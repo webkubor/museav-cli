@@ -77,6 +77,7 @@ import { ModelSettingsModal } from './components/ModelSettingsModal'
 import { ApiQuickCallModal } from './components/ApiQuickCallModal'
 import { ExperienceMessageList } from './components/ExperienceMessageList'
 import { TaskFileDropZone } from './components/TaskFileDropZone'
+import { resolveExperienceMessageMedia } from './experience-message-attachments'
 import './styles/model-experience-layout.css'
 import './styles/model-picker.css'
 import './styles/model-featured-card.css'
@@ -137,11 +138,15 @@ export default function ModelsPage() {
   const [attachmentUploading, setAttachmentUploading] = useState(false)
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const transientPreviewUrlsRef = useRef(new Set<string>())
   const viewTrackedRef = useRef(false)
   // 挂载那一刻的 entry state 会被下面的 navigate(replace, state:{}) 清空，先冻住供 playground_view 用
   const entryStateRef = useRef((location.state as { selectedModelId?: string } | null)?.selectedModelId)
 
-  useEffect(() => () => abortRef.current?.abort(), [])
+  useEffect(() => () => {
+    abortRef.current?.abort()
+    transientPreviewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url))
+  }, [])
 
   // 接口文档§九说 GET /catalog/models 支持 ?experience_type= 按可体验任务筛选；#533 的
   // 数据缺口（experience_types 全空）已由后端回填修复（2026-07-28 实测 test 环境 40 个
@@ -362,10 +367,19 @@ export default function ModelsPage() {
     const session = historySessions.find((s) => s.id === id)
     try {
       const { items } = await getExperienceSessionMessages(id)
-      const restored: ExperienceMessage[] = items.map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-        error: msg.status === 'failed' ? cleanErrorMessage(msg.error) : undefined,
+      const restored: ExperienceMessage[] = await Promise.all(items.map(async (msg) => {
+        const { media, hasFailures } = await resolveExperienceMessageMedia(msg.attachments)
+        return {
+          role: msg.role,
+          content: msg.content,
+          dispatchId: msg.dispatch_id,
+          error: msg.status === 'failed' ? cleanErrorMessage(msg.error) : undefined,
+          media: media.length > 0 ? media : undefined,
+          attachmentResourceIds: msg.role === 'user' && msg.attachments.length > 0
+            ? msg.attachments.map((attachment) => attachment.resource_id)
+            : undefined,
+          attachmentLoadFailed: msg.attachments.length > 0 && hasFailures,
+        }
       }))
       setSessionId(id)
       const conv = items.find((m) => m.conversation_id)?.conversation_id ?? null
@@ -466,13 +480,36 @@ export default function ModelsPage() {
     }
   }
 
-  function clearAttachment() {
+  function clearAttachment(revokePreview = true) {
     setAttachment((prev) => {
-      if (prev) URL.revokeObjectURL(prev.previewUrl)
+      if (prev && revokePreview) URL.revokeObjectURL(prev.previewUrl)
       return null
     })
     setAttachmentError(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  /**
+   * 发送时先保留本地 blob 预览，直到 resource_id 的短期 URL 可用再替换并释放它；
+   * 不能在 clearAttachment 时直接 revoke，否则刚插入消息列表的 img/audio/video 会变空白。
+   */
+  function replaceMessageAttachmentPreview(
+    dispatchId: string,
+    currentAttachment: { previewUrl: string; uploaded: ExperienceAttachment },
+  ) {
+    transientPreviewUrlsRef.current.add(currentAttachment.previewUrl)
+    void resolveExperienceMessageMedia([currentAttachment.uploaded]).then(({ media }) => {
+      if (media.length === 0) return
+      URL.revokeObjectURL(currentAttachment.previewUrl)
+      transientPreviewUrlsRef.current.delete(currentAttachment.previewUrl)
+      setMessages((prev) => prev.map((message) => (
+        message.role === 'user' &&
+        message.dispatchId === dispatchId &&
+        message.attachmentResourceIds?.includes(currentAttachment.uploaded.resource_id)
+          ? { ...message, media }
+          : message
+      )))
+    })
   }
 
   /** 上传附件（§7.5）：先按类型/大小校验，通过了才真的上传；会话已建好后不能再换类别的附件类型
@@ -570,11 +607,16 @@ export default function ModelsPage() {
 
   async function sendDialoguePrompt(prompt: string, dispatchId: string) {
     if (!selectedModel) return
-    const attachedKind = attachment ? attachmentKindFromMime(attachment.uploaded.mime) : null
-    const userMedia = attachment ? [{ kind: attachedKind ?? 'image', url: attachment.previewUrl }] : undefined
-    const resourceIds = attachment ? [attachment.uploaded.resource_id] : []
-    clearAttachment()
-    setMessages((prev) => [...prev, { role: 'user', content: prompt, media: userMedia }, { role: 'assistant', content: '' }])
+    const currentAttachment = attachment
+    const attachedKind = currentAttachment ? attachmentKindFromMime(currentAttachment.uploaded.mime) : null
+    const userMedia = currentAttachment ? [{ kind: attachedKind ?? 'image', url: currentAttachment.previewUrl }] : undefined
+    const resourceIds = currentAttachment ? [currentAttachment.uploaded.resource_id] : []
+    clearAttachment(false)
+    setMessages((prev) => [...prev, {
+      role: 'user', content: prompt, dispatchId, media: userMedia,
+      attachmentResourceIds: resourceIds.length > 0 ? resourceIds : undefined,
+    }, { role: 'assistant', content: '', dispatchId }])
+    if (currentAttachment) replaceMessageAttachmentPreview(dispatchId, currentAttachment)
     setInput('')
     setIsStreaming(true)
     abortRef.current?.abort()
@@ -715,15 +757,17 @@ export default function ModelsPage() {
   ) {
     if (!selectedModel) return
     const modelLabel = prettyModelName(selectedModel.display_name, selectedModel.model_id, selectedModel.vendor ?? selectedModel.provider)
-    const attachedKind = attachment ? attachmentKindFromMime(attachment.uploaded.mime) : null
-    const userMedia = retry ? retry.media : attachment ? [{ kind: attachedKind ?? 'image', url: attachment.previewUrl }] : undefined
-    const resourceIds = retry ? retry.resourceIds : attachment ? [attachment.uploaded.resource_id] : []
-    if (!retry) clearAttachment()
+    const currentAttachment = attachment
+    const attachedKind = currentAttachment ? attachmentKindFromMime(currentAttachment.uploaded.mime) : null
+    const userMedia = retry ? retry.media : currentAttachment ? [{ kind: attachedKind ?? 'image', url: currentAttachment.previewUrl }] : undefined
+    const resourceIds = retry ? retry.resourceIds : currentAttachment ? [currentAttachment.uploaded.resource_id] : []
+    if (!retry) clearAttachment(false)
     setMessages((prev) => [
       ...prev,
-      { role: 'user', content: prompt, media: userMedia, attachmentResourceIds: resourceIds.length ? resourceIds : undefined },
-      { role: 'assistant', content: '' },
+      { role: 'user', content: prompt, dispatchId, media: userMedia, attachmentResourceIds: resourceIds.length ? resourceIds : undefined },
+      { role: 'assistant', content: '', dispatchId },
     ])
+    if (currentAttachment && !retry) replaceMessageAttachmentPreview(dispatchId, currentAttachment)
     setInput('')
     setIsStreaming(true)
     const startedAt = Date.now()
@@ -1034,7 +1078,7 @@ export default function ModelsPage() {
                       ) : (
                         <span className="models-experience-attachment-name">{attachment.file.name}</span>
                       )}
-                      <button type="button" aria-label={t('modelsExperience.removeAttachment')} onClick={clearAttachment}>
+                      <button type="button" aria-label={t('modelsExperience.removeAttachment')} onClick={() => clearAttachment()}>
                         <LuX size={12} />
                       </button>
                     </div>

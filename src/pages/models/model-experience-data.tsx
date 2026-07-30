@@ -42,6 +42,8 @@ export interface ExperienceMessage {
   media?: ExperienceMediaResult[]
   /** 用户消息发送时携带的附件 resource_id（媒体任务重试用，PRD §AC-13），dialogue 消息不使用 */
   attachmentResourceIds?: string[]
+  /** 历史附件的短期展示地址获取失败时，仍明确告知用户而不是渲染空白消息气泡。 */
+  attachmentLoadFailed?: boolean
 }
 
 /** 延迟格式化：<1000ms 显示整数 ms，否则显示 x.xx s（App.tsx:17044 formatPlaygroundLatency 逐字对齐） */

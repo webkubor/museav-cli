@@ -123,6 +123,11 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
                       )}
                     </div>
                   )}
+                  {message.attachmentLoadFailed && (
+                    <span className="models-experience-message-error" role="alert">
+                      {t('modelsExperience.attachmentLoadFailed')}
+                    </span>
+                  )}
                   {message.role === 'assistant' && !message.media ? (
                     <MarkdownContent components={{ a: MessageLink }}>{message.content}</MarkdownContent>
                   ) : message.content ? (

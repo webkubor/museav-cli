@@ -102,10 +102,10 @@ export function LowBalanceAlert({ tenantId }: { tenantId: string }) {
                   type="button"
                   disabled={!alert.enabled}
                   className={cn(
-                    'billing-low-balance-recipient flex items-center gap-1.5 h-9 px-3 rounded-md border border-mg-border text-xs font-semibold text-mg-text-2 hover:bg-mg-fill-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed',
+                    'billing-low-balance-recipient flex shrink-0 items-center gap-1.5 h-9 px-3 rounded-md border border-mg-border text-xs font-semibold text-mg-text-2 hover:bg-mg-fill-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed',
                   )}
                 >
-                  <span className="text-mg-text-3">{t('billing.lowBalance.recipients', { defaultValue: '通知人' })}</span>
+                  <span className="whitespace-nowrap text-mg-text-3">{t('billing.lowBalance.recipients', { defaultValue: '通知人' })}</span>
                   <span className="text-mg-text-1 max-w-[140px] truncate">
                     {selectedNames.length > 0 ? selectedNames.join('、') : '—'}
                   </span>
@@ -136,8 +136,9 @@ export function LowBalanceAlert({ tenantId }: { tenantId: string }) {
             />
           )}
 
-          <div className="billing-low-balance-threshold flex items-center gap-1.5 h-9 px-3 rounded-md border border-mg-border">
-            <span className="text-xs text-mg-text-3">{t('billing.lowBalance.threshold', { defaultValue: '提醒阈值' })}</span>
+          <div className="billing-low-balance-threshold flex items-center gap-1.5 h-9 px-3 rounded-md border border-mg-border shrink-0">
+            {/* qa#278 二轮反馈：容器变窄时标签文字会逐字换行，缺 nowrap 保护 */}
+            <span className="whitespace-nowrap text-xs text-mg-text-3">{t('billing.lowBalance.threshold', { defaultValue: '提醒阈值' })}</span>
             <span className="text-xs text-mg-text-3">¥</span>
             <input
               type="number"

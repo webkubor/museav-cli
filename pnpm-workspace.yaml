@@ -2,8 +2,13 @@ allowBuilds:
   '@parcel/watcher': true
   msw: true
 
-# 供应链策略 minimumReleaseAge 豁免:@model-go/* 是自家可信包(如 @model-go/track),
-# 常同日发布同日上,不受"依赖须满龄"限制;第三方包仍受策略保护。
-# 解决 prod-global 因 @model-go/track@0.3.0 太新(ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION)构建失败。
+# 供应链策略 minimumReleaseAge 豁免:自家可信包(名字带 modelgo 的，不管是 @model-go/*
+# scope 还是裸包名如 modelgo-design-tokens)，常同日发布同日上，不受"依赖须满龄"限制；
+# 第三方包仍受策略保护。
+# 解决 prod-global 因 @model-go/track@0.3.0 太新(ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION)构建失败；
+# 2026-07-30 modelgo-design-tokens@0.6.1 同样撞了这个策略——@model-go/* 这条通配符盖不到不带
+# scope 的裸包名，索性改成 *modelgo* 通配，覆盖任何名字含 modelgo 的自家包，不用每加一个新包
+# 就手动补一条。
 minimumReleaseAgeExclude:
   - '@model-go/*'
+  - '*modelgo*'

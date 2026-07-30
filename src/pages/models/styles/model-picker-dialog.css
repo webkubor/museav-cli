@@ -5,7 +5,10 @@
 .model-picker-dialog__panel {
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 32px);
+  /* --mg-picker-max-h 由 computePosition() 按「翻转后那一侧的实际可用空间」算好后挂在
+     内联 style 上（见 ModelPickerDialog.tsx）。这里的 100vh 只是变量缺失时的兜底，
+     别当成真值——浮层是锚定在按钮下方的，按满屏算高度必然捅出窗口。 */
+  max-height: var(--mg-picker-max-h, calc(100vh - 32px));
 }
 
 .model-picker-dialog__panel-head {
@@ -42,7 +45,11 @@
 .model-picker-dialog__body {
   display: flex;
   min-height: 0;
+  /* 常态 560（原型刻度），但空间不够时要能被 panel 的 max-height 压下去：
+     flex-shrink 保持默认 1 + min-height:0，body 才会让步给 head/footer，
+     否则 footer 的确认按钮会被挤出浮层外。 */
   height: min(560px, 66vh);
+  flex-shrink: 1;
 }
 
 /* single 模式：列表是主体、详情是副栏 —— 对齐原型 playground-model-panel.with-detail
@@ -75,6 +82,19 @@
 .model-picker-dialog__panel.is-compare .model-picker-dialog__detail-pane {
   flex: 1;
   width: auto;
+}
+
+/* 面板本身在 <1024px（lg 断点以下）已经从 720 收窄到 520/92vw（见 ModelPickerDialog.tsx），
+   detail-pane/list-pane 的固定 px 分栏也要跟着收，否则列表在窄面板里被挤到只剩一百多px、
+   模型名截断——单模型模式详情栏让出空间，对比模式列表栏同理让出空间。 */
+@media (max-width: 1023px) {
+  .model-picker-dialog__detail-pane {
+    width: 200px;
+  }
+
+  .model-picker-dialog__panel.is-compare .model-picker-dialog__list-pane {
+    width: 220px;
+  }
 }
 
 .model-picker-dialog__list {

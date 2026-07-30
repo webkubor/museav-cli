@@ -113,6 +113,11 @@ function ModalityFlow({ model }: { model: CatalogModelItem }) {
   )
 }
 
+/** 浮层与视口边缘的最小留白（横竖同值，视觉上四周一致） */
+const EDGE_MARGIN = 8
+/** 可用空间再小也别把浮层压扁到没法用——低于这个值就宁可溢出一点，靠内部滚动兜 */
+const MIN_PANEL_HEIGHT = 240
+
 export interface ModelPickerDialogProps {
   open: boolean
   onClose: () => void
@@ -203,14 +208,29 @@ export function ModelPickerDialog({
     const panelH = panelRef.current?.offsetHeight ?? 0
 
     let left = rect.left
-    if (left + panelW > vw - 8) left = Math.max(8, vw - panelW - 8)
+    if (left + panelW > vw - EDGE_MARGIN) left = Math.max(EDGE_MARGIN, vw - panelW - EDGE_MARGIN)
 
     const spaceBelow = vh - rect.bottom
     const useTop = spaceBelow < panelH + gap && rect.top > spaceBelow
     const top = useTop ? undefined : rect.bottom + gap
     const bottom = useTop ? vh - rect.top + gap : undefined
 
-    setPanelStyle({ position: 'fixed', top, bottom, left, zIndex: 60, visibility: 'visible' })
+    // 高度必须夹到「翻转后那一侧的实际可用空间」，不能交给 CSS 的 100vh：浮层顶边钉在
+    // 按钮下方（top = rect.bottom + gap），而 max-height 按满屏算的话，按钮越靠页面中下部
+    // 浮层底部就越捅出窗口——列表下半截和底部确认栏直接够不着（shared/modelgo_prd#302）。
+    // 位置在这里算，高度就也在这里算，两者同源；已有的 scroll/resize reposition 自动带上。
+    const avail = (useTop ? rect.top : spaceBelow) - gap - EDGE_MARGIN
+    const maxHeight = Math.max(MIN_PANEL_HEIGHT, avail)
+
+    setPanelStyle({
+      position: 'fixed',
+      top,
+      bottom,
+      left,
+      zIndex: 60,
+      visibility: 'visible',
+      ['--mg-picker-max-h' as string]: `${maxHeight}px`,
+    })
   }, [anchorEl])
 
   useLayoutEffect(() => {
@@ -367,10 +387,14 @@ export function ModelPickerDialog({
       className={cn(
         'model-picker-dialog__panel mg-panel rounded-lg border border-mg-border bg-mg-bg-0 shadow-xl',
         'animate-in zoom-in-95 fade-in-0 duration-150',
-        // 宽度用本仓 Modal 的既有刻度（sm 400 / md 520 / lg 720）——改成浮层前这里就是
-        // size="lg"，别自造 880/1120 这种刻度外的值（2026-07-30：我拍过 880，导致详情区
-        // 撑到 580 而列表只剩 300、模型名全截断，就是这么来的）
-        mode === 'compareAdd' ? 'is-compare w-[720px] max-w-[calc(100vw-16px)]' : 'w-[720px] max-w-[calc(100vw-16px)]',
+        // 宽度用本仓 Modal 的既有刻度（sm 400 / md 520 / lg 720），但只在 lg 断点
+        // (≥1024px) 才用满 720——之前不管视口多窄都死守 720，只有 <736px 那个
+        // max-w 兜底才收缩，中间一大段笔记本宽度（900~1400px 很常见）完全没反应，
+        // 弹层比可用空间宽得不成比例（2026-07-30 实测反馈）。别自造 880/1120 这种
+        // 刻度外的值，本仓 Modal sm/md 就是刻度本身。
+        mode === 'compareAdd'
+          ? 'is-compare w-[92vw] sm:w-[520px] lg:w-[720px] max-w-[calc(100vw-16px)]'
+          : 'w-[92vw] sm:w-[520px] lg:w-[720px] max-w-[calc(100vw-16px)]',
       )}
     >
       <div className="model-picker-dialog__panel-head">

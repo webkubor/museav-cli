@@ -163,7 +163,9 @@ export default function ModelsComparePage() {
   const [removeConfirmIndex, setRemoveConfirmIndex] = useState<number | null>(null)
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false)
   const [switchPickerIndex, setSwitchPickerIndex] = useState<number | null>(null)
+  const [switchPickerAnchor, setSwitchPickerAnchor] = useState<HTMLElement | null>(null)
   const [addPickerOpen, setAddPickerOpen] = useState(false)
+  const [addPickerAnchor, setAddPickerAnchor] = useState<HTMLElement | null>(null)
   const [syncConfirm, setSyncConfirm] = useState<{ sourceIndex: number; sourceText: string; sourceAttachmentName: string | null } | null>(null)
   const [settingsIndex, setSettingsIndex] = useState<number | null>(null)
   const [apiIndex, setApiIndex] = useState<number | null>(null)
@@ -1176,8 +1178,9 @@ export default function ModelsComparePage() {
             variant="outline"
             size="sm"
             disabled={columns.length >= MAX_COMPARE}
-            onClick={() => {
+            onClick={(e) => {
               trackEvent('playground_model_picker_open', { picker_type: 'compareAdd', browse_category: compareCategory })
+              setAddPickerAnchor(e.currentTarget)
               setAddPickerOpen(true)
             }}
           >
@@ -1225,8 +1228,9 @@ export default function ModelsComparePage() {
               <button
                 type="button"
                 className="models-experience-model-trigger"
-                onClick={() => {
+                onClick={(e) => {
                   trackEvent('playground_model_picker_open', { picker_type: 'compareSwitch', browse_category: compareCategory })
+                  setSwitchPickerAnchor(e.currentTarget)
                   setSwitchPickerIndex(idx)
                 }}
               >
@@ -1548,6 +1552,7 @@ export default function ModelsComparePage() {
       <ModelPickerDialog
         open={switchPickerIndex !== null}
         onClose={() => setSwitchPickerIndex(null)}
+        anchorEl={switchPickerAnchor}
         mode="compareSwitch"
         models={allModels.filter((m) => switchPickerIndex === null || !excludeIdsFor(switchPickerIndex).includes(m.id))}
         isBalanceZero={isBalanceZero}
@@ -1569,6 +1574,7 @@ export default function ModelsComparePage() {
       <ModelPickerDialog
         open={addPickerOpen}
         onClose={() => setAddPickerOpen(false)}
+        anchorEl={addPickerAnchor}
         mode="compareAdd"
         models={allModels}
         isBalanceZero={isBalanceZero}

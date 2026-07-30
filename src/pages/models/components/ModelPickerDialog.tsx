@@ -16,15 +16,21 @@
  * 3) compareAdd：已选模型固定展示且不可重复选择，只能在剩余名额内勾选候选，确认后才批量加入。
  * 4) 付费模型零余额时仍展示，禁用 + 标记「余额不足」；已下线模型仅展示 disabled 徽标。
  * 5) 条目只展示 图标/名称/厂商/输入→输出模态/价格/状态——不展示推理供应商。
+ *
+ * 容器形态（2026-07-30 对齐原型修正）：原型 App.tsx `playground-model-picker` /
+ * `.playground-model-panel` 是**锚定在触发按钮正下方的浮层**（position:absolute;
+ * left:0; top:calc(100% + 6px)，无遮罩），不是居中弹窗。之前用 `<Modal>`（Radix Dialog
+ * 居中+全屏遮罩）形态选错了——PRD 定形态，这里改成锚定浮层，视觉细节（宽度/圆角/阴影）
+ * 仍走本仓 token，不照抄原型像素值。
  */
-import { useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback, type CSSProperties } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import {
-  LuSearch, LuFileText, LuImage, LuMic, LuVideo, LuArrowRight, LuCircleAlert, LuWifiOff, LuCheck, LuFileX,
+  LuSearch, LuFileText, LuImage, LuMic, LuVideo, LuArrowRight, LuCircleAlert, LuWifiOff, LuCheck, LuFileX, LuX,
 } from 'react-icons/lu'
 import type { IconType } from 'react-icons'
 import i18n from '@/i18n'
-import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs'
@@ -109,6 +115,9 @@ function ModalityFlow({ model }: { model: CatalogModelItem }) {
 export interface ModelPickerDialogProps {
   open: boolean
   onClose: () => void
+  /** 触发按钮的 DOM 节点（点击时 e.currentTarget 传入），浮层锚定在它正下方；
+   *  为空时兜底为屏幕居中（理论上不该发生，所有调用方都应传） */
+  anchorEl?: HTMLElement | null
   mode: ModelPickerMode
   models: CatalogModelItem[]
   /** compareSwitch/compareAdd 时需要，用于过滤候选到同类别 */
@@ -162,6 +171,7 @@ function compareRows(): Array<{ label: string; render: (m: CatalogModelItem) => 
 export function ModelPickerDialog({
   open,
   onClose,
+  anchorEl = null,
   mode,
   models,
   currentCategory,
@@ -178,6 +188,61 @@ export function ModelPickerDialog({
   const [activeCategory, setActiveCategory] = useState<ModelPickerCategory>(currentCategory ?? 'dialogue')
   const [detailId, setDetailId] = useState<string | null>(null)
   const [checkedIds, setCheckedIds] = useState<string[]>([])
+  const panelRef = useRef<HTMLDivElement>(null)
+  // 首帧 hidden，测量完锚点坐标后才 visible，杜绝位置闪烁（同 Popover.tsx 的手法）
+  const [panelStyle, setPanelStyle] = useState<CSSProperties>({ position: 'fixed', visibility: 'hidden' })
+
+  const computePosition = useCallback(() => {
+    if (!anchorEl) return
+    const rect = anchorEl.getBoundingClientRect()
+    const gap = 6
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    const panelW = panelRef.current?.offsetWidth ?? rect.width
+    const panelH = panelRef.current?.offsetHeight ?? 0
+
+    let left = rect.left
+    if (left + panelW > vw - 8) left = Math.max(8, vw - panelW - 8)
+
+    const spaceBelow = vh - rect.bottom
+    const useTop = spaceBelow < panelH + gap && rect.top > spaceBelow
+    const top = useTop ? undefined : rect.bottom + gap
+    const bottom = useTop ? vh - rect.top + gap : undefined
+
+    setPanelStyle({ position: 'fixed', top, bottom, left, zIndex: 60, visibility: 'visible' })
+  }, [anchorEl])
+
+  useLayoutEffect(() => {
+    if (open) {
+      computePosition()
+    } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPanelStyle({ position: 'fixed', visibility: 'hidden' })
+    }
+  }, [open, computePosition])
+
+  useEffect(() => {
+    if (!open) return
+    function handleClickOutside(e: MouseEvent) {
+      const target = e.target as Node
+      if (anchorEl?.contains(target)) return
+      if (panelRef.current && !panelRef.current.contains(target)) onClose()
+    }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    function handleReposition() { computePosition() }
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('scroll', handleReposition, true)
+    window.addEventListener('resize', handleReposition)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('scroll', handleReposition, true)
+      window.removeEventListener('resize', handleReposition)
+    }
+  }, [open, anchorEl, onClose, computePosition])
 
   // 弹层重新打开时重置为初始状态（渲染期同步，非交互副作用，避免残留上一次的搜索/详情）
   const [prevOpen, setPrevOpen] = useState(open)
@@ -254,39 +319,27 @@ export function ModelPickerDialog({
 
   const title = mode === 'single' ? t('modelsExperience.picker.selectModel') : mode === 'compareSwitch' ? t('modelsExperience.picker.switchModel') : t('modelsExperience.picker.addCompareModel')
 
-  return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      size="lg"
-      // compareAdd 右侧是最多 3 列的参数对比表格（88px 固定列 + N 等分列），880px 在选满
-      // 3 个模型时明显局促——模型名/价格/模态全被截断；这个模式单独放宽，其余模式不动
-      className={mode === 'compareAdd' ? 'sm:max-w-[1120px]' : 'sm:max-w-[880px]'}
-      title={title}
-      footer={
-        mode === 'compareAdd' ? (
-          <div className="flex items-center justify-between w-full">
-            <span className="text-xs text-mg-text-3">
-              {t('modelsExperience.picker.selectedCount', { count: alreadySelectedModels.length + checkedModels.length })}
-            </span>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={onClose}>{t('modelsExperience.picker.cancel')}</Button>
-              <Button
-                variant="brand"
-                size="sm"
-                disabled={checkedModels.length === 0}
-                onClick={() => {
-                  onConfirmAdd?.(checkedModels)
-                  onClose()
-                }}
-              >
-                {t('modelsExperience.picker.confirmAdd', { count: checkedModels.length })}
-              </Button>
-            </div>
-          </div>
-        ) : undefined
-      }
+  if (!open) return null
+
+  return createPortal(
+    <div
+      ref={panelRef}
+      role="dialog"
+      aria-modal="false"
+      aria-label={title}
+      style={panelStyle}
+      className={cn(
+        'model-picker-dialog__panel mg-panel rounded-lg border border-mg-border bg-mg-bg-0 shadow-xl',
+        'animate-in zoom-in-95 fade-in-0 duration-150',
+        mode === 'compareAdd' ? 'w-[1120px] max-w-[calc(100vw-16px)]' : 'w-[880px] max-w-[calc(100vw-16px)]',
+      )}
     >
+      <div className="model-picker-dialog__panel-head">
+        <span className="mg-text-title-sm font-bold text-mg-text-1">{title}</span>
+        <button type="button" className="model-picker-dialog__panel-close" aria-label={t('modelsExperience.picker.cancel')} onClick={onClose}>
+          <LuX size={16} />
+        </button>
+      </div>
       <div className="model-picker-dialog__body">
         <div className="model-picker-dialog__list-pane">
           <Input
@@ -504,7 +557,30 @@ export function ModelPickerDialog({
           </div>
         )}
       </div>
-    </Modal>
+
+      {mode === 'compareAdd' && (
+        <div className="model-picker-dialog__panel-footer">
+          <span className="text-xs text-mg-text-3">
+            {t('modelsExperience.picker.selectedCount', { count: alreadySelectedModels.length + checkedModels.length })}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={onClose}>{t('modelsExperience.picker.cancel')}</Button>
+            <Button
+              variant="brand"
+              size="sm"
+              disabled={checkedModels.length === 0}
+              onClick={() => {
+                onConfirmAdd?.(checkedModels)
+                onClose()
+              }}
+            >
+              {t('modelsExperience.picker.confirmAdd', { count: checkedModels.length })}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>,
+    document.body,
   )
 }
 

@@ -94,9 +94,11 @@ export default function ModelsPage() {
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [pickerAnchor, setPickerAnchor] = useState<HTMLElement | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [apiCallOpen, setApiCallOpen] = useState(false)
   const [compareAddOpen, setCompareAddOpen] = useState(false)
+  const [compareAddAnchor, setCompareAddAnchor] = useState<HTMLElement | null>(null)
   const [historyCollapsed, setHistoryCollapsed] = useState(true)
 
   // 模型列/会话/消息跨路由持久化（qa#544）：改走模块级 zustand store，SPA 内路由切走
@@ -835,8 +837,9 @@ export default function ModelsPage() {
                 <button
                   type="button"
                   className="models-experience-model-trigger"
-                  onClick={() => {
+                  onClick={(e) => {
                     trackEvent('playground_model_picker_open', { picker_type: 'single', browse_category: selectedCategory })
+                    setPickerAnchor(e.currentTarget)
                     setPickerOpen(true)
                   }}
                 >
@@ -896,8 +899,9 @@ export default function ModelsPage() {
                     variant="outline"
                     size="sm"
                     className="rounded-md"
-                    onClick={() => {
+                    onClick={(e) => {
                       trackEvent('playground_model_picker_open', { picker_type: 'compareAdd', browse_category: selectedCategory })
+                      setCompareAddAnchor(e.currentTarget)
                       setCompareAddOpen(true)
                     }}
                   >
@@ -1073,6 +1077,7 @@ export default function ModelsPage() {
       <ModelPickerDialog
         open={pickerOpen}
         onClose={() => setPickerOpen(false)}
+        anchorEl={pickerAnchor}
         mode="single"
         models={allModels}
         isBalanceZero={isBalanceZero}
@@ -1113,6 +1118,7 @@ export default function ModelsPage() {
         <ModelPickerDialog
           open={compareAddOpen}
           onClose={() => setCompareAddOpen(false)}
+          anchorEl={compareAddAnchor}
           mode="compareAdd"
           models={allModels}
           isBalanceZero={isBalanceZero}

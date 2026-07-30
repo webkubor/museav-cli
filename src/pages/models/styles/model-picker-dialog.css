@@ -1,5 +1,44 @@
 /* ── 模型选择器弹层（ModelPickerDialog，PRD 1.0.4 §模型选择）──────────── */
 
+/* 容器形态对齐原型 App.tsx .playground-model-panel：锚定在触发按钮正下方的浮层，
+   无全屏遮罩（区别于本仓 Modal 组件的居中+遮罩），视觉走本仓 --mg-* token。 */
+.model-picker-dialog__panel {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 32px);
+}
+
+.model-picker-dialog__panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--mg-border);
+  flex-shrink: 0;
+}
+
+.model-picker-dialog__panel-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  color: var(--mg-text-3);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.model-picker-dialog__panel-close:hover { color: var(--mg-text-1); background: var(--mg-fill-0); }
+
+.model-picker-dialog__panel-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-top: 1px solid var(--mg-border);
+  flex-shrink: 0;
+}
+
 .model-picker-dialog__body {
   display: flex;
   min-height: 0;

@@ -218,6 +218,7 @@
 .mg-side-row.is-active { background: color-mix(in oklab, var(--brand-base) 12%, transparent); color: var(--brand-base); font-weight: 700; }
 .mg-side-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .mg-side-chip {
+  display: inline-flex; align-items: center; gap: 5px;
   padding: 5px 12px; border: 1px solid var(--mg-border); border-radius: 999px;
   background: var(--mg-bg-0); color: var(--mg-text-2); font-size: 12.5px; font-weight: 500;
   cursor: pointer; transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
@@ -227,6 +228,9 @@
   border-color: color-mix(in oklab, var(--brand-base) 50%, transparent);
   background: color-mix(in oklab, var(--brand-base) 13%, transparent); color: var(--brand-base); font-weight: 700;
 }
+/* qa#288 二轮反馈：计数缺样式，跟标签文字粘连成"128K0"；对齐 .mg-side-row-count 同款 */
+.mg-side-count { font-style: normal; font-size: 12px; color: var(--mg-text-4); }
+.mg-side-chip.is-active .mg-side-count { color: var(--brand-base); }
 .mg-side-more { display: inline-flex; align-items: center; gap: 3px; padding: 6px 4px; font-size: 12px; font-weight: 600; color: var(--mg-text-3); cursor: pointer; }
 .mg-side-more:hover { color: var(--brand-base); }
 

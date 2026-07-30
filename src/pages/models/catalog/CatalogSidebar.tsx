@@ -34,12 +34,14 @@ const MODALITY_LABEL_ZH: Record<string, string> = { text: '对话', image: '图�
 const MODALITY_LABEL_EN: Record<string, string> = { text: 'Chat', image: 'Image', audio: 'Audio', video: 'Video' }
 const PROTOCOL_LABEL: Record<string, string> = { openai: 'OpenAI', anthropic: 'Anthropic' }
 
-/** token 数 → 展示标签（1048576 → >1M）。阈值由服务端 facets 下发。 */
+/** token 数 → 展示标签（1048576 → ≥1M）。阈值由服务端 facets 下发。
+ *  qa#288 二轮反馈：原型 App.tsx:3942-3944 是"≥ 128K"（大于等于，带空格），
+ *  不是">128K"（严格大于）——语义也对应筛选真实行为 context_min 是含边界的下限。 */
 function contextBucketLabel(tokens: string): string {
   const n = Number(tokens)
   if (!Number.isFinite(n) || n <= 0) return tokens
-  if (n >= 1_000_000) return `>${Math.round(n / 1_048_576)}M`
-  return `>${Math.round(n / 1000)}K`
+  if (n >= 1_000_000) return `≥ ${Math.round(n / 1_048_576)}M`
+  return `≥ ${Math.round(n / 1000)}K`
 }
 
 interface Props {

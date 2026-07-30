@@ -67,6 +67,7 @@ import {
   EXPERIENCE_CATEGORY_DEFAULT_TASK,
   offlineModelPlaceholder,
   isOfflineModel,
+  modelSupportsAttachment,
   type ExperienceMessage,
   type ExperienceTaskType,
 } from './model-experience-data'
@@ -185,8 +186,16 @@ export default function ModelsPage() {
   /** dialogue 类允许附哪种附件（§7.5）。对话类的音频附件在真实 task 枚举里没有对应的子任务
    *  （image_to_text/video_to_text 之外没有 audio 版本），先不开放，只开放能对应到真实
    *  任务枚举的图片/视频。image/audio/video 类不走这条通用回形针路径，改用 needsFileTask
-   *  时的 TaskFileDropZone（taskAttachmentKind(effectiveTask) 决定收哪种）。 */
-  const allowedAttachmentKinds: Array<keyof typeof ATTACHMENT_LIMITS> = ['image', 'video']
+   *  时的 TaskFileDropZone（taskAttachmentKind(effectiveTask) 决定收哪种）。
+   *
+   *  之前这里是写死的 ['image', 'video']，不看当前选中模型实际支不支持——纯文本模型
+   *  （如 deepseek/deepseek-v4-pro，input_modalities 只有 text）照样能点回形针传图片，
+   *  传上去请求里带不到模型那边，模型只能回"没看到图片"。改成按 modelSupportsAttachment
+   *  过滤，模型不支持的附件类型直接不出现在回形针可选项里。 */
+  const allowedAttachmentKinds: Array<keyof typeof ATTACHMENT_LIMITS> = useMemo(() => {
+    if (!selectedModel) return []
+    return (['image', 'video'] as const).filter((kind) => modelSupportsAttachment(selectedModel, kind))
+  }, [selectedModel])
 
   /** composer 底部预估费用：与原型 estimatePlaygroundTaskSpend 对齐——按当前草稿估算 input token，
    *  输出 token 取 min(400, max_tokens) 上限估算（App.tsx:16967-16990） */
@@ -1063,16 +1072,18 @@ export default function ModelsPage() {
                     activeChip={
                       isDialogue ? (
                         <div className="models-experience-composer-left">
-                          <button
-                            type="button"
-                            className="models-experience-icon-btn"
-                            aria-label={t('modelsExperience.addAttachment')}
-                            title={`${t('modelsExperience.attachmentSupports')}${allowedAttachmentKinds.map((k) => attachmentLimitLabel(k)).join(t('modelsExperience.listSeparator'))}`}
-                            disabled={attachmentUploading || !!attachment}
-                            onClick={() => fileInputRef.current?.click()}
-                          >
-                            <LuPaperclip size={14} />
-                          </button>
+                          {allowedAttachmentKinds.length > 0 && (
+                            <button
+                              type="button"
+                              className="models-experience-icon-btn"
+                              aria-label={t('modelsExperience.addAttachment')}
+                              title={`${t('modelsExperience.attachmentSupports')}${allowedAttachmentKinds.map((k) => attachmentLimitLabel(k)).join(t('modelsExperience.listSeparator'))}`}
+                              disabled={attachmentUploading || !!attachment}
+                              onClick={() => fileInputRef.current?.click()}
+                            >
+                              <LuPaperclip size={14} />
+                            </button>
+                          )}
                           <span className="models-experience-composer-hint">
                             {attachmentUploading ? t('modelsExperience.attachmentUploading') : (
                               <>{t('modelsExperience.estimatedSpend')} <strong>{composerEstimatedSpend}</strong></>

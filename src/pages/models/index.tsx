@@ -214,6 +214,14 @@ export default function ModelsPage() {
 
   useEffect(() => {
     const state = location.state as { selectedModelId?: string } | null
+    // 目录还没回来时 allModels 是空数组，此刻既找不到目标模型、也**不能清 entry state**：
+    // 清了之后列表加载完 effect 重跑，state 已空 → 落到下面的兜底选中 allModels[0]，
+    // 于是「带某个模型跳进体验页」变成「进了目录第一个模型」（shared/modelgo_prd#300：
+    // 搜 seek 点 DeepSeek V4 Flash 却进 Kimi K3——K3 正是目录第一个）。任何带模型的入口
+    // （广场卡片/模型详情/登录回跳）在列表未就绪时都会中招，跟搜索无关。
+    // 同理兜底选中也要等列表就绪，否则会先选错再被纠正，闪一下。
+    if (!modelsQuery.isSuccess) return
+
     if (state?.selectedModelId) {
       const targetModel = allModels.find((m) => m.model_id === state.selectedModelId || m.id === state.selectedModelId)
       if (targetModel) {
@@ -222,12 +230,14 @@ export default function ModelsPage() {
         // 语义等同 handlePick 换模型，同样要开新会话，不能沿用上一个模型遗留的旧对话
         startNewSession()
       }
+      // 到这里目录已就绪：找到了就已消费、没找到就是真的没这个模型，两种情况都该清掉 state，
+      // 免得它一直挂在 history 上，用户下次前进/后退回来又被套用一次
       navigate('/models/playground', { replace: true, state: {} })
     } else if (!selectedId && allModels[0]) {
       setSelectedId(allModels[0].id)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allModels, selectedId, setSelectedId, location.state, navigate])
+  }, [allModels, selectedId, setSelectedId, location.state, navigate, modelsQuery.isSuccess])
 
   // 会话按租户隔离，切换租户后旧 conversationId 在新租户下已不存在，继续发消息会打到
   // POST .../experience/conversations/{旧id}/messages 上被后端 404「资源不存在」拒绝

@@ -2107,6 +2107,16 @@
     "copyReply": "复制回复内容",
     "notBilled": "计费：未计费",
     "retryAfterAdjust": "调整后重试",
+    "mediaGenerating": "正在生成结果",
+    "mediaGeneratingHint": "请稍候，结果完成后会自动更新。",
+    "asyncTaskSubmitted": "异步任务已提交",
+    "asyncTaskHint": "任务会继续执行，可在调用日志中查看",
+    "artifactStatus": {
+      "generating": "生成中",
+      "taskRunning": "任务执行中",
+      "succeeded": "已完成",
+      "failed": "失败"
+    },
     "totalLatency": "总耗时",
     "firstToken": "首Token",
     "downloadResult": "下载产物",

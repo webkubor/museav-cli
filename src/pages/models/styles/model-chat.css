@@ -197,6 +197,59 @@
   font-weight: 500;
 }
 
+/* 媒体结果状态徽标（#308，对齐原型 App.tsx:20415 artifact header 的四态）：
+   仅媒体任务挂——对话结果没有"任务"概念。生成中/任务执行中共用中性色，
+   成功走 success、失败走 danger，色值全部取语义 token。 */
+.models-experience-artifact-status {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 700;
+  font-style: normal;
+  background: var(--mg-fill-0);
+  color: var(--mg-text-3);
+}
+.models-experience-artifact-status.is-succeeded { color: var(--mg-success); }
+.models-experience-artifact-status.is-failed { color: var(--mg-danger); }
+
+/* 媒体生成等待区（#308）：媒体生成没有流式增量，三点动画传达不了进度，
+   异步视频任务尤其要说清"任务还在跑"，否则跟卡死无法区分 */
+.models-experience-media-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 20px 16px;
+  text-align: center;
+  color: var(--mg-text-3);
+}
+
+.models-experience-media-loading strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mg-text-1);
+}
+
+.models-experience-media-loading span {
+  font-size: 12px;
+}
+
+.models-experience-media-loading-icon {
+  color: var(--mg-text-3);
+  animation: models-experience-media-spin 1.4s linear infinite;
+}
+
+@keyframes models-experience-media-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .models-experience-media-loading-icon { animation: none; }
+}
+
 /* 媒体结果失败卡（PRD §AC-13，对齐原型 App.tsx:20421 playground-artifact-error）：
    保留计费状态与重试入口，仅媒体任务（图像/音频/视频）失败时使用 */
 .models-experience-media-error {

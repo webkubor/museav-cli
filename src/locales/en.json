@@ -2095,6 +2095,16 @@
     "copyReply": "Copy reply",
     "notBilled": "Billing: not charged",
     "retryAfterAdjust": "Adjust and retry",
+    "mediaGenerating": "Generating result",
+    "mediaGeneratingHint": "Hang tight — this updates automatically when it's done.",
+    "asyncTaskSubmitted": "Async task submitted",
+    "asyncTaskHint": "It keeps running; track it in call logs",
+    "artifactStatus": {
+      "generating": "Generating",
+      "taskRunning": "Task running",
+      "succeeded": "Done",
+      "failed": "Failed"
+    },
     "totalLatency": "Total latency",
     "firstToken": "First token",
     "downloadResult": "Download result",

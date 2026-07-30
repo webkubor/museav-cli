@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { MarkdownContent } from '@/components/ui/MarkdownContent'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { LuCheck, LuCopy } from 'react-icons/lu'
+import { LuCheck, LuCopy, LuRefreshCcw } from 'react-icons/lu'
 import { cn } from '@/lib/utils'
 import { ModelIcon, type ModelIconLike } from '@/features/models/components/ModelIcon'
 import { formatPlaygroundSpend, type ExperienceMessage } from '../model-experience-data'
@@ -59,12 +59,15 @@ export interface ExperienceMessageListProps {
   isMediaTask?: boolean
   /** 重试：传回失败结果对应的用户消息（含原始文本与附件 resource_id），由调用方重新发起同一请求 */
   onRetry?: (userMessage: ExperienceMessage) => void
+  /** 当前媒体任务是否走异步（视频类）。异步任务提交后请求就返回了，结果要另行轮询/去调用日志看，
+   *  等待态必须说清楚"任务还在跑"，否则跟同步生成长得一样，用户会以为卡死（#308） */
+  isAsyncMediaTask?: boolean
   emptyState: React.ReactNode
   /** 助手消息头像用该模型的真实图标（ModelIcon 统一组件），不传时退回模型名首字母 */
   assistantModel?: ModelIconLike
 }
 
-export function ExperienceMessageList({ messages, isStreaming, showModelNameInMeta = true, isMediaTask = false, onRetry, emptyState, assistantModel }: ExperienceMessageListProps) {
+export function ExperienceMessageList({ messages, isStreaming, showModelNameInMeta = true, isMediaTask = false, onRetry, emptyState, assistantModel, isAsyncMediaTask = false }: ExperienceMessageListProps) {
   const { t } = useTranslation()
   return (
     <div className="models-experience-messages">
@@ -75,6 +78,19 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
           message.content === '' &&
           isStreaming &&
           index === messages.length - 1
+        // 媒体结果的状态徽标（#308）：对话结果没有"任务"概念，不挂徽标。
+        // 生成中/任务执行中 由 isAsyncMediaTask 区分——异步任务提交后本地请求已结束，
+        // 说"生成中"是错的，它是在队列里跑。
+        const artifactStatus =
+          !isMediaTask || message.role !== 'assistant'
+            ? null
+            : message.error
+              ? 'failed'
+              : isThinking
+                ? (isAsyncMediaTask ? 'taskRunning' : 'generating')
+                : message.media && message.media.length > 0
+                  ? 'succeeded'
+                  : null
         return (
           <div key={`${message.role}-${index}`} className={cn('models-experience-message', message.role === 'user' && 'is-user')}>
             {message.role === 'assistant' && assistantModel ? (
@@ -85,6 +101,11 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
               </span>
             )}
             <div className="models-experience-message-bubble">
+              {artifactStatus && (
+                <em className={cn('models-experience-artifact-status', `is-${artifactStatus}`)}>
+                  {t(`modelsExperience.artifactStatus.${artifactStatus}`)}
+                </em>
+              )}
               {message.error ? (
                 isMediaTask ? (
                   // 媒体结果失败（PRD §AC-13）：保留输入设置、展示计费状态（本次未计费）与重试
@@ -103,9 +124,19 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
                   <span className="models-experience-message-error" role="alert">{message.error}</span>
                 )
               ) : isThinking ? (
-                <span className="models-experience-thinking" aria-label={t('modelsExperience.modelThinking')}>
-                  <i /><i /><i />
-                </span>
+                isMediaTask ? (
+                  // 媒体生成没有流式增量可看，三点动画（对话用的"正在打字"隐喻）在这里传达不了
+                  // 任何进度，尤其视频异步任务一等好几分钟，用户会以为卡死（#308）
+                  <div className="models-experience-media-loading" role="status">
+                    <LuRefreshCcw size={22} className="models-experience-media-loading-icon" />
+                    <strong>{t(isAsyncMediaTask ? 'modelsExperience.asyncTaskSubmitted' : 'modelsExperience.mediaGenerating')}</strong>
+                    <span>{t(isAsyncMediaTask ? 'modelsExperience.asyncTaskHint' : 'modelsExperience.mediaGeneratingHint')}</span>
+                  </div>
+                ) : (
+                  <span className="models-experience-thinking" aria-label={t('modelsExperience.modelThinking')}>
+                    <i /><i /><i />
+                  </span>
+                )
               ) : (
                 <>
                   {/* 用户消息附件预览（§7.5）与助手媒体结果（§7.10）都走这个渲染，

@@ -290,8 +290,7 @@
       "giftHint": "Promo code / trial credit",
       "rewardBalance": "Reward Balance",
       "rewardHint": "Referral rebate",
-      "frozenHint": "Pre-authorization / processing",
-      "refreshHint": "Refresh balance and list"
+      "frozenHint": "Pre-authorization / processing"
     },
     "tabs": {
       "orders": "Orders",

@@ -1,7 +1,6 @@
-import { useState, useCallback } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LuRefreshCw, LuPlus, LuTicket } from 'react-icons/lu'
+import { LuPlus, LuTicket } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { InfoTip } from '@/components/ui/InfoTip'
@@ -26,14 +25,12 @@ interface BalanceCardProps {
 
 export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }: BalanceCardProps) {
   const { t } = useTranslation()
-  const qc = useQueryClient()
   const { hasPermission } = usePermissions()
   const canRecharge = hasPermission(PERMS.BILLING_RECHARGE_CREATE)
   const canRedeem = hasPermission(PERMS.BILLING_PROMO_REDEEM)
 
   const [topUpVisible, setTopUpVisible] = useState(false)
   const [redeemVisible, setRedeemVisible] = useState(false)
-  const [refreshing, setRefreshing] = useState(false)
 
   const { data: balance, isLoading: balanceLoading } = useBalance(tenantId)
   const { data: breakdown, isLoading: breakdownLoading } = useBalanceBreakdown(tenantId)
@@ -51,22 +48,6 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
       'billing-balance-bucket p-4 space-y-2 text-left w-full cursor-pointer outline-none select-none',
       active ? 'active' : ''
     )
-
-  const handleRefresh = useCallback(async () => {
-    if (!tenantId || refreshing) return
-    setRefreshing(true)
-    try {
-      await Promise.all([
-        qc.refetchQueries({ queryKey: ['balance', tenantId] }),
-        qc.refetchQueries({ queryKey: ['balance', 'breakdown', tenantId] }),
-        qc.refetchQueries({ queryKey: ['billing', 'recharges', tenantId] }),
-        qc.refetchQueries({ queryKey: ['billing', 'gift-records', tenantId] }),
-        qc.refetchQueries({ queryKey: ['referral', 'reward-records', tenantId] }),
-      ])
-    } finally {
-      setRefreshing(false)
-    }
-  }, [qc, tenantId, refreshing])
 
   return (
     <>
@@ -88,18 +69,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
         <div className="billing-balance-header flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <span className="billing-balance-title text-sm font-bold text-mg-text-1">{t('billing.balance.title')}</span>
           <div className="billing-balance-actions flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={handleRefresh}
-              disabled={refreshing}
-              aria-label={t('common.refresh', { defaultValue: '刷新' })}
-              title={t('billing.balance.refreshHint', { defaultValue: '刷新余额与列表' })}
-              className="h-9 w-9 rounded-md text-mg-text-3 hover:text-mg-text-1 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <LuRefreshCw size={14} className={cn(refreshing && 'animate-spin')} />
-            </Button>
+            {/* qa#277 二轮反馈：刷新按钮去掉——原型 billing-balance-actions 只有充值/兑换优惠码两个按钮 */}
             {canRecharge && (
               <Button
                 variant="brand"

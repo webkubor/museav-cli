@@ -290,8 +290,7 @@
       "giftHint": "兑换码/体验金",
       "rewardBalance": "奖励余额",
       "rewardHint": "推荐返佣",
-      "frozenHint": "预扣/处理中",
-      "refreshHint": "刷新余额与列表"
+      "frozenHint": "预扣/处理中"
     },
     "tabs": {
       "orders": "充值订单",

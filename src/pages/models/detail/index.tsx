@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { LuChevronLeft, LuChevronRight, LuExternalLink, LuGitCompareArrows } from 'react-icons/lu'
+import { LuArrowLeft, LuExternalLink } from 'react-icons/lu'
 import { getModel, listModels, listRelatedModels } from '@/services/catalog'
 import { useAuthStore } from '@/store/auth'
 import { useLangStore } from '@/store/use-brand-store'
@@ -173,7 +173,8 @@ export default function ModelDetailPage() {
         onClick={() => navigate(`/models${navState?.fromSearch ?? ''}`)}
         className="inline-flex w-fit items-center gap-1 text-[13px] text-mg-text-3 transition-colors hover:text-brand-base"
       >
-        <LuChevronLeft size={15} />
+        {/* 原型是 "← 返回模型广场"，← 是箭头不是尖括号，图标要用 LuArrowLeft 不是 LuChevronLeft */}
+        <LuArrowLeft size={15} />
         {isZh ? '返回模型广场' : 'Back to models'}
       </button>
 
@@ -205,12 +206,11 @@ export default function ModelDetailPage() {
                   title={!hasPlaygroundExperience(detail) ? t('modelsCatalog.button.comingSoonHint') : undefined}
                   onClick={goTry}
                 >
+                  {/* 原型 App.tsx:5073-5079「去体验」「模型对比」都是纯文本按钮，没有图标 */}
                   {hasPlaygroundExperience(detail) ? t('modelsCatalog.button.try') : t('modelsCatalog.button.comingSoon')}
-                  <LuChevronRight size={14} />
                 </Button>
                 {detail.compare_enabled === true && (
                   <Button variant="outline" onClick={openCompare}>
-                    <LuGitCompareArrows size={14} />
                     {t('modelsCatalog.button.compare')}
                   </Button>
                 )}

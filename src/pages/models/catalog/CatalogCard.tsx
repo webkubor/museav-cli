@@ -4,11 +4,10 @@
  * 信息顺序：图标 + 角标 → 名称/厂商/API ID → 简介 → 输入→输出模态流 → API 协议 →
  * 能力标签 → 价格规格（贴底）→ 操作。
  *
- * 两条硬约束:
- * 1) 卡片等高、价格贴底 —— 简介长度不同不能把价格行推得高低不齐（靠 flex + margin-top:auto）。
- * 2) 角标与心形收藏同处右上角，必须互相避让：收藏绝对定位在角上，角标在顶行内右
- *    对齐并留出收藏的宽度。收藏是既有功能（localStorage，无后端），按既定决策保持
- *    现状、不随原型删除。
+ * 硬约束：卡片等高、价格贴底 —— 简介长度不同不能把价格行推得高低不齐（靠 flex + margin-top:auto）。
+ *
+ * qa#286 二轮反馈：收藏按钮已删除——PRD §4.2「非目标」原文明确排除「收藏或订阅」，
+ * 之前当"既定决策保持现状"留着是误判，飞书 PRD 才是真源。
  *
  * 促销双价：original_price 是划线装饰，pricing 里的价格才是真实扣费价。promotion
  * 字段**存在即代表此刻生效**（服务端用服务端时钟判定，接口刻意不下发时间窗口），
@@ -18,13 +17,12 @@
  * --mg-card-* token），不再手写 border/shadow/裸数值圆角；主操作用
  * <Button variant="brand">。
  */
-import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   LuImage, LuMic, LuVideo, LuArrowRight,
   LuBrain, LuMapPin, LuGlobe, LuZap, LuWrench, LuTag,
-  LuGitCompareArrows, LuHeart, LuSparkles,
+  LuColumns2, LuSparkles,
 } from 'react-icons/lu'
 import type { IconType } from 'react-icons'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
@@ -35,7 +33,6 @@ import {
   MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, autoSummary,
 } from '@/features/models/model-format'
 import { hasPlaygroundExperience } from '../model-experience-data'
-import { trackEvent } from '@/lib/track'
 import type { CatalogModelItem } from '@/types'
 
 const MODALITY_ICON: Record<string, IconType> = { image: LuImage, audio: LuMic, video: LuVideo }
@@ -56,17 +53,6 @@ function tagIcon(tag: string): IconType {
   if (t.includes('search') || tag.includes('搜索') || tag.includes('联网')) return LuGlobe
   if (t.includes('function') || t.includes('tool') || tag.includes('函数') || tag.includes('工具')) return LuWrench
   return LuTag
-}
-
-// 收藏：localStorage 本地持久化（无后端，纯本地标记）
-const FAV_KEY = 'modelgo_fav_models'
-function readFavs(): Set<string> {
-  try { return new Set(JSON.parse(localStorage.getItem(FAV_KEY) || '[]') as string[]) } catch { return new Set() }
-}
-function writeFav(id: string, on: boolean) {
-  const s = readFavs()
-  if (on) s.add(id); else s.delete(id)
-  try { localStorage.setItem(FAV_KEY, JSON.stringify([...s])) } catch { /* 忽略隐私模式写入失败 */ }
 }
 
 interface Props {
@@ -96,7 +82,6 @@ export function CatalogCard({
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
-  const [fav, setFav] = useState(() => readFavs().has(model.id))
 
   const detailHref = `/models/${model.slug || model.id}`
   const symbol = currencySymbol(model.pricing?.currency, isZh)
@@ -128,14 +113,6 @@ export function CatalogCard({
   // 「去体验」按钮禁用并说明原因（原型 App.tsx:4619-4620/5076-5081 逐字对齐）。
   const hasExperience = hasPlaygroundExperience(model)
 
-  const toggleFav = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    const next = !fav
-    setFav(next)
-    writeFav(model.id, next)
-    trackEvent('marketplace_favorite_toggled', { model_id: model.model_id, favorited: next })
-  }
-
   return (
     <article
       className="mg-tile mg-tile-hover mg-mcard"
@@ -144,17 +121,7 @@ export function CatalogCard({
         navigate(detailHref, { state: { source: 'catalog_list', fromSearch: location.search } })
       }}
     >
-      <button
-        type="button"
-        onClick={toggleFav}
-        className={`mg-mcard-fav ${fav ? 'is-on' : ''}`}
-        aria-pressed={fav}
-        aria-label={t('modelsCatalog.card.favorite')}
-      >
-        <LuHeart size={15} fill={fav ? 'currentColor' : 'none'} />
-      </button>
-
-      {/* 顶行：图标 + 角标（右对齐，留出收藏按钮位置） */}
+      {/* 顶行：图标 + 角标（右对齐） */}
       <div className="mg-mcard-top">
         <ModelIcon model={model} size={38} rounded="rounded-full" className="mg-mcard-avatar" />
         <div className="mg-mcard-badges">
@@ -164,8 +131,9 @@ export function CatalogCard({
               {isZh ? '最新' : 'New'}
             </em>
           )}
+          {/* PRD §5「状态徽标」原文：免费显示「限时特惠·免费」 */}
           {isFree ? (
-            <em className="mg-badge is-free">{isZh ? '限时免费' : 'Free'}</em>
+            <em className="mg-badge is-free">{isZh ? '限时特惠·免费' : 'Free'}</em>
           ) : discountLabel ? (
             <em className="mg-badge is-discount">{discountLabel}</em>
           ) : null}
@@ -308,7 +276,8 @@ export function CatalogCard({
             aria-label={t('modelsCatalog.card.compare')}
             className="mg-mcard-icon-btn"
           >
-            <LuGitCompareArrows size={14} />
+            {/* 原型 App.tsx marketplace-card-compare-icon 用的是 Columns2，不是 git 对比箭头 */}
+            <LuColumns2 size={14} />
           </Button>
         )}
       </div>

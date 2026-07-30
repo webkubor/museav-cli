@@ -912,20 +912,10 @@ body[theme-mode='dark'] .catalog-insight-panel {
   cursor: pointer;
   overflow: hidden;
 }
-.mg-mcard-fav {
-  position: absolute; top: 12px; right: 14px; z-index: 2;
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 26px; height: 26px; border-radius: var(--radius-full);
-  color: var(--mg-text-4); background: transparent; cursor: pointer;
-  transition: color 0.15s ease, background 0.15s ease;
-}
-.mg-mcard-fav:hover { color: #f43f5e; background: var(--mg-fill-0); }
-.mg-mcard-fav.is-on { color: #f43f5e; }
-
-/* 顶行：图标在左，角标右对齐并让出收藏按钮的位置 */
+/* 顶行：图标在左，角标右对齐（qa#286：PRD §4.2 非目标明确排除收藏功能，已删除） */
 .mg-mcard-top {
   display: flex; align-items: flex-start; justify-content: space-between;
-  gap: 10px; padding-right: 30px;
+  gap: 10px;
 }
 .mg-mcard-avatar { border: 1px solid var(--mg-border); background: var(--mg-bg-1); flex-shrink: 0; }
 .mg-mcard-badges { display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end; }

@@ -19,10 +19,11 @@ export function currencySymbol(currency: string | undefined, isZh: boolean): str
   return CCY_SYMBOL[(currency || '').toUpperCase()] || currency || (isZh ? '¥' : '$')
 }
 
-/** 计价单位后缀。price_unit 为空表示按每 1M token 计价（对话模型）。
- *  qa#286：原型卡片/详情页都是紧凑的「/1M」，不带「tokens」字样。 */
+/** 计价单位后缀。price_unit 为空表示按每 M token 计价（对话模型）。
+ *  qa#286 二轮反馈：PRD §9.1 字段口径 price_unit 枚举值是「M、张、秒、万字符等」，
+ *  不带数字前缀，兜底要跟这套枚举同形态，不能写死「1M」。 */
 export function priceUnitSuffix(priceUnit: string | undefined): string {
-  return priceUnit ? `/${priceUnit}` : '/1M'
+  return priceUnit ? `/${priceUnit}` : '/M'
 }
 
 /**

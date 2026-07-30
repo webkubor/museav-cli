@@ -2229,6 +2229,7 @@
       "generationMode": "Generation mode",
       "multiModelCountNoteImage": "In a multi-model session, each model generates exactly 1 image.",
       "multiModelCountNoteVideo": "In a multi-model session, each model generates exactly 1 video.",
+      "paramsConfig": "Parameters",
       "sessionSummary": "This session",
       "requestCount": "Requests",
       "cost": "Cost",

@@ -2241,6 +2241,7 @@
       "generationMode": "生成方式",
       "multiModelCountNoteImage": "多模型会话中，每个模型固定生成 1 张图片。",
       "multiModelCountNoteVideo": "多模型会话中，每个模型固定生成 1 个视频。",
+      "paramsConfig": "参数配置",
       "sessionSummary": "本会话累计",
       "requestCount": "请求数",
       "cost": "费用",

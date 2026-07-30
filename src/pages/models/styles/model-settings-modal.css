@@ -89,48 +89,73 @@
   display: none;
 }
 
-.model-settings-footer {
+/* ── 「参数配置」头部：标题 + 右侧重置（原型 playground-params-head） ──────── */
+.model-settings-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  width: 100%;
-  flex-wrap: wrap;
+  margin-bottom: 14px;
 }
 
-.model-settings-stats {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-}
-
-.model-settings-stats-title {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--mg-text-2);
-}
-
-.model-settings-stats-row {
+.model-settings-head-title {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--mg-text-1);
 }
 
-.model-settings-stat {
+/* 任务名 + 模型名只读上下文块（原型 playground-config-context） */
+.model-settings-context {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  margin-bottom: 20px;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  background: var(--mg-fill-1);
 }
 
-.model-settings-stat-label {
+.model-settings-context > span {
   font-size: 11px;
   color: var(--mg-text-3);
 }
 
-.model-settings-stat-value {
-  font-size: 13px;
+.model-settings-context > strong {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--mg-text-1);
+}
+
+/* 本会话累计：纵向条目，label 左 / 值右（原型 playground-session-summary/line） */
+.model-settings-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid var(--mg-border);
+}
+
+.model-settings-summary-title {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--mg-text-3);
+}
+
+.model-settings-summary-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--mg-text-2);
+}
+
+.model-settings-summary-line > strong {
   font-weight: 700;
   color: var(--mg-text-1);
   font-variant-numeric: tabular-nums;

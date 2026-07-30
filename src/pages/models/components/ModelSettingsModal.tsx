@@ -6,7 +6,7 @@
  * 本组件是纯受控组件，不持有任何参数状态。
  */
 import { useTranslation } from 'react-i18next'
-import { LuRotateCcw, LuSettings2 } from 'react-icons/lu'
+import { LuRotateCcw, LuSettings2, LuSlidersHorizontal } from 'react-icons/lu'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -399,30 +399,25 @@ export function ModelSettingsModal({
   const { t } = useTranslation()
   const isDialogue = DIALOGUE_TASKS.includes(task)
 
-  const footer = (
-    <div className="model-settings-footer">
-      <div className="model-settings-stats">
-        <h4 className="model-settings-stats-title">{t('modelsExperience.settings.sessionSummary')}</h4>
-        <div className="model-settings-stats-row">
-          <div className="model-settings-stat">
-            <span className="model-settings-stat-label">{t('modelsExperience.settings.requestCount')}</span>
-            <span className="model-settings-stat-value">{sessionStats.requestCount}</span>
-          </div>
-          {isDialogue && (
-            <div className="model-settings-stat">
-              <span className="model-settings-stat-label">Tokens</span>
-              <span className="model-settings-stat-value">{formatNumber(sessionStats.tokens)}</span>
-            </div>
-          )}
-          <div className="model-settings-stat">
-            <span className="model-settings-stat-label">{t('modelsExperience.settings.cost')}</span>
-            <span className="model-settings-stat-value">{formatSessionSpend(sessionStats.cost)}</span>
-          </div>
-        </div>
+  /** 会话累计：原型 playground-session-summary 是 body 末尾的纵向条目（label 左 / 值右），
+   *  不是横排 footer；重置按钮在顶部 head 里，不跟累计并排。 */
+  const sessionSummary = (
+    <div className="model-settings-summary">
+      <h4 className="model-settings-summary-title">{t('modelsExperience.settings.sessionSummary')}</h4>
+      <div className="model-settings-summary-line">
+        <span>{t('modelsExperience.settings.requestCount')}</span>
+        <strong>{sessionStats.requestCount}</strong>
       </div>
-      <Button variant="outline" size="sm" icon={<LuRotateCcw size={14} />} onClick={onReset}>
-        {t('modelsExperience.settings.reset')}
-      </Button>
+      {isDialogue && (
+        <div className="model-settings-summary-line">
+          <span>Tokens</span>
+          <strong>{formatNumber(sessionStats.tokens)}</strong>
+        </div>
+      )}
+      <div className="model-settings-summary-line">
+        <span>{t('modelsExperience.settings.cost')}</span>
+        <strong>{formatSessionSpend(sessionStats.cost)}</strong>
+      </div>
     </div>
   )
 
@@ -440,13 +435,31 @@ export function ModelSettingsModal({
           </span>
         </span>
       }
-      footer={footer}
     >
+      {/* 原型 playground-params-head：「参数配置」标题 + 右侧重置，位于表单之上（App.tsx:20271-20274） */}
+      <div className="model-settings-head">
+        <h3 className="model-settings-head-title">
+          <LuSlidersHorizontal size={15} />
+          {t('modelsExperience.settings.paramsConfig')}
+        </h3>
+        <Button variant="ghost" size="sm" icon={<LuRotateCcw size={13} />} onClick={onReset}>
+          {t('modelsExperience.settings.reset')}
+        </Button>
+      </div>
+
+      {/* 原型 playground-config-context：任务名 + 模型名的只读上下文块（App.tsx:20276-20279） */}
+      <div className="model-settings-context">
+        <span>{experienceTaskLabel(task)}</span>
+        <strong>{modelName}</strong>
+      </div>
+
       {isDialogue ? (
         <ChatParamsForm values={values} onChange={onChange} maxOutputTokens={maxOutputTokens} />
       ) : (
         <TaskParamsForm task={task} values={values} onChange={onChange} multipleModels={multipleModels} />
       )}
+
+      {sessionSummary}
     </Modal>
   )
 }

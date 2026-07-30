@@ -207,11 +207,17 @@ export default function ModelsPage() {
     const state = location.state as { selectedModelId?: string } | null
     if (state?.selectedModelId) {
       const targetModel = allModels.find((m) => m.model_id === state.selectedModelId || m.id === state.selectedModelId)
-      if (targetModel) setSelectedId(targetModel.id)
+      if (targetModel) {
+        setSingle({ selectedId: targetModel.id, offlineModel: null, task: null })
+        // 从模型广场/详情页/登录跳转带 selectedModelId 进来 = 用户显式选了要体验的模型，
+        // 语义等同 handlePick 换模型，同样要开新会话，不能沿用上一个模型遗留的旧对话
+        startNewSession()
+      }
       navigate('/models/playground', { replace: true, state: {} })
     } else if (!selectedId && allModels[0]) {
       setSelectedId(allModels[0].id)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allModels, selectedId, setSelectedId, location.state, navigate])
 
   // §10.3 playground_view：页面有效展示（模型目录到位、当前模型可解析后才算“有效”），只上报一次

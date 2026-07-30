@@ -374,8 +374,17 @@ export default function ModelsPage() {
       // 模型条要切到这次会话真正用的模型（PRD §AC-18）：还在目录里就正常选中，
       // 已下线/删除就落到占位态——此前这里完全没处理，恢复历史后模型条会停在
       // 切历史前选中的模型上，跟消息区实际内容对不上。
-      const restoredModelId = items.find((m) => m.model_id)?.model_id
-      const catalogModel = restoredModelId ? allModels.find((m) => m.model_id === restoredModelId) : undefined
+      // 会话用的是哪个模型，优先从消息里反查；消息没带 model_id 时（只有用户消息、
+      // 或后端该字段为空）退回会话列表项自带的 models[0]。
+      // 缺这层兜底时两个 setSingle 分支都不进 → selectedId 保持原样，而本 store 是
+      // 非 persist 的、刷新后 selectedId 为 null → selectedModel 回落到 allModels[0]，
+      // 表现就是「刷新后点任何一个历史对话，模型条永远显示目录第一个模型」
+      // （shared/modelgo_prd#300 报单人补充的场景）
+      const sessionModelId = session?.models?.[0]?.id
+      const restoredModelId = items.find((m) => m.model_id)?.model_id ?? sessionModelId
+      const catalogModel = restoredModelId
+        ? allModels.find((m) => m.model_id === restoredModelId || m.id === restoredModelId)
+        : undefined
       // task 清回 null 退化到类别默认——恢复的历史会话真实用的哪个子任务不好从消息列表反推，
       // 这里不猜；反正 conversationId 已经从历史带出来了，composer 只影响新一轮怎么发，
       // 不影响已发生的历史内容展示

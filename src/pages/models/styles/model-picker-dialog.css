@@ -45,22 +45,36 @@
   height: min(560px, 66vh);
 }
 
+/* single 模式：列表是主体、详情是副栏 —— 对齐原型 playground-model-panel.with-detail
+   （总宽 640，.playground-model-detail 固定 250px、.playground-model-browser flex:1）。
+   改前是反的（列表固定 300、详情 flex:1），面板一变宽详情就吃掉全部余量、模型名反而截断。 */
 .model-picker-dialog__list-pane {
   display: flex;
   flex-direction: column;
+  flex: 1;
   min-width: 0;
-  width: 300px;
-  flex-shrink: 0;
   border-right: 1px solid var(--mg-border);
   padding: 12px;
   gap: 10px;
 }
 
 .model-picker-dialog__detail-pane {
-  flex: 1;
+  width: 250px;
+  flex: none;
   min-width: 0;
   overflow-y: auto;
   padding: 18px 20px;
+}
+
+/* compareAdd 模式：主体是右侧参数对照表（要容纳最多 3 列），列表退为固定副栏 */
+.model-picker-dialog__panel.is-compare .model-picker-dialog__list-pane {
+  flex: none;
+  width: 260px;
+}
+
+.model-picker-dialog__panel.is-compare .model-picker-dialog__detail-pane {
+  flex: 1;
+  width: auto;
 }
 
 .model-picker-dialog__list {

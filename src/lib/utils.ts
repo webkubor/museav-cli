@@ -46,10 +46,35 @@ export function formatContextLength(length: number | null | undefined): string {
 
 /** 模型展示名兜底：缺 display_name（或与 model_id 相同）时，取 model_id 末段转标题式。
  *  deepseek-v4-flash → DeepSeek V4 Flash；modelgo/web_fetch → Web Fetch */
-export function prettyModelName(displayName?: string | null, modelId?: string | null): string {
+/** 归一化厂商串用于比对：小写 + 去掉非字母数字（moonshot / MoonshotAI / Z.ai → moonshot / moonshotai / zai） */
+function normalizeVendorKey(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+/**
+ * @param vendor 传入时，会剥掉 display_name 里与厂商重复的 `厂商: ` 前缀。
+ *   线上（OpenRouter 风格）display_name 形如 `MoonshotAI: Kimi K3`，而 UI 紧邻位置
+ *   本来就单独渲染一遍 provider，前缀纯属重复且白吃掉近 100px 宽度，导致模型名被截断
+ *   （原型 App.tsx 的行结构是 `<strong>纯模型名</strong>` + 第二行 `provider · 任务`）。
+ *   只在前缀确实等于该厂商时才剥，避免误伤名字里本就带冒号的模型；不传则行为不变。
+ */
+export function prettyModelName(displayName?: string | null, modelId?: string | null, vendor?: string | null): string {
   const dn = (displayName ?? '').trim()
   const id = (modelId ?? '').trim()
-  if (dn && dn !== id) return dn
+  if (dn && dn !== id) {
+    const v = (vendor ?? '').trim()
+    if (v) {
+      const m = dn.match(/^([^:]{1,24}):\s*(.+)$/)
+      if (m) {
+        const prefixKey = normalizeVendorKey(m[1])
+        const vendorKey = normalizeVendorKey(v)
+        if (prefixKey && vendorKey && (prefixKey === vendorKey || prefixKey.startsWith(vendorKey) || vendorKey.startsWith(prefixKey))) {
+          return m[2].trim()
+        }
+      }
+    }
+    return dn
+  }
   const last = (id.split('/').pop() || id).trim()
   if (!last) return dn || id
   return last

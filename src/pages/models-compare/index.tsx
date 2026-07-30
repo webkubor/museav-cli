@@ -268,7 +268,7 @@ export default function ModelsComparePage() {
                 const catalogModel = allModels.find((m) => m.model_id === modelId)
                 return {
                   id: modelId,
-                  name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id) : modelId,
+                  name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id, catalogModel.vendor ?? catalogModel.provider) : modelId,
                   offline: !catalogModel,
                 }
               })
@@ -279,7 +279,7 @@ export default function ModelsComparePage() {
                   const catalogModel = allModels.find((m) => m.model_id === conv.model_id)
                   return {
                     id: conv.model_id,
-                    name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id) : conv.model_id,
+                    name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id, catalogModel.vendor ?? catalogModel.provider) : conv.model_id,
                     offline: !catalogModel,
                   }
                 }),
@@ -455,7 +455,7 @@ export default function ModelsComparePage() {
         onDelta: (delta) => applyAssistant(idx, (content) => content + delta),
         onStats: (event) => { stats = event },
       })
-      const modelLabel = prettyModelName(column.model.display_name, column.model.model_id)
+      const modelLabel = prettyModelName(column.model.display_name, column.model.model_id, column.model.vendor ?? column.model.provider)
       const hasStats = stats !== null
       const s = stats as ExperienceStatsEvent | null
       const totalMs = hasStats ? s!.total_ms : Date.now() - startedAt
@@ -528,7 +528,7 @@ export default function ModelsComparePage() {
    *  仍然只传 attachments，task 在会话创建时已固定，后端按实际是否带附件处理。 */
   async function sendMediaOne(idx: number, prompt: string, dispatchId: string, attachment?: DispatchAttachment) {
     const column = columns![idx]
-    const modelLabel = prettyModelName(column.model.display_name, column.model.model_id)
+    const modelLabel = prettyModelName(column.model.display_name, column.model.model_id, column.model.vendor ?? column.model.provider)
     updateColumn(idx, {
       streaming: true,
       history: [
@@ -1223,7 +1223,7 @@ export default function ModelsComparePage() {
                 className={cn('models-compare-mobile-tab-dot', `is-${status}`)}
                 aria-hidden="true"
               />
-              {prettyModelName(column.model.display_name, column.model.model_id)}
+              {prettyModelName(column.model.display_name, column.model.model_id, column.model.vendor ?? column.model.provider)}
             </button>
           )
         })}
@@ -1255,7 +1255,7 @@ export default function ModelsComparePage() {
                 )}
                 <div className="min-w-0">
                   <div className="models-experience-modelbar-title">
-                    {isOfflineModel(column.model) ? t('modelsExperience.modelOffline') : prettyModelName(column.model.display_name, column.model.model_id)}
+                    {isOfflineModel(column.model) ? t('modelsExperience.modelOffline') : prettyModelName(column.model.display_name, column.model.model_id, column.model.vendor ?? column.model.provider)}
                   </div>
                   <div className="models-experience-modelbar-sub">{column.model.vendor || column.model.provider || 'ModelGo'} · {experienceTaskLabel(compareTask)}</div>
                 </div>
@@ -1391,7 +1391,7 @@ export default function ModelsComparePage() {
                     onStop={() => abortRefs.current[idx]?.abort()}
                     placeholder={compareTask === 'image_to_image'
                       ? t('modelsExperience.taskPlaceholder.image_to_image')
-                      : t('modelsExperience.compare.columnPlaceholder', { name: prettyModelName(column.model.display_name, column.model.model_id), placeholder: categoryPlaceholder(compareCategory) })}
+                      : t('modelsExperience.compare.columnPlaceholder', { name: prettyModelName(column.model.display_name, column.model.model_id, column.model.vendor ?? column.model.provider), placeholder: categoryPlaceholder(compareCategory) })}
                     sendLabel={t('modelsExperience.send')}
                     className="models-experience-composer-wrap models-compare-composer"
                     sendEnabled={compareTask === 'audio_to_text' ? !!colAttachment : undefined}

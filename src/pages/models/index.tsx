@@ -261,7 +261,7 @@ export default function ModelsPage() {
                 const catalogModel = allModels.find((m) => m.model_id === modelId)
                 return {
                   id: modelId,
-                  name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id) : modelId,
+                  name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id, catalogModel.vendor ?? catalogModel.provider) : modelId,
                   offline: !catalogModel,
                 }
               })
@@ -272,7 +272,7 @@ export default function ModelsPage() {
                   const catalogModel = allModels.find((m) => m.model_id === conv.model_id)
                   return {
                     id: conv.model_id,
-                    name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id) : conv.model_id,
+                    name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id, catalogModel.vendor ?? catalogModel.provider) : conv.model_id,
                     offline: !catalogModel,
                   }
                 }),
@@ -584,7 +584,7 @@ export default function ModelsPage() {
         },
       })
 
-      const modelLabel = prettyModelName(selectedModel.display_name, selectedModel.model_id)
+      const modelLabel = prettyModelName(selectedModel.display_name, selectedModel.model_id, selectedModel.vendor ?? selectedModel.provider)
       if (stats) {
         const s: ExperienceStatsEvent = stats
         const spend = Number(s.actual_spend ?? s.estimated_spend ?? 0)
@@ -686,7 +686,7 @@ export default function ModelsPage() {
     retry?: { resourceIds: string[]; media?: ExperienceMessage['media'] },
   ) {
     if (!selectedModel) return
-    const modelLabel = prettyModelName(selectedModel.display_name, selectedModel.model_id)
+    const modelLabel = prettyModelName(selectedModel.display_name, selectedModel.model_id, selectedModel.vendor ?? selectedModel.provider)
     const attachedKind = attachment ? attachmentKindFromMime(attachment.uploaded.mime) : null
     const userMedia = retry ? retry.media : attachment ? [{ kind: attachedKind ?? 'image', url: attachment.previewUrl }] : undefined
     const resourceIds = retry ? retry.resourceIds : attachment ? [attachment.uploaded.resource_id] : []
@@ -871,7 +871,7 @@ export default function ModelsPage() {
                       )}
                       <div className="min-w-0">
                         <div className="models-experience-modelbar-title">
-                          {isOfflineModel(selectedModel) ? t('modelsExperience.modelOffline') : prettyModelName(selectedModel.display_name, selectedModel.model_id)}
+                          {isOfflineModel(selectedModel) ? t('modelsExperience.modelOffline') : prettyModelName(selectedModel.display_name, selectedModel.model_id, selectedModel.vendor ?? selectedModel.provider)}
                         </div>
                         <div className="models-experience-modelbar-sub">
                           {selectedModel.vendor || selectedModel.provider || 'ModelGo'} · {experienceTaskLabel(effectiveTask)}
@@ -895,7 +895,7 @@ export default function ModelsPage() {
                     className="models-experience-icon-btn"
                     aria-label={t('modelsExperience.openApiCall')}
                     disabled={!selectedModel || isOfflineModel(selectedModel)}
-                    title={selectedModel ? (isOfflineModel(selectedModel) ? t('modelsExperience.modelOffline') : t('modelsExperience.viewApiExample', { name: prettyModelName(selectedModel.display_name, selectedModel.model_id) })) : t('modelsExperience.openApiCall')}
+                    title={selectedModel ? (isOfflineModel(selectedModel) ? t('modelsExperience.modelOffline') : t('modelsExperience.viewApiExample', { name: prettyModelName(selectedModel.display_name, selectedModel.model_id, selectedModel.vendor ?? selectedModel.provider) })) : t('modelsExperience.openApiCall')}
                     onClick={() => {
                       trackEvent('playground_api_modal_action', { action: 'open', protocol: '', language: '', model_id: selectedModel?.model_id ?? '' })
                       setApiCallOpen(true)
@@ -908,7 +908,7 @@ export default function ModelsPage() {
                     className="models-experience-icon-btn"
                     aria-label={t('modelsExperience.openModelSettings')}
                     disabled={!selectedModel || isOfflineModel(selectedModel)}
-                    title={selectedModel ? (isOfflineModel(selectedModel) ? t('modelsExperience.modelOffline') : t('modelsExperience.configureModel', { name: prettyModelName(selectedModel.display_name, selectedModel.model_id) })) : t('modelsExperience.openModelSettings')}
+                    title={selectedModel ? (isOfflineModel(selectedModel) ? t('modelsExperience.modelOffline') : t('modelsExperience.configureModel', { name: prettyModelName(selectedModel.display_name, selectedModel.model_id, selectedModel.vendor ?? selectedModel.provider) })) : t('modelsExperience.openModelSettings')}
                     onClick={() => void openSettings()}
                   >
                     <LuSettings2 size={14} />
@@ -1109,7 +1109,7 @@ export default function ModelsPage() {
         <ModelSettingsModal
           open={settingsOpen}
           onClose={() => setSettingsOpen(false)}
-          modelName={prettyModelName(selectedModel.display_name, selectedModel.model_id)}
+          modelName={prettyModelName(selectedModel.display_name, selectedModel.model_id, selectedModel.vendor ?? selectedModel.provider)}
           vendor={selectedModel.vendor || selectedModel.provider || 'ModelGo'}
           maxOutputTokens={Math.max(256, selectedModel.max_output_tokens || 4096)}
           task={effectiveTask}
@@ -1124,7 +1124,7 @@ export default function ModelsPage() {
         <ApiQuickCallModal
           open={apiCallOpen}
           onClose={() => setApiCallOpen(false)}
-          modelName={prettyModelName(selectedModel.display_name, selectedModel.model_id)}
+          modelName={prettyModelName(selectedModel.display_name, selectedModel.model_id, selectedModel.vendor ?? selectedModel.provider)}
           modelId={selectedModel.model_id}
           supportedProtocols={selectedModel.protocols?.length ? (selectedModel.protocols as never) : ['openai']}
           onAction={(action, protocol, language) => trackEvent('playground_api_modal_action', { action, protocol, language, model_id: selectedModel.model_id })}

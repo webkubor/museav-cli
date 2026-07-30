@@ -367,7 +367,10 @@ export function ModelPickerDialog({
       className={cn(
         'model-picker-dialog__panel mg-panel rounded-lg border border-mg-border bg-mg-bg-0 shadow-xl',
         'animate-in zoom-in-95 fade-in-0 duration-150',
-        mode === 'compareAdd' ? 'w-[1120px] max-w-[calc(100vw-16px)]' : 'w-[880px] max-w-[calc(100vw-16px)]',
+        // 宽度用本仓 Modal 的既有刻度（sm 400 / md 520 / lg 720）——改成浮层前这里就是
+        // size="lg"，别自造 880/1120 这种刻度外的值（2026-07-30：我拍过 880，导致详情区
+        // 撑到 580 而列表只剩 300、模型名全截断，就是这么来的）
+        mode === 'compareAdd' ? 'is-compare w-[720px] max-w-[calc(100vw-16px)]' : 'w-[720px] max-w-[calc(100vw-16px)]',
       )}
     >
       <div className="model-picker-dialog__panel-head">
@@ -409,7 +412,7 @@ export function ModelPickerDialog({
                     <ModelIcon model={model} size={30} rounded="rounded-md" className="bg-mg-bg-0" />
                     <div className="model-picker-dialog__row-main">
                       <span className="mg-text-body font-semibold text-mg-text-1 truncate">
-                        {prettyModelName(model.display_name, model.model_id)}
+                        {prettyModelName(model.display_name, model.model_id, model.vendor ?? model.provider)}
                       </span>
                       <span className="flex items-center gap-2 text-xs text-mg-text-3">
                         <span className="truncate">{model.provider || model.vendor || 'ModelGo'}</span>
@@ -460,7 +463,7 @@ export function ModelPickerDialog({
                   <ModelIcon model={model} size={30} rounded="rounded-md" className="bg-mg-bg-0" />
                   <div className="model-picker-dialog__row-main">
                     <span className="mg-text-body font-semibold text-mg-text-1 truncate">
-                      {prettyModelName(model.display_name, model.model_id)}
+                      {prettyModelName(model.display_name, model.model_id, model.vendor ?? model.provider)}
                     </span>
                     <span className="flex items-center gap-2 text-xs text-mg-text-3">
                       <span className="truncate">{model.provider || model.vendor || 'ModelGo'}</span>
@@ -511,7 +514,7 @@ export function ModelPickerDialog({
                     <div key={m.id} className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <ModelIcon model={m} size={18} rounded="rounded-sm" />
-                        <span className="text-xs font-bold text-mg-text-1 truncate">{prettyModelName(m.display_name, m.model_id)}</span>
+                        <span className="text-xs font-bold text-mg-text-1 truncate">{prettyModelName(m.display_name, m.model_id, m.vendor ?? m.provider)}</span>
                       </div>
                     </div>
                   ))}
@@ -541,7 +544,7 @@ export function ModelPickerDialog({
                   <ModelIcon model={detailModel} size={40} rounded="rounded-lg" className="bg-mg-bg-0" />
                   <div className="min-w-0">
                     <div className="mg-text-title-sm font-bold text-mg-text-1 truncate">
-                      {prettyModelName(detailModel.display_name, detailModel.model_id)}
+                      {prettyModelName(detailModel.display_name, detailModel.model_id, detailModel.vendor ?? detailModel.provider)}
                     </div>
                     <div className="text-xs text-mg-text-3">{detailModel.provider || detailModel.vendor || 'ModelGo'}</div>
                   </div>

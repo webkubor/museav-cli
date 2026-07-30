@@ -59,21 +59,19 @@
 
 ## 5. 多 Agent 协同 → `docs/COLLABORATION.md`
 
-**默认永远有并发，不是「确认了才隔离」**：巡检/supervisor 会把单派给 Codex、人和其他 session 随时可能在同一目录动手。别在主检出的 `test` 分支上直接写代码/提交，一律先 `cs wt fix/<名>` 开隔离 worktree，完成后按 `docs/COLLABORATION.md` §4 合并+清理。
+**默认永远有并发，不是「确认了才隔离」**：巡检/supervisor 会把单派给 Codex、人和其他 session 随时可能在同一目录动手。别在主检出的 `test` 分支上直接写代码/提交，一律先 `cs wt fix/<名>` 开隔离 worktree，完成后按 `docs/COLLABORATION.md` §4 合并+清理。Claude Code + Codex 并发开发的完整 SOP（worktree 隔离 / 看板认领锁 / 冲突处理 / 实战雷区），详见协同文档。
 
 ## 6. 当前目标 PRD 版本
 
 **当前只做 V1.0.3**。PRD 已更新到 V1.0.4，新内容暂不实现——遇到 1.0.4 独占功能直接跳过，不自行扩展范围。如有疑问见 `docs/frontend-backlog.md`。
 
-Claude Code + Codex 并发开发的完整 SOP（worktree 隔离 / 看板认领锁 / 冲突处理 / 实战雷区），详见协同文档。
-
-## 6. 交付标准
+## 7. 交付标准
 
 - 「交付」= 接口在 test 可打通，不是代码写完
 - 前端对后端有要求 → 必须落 API 单，代码注释挂单号
 - 开关单只认真源实测，不认看板标签
 
-## 7. 项目注册
+## 8. 项目注册
 
 ```
 cs path → 4 个项目已注册

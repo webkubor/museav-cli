@@ -228,6 +228,19 @@ export default function ModelsComparePage() {
 
   useEffect(() => () => abortRefs.current.forEach((c) => c?.abort()), [])
 
+  // 会话按租户隔离，切换租户后各列绑的旧 conversationId 在新租户下已不存在，继续发消息
+  // 会被后端 404「资源不存在」拒绝（同 shared/modelgo_prd#296，单模型页那份修法搬过来）。
+  // 对比页本来就没有"留在原页面重开"的形态，startNewSession 会退回单模型页重新选模型，
+  // 语义上跟"租户变了、旧对比会话作废"一致。首次挂载时 tenantId 从空变初始值不算切换，跳过。
+  const prevTenantIdRef = useRef(tenantId)
+  useEffect(() => {
+    if (prevTenantIdRef.current && prevTenantIdRef.current !== tenantId) {
+      startNewSession()
+    }
+    prevTenantIdRef.current = tenantId
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantId])
+
   // 列数变化（加/移除模型）后夹紧窄屏 Tab 的激活列，避免越界指向已不存在的列
   useEffect(() => {
     if (columns && activeColumnIndex >= columns.length) setActiveColumnIndex(0)

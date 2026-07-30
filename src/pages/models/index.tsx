@@ -220,6 +220,19 @@ export default function ModelsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allModels, selectedId, setSelectedId, location.state, navigate])
 
+  // 会话按租户隔离，切换租户后旧 conversationId 在新租户下已不存在，继续发消息会打到
+  // POST .../experience/conversations/{旧id}/messages 上被后端 404「资源不存在」拒绝
+  // （shared/modelgo_prd#296 实测）。跟模型选择一样，这类跨边界的状态必须在边界变化
+  // 时清掉，不能指望它自己失效。首次挂载时 tenantId 从空变成初始值不算「切换」，跳过。
+  const prevTenantIdRef = useRef(tenantId)
+  useEffect(() => {
+    if (prevTenantIdRef.current && prevTenantIdRef.current !== tenantId) {
+      startNewSession()
+    }
+    prevTenantIdRef.current = tenantId
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantId])
+
   // §10.3 playground_view：页面有效展示（模型目录到位、当前模型可解析后才算“有效”），只上报一次
   useEffect(() => {
     if (viewTrackedRef.current || allModels.length === 0 || !selectedModel) return

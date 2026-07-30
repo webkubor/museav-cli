@@ -169,25 +169,31 @@ export function CatalogSidebar({ tags, selected, setSelected, isZh, facets }: Pr
       )}
 
       <Group id="ctx" title={isZh ? '上下文长度' : 'Context'} collapsed={collapsed} onToggle={toggleCollapse}>
-        <div className="mg-side-chips">
-          <Chip active={!ctxActive} onClick={() => pickOne('ctx', null)}>{t('modelsCatalog.sidebar.all')}</Chip>
+        <div className="mg-side-list">
+          <Row active={!ctxActive} label={t('modelsCatalog.sidebar.all')} count={total} onClick={() => pickOne('ctx', null)} />
           {(facets?.contexts ?? []).map((b) => (
-            <Chip key={b.value} active={ctxActive === b.value} onClick={() => pickOne('ctx', ctxActive === b.value ? null : b.value)}>
-              {contextBucketLabel(b.value)}
-              <Count n={b.count} />
-            </Chip>
+            <Row
+              key={b.value}
+              active={ctxActive === b.value}
+              label={contextBucketLabel(b.value)}
+              count={b.count}
+              onClick={() => pickOne('ctx', ctxActive === b.value ? null : b.value)}
+            />
           ))}
         </div>
       </Group>
 
       <Group id="price" title={isZh ? '价格' : 'Pricing'} collapsed={collapsed} onToggle={toggleCollapse}>
-        <div className="mg-side-chips">
-          <Chip active={!priceActive} onClick={() => pickOne('price', null)}>{t('modelsCatalog.sidebar.all')}</Chip>
+        <div className="mg-side-list">
+          <Row active={!priceActive} label={t('modelsCatalog.sidebar.all')} count={total} onClick={() => pickOne('price', null)} />
           {(['free', 'paid'] as const).map((c) => (
-            <Chip key={c} active={priceActive === c} onClick={() => pickOne('price', priceActive === c ? null : c)}>
-              {t(`modelsCatalog.sidebar.${c}`)}
-              <Count n={countOf(facets?.prices, c)} />
-            </Chip>
+            <Row
+              key={c}
+              active={priceActive === c}
+              label={t(`modelsCatalog.sidebar.${c}`)}
+              count={countOf(facets?.prices, c)}
+              onClick={() => pickOne('price', priceActive === c ? null : c)}
+            />
           ))}
         </div>
       </Group>
@@ -220,20 +226,6 @@ function Group({
       {!isCollapsed && children}
     </div>
   )
-}
-
-function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button type="button" className={`mg-side-chip ${active ? 'is-active' : ''}`} onClick={onClick}>
-      {children}
-    </button>
-  )
-}
-
-/** 选项计数。undefined（facets 未加载）时不渲染 —— 显示 0 会让用户以为该选项无结果。 */
-function Count({ n }: { n?: number }) {
-  if (n === undefined) return null
-  return <i className="mg-side-count">{n}</i>
 }
 
 /**

@@ -452,7 +452,13 @@ export function ModelPickerDialog({
             {(mode === 'compareAdd' ? addableCandidates : candidates).length === 0 && (
               <EmptyState title={t('modelsExperience.picker.noMatch')} className="py-10" />
             )}
-            {(mode === 'compareAdd' ? addableCandidates : singleGroupedRows).map((entry) => {
+            {/* compareSwitch 落进这个分支时之前直接吃 singleGroupedRows——那个 memo 对非 single
+                模式恒返回 []（三组分类是 single 独有的原型交互），于是「切换模型」面板永远空、
+                只剩搜索框（shared/modelgo_prd#316）。上面第 452 行的空状态判断早就正确地用了
+                candidates，这里漏了同步，两处对不上就是本 bug。compareSwitch 用扁平 candidates，
+                跟 addableCandidates 一样是 CatalogModelItem[]，下面 'model' in entry 判断本身
+                兼容扁平数组（entry 本身当 model 用），不用改渲染逻辑。 */}
+            {(mode === 'compareAdd' ? addableCandidates : mode === 'single' ? singleGroupedRows : candidates).map((entry) => {
               // single 模式按原型三组渲染，组标题作为列表项混在同一个流里
               if ('groupLabel' in entry) {
                 return (

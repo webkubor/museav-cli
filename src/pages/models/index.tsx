@@ -1005,6 +1005,7 @@ export default function ModelsPage() {
                 messages={messages}
                 isStreaming={isStreaming}
                 isMediaTask={!isDialogue}
+                isAsyncMediaTask={selectedCategory === 'video'}
                 onRetry={retryMediaMessage}
                 assistantModel={selectedModel}
                 emptyState={

@@ -1354,6 +1354,7 @@ export default function ModelsComparePage() {
               isStreaming={column.streaming}
               showModelNameInMeta={false}
               isMediaTask={compareCategory !== 'dialogue'}
+              isAsyncMediaTask={compareCategory === 'video'}
               onRetry={(userMessage) => retryMediaMessage(idx, userMessage)}
               assistantModel={column.model}
               emptyState={

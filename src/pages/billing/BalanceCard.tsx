@@ -113,7 +113,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
           <div className="flex items-baseline gap-3 flex-wrap">
             <div className="billing-spendable-line flex items-baseline gap-1">
               <span className="text-lg font-medium text-mg-text-2">{currencySymbol}</span>
-              <span className="billing-spendable-amount text-4xl font-bold tabular-nums leading-none">
+              <span className="billing-spendable-amount text-4xl font-bold tabular-nums leading-none text-mg-text-1">
                 {balanceLoading || breakdownLoading ? '...' : spendableTotal}
               </span>
             </div>

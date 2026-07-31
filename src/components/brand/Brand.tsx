@@ -9,7 +9,7 @@ import { useSiteLogo } from '@/config/brand-assets'
 import { cn } from '@/lib/utils'
 
 interface BrandProps {
-  /** logo 像素尺寸，默认 32 */
+  /** logo 像素尺寸，默认 36（与官网、文档站页头同尺寸） */
   logoSize?: number
   /** wordmark 字号 className，默认 text-base */
   textClassName?: string
@@ -17,12 +17,12 @@ interface BrandProps {
   className?: string
 }
 
-export function Brand({ logoSize = 32, textClassName = 'text-base', className }: BrandProps) {
+export function Brand({ logoSize = 36, textClassName = 'text-base', className }: BrandProps) {
   const market = useLangStore((s) => s.market)
   const siteLogo = useSiteLogo()
 
   return (
-    <div className={cn('flex items-center gap-2.5', className)}>
+    <div className={cn('flex items-center gap-1.5', className)}>
       <span className="brand-logo-premium shrink-0" style={{ width: logoSize, height: logoSize }}>
         <img src={siteLogo} alt="ModelGo" className="block w-auto object-contain" style={{ height: logoSize }} />
       </span>

@@ -75,6 +75,13 @@
   gap: 10px;
   cursor: pointer;
   background: transparent;
+  /* flex 子元素默认 min-width:auto，即按内容自然宽度撑开、不会真正收缩，
+     即便标题本身已做省略号截断也没用（父级还是按这个"最小宽度"计算布局）。
+     对比页三列挤压时这块因此被撑宽，把兄弟节点（设置/删除图标组）挤出列宽，
+     被 .models-compare-column 的 overflow:hidden 直接裁掉——删除按钮排在
+     图标组最后，永远最先消失（shared/modelgo_prd#317）。 */
+  min-width: 0;
+  flex: 1;
   /* 静止态没有边框，只有 hover 才有背景色——用户看不出这一整块（模型名+价格）是
      可点击的，得先划过去才"发现"（shared/modelgo_prd#314）。补边框常驻标出可点范围，
      跟本仓其它可点容器（.model-picker-dialog__row 等）一致用 --mg-border。 */

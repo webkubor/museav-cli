@@ -209,7 +209,17 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
                     <div className="models-experience-media-result">
                       {message.media.map((m, mIdx) =>
                         m.kind === 'image' ? (
-                          <img key={mIdx} src={m.url} alt={message.role === 'user' ? t('modelsExperience.attachmentPreview') : t('modelsExperience.generatedResult')} className="models-experience-media-image" />
+                          <div key={mIdx} className="models-experience-artifact">
+                            <img src={m.url} alt={message.role === 'user' ? t('modelsExperience.attachmentPreview') : t('modelsExperience.generatedResult')} className="models-experience-media-image" />
+                            {/* 产物标题/规格明细（PRD §7.10 artifact.title/detail 逐字对齐），只有生成结果才有
+                                （用户上传的附件预览没设 title/detail，天然不会显示这一行） */}
+                            {m.title && (
+                              <div className="models-experience-artifact-copy">
+                                <strong>{m.title}</strong>
+                                {m.detail && <span>{m.detail}</span>}
+                              </div>
+                            )}
+                          </div>
                         ) : m.kind === 'audio' ? (
                           // 音频产物卡（#308，对齐原型 playground-audio-result）：裸 <audio> 在消息流里
                           // 只有一条细控件、看不出这是「生成结果」，补波形图标与标题把它立成一张产物卡
@@ -221,9 +231,17 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
                             <audio controls preload="metadata" src={m.url} className="models-experience-media-audio" />
                           </div>
                         ) : m.kind === 'video' ? (
-                          // loop/muted/playsInline 对齐原型：静音自动可循环预览，iOS 上 playsInline
-                          // 避免点开就强制全屏
-                          <video key={mIdx} controls loop muted playsInline preload="metadata" src={m.url} className="models-experience-media-video" />
+                          <div key={mIdx} className="models-experience-artifact">
+                            {/* loop/muted/playsInline 对齐原型：静音自动可循环预览，iOS 上 playsInline
+                                避免点开就强制全屏 */}
+                            <video controls loop muted playsInline preload="metadata" src={m.url} className="models-experience-media-video" />
+                            {m.title && (
+                              <div className="models-experience-artifact-copy">
+                                <strong>{m.title}</strong>
+                                {m.detail && <span>{m.detail}</span>}
+                              </div>
+                            )}
+                          </div>
                         ) : null,
                       )}
                     </div>

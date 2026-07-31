@@ -2095,6 +2095,8 @@
     "attachmentPreview": "Attachment preview",
     "attachmentLoadFailed": "Attachment preview is temporarily unavailable",
     "generatedResult": "Generated result",
+    "artifactDetailImage": "{{resolution}}px · {{aspectRatio}} · {{format}} · #{{index}}",
+    "artifactDetailVideo": "{{resolution}} · {{duration}}s · {{aspectRatio}} · #{{index}}",
     "removeAttachment": "Remove attachment",
     "addAttachment": "Add attachment",
     "attachmentUploading": "Uploading attachment…",

@@ -181,6 +181,31 @@
   max-width: 100%;
 }
 
+/* 图片/视频产物标题 + 规格明细行（PRD §7.10 playground-artifact-copy 逐字对齐） */
+.models-experience-artifact {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.models-experience-artifact-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.models-experience-artifact-copy strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mg-text-1);
+  word-break: break-word;
+}
+
+.models-experience-artifact-copy span {
+  font-size: 11px;
+  color: var(--mg-text-3);
+}
+
 .models-experience-media-download {
   color: var(--brand-base);
   font-weight: 700;

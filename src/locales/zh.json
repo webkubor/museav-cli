@@ -2107,6 +2107,8 @@
     "attachmentPreview": "附件预览",
     "attachmentLoadFailed": "附件预览暂时无法加载",
     "generatedResult": "生成结果",
+    "artifactDetailImage": "{{resolution}}px · {{aspectRatio}} · {{format}} · 第 {{index}} 张",
+    "artifactDetailVideo": "{{resolution}} · {{duration}}s · {{aspectRatio}} · 第 {{index}} 个",
     "removeAttachment": "移除附件",
     "addAttachment": "添加附件",
     "attachmentUploading": "附件上传中…",

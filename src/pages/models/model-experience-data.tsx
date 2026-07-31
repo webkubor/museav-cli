@@ -64,23 +64,51 @@ export function estimateTokens(text: string): number {
 }
 
 /**
+ * 已知的 provider/网关英文报错关键词 → 用户可读文案。理论依据：模型调用直接报错的
+ * 原始技术信息（如 `model is not allowed by policy`）不该原样甩给用户看（qa#576 追问）。
+ * 命中不了任何已知模式时兜底展示通用文案，原始串打进 console.error 供排查，不再展示给用户。
+ */
+const UPSTREAM_ERROR_PATTERNS: Array<[RegExp, string]> = [
+  [/not allowed by policy|policy violation|model_not_allowed/i, 'modelsExperience.errorModelNotAllowed'],
+  [/provider_unsupported|unsupported protocol|no available provider|unknown provider/i, 'modelsExperience.errorProviderUnavailable'],
+  [/rate limit|too many requests|\b429\b/i, 'modelsExperience.errorRateLimited'],
+  [/insufficient_quota|quota exceeded/i, 'modelsExperience.errorInsufficientQuota'],
+  [/timed? ?out/i, 'modelsExperience.errorTimeout'],
+  [/unauthorized|invalid credential|\b401\b/i, 'modelsExperience.errorUpstreamAuth'],
+]
+
+/** 把已提取出的错误文本归一成用户可读文案；已经是中文人话（后端 field_errors 之类）直接展示，
+ *  英文技术错误串按已知模式分类，都不命中则展示通用兜底文案而不是原样透传。 */
+function friendlyUpstreamError(text: string): string {
+  const trimmed = text.trim()
+  if (!trimmed) return i18n.t('modelsExperience.sendFailed')
+  if (/[一-龥]/.test(trimmed)) return trimmed
+  const hit = UPSTREAM_ERROR_PATTERNS.find(([pattern]) => pattern.test(trimmed))
+  if (hit) return i18n.t(hit[1])
+  console.error('[modelsExperience] unmapped upstream error:', trimmed)
+  return i18n.t('modelsExperience.errorUpstreamGeneric')
+}
+
+/**
  * 历史消息里 status="failed" 行的 error 字段，实测后端存的是上游原始错误信封整个
  * JSON.stringify 之后的字符串（例如护栏拦截会把 {"error":{"code":403,"message":"..."}}
- * 整个当字符串塞进去），不是一句人话——这里做前端兜底清洗，解析不出来才展示原始字符串。
+ * 整个当字符串塞进去），不是一句人话——这里做前端兜底清洗+归一成用户可读文案。
  * 单模型页/对比页共用（qa#546 对比页历史恢复需要同样的清洗）。
  */
 export function cleanErrorMessage(raw: string | undefined): string {
   if (!raw) return i18n.t('modelsExperience.sendFailed')
+  let extracted: string
   try {
     const parsed = JSON.parse(raw) as {
       error?: { message?: string }
       msg?: string
       data?: { details?: Array<{ message?: string }> }
     }
-    return parsed.data?.details?.[0]?.message ?? parsed.msg ?? parsed.error?.message ?? raw
+    extracted = parsed.data?.details?.[0]?.message ?? parsed.msg ?? parsed.error?.message ?? raw
   } catch {
-    return raw
+    extracted = raw
   }
+  return friendlyUpstreamError(extracted)
 }
 
 /**
@@ -94,7 +122,8 @@ export function extractApiErrorMessage(err: unknown): string {
   const data = (err as { data?: { field_errors?: Array<{ message?: string }>; details?: Array<{ message?: string }> } } | undefined)?.data
   const raw = data?.field_errors?.[0]?.message ?? data?.details?.[0]?.message
   if (raw) return cleanErrorMessage(raw)
-  return (err as Error).message || i18n.t('modelsExperience.retryLater')
+  const message = (err as Error).message
+  return message ? friendlyUpstreamError(message) : i18n.t('modelsExperience.retryLater')
 }
 
 /** 九类体验任务枚举 → 展示文案，取自后端接口文档 §二 task 值域（字面值以文档为准） */

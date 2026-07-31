@@ -533,7 +533,7 @@ export default function ModelsComparePage() {
               if (i !== idx) return c
               const next = [...c.history]
               const last = next[next.length - 1]
-              if (last?.role === 'assistant') next[next.length - 1] = { ...last, error: `${t('modelsExperience.requestFailed')}${(err as Error).message || t('modelsExperience.retryLater')}` }
+              if (last?.role === 'assistant') next[next.length - 1] = { ...last, error: `${t('modelsExperience.requestFailed')}${extractApiErrorMessage(err)}` }
               return { ...c, history: next }
             })
           : prev,
@@ -659,7 +659,7 @@ export default function ModelsComparePage() {
             const last = next[next.length - 1]
             if (last?.role !== 'assistant') return c
             if (message.status === 'failed') {
-              next[next.length - 1] = { ...last, error: message.error || t('modelsExperience.videoGenerateFailed'), content: '' }
+              next[next.length - 1] = { ...last, error: message.error ? cleanErrorMessage(message.error) : t('modelsExperience.videoGenerateFailed'), content: '' }
               return { ...c, history: next }
             }
             const media = message.attachments.map((a) => ({ kind: a.kind, url: attachment_urls[a.resource_id] ?? '' }))

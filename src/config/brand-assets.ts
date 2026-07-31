@@ -9,7 +9,9 @@
 import { useMarket } from '@/hooks/useMarket'
 
 const LOGOS = {
-  china: '/brand/modelgo-cn-logo.svg',
+  /* 立体渐变版标记（Frame 1399），与官网 modelgo-web、文档站同一份素材。
+     海外那份不动。ICONS 是另一套资源（应用图标），也不动。 */
+  china: '/brand/modelgo-cn-logo.png',
   global: '/brand/modelgo-global-logo.svg',
 } as const
 

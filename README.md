@@ -42,12 +42,32 @@
 | 层 | 选型 |
 | ---- | --------------------------------------- |
 | 构建 | Vite 8 + TypeScript |
-| 框架 | React 19 + React Router v6 |
-| UI | Tailwind CSS v4 + Radix UI |
+| 框架 | React 19 + React Router v7 |
+| UI | Tailwind CSS v4 + Radix UI + 自有 `src/components/ui/*` |
 | HTTP | Fetch + TanStack Query v5 |
 | 状态 | Zustand |
-| 图标 | Lucide React |
+| 图标 | react-icons + @lobehub/icons（模型厂商），**禁用 lucide-react** |
 | 国际化 | react-i18next |
+
+---
+
+## 🤖 AI 开发规范与工具（用 AI 写本仓代码前必读）
+
+**统一约束 SSOT = 公司 skill 仓的 `mg-frontend`**（硬约束/选型矩阵/标准样板/验证 DoD，一处维护全员生效）：
+
+```bash
+# 安装到本地 agent（Claude Code / Codex 通用），装完 AI 写码前会自动预载规范
+npx git+ssh://git@gitlab.ops.modelgo.com/shared/ai-skills.git -- --skill mg-frontend
+```
+
+> 真源关系：skill 是入口与路由；视觉细则真源在本仓 `DESIGN.md`，模块级 UI 参考在 `docs/ui-reference/`，协同 SOP 在 `docs/COLLABORATION.md`。冲突以真源为准。
+> 机器门禁：pre-commit 自动跑 类型+规范快检（无 cs 环境降级 tsc+eslint）+ `scripts/ui-guard.sh` UI 铁律硬拦。
+
+**推荐安装 ego-lite（UI 验证 DoD 的标准工具）**：AI Agent 专属隔离浏览器空间、复用你的登录态，UI 改动交付前的浏览器实测（双主题/截图留证/交互验证）都靠它。
+
+- 下载：<https://lite.ego.app/>（macOS，装完首次引导会把 `ego-browser` 命令注册到 PATH）
+- 验证可用：`command -v ego-browser`
+- 用法与验证清单见 skill 内 `references/ui-verification.md`
 
 ---
 

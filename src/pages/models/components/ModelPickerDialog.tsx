@@ -17,11 +17,14 @@
  * 4) 付费模型零余额时仍展示，禁用 + 标记「余额不足」；已下线模型仅展示 disabled 徽标。
  * 5) 条目只展示 图标/名称/厂商/输入→输出模态/价格/状态——不展示推理供应商。
  *
- * 容器形态（2026-07-30 对齐原型修正）：原型 App.tsx `playground-model-picker` /
- * `.playground-model-panel` 是**锚定在触发按钮正下方的浮层**（position:absolute;
- * left:0; top:calc(100% + 6px)，无遮罩），不是居中弹窗。之前用 `<Modal>`（Radix Dialog
- * 居中+全屏遮罩）形态选错了——PRD 定形态，这里改成锚定浮层，视觉细节（宽度/圆角/阴影）
- * 仍走本仓 token，不照抄原型像素值。
+ * 容器形态（2026-07-31 二次修正，shared/modelgo_prd#320）：原型里两种入口是**两种形态**——
+ * - single/compareSwitch：`.playground-model-panel` 锚定在触发按钮正下方的浮层
+ *   （position:absolute; left:0; top:calc(100% + 6px)，无遮罩）。
+ * - compareAdd：「添加模型/模型对比」走的是 `MarketplaceCompareModal`
+ *   （App.tsx:18744，`.marketplace-compare-modal-overlay` fixed inset:0 + flex 居中 + 遮罩）。
+ * 2026-07-30 那次「对齐原型」把三种模式全改成了锚定浮层，compareAdd 被顺带带偏——
+ * 触发按钮在右上角，浮层挂在按钮左沿往右铺，直接捅出视口被裁。这里按原型把
+ * compareAdd 改回「遮罩 + 居中」，另两种保持锚定；视觉细节仍走本仓 token。
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
@@ -196,11 +199,13 @@ export function ModelPickerDialog({
   const [detailId, setDetailId] = useState<string | null>(null)
   const [checkedIds, setCheckedIds] = useState<string[]>([])
   const panelRef = useRef<HTMLDivElement>(null)
+  // compareAdd 是「遮罩 + 居中」的 modal（原型 MarketplaceCompareModal），不参与锚点定位
+  const isCentered = mode === 'compareAdd'
   // 首帧 hidden，测量完锚点坐标后才 visible，杜绝位置闪烁（同 Popover.tsx 的手法）
   const [panelStyle, setPanelStyle] = useState<CSSProperties>({ position: 'fixed', visibility: 'hidden' })
 
   const computePosition = useCallback(() => {
-    if (!anchorEl) return
+    if (isCentered || !anchorEl) return
     const rect = anchorEl.getBoundingClientRect()
     const gap = 6
     const vw = window.innerWidth
@@ -232,7 +237,7 @@ export function ModelPickerDialog({
       visibility: 'visible',
       ['--mg-picker-max-h' as string]: `${maxHeight}px`,
     })
-  }, [anchorEl])
+  }, [isCentered, anchorEl])
 
   useLayoutEffect(() => {
     if (open) {
@@ -378,13 +383,13 @@ export function ModelPickerDialog({
 
   if (!open) return null
 
-  return createPortal(
+  const panel = (
     <div
       ref={panelRef}
       role="dialog"
-      aria-modal="false"
+      aria-modal={isCentered ? 'true' : 'false'}
       aria-label={title}
-      style={panelStyle}
+      style={isCentered ? undefined : panelStyle}
       className={cn(
         'model-picker-dialog__panel mg-panel rounded-lg border border-mg-border bg-mg-bg-0 shadow-xl',
         'animate-in zoom-in-95 fade-in-0 duration-150',
@@ -667,7 +672,18 @@ export function ModelPickerDialog({
           </div>
         </div>
       )}
-    </div>,
+    </div>
+  )
+
+  // compareAdd：遮罩 + flex 居中（原型 .marketplace-compare-modal-overlay 的形态，
+  // 遮罩视觉复用本仓 Dialog 的 overlay 刻度）；点击遮罩关闭由既有的
+  // document mousedown 外点处理器兜住，这里不用重复绑。
+  return createPortal(
+    isCentered ? (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 dark:bg-black/60 backdrop-blur-sm animate-in fade-in-0 duration-150">
+        {panel}
+      </div>
+    ) : panel,
     document.body,
   )
 }

@@ -1,7 +1,8 @@
 /* ── 模型选择器弹层（ModelPickerDialog，PRD 1.0.4 §模型选择）──────────── */
 
-/* 容器形态对齐原型 App.tsx .playground-model-panel：锚定在触发按钮正下方的浮层，
-   无全屏遮罩（区别于本仓 Modal 组件的居中+遮罩），视觉走本仓 --mg-* token。 */
+/* 容器形态对齐原型 App.tsx：single/compareSwitch 是锚定在触发按钮正下方的浮层
+   （.playground-model-panel，无遮罩）；compareAdd 是遮罩+居中 modal
+   （MarketplaceCompareModal，见 ModelPickerDialog.tsx #320）。视觉走本仓 --mg-* token。 */
 .model-picker-dialog__panel {
   display: flex;
   flex-direction: column;

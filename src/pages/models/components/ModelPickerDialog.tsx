@@ -44,6 +44,7 @@ import {
   isPaidModel,
   modelSupportsAttachment,
   modelCategoryTasks,
+  modelExperienceTasks,
   EXPERIENCE_CATEGORY_ORDER,
   EXPERIENCE_CATEGORY_DEFAULT_TASK,
   experienceCategoryLabel,
@@ -285,8 +286,8 @@ export function ModelPickerDialog({
       } else {
         if (currentCategory && resolveCategory(model) !== currentCategory) return false
         if (currentTask) {
-          const tasks = model.experience_types
-          if (tasks && tasks.length > 0 && !tasks.includes(currentTask)) return false
+          const tasks = modelExperienceTasks(model)
+          if (tasks.length > 0 && !tasks.includes(currentTask as ExperienceTaskType)) return false
         }
       }
       if (!q) return true
@@ -310,20 +311,20 @@ export function ModelPickerDialog({
   )
 
   /** single 模式的候选分三组（原型 App.tsx:19562-19575 / 19729-19733）：
-   *  当前任务 · X（experience_types 含当前任务）→ 其他可体验任务（有任务但不含当前任务）
-   *  → 暂不支持在线体验（experience_types 为空，不可选）。
-   *  改前是平铺一个列表，且把后两组直接过滤掉了——用户在类别页签下看不到那些
-   *  只支持同类别其他子任务的模型，白少一批可选项。 */
+   *  当前任务 · X（推导任务含当前任务）→ 其他可体验任务（有任务但不含当前任务）
+   *  → 暂不支持在线体验（推导任务为空，不可选）。任务一律由模态推导
+   *  （modelExperienceTasks），不再读 experience_types（该字段后端将删除）。 */
   const singleGroupedRows = useMemo(() => {
     if (mode !== 'single') return []
-    const withTasks = candidates.filter((m) => (m.experience_types?.length ?? 0) > 0)
+    const taskOf = new Map(candidates.map((m) => [m.id, modelExperienceTasks(m)]))
+    const withTasks = candidates.filter((m) => (taskOf.get(m.id)?.length ?? 0) > 0)
     const currentTaskModels = currentTask
-      ? withTasks.filter((m) => m.experience_types?.includes(currentTask))
+      ? withTasks.filter((m) => taskOf.get(m.id)?.includes(currentTask as ExperienceTaskType))
       : withTasks
     const otherTaskModels = currentTask
-      ? withTasks.filter((m) => !m.experience_types?.includes(currentTask))
+      ? withTasks.filter((m) => !taskOf.get(m.id)?.includes(currentTask as ExperienceTaskType))
       : []
-    const unsupportedModels = candidates.filter((m) => (m.experience_types?.length ?? 0) === 0)
+    const unsupportedModels = candidates.filter((m) => (taskOf.get(m.id)?.length ?? 0) === 0)
 
     const rows: Array<{ groupLabel: string } | { model: CatalogModelItem; unsupported: boolean }> = []
     if (currentTaskModels.length > 0) {

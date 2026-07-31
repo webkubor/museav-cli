@@ -153,10 +153,9 @@ export default function ModelsPage() {
   }, [])
 
   // 接口文档§九说 GET /catalog/models 支持 ?experience_type= 按可体验任务筛选；#533 的
-  // 数据缺口（experience_types 全空）已由后端回填修复（2026-07-28 实测 test 环境 40 个
-  // 模型均非空），但 query 参数本身筛选行为未重新验证过，暂不改成服务端筛选，仍取全量目录，
-  // 用 resolveModelCategory 按 experience_types/输出模态自己分桶到对话/图像/音频/视频四个
-  // 类别（ModelPickerDialog 的类别 Tab 用的是同一份逻辑，两边口径一致）
+  // 取全量目录，用 resolveModelCategory 按输入/输出模态分桶到对话/图像/音频/视频四个
+  // 类别（口径 2026-07-31：experience_types 后端将删除，类别与任务一律模态推导；
+  // ModelPickerDialog 的类别 Tab 用的是同一份逻辑，两边口径一致）
   const { modelsQuery } = useModels()
 
   const allModels = useMemo(() => modelsQuery.data?.items ?? [], [modelsQuery.data?.items])

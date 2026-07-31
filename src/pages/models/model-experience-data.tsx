@@ -298,18 +298,6 @@ export function taskAttachmentKind(task: ExperienceTaskType): keyof typeof ATTAC
   return null
 }
 
-/** 某个模型在给定一级类别下，实际可体验的任务子集（按 experience_types 过滤；
- *  该字段缺失/为空时退化为该类别全部任务——与 hasPlaygroundExperience/
- *  resolveModelCategory 同一套兜底口径，避免同一份数据两种解读）。用于渲染
- *  「可体验任务」按钮组：>=2 个才需要显式切换，1 个时任务已定、不显示按钮组。 */
-export function modelCategoryTasks(model: CatalogModelItem, category: ExperienceCategoryKey): ExperienceTaskType[] {
-  const all = EXPERIENCE_CATEGORY_TASKS[category]
-  const declared = model.experience_types ?? []
-  if (declared.length === 0) return all
-  const filtered = all.filter((task) => declared.includes(task))
-  return filtered.length > 0 ? filtered : all
-}
-
 function taskToCategory(task: string): ExperienceCategoryKey | undefined {
   for (const cat of EXPERIENCE_CATEGORY_ORDER) {
     if (EXPERIENCE_CATEGORY_TASKS[cat].includes(task as ExperienceTaskType)) return cat
@@ -317,41 +305,87 @@ function taskToCategory(task: string): ExperienceCategoryKey | undefined {
   return undefined
 }
 
+// ─── 模态推导核心（口径变更 2026-07-31，需求方拍板）───────────────────────────
+// experience_types 字段将被后端删除，类别与可体验任务一律由 input/output_modalities
+// 推导——对齐 PRD 原型 modelPlaygroundDomain.ts 的推导式设计（getPlaygroundCategory/
+// getPlaygroundTasks）：「暂未开放」不是开关字段，而是**推导结果为空**的自然表达。
+// ⚠️ 前提是模态数据准确（embedding 类模型 output 不得错标成 text，否则会被推导成
+// 对话模型出假入口）——数据准确性要求已落 qa#581。
+
+function inputMods(model: CatalogModelItem): string[] {
+  return model.input_modalities ?? model.modalities ?? []
+}
+
+function outputMods(model: CatalogModelItem): string[] {
+  return model.output_modalities ?? model.modalities ?? []
+}
+
 /**
- * 推断模型所属一级类别。优先取 experience_types（服务端下发的可体验任务，直接
- * 对应 PRD 任务枚举）；缺失时按输出模态兜底（老数据/字段未下发场景）。
+ * 推断模型所属一级类别，只看模态、不再读 experience_types：
+ * 输出含媒体的按产物归类（优先级 video > audio > image——#297 回归教训：gemini
+ * out=[text,image] 本体是图像生成模型，不因兼具聊天能力归对话）；纯文本输出的
+ * 全模态模型归对话（#297 正向教训：mimo/seed 系不因输入含音频被判成语音识别）；
+ * 纯音频输入且无文本输入的是 ASR，归音频类。
  */
 export function resolveModelCategory(model: CatalogModelItem): ExperienceCategoryKey {
-  const outputModalities = model.output_modalities ?? model.modalities ?? []
-  const isTextOnlyOutput = outputModalities.length === 0 || (outputModalities.length === 1 && outputModalities[0] === 'text')
-
-  // 全模态（omni）模型优先归对话类：只要能 text_to_text 就先按对话进，别被 experience_types
-  // 的**数组顺序**决定归属。mimo-v2-omni 这类 input=text/image/audio/video、output=text 的模型，
-  // 若 audio_to_text 恰好排在数组前面就会被判成音频类 → 默认任务 audio_to_text → 强制出
-  // 「上传音频文件」区、纯文本发不出去，而它明明支持纯文本对话（shared/modelgo_prd#297）。
-  //
-  // ⚠️ 必须用 isTextOnlyOutput 限定，不能只看「含 text_to_text」：gemini-3.1-flash-lite-image
-  // 这类模型 experience_types 同样含 text_to_text（它也能纯聊天），但 output_modalities 是
-  // ['text','image']——它的本体是图像生成模型，不能被这条规则误抢成对话类，否则「文生图」
-  // 选项直接消失。区分点就是 output 是否只有 text：只有纯文本输出的全模态模型才默认归对话，
-  // 能产出图/音/视频的模型仍按输出模态归属（此教训来自 #297 撞车分支里遗留的单测，
-  // model-category.test.ts 用真实目录数据验过两个模型都对）。
-  if (isTextOnlyOutput && (model.experience_types ?? []).includes('text_to_text')) return 'dialogue'
-  for (const task of model.experience_types ?? []) {
-    const cat = taskToCategory(task)
-    if (cat) return cat
-  }
-  const out = model.output_modalities ?? model.modalities ?? []
+  const out = outputMods(model)
+  const inp = inputMods(model)
   if (out.includes('video')) return 'video'
   if (out.includes('audio')) return 'audio'
-  if (out.includes('image') && !out.includes('text')) return 'image'
+  if (out.includes('image')) return 'image'
+  if (!inp.includes('text') && inp.includes('audio')) return 'audio'
   return 'dialogue'
 }
 
-/** 模型是否配置了任意可体验任务（PRD 模型广场 §AC-13「暂未开放」判定依据，
- *  原型 App.tsx:4619 `getPlaygroundTasks(model).length === 0` 逐字对齐） */
+/**
+ * 模型全部可体验任务（PRD 原型 getPlaygroundTasks 的模态版）：类别内按输入模态
+ * 交叉推导。老数据输入/输出模态缺失时按文本兜底，避免误伤存量 LLM；输出既非
+ * 四类媒体也非文本（如 embedding 向量）推不出任务 → 空集 = 暂未开放（§AC-13）。
+ */
+export function modelExperienceTasks(model: CatalogModelItem): ExperienceTaskType[] {
+  const inp = inputMods(model)
+  const out = outputMods(model)
+  const hasTextIn = inp.length === 0 || inp.includes('text')
+  const tasks: ExperienceTaskType[] = []
+  switch (resolveModelCategory(model)) {
+    case 'dialogue': {
+      if (out.length > 0 && !out.includes('text')) break
+      if (hasTextIn) tasks.push('text_to_text')
+      if (inp.includes('image')) tasks.push('image_to_text')
+      if (inp.includes('video')) tasks.push('video_to_text')
+      break
+    }
+    case 'image':
+      if (hasTextIn) tasks.push('text_to_image')
+      if (inp.includes('image')) tasks.push('image_to_image')
+      break
+    case 'audio':
+      if (out.includes('audio') && hasTextIn) tasks.push('text_to_audio')
+      if (inp.includes('audio') && out.includes('text')) tasks.push('audio_to_text')
+      break
+    case 'video':
+      if (hasTextIn) tasks.push('text_to_video')
+      if (inp.includes('image')) tasks.push('image_to_video')
+      break
+  }
+  return tasks
+}
+
+/** 某个模型在给定一级类别下，实际可体验的任务子集（模态推导 ∩ 类别任务表）。
+ *  用于渲染「可体验任务」按钮组：>=2 个才需要显式切换，1 个时任务已定、不显示按钮组。 */
+export function modelCategoryTasks(model: CatalogModelItem, category: ExperienceCategoryKey): ExperienceTaskType[] {
+  const all = EXPERIENCE_CATEGORY_TASKS[category]
+  const derived = modelExperienceTasks(model)
+  const filtered = all.filter((task) => derived.includes(task))
+  // 跨类别调用（如恢复历史时模型已换）推导子集可能为空，退化为该类别全部任务，
+  // 保持与旧版兜底口径一致，避免恢复态渲染不出任务
+  return filtered.length > 0 ? filtered : all
+}
+
+/** 模型是否有任何可体验任务（PRD 模型广场 §AC-13「暂未开放」判定依据，
+ *  原型 App.tsx:4619 `getPlaygroundTasks(model).length === 0` 同语义的模态推导版） */
 export function hasPlaygroundExperience(model: CatalogModelItem): boolean {
-  return (model.experience_types ?? []).length > 0
+  return modelExperienceTasks(model).length > 0
 }
 
 /**

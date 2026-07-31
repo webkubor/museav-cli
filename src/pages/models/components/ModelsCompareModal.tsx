@@ -8,7 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { cn, formatContextLength, trimPriceZeros } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
-import { resolveModelCategory } from '../model-experience-data'
+import { resolveModelCategory, modelExperienceTasks } from '../model-experience-data'
 
 interface ModelsCompareModalProps {
   isOpen: boolean
@@ -18,7 +18,7 @@ interface ModelsCompareModalProps {
   initialSelectedIds?: string[]
   /**
    * 对比基准（发起对比的「当前模型」，PRD §7.7 模型广场对比以当前模型为基准）。
-   * 候选资格判断（一级类别 + 共同支持的 default_experience_type）都以它为准；
+   * 候选资格判断（一级类别 + 共同支持的基准任务，均由模态推导）都以它为准；
    * 缺省时回退取 initialSelectedIds[0]（现有调用方始终把当前模型作为首个选中项传入）。
    */
   currentModelId?: string
@@ -100,12 +100,14 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
 
   const anchorModel = useMemo(() => allModels.find((m) => m.id === anchorId), [allModels, anchorId])
   const anchorCategory = anchorModel ? resolveModelCategory(anchorModel) : undefined
-  const anchorExperienceType = anchorModel?.default_experience_type
+  // 基准任务取模态推导任务集的首个（类别默认任务在前）——default_experience_type/
+  // experience_types 字段后端将删除，共同任务资格改为「候选的推导任务集包含基准任务」
+  const anchorTask = anchorModel ? modelExperienceTasks(anchorModel)[0] : undefined
 
   /**
    * 候选资格判断（PRD §7.7 模型广场页面）：compare_enabled=true、公开在线、一级类别
-   * 与基准模型相同、且与基准模型共同支持 default_experience_type 的候选，最多再选 2 个。
-   * 一级类别不同 / 不共享可体验类型的模型直接不出现在候选列表里（过滤掉，非禁用置灰）。
+   * 与基准模型相同、且与基准模型共同支持基准任务的候选，最多再选 2 个。
+   * 一级类别不同 / 不共享可体验任务的模型直接不出现在候选列表里（过滤掉，非禁用置灰）。
    * 无基准模型时（防御性兜底，理论上不会发生——现有调用方都会带上当前模型）不做限制。
    */
   const eligibleModels = useMemo(() => {
@@ -115,10 +117,10 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
       if (!isOnline(m)) return false
       if (!anchorModel) return true
       if (resolveModelCategory(m) !== anchorCategory) return false
-      if (anchorExperienceType && !(m.experience_types ?? []).includes(anchorExperienceType)) return false
+      if (anchorTask && !modelExperienceTasks(m).includes(anchorTask)) return false
       return true
     })
-  }, [allModels, anchorId, anchorModel, anchorCategory, anchorExperienceType])
+  }, [allModels, anchorId, anchorModel, anchorCategory, anchorTask])
 
   if (!isOpen) return null
 

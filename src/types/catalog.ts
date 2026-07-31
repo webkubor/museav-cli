@@ -40,8 +40,10 @@ export interface CatalogModelItem {
   output_modalities?: string[]
   /** 模型级公开协议 */
   protocols?: ('openai' | 'anthropic' | 'other')[]
-  /** 可体验任务；空数组 = 未开放在线体验 */
+  /** @deprecated 后端将删除（2026-07-31 口径变更）：可体验任务一律由 input/output_modalities
+   *  推导（modelExperienceTasks），前端已不读这两个字段，仅保留类型定义待后端下线后移除 */
   experience_types?: string[]
+  /** @deprecated 同 experience_types */
   default_experience_type?: string
   /** 模型级对比总开关 */
   compare_enabled?: boolean

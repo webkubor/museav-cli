@@ -303,26 +303,53 @@ pnpm build:prod
 
 ---
 
-## 📋 任务看板 & CS 入口
+## 📋 任务看板 & 开发流程
 
-### GitLab QA 看板
+### 三个看板（按优先级）
 
-线上地址：[https://gitlab.ops.modelgo.com/groups/qa/-/boards](https://gitlab.ops.modelgo.com/groups/qa/-/boards)
-
-Group: `qa`（ID 8） · Board: `Development`（ID 2） · **唯一目标项目: `ai-quality-platform`（ID 1）**
-
-> ⚠️ **所有需求/BUG 必须创建在 `project_id=1`（qa group / ai-quality-platform）**，不要创建在本代码仓库（`frontend/modelgo-console-web`，project_id=31）的 issue tracker 里。
+| 看板 | 用途 | 优先级 |
+| :--- | :--- | :--- |
+| `shared/modelgo_prd` | **需求方**报的 BUG/需求（PD 提单） | 最高，优先处理 |
+| `qa/ai-quality-platform` | QA 板：`[前端]`/`[后端]` 前缀分流 + owner 指派 | 次之 |
+| `frontend/modelgo-console-web` | 前端内部任务跟踪 | 内部 |
 
 | 看板列 | GitLab Label | 说明 |
 | :--- | :--- | :--- |
 | 待处理 | `已认领` | 已分配但未开始 |
 | 进行中 | `进行中` | 开发/修复中 |
-| 待验证 | `待验证` | 等待 QA 验收 |
+| 待验证 | `待验证` | 等待报单人/QA 验收 |
 | 已完成 | `已完成` | 验收通过，关闭 |
 
 业务标签：`BUG`（缺陷）、`TASK`（需求）、`Feature`（功能需求）、`前端就绪`（前端已完成待后端/QA）
 
-> 控制台 `platform-config` 页面的需求看板与此 GitLab Board 对应，issue 状态同步。
+### 单张任务的标准流程（摘要，全文见 [`docs/COLLABORATION.md`](./docs/COLLABORATION.md)）
+
+```
+领单/认领 → 开隔离 worktree（禁止直接在主检出 test 分支写码）
+→ 对真源（PRD 原型 > 飞书 PRD > 现代码；API 以 Swagger 为准）
+→ 开发 + 门禁（pre-commit 快检 + ui-guard）
+→ ego-lite 浏览器验证（双主题/真实数据/截图，见 mg-frontend skill 的 ui-verification）
+→ 合 test 分支 → push → Jenkins 发测试环境 → 在部署后的环境复验
+→ GitLab 单贴 版本号+根因+截图 → 转「待验证」   ← 顺序不可反：先部署后改状态
+```
+
+- 前端用了后端未交付的字段/端点 → 必须落 API 单并在代码注释挂单号（owner 路由见 skill 的 contacts）；
+- 后端交付的待验证单 → 联调实测后才流转，不认标签只认真源。
+
+### 产品需求真源（飞书 PRD）
+
+**优先级：PRD 原型 > 飞书 PRD 文档 > 现状代码**；命名一律以 PRD 原型为准（租户/工作空间，禁用组织/项目）。
+
+| 真源 | 位置 | 用途 |
+| :--- | :--- | :--- |
+| PRD 原型源码 | 同级仓 `modelgo_prd/src/App.tsx`（本地直接读） | 功能/交互/字段文案/弹层形态 |
+| 飞书 PRD | 《ModelGo PRD by Release》知识库（V1.0.x 累积基线，8 篇子 PRD） | 规格细节、验收标准（AC） |
+| 现状控制台 | 本仓代码 + `DESIGN.md` + `docs/ui-reference/` | 布局排版与视觉的唯一真源 |
+
+> 飞书各篇 node token 与 lark-cli 读法见仓根 `CLAUDE.md`「真源 & 交付铁律」（token 随改版会失效，不在本文复制）。
+> 原型只给功能与交互——**它自身的视觉 ≠ 控制台视觉**，排版照现状同类页。
+
+> 控制台 `platform-config` 页面的需求看板与 GitLab Board 对应，issue 状态同步。
 
 ### Task Skills（Agent 操作入口）
 

@@ -79,6 +79,7 @@ import { ModelSettingsModal } from './components/ModelSettingsModal'
 import { ApiQuickCallModal } from './components/ApiQuickCallModal'
 import { ExperienceMessageList } from './components/ExperienceMessageList'
 import { TaskFileDropZone } from './components/TaskFileDropZone'
+import { TaskSwitch } from './components/TaskSwitch'
 import { resolveExperienceMessageMedia } from './experience-message-attachments'
 import './styles/model-experience-layout.css'
 import './styles/model-picker.css'
@@ -362,6 +363,20 @@ export default function ModelsPage() {
     // 换模型 = 当前列绑定的模型变了，旧会话的列已经对不上——开新会话，而不是复用旧 conversationId
     startNewSession()
     window.setTimeout(() => inputRef.current?.focus(), 80)
+  }
+
+  /** 页面级「可体验任务」切换：广场标着图片输入的生成类模型（如 gemini-3.1-flash-lite-image）
+   *  进来默认 text_to_*，此前任务切换只藏在 ModelPickerDialog 里，页面上没有任何入口能切到
+   *  image_to_image/image_to_video，用户会误以为"标签支持图片却传不了图"。task 建会话时已
+   *  写死（ensureConversation），切任务必须开新会话（与选择器路径 handlePick 语义一致）；
+   *  附件的类型校验按 task 走，一并清掉；输入草稿最值钱，保留。 */
+  function handleTaskSwitch(task: ExperienceTaskType) {
+    if (task === effectiveTask) return
+    clearAttachment()
+    setSingle({ task })
+    const draft = input
+    startNewSession()
+    setInput(draft)
   }
 
   async function openHistorySession(id: string) {
@@ -1092,6 +1107,14 @@ export default function ModelsPage() {
                     {t('modelsExperience.modelOfflineHint')}
                   </span>
                 </div>
+              )}
+
+              {/* 页面级「可体验任务」切换（原型 PlaygroundCapabilitySwitch 的落地位——
+                  .models-task-switch 样式当初就按"选中项决定下方 TaskFileDropZone"设计，
+                  但组件此前只挂在 ModelPickerDialog 里，页面上无入口）。dialogue 类子任务
+                  由附件反推（resolveDialogueTask），不渲染；<2 个任务时组件自身返回 null。 */}
+              {!isSelectedModelOffline && !isDialogue && (
+                <TaskSwitch tasks={categoryTasks} value={effectiveTask} onChange={handleTaskSwitch} />
               )}
 
               {/* 附件预览/错误（§7.5，仅 dialogue 类走通用回形针）：每轮最多一个附件，发送后清空 */}

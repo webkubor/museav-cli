@@ -367,3 +367,28 @@
   box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.03);
   width: 100%;
 }
+
+/* 音频产物卡（#308，对齐原型 playground-audio-result）：裸 <audio> 在消息流里只是一条
+   细控件，看不出它是「生成结果」。补波形图标 + 标题回显，把它立成一张可识别的产物卡。 */
+.models-experience-audio-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 16px;
+  border-radius: var(--radius-md);
+  background: var(--mg-fill-0);
+  color: var(--mg-text-3);
+}
+
+.models-experience-audio-result strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mg-text-1);
+  text-align: center;
+  word-break: break-word;
+}
+
+.models-experience-audio-result .models-experience-media-audio {
+  width: 100%;
+}

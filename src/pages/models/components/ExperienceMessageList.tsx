@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import { MarkdownContent } from '@/components/ui/MarkdownContent'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { LuCheck, LuCopy, LuRefreshCcw } from 'react-icons/lu'
+import { LuAudioLines, LuCheck, LuCopy, LuRefreshCcw } from 'react-icons/lu'
 import { cn } from '@/lib/utils'
 import { ModelIcon, type ModelIconLike } from '@/features/models/components/ModelIcon'
 import { formatPlaygroundSpend, type ExperienceMessage } from '../model-experience-data'
@@ -211,9 +211,19 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
                         m.kind === 'image' ? (
                           <img key={mIdx} src={m.url} alt={message.role === 'user' ? t('modelsExperience.attachmentPreview') : t('modelsExperience.generatedResult')} className="models-experience-media-image" />
                         ) : m.kind === 'audio' ? (
-                          <audio key={mIdx} controls preload="metadata" src={m.url} className="models-experience-media-audio" />
+                          // 音频产物卡（#308，对齐原型 playground-audio-result）：裸 <audio> 在消息流里
+                          // 只有一条细控件、看不出这是「生成结果」，补波形图标与标题把它立成一张产物卡
+                          <div key={mIdx} className="models-experience-audio-result">
+                            <LuAudioLines size={28} aria-hidden="true" />
+                            {message.role === 'assistant' && message.content ? (
+                              <strong>{message.content}</strong>
+                            ) : null}
+                            <audio controls preload="metadata" src={m.url} className="models-experience-media-audio" />
+                          </div>
                         ) : m.kind === 'video' ? (
-                          <video key={mIdx} controls preload="metadata" src={m.url} className="models-experience-media-video" />
+                          // loop/muted/playsInline 对齐原型：静音自动可循环预览，iOS 上 playsInline
+                          // 避免点开就强制全屏
+                          <video key={mIdx} controls loop muted playsInline preload="metadata" src={m.url} className="models-experience-media-video" />
                         ) : null,
                       )}
                     </div>

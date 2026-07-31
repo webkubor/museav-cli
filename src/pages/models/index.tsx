@@ -730,7 +730,7 @@ export default function ModelsPage() {
         const next = [...prev]
         const last = next[next.length - 1]
         if (last?.role === 'assistant') {
-          next[next.length - 1] = { ...last, error: `${t('modelsExperience.requestFailed')}${(err as Error).message || t('modelsExperience.retryLater')}` }
+          next[next.length - 1] = { ...last, error: `${t('modelsExperience.requestFailed')}${extractApiErrorMessage(err)}` }
         }
         return next
       })
@@ -860,7 +860,7 @@ export default function ModelsPage() {
           const last = next[next.length - 1]
           if (last?.role !== 'assistant') return prev
           if (message.status === 'failed') {
-            return [...next.slice(0, -1), { ...last, error: message.error || t('modelsExperience.videoGenerateFailed'), content: '' }]
+            return [...next.slice(0, -1), { ...last, error: message.error ? cleanErrorMessage(message.error) : t('modelsExperience.videoGenerateFailed'), content: '' }]
           }
           const media = message.attachments.map((a) => ({ kind: a.kind, url: attachment_urls[a.resource_id] ?? '' }))
           return [

@@ -14,12 +14,22 @@
   gap: 16px;
   padding: 16px 18px;
   border-bottom: 1px solid var(--mg-border);
+  /* 对比页三列挤压时这行本身也要能收缩，不然子元素的 min-width:0 不起作用
+     （父级不收缩，flex 子元素的收缩空间无从谈起）。 */
+  min-width: 0;
 }
 
 .models-experience-modelbar-title {
   color: var(--mg-text-1);
   font-size: 17px;
   font-weight: 820;
+  /* 长模型名（如「Deepseek V4 Pro」）之前不截断，对比页三列挤压时把模型条
+     撑到自然宽度，挤出右侧的设置/删除图标——被列容器的 overflow:hidden 直接
+     裁掉，删除按钮（X，flex 里排最后）永远最先消失（shared/modelgo_prd#317）。
+     改成单行省略号截断，模型条能真正收缩到列宽内。 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .models-experience-modelbar-sub {
@@ -28,9 +38,9 @@
   color: var(--mg-text-3);
   font-size: 12px;
   font-weight: 590;
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .models-experience-chips {

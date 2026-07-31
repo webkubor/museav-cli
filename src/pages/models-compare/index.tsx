@@ -1345,7 +1345,9 @@ export default function ModelsComparePage() {
                 )}
                 <LuChevronDown size={13} className="text-mg-text-3 shrink-0" />
               </button>
-              <div className="ml-auto flex items-center gap-1">
+              {/* shrink-0：三列挤压时收缩空间应该全落在左边可截断的模型条上，不能让
+                  设置/删除这组常驻控件被一起挤没（shared/modelgo_prd#317） */}
+              <div className="ml-auto flex items-center gap-1 shrink-0">
                 <button
                   type="button"
                   className="models-experience-icon-btn"

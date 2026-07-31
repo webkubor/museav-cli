@@ -417,10 +417,11 @@ cs secrets get secret://modelgo/accounts
 ```
 
 **自动化流程：**
-1. 使用 ego-lite 打开浏览器
-2. 注入登录 cookie 或调用 `window.__mg_login`
-3. 执行自动化操作
-4. 截图验证
+1. **先用 ego-lite 验本地端口**（默认 `http://localhost:5175`）：注入测试登录态或调用 `window.__mg_login`，按验收标准逐条执行并保留接口/DOM 证据。
+2. 本地通过后，合并到 `test`、触发测试环境部署，并核对 Jenkins checkout commit 与修复 commit 一致。
+3. **仍用 ego-lite 验测试站**：同一条验收路径必须在 `https://console.test.modelgo.com` 重跑；本地热更新通过不等于交付。
+4. 只有测试站通过才可把 GitLab QA 单移为「待验证」；评论必须包含 SCQA、接口数据和截图/可视化证据。
+5. 生产环境只在 `main` 发布后验证对应提交；未发布不得声称「测试和生产一致」。禁止把测试账号 cookie 注入生产。
 
 ### Agent 自动化测试
 
@@ -557,11 +558,11 @@ scripts/ui-guard.sh        # UI 门禁（圆角/颜色/组件违规拦截）
 ### 浏览器验证
 
 ```bash
-# 加载 browser-verify skill，走完整验收流程：
-# ① 登录（window.__mg_login）
-# ② 按验收标准逐条浏览器实测
-# ③ 截图存证
-# ④ 输出验收报告
+# 优先使用 ego-lite；本地端口优先于测试站，测试站优先于生产。
+# ① http://localhost:5175：登录并按验收标准逐条实测，保留接口和 DOM 证据
+# ② 合并 test + Jenkins 成功后：https://console.test.modelgo.com 重跑同一组用例
+# ③ 用 EgoLite 截图或记录可视媒体/控件的实际加载状态
+# ④ 仅 main 已发布时，再到生产核对同一 commit；否则明确标注“生产未验证”
 ```
 
 ### 部署后再验
@@ -574,8 +575,9 @@ cs flow deploy
 cs secrets run --env JENKINS_TOKEN=secret://jenkins/modelgo -- \
   curl -fsS "https://jenkins.ops.modelgo.com/job/test/job/modelgo-console-web/<buildNo>/api/json"
 
-# 3. 打开测试环境浏览器验证（⚠️ 先清 PWA 缓存）
-# 4. 页脚核对 commit hash
+# 3. 先在 http://localhost:5175 用 ego-lite 完成本地验证
+# 4. 再打开测试环境并用 ego-lite 重跑（⚠️ 先清 PWA 缓存）
+# 5. 生产验证只允许在 main 发布后进行，并核对其部署 commit
 ```
 
 ## 10. 收工清理

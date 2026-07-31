@@ -54,32 +54,12 @@
   margin: 0 12px 12px;
 }
 
-/* 列头自适应（shared/modelgo_prd#317）：模型触发器（button 默认 min-width:auto）不收缩，
-   窄列时把右侧 API/设置/移除 图标组顶出列边界，被 .models-compare-column 的
-   overflow:hidden 裁掉——表现为"没有删除按钮/图标缺失"；模型名长短不一还会换行，
-   三列头部高度错位。收敛：触发器可收缩+模型名单行省略，图标组恒定不缩。 */
+/* 列头紧凑化（shared/modelgo_prd#317）：窄列时给图标组多留空间。收缩/截断规则
+   在全局 .models-experience-model-trigger（min-width:0，只缩不涨）与
+   .models-experience-modelbar-title（单行省略）统一定义，此处不重复。 */
 .models-compare-column .models-experience-modelbar {
   gap: 8px;
   padding: 12px;
-}
-
-.models-compare-column .models-experience-model-trigger {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.models-compare-column .models-experience-model-trigger > .min-w-0 {
-  flex: 1 1 auto;
-}
-
-.models-compare-column .models-experience-modelbar-title {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.models-compare-column .models-experience-modelbar > .ml-auto {
-  flex-shrink: 0;
 }
 
 /* 历史会话恢复/新建失败的行内提示（§7.8），不阻塞页面，仅提醒 */

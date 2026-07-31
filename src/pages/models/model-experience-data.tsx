@@ -279,12 +279,21 @@ function taskToCategory(task: string): ExperienceCategoryKey | undefined {
  * 对应 PRD 任务枚举）；缺失时按输出模态兜底（老数据/字段未下发场景）。
  */
 export function resolveModelCategory(model: CatalogModelItem): ExperienceCategoryKey {
+  const outputModalities = model.output_modalities ?? model.modalities ?? []
+  const isTextOnlyOutput = outputModalities.length === 0 || (outputModalities.length === 1 && outputModalities[0] === 'text')
+
   // 全模态（omni）模型优先归对话类：只要能 text_to_text 就先按对话进，别被 experience_types
   // 的**数组顺序**决定归属。mimo-v2-omni 这类 input=text/image/audio/video、output=text 的模型，
   // 若 audio_to_text 恰好排在数组前面就会被判成音频类 → 默认任务 audio_to_text → 强制出
   // 「上传音频文件」区、纯文本发不出去，而它明明支持纯文本对话（shared/modelgo_prd#297）。
-  // 对话类是唯一永不强制附件的类别，作默认最安全；其余任务用户仍可在模型选择器里显式选。
-  if ((model.experience_types ?? []).includes('text_to_text')) return 'dialogue'
+  //
+  // ⚠️ 必须用 isTextOnlyOutput 限定，不能只看「含 text_to_text」：gemini-3.1-flash-lite-image
+  // 这类模型 experience_types 同样含 text_to_text（它也能纯聊天），但 output_modalities 是
+  // ['text','image']——它的本体是图像生成模型，不能被这条规则误抢成对话类，否则「文生图」
+  // 选项直接消失。区分点就是 output 是否只有 text：只有纯文本输出的全模态模型才默认归对话，
+  // 能产出图/音/视频的模型仍按输出模态归属（此教训来自 #297 撞车分支里遗留的单测，
+  // model-category.test.ts 用真实目录数据验过两个模型都对）。
+  if (isTextOnlyOutput && (model.experience_types ?? []).includes('text_to_text')) return 'dialogue'
   for (const task of model.experience_types ?? []) {
     const cat = taskToCategory(task)
     if (cat) return cat

@@ -88,7 +88,10 @@ function ChatParamsForm({
   const topP = asNumber(values.top_p, 1)
   const maxTokens = asNumber(values.max_tokens, Math.min(4096, maxOutputTokens))
   const stream = asBool(values.stream, true)
-  const systemPrompt = asString(values.systemPrompt)
+  // 键名必须是 system_prompt（下划线）——后端只认这个键（shared/modelgo_prd#315：
+  // 此前存 systemPrompt 驼峰，config 落库成功但网关拼请求时取不到，系统提示词整体失效；
+  // 2026-07-31 test 环境实测 system_prompt 生效、systemPrompt/system 均被无视）
+  const systemPrompt = asString(values.system_prompt)
 
   return (
     <div className="model-settings-form">
@@ -168,7 +171,7 @@ function ChatParamsForm({
           rows={3}
           placeholder={t('modelsExperience.settings.systemPromptPlaceholder')}
           value={systemPrompt}
-          onChange={(e) => onChange('systemPrompt', e.target.value)}
+          onChange={(e) => onChange('system_prompt', e.target.value)}
         />
       </div>
     </div>

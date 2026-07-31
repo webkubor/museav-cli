@@ -63,6 +63,7 @@ import {
   attachmentKindFromMime,
   resolveDialogueTask,
   modelCategoryTasks,
+  normalizeChatParams,
   taskNeedsFile,
   taskAttachmentKind,
   EXPERIENCE_CATEGORY_TASKS,
@@ -212,7 +213,7 @@ export default function ModelsPage() {
     const inputPrice = Number(selectedModel.pricing?.input_per_1m ?? 0)
     const outputPrice = Number(selectedModel.pricing?.output_per_1m ?? 0)
     if (!inputPrice && !outputPrice) return '¥0.00'
-    const systemPrompt = typeof chatParams.systemPrompt === 'string' ? chatParams.systemPrompt : ''
+    const systemPrompt = typeof chatParams.system_prompt === 'string' ? chatParams.system_prompt : ''
     const maxTokens = typeof chatParams.max_tokens === 'number' ? chatParams.max_tokens : 4096
     const inputTokens = estimateTokens(`${input}${systemPrompt}`)
     const outputTokens = Math.min(400, maxTokens)
@@ -457,7 +458,7 @@ export default function ModelsPage() {
         getExperienceSessionStats(sessionId),
       ])
       const savedConfig = configs.find((c) => matchesModelConfigId(c.model_id, selectedModel.model_id))
-      if (savedConfig) setChatParams(savedConfig.config)
+      if (savedConfig) setChatParams(normalizeChatParams(savedConfig.config))
       const modelStats = stats.find((s) => s.model_id === selectedModel.model_id)
       if (modelStats) {
         setSessionStats({
@@ -596,6 +597,18 @@ export default function ModelsPage() {
     const convId = session.conversations?.[0]?.id ?? null
     setConversationId(convId)
     if (!convId) throw new Error(t('modelsExperience.sessionCreateError'))
+    // 会话是发首条消息时才懒创建的，用户先开设置改参数（最常见的先配后聊）时
+    // handleChatParamChange 只改了本地、静默跳过了持久化（当时没有 sessionId 可挂）——
+    // 这里建完会话必须把暂存参数回填到后端，且要 await：参数（含 system_prompt）是
+    // 后端从会话 config 读的、不随消息体走，首条消息打到模型前 config 必须已就位
+    // （shared/modelgo_prd#315 的第二条失效路径）。回填失败不阻塞发送，提示用户即可。
+    if (Object.keys(chatParams).length > 0) {
+      try {
+        await saveExperienceModelConfig(session.id, selectedModel.model_id, chatParams)
+      } catch (err) {
+        appToast.requestError(err, t('modelsExperience.settings.saveFailed'))
+      }
+    }
     return convId
   }
 

@@ -228,6 +228,17 @@ export function categoryPlaceholder(category: ExperienceCategoryKey): string {
   return i18n.t(`modelsExperience.categoryPlaceholder.${category}`)
 }
 
+/**
+ * 会话模型配置的键名归一（shared/modelgo_prd#315）：系统提示词后端只认 system_prompt，
+ * 历史会话的已存 config 里可能还是旧键 systemPrompt（当年就没生效过），拉回来时就地
+ * 改名，让旧配置在弹窗里可见、重新保存后即生效。单模型页/对比页两个加载点共用。
+ */
+export function normalizeChatParams(config: Record<string, unknown>): Record<string, unknown> {
+  if (!('systemPrompt' in config)) return config
+  const { systemPrompt, ...rest } = config
+  return { system_prompt: rest.system_prompt ?? systemPrompt, ...rest }
+}
+
 /** 附件类型/大小上限（PRD §7.5），accept 给 <input type="file"> 用。单模型页/对比页共用（qa#545）。 */
 export const ATTACHMENT_LIMITS = {
   image: { maxBytes: 10 * 1024 * 1024, accept: '.png,.jpg,.jpeg,.webp' },

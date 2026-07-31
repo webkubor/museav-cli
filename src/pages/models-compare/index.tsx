@@ -79,6 +79,7 @@ import {
   attachmentLimitLabel,
   attachmentKindFromMime,
   modelSupportsAttachment,
+  normalizeChatParams,
   offlineModelPlaceholder,
   isOfflineModel,
   type ExperienceMessage,
@@ -986,7 +987,7 @@ export default function ModelsComparePage() {
         getExperienceSessionStats(sessionId),
       ])
       const savedConfig = configs.find((c) => matchesModelConfigId(c.model_id, model.model_id))
-      if (savedConfig) updateColumn(idx, { chatParams: savedConfig.config })
+      if (savedConfig) updateColumn(idx, { chatParams: normalizeChatParams(savedConfig.config) })
       const modelStats = stats.find((s) => s.model_id === model.model_id)
       if (modelStats) {
         setSessionStats({

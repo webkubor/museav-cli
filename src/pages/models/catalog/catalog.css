@@ -593,8 +593,13 @@
   /* 原型是 minmax(280px, 1fr) + 页面 max-width:1480px 兜住「最多四列」。本仓内容区
      更宽（约 1278px 起，大屏更宽），单纯用 280px 会排到 5 列以上，所以把最小轨道
      钉在 max(280px, 四列均分宽)：能排几列排几列、但永不超过 4 列。
-     四列均分 = (100% - 3 个 gap) / 4。 */
-  grid-template-columns: repeat(auto-fit, minmax(max(280px, (100% - 3 * 12px) / 4), 1fr));
+     四列均分 = (100% - 3 个 gap) / 4。
+
+     ⚠️ 必须是 auto-fill 不是 auto-fit：auto-fit 会把空轨道折叠掉、让剩下的卡片拉伸
+     填满整行——筛选/搜索只剩 1 个结果时，那张卡就被撑成通栏，模型名和描述挤在最左、
+     右边一大片空白，「输入 ¥1/M」和「输出 ¥2/M」被拉开半个屏幕（shared/modelgo_prd#303）。
+     auto-fill 保留空轨道，卡片宽度与结果数无关，始终是四分之一列宽。 */
+  grid-template-columns: repeat(auto-fill, minmax(max(280px, (100% - 3 * 12px) / 4), 1fr));
 }
 
 .catalog-insight-panel {

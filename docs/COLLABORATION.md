@@ -140,22 +140,24 @@ node $S claim 100 --project 46  # PRD 看板
    - 角色矩阵没授码、权限没按"所看空间"解析 → **后端契约**（RBAC/`/auth/session`）
    - ⚠️ 别停在第一层表象：#255「空间负责人少 tab」表面像前端 gate，实为 `/auth/session` 只按租户默认空间解析权限（后端契约缺口）——透镜（ssot）一点就现形。
 4. **带证据 SCQA 转对人**（见下「生产验收 → QA → 回归 Loop」），指对模块 owner（团队指派表）。
-5. **闭环回单**：修复→目标环境部署→带 commit、构建号、截图与接口结果回评→挪「待验证」。
+5. **闭环回单**：修复→目标环境部署→带 commit、构建号、截图与接口结果回评需求方任务单→挪「待验证」。
 
 ### 生产验收 → QA → 回归 Loop（唯一执行路径）
 
 线上或测试环境发现问题时，不允许只在对话里报结论、只写 retro，或先改代码后补单。必须按下面顺序闭环：
 
 ```text
-目标环境验收
+需求方任务单（唯一主线）
   → 结构化取证（截图 + 请求/响应）
   → 按 SSOT 判定前端 / API / 混合归属
-  → 查重并创建 QA BUG（Open）
-  → 修复单关联 BUG、提交与部署
+  → 在需求方任务单内记录范围、修复与证据
+  → 提交与部署
   → 同一环境按原步骤回归
-  → 证据回评（待验证）
-  → QA 通过后已完成 / Closed
+  → 证据回写需求方任务单
+  → 需求方验收后已完成 / Closed
 ```
+
+**任务单边界：** 需求方任务单优先，后续不再新增 QA 问题单。已有 QA 单只做验证、状态同步或关闭；除非需求方明确要求，否则不得把 QA 单当作新的需求入口，也不得为了“补流程”新建 QA 单。
 
 #### 1. 先给验收结论，再给证据
 
@@ -167,7 +169,8 @@ node $S claim 100 --project 46  # PRD 看板
 **状态：** 通过 / 失败 / 阻塞
 **环境：** <test / production URL>
 **范围：** <页面 + 用户操作 + 角色/模型/工作空间>
-**QA 单：** <链接；未建则写“正在按下方证据创建”>
+**需求方任务单：** <链接>
+**已有 QA 单（如有）：** <链接；没有则写“无，不新建”>
 
 ## 证据
 
@@ -194,15 +197,15 @@ node $S claim 100 --project 46  # PRD 看板
 
 | 证据 | 归属 | 动作 |
 |---|---|---|
-| 接口字段/状态正确，页面漏渲染、状态错误或刷新后丢失 | 前端 | 建/认领前端 BUG，QA 单写清期望 UI 与回归步骤 |
-| 请求路由、HTTP 状态或业务 code/字段违反契约 | API/后端 | 建 API BUG；前端不代替后端转派 |
-| 前端展示与 API 契约都异常 | 混合 | 分成互相链接的两张单；每张只写一个根因与验收标准 |
+| 接口字段/状态正确，页面漏渲染、状态错误或刷新后丢失 | 前端 | 在需求方任务单记录前端根因与回归步骤；已有 QA 单只同步验证 |
+| 请求路由、HTTP 状态或业务 code/字段违反契约 | API/后端 | 在需求方任务单记录 API 根因与责任边界；不新建 QA 单 |
+| 前端展示与 API 契约都异常 | 混合 | 在同一需求方任务单拆清根因与验收标准；已有 QA 单只作辅助验证 |
 
 HTTP 200 不等于业务成功：必须同时记录 HTTP 状态和响应体 `code`/错误字段。前端历史恢复类问题还要证明“消息接口是否有附件字段”和“前端是否实际请求附件展示 URL”。
 
-#### 3. QA BUG 的 SCQA 模板
+#### 3. 需求方任务单的 SCQA 模板
 
-先用 `glab issue list` 在 `qa/ai-quality-platform` 查重；普通 BUG 只加 `BUG` 标签，保持 Open，不要创建即标“待验证”。一张单只对应一个可验证根因。
+先在 `shared/modelgo_prd` 找到需求方任务单；不要在 `qa/ai-quality-platform` 新建替代单。一张需求方任务单只对应一个可验证根因。
 
 ````md
 ## SCQA
@@ -254,12 +257,12 @@ HTTP 200 不等于业务成功：必须同时记录 HTTP 状态和响应体 `cod
 
 #### 4. 状态与回评固定格式
 
-| 时机 | QA 单状态 | 必须写回的内容 |
+| 时机 | 需求方任务单状态 | 必须写回的内容 |
 |---|---|---|
-| 发现并证据齐全 | Open | SCQA、截图、脱敏接口数据、影响范围 |
-| 开始处理 | 已认领 → 进行中 | 分支/责任边界；不得把别人的后端单擅自转派 |
-| 已部署到目标环境且原步骤回归通过 | 待验证 | commit、构建号、环境 URL、截图、接口结果 |
-| QA 确认通过 | 已完成 → Closed | 最终验收时间和结论 |
+| 发现并证据齐全 | 当前状态 | SCQA、截图、脱敏接口数据、影响范围 |
+| 开始处理 | 进行中 | 分支/责任边界；不得把别人的后端单擅自转派 |
+| 已部署到目标环境且原步骤回归通过 | 待验证 | commit、构建号、环境 URL、截图、接口结果，回写需求方任务单 |
+| 需求方确认通过 | 已完成 → Closed | 最终验收时间和结论 |
 | 复验失败 | 回到进行中 | 新证据、失败步骤、与旧证据的差异 |
 
 回评必须用同一种格式，不能只写“已修复”：
@@ -278,7 +281,7 @@ HTTP 200 不等于业务成功：必须同时记录 HTTP 状态和响应体 `cod
 - 关键字段：<字段和值，已脱敏>
 
 ## 状态动作
-<移待验证 / 退回进行中；原因>
+<更新需求方任务单为待验证 / 退回进行中；已有 QA 单仅同步，不新建>
 ```
 
 #### 5. GitLab 原生命令（禁止 `glab api`）
@@ -286,17 +289,15 @@ HTTP 200 不等于业务成功：必须同时记录 HTTP 状态和响应体 `cod
 ```bash
 REPO=gitlab.ops.modelgo.com/qa/ai-quality-platform
 
-# 创建 BUG：Open 泳道，只加 BUG 标签
-glab issue create -R "$REPO" \
-  -t "[生产][模块] 问题摘要" \
-  -l BUG \
-  -d "<按上方 SCQA 模板填写的 Markdown>"
+REQ_REPO=gitlab.ops.modelgo.com/shared/modelgo_prd
 
-# 回评与状态推进
-glab issue note <iid> -R "$REPO" -m "<按上方回归结论模板填写>"
-glab issue update <iid> -R "$REPO" -l 待验证 -u 进行中
-glab issue update <iid> -R "$REPO" -l 已完成 -u 待验证
-glab issue close <iid> -R "$REPO"
+# 回评需求方任务单（主记录）
+glab issue note <需求方任务单 IID> -R "$REQ_REPO" -m "<按上方回归结论模板填写>"
+
+# 只有已有 QA 单时才同步；禁止为了验证新建 QA 单
+glab issue note <已有 QA IID> -R "$REPO" -m "已在需求方任务单回写回归证据：<需求方任务单链接>"
+glab issue update <已有 QA IID> -R "$REPO" -l 已完成 -u 待验证
+glab issue close <已有 QA IID>
 ```
 
 ## 3. 冲突处理
@@ -420,7 +421,7 @@ cs secrets get secret://modelgo/accounts
 1. **先用 ego-lite 验本地端口**（默认 `http://localhost:5175`）：注入测试登录态或调用 `window.__mg_login`，按验收标准逐条执行并保留接口/DOM 证据。
 2. 本地通过后，合并到 `test`、触发测试环境部署，并核对 Jenkins checkout commit 与修复 commit 一致。
 3. **仍用 ego-lite 验测试站**：同一条验收路径必须在 `https://console.test.modelgo.com` 重跑；本地热更新通过不等于交付。
-4. 只有测试站通过才可把 GitLab QA 单移为「待验证」；评论必须包含 SCQA、接口数据和截图/可视化证据。
+4. 只有测试站通过才可把需求方任务单移为「待验证」；评论必须包含 SCQA、接口数据和截图/可视化证据。已有 QA 单只同步，不新建。
 5. 生产环境只在 `main` 发布后验证对应提交；未发布不得声称「测试和生产一致」。禁止把测试账号 cookie 注入生产。
 
 ### Agent 自动化测试
@@ -473,9 +474,9 @@ glab issue update <iid> -R gitlab.ops.modelgo.com/qa/ai-quality-platform -l 进�
 cs check test                        # 类型 + lint + 构建
 cs search <关键词>                    # 查项目文档和规则
 
-# 收工：只有目标环境回归证据齐全才可移待验证
-glab issue note <iid> -R gitlab.ops.modelgo.com/qa/ai-quality-platform -m "<回归结论 + 截图 + 接口证据>"
-glab issue update <iid> -R gitlab.ops.modelgo.com/qa/ai-quality-platform -l 待验证 -u 进行中
+# 收工：只有目标环境回归证据齐全才可把需求方任务单移为待验证
+glab issue note <需求方 IID> -R gitlab.ops.modelgo.com/shared/modelgo_prd -m "<回归结论 + 截图 + 接口证据>"
+glab issue update <需求方 IID> -R gitlab.ops.modelgo.com/shared/modelgo_prd -l 待验证 -u 进行中
 ```
 
 ## 8. 真源阅读指南

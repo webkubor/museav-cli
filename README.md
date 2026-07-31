@@ -342,7 +342,7 @@ pnpm build:prod
 
 | 真源 | 位置 | 用途 |
 | :--- | :--- | :--- |
-| PRD 原型源码 | 同级仓 `modelgo_prd/src/App.tsx`（本地直接读） | 功能/交互/字段文案/弹层形态 |
+| PRD 原型源码 | [`shared/modelgo_prd`](https://gitlab.ops.modelgo.com/shared/modelgo_prd) → `src/App.tsx`（clone 到本地后直接读源码，勿开浏览器扒） | 功能/交互/字段文案/弹层形态 |
 | 飞书 PRD | 《ModelGo PRD by Release》知识库（V1.0.x 累积基线，8 篇子 PRD） | 规格细节、验收标准（AC） |
 | 现状控制台 | 本仓代码 + `DESIGN.md` + `docs/ui-reference/` | 布局排版与视觉的唯一真源 |
 

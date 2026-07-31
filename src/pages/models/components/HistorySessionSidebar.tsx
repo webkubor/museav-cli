@@ -6,7 +6,7 @@
  */
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LuHistory, LuPanelLeftOpen, LuPlus, LuCircleOff } from 'react-icons/lu'
+import { LuHistory, LuPanelLeftOpen, LuPanelLeftClose, LuPlus, LuCircleOff } from 'react-icons/lu'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
 import { Badge, type BadgeVariant } from '@/components/ui/Badge'
@@ -133,24 +133,28 @@ export function HistorySessionSidebar({
   if (collapsed) {
     return (
       <div className="history-sidebar-rail" role="navigation" aria-label={t('modelsExperience.historySidebar.ariaCollapsed')}>
-        <button
-          type="button"
-          title={t('modelsExperience.historySidebar.railExpandLabel')}
-          aria-label={t('modelsExperience.historySidebar.railExpandLabel')}
-          className="history-sidebar-rail-btn"
-          onClick={() => onToggleCollapsed(false)}
-        >
-          <LuPanelLeftOpen size={18} />
-        </button>
-        <button
-          type="button"
-          title={t('modelsExperience.historySidebar.railNewLabel')}
-          aria-label={t('modelsExperience.historySidebar.railNewLabel')}
-          className="history-sidebar-rail-btn"
-          onClick={onNewSession}
-        >
-          <LuPlus size={18} />
-        </button>
+        {/* 两个图标贴合内容套一张 .mg-tile 小卡片，给一组按钮一个视觉边界
+            （shared/modelgo_prd#314：之前裸放在页面背景上，跟原型的分组卡片不一致） */}
+        <div className="mg-tile history-sidebar-rail-group">
+          <button
+            type="button"
+            title={t('modelsExperience.historySidebar.railExpandLabel')}
+            aria-label={t('modelsExperience.historySidebar.railExpandLabel')}
+            className="history-sidebar-rail-btn"
+            onClick={() => onToggleCollapsed(false)}
+          >
+            <LuPanelLeftOpen size={18} />
+          </button>
+          <button
+            type="button"
+            title={t('modelsExperience.historySidebar.railNewLabel')}
+            aria-label={t('modelsExperience.historySidebar.railNewLabel')}
+            className="history-sidebar-rail-btn"
+            onClick={onNewSession}
+          >
+            <LuPlus size={18} />
+          </button>
+        </div>
       </div>
     )
   }
@@ -161,6 +165,14 @@ export function HistorySessionSidebar({
       <div className="history-sidebar-backdrop" onClick={() => onToggleCollapsed(true)} aria-hidden="true" />
       <div className="history-sidebar-panel" role="navigation" aria-label={t('modelsExperience.historySidebar.ariaExpanded')}>
       <div className="history-sidebar-panel-header">
+        <span className="history-sidebar-panel-title">
+          <LuHistory size={14} className="text-mg-text-3" />
+          {t('modelsExperience.historySidebar.title')}
+        </span>
+        {/* 收起按钮：onClick/aria-label 本来就是收起语义，只是图标用了 LuHistory（跟标题
+            前缀图标重复，视觉上读不出"这是收起"），且排在标题左边——用户找右上角
+            找不到收起入口（shared/modelgo_prd#314）。换成跟收起态 LuPanelLeftOpen 对称的
+            LuPanelLeftClose，挪到右侧，header 改 space-between 顶开两端。 */}
         <button
           type="button"
           title={t('modelsExperience.historySidebar.collapseLabel')}
@@ -168,9 +180,8 @@ export function HistorySessionSidebar({
           className="history-sidebar-rail-btn"
           onClick={() => onToggleCollapsed(true)}
         >
-          <LuHistory size={16} />
+          <LuPanelLeftClose size={16} />
         </button>
-        <span className="history-sidebar-panel-title">{t('modelsExperience.historySidebar.title')}</span>
       </div>
 
       <Button variant="brand" size="sm" className="history-sidebar-new-btn" onClick={onNewSession}>

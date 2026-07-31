@@ -66,6 +66,8 @@ import {
   cleanErrorMessage,
   extractApiErrorMessage,
   experienceTaskLabel,
+  buildMediaArtifactTitle,
+  buildMediaArtifactDetail,
   resolveModelCategory,
   EXPERIENCE_CATEGORY_DEFAULT_TASK,
   modelCategoryTasks,
@@ -557,6 +559,10 @@ export default function ModelsComparePage() {
   async function sendMediaOne(idx: number, prompt: string, dispatchId: string, attachment?: DispatchAttachment) {
     const column = columns![idx]
     const modelLabel = prettyModelName(column.model.display_name, column.model.model_id, column.model.vendor ?? column.model.provider)
+    // 发送这一刻的任务/参数配置算标题明细（PRD §7.10 artifact.title/detail），响应回来前
+    // 用户可能已经改了这一列的设置，不能等结果回来时再读当前 chatParams
+    const chatParamsAtSend = column.chatParams
+    const artifactTitle = buildMediaArtifactTitle(prompt, undefined, compareTask)
     updateColumn(idx, {
       streaming: true,
       history: [
@@ -579,11 +585,16 @@ export default function ModelsComparePage() {
       if (message.status === 'running' && message.async_task_id) {
         isAsyncVideo = true
         applyAssistant(idx, () => `${t('modelsExperience.videoGenerating')}[${t('modelsExperience.videoGeneratingLink')}](/logs?task_id=${encodeURIComponent(message.async_task_id!)})…`)
-        void pollVideoColumn(idx, column.conversationId, message.id, modelLabel, dispatchId)
+        void pollVideoColumn(idx, column.conversationId, message.id, modelLabel, dispatchId, artifactTitle, compareTask, chatParamsAtSend)
         return
       }
 
-      const media = message.attachments.map((a) => ({ kind: a.kind, url: attachment_urls[a.resource_id] ?? '' }))
+      const media = message.attachments.map((a, i) => ({
+        kind: a.kind,
+        url: attachment_urls[a.resource_id] ?? '',
+        title: artifactTitle,
+        detail: buildMediaArtifactDetail(compareTask, chatParamsAtSend, i),
+      }))
       const spend = Number(message.actual_spend ?? 0)
       const totalMs = message.total_ms ?? Date.now() - startedAt
       setColumns((prev) =>
@@ -645,7 +656,16 @@ export default function ModelsComparePage() {
 
   /** 视频列异步轮询（§5.4）：running 继续轮询，succeeded/failed 为终态。每列各自独立的
    *  轮询循环，互不阻塞——多列视频任务同时进行时各自按自己的节奏完成。 */
-  async function pollVideoColumn(idx: number, conversationId: string, messageId: string, modelLabel: string, dispatchId: string) {
+  async function pollVideoColumn(
+    idx: number,
+    conversationId: string,
+    messageId: string,
+    modelLabel: string,
+    dispatchId: string,
+    artifactTitle: string,
+    task: ExperienceTaskType,
+    chatParamsAtSend: Record<string, unknown>,
+  ) {
     for (;;) {
       await new Promise((resolve) => window.setTimeout(resolve, 5000))
       try {
@@ -662,7 +682,12 @@ export default function ModelsComparePage() {
               next[next.length - 1] = { ...last, error: message.error ? cleanErrorMessage(message.error) : t('modelsExperience.videoGenerateFailed'), content: '' }
               return { ...c, history: next }
             }
-            const media = message.attachments.map((a) => ({ kind: a.kind, url: attachment_urls[a.resource_id] ?? '' }))
+            const media = message.attachments.map((a, mediaIdx) => ({
+              kind: a.kind,
+              url: attachment_urls[a.resource_id] ?? '',
+              title: artifactTitle,
+              detail: buildMediaArtifactDetail(task, chatParamsAtSend, mediaIdx),
+            }))
             next[next.length - 1] = {
               ...last,
               content: '',

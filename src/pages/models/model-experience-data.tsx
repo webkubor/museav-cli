@@ -27,6 +27,10 @@ export interface ExperienceMessageMetrics {
 export interface ExperienceMediaResult {
   kind: string
   url: string
+  /** 产物标题/规格明细（PRD 原型 PlaygroundArtifactCard 的 artifact.title/detail，逐字对齐）——
+   *  图片/视频结果卡才展示，音频卡已用 message.content 当标题（#308），不重复加一行。 */
+  title?: string
+  detail?: string
 }
 
 export interface ExperienceMessage {
@@ -61,6 +65,34 @@ export function formatPlaygroundSpend(metrics: Pick<ExperienceMessageMetrics, 's
  *  真实 Token 数以后端 `modelgo.stats` 帧的 input_tokens/output_tokens 为准 */
 export function estimateTokens(text: string): number {
   return Math.max(1, Math.round(text.length / 4))
+}
+
+/** 图片/视频产物标题 · 规格明细行（PRD §7.10 PlaygroundArtifactCard 逐字对齐：
+ *  title = 用户输入文本 || 附件文件名 || 任务默认标签；detail 按任务类型拼规格参数）。
+ *  chatParams 取的是发送这轮时 ModelSettingsModal 里的比例/分辨率/格式等配置，缺省值
+ *  与各任务参数表单的默认值保持一致（ImageParamsForm/VideoParamsForm）。 */
+export function buildMediaArtifactTitle(prompt: string, attachmentName: string | undefined, task: ExperienceTaskType): string {
+  return prompt.trim() || attachmentName || experienceTaskLabel(task)
+}
+
+export function buildMediaArtifactDetail(task: ExperienceTaskType, chatParams: Record<string, unknown>, outputIndex: number): string | undefined {
+  const str = (key: string, fallback: string) => {
+    const v = chatParams[key]
+    return typeof v === 'string' && v ? v : fallback
+  }
+  if (task === 'text_to_image' || task === 'image_to_image') {
+    const resolution = str('resolution', '1024')
+    const aspectRatio = str('aspect_ratio', '1:1')
+    const format = str('format', 'PNG')
+    return i18n.t('modelsExperience.artifactDetailImage', { resolution, aspectRatio, format, index: outputIndex + 1 })
+  }
+  if (task === 'text_to_video' || task === 'image_to_video') {
+    const resolution = str('resolution', '720p')
+    const duration = str('duration', '5')
+    const aspectRatio = str('aspect_ratio', '16:9')
+    return i18n.t('modelsExperience.artifactDetailVideo', { resolution, duration, aspectRatio, index: outputIndex + 1 })
+  }
+  return undefined
 }
 
 /**

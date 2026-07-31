@@ -54,6 +54,8 @@ import {
   playgroundSamplePrompts,
   cleanErrorMessage,
   extractApiErrorMessage,
+  buildMediaArtifactTitle,
+  buildMediaArtifactDetail,
   categoryEmptyCopy,
   categoryPlaceholder,
   ATTACHMENT_LIMITS,
@@ -758,6 +760,11 @@ export default function ModelsPage() {
     if (!selectedModel) return
     const modelLabel = prettyModelName(selectedModel.display_name, selectedModel.model_id, selectedModel.vendor ?? selectedModel.provider)
     const currentAttachment = attachment
+    // 用发送这一刻的任务/参数配置算标题明细（PRD §7.10 artifact.title/detail）——响应回来前
+    // 用户可能已经切了任务/改了设置，不能等异步结果回来时再读当前 state，会算错这轮的规格。
+    const taskAtSend = effectiveTask
+    const chatParamsAtSend = chatParams
+    const artifactTitle = buildMediaArtifactTitle(prompt, currentAttachment?.file.name, taskAtSend)
     const attachedKind = currentAttachment ? attachmentKindFromMime(currentAttachment.uploaded.mime) : null
     const userMedia = retry ? retry.media : currentAttachment ? [{ kind: attachedKind ?? 'image', url: currentAttachment.previewUrl }] : undefined
     const resourceIds = retry ? retry.resourceIds : currentAttachment ? [currentAttachment.uploaded.resource_id] : []
@@ -794,11 +801,16 @@ export default function ModelsPage() {
         // 视频异步任务：建议间隔 5 秒轮询，succeeded/failed 才是终态；run_result 留给轮询终态上报，这里不重复
         // 跳转链接携带 task_id，命中 /logs 页 AsyncTasksPanel 的 gateway_request_id 精确匹配自动展开详情（同 qa#14 逻辑）
         applyResult({ content: `${t('modelsExperience.videoGenerating')}[${t('modelsExperience.videoGeneratingLink')}](/logs?task_id=${encodeURIComponent(message.async_task_id)})…` })
-        void pollVideoMessage(convId, message.id, modelLabel, selectedModel.model_id)
+        void pollVideoMessage(convId, message.id, modelLabel, selectedModel.model_id, artifactTitle, taskAtSend, chatParamsAtSend)
         return
       }
 
-      const media = message.attachments.map((a) => ({ kind: a.kind, url: attachment_urls[a.resource_id] ?? '' }))
+      const media = message.attachments.map((a, i) => ({
+        kind: a.kind,
+        url: attachment_urls[a.resource_id] ?? '',
+        title: artifactTitle,
+        detail: buildMediaArtifactDetail(taskAtSend, chatParamsAtSend, i),
+      }))
       const spend = Number(message.actual_spend ?? 0)
       const totalMs = message.total_ms ?? Date.now() - startedAt
       applyResult({
@@ -849,7 +861,15 @@ export default function ModelsPage() {
   }
 
   /** 视频异步任务轮询（§5.4）：running 继续轮询，succeeded/failed 为终态 */
-  async function pollVideoMessage(conversationId: string, messageId: string, modelLabel: string, modelId: string) {
+  async function pollVideoMessage(
+    conversationId: string,
+    messageId: string,
+    modelLabel: string,
+    modelId: string,
+    artifactTitle: string,
+    task: ExperienceTaskType,
+    chatParamsAtSend: Record<string, unknown>,
+  ) {
     for (;;) {
       await new Promise((resolve) => window.setTimeout(resolve, 5000))
       try {
@@ -862,7 +882,12 @@ export default function ModelsPage() {
           if (message.status === 'failed') {
             return [...next.slice(0, -1), { ...last, error: message.error ? cleanErrorMessage(message.error) : t('modelsExperience.videoGenerateFailed'), content: '' }]
           }
-          const media = message.attachments.map((a) => ({ kind: a.kind, url: attachment_urls[a.resource_id] ?? '' }))
+          const media = message.attachments.map((a, i) => ({
+            kind: a.kind,
+            url: attachment_urls[a.resource_id] ?? '',
+            title: artifactTitle,
+            detail: buildMediaArtifactDetail(task, chatParamsAtSend, i),
+          }))
           return [
             ...next.slice(0, -1),
             {

@@ -2098,6 +2098,7 @@
     "attachmentTooLarge": "文件超出大小限制（{{limit}}）",
     "attachmentSupports": "支持：",
     "attachmentPreview": "附件预览",
+    "attachmentLoadFailed": "附件预览暂时无法加载",
     "generatedResult": "生成结果",
     "removeAttachment": "移除附件",
     "addAttachment": "添加附件",

@@ -2086,6 +2086,7 @@
     "attachmentTooLarge": "File exceeds the size limit ({{limit}})",
     "attachmentSupports": "Supports: ",
     "attachmentPreview": "Attachment preview",
+    "attachmentLoadFailed": "Attachment preview is temporarily unavailable",
     "generatedResult": "Generated result",
     "removeAttachment": "Remove attachment",
     "addAttachment": "Add attachment",

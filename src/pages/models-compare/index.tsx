@@ -89,6 +89,7 @@ import { ApiQuickCallModal } from '../models/components/ApiQuickCallModal'
 import { ExperienceMessageList } from '../models/components/ExperienceMessageList'
 import { HistorySessionSidebar, type HistorySessionItem } from '../models/components/HistorySessionSidebar'
 import { TaskFileDropZone } from '../models/components/TaskFileDropZone'
+import { resolveExperienceMessageMedia } from '../models/experience-message-attachments'
 import '../models/styles/model-experience-layout.css'
 import '../models/styles/model-chat.css'
 import '../models/styles/model-composer.css'
@@ -178,6 +179,7 @@ export default function ModelsComparePage() {
   const [attachmentUploading, setAttachmentUploading] = useState(false)
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const transientPreviewUrlsRef = useRef(new Set<string>())
 
   // 独立输入模式每列各自的附件（PRD §AC-07「每列有独立输入区和当前模型可用的附件入口」）。
   // 按 conversationId 而非数组下标存——加/删列时下标会重排，conversationId 在列的生命周期内稳定。
@@ -198,19 +200,15 @@ export default function ModelsComparePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // 建会话：只在首次拿到 selectedIds + 目录加载完成时建一次
+  // 建会话：入口带模型时创建新会话；刷新/直达时默认恢复最新历史会话。
   useEffect(() => {
     if (bootedRef.current) return
     const navState = location.state as { selectedIds?: string[]; compareTask?: ExperienceTaskType } | null
     const ids = navState?.selectedIds
-    // 刷新本页/直接输入 URL 时 location.state 会丢（本来就没有历史恢复，见文件头注释）——
-    // 这种情况不会等到 ids，之前会让"正在准备对比会话…"占位无限期挂着，改成直接报错退出；
-    // 但用户可能是在一个真实会话里刷新的（不是真的没模型），报错态也把历史侧栏带出来
-    // 展开显示，能从里面点回刚才的会话，不是只有"返回重新选模型"一条死路。
     if (!ids || ids.length < 2) {
+      if (!modelsQuery.isSuccess) return
       bootedRef.current = true
-      setBootError(t('modelsExperience.compare.modelsNotFound'))
-      setHistoryCollapsed(false)
+      void restoreFirstHistorySession()
       return
     }
     if (allModels.length === 0) return
@@ -224,9 +222,12 @@ export default function ModelsComparePage() {
     void bootSession(resolved, navState?.compareTask)
     navigate(location.pathname, { replace: true, state: {} })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allModels])
+  }, [allModels, modelsQuery.isSuccess])
 
-  useEffect(() => () => abortRefs.current.forEach((c) => c?.abort()), [])
+  useEffect(() => () => {
+    abortRefs.current.forEach((controller) => controller?.abort())
+    transientPreviewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url))
+  }, [])
 
   // 会话按租户隔离，切换租户后各列绑的旧 conversationId 在新租户下已不存在，继续发消息
   // 会被后端 404「资源不存在」拒绝（同 shared/modelgo_prd#296，单模型页那份修法搬过来）。
@@ -256,8 +257,7 @@ export default function ModelsComparePage() {
   async function refreshHistorySessions() {
     try {
       const { items } = await listExperienceSessions({ limit: 20, offset: 0 })
-      setHistorySessions(
-        items.map((session) => ({
+      const sessions = items.map((session) => ({
           id: session.id,
           name: session.name,
           updatedAt: session.updated_at,
@@ -280,14 +280,28 @@ export default function ModelsComparePage() {
                   return {
                     id: conv.model_id,
                     name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id, catalogModel.vendor ?? catalogModel.provider) : conv.model_id,
-                    offline: !catalogModel,
-                  }
-                }),
-        })),
-      )
+                  offline: !catalogModel,
+                }
+              }),
+        }))
+      setHistorySessions(sessions)
+      return sessions
     } catch {
       // 历史列表拉取失败不阻塞主流程，侧栏保持空态
+      return []
     }
+  }
+
+  /** 刷新或直达对比页时优先恢复列表第一条（接口按更新时间倒序），无记录才展示入口错误态。 */
+  async function restoreFirstHistorySession() {
+    const sessions = await refreshHistorySessions()
+    const firstSession = sessions[0]
+    if (firstSession && await openHistorySession(firstSession.id)) {
+      setHistoryCollapsed(false)
+      return
+    }
+    setBootError(t('modelsExperience.compare.modelsNotFound'))
+    setHistoryCollapsed(false)
   }
 
   /** 双击重命名（HistorySessionSidebar）：乐观更新 + 失败回滚，name 传空串会清空标题交回自动命名 */
@@ -307,8 +321,8 @@ export default function ModelsComparePage() {
    * 按它分组即可还原成每列各自的 history，不需要逐 conversation 再分别调接口。
    * conversations 组合要拿真实模型 id，走 GET 详情接口（列表响应不带 conversations）。
    */
-  async function openHistorySession(id: string) {
-    if (!id) return
+  async function openHistorySession(id: string): Promise<boolean> {
+    if (!id) return false
     try {
       const [detail, { items: msgItems }] = await Promise.all([
         getExperienceSession(id),
@@ -322,16 +336,25 @@ export default function ModelsComparePage() {
         list.push(msg)
         byConv.set(msg.conversation_id, list)
       }
-      const nextColumns: ColumnState[] = convs.map((conv) => {
+      const nextColumns: ColumnState[] = await Promise.all(convs.map(async (conv) => {
         const model = allModels.find((m) => m.model_id === conv.model_id) ?? offlineModelPlaceholder(conv.model_id)
         const convMessages = (byConv.get(conv.id) ?? []).slice().sort((a, b) => a.seq - b.seq)
-        const history: ExperienceMessage[] = convMessages.map((msg) => ({
-          role: msg.role,
-          content: msg.content,
-          error: msg.status === 'failed' ? cleanErrorMessage(msg.error) : undefined,
+        const history: ExperienceMessage[] = await Promise.all(convMessages.map(async (msg) => {
+          const { media, hasFailures } = await resolveExperienceMessageMedia(msg.attachments)
+          return {
+            role: msg.role,
+            content: msg.content,
+            dispatchId: msg.dispatch_id,
+            error: msg.status === 'failed' ? cleanErrorMessage(msg.error) : undefined,
+            media: media.length > 0 ? media : undefined,
+            attachmentResourceIds: msg.role === 'user' && msg.attachments.length > 0
+              ? msg.attachments.map((attachment) => attachment.resource_id)
+              : undefined,
+            attachmentLoadFailed: msg.attachments.length > 0 && hasFailures,
+          }
         }))
         return { model, conversationId: conv.id, history, streaming: false, draft: '', chatParams: {} }
-      })
+      }))
       bootedRef.current = true
       abortRefs.current = nextColumns.map(() => null)
       setActiveColumnIndex(0)
@@ -345,9 +368,11 @@ export default function ModelsComparePage() {
       setBootError(null)
       setHistoryActionError(null)
       trackEvent('playground_history_action', { action: 'restore' }, { result: 'success' })
+      return true
     } catch (err) {
       trackEvent('playground_history_action', { action: 'restore' }, { result: 'fail' })
       setHistoryActionError(`${t('modelsExperience.historyLoadFailed')}${(err as Error).message || t('modelsExperience.retryLater')}`)
+      return false
     }
   }
 
@@ -437,7 +462,10 @@ export default function ModelsComparePage() {
     const column = columns![idx]
     updateColumn(idx, {
       streaming: true,
-      history: [...column.history, { role: 'user', content: prompt, dispatchId, media: attachment?.media }, { role: 'assistant', content: '', dispatchId }],
+      history: [...column.history, {
+        role: 'user', content: prompt, dispatchId, media: attachment?.media,
+        attachmentResourceIds: attachment?.resourceIds,
+      }, { role: 'assistant', content: '', dispatchId }],
     })
     abortRefs.current[idx]?.abort()
     const controller = new AbortController()
@@ -724,7 +752,7 @@ export default function ModelsComparePage() {
       attachment_recipient_count: supportingCount,
     })
     setSharedDraft('')
-    clearAttachment()
+    clearAttachment(false)
     onlineIndexes.forEach((idx) => {
       const c = columns[idx]
       const supports = currentAttachment && attachedKind ? modelSupportsAttachment(c.model, attachedKind) : false
@@ -736,6 +764,7 @@ export default function ModelsComparePage() {
         : undefined
       void sendOne(idx, prompt, dispatchId, dispatchAttachment)
     })
+    if (currentAttachment) replaceColumnMessageAttachmentPreview(dispatchId, currentAttachment)
   }
 
   function handleIndependentSend(idx: number) {
@@ -765,8 +794,9 @@ export default function ModelsComparePage() {
     const dispatchAttachment: DispatchAttachment | undefined = colAttachment
       ? { resourceIds: [colAttachment.uploaded.resource_id], media: [{ kind: attachedKind ?? 'image', url: colAttachment.previewUrl }] }
       : undefined
-    clearColumnAttachment(conversationId)
+    clearColumnAttachment(conversationId, false)
     void sendOne(idx, prompt, dispatchId, dispatchAttachment)
+    if (colAttachment) replaceColumnMessageAttachmentPreview(dispatchId, colAttachment)
   }
 
   /** 媒体结果失败重试（PRD §AC-13）：原样复用失败那条用户消息的文本与附件 resource_id */
@@ -1017,13 +1047,36 @@ export default function ModelsComparePage() {
    *  通用回形针路径，改用 needs-file 时的 TaskFileDropZone（taskAttachmentKind(compareTask)） */
   const allowedAttachmentKinds: Array<keyof typeof ATTACHMENT_LIMITS> = ['image', 'video']
 
-  function clearAttachment() {
+  function clearAttachment(revokePreview = true) {
     setAttachment((prev) => {
-      if (prev) URL.revokeObjectURL(prev.previewUrl)
+      if (prev && revokePreview) URL.revokeObjectURL(prev.previewUrl)
       return null
     })
     setAttachmentError(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  /** 将发送中仍在使用的本地预览换成 resource_id 对应的短期 URL，再释放 blob URL。 */
+  function replaceColumnMessageAttachmentPreview(
+    dispatchId: string,
+    currentAttachment: { previewUrl: string; uploaded: ExperienceAttachment },
+  ) {
+    transientPreviewUrlsRef.current.add(currentAttachment.previewUrl)
+    void resolveExperienceMessageMedia([currentAttachment.uploaded]).then(({ media }) => {
+      if (media.length === 0) return
+      URL.revokeObjectURL(currentAttachment.previewUrl)
+      transientPreviewUrlsRef.current.delete(currentAttachment.previewUrl)
+      setColumns((prev) => prev?.map((column) => ({
+        ...column,
+        history: column.history.map((message) => (
+          message.role === 'user' &&
+          message.dispatchId === dispatchId &&
+          message.attachmentResourceIds?.includes(currentAttachment.uploaded.resource_id)
+            ? { ...message, media }
+            : message
+        )),
+      })) ?? prev)
+    })
   }
 
   /** 共享附件上传（qa#545，§7.4/7.5）：只做类型/大小校验和上传，不因"部分模型不支持"而拦截
@@ -1070,11 +1123,11 @@ export default function ModelsComparePage() {
     }
   }
 
-  function clearColumnAttachment(conversationId: string) {
+  function clearColumnAttachment(conversationId: string, revokePreview = true) {
     setColumnAttachments((prev) => {
       const existing = prev[conversationId]
       if (!existing) return prev
-      URL.revokeObjectURL(existing.previewUrl)
+      if (revokePreview) URL.revokeObjectURL(existing.previewUrl)
       const next = { ...prev }
       delete next[conversationId]
       return next
@@ -1472,7 +1525,7 @@ export default function ModelsComparePage() {
               ) : (
                 <span className="models-experience-attachment-name">{attachment.file.name}</span>
               )}
-              <button type="button" aria-label={t('modelsExperience.removeAttachment')} onClick={clearAttachment}>
+              <button type="button" aria-label={t('modelsExperience.removeAttachment')} onClick={() => clearAttachment()}>
                 <LuX size={12} />
               </button>
             </div>

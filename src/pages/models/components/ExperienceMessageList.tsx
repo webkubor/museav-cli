@@ -2,7 +2,7 @@
  * 消息列表渲染（单模型页 / 对比页每列共用），从 index.tsx 抽出避免重复。
  * 逐字对齐原型 App.tsx:20470-20510 的 playground-message 结构。
  */
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MarkdownContent } from '@/components/ui/MarkdownContent'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -49,6 +49,48 @@ function MessageCopyButton({ content }: { content: string }) {
   )
 }
 
+/** 媒体产物下载（#310）。
+ *
+ *  原来是 `<a href={url} download>`，但**跨域时浏览器会忽略 download 属性**：产物存在
+ *  OSS/CDN 上，与控制台不同源，点击就变成整页导航过去（表现即「整个网页跳到一个新链接」）。
+ *  改成先 fetch 成 blob、再用 object URL 触发下载，同源与跨域都能真正下载。
+ *  取不到（网络失败/CORS 不允许）时退回原来的新标签打开，至少不把当前页顶掉。 */
+function MediaDownloadLink({ url, label }: { url: string; label: string }) {
+  const [busy, setBusy] = useState(false)
+  const filename = (() => {
+    try { return decodeURIComponent(new URL(url, window.location.href).pathname.split('/').pop() || 'download') }
+    catch { return 'download' }
+  })()
+  return (
+    <a
+      href={url}
+      className="models-experience-media-download"
+      aria-busy={busy || undefined}
+      onClick={(e) => {
+        e.preventDefault()
+        if (busy) return
+        setBusy(true)
+        void fetch(url)
+          .then((r) => (r.ok ? r.blob() : Promise.reject(new Error(String(r.status)))))
+          .then((blob) => {
+            const objectUrl = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = objectUrl
+            a.download = filename
+            document.body.appendChild(a)
+            a.click()
+            a.remove()
+            URL.revokeObjectURL(objectUrl)
+          })
+          .catch(() => { window.open(url, '_blank', 'noopener,noreferrer') })
+          .finally(() => setBusy(false))
+      }}
+    >
+      {label}
+    </a>
+  )
+}
+
 export interface ExperienceMessageListProps {
   messages: ExperienceMessage[]
   isStreaming: boolean
@@ -69,8 +111,30 @@ export interface ExperienceMessageListProps {
 
 export function ExperienceMessageList({ messages, isStreaming, showModelNameInMeta = true, isMediaTask = false, onRetry, emptyState, assistantModel, isAsyncMediaTask = false }: ExperienceMessageListProps) {
   const { t } = useTranslation()
+
+  /** 新消息/流式增量到来时自动滚到底（#311）。此前两个页面都没有任何滚动逻辑，
+   *  对比页多列各自独立滚动，聊到一屏以外就得手动往下拖才看得到最新内容。
+   *
+   *  只在"用户本来就贴着底部"时才滚——用户主动往上翻历史时不抢滚动位置，
+   *  否则流式回复每来一个 chunk 就把人拽回底部，历史根本没法看。 */
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const stickToBottomRef = useRef(true)
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el || !stickToBottomRef.current) return
+    el.scrollTop = el.scrollHeight
+  })
+
   return (
-    <div className="models-experience-messages">
+    <div
+      className="models-experience-messages"
+      ref={scrollRef}
+      onScroll={(e) => {
+        const el = e.currentTarget
+        // 容差 40px：贴底判定别太严，否则流式渲染时的亚像素抖动会误判成"用户翻上去了"
+        stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40
+      }}
+    >
       {messages.length === 0 && emptyState}
       {messages.map((message, index) => {
         const isThinking =
@@ -154,6 +218,11 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
                       )}
                     </div>
                   )}
+                  {message.attachmentLoadFailed && (
+                    <span className="models-experience-message-error" role="alert">
+                      {t('modelsExperience.attachmentLoadFailed')}
+                    </span>
+                  )}
                   {message.role === 'assistant' && !message.media ? (
                     <MarkdownContent components={{ a: MessageLink }}>{message.content}</MarkdownContent>
                   ) : message.content ? (
@@ -168,7 +237,7 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
                   <span>{t('modelsExperience.totalLatency')} {message.metrics.totalLatency}</span>
                   <span>{formatPlaygroundSpend(message.metrics)}</span>
                   {message.media[0] && (
-                    <a href={message.media[0].url} download className="models-experience-media-download">{t('modelsExperience.downloadResult')}</a>
+                    <MediaDownloadLink url={message.media[0].url} label={t('modelsExperience.downloadResult')} />
                   )}
                 </div>
               ) : message.metrics ? (

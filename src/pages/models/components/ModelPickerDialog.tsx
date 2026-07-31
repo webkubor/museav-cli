@@ -611,15 +611,18 @@ export function ModelPickerDialog({
                 })()}
 
                 <div className="grid grid-cols-2 gap-3 pt-3 border-t border-mg-border">
-                  <div>
+                  <div className="min-w-0">
                     <div className="text-xs text-mg-text-3 font-semibold">{t('modelsExperience.picker.contextWindow')}</div>
-                    <div className="text-sm font-semibold text-mg-text-1 mt-0.5">
+                    {/* 详情栏窄屏收窄到 200px 后这两格每格不到 90px，价格文案（如"¥10/1M tokens"）
+                        中间有空格，浏览器默认换行会把单位拆到第二行，难看——加 nowrap+ellipsis，
+                        宁可省略号收尾也不断行（2026-07-30 实测截图发现）。 */}
+                    <div className="text-sm font-semibold text-mg-text-1 mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
                       {formatContextLength(detailModel.context_length)}
                     </div>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <div className="text-xs text-mg-text-3 font-semibold">{t('modelsExperience.picker.price')}</div>
-                    <div className="text-sm font-semibold text-mg-text-1 mt-0.5">{priceLabel(detailModel)}</div>
+                    <div className="text-sm font-semibold text-mg-text-1 mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">{priceLabel(detailModel)}</div>
                   </div>
                   <div className="col-span-2">
                     <div className="text-xs text-mg-text-3 font-semibold">{t('modelsExperience.picker.compatibleProtocols')}</div>

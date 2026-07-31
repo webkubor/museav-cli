@@ -2,7 +2,7 @@
  * 消息列表渲染（单模型页 / 对比页每列共用），从 index.tsx 抽出避免重复。
  * 逐字对齐原型 App.tsx:20470-20510 的 playground-message 结构。
  */
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MarkdownContent } from '@/components/ui/MarkdownContent'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -66,8 +66,30 @@ export interface ExperienceMessageListProps {
 
 export function ExperienceMessageList({ messages, isStreaming, showModelNameInMeta = true, isMediaTask = false, onRetry, emptyState, assistantModel }: ExperienceMessageListProps) {
   const { t } = useTranslation()
+
+  /** 新消息/流式增量到来时自动滚到底（#311）。此前两个页面都没有任何滚动逻辑，
+   *  对比页多列各自独立滚动，聊到一屏以外就得手动往下拖才看得到最新内容。
+   *
+   *  只在"用户本来就贴着底部"时才滚——用户主动往上翻历史时不抢滚动位置，
+   *  否则流式回复每来一个 chunk 就把人拽回底部，历史根本没法看。 */
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const stickToBottomRef = useRef(true)
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el || !stickToBottomRef.current) return
+    el.scrollTop = el.scrollHeight
+  })
+
   return (
-    <div className="models-experience-messages">
+    <div
+      className="models-experience-messages"
+      ref={scrollRef}
+      onScroll={(e) => {
+        const el = e.currentTarget
+        // 容差 40px：贴底判定别太严，否则流式渲染时的亚像素抖动会误判成"用户翻上去了"
+        stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40
+      }}
+    >
       {messages.length === 0 && emptyState}
       {messages.map((message, index) => {
         const isThinking =

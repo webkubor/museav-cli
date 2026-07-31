@@ -49,6 +49,48 @@ function MessageCopyButton({ content }: { content: string }) {
   )
 }
 
+/** 媒体产物下载（#310）。
+ *
+ *  原来是 `<a href={url} download>`，但**跨域时浏览器会忽略 download 属性**：产物存在
+ *  OSS/CDN 上，与控制台不同源，点击就变成整页导航过去（表现即「整个网页跳到一个新链接」）。
+ *  改成先 fetch 成 blob、再用 object URL 触发下载，同源与跨域都能真正下载。
+ *  取不到（网络失败/CORS 不允许）时退回原来的新标签打开，至少不把当前页顶掉。 */
+function MediaDownloadLink({ url, label }: { url: string; label: string }) {
+  const [busy, setBusy] = useState(false)
+  const filename = (() => {
+    try { return decodeURIComponent(new URL(url, window.location.href).pathname.split('/').pop() || 'download') }
+    catch { return 'download' }
+  })()
+  return (
+    <a
+      href={url}
+      className="models-experience-media-download"
+      aria-busy={busy || undefined}
+      onClick={(e) => {
+        e.preventDefault()
+        if (busy) return
+        setBusy(true)
+        void fetch(url)
+          .then((r) => (r.ok ? r.blob() : Promise.reject(new Error(String(r.status)))))
+          .then((blob) => {
+            const objectUrl = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = objectUrl
+            a.download = filename
+            document.body.appendChild(a)
+            a.click()
+            a.remove()
+            URL.revokeObjectURL(objectUrl)
+          })
+          .catch(() => { window.open(url, '_blank', 'noopener,noreferrer') })
+          .finally(() => setBusy(false))
+      }}
+    >
+      {label}
+    </a>
+  )
+}
+
 export interface ExperienceMessageListProps {
   messages: ExperienceMessage[]
   isStreaming: boolean
@@ -164,7 +206,7 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
                   <span>{t('modelsExperience.totalLatency')} {message.metrics.totalLatency}</span>
                   <span>{formatPlaygroundSpend(message.metrics)}</span>
                   {message.media[0] && (
-                    <a href={message.media[0].url} download className="models-experience-media-download">{t('modelsExperience.downloadResult')}</a>
+                    <MediaDownloadLink url={message.media[0].url} label={t('modelsExperience.downloadResult')} />
                   )}
                 </div>
               ) : message.metrics ? (

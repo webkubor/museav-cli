@@ -1,7 +1,7 @@
 {
   "name": "modelgo-console-web",
   "private": true,
-  "version": "1.0.3",
+  "version": "1.0.4",
   "type": "module",
   "scripts": {
     "prepare": "sh scripts/install-hooks.sh",

@@ -57,11 +57,11 @@ export default defineConfig(({ mode }) => {
     agentDebugger(),
     // 提交前门禁（dev 启动时幂等安装 pre-commit 钩子）
     agentGit({
-      // 提交前门禁：cs check test --quick（类型+规范快检，全量构建挪 pre-push/CI，
-      // 与 cs flow frontend ⑤ 门禁口径一致——此前不带 --quick 每次 commit 都全量构建，
-      // 单次提交要 2 分钟+）+ UI 门禁（DESIGN.md 约定，见 scripts/ui-guard.sh）。
-      // 任一非零退出即阻断。force 接管既有手写 pre-commit —— cs check 已并入下面 precommit，不丢。
-      precommit: ['cs check test --quick', 'bash scripts/ui-guard.sh'],
+      // 提交前门禁：类型+规范快检（全量构建挪 pre-push/CI）+ UI 门禁（DESIGN.md
+      // 约定，见 scripts/ui-guard.sh）。任一非零退出即阻断。
+      // ⚠️ 不直接写 cs 命令——cs 是个人工具链，团队成员没有会导致谁都无法提交；
+      // pre-commit-check.sh 内部做「有 cs 用 cs、无则降级 tsc+eslint」的等效检查。
+      precommit: ['sh scripts/pre-commit-check.sh', 'bash scripts/ui-guard.sh'],
       force: true,
     }),
     devRequirementsPlugin(),

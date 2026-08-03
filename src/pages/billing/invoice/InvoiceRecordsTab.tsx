@@ -2,7 +2,8 @@
  * 发票记录页（FR-B1）
  * 状态筛选 + 发票号/抬头搜索 + 列表（下载）+ 加载更多。客户端无红冲/开票执行入口（D-INV15）。
  */
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import { LuDownload, LuCircleAlert } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -40,43 +41,38 @@ export function InvoiceRecordsTab({
   const canDownload = hasPermission(PERMS.BILLING_INVOICE_DOWNLOAD)
   const [status, setStatus] = useState('all')
   const [keyword, setKeyword] = useState('')
-  const [records, setRecords] = useState<InvoiceRecord[]>([])
-  const [hasMore, setHasMore] = useState(false)
-  const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    let alive = true
-    // 筛选条件变化触发重新拉取（外部数据同步），loading 起点需与请求同步置位
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLoading(true)
-    listInvoiceRecords(tenantId, { status: status === 'all' ? undefined : status, keyword: keyword || undefined })
-      .then((res) => {
-        if (!alive) return
-        setRecords(res.items)
-        setHasMore(res.has_more)
-      })
-      .catch(() => {
-        if (alive) {
-          setRecords([])
-          setHasMore(false)
-        }
-      })
-      .finally(() => alive && setLoading(false))
-    return () => {
-      alive = false
-    }
-  }, [tenantId, status, keyword])
+  // 走 react-query（key 前缀 'invoice'）而非自管 useState+useEffect：申请开票成功后
+  // ApplyInvoiceTab 的 invalidateQueries({ queryKey: ['invoice'] }) 才能按前缀命中这里，
+  // 列表自动刷新。此前这里是缓存外的孤岛，那次失效打不到，新发票要手动刷浏览器才出现
+  // （需求方 shared#327）。
+  const {
+    data,
+    isLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['invoice', 'records', tenantId, status, keyword],
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) =>
+      listInvoiceRecords(tenantId, {
+        status: status === 'all' ? undefined : status,
+        keyword: keyword || undefined,
+        cursor: pageParam,
+      }),
+    // 游标沿用原有约定：首页不带 cursor，后续页固定传 'next'（后端响应目前只回
+    // items/has_more/total，不回真实游标）
+    getNextPageParam: (lastPage) => (lastPage.has_more ? 'next' : undefined),
+    enabled: Boolean(tenantId),
+  })
+
+  const records: InvoiceRecord[] = data?.pages.flatMap((p) => p.items) ?? []
 
   const loadMore = () => {
-    listInvoiceRecords(tenantId, { status: status === 'all' ? undefined : status, keyword: keyword || undefined, cursor: 'next' })
-      .then((res) => {
-        setRecords((prev) => [...prev, ...res.items])
-        setHasMore(res.has_more)
-      })
-      .catch(() => {
-        appToast.error('加载更多失败，请重试')
-        setHasMore(false)
-      })
+    void fetchNextPage().then((res) => {
+      if (res.isError) appToast.error('加载更多失败，请重试')
+    })
   }
 
   const download = async (invoiceNo: string, invoiceStatus: InvoiceRecord['status']) => {
@@ -112,7 +108,7 @@ export function InvoiceRecordsTab({
       </div>
 
       {/* 列表 */}
-      {loading && records.length === 0 ? (
+      {isLoading && records.length === 0 ? (
         <EmptyState title="加载中…" />
       ) : records.length === 0 ? (
         <EmptyState
@@ -173,11 +169,12 @@ export function InvoiceRecordsTab({
         })
       )}
 
-      {hasMore && (
+      {hasNextPage && (
         <button
           type="button"
           onClick={loadMore}
-          className="w-full rounded-md border border-mg-border py-2.5 text-sm font-semibold text-mg-text-2 transition-colors hover:bg-mg-fill-0"
+          disabled={isFetchingNextPage}
+          className="w-full rounded-md border border-mg-border py-2.5 text-sm font-semibold text-mg-text-2 transition-colors hover:bg-mg-fill-0 disabled:opacity-60"
         >
           加载更多
         </button>

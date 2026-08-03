@@ -55,8 +55,10 @@ export function BillingInvoiceTab({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId])
 
+  // 开票成功后按 'invoice' 前缀整体失效：可开票充值单 + 开票记录列表 + 抬头一起刷新。
+  // 之前只失效了 recharges，名字叫 refreshRecords 却刷不到记录列表（需求方 shared#327）。
   const refreshRecords = () => {
-    qc.invalidateQueries({ queryKey: ['invoice', 'recharges', tenantId] })
+    qc.invalidateQueries({ queryKey: ['invoice'] })
   }
 
   return (

@@ -29,7 +29,11 @@ const Card = React.forwardRef<
       ),
       glass && "glass-card-glow",
       glass && hoverable && "glass-card-glow-interactive",
-      className
+      className,
+      // 选中/运行态统一设计语言（qa#468）：业务层把选中语义交给 aria-pressed（无障碍
+      // 本来就需要），组件层据此挂克制版流光边框（.mg-running-border，effects.css），
+      // 表达「该资源正在运行」的活感。放在 className 之后，保证不被业务侧静态边框类盖掉。
+      props["aria-pressed"] === true && "mg-running-border"
     )}
     {...props}
   />

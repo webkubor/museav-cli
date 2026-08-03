@@ -1400,6 +1400,7 @@
       "tags": "Tags"
     },
     "currentModel": "Current Model",
+    "selectedModels": "Selected models",
     "candidates": "Candidates",
     "empty": {
       "hint": "Select models from the left to start comparing",

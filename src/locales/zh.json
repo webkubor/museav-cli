@@ -1399,6 +1399,7 @@
       "tags": "标签"
     },
     "currentModel": "当前模型",
+    "selectedModels": "已选模型",
     "candidates": "可选候选",
     "empty": {
       "hint": "在左侧选择模型后开始对比",

@@ -87,6 +87,7 @@ import {
   type ExperienceTaskType,
 } from '../models/model-experience-data'
 import { ModelPickerDialog } from '../models/components/ModelPickerDialog'
+import { ModelsCompareModal } from '../models/components/ModelsCompareModal'
 import { ModelSettingsModal } from '../models/components/ModelSettingsModal'
 import { ApiQuickCallModal } from '../models/components/ApiQuickCallModal'
 import { ExperienceMessageList } from '../models/components/ExperienceMessageList'
@@ -168,7 +169,6 @@ export default function ModelsComparePage() {
   const [switchPickerIndex, setSwitchPickerIndex] = useState<number | null>(null)
   const [switchPickerAnchor, setSwitchPickerAnchor] = useState<HTMLElement | null>(null)
   const [addPickerOpen, setAddPickerOpen] = useState(false)
-  const [addPickerAnchor, setAddPickerAnchor] = useState<HTMLElement | null>(null)
   const [syncConfirm, setSyncConfirm] = useState<{ sourceIndex: number; sourceText: string; sourceAttachmentName: string | null } | null>(null)
   const [settingsIndex, setSettingsIndex] = useState<number | null>(null)
   const [apiIndex, setApiIndex] = useState<number | null>(null)
@@ -1289,9 +1289,8 @@ export default function ModelsComparePage() {
             variant="outline"
             size="sm"
             disabled={columns.length >= MAX_COMPARE}
-            onClick={(e) => {
+            onClick={() => {
               trackEvent('playground_model_picker_open', { picker_type: 'compareAdd', browse_category: compareCategory })
-              setAddPickerAnchor(e.currentTarget)
               setAddPickerOpen(true)
             }}
           >
@@ -1686,17 +1685,18 @@ export default function ModelsComparePage() {
         })()}
       />
 
-      <ModelPickerDialog
-        open={addPickerOpen}
+      {/* shared/modelgo_prd#335：「添加模型」与模型广场共用同一个对比弹窗 ——
+          原型里两处本来就是同一个 MarketplaceCompareModal，移植时被拆成两个组件导致样式分叉。
+          已在对比中的列全部作为 lockedIds 固定展示、不可取消；上限仍是 MAX_COMPARE。 */}
+      <ModelsCompareModal
+        isOpen={addPickerOpen}
         onClose={() => setAddPickerOpen(false)}
-        anchorEl={addPickerAnchor}
-        mode="compareAdd"
-        models={allModels}
+        allModels={allModels}
+        lockedIds={columns.map((c) => c.model.id)}
+        maxSelectable={MAX_COMPARE}
         isBalanceZero={isBalanceZero}
-        currentCategory={compareCategory}
-        currentTask={compareTask}
-        alreadySelectedIds={columns.map((c) => c.model.id)}
-        maxAdditional={MAX_COMPARE - columns.length}
+        anchorCategory={compareCategory}
+        anchorTask={compareTask}
         onConfirmAdd={handleAddConfirm}
       />
 

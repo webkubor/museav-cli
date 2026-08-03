@@ -75,6 +75,7 @@ import {
   type ExperienceTaskType,
 } from './model-experience-data'
 import { ModelPickerDialog } from './components/ModelPickerDialog'
+import { ModelsCompareModal } from './components/ModelsCompareModal'
 import { HistorySessionSidebar, type HistorySessionItem } from './components/HistorySessionSidebar'
 import { ModelSettingsModal } from './components/ModelSettingsModal'
 import { ApiQuickCallModal } from './components/ApiQuickCallModal'
@@ -104,7 +105,6 @@ export default function ModelsPage() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [apiCallOpen, setApiCallOpen] = useState(false)
   const [compareAddOpen, setCompareAddOpen] = useState(false)
-  const [compareAddAnchor, setCompareAddAnchor] = useState<HTMLElement | null>(null)
   const [historyCollapsed, setHistoryCollapsed] = useState(true)
 
   // 模型列/会话/消息跨路由持久化（qa#544）：改走模块级 zustand store，SPA 内路由切走
@@ -1057,9 +1057,8 @@ export default function ModelsPage() {
                     variant="outline"
                     size="sm"
                     className="rounded-md"
-                    onClick={(e) => {
+                    onClick={() => {
                       trackEvent('playground_model_picker_open', { picker_type: 'compareAdd', browse_category: selectedCategory })
-                      setCompareAddAnchor(e.currentTarget)
                       setCompareAddOpen(true)
                     }}
                   >
@@ -1282,19 +1281,19 @@ export default function ModelsPage() {
       )}
 
       {/* PRD §7.3：单模型点「模型对比」打开统一候选弹窗，可勾选第 2/3 个模型；
-          当前模型固定展示为「已选模型」不可取消；确认后一次性带着完整模型组进入对比页 */}
+          当前模型固定展示为「已选模型」不可取消；确认后一次性带着完整模型组进入对比页。
+          shared/modelgo_prd#335：与模型广场共用 ModelsCompareModal —— 原型里这两处本来
+          就是同一个 MarketplaceCompareModal，移植时被拆成了两个组件、样式跟着分叉。 */}
       {selectedModel && (
-        <ModelPickerDialog
-          open={compareAddOpen}
+        <ModelsCompareModal
+          isOpen={compareAddOpen}
           onClose={() => setCompareAddOpen(false)}
-          anchorEl={compareAddAnchor}
-          mode="compareAdd"
-          models={allModels}
+          allModels={allModels}
+          lockedIds={[selectedModel.id]}
+          maxSelectable={3}
           isBalanceZero={isBalanceZero}
-          currentCategory={selectedCategory}
-          currentTask={effectiveTask}
-          alreadySelectedIds={[selectedModel.id]}
-          maxAdditional={2}
+          anchorCategory={selectedCategory}
+          anchorTask={effectiveTask}
           onConfirmAdd={(added) => {
             if (added.length === 0) return
             trackEvent('playground_compare_enter', { sidebar_was_collapsed: historyCollapsed })

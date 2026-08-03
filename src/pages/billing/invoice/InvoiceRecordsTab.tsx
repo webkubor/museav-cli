@@ -63,7 +63,7 @@ export function InvoiceRecordsTab({
       }),
     // 游标沿用原有约定：首页不带 cursor，后续页固定传 'next'。这是占位值——后端
     // GET /tenants/{id}/invoices 响应目前只回 items/has_more/total，不回真实游标，
-    // 记录数超过一页时翻页结果不可靠。等 qa#585 后端补 next_cursor 后换成真实游标。
+    // 记录数超过一页时翻页结果不可靠。等 shared#349 后端补 next_cursor 后换成真实游标。
     getNextPageParam: (lastPage) => (lastPage.has_more ? 'next' : undefined),
     enabled: Boolean(tenantId),
   })

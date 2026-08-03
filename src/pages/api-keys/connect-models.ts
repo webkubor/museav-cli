@@ -19,7 +19,8 @@ export function stripVendorPrefix(id: string) {
  * 「立即接入」浮层里 Model 下拉的候选（需求方 shared#322）。
  *
  * PRD 原型按 `protocols` + `codingTools` 双重过滤，但 catalog 只有 protocols，没有 codingTools
- * （编程客户端适配名单是原型里人工写死的）。这里用「协议由调用方按 tab 传给接口过滤」+
+ * （编程客户端适配名单是原型里人工写死的）——已落后端单 qa#583 要该字段，到位后替换本函数的
+ * 过滤条件即可。这里用「协议由调用方按 tab 传给接口过滤」+
  * 「输出模态含 text」近似：Claude Code / Codex 这类编程客户端只能消费出文本的对话模型，
  * 出图 / 出视频 / embedding 模型放进下拉是必然报错的死选项。
  */

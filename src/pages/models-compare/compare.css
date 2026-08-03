@@ -48,7 +48,13 @@
   border: 1px solid var(--mg-border);
   background: color-mix(in srgb, var(--mg-bg-0) 88%, transparent);
   border-radius: 8px;
-  min-height: 420px;
+  /* 列高交给容器拉伸（grid/flex 默认 stretch 已把列填满可用高度），不设固定保底。
+     此前的 min-height:420px 在矮视口会把列顶出 .models-compare-columns 的盒子：
+     溢出的最后几行正文和底部 Token/耗时/费用统计行，线上被半透明共享 composer
+     直接盖住压字、#333 加裁剪后则整段被裁掉看不见（shared/modelgo_prd#338）。
+     去掉后列贴合容器高，消息区（.models-experience-messages）内部滚动，
+     统计行恒在列内可见。420px 保底仅窄屏 block 布局仍需要（见下方 768px 媒体查询）。 */
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -213,6 +219,9 @@
 
   .models-compare-column {
     display: none !important;
+    /* 窄屏是 block 流式布局（columns 为 display:block），列高不再由容器 stretch
+       决定，空会话时需要固定保底高度撑起工作区（#338 桌面侧已改为跟随容器）。 */
+    min-height: 420px;
   }
 
   .models-compare-column.is-active-mobile {

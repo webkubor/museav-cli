@@ -951,9 +951,17 @@ export default function ModelsComparePage() {
     }
   }
 
-  function handleExitConfirmed() {
+  async function handleExitConfirmed() {
     if (!columns) return
     trackEvent('playground_compare_exit', { action: 'confirm' })
+    // 原型 exitComparison：session 只剩最左主列（columns: [retainedColumn]），其余列彻底移除。
+    // 之前只做前端导航、没删 session 里其余列的 conversation，历史会话列表按
+    // session.models 渲染就仍显示对比模型（shared/modelgo_prd#343）。
+    if (sessionId) {
+      await Promise.allSettled(
+        columns.slice(1).map((c) => removeExperienceConversation(sessionId, c.conversationId)),
+      ) // 删除失败不阻塞导航——用户的主要诉求是离开对比（同删列路径容错）
+    }
     restoreSavedPreference()
     // 原型 exitComparison 保留最左主列及其会话记录（丢失的只有其余对比列），
     // 与上面「删到剩一列」同一根因、同一收敛：带 resume 语义回单模型页

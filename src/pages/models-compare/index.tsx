@@ -906,15 +906,25 @@ export default function ModelsComparePage() {
     const target = columns[removeConfirmIndex]
     trackEvent('playground_model_remove', { model_id: target.model.model_id, action: 'confirm' })
     if (columns.length <= 2) {
-      // §7.3：移除至单模型按退出对比同样规则处理——保留最左侧主模型，恢复侧栏
-      const keep = columns[0].model.model_id === target.model.model_id ? columns[1].model : columns[0].model
+      // §7.3：移除至单模型按退出对比同样规则处理——保留最左侧主模型，恢复侧栏。
+      // 原型口径（App.tsx removeCompareModel + 确认弹窗文案）：只有被移除那列的记录
+      // 永久丢失，保留列的会话原样带回单模型页——所以要传 resume 语义让单模型页
+      // 恢复该会话，而不是只带 selectedModelId 让它开新会话（shared/modelgo_prd#339：
+      // 之前主模型的会话内容被一并清空）。
+      const keepColumn = columns[0].model.model_id === target.model.model_id ? columns[1] : columns[0]
       try {
         await removeExperienceConversation(sessionId, target.conversationId)
       } catch {
         // 真实删列失败也不阻塞回退到单模型页——用户的主要诉求是离开对比
       }
       restoreSavedPreference()
-      navigate('/models/playground', { state: { selectedModelId: keep.model_id } })
+      navigate('/models/playground', {
+        state: {
+          selectedModelId: keepColumn.model.model_id,
+          resumeSessionId: sessionId,
+          resumeConversationId: keepColumn.conversationId,
+        },
+      })
       return
     }
     try {
@@ -930,7 +940,15 @@ export default function ModelsComparePage() {
     if (!columns) return
     trackEvent('playground_compare_exit', { action: 'confirm' })
     restoreSavedPreference()
-    navigate('/models/playground', { state: { selectedModelId: columns[0].model.model_id } })
+    // 原型 exitComparison 保留最左主列及其会话记录（丢失的只有其余对比列），
+    // 与上面「删到剩一列」同一根因、同一收敛：带 resume 语义回单模型页
+    navigate('/models/playground', {
+      state: {
+        selectedModelId: columns[0].model.model_id,
+        resumeSessionId: sessionId,
+        resumeConversationId: columns[0].conversationId,
+      },
+    })
   }
 
   /** §7.3：加模型——调真实加列端点，只追加新列，不影响已有列的对话历史 */

@@ -17,6 +17,12 @@ export type ConnectActionKey = 'mgc' | 'cc-switch' | 'claude-code' | 'codex' | '
 export type ConnectParam = {
   label: string
   value: string
+  /**
+   * 可选字段（需求方 shared#322）：浮层里渲染成内嵌下拉而非只读值。
+   * apiKey = 选当前空间的 Key（全部 tab 都有）；model = 选钉进接入参数的模型
+   * （只有 CC Switch / Claude Code / Codex 三个编程客户端 tab 有，SDK / cURL 没有）。
+   */
+  field?: 'apiKey' | 'model'
 }
 
 export type ConnectSnippet = {
@@ -232,12 +238,17 @@ export function buildConnectSnippets(args: {
   anthropicBaseUrl: string
   createdKeyText: string
   docsUrl: string
-  /** 目录里真实存在的 Claude 模型 id；不传则不钉模型（Claude Code 会用默认 slug，可能 403 无法使用） */
-  claudeModel?: string
-  /** 目录里真实存在的 Codex/OpenAI 模型 id */
-  codexModel?: string
+  /**
+   * 各编程客户端 tab 当前选中的模型 id（目录里真实存在的裸名）。
+   * 缺省则不钉模型——Claude Code 会退回官方默认 slug，ModelGo 目录里没有 → 网关 403。
+   * 三个 tab 各存一份：用户可以给 CC Switch 和 Claude Code 选不同模型（PRD shared#322）。
+   */
+  models?: { 'cc-switch'?: string; 'claude-code'?: string; codex?: string }
 }): ConnectSnippet[] {
-  const { openAIBaseUrl, anthropicBaseUrl, createdKeyText, docsUrl, claudeModel, codexModel } = args
+  const { openAIBaseUrl, anthropicBaseUrl, createdKeyText, docsUrl, models } = args
+  const ccSwitchModel = models?.['cc-switch']
+  const claudeCodeModel = models?.['claude-code']
+  const codexModel = models?.codex
   const keyForSnippet = createdKeyText || '<YOUR_MODELGO_API_KEY>'
 
   // CC Switch 导入的 Provider 需要带默认模型，否则 Claude Code 用官方默认 slug 请求
@@ -265,7 +276,7 @@ export function buildConnectSnippets(args: {
       '使用下面的 Anthropic 协议地址，只写入本机环境或本地忽略配置，不要提交密钥：',
       `ANTHROPIC_BASE_URL=${anthropicBaseUrl}`,
       `ANTHROPIC_API_KEY=${keyForSnippet}`,
-      ...(claudeModel ? [`ANTHROPIC_MODEL=${claudeModel}`] : []),
+      ...(claudeCodeModel ? [`ANTHROPIC_MODEL=${claudeCodeModel}`] : []),
     ].join('\n')
     return `claude-cli://open?q=${encodeURIComponent(prompt)}`
   }
@@ -276,21 +287,21 @@ export function buildConnectSnippets(args: {
       title: 'CC Switch 导入 Provider',
       desc: '拉起 CC Switch，直接导入 Claude Provider。',
       launchLabel: '拉起 CC Switch',
-      launchHref: buildCcSwitchProviderLink('claude', anthropicBaseUrl, claudeModel),
+      launchHref: buildCcSwitchProviderLink('claude', anthropicBaseUrl, ccSwitchModel),
       copyLabel: '复制参数',
       params: [
+        { label: 'API Key', value: keyForSnippet, field: 'apiKey' },
         { label: 'Provider Name', value: 'ModelGo' },
         { label: 'App', value: 'Claude' },
         { label: 'Endpoint', value: anthropicBaseUrl },
-        { label: 'API Key', value: keyForSnippet },
-        ...(claudeModel ? [{ label: 'Model', value: claudeModel }] : []),
+        { label: 'Model', value: ccSwitchModel ?? '', field: 'model' },
       ],
       copyText: [
         'Provider Name: ModelGo',
         'App: Claude',
         `Endpoint: ${anthropicBaseUrl}`,
         `API Key: ${keyForSnippet}`,
-        ...(claudeModel ? [`Model: ${claudeModel}`] : []),
+        ...(ccSwitchModel ? [`Model: ${ccSwitchModel}`] : []),
       ].join('\n'),
     },
     {
@@ -301,20 +312,20 @@ export function buildConnectSnippets(args: {
       launchHref: buildClaudeCodeLink(),
       copyLabel: '复制终端命令',
       params: [
+        { label: 'ANTHROPIC_API_KEY', value: keyForSnippet, field: 'apiKey' },
         { label: 'ANTHROPIC_BASE_URL', value: anthropicBaseUrl },
-        { label: 'ANTHROPIC_API_KEY', value: keyForSnippet },
-        ...(claudeModel ? [{ label: 'ANTHROPIC_MODEL', value: claudeModel }] : []),
+        { label: 'ANTHROPIC_MODEL', value: claudeCodeModel ?? '', field: 'model' },
       ],
       copyText: [
         `export ANTHROPIC_BASE_URL="${anthropicBaseUrl}"`,
         `export ANTHROPIC_API_KEY="${keyForSnippet}"`,
-        ...(claudeModel ? [`export ANTHROPIC_MODEL="${claudeModel}"`] : []),
+        ...(claudeCodeModel ? [`export ANTHROPIC_MODEL="${claudeCodeModel}"`] : []),
         'claude',
       ].join('\n'),
       command: [
         `export ANTHROPIC_BASE_URL="${anthropicBaseUrl}"`,
         `export ANTHROPIC_API_KEY="${keyForSnippet}"`,
-        ...(claudeModel ? [`export ANTHROPIC_MODEL="${claudeModel}"`] : []),
+        ...(claudeCodeModel ? [`export ANTHROPIC_MODEL="${claudeCodeModel}"`] : []),
         'claude',
       ].join('\n'),
     },
@@ -326,11 +337,11 @@ export function buildConnectSnippets(args: {
       launchHref: buildCcSwitchProviderLink('codex', openAIBaseUrl, codexModel),
       copyLabel: '复制参数',
       params: [
+        { label: 'API Key', value: keyForSnippet, field: 'apiKey' },
         { label: 'Provider Name', value: 'ModelGo' },
         { label: 'App', value: 'Codex' },
         { label: 'Base URL', value: openAIBaseUrl },
-        { label: 'API Key', value: keyForSnippet },
-        ...(codexModel ? [{ label: 'Model', value: codexModel }] : []),
+        { label: 'Model', value: codexModel ?? '', field: 'model' },
       ],
       copyText: [
         'Provider Name: ModelGo',
@@ -348,8 +359,8 @@ export function buildConnectSnippets(args: {
       launchHref: docsUrl,
       copyLabel: '复制代码示例',
       params: [
+        { label: 'API Key', value: keyForSnippet, field: 'apiKey' },
         { label: 'baseURL', value: openAIBaseUrl },
-        { label: 'apiKey', value: keyForSnippet },
       ],
       copyText: [
         "import OpenAI from 'openai'",
@@ -379,9 +390,9 @@ export function buildConnectSnippets(args: {
       launchHref: docsUrl,
       copyLabel: '复制 cURL 命令',
       params: [
+        { label: 'API Key', value: keyForSnippet, field: 'apiKey' },
         { label: 'Method', value: 'GET' },
         { label: 'URL', value: `${openAIBaseUrl}/models` },
-        { label: 'Header', value: `Authorization: Bearer ${keyForSnippet}` },
       ],
       copyText: [
         `curl "${openAIBaseUrl}/models" \\`,

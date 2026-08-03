@@ -6,18 +6,25 @@
  * - variant="icon"（默认）：行内 / 字段行 / ID / 链接旁的紧凑复制，一个图标搞定
  * - variant="labeled"：独立强调的复制 CTA（如新建 Key 横幅、收银台付款码），走 Button 基础件
  */
+import { useState } from 'react'
 import { LuCheck, LuCopy } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import { useCopy } from '@/hooks/use-copy'
 import { appToast } from '@/lib/app-toast'
+import { getRequestErrorMessage } from '@/lib/request-error-message'
 import { cn } from '@/lib/utils'
 
 type CopyVariant = 'icon' | 'labeled'
 type CopySize = 'sm' | 'md'
 
 export interface CopyButtonProps {
-  /** 要复制的文本；为空时按钮 disabled */
+  /** 要复制的文本；为空时按钮 disabled。传了 getValue 时它只用于 disabled 判定与占位展示 */
   value: string
+  /**
+   * 复制内容需要异步取回时用（如 API Key 明文要先调 reveal）。
+   * 走 ClipboardItem + Promise 写入，避免 Safari 在 await 之后丢失用户手势导致复制被拒。
+   */
+  getValue?: () => Promise<string>
   /** icon=紧凑图标钮（默认）；labeled=带文字的强调按钮 */
   variant?: CopyVariant
   /** 尺寸：icon 变体控制方框/图标大小，labeled 变体透传给 Button */
@@ -49,6 +56,7 @@ const ICON_SIZE: Record<CopySize, number> = { sm: 14, md: 15 }
 /** 全站统一的复制按钮。 */
 export function CopyButton({
   value,
+  getValue,
   variant = 'icon',
   size = 'sm',
   label = '复制',
@@ -61,12 +69,38 @@ export function CopyButton({
   'aria-label': ariaLabel,
   'data-track': dataTrack,
 }: CopyButtonProps) {
-  const { copy, copied } = useCopy()
-  const isDisabled = disabled || !value
+  const { copy, copied: syncCopied } = useCopy()
+  // getValue 路径不经过 useCopy，自己维持一份「已复制」反馈
+  const [asyncCopied, setAsyncCopied] = useState(false)
+  const copied = syncCopied || asyncCopied
+  const isDisabled = disabled || (!value && !getValue)
 
   const handleCopy = async () => {
-    if (!value) {
+    if (!value && !getValue) {
       appToast.error('暂无可复制内容')
+      return
+    }
+    if (getValue) {
+      // 手势栈内先把 Promise 交给 ClipboardItem，再去 await——否则 Safari 会以「非用户手势」拒写
+      const pending = getValue()
+      pending.catch(() => {})
+      try {
+        if (typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
+          await navigator.clipboard.write([
+            new ClipboardItem({ 'text/plain': pending.then((t) => new Blob([t], { type: 'text/plain' })) }),
+          ])
+        } else if (!(await copy(await pending))) {
+          throw new Error('clipboard write failed')
+        }
+      } catch {
+        const requestError = await pending.then(() => null, (e: unknown) => e)
+        appToast.error(requestError ? getRequestErrorMessage(requestError, '复制失败，请手动复制') : '复制失败，请手动复制')
+        return
+      }
+      setAsyncCopied(true)
+      setTimeout(() => setAsyncCopied(false), 2000)
+      if (toast) appToast.success(toast)
+      onCopied?.()
       return
     }
     const ok = await copy(value)

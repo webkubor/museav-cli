@@ -8,9 +8,32 @@
  * ⚠️ 目录 model_id 带厂商前缀（anthropic/claude-opus-4.6），但网关 /v1/models 认的是裸名
  * （claude-opus-4.6）。带前缀请求同样 403，所以这里统一剥掉前缀再挑。
  */
+import type { CatalogModelItem } from '@/types'
+
+/** 目录 model_id 带厂商前缀（anthropic/claude-opus-4.6），网关只认裸名，统一剥掉。 */
+export function stripVendorPrefix(id: string) {
+  return id.includes('/') ? id.slice(id.lastIndexOf('/') + 1) : id
+}
+
+/**
+ * 「立即接入」浮层里 Model 下拉的候选（需求方 shared#322）。
+ *
+ * PRD 原型按 `protocols` + `codingTools` 双重过滤，但 catalog 只有 protocols，没有 codingTools
+ * （编程客户端适配名单是原型里人工写死的）。这里用「协议由调用方按 tab 传给接口过滤」+
+ * 「输出模态含 text」近似：Claude Code / Codex 这类编程客户端只能消费出文本的对话模型，
+ * 出图 / 出视频 / embedding 模型放进下拉是必然报错的死选项。
+ */
+export function buildConnectModelOptions(items: CatalogModelItem[]): string[] {
+  const ids = items
+    .filter((m) => m.status === 'available')
+    .filter((m) => !m.output_modalities?.length || m.output_modalities.includes('text'))
+    .map((m) => stripVendorPrefix(m.model_id))
+    .filter((id) => id.length > 0)
+  return Array.from(new Set(ids)).sort((a, b) => a.localeCompare(b))
+}
+
 export function pickConnectModels(modelIds: string[]): { claudeModel?: string; codexModel?: string } {
-  const stripVendor = (id: string) => (id.includes('/') ? id.slice(id.lastIndexOf('/') + 1) : id)
-  const ids = modelIds.filter((id) => typeof id === 'string' && id.length > 0).map(stripVendor)
+  const ids = modelIds.filter((id) => typeof id === 'string' && id.length > 0).map(stripVendorPrefix)
 
   const versionKey = (id: string) => {
     const m = id.toLowerCase().match(/(\d+(?:[.-]\d+)*)/)

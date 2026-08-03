@@ -2321,7 +2321,6 @@
       "removeModel": "移除模型",
       "columnPlaceholder": "仅向 {{name}}：{{placeholder}}",
       "sharedPlaceholder": "{{placeholder}}（同时发送给 {{count}} 个模型）",
-      "syncSendHint": "同步发送给全部已选模型",
       "attachmentSupportCount": "{{supporting}} / {{total}} 个模型支持该附件；其余模型本轮仅收到文本",
       "categoryAttachmentUnsupported": "当前对比类别不支持该附件类型，仅支持：",
       "none": "无",

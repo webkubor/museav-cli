@@ -2309,7 +2309,6 @@
       "removeModel": "Remove model",
       "columnPlaceholder": "To {{name}} only: {{placeholder}}",
       "sharedPlaceholder": "{{placeholder}} (sent to {{count}} models at once)",
-      "syncSendHint": "Send to all selected models at once",
       "attachmentSupportCount": "{{supporting}} / {{total}} models support this attachment; the rest will only receive the text",
       "categoryAttachmentUnsupported": "This comparison category doesn't support this attachment type. Supported: ",
       "none": "none",

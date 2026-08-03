@@ -1642,13 +1642,13 @@ export default function ModelsComparePage() {
                   >
                     <LuPaperclip size={14} />
                   </button>
-                  <span className="models-experience-composer-hint">
-                    {attachmentUploading ? t('modelsExperience.attachmentUploading') : t('modelsExperience.compare.syncSendHint')}
-                  </span>
+                  {/* 只在上传中给状态反馈；常驻的「同步发送给全部已选模型」按需求方 shared#340
+                      去掉——顶部已有「同步输入」开关和「同一输入发送给 N 个模型」说明，重复且占位。 */}
+                  {attachmentUploading && (
+                    <span className="models-experience-composer-hint">{t('modelsExperience.attachmentUploading')}</span>
+                  )}
                 </div>
-              ) : (
-                <span className="models-experience-composer-hint">{t('modelsExperience.compare.syncSendHint')}</span>
-              )
+              ) : undefined
             }
           />
         </>

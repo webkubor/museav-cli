@@ -280,6 +280,13 @@ async function composeIncomeRecordsFallback(
     listGiftRecords(tenantId, { page_size: FETCH_CAP }).catch(() => null),
   ])
 
+  // 单源失败容忍（出另一半的部分数据），但两个源全挂时必须抛错让 react-query 进
+  // isError——原先双双 catch 成 null 会合成出空列表，加载失败永远被渲染成
+  // 「暂无入账记录」，失败提示与重试（#25）根本没有触发路径。
+  if (!recharges && !gifts) {
+    throw new Error('income record sources unavailable')
+  }
+
   const merged: IncomeRecord[] = [
     ...pageItems<RechargeOrder>(recharges)
       .map(rechargeToIncome)

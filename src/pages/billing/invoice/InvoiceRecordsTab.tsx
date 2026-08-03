@@ -49,6 +49,8 @@ export function InvoiceRecordsTab({
   const {
     data,
     isLoading,
+    isError,
+    refetch,
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
@@ -111,6 +113,16 @@ export function InvoiceRecordsTab({
       {/* 列表 */}
       {isLoading && records.length === 0 ? (
         <EmptyState title="加载中…" />
+      ) : isError && records.length === 0 ? (
+        // 首屏加载失败 ≠ 暂无记录：给明确失败提示+重试，不误导成空态（#25）
+        <EmptyState
+          title="开票记录加载失败"
+          action={
+            <Button variant="outline" size="sm" onClick={() => void refetch()}>
+              重试
+            </Button>
+          }
+        />
       ) : records.length === 0 ? (
         <EmptyState
           title={status !== 'all' || keyword ? '当前筛选条件下没有发票记录' : '暂无开票记录'}

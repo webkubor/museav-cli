@@ -137,7 +137,7 @@ export function BillingLedgerPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bucketFilter])
 
-  const { data, isFetching } = useQuery({
+  const { data, isFetching, isError, refetch } = useQuery({
     queryKey: ['billing', 'income-records', tenantId, type, bucketFilter, timeFilter, pager.page, pager.cursor],
     queryFn: () =>
       listIncomeRecords(tenantId, {
@@ -257,6 +257,16 @@ export function BillingLedgerPanel({
 
       {ledgerTab === 'invoices' ? (
         <BillingInvoiceTab tenantId={tenantId} currencySymbol={currencySymbol} />
+      ) : isError ? (
+        // 加载失败 ≠ 空数据：失败时给明确提示+重试，不能装成「暂无记录」误导用户（#25）
+        <EmptyState
+          title={t('billing.income.loadFailed')}
+          action={
+            <Button variant="outline" size="sm" onClick={() => void refetch()}>
+              {t('billing.income.retry')}
+            </Button>
+          }
+        />
       ) : items.length === 0 && !isFetching ? (
         <EmptyState
           title={hasActiveFilter ? t('billing.income.emptyFiltered') : t('billing.income.empty')}

@@ -32,8 +32,8 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
   const [topUpVisible, setTopUpVisible] = useState(false)
   const [redeemVisible, setRedeemVisible] = useState(false)
 
-  const { data: balance, isLoading: balanceLoading } = useBalance(tenantId)
-  const { data: breakdown, isLoading: breakdownLoading } = useBalanceBreakdown(tenantId)
+  const { data: balance, isLoading: balanceLoading, isError: balanceError, refetch: refetchBalance } = useBalance(tenantId)
+  const { data: breakdown, isLoading: breakdownLoading, isError: breakdownError, refetch: refetchBreakdown } = useBalanceBreakdown(tenantId)
   const spendableBalance = calculateSpendableBalance(
     balance?.available.amount,
     breakdown?.gift.amount,
@@ -111,12 +111,26 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
             <InfoTip text="调用消费时按 赠送 → 奖励 → 主余额 的顺序扣减。" />
           </p>
           <div className="flex items-baseline gap-3 flex-wrap">
-            <div className="billing-spendable-line flex items-baseline gap-1">
-              <span className="text-lg font-medium text-mg-text-2">{currencySymbol}</span>
-              <span className="billing-spendable-amount text-4xl font-bold tabular-nums leading-none text-mg-text-1">
-                {balanceLoading || breakdownLoading ? '...' : spendableTotal}
+            {(balanceError || breakdownError) && !balance && !breakdown ? (
+              // 余额加载失败 ≠ 余额为 0/…：轮询查询失败且无缓存数据时给明确提示+重试（#25）
+              <span className="flex items-center gap-2 text-sm text-mg-text-3">
+                {t('billing.balance.loadFailed')}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { void refetchBalance(); void refetchBreakdown() }}
+                >
+                  {t('billing.income.retry')}
+                </Button>
               </span>
-            </div>
+            ) : (
+              <div className="billing-spendable-line flex items-baseline gap-1">
+                <span className="text-lg font-medium text-mg-text-2">{currencySymbol}</span>
+                <span className="billing-spendable-amount text-4xl font-bold tabular-nums leading-none text-mg-text-1">
+                  {balanceLoading || breakdownLoading ? '...' : spendableTotal}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useQuery, keepPreviousData } from '@tanstack/react-query'
+import { useQuery, useQueries, keepPreviousData } from '@tanstack/react-query'
 import { LuSearch, LuChevronDown, LuCheck, LuSlidersHorizontal, LuLayers, LuZap, LuBuilding2, LuShieldCheck } from 'react-icons/lu'
 import { listModels, listModelTags, listModelFacets, listFeatured } from '@/services/catalog'
 import { useAuthStore } from '@/store/auth'
@@ -16,6 +16,7 @@ import { resolveModelCategory } from '../model-experience-data'
 import { CatalogCard } from './CatalogCard'
 import { CatalogFeatured } from './CatalogFeatured'
 import { CatalogSidebar } from './CatalogSidebar'
+import { GROUP_PARAM_KEY, type FilterGroupId } from './modelCatalogFilterLogic'
 import { ModelsCompareModal } from '../components/ModelsCompareModal'
 import { queryLengthBucket, diffFilterChange, buildFilterSummary } from './catalog-tracking'
 import type { CatalogModelItem } from '@/types'
@@ -23,6 +24,7 @@ import './catalog.css'
 
 type SortKey = 'default' | 'newest' | 'cheapest'
 // 上下文阈值改由服务端 facets 下发，前端不再硬编码（原 CTX_THRESHOLDS 已删除）。
+
 
 export default function ModelsCatalogPage() {
   const { t, i18n } = useTranslation()
@@ -111,6 +113,35 @@ export default function ModelsCatalogPage() {
     placeholderData: keepPreviousData,
   })
   const facets = facetsQuery.data
+
+  /**
+   * 各组「全部」的计数（shared/modelgo_prd#330）。口径与取舍见 CatalogSidebar 的
+   * GROUP_PARAM_KEY 注释：只有**有选中项**的维度才补发一次「剔除本维度条件」的 facets，
+   * 没选中的维度剔除等于没剔除，沿用 facets.total 即可（React Query 会把两者去重成同一
+   * 份缓存，不会多打一枪）。
+   */
+  const activeGroups = useMemo(
+    () => (Object.keys(GROUP_PARAM_KEY) as FilterGroupId[]).filter(
+      (g) => listParams[GROUP_PARAM_KEY[g]] !== undefined,
+    ),
+    [listParams],
+  )
+  const groupTotalQueries = useQueries({
+    queries: activeGroups.map((g) => {
+      const params = { ...listParams, [GROUP_PARAM_KEY[g]]: undefined } as typeof listParams
+      return {
+        queryKey: ['catalog-model-facets', params],
+        queryFn: () => listModelFacets(params),
+        staleTime: 5 * 60_000,
+        placeholderData: keepPreviousData,
+      }
+    }),
+  })
+  const groupTotals: Partial<Record<FilterGroupId, number>> = {}
+  activeGroups.forEach((g, i) => {
+    const groupTotal = groupTotalQueries[i]?.data?.total
+    if (typeof groupTotal === 'number') groupTotals[g] = groupTotal
+  })
 
   /**
    * 精选轮播。不随筛选变化（它是运营发布的固定推荐位），所以 queryKey 不带
@@ -351,7 +382,14 @@ export default function ModelsCatalogPage() {
       {/* 两列：筛选栏（卡片）+ 卡片网格 */}
       <div className="mg-plaza-layout">
         <div className={`models-sticky mg-side-card ${filtersOpen ? 'block' : 'hidden lg:block'}`}>
-          <CatalogSidebar tags={tags} selected={selected} setSelected={setSelected} isZh={isZh} facets={facets} />
+          <CatalogSidebar
+            tags={tags}
+            selected={selected}
+            setSelected={setSelected}
+            isZh={isZh}
+            facets={facets}
+            groupTotals={groupTotals}
+          />
         </div>
 
         <div>

@@ -1399,6 +1399,7 @@
       "tags": "标签"
     },
     "currentModel": "当前模型",
+    "selectedModels": "已选模型",
     "candidates": "可选候选",
     "empty": {
       "hint": "在左侧选择模型后开始对比",
@@ -1543,7 +1544,7 @@
     },
     "page": {
       "title": "模型广场",
-      "subtitle": "一个 API，接入主流大模型"
+      "subtitle": "一个 API 接入主流大模型，价格透明、开箱可用。"
     },
     "filtersButton": "筛选",
     "search": {

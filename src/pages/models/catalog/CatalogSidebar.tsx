@@ -16,6 +16,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LuChevronDown, LuX } from 'react-icons/lu'
 import type { CatalogModelTag, CatalogFacets, CatalogFacetBucket } from '@/types'
+import type { FilterGroupId } from './modelCatalogFilterLogic'
 
 const VENDOR_PREVIEW = 6
 
@@ -50,9 +51,11 @@ interface Props {
   setSelected: React.Dispatch<React.SetStateAction<string[]>>
   isZh: boolean
   facets?: CatalogFacets
+  /** 各组「全部」的计数（已排除本组自身条件）；缺项回落 facets.total。见 GROUP_PARAM_KEY。 */
+  groupTotals?: Partial<Record<FilterGroupId, number>>
 }
 
-export function CatalogSidebar({ tags, selected, setSelected, isZh, facets }: Props) {
+export function CatalogSidebar({ tags, selected, setSelected, isZh, facets, groupTotals }: Props) {
   const { t } = useTranslation()
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [showAllVendors, setShowAllVendors] = useState(false)
@@ -75,6 +78,8 @@ export function CatalogSidebar({ tags, selected, setSelected, isZh, facets }: Pr
   const vendors = facets?.vendors ?? []
   const shownVendors = showAllVendors ? vendors : vendors.slice(0, VENDOR_PREVIEW)
   const total = facets?.total
+  /** 某组「全部」的计数：优先用已排除本组自身条件的 groupTotals；该组没有选中项时二者本就相等。 */
+  const allCount = (group: FilterGroupId) => groupTotals?.[group] ?? total
 
   const toggleCollapse = (key: string) =>
     setCollapsed((prev) => {
@@ -105,7 +110,7 @@ export function CatalogSidebar({ tags, selected, setSelected, isZh, facets }: Pr
 
       <Group id="vendor" title={isZh ? '模型厂商' : 'Provider'} collapsed={collapsed} onToggle={toggleCollapse}>
         <div className="mg-side-list">
-          <Row active={!vendorActive} label={t('modelsCatalog.sidebar.all')} count={total} onClick={() => pickOne('vendor', null)} />
+          <Row active={!vendorActive} label={t('modelsCatalog.sidebar.all')} count={allCount('vendor')} onClick={() => pickOne('vendor', null)} />
           {/* 原型的厂商行是纯文本，不带品牌图标 */}
           {shownVendors.map((v) => (
             <Row
@@ -127,7 +132,7 @@ export function CatalogSidebar({ tags, selected, setSelected, isZh, facets }: Pr
 
       <Group id="modality" title={isZh ? '模型类型' : 'Modality'} collapsed={collapsed} onToggle={toggleCollapse}>
         <div className="mg-side-list">
-          <Row active={!modalityActive} label={t('modelsCatalog.sidebar.all')} count={total} onClick={() => pickOne('modality', null)} />
+          <Row active={!modalityActive} label={t('modelsCatalog.sidebar.all')} count={allCount('modality')} onClick={() => pickOne('modality', null)} />
           {(facets?.modalities ?? []).map((m) => (
             <Row
               key={m.value}
@@ -142,7 +147,7 @@ export function CatalogSidebar({ tags, selected, setSelected, isZh, facets }: Pr
 
       <Group id="protocol" title={isZh ? 'API 协议' : 'API protocol'} collapsed={collapsed} onToggle={toggleCollapse}>
         <div className="mg-side-list">
-          <Row active={!protocolActive} label={t('modelsCatalog.sidebar.all')} count={total} onClick={() => pickOne('protocol', null)} />
+          <Row active={!protocolActive} label={t('modelsCatalog.sidebar.all')} count={allCount('protocol')} onClick={() => pickOne('protocol', null)} />
           {(['openai', 'anthropic', 'other'] as const).map((p) => (
             <Row
               key={p}
@@ -170,7 +175,7 @@ export function CatalogSidebar({ tags, selected, setSelected, isZh, facets }: Pr
 
       <Group id="ctx" title={isZh ? '上下文长度' : 'Context'} collapsed={collapsed} onToggle={toggleCollapse}>
         <div className="mg-side-list">
-          <Row active={!ctxActive} label={t('modelsCatalog.sidebar.all')} count={total} onClick={() => pickOne('ctx', null)} />
+          <Row active={!ctxActive} label={t('modelsCatalog.sidebar.all')} count={allCount('ctx')} onClick={() => pickOne('ctx', null)} />
           {(facets?.contexts ?? []).map((b) => (
             <Row
               key={b.value}
@@ -185,7 +190,7 @@ export function CatalogSidebar({ tags, selected, setSelected, isZh, facets }: Pr
 
       <Group id="price" title={isZh ? '价格' : 'Pricing'} collapsed={collapsed} onToggle={toggleCollapse}>
         <div className="mg-side-list">
-          <Row active={!priceActive} label={t('modelsCatalog.sidebar.all')} count={total} onClick={() => pickOne('price', null)} />
+          <Row active={!priceActive} label={t('modelsCatalog.sidebar.all')} count={allCount('price')} onClick={() => pickOne('price', null)} />
           {(['free', 'paid'] as const).map((c) => (
             <Row
               key={c}

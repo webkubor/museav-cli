@@ -1384,7 +1384,6 @@
     },
     "row": {
       "contextLength": "上下文长度",
-      "maxOutput": "最大输出",
       "modalities": "模态支持",
       "modalityFlow": "输入→输出模态",
       "protocols": "兼容协议",
@@ -1872,8 +1871,7 @@
       "pricingOutput": "输出价格",
       "pricingCacheRead": "缓存读取",
       "pricingCacheWrite": "缓存写入",
-      "contextLength": "上下文窗口",
-      "maxOutputTokens": "最大输出"
+      "contextLength": "上下文窗口"
     },
     "card": {
       "context": "上下文",

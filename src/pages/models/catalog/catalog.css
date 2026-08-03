@@ -996,7 +996,7 @@ body[theme-mode='dark'] .catalog-insight-panel {
 .mg-mcard-specs {
   margin-top: auto; padding-top: 10px;
   border-top: 1px solid var(--mg-border);
-  /* 2 行 × 2 列（原型口径）：输入/输出，然后 上下文/最大输出 */
+  /* 2 列网格：第一行 输入/输出，第二行 上下文（最大输出已按 #348 移除） */
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px;
 }
 .mg-metric-value.is-accent { color: var(--brand-base); }

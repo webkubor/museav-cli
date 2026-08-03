@@ -1385,7 +1385,6 @@
     },
     "row": {
       "contextLength": "Context Length",
-      "maxOutput": "Max Output",
       "modalities": "Modalities",
       "modalityFlow": "Input → Output",
       "protocols": "Compatible Protocols",
@@ -1860,8 +1859,7 @@
       "pricingOutput": "Output price",
       "pricingCacheRead": "Cache read",
       "pricingCacheWrite": "Cache write",
-      "contextLength": "Context Window",
-      "maxOutputTokens": "Max output"
+      "contextLength": "Context Window"
     },
     "card": {
       "context": "Context",

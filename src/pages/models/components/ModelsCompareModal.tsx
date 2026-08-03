@@ -213,7 +213,6 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
   // 兼容协议、能力标签——厂商已在卡片头部展示，这里不重复渲染）
   const ROWS: Array<{ label: string; render: (m: CatalogModelItem) => React.ReactNode }> = [
     { label: t('modelsCompare.row.contextLength', '上下文长度'), render: (m) => formatContextLength(m.context_length) },
-    { label: t('modelsCompare.row.maxOutput', '最大输出'), render: (m) => formatContextLength(m.max_output_tokens) },
     { label: t('modelsCompare.row.modalityFlow', '输入→输出模态'), render: (m) => <ModalityFlow model={m} /> },
     { label: t('modelsCompare.row.inputPrice', '输入价格 (百万)'), render: (m) => formatPrice(m.pricing?.input_per_1m, m.pricing?.currency) },
     { label: t('modelsCompare.row.outputPrice', '输出价格 (百万)'), render: (m) => formatPrice(m.pricing?.output_per_1m, m.pricing?.currency) },

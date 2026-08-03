@@ -12,7 +12,7 @@
 | :--- | :--- | :--- |
 | **官网** | [modelgo.com](https://modelgo.com) | [modelgo.ai](https://modelgo.ai) |
 | **客户中心** | [console.modelgo.com](https://console.modelgo.com) | [console.modelgo.ai](https://console.modelgo.ai) |
-| **说明文档** | [doc.modelgo.com](https://doc.modelgo.com) | [doc.modelgo.ai](https://doc.modelgo.ai) |
+| **说明文档** | [docs.modelgo.com](https://docs.modelgo.com) | [docs.modelgo.ai](https://docs.modelgo.ai) |
 
 **API 接口文档（全接口真源，所有市场共用一套 Swagger）：**
 
@@ -266,9 +266,9 @@ npm run sync:permissions:global    # ③ 推国外菜单(剔除国内特例)    
 | `VITE_API_URL` | 空（手动配置） | `https://modelgo-web-api.test.modelgo.com` | 空（运行时推断） |
 | `VITE_SITE_URL` | `https://test.modelgo.com` | `https://test.modelgo.com` | 空（按市场回退到正式官网） |
 | `VITE_DOMESTIC_CONSOLE` | `https://console.test.modelgo.com` | `https://console.test.modelgo.com` | `https://console.modelgo.com` |
-| `VITE_DOMESTIC_DOCS` | `https://doc.test.modelgo.com` | `https://doc.test.modelgo.com` | `https://doc.modelgo.com` |
+| `VITE_DOMESTIC_DOCS` | `https://docs.test.modelgo.com` | `https://docs.test.modelgo.com` | `https://docs.modelgo.com` |
 | `VITE_GLOBAL_CONSOLE` | `https://console.test.modelgo.com` | `https://console.test.modelgo.com` | `https://console.modelgo.ai` |
-| `VITE_GLOBAL_DOCS` | `https://doc.test.modelgo.com` | `https://doc.test.modelgo.com` | `https://doc.modelgo.ai` |
+| `VITE_GLOBAL_DOCS` | `https://docs.test.modelgo.com` | `https://docs.test.modelgo.com` | `https://docs.modelgo.ai` |
 
 ---
 

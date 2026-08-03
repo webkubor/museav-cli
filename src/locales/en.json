@@ -2130,7 +2130,8 @@
       "text_to_audio": "Text-to-speech",
       "audio_to_text": "Speech-to-text",
       "text_to_video": "Text-to-video",
-      "image_to_video": "Image-to-video"
+      "image_to_video": "Image-to-video",
+      "video_to_video": "Video-to-video"
     },
     "categoryLabel": {
       "dialogue": "Chat",
@@ -2165,6 +2166,7 @@
       "clickToReplace": "Click to replace",
       "image_to_image": "Upload a reference image",
       "image_to_video": "Upload the first frame",
+      "video_to_video": "Upload the reference video",
       "audio_to_text": "Upload an audio file"
     },
     "transcribeReady": "Transcription will start with this model's current settings once uploaded.",

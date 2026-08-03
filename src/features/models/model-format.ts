@@ -112,6 +112,23 @@ export function autoSummary(
 }
 
 /**
+ * 模型副标题（原厂名）的唯一取值规则：provider（对外厂商名，见 types/catalog.ts 注释
+ * 「替代暴露上游的 vendor」）优先，退 vendor，都缺再退 fallback（默认平台名 ModelGo）。
+ *
+ * 此前同一规则散在 8 处、三种写法（provider||vendor / vendor||provider / vendor||'ModelGo'），
+ * shared/modelgo_prd#341 收敛到这一个函数。注意：**禁止从 model_id 猜厂商名兜底** ——
+ * 线上部分模型（glm-5.2 / kimi-k2.7-code 等）副标题显示成模型 ID，是后端把
+ * vendor/provider 字段本身存成了模型 ID（test 环境同类样本：deepseek-v4-flash-free 的
+ * vendor === model_id），属后端数据问题，前端不造假掩盖。
+ */
+export function modelVendorLabel(
+  model: { vendor?: string | null; provider?: string | null },
+  fallback = 'ModelGo',
+): string {
+  return (model.provider ?? '').trim() || (model.vendor ?? '').trim() || fallback
+}
+
+/**
  * 厂商名兜底。详情接口（GET /catalog/models/:id）**不下发 vendor/provider**，只有
  * 列表接口有 —— 详情页 Hero 因此长期缺厂商名（原型 App.tsx:5051 有）。后端补字段
  * 前，用 model_id 的 `vendor/model` 前缀兜底；已开后端单见 detail/index.tsx 注释。

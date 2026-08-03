@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { cn, formatContextLength, trimPriceZeros } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
+import { modelVendorLabel } from '@/features/models/model-format'
 import { resolveModelCategory, modelExperienceTasks } from '../model-experience-data'
 
 interface ModelsCompareModalProps {
@@ -244,7 +245,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
                         {anchorModel.display_name}
                       </div>
                       <div className="text-xs text-mg-text-3 truncate font-mono mt-0.5">
-                        {anchorModel.vendor || 'ModelGo'} · {anchorModel.model_id}
+                        {modelVendorLabel(anchorModel)} · {anchorModel.model_id}
                       </div>
                     </div>
                   </div>
@@ -276,7 +277,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
                         {m.display_name}
                       </div>
                       <div className="text-xs text-mg-text-3 truncate font-mono mt-0.5">
-                        {m.vendor || 'ModelGo'} · {m.model_id}
+                        {modelVendorLabel(m)} · {m.model_id}
                       </div>
                     </div>
                   </div>
@@ -308,7 +309,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-[13px] text-mg-text-1 leading-none">{m.display_name}</span>
                             <span className="text-xs text-brand-base font-semibold px-2 py-0.5 rounded-full bg-brand-selected-bg border border-brand-mid/10">
-                              {m.vendor || 'ModelGo'}
+                              {modelVendorLabel(m)}
                             </span>
                             {m.id === anchorId && (
                               <span className="text-xs text-mg-text-3 font-semibold px-2 py-0.5 rounded-full bg-mg-fill-1 border border-mg-border/40">

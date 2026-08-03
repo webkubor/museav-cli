@@ -40,6 +40,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
+import { modelVendorLabel } from '@/features/models/model-format'
 import { cn, formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 import {
@@ -153,7 +154,7 @@ export interface ModelPickerDialogProps {
 /** 对比表行定义；用函数而非模块级常量是因为 label 要按当前语言取值（渲染时调用，随语言切换更新） */
 function compareRows(): Array<{ label: string; render: (m: CatalogModelItem) => React.ReactNode }> {
   return [
-    { label: i18n.t('modelsExperience.picker.vendor'), render: (m) => m.provider || m.vendor || 'ModelGo' },
+    { label: i18n.t('modelsExperience.picker.vendor'), render: (m) => modelVendorLabel(m) },
     { label: i18n.t('modelsExperience.picker.contextWindow'), render: (m) => formatContextLength(m.context_length) },
     { label: i18n.t('modelsExperience.picker.inputPrice'), render: (m) => priceLabel(m) },
     { label: i18n.t('modelsExperience.picker.outputPrice'), render: (m) => {
@@ -442,10 +443,10 @@ export function ModelPickerDialog({
                     <ModelIcon model={model} size={30} rounded="rounded-md" className="bg-mg-bg-0" />
                     <div className="model-picker-dialog__row-main">
                       <span className="mg-text-body font-semibold text-mg-text-1 truncate">
-                        {prettyModelName(model.display_name, model.model_id, model.vendor ?? model.provider)}
+                        {prettyModelName(model.display_name, model.model_id, modelVendorLabel(model, ''))}
                       </span>
                       <span className="flex items-center gap-2 text-xs text-mg-text-3">
-                        <span className="truncate">{model.provider || model.vendor || 'ModelGo'}</span>
+                        <span className="truncate">{modelVendorLabel(model)}</span>
                       </span>
                     </div>
                     <span className="model-picker-dialog__fixed-badge"><LuCheck size={12} /> {t('modelsExperience.picker.alreadyInCompare')}</span>
@@ -499,10 +500,10 @@ export function ModelPickerDialog({
                   <ModelIcon model={model} size={30} rounded="rounded-md" className="bg-mg-bg-0" />
                   <div className="model-picker-dialog__row-main">
                     <span className="mg-text-body font-semibold text-mg-text-1 truncate">
-                      {prettyModelName(model.display_name, model.model_id, model.vendor ?? model.provider)}
+                      {prettyModelName(model.display_name, model.model_id, modelVendorLabel(model, ''))}
                     </span>
                     <span className="flex items-center gap-2 text-xs text-mg-text-3">
-                      <span className="truncate">{model.provider || model.vendor || 'ModelGo'}</span>
+                      <span className="truncate">{modelVendorLabel(model)}</span>
                       <ModalityFlow model={model} />
                     </span>
                   </div>
@@ -550,7 +551,7 @@ export function ModelPickerDialog({
                     <div key={m.id} className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <ModelIcon model={m} size={18} rounded="rounded-sm" />
-                        <span className="text-xs font-bold text-mg-text-1 truncate">{prettyModelName(m.display_name, m.model_id, m.vendor ?? m.provider)}</span>
+                        <span className="text-xs font-bold text-mg-text-1 truncate">{prettyModelName(m.display_name, m.model_id, modelVendorLabel(m, ''))}</span>
                       </div>
                     </div>
                   ))}
@@ -580,9 +581,9 @@ export function ModelPickerDialog({
                   <ModelIcon model={detailModel} size={40} rounded="rounded-lg" className="bg-mg-bg-0" />
                   <div className="min-w-0">
                     <div className="mg-text-title-sm font-bold text-mg-text-1 truncate">
-                      {prettyModelName(detailModel.display_name, detailModel.model_id, detailModel.vendor ?? detailModel.provider)}
+                      {prettyModelName(detailModel.display_name, detailModel.model_id, modelVendorLabel(detailModel, ''))}
                     </div>
-                    <div className="text-xs text-mg-text-3">{detailModel.provider || detailModel.vendor || 'ModelGo'}</div>
+                    <div className="text-xs text-mg-text-3">{modelVendorLabel(detailModel)}</div>
                   </div>
                 </div>
 

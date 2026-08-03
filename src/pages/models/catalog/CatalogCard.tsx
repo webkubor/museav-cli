@@ -28,7 +28,7 @@ import type { IconType } from 'react-icons'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { Button } from '@/components/ui/Button'
-import { formatContextLength, formatNumber, prettyModelName, trimPriceZeros } from '@/lib/utils'
+import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 import {
   MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, autoSummary,
 } from '@/features/models/model-format'
@@ -221,8 +221,8 @@ export function CatalogCard({
         </div>
       )}
 
-      {/* 贴底：价格规格。原型口径 2 行 × 2 列 —— 第一行输入/输出价，第二行
-          上下文/最大输出。划线原价内联在现价右侧，不另起一行。 */}
+      {/* 贴底：价格规格。第一行输入/输出价，第二行上下文。划线原价内联在现价
+          右侧，不另起一行。最大输出已按 shared/modelgo_prd#348 移除（后端无可靠数据）。 */}
       <div className="mg-mcard-specs">
         <Metric
           label={t('modelsCatalog.card.input')}
@@ -233,10 +233,6 @@ export function CatalogCard({
         />
         <Metric label={t('modelsCatalog.card.output')} value={output.value} unit={output.unit} accent />
         <Metric label={t('modelsCatalog.card.context')} value={ctxValue} />
-        <Metric
-          label={isZh ? '最大输出' : 'Max output'}
-          value={model.max_output_tokens ? formatNumber(model.max_output_tokens) : '—'}
-        />
       </div>
 
       {/* 操作：hover / 键盘聚焦时浮出，覆盖最底一行，不改变卡片高度。

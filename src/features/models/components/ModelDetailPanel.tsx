@@ -2,8 +2,9 @@
  * 模型详情主面板（Hero + 规格）。
  *
  * 信息结构照 PRD 原型 `modelgo_prd/src/App.tsx:5035-5168`（MarketplaceModelDetail）：
- * Hero 三栏「图标 | 名称+角标/厂商+API ID/简介/标签 | 操作区」，下面一条横向 6 格
- * 规格条（上下文窗口 / 最大输出 / 输入价格 / 输出价格 / 缓存读取 / 缓存写入）。
+ * Hero 三栏「图标 | 名称+角标/厂商+API ID/简介/标签 | 操作区」，下面一条横向 5 格
+ * 规格条（上下文窗口 / 输入价格 / 输出价格 / 缓存读取 / 缓存写入；最大输出已按
+ * shared/modelgo_prd#348 移除——后端无可靠数据）。
  * 原型没有 Tab —— 此前包了一层只剩单个「基本参数」Tab 的空壳（供应商 Tab 已按
  * PRD §9.2 下线），现按原型平铺。
  *
@@ -20,7 +21,7 @@ import { CopyButton } from '@/components/ui/CopyButton'
 import {
   currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, vendorFromModelId, autoSummary,
 } from '../model-format'
-import { formatContextLength, formatNumber, prettyModelName, trimPriceZeros } from '@/lib/utils'
+import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 
 interface ModelDetailPanelProps {
   detail: CatalogModelDetail
@@ -177,11 +178,6 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
           label={t('models.detail.contextLength')}
           value={detail.context_length > 0 ? formatContextLength(detail.context_length) : ''}
           unit={detail.context_length > 0 ? 'tokens' : undefined}
-        />
-        <Metric
-          label={t('models.detail.maxOutputTokens')}
-          value={detail.max_output_tokens ? formatNumber(detail.max_output_tokens) : ''}
-          unit={detail.max_output_tokens ? 'tokens' : undefined}
         />
         <Metric
           label={t('models.detail.pricingInput')}

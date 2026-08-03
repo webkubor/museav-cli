@@ -331,17 +331,47 @@ pnpm build:prod
 → ego-lite 浏览器验证（双主题/真实数据/截图，见 mg-frontend skill 的 ui-verification）
 → 合 test 分支 → push → Jenkins 发测试环境 → 在部署后的环境复验
 → GitLab 单贴 版本号+根因+截图 → 转「待验证」   ← 顺序不可反：先部署后改状态
+→ 清分支：本地 + 远程 + worktree 三处都删，已合并上线的一个都不留
 ```
 
 - 前端用了后端未交付的字段/端点 → 必须落 API 单并在代码注释挂单号；
 - 后端交付的待验证单 → 联调实测后才流转，不认标签只认真源。
+
+#### 分支卫生：已合并上线的分支一个都不留
+
+交付完成后**必须把分支清掉**（本地 + 远程 + worktree 三处），不留残枝。反过来说：**分支/worktree 不存在，是这件事已经做完上线的证据，不是改动丢了**——别看到目录没了就以为要重做，先去 `git log` 里搜提交。
+
+```bash
+# 1. 判「是否已合并」只认 origin，别信 git branch -d 的提示
+git merge-base --is-ancestor <branch> origin/test && echo 已合并
+
+# 2. 清理（三处）
+git worktree remove <path>            # worktree
+git branch -d <branch>                # 本地；-d 拒绝时先 git pull --ff-only origin test 再删
+git push origin --delete <branch>     # 远程
+
+# 3. 定期回收已删远程分支的本地引用
+git fetch origin --prune
+```
+
+三个坑：
+
+- **`git branch -d` 说「not fully merged」不等于真没合并**：它按**当前分支**比，本地 `test` 落后于 `origin/test` 时会误报。先 `git pull --ff-only origin test` 同步再删，别直接 `-D` 硬删。
+- **被 cherry-pick / 重新提交过的分支**，commit hash 不同但内容已上线。用 `git patch-id` 确认等价再删，别只看 commit message 像：
+  ```bash
+  git show <branch-commit> --format="" | git patch-id --stable   # 与 test 上那个 commit 的 patch-id 对比
+  ```
+- **护栏，这三种绝不删**：别人的分支（`git log -1 --format=%an` 先看作者）、有未提交 WIP 的、共享分支（`test`/`main`/`dev`）。别人的已合并分支也只报告、不代删。
 
 **发现 API 错误（联调打不通 / 返回违反契约 / 后端字段缺失）怎么走**：
 
 1. 先取证：读 `log/api-calls.log`（agent-eyes 落盘的请求/响应全量），别凭页面表象判断；
 2. 判归属：归属判定表见 [`docs/COLLABORATION.md`](./docs/COLLABORATION.md)「生产验收 → QA → 回归 Loop」——请求路由/HTTP 状态/业务 code 违反契约归后端，展示与契约都异常算混合、同单拆清；
 3. 落 API 单（建单前按模块查重，一模块一单）：格式 页面→接口→问题→缺什么 + 验收 checkbox，带 curl/请求响应证据；
-4. 指对模块 owner（完整指派表见 [`docs/COLLABORATION.md`](./docs/COLLABORATION.md)「团队指派表」）：通用 API=任杰、用量/日志/总览口径=凌霄、护栏/提示词检测=邵一鸣；
+4. 指对模块 owner（完整指派表见 [`docs/COLLABORATION.md`](./docs/COLLABORATION.md)「团队指派表」）——**先分前后端，再查 owner**：
+   - 前端：模型广场=陆浩，其余=栖洲；
+   - 后端：调用日志/模型日志、模型广场（数据侧）、可观测性、平台助手=任杰；护栏/提示词检测=邵一鸣；**以上之外全部=凌霄**（登录注册、权限角色、支付充值、账单发票、用量与总览口径、租户企业、工作空间与成员、邀请、API Keys、模型体验/对比、异步任务、返利、平台配置）；
+   - 两个易混边界：「日志」→ 调用日志归任杰、用量统计归凌霄；「模型」→ 模型广场归任杰（后端）/陆浩（前端）、模型体验与对比归凌霄。**「通用 API=任杰」这个旧口径已作废**，别再拿它当默认兜底；
 5. 边界：别人建的纯后端单不代管、不擅自转派；前端不写兜底遮掩后端语义错误，开单钉死。
 
 ### 产品需求真源（飞书 PRD）

@@ -765,7 +765,6 @@ export default function ModelsPage() {
           billing_status: free ? 'free' : 'billed',
         }, { result: 'success' })
       }
-      void refreshHistorySessions()
     } catch (err) {
       if ((err as Error).name === 'AbortError') return
       applyAssistant(() => '')
@@ -787,6 +786,10 @@ export default function ModelsPage() {
       }, { result: 'fail', error_code: errorCode })
     } finally {
       setIsStreaming(false)
+      // 放 finally 而不是 try 末尾：会话是 ensureConversation 懒创建的，创建成功但模型调用
+      // 失败时也已经落库了，只在成功路径刷新会导致这条会话在侧栏里不存在，要手动刷浏览器
+      // 才出现（需求方 shared#346）。成功路径同样需要它来同步自动生成的标题与排序。
+      void refreshHistorySessions()
     }
   }
 
@@ -875,7 +878,6 @@ export default function ModelsPage() {
         token_bucket: tokenBucket(0),
         billing_status: spend === 0 ? 'free' : 'billed',
       }, { result: message.status === 'failed' ? 'fail' : 'success' })
-      void refreshHistorySessions()
     } catch (err) {
       applyResult({ error: `${t('modelsExperience.requestFailed')}${extractApiErrorMessage(err)}` })
       const errorCode = (err as { data?: { field_errors?: Array<{ code?: string }> } } | undefined)?.data?.field_errors?.[0]?.code
@@ -888,6 +890,8 @@ export default function ModelsPage() {
       }, { result: 'fail', error_code: errorCode })
     } finally {
       setIsStreaming(false)
+      // 同对话路径（shared#346）：懒创建的会话在模型调用失败时也已落库，成功失败都要同步侧栏
+      void refreshHistorySessions()
     }
   }
 

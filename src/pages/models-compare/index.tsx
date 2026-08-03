@@ -723,6 +723,12 @@ export default function ModelsComparePage() {
     const remaining = (pendingByDispatch.current.get(dispatchId) ?? 1) - 1
     pendingByDispatch.current.set(dispatchId, remaining)
     if (remaining > 0) return
+    // 一轮发送全部落地后同步历史侧栏：新建的会话、后端按首条提问自动生成的标题、
+    // 以及更新时间排序都要立刻反映出来。对比页此前完全没有这个刷新（只在展开侧栏时拉一次），
+    // 会话记录要手动刷浏览器才出现（需求方 shared#346）。放在 settleDispatch 而不是各列的
+    // 发送函数里：这里是同步/独立/重试/异步视频四条路径共同的收口点，且各列 finally 都会走到，
+    // 成功失败都覆盖，一轮只发一次请求。
+    void refreshHistorySessions()
     setColumns((prev) => {
       if (!prev) return prev
       const rounds = prev

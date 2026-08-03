@@ -92,6 +92,10 @@
   padding: 4px 8px;
   border-radius: var(--radius-sm);
   transition: background-color 0.15s ease, border-color 0.15s ease;
+  /* 这是 <button>，浏览器 UA 默认 text-align:center 会继承进标题/副标题两行文本块：
+     副标题（glm-5.2 · 对话）比标题窄，被居中后左侧空出一截，看着像"厂商 logo 没
+     渲染的空占位"（shared/modelgo_prd#342）。显式左对齐，两行文本左缘对齐。 */
+  text-align: left;
 }
 
 .models-experience-model-trigger:hover {

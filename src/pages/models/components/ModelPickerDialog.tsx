@@ -484,6 +484,11 @@ export function ModelPickerDialog({
                 <button
                   key={model.id}
                   type="button"
+                  // 悬停即预览右栏详情（shared/modelgo_prd#351：滑过不出详情、点击行为不一致）。
+                  // 附带统一了点击语义：桌面端悬停已把 detailId 设为本行，handleRowClick 的
+                  // 「多任务模型第一次点击只预览」保护自然短路——所有模型点击=选中；
+                  // 触屏无 hover 时该保护原样生效（首击预览、再击提交），无回归。
+                  onMouseEnter={() => setDetailId(model.id)}
                   onClick={() => { if (!unsupported) handleRowClick(model) }}
                   className={cn(
                     'model-picker-dialog__row',

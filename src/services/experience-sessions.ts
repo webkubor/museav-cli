@@ -150,7 +150,12 @@ export async function removeExperienceConversation(sessionId: string, conversati
   await del(`experience/sessions/${sessionId}/conversations/${conversationId}`)
 }
 
-/** 模型列换模型（保留列内历史），真实端点见 Swagger PATCH .../conversations/{conversationId} */
+/**
+ * 模型列换模型，真实端点见 Swagger PATCH .../conversations/{conversationId}。
+ * 语义（shared/modelgo_prd#336，后端 observer f776c33 起）：模型实际变化时服务端同事务
+ * 删除该 conversation 的全部消息（从干净上下文开始，刷新/历史恢复也为空）；
+ * 重选同一模型不视为「换」，历史保留。调用方成功后需同步清掉该列本地消息状态。
+ */
 export async function switchExperienceConversationModel(
   sessionId: string,
   conversationId: string,

@@ -67,7 +67,19 @@
 
 ### 1.5 接入弹窗 (`ConnectModal.tsx`)
 
-`Modal`（size=lg，title=`立即接入`）。顶部「ModelGo 接入参数」卡 + `Tabs` 切换 6 种客户端（一键接入/CC Switch/Claude Code/Codex/OpenAI SDK/cURL，见 `CONNECT_ACTIONS` `constants.tsx:110-152`），每个 Tab 展示参数表 + 拉起工具/文档按钮 + 复制。
+`Modal`（size=lg，title=`立即接入`）。顶部「ModelGo 接入参数」卡 + `Tabs` 切换 6 种客户端（一键接入/CC Switch/Claude Code/Codex/OpenAI SDK/cURL，见 `CONNECT_ACTIONS` `constants.tsx:116-158`），每个 Tab 展示参数表 + 拉起工具/文档按钮 + 复制。
+
+**参数格里的两个下拉**（需求方 shared#322，对齐原型 `modelgo_prd@47e08f8`）：参数由 `ConnectParam.field` 标记（`constants.tsx`），`ConnectModal.renderParam()` 据此决定渲染只读值还是内嵌下拉。下拉复用 `ui/Select`，只把触发器的边框/底色去掉（`h-auto border-0 bg-transparent px-0 text-left`），视觉上仍是一张参数卡。
+
+| 字段 | 出现的 Tab | 选项来源 | 空态 |
+|---|---|---|---|
+| `API Key` | 全部 5 个（一键接入 tab 无参数格） | `listApiKeys(activeWorkspaceId)` 里 `status==='active'` 的 Key，文案 `名称 · 掩码` | 「暂无可用 API Key」+ 下拉禁用 + 拉起按钮置灰 |
+| `Model` / `ANTHROPIC_MODEL` | 仅 CC Switch / Claude Code / Codex | `listModels({protocol})`（前两者 anthropic、Codex openai）经 `buildConnectModelOptions()` 过滤，见 `connect-models.ts` | 「暂无可用模型」+ 下拉禁用 |
+
+- 模型选择**按 tab 各存一份**（`modelByMethod`），切 tab 不互相覆盖；默认项走 `pickConnectModels()`。
+- 参数格**只渲染掩码**，明文不落 DOM；「复制参数 / 复制 API Key」走 `CopyButton` 的 `getValue` 异步取值 → `revealApiKey()`。
+- 「拉起 CC Switch / 打开 Claude Code」是 `Button variant="brand"` 而非 `<a>`：deep link 必须带明文 Key，点击时才 reveal 再 `location.assign`（带掩码会导出不可用的 Provider）。外链型（SDK/cURL 的文档）仍是 `<a target="_blank">`。
+- ⚠️ 已知偏差：原型有 per-model `codingTools` 白名单，catalog 没有，只能按「协议 + 输出含 text」近似 → 已落后端单 qa#583。
 
 ### 1.6 协议横栏 (`ApiKeyProtocolBanner.tsx`)
 

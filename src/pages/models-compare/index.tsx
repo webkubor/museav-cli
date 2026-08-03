@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/Button'
 import { Switch } from '@/components/ui/Switch'
 import { Composer } from '@/components/ui/Composer'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { Modal } from '@/components/ui/Modal'
 import { useModels } from '@/features/models/hooks/useModels'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { modelVendorLabel } from '@/features/models/model-format'
@@ -182,6 +183,13 @@ export default function ModelsComparePage() {
   const [attachment, setAttachment] = useState<{ file: File; previewUrl: string; uploaded: ExperienceAttachment } | null>(null)
   const [attachmentUploading, setAttachmentUploading] = useState(false)
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
+  /** 共享附件仅部分模型支持时的提示弹框（shared#337，PRD 原型 PlaygroundAttachmentCompatibilityDialog）：
+   *  上传成功后检测到部分列不支持该附件类型时弹出，列出「收到文本与附件 / 仅收到文本」两组模型。 */
+  const [attachmentCompatibility, setAttachmentCompatibility] = useState<{
+    attachmentName: string
+    supportedModelNames: string[]
+    unsupportedModelNames: string[]
+  } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const transientPreviewUrlsRef = useRef(new Set<string>())
 
@@ -1156,6 +1164,16 @@ export default function ModelsComparePage() {
       const uploaded = await uploadExperienceAttachment(file)
       setAttachment({ file, previewUrl, uploaded })
       const supportingCount = cols.filter((c) => modelSupportsAttachment(c.model, kind)).length
+      // 部分支持 → 弹「部分模型支持该附件」提示框（shared#337，原型上传后即弹、非发送时才提示）；
+      // 全支持/全不支持不弹（后者由类别校验或发送兜底，标题"部分模型"也对不上）。
+      if (supportingCount > 0 && supportingCount < cols.length) {
+        const modelName = (c: ColumnState) => prettyModelName(c.model.display_name, c.model.model_id, c.model.vendor ?? c.model.provider)
+        setAttachmentCompatibility({
+          attachmentName: file.name,
+          supportedModelNames: cols.filter((c) => modelSupportsAttachment(c.model, kind)).map(modelName),
+          unsupportedModelNames: cols.filter((c) => !modelSupportsAttachment(c.model, kind)).map(modelName),
+        })
+      }
       trackEvent('playground_attachment_result', {
         kind, size_bucket: sizeBucket(file.size), result: 'success',
         supporting_model_count: supportingCount, unsupported_model_count: cols.length - supportingCount,
@@ -1585,6 +1603,8 @@ export default function ModelsComparePage() {
           {attachment && (() => {
             const kind = attachmentKindFromMime(attachment.uploaded.mime)
             const supportingCount = kind ? columns.filter((c) => modelSupportsAttachment(c.model, kind)).length : 0
+            // 只在"部分支持"时显示（shared#337 对齐原型：全支持不提示，主要告知走弹框，这行仅作常驻提醒）
+            if (supportingCount === 0 || supportingCount >= columns.length) return null
             return (
               <span className="models-compare-attachment-support">
                 {t('modelsExperience.compare.attachmentSupportCount', { supporting: supportingCount, total: columns.length })}
@@ -1783,6 +1803,48 @@ export default function ModelsComparePage() {
           </>
         )}
       </ConfirmModal>
+
+      {/* 「部分模型支持该附件」提示框（shared#337，PRD 原型 PlaygroundAttachmentCompatibilityDialog
+          逐字对齐）：上传后部分列不支持时弹出，分组列出收到附件/仅收到文本的模型，单按钮确认。 */}
+      <Modal
+        open={attachmentCompatibility !== null}
+        onClose={() => setAttachmentCompatibility(null)}
+        title={t('modelsExperience.compare.attachmentCompatibilityTitle')}
+        description={attachmentCompatibility?.attachmentName}
+        size="sm"
+        footer={
+          <Button variant="brand" onClick={() => setAttachmentCompatibility(null)}>
+            {t('modelsExperience.compare.attachmentCompatibilityConfirm')}
+          </Button>
+        }
+      >
+        {attachmentCompatibility && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <section className="rounded-md border border-mg-border bg-mg-fill-0/40 p-3">
+                <p className="text-xs font-semibold text-mg-text-2">
+                  {t('modelsExperience.compare.attachmentCompatibilitySupported')}
+                </p>
+                <ul className="mt-1.5 space-y-1 text-sm text-mg-text-1">
+                  {attachmentCompatibility.supportedModelNames.map((name) => <li key={name}>{name}</li>)}
+                </ul>
+              </section>
+              <section className="rounded-md border border-mg-border bg-mg-fill-0/40 p-3">
+                <p className="text-xs font-semibold text-mg-text-2">
+                  {t('modelsExperience.compare.attachmentCompatibilityUnsupported')}
+                </p>
+                <ul className="mt-1.5 space-y-1 text-sm text-mg-text-1">
+                  {attachmentCompatibility.unsupportedModelNames.map((name) => <li key={name}>{name}</li>)}
+                </ul>
+              </section>
+            </div>
+            <div className="flex items-start gap-1.5 text-xs text-mg-text-3">
+              <LuInfo size={14} className="mt-0.5 shrink-0" />
+              <span>{t('modelsExperience.compare.attachmentCompatibilityNote')}</span>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

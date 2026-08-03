@@ -158,7 +158,8 @@ export function extractApiErrorMessage(err: unknown): string {
   return message ? friendlyUpstreamError(message) : i18n.t('modelsExperience.retryLater')
 }
 
-/** 九类体验任务枚举 → 展示文案，取自后端接口文档 §二 task 值域（字面值以文档为准） */
+/** 十类体验任务枚举 → 展示文案，取自后端接口文档 §二 task 值域（字面值以文档为准；
+ *  video_to_video 为 2026-08-03 qa#584 后端新增第十类，shared#319 视频生视频） */
 export type ExperienceTaskType =
   | 'text_to_text'
   | 'image_to_text'
@@ -169,6 +170,7 @@ export type ExperienceTaskType =
   | 'audio_to_text'
   | 'text_to_video'
   | 'image_to_video'
+  | 'video_to_video'
 
 /** 任务类型 → 展示文案；用函数而非常量表是因为要在每次调用时按当前语言取值（模块加载时算一次会在切语言后过期） */
 export function experienceTaskLabel(task: ExperienceTaskType): string {
@@ -182,7 +184,7 @@ export const EXPERIENCE_CATEGORY_TASKS: Record<ExperienceCategoryKey, Experience
   dialogue: ['text_to_text', 'image_to_text', 'video_to_text'],
   image: ['text_to_image', 'image_to_image'],
   audio: ['text_to_audio', 'audio_to_text'],
-  video: ['text_to_video', 'image_to_video'],
+  video: ['text_to_video', 'image_to_video', 'video_to_video'],
 }
 
 export const EXPERIENCE_CATEGORY_ORDER: ExperienceCategoryKey[] = ['dialogue', 'image', 'audio', 'video']
@@ -285,7 +287,7 @@ export function resolveDialogueTask(attachmentKind: string | null): ExperienceTa
 /** 需要「先传文件才能发」的三个任务（PRD §7.5 必须携带附件列表 / App.tsx:16951
  *  isPlaygroundTaskNeedsFile 逐字对齐）。这三个任务的 composer 用专门上传区替换
  *  掉通用回形针，其余任务(text_to_image/text_to_audio/text_to_video/对话类)不显示。 */
-const TASK_NEEDS_FILE = new Set<ExperienceTaskType>(['image_to_image', 'audio_to_text', 'image_to_video'])
+const TASK_NEEDS_FILE = new Set<ExperienceTaskType>(['image_to_image', 'audio_to_text', 'image_to_video', 'video_to_video'])
 
 export function taskNeedsFile(task: ExperienceTaskType): boolean {
   return TASK_NEEDS_FILE.has(task)
@@ -295,6 +297,7 @@ export function taskNeedsFile(task: ExperienceTaskType): boolean {
 export function taskAttachmentKind(task: ExperienceTaskType): keyof typeof ATTACHMENT_LIMITS | null {
   if (task === 'image_to_image' || task === 'image_to_video') return 'image'
   if (task === 'audio_to_text') return 'audio'
+  if (task === 'video_to_video') return 'video'
   return null
 }
 
@@ -366,6 +369,7 @@ export function modelExperienceTasks(model: CatalogModelItem): ExperienceTaskTyp
     case 'video':
       if (hasTextIn) tasks.push('text_to_video')
       if (inp.includes('image')) tasks.push('image_to_video')
+      if (inp.includes('video')) tasks.push('video_to_video')
       break
   }
   return tasks

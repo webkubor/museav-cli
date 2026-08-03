@@ -108,6 +108,25 @@
   box-shadow: none !important;
 }
 
+/* 附件兼容弹框的提示行（#337 reopen）：与上方两个分组框同宽同圆角的成型 info 条，
+   语言对齐 .models-experience-inline-error（同款条形提示，info 色替换 danger 色） */
+.models-compare-dialog-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--mg-info, #3b82f6) 24%, var(--mg-border));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--mg-info, #3b82f6) 6%, var(--mg-bg-0));
+  color: var(--mg-text-2);
+  font-size: 12px;
+}
+
+.models-compare-dialog-note > svg {
+  flex-shrink: 0;
+  color: var(--mg-info, #3b82f6);
+}
+
 /* 共享附件"N个模型支持"提示（qa#545 §7.4/7.5），与附件预览行同一行展示 */
 .models-compare-attachment-support {
   font-size: 12px;

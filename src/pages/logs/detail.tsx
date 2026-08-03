@@ -389,7 +389,7 @@ function MessageBubble({ content, role }: { content: string; role: string }) {
   )
 }
 
-/** 还原出的助手回答用 Markdown 渲染（标题/列表/代码块等），复用客服聊天 / 模型体验同款 cs-markdown 样式。 */
+/** 还原出的助手回答用 Markdown 渲染（标题/列表/代码块等），复用平台助手聊天 / 模型体验同款 cs-markdown 样式。 */
 function MarkdownBubble({ label, content, tone }: { label: string; content: string; tone: 'success' | 'brand' }) {
   return (
     <div className="rounded-md border border-mg-border/60 bg-mg-fill-0/30 p-3">

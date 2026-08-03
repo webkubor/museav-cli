@@ -150,7 +150,7 @@ body[theme-mode='dark'] .sidebar-flow-line::after {
   margin-bottom: 6px;
 }
 
-/* ── 客服聊天 Markdown ─────────────────────────── */
+/* ── 平台助手聊天 Markdown ─────────────────────── */
 .cs-markdown { font-size: 13px; line-height: 1.6; }
 .cs-markdown p { margin: 0 0 8px; }
 .cs-markdown p:last-child { margin-bottom: 0; }

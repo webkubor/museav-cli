@@ -71,7 +71,7 @@ export const storageKeys = {
   // ── 平台配置缓存（用于 stale-while-revalidate，避免首屏品牌色闪烁） ────────
   platformSite:     () => buildKey('platform_site', 'app'),
 
-  // ── 客服聊天（app 全局，会话数据无需 market 隔离） ────────────────────────
+  // ── 平台助手聊天（app 全局，会话数据无需 market 隔离） ────────────────────
   csHistory:        () => buildKey('cs_history', 'app'),
   csConversationId: () => buildKey('cs_cid', 'app'),
   csTriggerPos:     () => buildKey('cs_pos', 'app'),

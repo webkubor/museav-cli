@@ -114,18 +114,6 @@ export function CustomerService() {
     }
   }, [messages, isLoading])
 
-  // 外部入口（如错误弹窗「转给客服」）注入草稿：预填输入框并聚焦，不自动发送。
-  // 用 store 订阅而非 selector + effect，避免在 effect 同步 setState。
-  useEffect(() => {
-    return useCustomerServiceStore.subscribe((state, prev) => {
-      if (state.draft != null && state.draft !== prev.draft) {
-        setInputValue(state.draft)
-        useCustomerServiceStore.getState().clearDraft()
-        requestAnimationFrame(() => textareaRef.current?.focus())
-      }
-    })
-  }, [])
-
   if (!activeTenantId) return null
 
   function handleMouseDown(e: React.MouseEvent) {

@@ -63,7 +63,7 @@
 @import "./styles/brand.css";       /* 左上角品牌区：品牌字体 + 双色 wordmark + 漂浮光晕 logo */
 @import "./styles/auth.css";        /* 登录/注册/鉴权页样式 */
 @import "./styles/components.css";  /* modern-* 自定义组件 + 液态玻璃搜索 */
-@import "./styles/effects.css";     /* 动画、侧边栏流光、客服 markdown */
+@import "./styles/effects.css";     /* 动画、侧边栏流光、平台助手 markdown */
 
 
 /* ── 🚀 全局主题切换丝滑过渡（防瞬间闪眼） ── */

@@ -222,6 +222,8 @@
       "invoiceTab": "发票",
       "empty": "暂无入账记录",
       "emptyFiltered": "当前筛选条件下没有入账记录",
+      "loadFailed": "账务记录加载失败",
+      "retry": "重试",
       "clearFilters": "清除筛选",
       "typeAll": "全部类型",
       "bucketAll": "全部余额桶",
@@ -290,7 +292,8 @@
       "giftHint": "兑换码/体验金",
       "rewardBalance": "奖励余额",
       "rewardHint": "推荐返佣",
-      "frozenHint": "预扣/处理中"
+      "frozenHint": "预扣/处理中",
+      "loadFailed": "余额加载失败"
     },
     "tabs": {
       "orders": "充值订单",

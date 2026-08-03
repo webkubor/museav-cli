@@ -222,6 +222,8 @@
       "invoiceTab": "Invoices",
       "empty": "No income records yet",
       "emptyFiltered": "No income records match the current filters",
+      "loadFailed": "Failed to load records",
+      "retry": "Retry",
       "clearFilters": "Clear filters",
       "typeAll": "All Types",
       "bucketAll": "All Buckets",
@@ -290,7 +292,8 @@
       "giftHint": "Promo code / trial credit",
       "rewardBalance": "Reward Balance",
       "rewardHint": "Referral rebate",
-      "frozenHint": "Pre-authorization / processing"
+      "frozenHint": "Pre-authorization / processing",
+      "loadFailed": "Failed to load balance"
     },
     "tabs": {
       "orders": "Orders",

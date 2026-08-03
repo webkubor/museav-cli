@@ -38,6 +38,10 @@
   gap: 14px;
   flex: 1;
   min-height: 0;
+  /* 页面壳是固定高 + overflow:hidden（.models-experience-page），列又有 420px 的
+     min-height——矮视口下列内容会溢出本容器的盒子，紧随其后的共享 composer 就压在
+     溢出内容上（shared/modelgo_prd#333）。放不下时让列区自己滚，composer 恒在其下。 */
+  overflow-y: auto;
 }
 
 .models-compare-column {

@@ -1855,8 +1855,9 @@ export default function ModelsComparePage() {
                 </ul>
               </section>
             </div>
-            <div className="flex items-start gap-1.5 text-xs text-mg-text-3">
-              <LuInfo size={14} className="mt-0.5 shrink-0" />
+            {/* 提示行成型为 info 条（#337 reopen：裸文本视觉上"没对齐"），样式在 compare.css */}
+            <div className="models-compare-dialog-note">
+              <LuInfo size={14} />
               <span>{t('modelsExperience.compare.attachmentCompatibilityNote')}</span>
             </div>
           </div>

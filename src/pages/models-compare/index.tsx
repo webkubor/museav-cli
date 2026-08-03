@@ -994,13 +994,22 @@ export default function ModelsComparePage() {
     }
   }
 
-  /** §7.1：对比列内切换模型——调真实换模型端点，保留该列聊天记录（接口原文"保留列内历史"） */
+  /** §7.1：对比列内切换模型（shared/modelgo_prd#336）——后端 PATCH 语义已改（observer
+   *  f776c33）：模型实际变化时服务端同事务删除该 conversation 的全部消息（刷新/历史恢复
+   *  也干净），重选同一模型不视为「换」、历史不动。前端与之对齐：换模型成功后中断该列
+   *  进行中的流式输出并清空本地消息，从干净上下文开始；同模型则保留现状。 */
   async function handleSwitchConfirm(model: CatalogModelItem) {
     if (switchPickerIndex === null || !columns || !sessionId) return
-    const target = columns[switchPickerIndex]
+    const idx = switchPickerIndex
+    const target = columns[idx]
+    const modelChanged = model.model_id !== target.model.model_id
     try {
       await switchExperienceConversationModel(sessionId, target.conversationId, model.model_id)
-      updateColumn(switchPickerIndex, { model, chatParams: {} })
+      if (modelChanged) {
+        abortRefs.current[idx]?.abort()
+        abortRefs.current[idx] = null
+        updateColumn(idx, { model, chatParams: {}, history: [], streaming: false })
+      }
       trackEvent('playground_model_select', { from_model_id: target.model.model_id, to_model_id: model.model_id }, { result: 'success' })
     } catch (err) {
       setBootError(`${t('modelsExperience.compare.switchModelFailed')}${(err as Error).message || t('modelsExperience.retryLater')}`)

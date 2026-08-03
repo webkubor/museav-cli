@@ -221,7 +221,11 @@ export default function ModelsPage() {
   }, [selectedModel, input, chatParams])
 
   useEffect(() => {
-    const state = location.state as { selectedModelId?: string } | null
+    const state = location.state as {
+      selectedModelId?: string
+      resumeSessionId?: string
+      resumeConversationId?: string
+    } | null
     // 目录还没回来时 allModels 是空数组，此刻既找不到目标模型、也**不能清 entry state**：
     // 清了之后列表加载完 effect 重跑，state 已空 → 落到下面的兜底选中 allModels[0]，
     // 于是「带某个模型跳进体验页」变成「进了目录第一个模型」（shared/modelgo_prd#300：
@@ -234,9 +238,16 @@ export default function ModelsPage() {
       const targetModel = allModels.find((m) => m.model_id === state.selectedModelId || m.id === state.selectedModelId)
       if (targetModel) {
         setSingle({ selectedId: targetModel.id, offlineModel: null, task: null })
-        // 从模型广场/详情页/登录跳转带 selectedModelId 进来 = 用户显式选了要体验的模型，
-        // 语义等同 handlePick 换模型，同样要开新会话，不能沿用上一个模型遗留的旧对话
-        startNewSession()
+        if (state.resumeSessionId) {
+          // 从对比页「删到剩一列 / 退出对比」回来 = 继续保留列的既有会话（原型
+          // exitComparison/removeCompareModel 都保留主列记录，shared/modelgo_prd#339），
+          // 恢复会话消息而不是开新会话；只恢复保留列那条 conversation 的消息
+          void openHistorySession(state.resumeSessionId, state.resumeConversationId)
+        } else {
+          // 从模型广场/详情页/登录跳转带 selectedModelId 进来 = 用户显式选了要体验的模型，
+          // 语义等同 handlePick 换模型，同样要开新会话，不能沿用上一个模型遗留的旧对话
+          startNewSession()
+        }
       }
       // 到这里目录已就绪：找到了就已消费、没找到就是真的没这个模型，两种情况都该清掉 state，
       // 免得它一直挂在 history 上，用户下次前进/后退回来又被套用一次
@@ -379,11 +390,15 @@ export default function ModelsPage() {
     setInput(draft)
   }
 
-  async function openHistorySession(id: string) {
+  async function openHistorySession(id: string, onlyConversationId?: string) {
     if (!id) return
     const session = historySessions.find((s) => s.id === id)
     try {
-      const { items } = await getExperienceSessionMessages(id)
+      const { items: allItems } = await getExperienceSessionMessages(id)
+      // 从对比页 resume 回来时会话里可能残留其他对比列的消息，只取保留列那条 conversation 的
+      const items = onlyConversationId
+        ? allItems.filter((m) => m.conversation_id === onlyConversationId)
+        : allItems
       const restored: ExperienceMessage[] = await Promise.all(items.map(async (msg) => {
         const { media, hasFailures } = await resolveExperienceMessageMedia(msg.attachments)
         return {
@@ -399,7 +414,7 @@ export default function ModelsPage() {
         }
       }))
       setSessionId(id)
-      const conv = items.find((m) => m.conversation_id)?.conversation_id ?? null
+      const conv = onlyConversationId ?? items.find((m) => m.conversation_id)?.conversation_id ?? null
       setConversationId(conv)
       setMessages(restored)
       // 模型条要切到这次会话真正用的模型（PRD §AC-18）：还在目录里就正常选中，

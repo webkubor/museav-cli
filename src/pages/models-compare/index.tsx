@@ -23,6 +23,7 @@ import { Composer } from '@/components/ui/Composer'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useModels } from '@/features/models/hooks/useModels'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
+import { modelVendorLabel } from '@/features/models/model-format'
 import { prettyModelName, cn } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 import {
@@ -271,7 +272,7 @@ export default function ModelsComparePage() {
                 const catalogModel = allModels.find((m) => m.model_id === modelId)
                 return {
                   id: modelId,
-                  name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id, catalogModel.vendor ?? catalogModel.provider) : modelId,
+                  name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id, modelVendorLabel(catalogModel, '')) : modelId,
                   offline: !catalogModel,
                 }
               })
@@ -282,7 +283,7 @@ export default function ModelsComparePage() {
                   const catalogModel = allModels.find((m) => m.model_id === conv.model_id)
                   return {
                     id: conv.model_id,
-                    name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id, catalogModel.vendor ?? catalogModel.provider) : conv.model_id,
+                    name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id, modelVendorLabel(catalogModel, '')) : conv.model_id,
                   offline: !catalogModel,
                 }
               }),
@@ -486,7 +487,7 @@ export default function ModelsComparePage() {
         onDelta: (delta) => applyAssistant(idx, (content) => content + delta),
         onStats: (event) => { stats = event },
       })
-      const modelLabel = prettyModelName(column.model.display_name, column.model.model_id, column.model.vendor ?? column.model.provider)
+      const modelLabel = prettyModelName(column.model.display_name, column.model.model_id, modelVendorLabel(column.model, ''))
       const hasStats = stats !== null
       const s = stats as ExperienceStatsEvent | null
       const totalMs = hasStats ? s!.total_ms : Date.now() - startedAt
@@ -559,7 +560,7 @@ export default function ModelsComparePage() {
    *  仍然只传 attachments，task 在会话创建时已固定，后端按实际是否带附件处理。 */
   async function sendMediaOne(idx: number, prompt: string, dispatchId: string, attachment?: DispatchAttachment) {
     const column = columns![idx]
-    const modelLabel = prettyModelName(column.model.display_name, column.model.model_id, column.model.vendor ?? column.model.provider)
+    const modelLabel = prettyModelName(column.model.display_name, column.model.model_id, modelVendorLabel(column.model, ''))
     // 发送这一刻的任务/参数配置算标题明细（PRD §7.10 artifact.title/detail），响应回来前
     // 用户可能已经改了这一列的设置，不能等结果回来时再读当前 chatParams
     const chatParamsAtSend = column.chatParams
@@ -1325,7 +1326,7 @@ export default function ModelsComparePage() {
                 className={cn('models-compare-mobile-tab-dot', `is-${status}`)}
                 aria-hidden="true"
               />
-              {prettyModelName(column.model.display_name, column.model.model_id, column.model.vendor ?? column.model.provider)}
+              {prettyModelName(column.model.display_name, column.model.model_id, modelVendorLabel(column.model, ''))}
             </button>
           )
         })}
@@ -1357,9 +1358,9 @@ export default function ModelsComparePage() {
                 )}
                 <div className="min-w-0">
                   <div className="models-experience-modelbar-title">
-                    {isOfflineModel(column.model) ? t('modelsExperience.modelOffline') : prettyModelName(column.model.display_name, column.model.model_id, column.model.vendor ?? column.model.provider)}
+                    {isOfflineModel(column.model) ? t('modelsExperience.modelOffline') : prettyModelName(column.model.display_name, column.model.model_id, modelVendorLabel(column.model, ''))}
                   </div>
-                  <div className="models-experience-modelbar-sub">{column.model.vendor || column.model.provider || 'ModelGo'} · {experienceTaskLabel(compareTask)}</div>
+                  <div className="models-experience-modelbar-sub">{modelVendorLabel(column.model)} · {experienceTaskLabel(compareTask)}</div>
                 </div>
                 {isOfflineModel(column.model) ? (
                   <span className="models-experience-price-chip is-offline">{t('modelsExperience.modelOffline')}</span>
@@ -1496,7 +1497,7 @@ export default function ModelsComparePage() {
                     onStop={() => abortRefs.current[idx]?.abort()}
                     placeholder={compareTask === 'image_to_image'
                       ? t('modelsExperience.taskPlaceholder.image_to_image')
-                      : t('modelsExperience.compare.columnPlaceholder', { name: prettyModelName(column.model.display_name, column.model.model_id, column.model.vendor ?? column.model.provider), placeholder: categoryPlaceholder(compareCategory) })}
+                      : t('modelsExperience.compare.columnPlaceholder', { name: prettyModelName(column.model.display_name, column.model.model_id, modelVendorLabel(column.model, '')), placeholder: categoryPlaceholder(compareCategory) })}
                     sendLabel={t('modelsExperience.send')}
                     className="models-experience-composer-wrap models-compare-composer"
                     sendEnabled={compareTask === 'audio_to_text' ? !!colAttachment : undefined}
@@ -1711,7 +1712,7 @@ export default function ModelsComparePage() {
           open
           onClose={() => setSettingsIndex(null)}
           modelName={prettyModelName(columns[settingsIndex].model.display_name, columns[settingsIndex].model.model_id)}
-          vendor={columns[settingsIndex].model.vendor || columns[settingsIndex].model.provider || 'ModelGo'}
+          vendor={modelVendorLabel(columns[settingsIndex].model)}
           maxOutputTokens={Math.max(256, columns[settingsIndex].model.max_output_tokens || 4096)}
           task={compareTask}
           values={columns[settingsIndex].chatParams}

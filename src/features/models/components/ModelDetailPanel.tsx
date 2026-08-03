@@ -18,7 +18,7 @@ import { ModalityBadge } from './ModalityBadge'
 import { ModelIcon } from './ModelIcon'
 import { CopyButton } from '@/components/ui/CopyButton'
 import {
-  currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, vendorFromModelId, autoSummary,
+  currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, vendorFromModelId, autoSummary, modelVendorLabel,
 } from '../model-format'
 import { formatContextLength, formatNumber, prettyModelName, trimPriceZeros } from '@/lib/utils'
 
@@ -74,7 +74,7 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
   const { t, i18n } = useTranslation()
   const isZh = i18n.language.startsWith('zh')
   // provider（对外厂商名）优先；详情接口两者都不下发时用 model_id 前缀兜底（见 model-format）
-  const vendor = detail.provider || detail.vendor || vendorHint || vendorFromModelId(detail.model_id)
+  const vendor = modelVendorLabel(detail, '') || vendorHint || vendorFromModelId(detail.model_id)
 
   const promo = detail.promotion
   // free 只认服务端的显式限免标记，不从「价格为 0」推断 —— 未配价的模型也是 0。

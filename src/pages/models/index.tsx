@@ -32,6 +32,7 @@ import { Button } from '@/components/ui/Button'
 import { Composer } from '@/components/ui/Composer'
 import { useModels } from '@/features/models/hooks/useModels'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
+import { modelVendorLabel } from '@/features/models/model-format'
 import { useExperienceWorkbenchStore } from '@/store/use-experience-workbench-store'
 import { prettyModelName } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
@@ -299,7 +300,7 @@ export default function ModelsPage() {
                 const catalogModel = allModels.find((m) => m.model_id === modelId)
                 return {
                   id: modelId,
-                  name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id, catalogModel.vendor ?? catalogModel.provider) : modelId,
+                  name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id, modelVendorLabel(catalogModel, '')) : modelId,
                   offline: !catalogModel,
                 }
               })
@@ -310,7 +311,7 @@ export default function ModelsPage() {
                   const catalogModel = allModels.find((m) => m.model_id === conv.model_id)
                   return {
                     id: conv.model_id,
-                    name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id, catalogModel.vendor ?? catalogModel.provider) : conv.model_id,
+                    name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id, modelVendorLabel(catalogModel, '')) : conv.model_id,
                     offline: !catalogModel,
                   }
                 }),
@@ -698,7 +699,7 @@ export default function ModelsPage() {
         },
       })
 
-      const modelLabel = prettyModelName(selectedModel.display_name, selectedModel.model_id, selectedModel.vendor ?? selectedModel.provider)
+      const modelLabel = prettyModelName(selectedModel.display_name, selectedModel.model_id, modelVendorLabel(selectedModel, ''))
       if (stats) {
         const s: ExperienceStatsEvent = stats
         const spend = Number(s.actual_spend ?? s.estimated_spend ?? 0)
@@ -803,7 +804,7 @@ export default function ModelsPage() {
     retry?: { resourceIds: string[]; media?: ExperienceMessage['media'] },
   ) {
     if (!selectedModel) return
-    const modelLabel = prettyModelName(selectedModel.display_name, selectedModel.model_id, selectedModel.vendor ?? selectedModel.provider)
+    const modelLabel = prettyModelName(selectedModel.display_name, selectedModel.model_id, modelVendorLabel(selectedModel, ''))
     const currentAttachment = attachment
     // 用发送这一刻的任务/参数配置算标题明细（PRD §7.10 artifact.title/detail）——响应回来前
     // 用户可能已经切了任务/改了设置，不能等异步结果回来时再读当前 state，会算错这轮的规格。
@@ -1014,10 +1015,10 @@ export default function ModelsPage() {
                       )}
                       <div className="min-w-0">
                         <div className="models-experience-modelbar-title">
-                          {isOfflineModel(selectedModel) ? t('modelsExperience.modelOffline') : prettyModelName(selectedModel.display_name, selectedModel.model_id, selectedModel.vendor ?? selectedModel.provider)}
+                          {isOfflineModel(selectedModel) ? t('modelsExperience.modelOffline') : prettyModelName(selectedModel.display_name, selectedModel.model_id, modelVendorLabel(selectedModel, ''))}
                         </div>
                         <div className="models-experience-modelbar-sub">
-                          {selectedModel.vendor || selectedModel.provider || 'ModelGo'} · {experienceTaskLabel(effectiveTask)}
+                          {modelVendorLabel(selectedModel)} · {experienceTaskLabel(effectiveTask)}
                         </div>
                       </div>
                       {isOfflineModel(selectedModel) ? (
@@ -1038,7 +1039,7 @@ export default function ModelsPage() {
                     className="models-experience-icon-btn"
                     aria-label={t('modelsExperience.openApiCall')}
                     disabled={!selectedModel || isOfflineModel(selectedModel)}
-                    title={selectedModel ? (isOfflineModel(selectedModel) ? t('modelsExperience.modelOffline') : t('modelsExperience.viewApiExample', { name: prettyModelName(selectedModel.display_name, selectedModel.model_id, selectedModel.vendor ?? selectedModel.provider) })) : t('modelsExperience.openApiCall')}
+                    title={selectedModel ? (isOfflineModel(selectedModel) ? t('modelsExperience.modelOffline') : t('modelsExperience.viewApiExample', { name: prettyModelName(selectedModel.display_name, selectedModel.model_id, modelVendorLabel(selectedModel, '')) })) : t('modelsExperience.openApiCall')}
                     onClick={() => {
                       trackEvent('playground_api_modal_action', { action: 'open', protocol: '', language: '', model_id: selectedModel?.model_id ?? '' })
                       setApiCallOpen(true)
@@ -1051,7 +1052,7 @@ export default function ModelsPage() {
                     className="models-experience-icon-btn"
                     aria-label={t('modelsExperience.openModelSettings')}
                     disabled={!selectedModel || isOfflineModel(selectedModel)}
-                    title={selectedModel ? (isOfflineModel(selectedModel) ? t('modelsExperience.modelOffline') : t('modelsExperience.configureModel', { name: prettyModelName(selectedModel.display_name, selectedModel.model_id, selectedModel.vendor ?? selectedModel.provider) })) : t('modelsExperience.openModelSettings')}
+                    title={selectedModel ? (isOfflineModel(selectedModel) ? t('modelsExperience.modelOffline') : t('modelsExperience.configureModel', { name: prettyModelName(selectedModel.display_name, selectedModel.model_id, modelVendorLabel(selectedModel, '')) })) : t('modelsExperience.openModelSettings')}
                     onClick={() => void openSettings()}
                   >
                     <LuSettings2 size={14} />
@@ -1262,8 +1263,8 @@ export default function ModelsPage() {
         <ModelSettingsModal
           open={settingsOpen}
           onClose={() => setSettingsOpen(false)}
-          modelName={prettyModelName(selectedModel.display_name, selectedModel.model_id, selectedModel.vendor ?? selectedModel.provider)}
-          vendor={selectedModel.vendor || selectedModel.provider || 'ModelGo'}
+          modelName={prettyModelName(selectedModel.display_name, selectedModel.model_id, modelVendorLabel(selectedModel, ''))}
+          vendor={modelVendorLabel(selectedModel)}
           maxOutputTokens={Math.max(256, selectedModel.max_output_tokens || 4096)}
           task={effectiveTask}
           values={chatParams}
@@ -1277,7 +1278,7 @@ export default function ModelsPage() {
         <ApiQuickCallModal
           open={apiCallOpen}
           onClose={() => setApiCallOpen(false)}
-          modelName={prettyModelName(selectedModel.display_name, selectedModel.model_id, selectedModel.vendor ?? selectedModel.provider)}
+          modelName={prettyModelName(selectedModel.display_name, selectedModel.model_id, modelVendorLabel(selectedModel, ''))}
           modelId={selectedModel.model_id}
           supportedProtocols={selectedModel.protocols?.length ? (selectedModel.protocols as never) : ['openai']}
           onAction={(action, protocol, language) => trackEvent('playground_api_modal_action', { action, protocol, language, model_id: selectedModel.model_id })}

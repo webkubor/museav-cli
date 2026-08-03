@@ -30,7 +30,7 @@ import { CopyButton } from '@/components/ui/CopyButton'
 import { Button } from '@/components/ui/Button'
 import { formatContextLength, formatNumber, prettyModelName, trimPriceZeros } from '@/lib/utils'
 import {
-  MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, autoSummary,
+  MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, autoSummary, modelVendorLabel,
 } from '@/features/models/model-format'
 import { hasPlaygroundExperience } from '../model-experience-data'
 import type { CatalogModelItem } from '@/types'
@@ -87,7 +87,7 @@ export function CatalogCard({
   const symbol = currencySymbol(model.pricing?.currency, isZh)
   const ctxValue = (model.context_length ?? 0) > 0 ? formatContextLength(model.context_length) : '—'
   const name = prettyModelName(model.display_name, model.model_id)
-  const provider = model.provider || model.vendor
+  const provider = modelVendorLabel(model, '') || undefined
   const promo = model.promotion
   // free 只认服务端的显式限免标记，不从「价格为 0」推断 —— 未配价的模型也是 0。
   const isFree = Boolean(promo?.free)

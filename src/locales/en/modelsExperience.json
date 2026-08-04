@@ -169,7 +169,16 @@
       "categoryAudio": "Audio",
       "categoryVideo": "Video",
       "offlineFlag": "Some models offline",
-      "renameError": "Rename failed, please try again"
+      "renameError": "Rename failed, please try again",
+      "deleteLabel": "Delete session",
+      "deleteError": "Delete failed, please try again",
+      "deleteSuccess": "Session deleted",
+      "deleteModal": {
+        "title": "Delete session",
+        "description": "All records of \"{{name}}\" will be deleted. This cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Delete"
+      }
     },
     "settings": {
       "maxLimit": "Max",

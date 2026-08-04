@@ -47,6 +47,10 @@ export default function ModelsComparePage() {
             onSelectSession={(id) => void ctx.openHistorySession(id)}
             onNewSession={() => navigate('/models/playground')}
             onRenameSession={(id, name) => void ctx.renameHistorySession(id, name)}
+            onDeleteSession={(id) => {
+              trackEvent('playground_history_action', { action: 'delete' })
+              return ctx.deleteHistorySession(id)
+            }}
           />
           <div className="models-experience-main">
             <Button variant="brand" onClick={() => navigate('/models/playground')}>{t('modelsExperience.compare.backToExperience')}</Button>
@@ -86,6 +90,10 @@ export default function ModelsComparePage() {
             ctx.startNewSession()
           }}
           onRenameSession={(id, name) => void ctx.renameHistorySession(id, name)}
+          onDeleteSession={(id) => {
+            trackEvent('playground_history_action', { action: 'delete' })
+            return ctx.deleteHistorySession(id)
+          }}
         />
 
         <div className="models-experience-main">

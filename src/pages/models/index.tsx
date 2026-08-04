@@ -78,6 +78,7 @@ export default function ModelsPage() {
     startNewSession,
     openHistorySession,
     renameHistorySession,
+    deleteHistorySession,
     sendPrompt,
     handleFileSelect,
     clearAttachment,
@@ -105,6 +106,10 @@ export default function ModelsPage() {
             startNewSession()
           }}
           onRenameSession={(id, name) => void renameHistorySession(id, name)}
+          onDeleteSession={(id) => {
+            trackEvent('playground_history_action', { action: 'delete' })
+            return deleteHistorySession(id)
+          }}
         />
 
         <div className="models-experience-main">

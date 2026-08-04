@@ -8,6 +8,7 @@ import {
   getExperienceMessage,
   listExperienceSessions,
   renameExperienceSession,
+  deleteExperienceSession,
   getExperienceSessionMessages,
   getExperienceSessionStats,
   listExperienceModelConfigs,
@@ -307,6 +308,20 @@ export function useModelsPlayground() {
     } catch {
       setHistorySessions(prev)
       appToast.error(t('modelsExperience.historySidebar.renameError'))
+    }
+  }
+
+  /** 删除会话记录（shared/modelgo_prd#362）：删成功再改本地列表——删除不可撤销，
+   *  乐观更新一旦失败会让「已经消失的卡片」再冒出来，不如等接口回。
+   *  删掉的正是当前打开的会话时，把工作区重置成新会话，避免继续往已删 session 发消息。 */
+  async function deleteHistorySession(id: string) {
+    try {
+      await deleteExperienceSession(id)
+      setHistorySessions((cur) => cur.filter((s) => s.id !== id))
+      if (sessionId === id) startNewSession()
+      appToast.success(t('modelsExperience.historySidebar.deleteSuccess'))
+    } catch {
+      appToast.error(t('modelsExperience.historySidebar.deleteError'))
     }
   }
 
@@ -1005,6 +1020,7 @@ export function useModelsPlayground() {
     startNewSession,
     openHistorySession,
     renameHistorySession,
+    deleteHistorySession,
     sendPrompt,
     handleFileSelect,
     clearAttachment,

@@ -21,6 +21,7 @@ import {
   createExperienceSession,
   listExperienceSessions,
   renameExperienceSession,
+  deleteExperienceSession,
   getExperienceSession,
   getExperienceSessionMessages,
   type ExperienceMessageView,
@@ -299,6 +300,19 @@ export function useModelsCompareState() {
     }
   }
 
+  /** 删除会话记录（shared/modelgo_prd#362）：与单模型页同口径——删成功再改列表，不做乐观更新。
+   *  删掉的是当前对比会话时走 startNewSession（对比页的归宿是退回单模型页重新选模型）。 */
+  async function deleteHistorySession(id: string) {
+    try {
+      await deleteExperienceSession(id)
+      setHistorySessions((cur) => cur.filter((s) => s.id !== id))
+      appToast.success(t('modelsExperience.historySidebar.deleteSuccess'))
+      if (sessionId === id) startNewSession()
+    } catch {
+      appToast.error(t('modelsExperience.historySidebar.deleteError'))
+    }
+  }
+
   /** §7.8 新建会话：对比页本身没有内嵌的"选模型"态（一直要求带 selectedIds 进场），
    *  退回单模型页重新走"选模型 → 模型对比"的标准入口，跟移除至单模型/退出对比同一归宿。 */
   function startNewSession() {
@@ -415,6 +429,7 @@ export function useModelsCompareState() {
     historyActionError,
     openHistorySession,
     renameHistorySession,
+    deleteHistorySession,
     startNewSession,
     syncInput,
     setSyncInput,

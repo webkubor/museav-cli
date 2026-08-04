@@ -12,7 +12,10 @@ cat PROJECT-BRIEF.md
 # ② 读协同 SOP
 cat docs/COLLABORATION.md
 
-# ③ 读全局规则（按需）
+# ③ 涉及前端 UI / 样式 / 图标 / 组件时，必须读本地 UI 真源
+cat DESIGN.md
+
+# ④ 读全局规则（按需）
 cs rule agent_governance
 cs rule coding_conventions
 cs rule engineering_baseline
@@ -26,5 +29,6 @@ cs rule engineering_baseline
 
 - 接口 → Swagger `https://modelgo-web-api.test.modelgo.com/swagger/doc.json`
 - 功能/交互 → PRD 原型 `@modelgo-prd/src/App.tsx`（`cs path` 查路径）
-- UI 方向 → 现状控制台代码（不对标原型视觉）
+- UI 方向 → `DESIGN.md` + 现状控制台代码（不对标原型视觉）
+- UI 依赖 → `modelgo-design-tokens`、`react-icons`、`@lobehub/icons` 的使用边界见 `DESIGN.md#Local UI Dependency Matrix`
 - 命名 → PRD 原型（租户/工作空间，非组织/项目）

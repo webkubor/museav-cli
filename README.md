@@ -49,6 +49,8 @@
 | 图标 | react-icons + @lobehub/icons（模型厂商），**禁用 lucide-react** |
 | 国际化 | react-i18next |
 
+UI 具体执行规则以本仓 `DESIGN.md` 为准：包括 `modelgo-design-tokens` 维护边界、`react-icons` / `@lobehub/icons` 使用边界、`src/components/ui/*` 复用要求和 Agent UI Pre-flight。
+
 ---
 
 ## 🤖 AI 开发规范与工具（用 AI 写本仓代码前必读）

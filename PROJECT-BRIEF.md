@@ -12,7 +12,7 @@
 ③ cs rule coding_conventions  ← 编码约定
 ④ cs rule engineering_baseline ← 工程基线（含 worktree 隔离 §4.1）
 ⑤ 本仓 CLAUDE.md              ← 交付铁律 + 自决门槛 + UI 真源优先级
-⑥ 本仓 DESIGN.md              ← UI 具体约束（颜色/圆角/组件）
+⑥ 本仓 DESIGN.md              ← UI 具体约束（颜色/圆角/组件/token 包/图标库/Agent UI Pre-flight）
 ⑦ Swagger                     ← 接口真源（禁止自行推测 API）
 ⑧ gitlab-board SKILL          ← 看板操作（认领/移动/创建 issue）
 ```
@@ -40,7 +40,7 @@
 |:---|:---|:---|
 | 1 | PRD 原型 `modelgo_prd/src/App.tsx` | 功能 + 交互（命名以原型为准：租户/工作空间，非组织/项目）。**仅限 V1.0.3 范围** |
 | 2 | 飞书 PRD 文档 | 需求描述。**仅限 V1.0.3 版本** |
-| 3 | 现控制台代码 | 布局/排版/组件用法（UI 方向对标现状代码，不对标原型视觉） |
+| 3 | `DESIGN.md` + 现控制台代码 | 视觉 token、组件、图标库、布局/排版用法（UI 方向对标现状代码，不对标原型视觉） |
 | 4 | Swagger | 接口契约（是否有 API，以此为准，禁止推测） |
 
 **真源冲突判例**：

@@ -5,7 +5,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 import { execSync } from 'child_process'
 import { readFileSync } from 'fs'
-import { agentDebugger, agentProxy, agentGit, agentVersion } from 'vite-plugin-agent-eyes'
+import { agentEyes, agentProxy, agentVersion } from 'vite-plugin-agent-eyes'
 import { devRequirementsPlugin } from './scripts/dev-requirements-plugin'
 
 // 构建时产出 /version.json：供「新版本强制更新弹窗」拉取最新部署的版本号做「当前→最新」对比。
@@ -54,15 +54,17 @@ export default defineConfig(({ mode }) => {
     // 构建戳记：__APP_VERSION__/__BUILD_TAG__(最新 make-tag)/__BUILD_COMMIT__/__BUILD_TIME__ + dev GET /__version
     agentVersion(),
     emitVersionJson(),
-    agentDebugger(),
-    // 提交前门禁（dev 启动时幂等安装 pre-commit 钩子）
-    agentGit({
-      // 提交前门禁：类型+规范快检（全量构建挪 pre-push/CI）+ UI 门禁（DESIGN.md
-      // 约定，见 scripts/ui-guard.sh）。任一非零退出即阻断。
-      // ⚠️ 不直接写 cs 命令——cs 是个人工具链，团队成员没有会导致谁都无法提交；
-      // pre-commit-check.sh 内部做「有 cs 用 cs、无则降级 tsc+eslint」的等效检查。
-      precommit: ['sh scripts/pre-commit-check.sh', 'bash scripts/ui-guard.sh'],
-      force: true,
+    // 一站式入口（0.13）：遥测 + 客户端自动埋点 + 项目体检 + dev 超长文件实时警告(sizeWatch)
+    // + 提交 guard 默认全开；本仓的提交门禁仍走自定义 git.precommit 透传。
+    ...agentEyes({
+      git: {
+        // 提交前门禁：类型+规范快检（全量构建挪 pre-push/CI）+ UI 门禁（DESIGN.md
+        // 约定，见 scripts/ui-guard.sh）。任一非零退出即阻断。
+        // ⚠️ 不直接写 cs 命令——cs 是个人工具链，团队成员没有会导致谁都无法提交；
+        // pre-commit-check.sh 内部做「有 cs 用 cs、无则降级 tsc+eslint」的等效检查。
+        precommit: ['sh scripts/pre-commit-check.sh', 'bash scripts/ui-guard.sh'],
+        force: true,
+      },
     }),
     devRequirementsPlugin(),
     VitePWA({

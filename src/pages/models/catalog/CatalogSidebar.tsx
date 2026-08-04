@@ -31,8 +31,11 @@ function vendorLabel(code: string): string {
   return VENDOR_LABEL[code.toLowerCase()] || code.charAt(0).toUpperCase() + code.slice(1)
 }
 
-const MODALITY_LABEL_ZH: Record<string, string> = { text: '对话', image: '图像', audio: '音频', video: '视频' }
-const MODALITY_LABEL_EN: Record<string, string> = { text: 'Chat', image: 'Image', audio: 'Audio', video: 'Video' }
+// 模型类型的桶由服务端 facets 下发，取值是 gateway_models 的模态码（自由文本列，
+// 不是闭合枚举），未收录的码回落显示原码。embedding / file 之前就会漏出英文原码，
+// qa#332 修好计数口径后 file 桶（Claude/GPT-5 的文档输入）开始出现，一并补上。
+const MODALITY_LABEL_ZH: Record<string, string> = { text: '对话', image: '图像', audio: '音频', video: '视频', embedding: '向量', file: '文件' }
+const MODALITY_LABEL_EN: Record<string, string> = { text: 'Chat', image: 'Image', audio: 'Audio', video: 'Video', embedding: 'Embedding', file: 'File' }
 const PROTOCOL_LABEL: Record<string, string> = { openai: 'OpenAI', anthropic: 'Anthropic' }
 
 /** token 数 → 展示标签（1048576 → ≥1M）。阈值由服务端 facets 下发。

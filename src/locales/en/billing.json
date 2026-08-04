@@ -1,0 +1,208 @@
+{
+  "billing": {
+    "title": "Billing",
+    "desc": "Tenant balance, income records, and invoices. Recharges and rewards are grouped by balance type into this tenant's account.",
+    "income": {
+      "tab": "Income Records",
+      "invoiceTab": "Invoices",
+      "empty": "No income records yet",
+      "emptyFiltered": "No income records match the current filters",
+      "loadFailed": "Failed to load records",
+      "retry": "Retry",
+      "clearFilters": "Clear filters",
+      "typeAll": "All Types",
+      "bucketAll": "All Buckets",
+      "cols": {
+        "recordRef": "Ref No.",
+        "time": "Time",
+        "type": "Type",
+        "channel": "Channel",
+        "bucket": "Balance Bucket",
+        "amount": "Amount",
+        "status": "Status",
+        "invoice": "Invoice"
+      },
+      "types": {
+        "recharge": "Recharge",
+        "gift": "Gift Credit",
+        "reward": "Reward Credit"
+      },
+      "channels": {
+        "alipay": "Alipay",
+        "admin": "Admin Recharge",
+        "promo": "Promo Code",
+        "activity": "Campaign Gift",
+        "referral": "Referral Program"
+      },
+      "buckets": {
+        "main": "Main Balance",
+        "gift": "Gift Balance",
+        "reward": "Reward Balance"
+      },
+      "status": {
+        "completed": "Completed",
+        "processing": "Processing",
+        "failed": "Failed"
+      },
+      "invoice": {
+        "none": "—",
+        "available": "Available",
+        "processing": "Processing",
+        "issued": "Issued"
+      },
+      "timeFilters": {
+        "all": "All Time",
+        "last7d": "Last 7 Days",
+        "last30d": "Last 30 Days",
+        "thisMonth": "This Month",
+        "lastMonth": "Last Month"
+      }
+    },
+    "balance": {
+      "title": "Account Balance",
+      "available": "Available Balance",
+      "frozen": "Frozen Balance",
+      "recharge": "Top Up",
+      "health": "Balance Health",
+      "healthSufficient": "Sufficient",
+      "healthLow": "Low Balance",
+      "healthDepleted": "Overdue",
+      "exactBalance": "Exact: {{amount}}",
+      "walletCard": "ModelGo Developer Wallet",
+      "spendableTotal": "Spendable Total",
+      "spendableHint": "Deducted in order: Gift → Reward → Main",
+      "mainBalance": "Main Balance",
+      "mainHint": "Cash top-up",
+      "giftBalance": "Gift Balance",
+      "giftHint": "Promo code / trial credit",
+      "rewardBalance": "Reward Balance",
+      "rewardHint": "Referral rebate",
+      "frozenHint": "Pre-authorization / processing",
+      "loadFailed": "Failed to load balance"
+    },
+    "tabs": {
+      "orders": "Orders",
+      "promo": "Redeem"
+    },
+    "rechargeModal": {
+      "title": "Top Up",
+      "amount": "Amount",
+      "customAmount": "Custom Amount",
+      "method": "Payment Method",
+      "submit": "Pay ¥{{amount}}",
+      "success": "Recharge order created",
+      "error": "Failed to create order",
+      "submitting": "Submitting...",
+      "wechatQrReady": "WeChat Pay QR code created",
+      "wechatQrTitle": "Scan with WeChat Pay",
+      "wechatQrHint": "Use WeChat to scan the QR code and complete payment",
+      "wechatQrCopy": "Copy payment link",
+      "wechatQrCopied": "Payment link copied"
+    },
+    "wechatCashier": {
+      "title": "WeChat Pay Cashier",
+      "defaultPayee": "杭州词元共生科技有限公司",
+      "back": "Back to Billing",
+      "scanHint": "Scan with WeChat to pay",
+      "waiting": "Waiting for payment…",
+      "orderNo": "Order No.",
+      "copy": "Copy payment link",
+      "copied": "Copied",
+      "copyFailed": "Copy failed. Please copy manually.",
+      "paidTitle": "Payment successful",
+      "redirecting": "Returning to Billing in {{seconds}}s",
+      "backNow": "Back now",
+      "secure": "Secured by WeChat Pay · encrypted end-to-end",
+      "qrAria": "WeChat Pay QR code",
+      "missingTitle": "Payment QR code expired",
+      "missingDesc": "Return to Billing and create a new recharge order.",
+      "closedTitle": "Payment closed",
+      "closedDesc": "This order was not completed. Return to Billing and create a new recharge order."
+    },
+    "promo": {
+      "title": "Redeem Promo Code",
+      "subtitle": "Offline payment / self-service promo redemption",
+      "codeLabel": "Promo code",
+      "placeholder": "Enter the promo code from an offline payment or promotion",
+      "hint": "The redeemed amount goes to your gift balance and is used first.",
+      "submit": "Redeem Now",
+      "emptyWarning": "Please enter a promo code",
+      "success": "Redeemed! Credited {{amount}} {{currency}}",
+      "error": "Redemption failed, please check the Promo Code",
+      "errorInvalid": "Invalid promo code. Check the code and try again.",
+      "errorRedeemLimit": "This promo code has already been used.",
+      "errorDisabled": "This promo code has been disabled. Contact support if needed.",
+      "errorNotActive": "This promo code is not active yet. Try again later.",
+      "errorExpired": "This promo code has expired.",
+      "errorUnavailable": "Promo code redemption is temporarily unavailable. Please try again later."
+    },
+    "orders": {
+      "empty": "No orders",
+      "emptyHint": "Your account has no recharge or redemption transactions yet. Use the quick recharge above to get started.",
+      "tab": {
+        "recharge": "Recharge Records",
+        "gift": "Gift Balance Details",
+        "reward": "Reward Records"
+      },
+      "gift": {
+        "empty": "No gift records yet",
+        "source": "Source",
+        "amount": "Amount",
+        "creditedAt": "Credited At"
+      },
+      "loadMore": "Load More",
+      "detailTitle": "Order Details",
+      "detailPlaceholder": "Click an order to view details",
+      "cancelSuccess": "Order cancelled",
+      "cancelError": "Failed to cancel order",
+      "paymentSuccess": "Top-up credited: {{amount}}. Balance updated.",
+      "cancelConfirm": {
+        "title": "Cancel Order",
+        "message": "Are you sure you want to cancel this recharge order? This action cannot be undone.",
+        "yes": "Confirm Cancel",
+        "no": "Keep"
+      },
+      "table": {
+        "orderNo": "Order No",
+        "status": "Status",
+        "channel": "Channel",
+        "amount": "Amount",
+        "paidAt": "Paid At",
+        "actions": "Actions",
+        "cancel": "Cancel"
+      },
+      "detail": {
+        "orderNo": "Order No",
+        "status": "Status",
+        "amount": "Amount",
+        "credited": "Credited",
+        "channel": "Channel",
+        "promo": "Promo Code",
+        "paidAt": "Paid At",
+        "viewInvoice": "View Invoice",
+        "receiptTitle": "Electronic Receipt",
+        "receiptFooter": "Thank you for using ModelGo Developer Services"
+      },
+      "status": {
+        "pending": "Pending",
+        "paid": "Paid",
+        "failed": "Failed",
+        "cancelled": "Cancelled",
+        "refunded": "Refunded"
+      }
+    },
+    "paymentMethod": {
+      "alipay": "Alipay",
+      "wechat": "WeChat Pay"
+    },
+    "lowBalance": {
+      "title": "Low Balance Alert",
+      "desc": "Receive alerts when the balance falls below the threshold to avoid service interruptions.",
+      "recipients": "Recipients",
+      "noCandidates": "No recipients available",
+      "threshold": "Alert threshold",
+      "toggle": "Low balance alert toggle",
+      "saveFailed": "Failed to save. Please try again later."
+    }
+  }
+}

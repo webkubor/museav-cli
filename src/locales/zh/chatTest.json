@@ -1,0 +1,25 @@
+{
+  "chatTest": {
+    "title": "对话测试",
+    "desc": "粘贴 API Key 并选择模型，实时流式测试对话效果。",
+    "placeholder": {
+      "key": "粘贴 API Key（sk-...）",
+      "model": "选择模型"
+    },
+    "button": {
+      "clear": "清空对话",
+      "send": "发送",
+      "stop": "停止"
+    },
+    "empty": "粘贴 API Key 并选择模型后开始对话",
+    "input": {
+      "placeholder": "输入消息，Enter 发送，Shift+Enter 换行"
+    },
+    "toast": {
+      "noKey": "请先粘贴 API Key",
+      "noModel": "请先选择模型"
+    },
+    "footer": "请求直接发往 {{url}}/v1/chat/completions，响应不经过控制台后端。",
+    "keyHint": "请粘贴创建 API Key 时复制的完整密钥，列表中仅显示掩码，无法在此处检索。"
+  }
+}

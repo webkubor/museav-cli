@@ -1,0 +1,143 @@
+{
+  "dashboard": {
+    "section.integration": "接入示例",
+    "section.guide": "进阶向导",
+    "kpi": {
+      "balance": "可用余额",
+      "monthlySpend": "本月消费",
+      "monthlyRequests": "本月请求数",
+      "monthlyTokens": "本月 Token 用量"
+    },
+    "recentLogs": {
+      "title": "最近调用日志",
+      "viewAll": "查看全部",
+      "requestId": "请求 ID",
+      "model": "模型",
+      "status": "状态",
+      "duration": "耗时",
+      "time": "时间",
+      "empty": "暂无调用记录"
+    },
+    "usageChart": {
+      "title": "用量趋势 (近 5 天)",
+      "requests": "请求",
+      "empty": "暂无趋势数据",
+      "requestsLabel": "请求数 (Requests)"
+    },
+    "histogramChart": {
+      "title": "请求分布 (近 5 天)",
+      "requests": "请求数",
+      "empty": "暂无分布数据",
+      "requestsLabel": "调用频次 (Requests)"
+    },
+    "workbench": {
+      "view": {
+        "enterprise": "企业视图",
+        "space": "空间视图",
+        "mine": "我的视图",
+        "mineTodo": "当前展示组织口径的用量数据"
+      },
+      "granularity": {
+        "day": "按天",
+        "month": "按月"
+      },
+      "quickStart": {
+        "title": "快速开始",
+        "subtitle": "3 步完成第一次模型调用",
+        "dismiss": "关闭",
+        "step1Title": "创建 API Key",
+        "step1Desc": "创建一个用于本地开发或服务端调用的 Key。",
+        "step1Action": "创建",
+        "step2Title": "配置客户端",
+        "step2Desc": "复制 Base URL 和 API Key，填到你的 SDK 或 HTTP 客户端里。",
+        "step2Action": "复制地址",
+        "step3Title": "发送测试请求",
+        "step3Desc": "发起第一次调用，确认模型返回结果并生成日志。",
+        "step3Action": "查看日志",
+        "cliTitle": "一键配置本地开发环境",
+        "cliBadge": "推荐",
+        "cliHint": "在终端运行以下命令，自动写入 Base URL 和 API Key",
+        "cliCopied": "命令已复制到剪贴板",
+        "cliCopyFailed": "复制失败，请手动复制",
+        "cliHintPrefix": "在终端运行",
+        "cliHintSuffix": "自动写入 Base URL 和 API Key。"
+      },
+      "periodLabel": {
+        "day": "今日",
+        "month": "本月"
+      },
+      "metrics": {
+        "requests": "总请求",
+        "spend": "总费用",
+        "tokens": "总 Tokens",
+        "balance": "账户余额",
+        "balanceLow": "余额偏低",
+        "recharge": "充值",
+        "requestsSub": "本月调用",
+        "spendSub": "本月消费",
+        "tokensSub": "本月输入和输出合计",
+        "requestsSubDay": "今日调用",
+        "spendSubDay": "今日消费",
+        "tokensSubDay": "今日输入和输出合计",
+        "balanceSub": "当前可用余额",
+        "balanceSubTenant": "租户可用余额"
+      },
+      "trend": {
+        "title": "用量趋势",
+        "metric": {
+          "requests": "请求量",
+          "spend": "费用",
+          "tokens": "Tokens"
+        },
+        "range": {
+          "day": "近 30 天",
+          "month": "近 12 个月"
+        },
+        "unit": {
+          "requests": "次",
+          "spend": "",
+          "tokens": "tokens"
+        },
+        "empty": "暂无趋势数据",
+        "emptyHint": "发送一次测试请求后，用量趋势将在此展示"
+      },
+      "workspaces": {
+        "title": "工作空间明细",
+        "titleMine": "我的工作空间",
+        "subtitle": "按工作空间聚合",
+        "subtitleMine": "我有调用或 API Key 的工作空间",
+        "viewMore": "查看更多",
+        "empty": "暂无工作空间用量",
+        "noDesc": "暂无描述"
+      },
+      "rankings": {
+        "models": "模型用量",
+        "myModels": "我的模型用量",
+        "members": "成员用量",
+        "apiKeys": "API Keys 用量",
+        "myApiKeys": "我的 API Keys 用量",
+        "viewMore": "查看更多",
+        "empty": "暂无数据",
+        "emptyHint": "发送一次测试请求后，用量排行将在此展示",
+        "membersTodo": "暂无成员用量数据"
+      },
+      "recent": {
+        "title": "最近调用",
+        "viewAll": "查看全部",
+        "time": "时间",
+        "status": "状态",
+        "model": "模型",
+        "owner": "归属",
+        "tokens": "Token",
+        "cost": "费用",
+        "latency": "延迟",
+        "empty": "暂无调用记录",
+        "emptyHint": "创建 API Key 并发送第一次请求后，调用记录将在此展示"
+      },
+      "empty": {
+        "lowBalance": "账户余额不足，请及时充值以免影响调用",
+        "noApiKey": "还没有 API Key，先创建一个开始接入"
+      }
+    }
+  }
+}

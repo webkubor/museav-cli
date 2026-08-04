@@ -1,0 +1,75 @@
+{
+  "apiKeys": {
+    "title": "API Keys",
+    "desc": "用于 OpenAI SDK 兼容接入的安全凭证，请妥善保管您的密钥凭证，切勿泄露给第三方。",
+    "create": "创建 API Key",
+    "search": "搜索密钥名称",
+    "table": {
+      "name": "名称",
+      "env": "环境",
+      "credentials": "API Key 凭证",
+      "status": "状态",
+      "createdAt": "创建时间",
+      "actions": "操作",
+      "active": "启用中",
+      "disabled": "已禁用",
+      "revoked": "已吊销",
+      "copy": "复制",
+      "revoke": "删除",
+      "copyMaskedSuccess": "遮蔽凭证已复制到剪贴板",
+      "expiresAt": "过期时间",
+      "neverExpires": "永不过期",
+      "expired": "已过期",
+      "totalSpend": "累计消费",
+      "noData": "无数据",
+      "copyUnavailableLegacy": "该密钥创建于「支持复制」功能上线之前，明文不可找回；请轮换新建密钥",
+      "copyUnavailableInactive": "密钥已撤销或过期，无法复制"
+    },
+    "revokeConfirm": {
+      "title": "确定删除该密钥吗？",
+      "content": "密钥删除后立即失效、从列表中移除且不可恢复，所有使用该密钥的网关请求将被阻断！"
+    },
+    "createModal": {
+      "title": "创建 API Key",
+      "nameLabel": "Key 名称",
+      "namePlaceholder": "如：生产测试 Key",
+      "nameRequired": "密钥名称不能为空",
+      "envLabel": "调用环境",
+      "live": "LIVE (真实计费)",
+      "test": "TEST (沙盒测试)",
+      "guardrailLabel": "绑定护栏",
+      "guardrailPlaceholder": "选择安全护栏（可选）",
+      "guardrailNone": "不绑定",
+      "cancel": "取消",
+      "confirm": "立即创建"
+    },
+    "revealModal": {
+      "title": "🔑 您的新 API Key 已就绪",
+      "warning": "请立即妥善保存该凭证！出于安全性设计，明文 API Key 仅在创建时短暂显示一次，若不慎关闭该弹窗，您将再也无法寻回明文。",
+      "label": "API Key 凭证明文：",
+      "done": "我已复制并妥善保存"
+    },
+    "connectModal": {
+      "keyCreatedHint": "API Key 只在创建后展示一次，关闭横幅后将无法再次查看完整密钥。",
+      "noKeyHint": "先确认协议地址和接入方式；创建 API Key 后即可复制完整参数。"
+    },
+    "toast": {
+      "createSuccess": "密钥 \"{{name}}\" 创建成功",
+      "createError": "创建密钥失败",
+      "revokeSuccess": "密钥已删除",
+      "revokeError": "删除密钥失败",
+      "copyKeySuccess": "完整密钥已复制到剪贴板",
+      "copyKeyError": "获取密钥失败，请稍后重试",
+      "copyKeyClipboardError": "写入剪贴板失败，请检查浏览器权限"
+    },
+    "emptySelfScope": {
+      "title": "你名下暂无 API Key",
+      "desc": "仅展示由你负责的 Key；如需新的 Key，请联系空间负责人创建或指派给你"
+    },
+    "detailError": {
+      "title": "详情加载失败",
+      "desc": "无法获取该 Key 的最新详情，请重试",
+      "retry": "重试"
+    }
+  }
+}

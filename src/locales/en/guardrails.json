@@ -1,0 +1,78 @@
+{
+  "guardrails": {
+    "title": "Guardrails",
+    "desc": "Configure prompt defense rules to block injection attacks, sensitive words, and uncontrolled outputs.",
+    "create": "Create Guardrail",
+    "empty": "No guardrails. Create one to get started.",
+    "summary": {
+      "global": "Global Guardrails",
+      "member": "Member Guardrails",
+      "key": "Key Guardrails",
+      "boost": "Boost Guardrails"
+    },
+    "table": {
+      "name": "Name",
+      "desc": "Description",
+      "modelBlacklist": "Model Blacklist",
+      "ipWhitelist": "IP Whitelist",
+      "boundKeys": "Bound Keys",
+      "unlimited": "Unlimited",
+      "keyUnit": "keys",
+      "priority": "Priority",
+      "isDefault": "Default",
+      "status": "Status",
+      "active": "Active",
+      "inactive": "Inactive",
+      "createdAt": "Created At",
+      "defaultBadge": "Default",
+      "optionalBadge": "Optional",
+      "configure": "Configure",
+      "delete": "Delete"
+    },
+    "form": {
+      "nameLabel": "Name",
+      "namePlaceholder": "e.g. Prompt Injection Defense",
+      "priorityLabel": "Priority",
+      "priorityPlaceholder": "e.g. 0",
+      "descLabel": "Description (Optional)",
+      "descPlaceholder": "Brief description of this rule",
+      "modelWhitelistLabel": "Model Whitelist",
+      "modelWhitelistPlaceholder": "Type or select models from dropdown",
+      "modelWhitelistHint": "Select from dropdown or type model ID, press Enter to add. Leave empty for no restriction.",
+      "modelBlacklistLabel": "Model Blacklist",
+      "modelBlacklistPlaceholder": "Search models",
+      "modelBlacklistHint": "Models matching the blacklist will be rejected. Leave empty for no restriction.",
+      "ipWhitelistLabel": "IP Whitelist",
+      "ipWhitelistPlaceholder": "Press Enter to add. Supports IPv4/IPv6/CIDR. Leave empty for no restriction.",
+      "ipWhitelistHint": "Press Enter to add. Supports IPv4/IPv6/CIDR. Leave empty for no restriction.",
+      "membersLabel": "Members",
+      "membersPlaceholder": "Search members",
+      "membersHint": "Select members to bind to this guardrail. Leave empty for no restriction.",
+      "isDefaultLabel": "Apply by Default",
+      "isDefaultHint": "Automatically apply to all requests"
+    },
+    "modal": {
+      "createTitle": "Create Guardrail",
+      "editTitle": "Configure Guardrail",
+      "cancel": "Cancel",
+      "saveEdit": "Save Changes",
+      "confirmCreate": "Create Guardrail"
+    },
+    "deleteModal": {
+      "title": "Delete Guardrail",
+      "description": "Delete guardrail \"{{name}}\"? This cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Delete"
+    },
+    "toast": {
+      "createSuccess": "Guardrail created",
+      "createError": "Failed to create",
+      "updateSuccess": "Guardrail updated",
+      "updateError": "Failed to update",
+      "deleteSuccess": "Guardrail deleted",
+      "deleteError": "Failed to delete",
+      "toggleError": "Operation failed",
+      "nameRequired": "Please enter a name"
+    }
+  }
+}

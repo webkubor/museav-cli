@@ -189,7 +189,7 @@ function SelectField({
 }: {
   label: string
   value: string
-  options: string[]
+  options: Array<string | { value: string; label: string }>
   suffix?: string
   disabled?: boolean
   onChange: (value: string) => void
@@ -198,11 +198,14 @@ function SelectField({
     <div className="model-settings-field">
       <label className="model-settings-field-label">{label}</label>
       <Select value={value} onChange={onChange} disabled={disabled} className="h-9 text-xs rounded-lg">
-        {options.map((opt) => (
-          <Select.Option key={opt} value={opt}>
-            {opt}{suffix ? ` ${suffix}` : ''}
+        {options.map((option) => {
+          const opt = typeof option === 'string' ? { value: option, label: option } : option
+          return (
+          <Select.Option key={opt.value} value={opt.value}>
+            {opt.label}{suffix ? ` ${suffix}` : ''}
           </Select.Option>
-        ))}
+          )
+        })}
       </Select>
     </div>
   )
@@ -259,10 +262,15 @@ function TTSParamsForm({ values, onChange }: { values: Record<string, unknown>; 
   const speed = asNumber(values.speed, 1)
   const format = asString(values.audio_format, 'MP3')
   const voiceStyle = asString(values.voice_style)
+  const voiceOptions = [
+    { value: '晓辰', label: t('modelsExperience.settings.option.voiceXiaochen') },
+    { value: '安然', label: t('modelsExperience.settings.option.voiceAnran') },
+    { value: 'Miles', label: t('modelsExperience.settings.option.voiceMiles') },
+  ]
 
   return (
     <div className="model-settings-form">
-      <SelectField label={t('modelsExperience.settings.voice')} value={voice} options={['晓辰', '安然', 'Miles']} onChange={(v) => onChange('voice', v)} />
+      <SelectField label={t('modelsExperience.settings.voice')} value={voice} options={voiceOptions} onChange={(v) => onChange('voice', v)} />
       <div className="model-settings-field">
         <div className="model-settings-field-label-row">
           <label className="model-settings-field-label">{t('modelsExperience.settings.speed')}</label>
@@ -304,12 +312,28 @@ function TranscribeParamsForm({ values, onChange }: { values: Record<string, unk
   const format = asString(values.transcript_format, '纯文本')
   const terms = asString(values.terms)
   const contextPrompt = asString(values.context_prompt)
+  const languageOptions = [
+    { value: '自动识别', label: t('modelsExperience.settings.option.autoDetect') },
+    { value: '中文', label: t('modelsExperience.settings.option.chinese') },
+    { value: '英文', label: t('modelsExperience.settings.option.english') },
+    { value: '日文', label: t('modelsExperience.settings.option.japanese') },
+  ]
+  const timestampOptions = [
+    { value: '关闭', label: t('modelsExperience.settings.option.off') },
+    { value: '分段', label: t('modelsExperience.settings.option.segment') },
+    { value: '逐词', label: t('modelsExperience.settings.option.word') },
+  ]
+  const formatOptions = [
+    { value: '纯文本', label: t('modelsExperience.settings.option.plainText') },
+    'JSON',
+    'SRT',
+  ]
 
   return (
     <div className="model-settings-form">
-      <SelectField label={t('modelsExperience.settings.recognitionLanguage')} value={language} options={['自动识别', '中文', '英文', '日文']} onChange={(v) => onChange('language', v)} />
-      <SelectField label={t('modelsExperience.settings.timestamps')} value={timestamps} options={['关闭', '分段', '逐词']} onChange={(v) => onChange('timestamps', v)} />
-      <SelectField label={t('modelsExperience.settings.outputFormat')} value={format} options={['纯文本', 'JSON', 'SRT']} onChange={(v) => onChange('transcript_format', v)} />
+      <SelectField label={t('modelsExperience.settings.recognitionLanguage')} value={language} options={languageOptions} onChange={(v) => onChange('language', v)} />
+      <SelectField label={t('modelsExperience.settings.timestamps')} value={timestamps} options={timestampOptions} onChange={(v) => onChange('timestamps', v)} />
+      <SelectField label={t('modelsExperience.settings.outputFormat')} value={format} options={formatOptions} onChange={(v) => onChange('transcript_format', v)} />
 
       <details className="model-settings-advanced" open>
         <summary>{t('modelsExperience.settings.advanced')}</summary>

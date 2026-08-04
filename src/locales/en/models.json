@@ -1,0 +1,27 @@
+{
+  "models": {
+    "detail": {
+      "tabOverview": "Overview",
+      "pricing": "Pricing",
+      "pricingInput": "Input price",
+      "pricingOutput": "Output price",
+      "pricingCacheRead": "Cache read",
+      "pricingCacheWrite": "Cache write",
+      "contextLength": "Context Window"
+    },
+    "card": {
+      "context": "Context",
+      "inputPrice": "Input",
+      "outputPrice": "Output"
+    },
+    "modality": {
+      "text": "Text",
+      "image": "Image",
+      "audio": "Audio",
+      "video": "Video",
+      "file": "File",
+      "embedding": "Embedding",
+      "reranker": "Reranker"
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "modelsCompare": {
+    "title": "Model Compare",
+    "desc": "Send the same prompt to up to {{max}} models and compare outputs.",
+    "placeholder": {
+      "search": "Search models..."
+    },
+    "button": {
+      "select": "Select Model"
+    },
+    "table": {
+      "attr": "Attribute"
+    },
+    "row": {
+      "contextLength": "Context Length",
+      "modalities": "Modalities",
+      "modalityFlow": "Input → Output",
+      "protocols": "Compatible Protocols",
+      "releasedAt": "Released",
+      "knowledgeCutoff": "Knowledge Cutoff",
+      "inputPrice": "Input Price (1M)",
+      "outputPrice": "Output Price (1M)",
+      "cachePrice": "Cache Read (1M)",
+      "providersCount": "Providers",
+      "zeroDataRetention": "Zero Data Retention",
+      "inRegionRouting": "In-Region Routing",
+      "tags": "Tags"
+    },
+    "currentModel": "Current Model",
+    "selectedModels": "Selected models",
+    "candidates": "Candidates",
+    "empty": {
+      "hint": "Select models from the left to start comparing",
+      "noMatch": "No matching models"
+    },
+    "error": {
+      "load": "Failed to load models. Please try again."
+    }
+  }
+}

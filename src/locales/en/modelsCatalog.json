@@ -1,0 +1,167 @@
+{
+  "modelsCatalog": {
+    "title": "Model Catalog",
+    "desc": "Browse all models supported by ModelGo — context length, pricing, and modalities.",
+    "placeholder.search": "Search model name, provider or ID",
+    "placeholder": {
+      "search": "Search model name, API ID, provider..."
+    },
+    "filter.all": "All",
+    "filter": {
+      "all": "All Models",
+      "text": "Text Chat",
+      "image": "Image Generation",
+      "video": "Video Understanding",
+      "code": "Code Writing",
+      "reasoning": "Deep Reasoning",
+      "multimodal": "Multimodal"
+    },
+    "allModels": {
+      "title": "All Models",
+      "desc": "Browse and integrate all supported LLMs and multimodal models. Copy the model API ID with one click to configure your local agents, API requests, or server-side SDKs seamlessly."
+    },
+    "hero": {
+      "kicker": "Model catalog workspace"
+    },
+    "stats": {
+      "label": "Model catalog statistics",
+      "models": "Models",
+      "vendors": "Providers",
+      "text": "Text",
+      "image": "Image",
+      "video": "Video",
+      "free": "Free"
+    },
+    "filters": {
+      "label": "Filters",
+      "moreLabel": "More filters",
+      "all": "All",
+      "category": "Model category",
+      "language": "Language support",
+      "languageMultilingual": "Multilingual",
+      "languageEnglish": "English",
+      "languageChinese": "Chinese",
+      "context": "Context length",
+      "provider": "Provider",
+      "family": "Model Family",
+      "scenario": "Scenario",
+      "sort": {
+        "label": "Sort",
+        "popular": "Default",
+        "newest": "Newest",
+        "cheapest": "Cheapest"
+      },
+      "reset": "Reset filters"
+    },
+    "results": {
+      "label": "Model list",
+      "title": "Available models",
+      "count": "Showing {{visible}} / {{total}} models"
+    },
+    "button": {
+      "compare": "Compare Models",
+      "compareShort": "Compare",
+      "compareUnavailable": "Not comparable",
+      "docs": "Integration Docs",
+      "try": "Try",
+      "comingSoon": "Coming soon",
+      "comingSoonHint": "Online experience for this model is not yet available"
+    },
+    "labels": {
+      "apiId": "API ID",
+      "context": "Context",
+      "inputPrice": "Input",
+      "outputPrice": "Output",
+      "releasedAt": "Released"
+    },
+    "insights": {
+      "title": "Model Insights",
+      "subtitle": "Based on this month's real usage",
+      "noRanking": "No usage yet, showing catalog picks",
+      "hot": "Hot models",
+      "lowCost": "Low cost picks",
+      "free": "Free models",
+      "freeTag": "Free",
+      "freeEmpty": "No free models yet",
+      "recent": "Recently updated",
+      "calls": "{{count}} calls",
+      "waiting": "Waiting for usage"
+    },
+    "loading": "Loading models...",
+    "empty": "No matching models",
+    "error.load": "Failed to load model catalog. Please try again.",
+    "error": {
+      "load": "Failed to load models. Please try again later."
+    },
+    "toast": {
+      "copied": "Model API ID copied",
+      "copyFailed": "Failed to copy"
+    },
+    "page": {
+      "title": "Models",
+      "subtitle": "One API for leading models. Transparent pricing, ready to use."
+    },
+    "filtersButton": "Filters",
+    "search": {
+      "placeholder": "Search model, API ID, provider or keyword…"
+    },
+    "sort": {
+      "default": "Recommended",
+      "newest": "Newest release",
+      "cheapest": "Price: low to high"
+    },
+    "count": "{{n}} models",
+    "emptyFiltered": "No models match your filters",
+    "clearFilters": "Clear all filters",
+    "sidebar": {
+      "family": "Model Family",
+      "allFamilies": "All families",
+      "tags": "Tags",
+      "context": "Context",
+      "pricing": "Pricing",
+      "all": "All",
+      "free": "Free",
+      "paid": "Paid",
+      "more": "More",
+      "less": "Less",
+      "offers": "Offers",
+      "onlyDiscounted": "Only discounted models",
+      "provider": "Provider",
+      "modality": "Modality",
+      "apiProtocol": "API protocol",
+      "otherProtocol": "Other",
+      "capabilities": "Capabilities",
+      "selectTags": "Select tags",
+      "allTagsSelected": "All tags selected",
+      "removeTag": "Remove tag {{tag}}",
+      "filterTitle": "Filter: {{label}}",
+      "inputOutputFlow": "input {{input}} to output {{output}}",
+      "apiProtocolAria": "API protocol",
+      "new": "New",
+      "limitedFree": "Free",
+      "modalityEmbedding": "Embedding",
+      "modalityFile": "File"
+    },
+    "card": {
+      "free": "Free",
+      "copyApiId": "Copy API ID",
+      "try": "Try now",
+      "apiDocs": "API docs",
+      "compare": "Compare",
+      "context": "Context",
+      "cacheRead": "Cache read",
+      "input": "Input",
+      "output": "Output"
+    },
+    "modality": {
+      "text": "Text",
+      "image": "Image",
+      "audio": "Audio",
+      "video": "Video",
+      "embedding": "Embedding",
+      "file": "File"
+    },
+    "detail.title": "Model Detail",
+    "error.loadDetail": "Failed to load model detail. Please try again."
+  }
+}

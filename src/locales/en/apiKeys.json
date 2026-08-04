@@ -1,0 +1,75 @@
+{
+  "apiKeys": {
+    "title": "API Keys",
+    "desc": "Security credentials for OpenAI SDK compatible access. Keep your keys safe.",
+    "create": "Create API Key",
+    "search": "Search key name",
+    "table": {
+      "name": "Name",
+      "env": "Environment",
+      "credentials": "API Key Credentials",
+      "status": "Status",
+      "createdAt": "Created At",
+      "actions": "Actions",
+      "active": "Active",
+      "disabled": "Disabled",
+      "revoked": "Revoked",
+      "copy": "Copy",
+      "revoke": "Delete",
+      "copyMaskedSuccess": "Masked credentials copied to clipboard",
+      "expiresAt": "Expires At",
+      "neverExpires": "Never expires",
+      "expired": "Expired",
+      "totalSpend": "Total Spend",
+      "noData": "No data",
+      "copyUnavailableLegacy": "This key was created before copy support; the plaintext cannot be recovered — rotate to a new key",
+      "copyUnavailableInactive": "This key is revoked or expired and cannot be copied"
+    },
+    "revokeConfirm": {
+      "title": "Delete this API key?",
+      "content": "The key is invalidated immediately, removed from the list, and cannot be recovered. All gateway requests using it will be blocked."
+    },
+    "createModal": {
+      "title": "Create API Key",
+      "nameLabel": "Key Name",
+      "namePlaceholder": "e.g., Production Key",
+      "nameRequired": "Key name cannot be empty",
+      "envLabel": "Environment",
+      "live": "LIVE (Actual Billing)",
+      "test": "TEST (Sandbox)",
+      "guardrailLabel": "Bind Guardrail",
+      "guardrailPlaceholder": "Select a guardrail (optional)",
+      "guardrailNone": "None",
+      "cancel": "Cancel",
+      "confirm": "Create Now"
+    },
+    "revealModal": {
+      "title": "🔑 Your New API Key is Ready",
+      "warning": "Please save this credential immediately! It is only shown once.",
+      "label": "Plain Text API Key:",
+      "done": "I have copied and saved it"
+    },
+    "connectModal": {
+      "keyCreatedHint": "The API key is shown only once after creation. Save it before closing this banner.",
+      "noKeyHint": "Review endpoints and connection methods first. Create an API key to copy complete parameters."
+    },
+    "toast": {
+      "createSuccess": "Key \"{{name}}\" created successfully",
+      "createError": "Failed to create API key",
+      "revokeSuccess": "API Key deleted",
+      "revokeError": "Failed to delete API key",
+      "copyKeySuccess": "Full API key copied to clipboard",
+      "copyKeyError": "Failed to retrieve the key, please try again later",
+      "copyKeyClipboardError": "Could not write to clipboard; check browser permissions"
+    },
+    "emptySelfScope": {
+      "title": "You have no API keys yet",
+      "desc": "Only keys you own are shown here. Ask a workspace owner to create or assign one to you."
+    },
+    "detailError": {
+      "title": "Failed to load details",
+      "desc": "Could not fetch the latest details for this key. Please try again.",
+      "retry": "Retry"
+    }
+  }
+}

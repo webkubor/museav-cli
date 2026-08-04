@@ -1,0 +1,59 @@
+{
+  "invitations": {
+    "title": "成员管理",
+    "desc": "将企业成员分配到工作空间中，管理角色与权限。",
+    "inviteBtn": "邀请成员",
+    "assign": {
+      "desc": "将企业成员分配到不同的工作空间中，管理工作空间内的角色权限。",
+      "orgPool": "企业成员",
+      "wsMembers": "工作空间成员",
+      "searchPlaceholder": "搜索姓名或邮箱...",
+      "orgEmpty": "当前企业暂无成员",
+      "wsEmpty": "该工作空间暂无成员，从左侧添加",
+      "selectWs": "请在上方选择一个工作空间",
+      "current": "当前",
+      "inWs": "已在",
+      "add": "加入",
+      "remove": "移出工作空间",
+      "memberCount": "人",
+      "addSuccess": "已加入工作空间",
+      "addError": "添加失败",
+      "removeSuccess": "已从工作空间移出",
+      "removeError": "移出失败",
+      "roleError": "角色修改失败"
+    },
+    "modal": {
+      "title": "邀请企业成员",
+      "close": "✕",
+      "searchPlaceholder": "搜索姓名或邮箱",
+      "noMembers": "暂无匹配成员",
+      "roleLabel": "角色",
+      "expiryLabel": "有效期",
+      "expiry24h": "24 小时",
+      "expiry3d": "3 天",
+      "expiry7d": "7 天",
+      "expiry30d": "30 天",
+      "cancel": "取消",
+      "sendPending": "发送中...",
+      "send": "发送邀请 {{suffix}}"
+    },
+    "list": {
+      "title": "邀请记录",
+      "empty": "暂无邀请记录",
+      "table": {
+        "email": "邮箱",
+        "role": "角色",
+        "status": "状态",
+        "expiresAt": "过期时间",
+        "actions": "操作",
+        "revoke": "撤销"
+      }
+    },
+    "toast": {
+      "sent": "邀请已发出",
+      "sendError": "邀请失败",
+      "revoked": "邀请已撤销",
+      "revokeError": "撤销邀请失败"
+    }
+  }
+}

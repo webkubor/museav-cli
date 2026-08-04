@@ -1,0 +1,78 @@
+{
+  "guardrails": {
+    "title": "安全护栏",
+    "desc": "配置提示词防御规则，拦截恶意的提示注入、敏感词以及不受控制的模型输出。",
+    "create": "创建护栏",
+    "empty": "暂无安全护栏，点击右上角创建一个",
+    "summary": {
+      "global": "全局护栏",
+      "member": "个人护栏",
+      "key": "Key 护栏",
+      "boost": "提额护栏"
+    },
+    "table": {
+      "name": "名称",
+      "desc": "描述",
+      "modelBlacklist": "模型黑名单",
+      "ipWhitelist": "IP 白名单",
+      "boundKeys": "绑定 Key",
+      "unlimited": "不限制",
+      "keyUnit": "个",
+      "priority": "优先级",
+      "isDefault": "默认应用",
+      "status": "状态",
+      "active": "启用",
+      "inactive": "停用",
+      "createdAt": "创建时间",
+      "defaultBadge": "默认应用",
+      "optionalBadge": "可选",
+      "configure": "配置",
+      "delete": "删除"
+    },
+    "form": {
+      "nameLabel": "名称",
+      "namePlaceholder": "例如：提示词注入防御",
+      "priorityLabel": "优先级",
+      "priorityPlaceholder": "例如：0",
+      "descLabel": "描述 (可选)",
+      "descPlaceholder": "对此安全规则进行简要描述",
+      "modelWhitelistLabel": "模型白名单",
+      "modelWhitelistPlaceholder": "输入或从下拉选择模型",
+      "modelWhitelistHint": "从下拉列表选择或直接输入模型 ID，回车添加。留空表示不限制。",
+      "modelBlacklistLabel": "模型黑名单",
+      "modelBlacklistPlaceholder": "搜索模型",
+      "modelBlacklistHint": "命中黑名单的模型将被拒绝调用。留空表示不限制。",
+      "ipWhitelistLabel": "IP 白名单",
+      "ipWhitelistPlaceholder": "输入后按回车添加，支持 IPv4/IPv6/CIDR 格式。留空表示不限制。",
+      "ipWhitelistHint": "输入后按回车添加，支持 IPv4/IPv6/CIDR 格式。留空表示不限制。",
+      "membersLabel": "成员",
+      "membersPlaceholder": "搜索成员",
+      "membersHint": "选择需要绑定此护栏的工作区成员，留空表示不限制。",
+      "isDefaultLabel": "默认应用",
+      "isDefaultHint": "自动应用此护栏到所有模型请求"
+    },
+    "modal": {
+      "createTitle": "创建护栏",
+      "editTitle": "配置护栏",
+      "cancel": "取消",
+      "saveEdit": "保存修改",
+      "confirmCreate": "创建护栏"
+    },
+    "deleteModal": {
+      "title": "删除护栏",
+      "description": "确定要删除安全护栏「{{name}}」吗？此操作不可撤销。",
+      "cancel": "取消",
+      "confirm": "确认删除"
+    },
+    "toast": {
+      "createSuccess": "安全护栏已创建",
+      "createError": "创建失败",
+      "updateSuccess": "安全护栏已更新",
+      "updateError": "更新失败",
+      "deleteSuccess": "安全护栏已删除",
+      "deleteError": "删除失败",
+      "toggleError": "操作失败",
+      "nameRequired": "请输入名称"
+    }
+  }
+}

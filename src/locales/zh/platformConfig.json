@@ -1,0 +1,140 @@
+{
+  "platformConfig": {
+    "title": "开发者菜单",
+    "desc": "免登录可访问，便于局域网分享：权限/路由设计、回跳参数、弹窗预览与需求记录。",
+    "callBtn": "调用",
+    "recallBtn": "重新调用",
+    "permPanel": {
+      "title": "权限速查",
+      "idList": "权限 ID 清单",
+      "copyBtn": "一键复制 (交给后端/产品)",
+      "tenantMatrix": "组织角色权限矩阵",
+      "wsMatrix": "工作空间角色权限矩阵",
+      "permLogic": "最终权限 = 组织角色权限 ∪ 工作空间角色权限 (取并集)",
+      "personalNotice": "personal 租户：owner 获得 billing 权限 (国内含 invoice)，无企业管理与邀请管理功能。"
+    },
+    "endpoints": {
+      "session": "当前会话",
+      "platformConfig": "平台配置",
+      "tenants": "我的企业列表",
+      "workspaces": "工作空间列表",
+      "apiKeys": "API Key 列表",
+      "models": "模型目录",
+      "modelTags": "模型标签"
+    },
+    "moduleCompare": {
+      "title": "前端交互模块 vs 实际 API 模块",
+      "frontendModules": "前端交互模块",
+      "apiModules": "实际 API 模块",
+      "difference": "差异对比",
+      "extraInApi": "API 多出的模块 (未在 Console 独立体现)",
+      "extraInFrontend": "前端多出的模块 (基于基础 API 封装的交互工具)",
+      "docsDesc": "文档站 API (Console 内暂无独立页面)",
+      "healthDesc": "健康检查 (系统内部使用)",
+      "playgroundDesc": "交互式接口测试工具",
+      "chatTestDesc": "对话测试工具 (基于 agent API)",
+      "deviceDesc": "CLI 设备流授权页面 (基于 auth API)",
+      "matched": "已对齐模块",
+      "matchedDesc": "这些模块在前端和 API 中均有明确的对应关系。",
+      "gaps": {
+        "title": "核心模块功能对齐细节 (UI 原型 vs 实际 API)",
+        "guardrail": {
+          "title": "安全护栏 (Guardrails)",
+          "ui": "UI 原型仅需要：名称、绑定对象 (成员/Key)、金额预算 (含周期)。已实现 IP/模型白名单展示。",
+          "api": "API 严重过度设计：支持 Token/次数限流、监控模式、多种聚合维度。这些复杂度在 UI 中被明确屏蔽。需确保 PATCH 接口稳定支持 IP/模型白名单字段。"
+        },
+        "observability": {
+          "title": "可观测性 (Observability)",
+          "ui": "UI 原型仅关注：转发开关及目的地管理。",
+          "api": "API 提供了完整的死信队列 (Dead Letters) 接口，但目前 UI 并不需要展示这些底层重试逻辑。功能上 API 大于 UI。"
+        },
+        "billing": {
+          "title": "账单/计费 (Billing)",
+          "ui": "UI 原型将余额、流水、发票聚合。需注意金额输出必须统一约束小数点精度 (Requirement #66)。",
+          "api": "API 将 Credits 和 Transactions 拆分在不同 Tag 下，UI 已完成业务层面的聚合。缺少统一的金额精度控制参数。"
+        },
+        "models": {
+          "title": "模型中心 (Models)",
+          "ui": "UI 原型是一个高度集成的「体验中心」。",
+          "api": "API 拆分为静态目录 (Catalog) 和运行态 (Agent)。缺少像 UI 这样的一站式聚合接口，导致前端需多次请求拼装。涉及 Requirement #63 的大量优化。"
+        },
+        "apiKeys": {
+          "title": "API Keys",
+          "ui": "UI 原型已实现：作用域 (个人/工作空间/成员)、限额、有效期配置。涉及 Requirement #14。",
+          "api": "Swagger v1.2 定义严重滞后：完全缺失 scope, spending_limit, expires_at 字段。API 应尽快对齐 UI 已有的字段定义。"
+        },
+        "organization": {
+          "title": "企业管理 (Org & Members)",
+          "ui": "UI 原型需要：上传企业 Logo (Requirement #1780294522906)、查看企业总人数、从企业全量列表中筛选拉取成员。",
+          "api": "API 缺失严重：缺少 POST /tenants/:id/avatar 接口；TenantItem 缺少 member_count；缺少“过滤工作空间外企业成员”的筛选接口。"
+        },
+        "invitation": {
+          "title": "成员邀请 (Invitations)",
+          "ui": "邀请配置支持默认加入工作区 (Requirement #70)。",
+          "api": "POST /invitations 需确保稳定支持 workspace_id 和 auto_join 配置。目前 API 字段支持情况不明。"
+        }
+      }
+    },
+    "perm": {
+      "tenantType": "租户类型 (Tenant Type)",
+      "tenantRole": "企业角色 (Tenant Role)",
+      "wsRole": "工作空间角色 (Workspace Role)",
+      "personal": {
+        "desc": "个人账户",
+        "perm1": "侧边栏无邀请管理",
+        "perm2": "Header 无工作空间管理入口",
+        "perm3": "Header 无企业设置"
+      },
+      "enterprise": {
+        "desc": "企业",
+        "perm1": "侧边栏显示邀请管理",
+        "perm2": "Header 显示工作空间管理",
+        "perm3": "Header 显示企业设置"
+      },
+      "tenantOwner": {
+        "desc": "拥有者",
+        "perm1": "查看账户余额",
+        "perm2": "邀请成员 Tab",
+        "perm3": "域名配置 Tab",
+        "perm4": "修改成员角色",
+        "perm5": "移除成员"
+      },
+      "tenantAdmin": {
+        "desc": "管理员",
+        "perm1": "查看账户余额",
+        "perm2": "邀请成员 Tab",
+        "perm3": "域名配置 Tab",
+        "perm4": "修改成员角色",
+        "perm5": "移除成员"
+      },
+      "tenantMember": {
+        "desc": "普通成员",
+        "perm1": "余额不可见 (null)",
+        "perm2": "无邀请成员 Tab",
+        "perm3": "无域名配置 Tab",
+        "perm4": "无角色/移除操作"
+      },
+      "wsOwner": {
+        "desc": "拥有者",
+        "perm1": "可撤销任意邀请",
+        "perm2": "可修改任意成员角色"
+      },
+      "wsAdmin": {
+        "desc": "管理员",
+        "perm1": "可撤销任意邀请",
+        "perm2": "可修改任意成员角色"
+      },
+      "wsMember": {
+        "desc": "普通成员",
+        "perm1": "仅撤销自己发出的邀请",
+        "perm2": "不可修改成员角色"
+      }
+    },
+    "tab": {
+      "endpoints": "接口调试",
+      "modules": "模块对照",
+      "permissions": "权限速查",
+      "requirements": "需求清单"
+    }
+  }
+}

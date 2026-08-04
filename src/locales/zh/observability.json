@@ -1,0 +1,123 @@
+{
+  "observability": {
+    "title": "可观测性",
+    "desc": "管理日志记录、数据转发目标与失败事件的重试策略。",
+    "settingsTitle": "日志采集设置",
+    "settingsDesc": "控制完整请求内容的留存，以及是否向外部观测平台推送。",
+    "loggingOffWarning": "关闭日志上报将同时关闭广播转发",
+    "status": {
+      "enabled": "已开启",
+      "disabled": "未开启",
+      "active": "可用",
+      "warning": "告警",
+      "error": "异常"
+    },
+    "logging": {
+      "title": "输入 / 输出日志",
+      "desc": "记录每次请求的完整输入和模型输出内容。",
+      "meta": "完整内容已采集 · 保留 30 天"
+    },
+    "broadcast": {
+      "title": "广播转发",
+      "desc": "将日志实时推送到已配置的转发目标（如 Datadog、OpenTelemetry）。",
+      "meta": "关闭时不会向外部平台推送日志"
+    },
+    "destinations": {
+      "panelTitle": "转发目标",
+      "addButton": "Add Destination",
+      "recentOff": "最近投递 未开启",
+      "recentNone": "最近投递 暂无成功记录",
+      "recentAt": "最近投递 {{time}}",
+      "availablePlatforms": "可用平台",
+      "configuredCount": "已配置 {{count}}",
+      "endpointUnknown": "未配置 Endpoint",
+      "emptyTitle": "暂无转发目标",
+      "emptyDesc": "添加目标后，广播转发会把日志推送到外部观测平台。",
+      "viewLogs": "查看调用日志",
+      "sampleRate": "采样 {{rate}}%",
+      "privacyOn": "隐私模式开启",
+      "privacyOff": "完整内容转发",
+      "lastSuccess": "最近成功 {{time}}",
+      "noLastSuccess": "暂无成功投递",
+      "noPlatforms": "暂无可用平台",
+      "addTitle": "添加转发目标",
+      "listTitle": "已配置的转发目标",
+      "empty": "暂无转发目标，请在上方添加",
+      "table": {
+        "name": "名称",
+        "platform": "平台",
+        "status": "状态",
+        "lastSuccess": "最近成功",
+        "enabled": "启用中",
+        "paused": "已暂停",
+        "pause": "暂停",
+        "resume": "恢复",
+        "delete": "删除"
+      },
+      "deleteModal": {
+        "title": "删除转发目标",
+        "description": "确定要删除「{{name}}」吗？此操作不可撤销。",
+        "cancel": "取消",
+        "confirm": "确认删除"
+      }
+    },
+    "form": {
+      "platformLabel": "平台",
+      "nameLabel": "名称",
+      "namePlaceholder": "为此目标起一个名称",
+      "samplingRate": "采样率",
+      "samplingHint": "100% 表示全量转发，降低可减少流量成本",
+      "privacyMode": "隐私模式",
+      "privacyHint": "开启后对转发内容脱敏，不发送原始输入输出",
+      "apiKeyFilter": "指定 API Key",
+      "apiKeyFilterHint": "不选则转发所有 Key 的日志；选择后仅转发勾选 Key 的请求",
+      "apiKeyFilterPlaceholder": "选择 API Key…",
+      "apiKeyFilterCount": "已选 {{count}} 个",
+      "noApiKeys": "当前工作空间暂无可用 API Key",
+      "connectionTitle": "连接配置",
+      "connectionDesc": "配置凭证与端点，保存后会用于日志转发。",
+      "urlHint": "需填写完整 OTLP traces 地址，通常以 /v1/traces 结尾。",
+      "methodLabel": "方法（可选）",
+      "headersLabel": "请求头（可选）",
+      "headersInvalid": "请求头必须是合法 JSON",
+      "submit": "创建目标",
+      "validationError": "请填写必填项：{{fields}}"
+    },
+    "deadLetters": {
+      "title": "失败重试",
+      "empty": "暂无失败记录",
+      "filterAll": "全部状态",
+      "filterPending": "待重试",
+      "filterRetrying": "重试中",
+      "filterIgnored": "已忽略",
+      "statusPending": "待重试",
+      "statusRetrying": "重试中",
+      "statusIgnored": "已忽略",
+      "table": {
+        "platform": "平台",
+        "status": "状态",
+        "error": "错误信息",
+        "attempts": "重试次数",
+        "lastAttempt": "最近尝试",
+        "retry": "重试",
+        "ignore": "忽略"
+      }
+    },
+    "toast": {
+      "forwardCreated": "转发目标已创建",
+      "forwardCreateError": "创建失败",
+      "forwardDeleted": "转发目标已删除",
+      "forwardDeleteError": "删除失败",
+      "toggleError": "操作失败",
+      "retryTriggered": "已触发重试",
+      "retryError": "重试失败",
+      "ignored": "已标记为忽略",
+      "ignoreError": "操作失败",
+      "saveError": "保存失败",
+      "saveSuccess": "保存成功",
+      "nameRequired": "请填写名称",
+      "urlRequired": "请填写 URL",
+      "deleteSuccess": "删除成功"
+    }
+  }
+}

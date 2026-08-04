@@ -1,0 +1,8 @@
+{
+  "sidebarSettings": {
+    "accountHint": "Profile, security, and bindings",
+    "personalSpaceHint": "Follows account settings",
+    "organizationHint": "Members, invites, and organization info",
+    "workspaceHint": "Keys, guardrails, and workspace members"
+  }
+}

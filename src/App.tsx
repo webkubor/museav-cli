@@ -7,7 +7,9 @@ import { PublicShell } from '@/components/layout/PublicShell'
 import { AuthProvider, RequireAuth } from '@/components/auth/AuthProvider'
 import { RequirePermission } from '@/components/auth/RequirePermission'
 import { RequireEnterpriseTenant } from '@/components/auth/RequireEnterpriseTenant'
+import { LocaleNamespaces } from '@/components/i18n/LocaleNamespaces'
 import { CONSOLE_ROUTES, type ConsoleRouteMeta } from '@/config/console-routes'
+import type { LocaleNamespace } from '@/i18n'
 
 // 页面路由懒加载：各页面拆为独立 chunk，按需加载，缩小首屏体积
 const DashboardPage = lazy(() => import('@/pages/dashboard'))
@@ -49,18 +51,42 @@ const DevToolbar = import.meta.env.DEV
   : null
 const NotFoundPage = lazy(() => import('@/pages/not-found'))
 
+const DASHBOARD_NAMESPACES = ['dashboard', 'dashboardTop', 'billing'] satisfies LocaleNamespace[]
+const MODEL_NAMESPACES = ['models', 'modelsCatalog', 'modelsCompare', 'modelsExperience', 'modelsChat', 'modelsHistory', 'apiKeys'] satisfies LocaleNamespace[]
+
+const CONSOLE_NAMESPACES: Record<string, readonly LocaleNamespace[]> = {
+  dashboard: DASHBOARD_NAMESPACES,
+  organization: ['enterprise', 'workspaces'],
+  workspaces: ['workspaces', 'enterprise', 'observability', 'logs'],
+  billing: ['billing'],
+  usage: ['usage', 'dashboard'],
+  logs: ['logs'],
+  referral: ['billing'],
+  'api-keys': ['apiKeys', 'guardrails', 'models', 'modelsCatalog'],
+  guardrails: ['guardrails'],
+  observability: ['observability', 'apiKeys'],
+}
+
+function withLocaleNamespaces(element: ReactNode, namespaces: readonly LocaleNamespace[]) {
+  return (
+    <LocaleNamespaces namespaces={namespaces} fallback={<RouteFallback />}>
+      {element}
+    </LocaleNamespaces>
+  )
+}
+
 // 菜单驱动页面：key → 页面元素（路由/scope/权限见 config/console-routes 单一真源）
 const CONSOLE_ELEMENTS: Record<string, ReactNode> = {
-  dashboard: <DashboardPage />,
-  organization: <OrganizationPage />,
-  workspaces: <WorkspacesPage />,
-  billing: <BillingPage />,
-  usage: <UsagePage />,
-  logs: <LogsPage />,
-  referral: <ReferralPage />,
-  'api-keys': <ApiKeysPage />,
-  guardrails: <GuardrailsPage />,
-  observability: <ObservabilityPage />,
+  dashboard: withLocaleNamespaces(<DashboardPage />, CONSOLE_NAMESPACES.dashboard),
+  organization: withLocaleNamespaces(<OrganizationPage />, CONSOLE_NAMESPACES.organization),
+  workspaces: withLocaleNamespaces(<WorkspacesPage />, CONSOLE_NAMESPACES.workspaces),
+  billing: withLocaleNamespaces(<BillingPage />, CONSOLE_NAMESPACES.billing),
+  usage: withLocaleNamespaces(<UsagePage />, CONSOLE_NAMESPACES.usage),
+  logs: withLocaleNamespaces(<LogsPage />, CONSOLE_NAMESPACES.logs),
+  referral: withLocaleNamespaces(<ReferralPage />, CONSOLE_NAMESPACES.referral),
+  'api-keys': withLocaleNamespaces(<ApiKeysPage />, CONSOLE_NAMESPACES['api-keys']),
+  guardrails: withLocaleNamespaces(<GuardrailsPage />, CONSOLE_NAMESPACES.guardrails),
+  observability: withLocaleNamespaces(<ObservabilityPage />, CONSOLE_NAMESPACES.observability),
 }
 
 /** 按清单渲染一条菜单页路由：有 view 权限则套 RequirePermission 守卫，否则仅需登录；
@@ -217,25 +243,25 @@ export default function App() {
         <Suspense fallback={<RouteFallback />}>
         <Routes>
           {/* 认证路由（公开） */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/login" element={withLocaleNamespaces(<LoginPage />, ['account'])} />
+          <Route path="/signup" element={withLocaleNamespaces(<SignupPage />, ['account'])} />
           {/* /register 无此路由——历史外链/书签（如国内官网旧 CTA）重定向到 /signup 防呆。
               指 /signup 而非 /login：/signup 已市场自适应（国内自动转 /login，国际是注册页），两端都对。 */}
           <Route path="/register" element={<Navigate to="/signup" replace />} />
           <Route path="/legal/privacy" element={<LegalPage docType="privacy" />} />
           <Route path="/legal/terms" element={<LegalPage docType="terms" />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/auth/callback" element={<AuthCallbackPage />} />
-          <Route path="/invitations" element={<InvitationsPage />} />
-          <Route path="/invitations/:token" element={<InvitationsPage />} />
-          <Route path="/device" element={<DevicePage />} />
-          <Route path="/billing/wechat-cashier" element={<WechatCashierPage />} />
+          <Route path="/forgot-password" element={withLocaleNamespaces(<ForgotPasswordPage />, ['account'])} />
+          <Route path="/reset-password" element={withLocaleNamespaces(<ResetPasswordPage />, ['account'])} />
+          <Route path="/auth/callback" element={withLocaleNamespaces(<AuthCallbackPage />, ['account'])} />
+          <Route path="/invitations" element={withLocaleNamespaces(<InvitationsPage />, ['invitations'])} />
+          <Route path="/invitations/:token" element={withLocaleNamespaces(<InvitationsPage />, ['invitations'])} />
+          <Route path="/device" element={withLocaleNamespaces(<DevicePage />, ['device'])} />
+          <Route path="/billing/wechat-cashier" element={withLocaleNamespaces(<WechatCashierPage />, ['billing'])} />
 
           {/* 模型广场（公开，免登录，双主题）— 与官网同路径 /models，官网「模型」直接跳此 */}
           <Route path="/models" element={<PublicShell />}>
-            <Route index element={<ModelsCatalogPage />} />
-            <Route path=":modelId" element={<ModelDetailPage />} />
+            <Route index element={withLocaleNamespaces(<ModelsCatalogPage />, MODEL_NAMESPACES)} />
+            <Route path=":modelId" element={withLocaleNamespaces(<ModelDetailPage />, MODEL_NAMESPACES)} />
           </Route>
 
           {/* 控制台路由（需登录） */}
@@ -247,8 +273,8 @@ export default function App() {
 
             {/* /models 公开广场已在登录组外；此处仅登录态子页 */}
             <Route path="models">
-              <Route path="playground" element={<ModelsPage />} />
-              <Route path="compare" element={<ModelsComparePage />} />
+              <Route path="playground" element={withLocaleNamespaces(<ModelsPage />, MODEL_NAMESPACES)} />
+              <Route path="compare" element={withLocaleNamespaces(<ModelsComparePage />, MODEL_NAMESPACES)} />
             </Route>
             {/* 任务历史已并入调用日志（#361）：旧路由重定向到「异步任务」记录类型 */}
             <Route path="tasks" element={<Navigate to="/logs?record_type=async" replace />} />
@@ -257,11 +283,11 @@ export default function App() {
                 但模型详情页「获取 API Key」、模型体验的 API 弹窗、以及未登录时的
                 `redirect=/api-keys` 回跳手上都没有 workspaceId —— 给它们一个稳定的
                 无参入口，由中转页解析默认工作空间后再跳。此前这些入口直接落 404。 */}
-            <Route path="api-keys" element={<ApiKeysRedirectPage />} />
+            <Route path="api-keys" element={withLocaleNamespaces(<ApiKeysRedirectPage />, ['apiKeys', 'workspaces'])} />
 
             {/* 开发者菜单（DEV 调试页）——挂在后台壳内（带侧栏/头部），不再独立整页。
                 编译期 DEV 专属：生产构建时页面 import 与整条路由均被静态消除。 */}
-            {PlatformConfigPage && <Route path="dev-config" element={<PlatformConfigPage />} />}
+            {PlatformConfigPage && <Route path="dev-config" element={withLocaleNamespaces(<PlatformConfigPage />, ['platformConfig'])} />}
 
             {/* 企业管理/空间管理是主入口顶层页（nav.ts main 组），不是「设置」子页——
                 路径保持扁平（/organization、/workspaces），与 usage/logs/billing 同级。
@@ -270,7 +296,7 @@ export default function App() {
             {/* 仅「账号设置」真正属于 Settings（底部固定入口） */}
             <Route path="settings">
               <Route index element={<Navigate to="account" replace />} />
-              <Route path="account" element={<AccountSettingsPage />} />
+              <Route path="account" element={withLocaleNamespaces(<AccountSettingsPage />, ['account'])} />
               {/* 旧路径向后兼容：v1.0.1 已发布过 /settings/organization、/settings/workspace，
                   可能被收藏/分享，重定向到新扁平路径，不能直接删。 */}
               <Route path="organization" element={<Navigate to="/organization" replace />} />
@@ -283,7 +309,7 @@ export default function App() {
             </Route>
           </Route>
 
-          <Route path="*" element={<NotFoundPage />} />
+          <Route path="*" element={withLocaleNamespaces(<NotFoundPage />, ['common'])} />
         </Routes>
         </Suspense>
         </AuthProvider>

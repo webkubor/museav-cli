@@ -131,12 +131,12 @@ export function CatalogCard({
           {model.is_new && (
             <em className="mg-badge is-new">
               <LuSparkles size={10} />
-              {isZh ? '最新' : 'New'}
+              {t('modelsCatalog.sidebar.new')}
             </em>
           )}
           {/* PRD §5「状态徽标」原文：免费显示「限时特惠·免费」 */}
           {isFree ? (
-            <em className="mg-badge is-free">{isZh ? '限时特惠·免费' : 'Free'}</em>
+            <em className="mg-badge is-free">{t('modelsCatalog.sidebar.limitedFree')}</em>
           ) : discountLabel ? (
             <em className="mg-badge is-discount">{discountLabel}</em>
           ) : null}
@@ -170,9 +170,10 @@ export function CatalogCard({
         <div
           className="mg-mcard-flow"
           aria-label={
-            isZh
-              ? `输入 ${inputMods.map((m) => t(`modelsCatalog.modality.${m}`)).join('、')}，输出 ${outputMods.map((m) => t(`modelsCatalog.modality.${m}`)).join('、')}`
-              : `input ${inputMods.join(', ')} to output ${outputMods.join(', ')}`
+            t('modelsCatalog.sidebar.inputOutputFlow', {
+              input: inputMods.map((m) => t(`modelsCatalog.modality.${m}`)).join(t('modelsExperience.listSeparator')),
+              output: outputMods.map((m) => t(`modelsCatalog.modality.${m}`)).join(t('modelsExperience.listSeparator')),
+            })
           }
         >
           <span className="mg-mcard-flow-group">
@@ -187,13 +188,13 @@ export function CatalogCard({
 
       {/* API 协议：可点击反查筛选 */}
       {(model.protocols ?? []).length > 0 && (
-        <div className="mg-mcard-protocols" aria-label={isZh ? 'API 协议' : 'API protocol'}>
+        <div className="mg-mcard-protocols" aria-label={t('modelsCatalog.sidebar.apiProtocolAria')}>
           {(model.protocols ?? []).map((p) => (
             <button
               key={p}
               type="button"
               className={`mg-proto is-${p}`}
-              title={`${isZh ? '筛选：' : 'Filter: '}${protocolLabel(p, isZh)}`}
+              title={t('modelsCatalog.sidebar.filterTitle', { label: protocolLabel(p, isZh) })}
               onClick={(e) => { e.stopPropagation(); onPickProtocol?.(p) }}
               disabled={!onPickProtocol}
             >

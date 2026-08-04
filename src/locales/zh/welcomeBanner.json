@@ -1,0 +1,31 @@
+{
+  "welcomeBanner": {
+    "greetingDomestic": "你好，{{name}}",
+    "greetingGlobal": "Hello, {{name}}",
+    "greetingDefaultDomestic": "你好，开发者",
+    "greetingDefaultGlobal": "Hello, Developer",
+    "brandNameDomestic": "ModelGo",
+    "brandNameGlobal": "ModelGo",
+    "subTitleDomestic": "高性能、高合规的多模型路由聚合平台",
+    "subTitleGlobal": "Unified High-Performance Intelligent AI Routing Platform",
+    "descDomestic": "欢迎访问 ModelGo 开发者控制台。在下方管理 API 密钥、监控用量和账单，并通过统一工作区连接多模型接入、预算控制与调用审计。",
+    "descGlobal": "Welcome to the ModelGo workspace. Manage API keys, monitor requests, and check billing while keeping model access, budgets, and audit trails in one control layer.",
+    "workspaceTagEnterpriseDomestic": "企业",
+    "workspaceTagEnterpriseGlobal": "Enterprise Org",
+    "workspaceTagPersonalDomestic": "个人开发者",
+    "workspaceTagPersonalGlobal": "Personal Acc",
+    "docsBtnDomestic": "开发文档",
+    "docsBtnGlobal": "Developer Docs",
+    "terminalTitle": "bash — installation & login",
+    "copied": "已复制",
+    "copy": "复制",
+    "copiedGlobal": "Copied",
+    "copyGlobal": "Copy",
+    "toast.copiedDomestic": "CLI 接入命令已复制到剪贴板",
+    "toast.copiedGlobal": "CLI commands copied to clipboard",
+    "cliComment1Domestic": "安装命令行接入工具",
+    "cliComment1Global": "Install ModelGo CLI",
+    "cliComment2Domestic": "快捷浏览器登录授权",
+    "cliComment2Global": "Auth & login via browser"
+  }
+}

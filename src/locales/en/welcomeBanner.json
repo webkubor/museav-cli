@@ -1,0 +1,31 @@
+{
+  "welcomeBanner": {
+    "greetingDomestic": "Hello, {{name}}",
+    "greetingGlobal": "Hello, {{name}}",
+    "greetingDefaultDomestic": "Hello, Developer",
+    "greetingDefaultGlobal": "Hello, Developer",
+    "brandNameDomestic": "Ciyuan Gongsheng",
+    "brandNameGlobal": "ModelGo",
+    "subTitleDomestic": "High-performance, compliant multi-model routing platform",
+    "subTitleGlobal": "Unified High-Performance Intelligent AI Routing Platform",
+    "descDomestic": "Welcome to the ModelGo developer console. Manage API keys, monitor usage and billing, and keep model access, budgets, and audit trails in one workspace.",
+    "descGlobal": "Welcome to the ModelGo workspace. Manage API keys, monitor requests, and check billing while keeping model access, budgets, and audit trails in one control layer.",
+    "workspaceTagEnterpriseDomestic": "Enterprise Org",
+    "workspaceTagEnterpriseGlobal": "Enterprise Org",
+    "workspaceTagPersonalDomestic": "Personal Developer",
+    "workspaceTagPersonalGlobal": "Personal Developer",
+    "docsBtnDomestic": "Developer Docs",
+    "docsBtnGlobal": "Developer Docs",
+    "terminalTitle": "bash — installation & login",
+    "copied": "Copied",
+    "copy": "Copy",
+    "copiedGlobal": "Copied",
+    "copyGlobal": "Copy",
+    "toast.copiedDomestic": "CLI commands copied to clipboard",
+    "toast.copiedGlobal": "CLI commands copied to clipboard",
+    "cliComment1Domestic": "Install ModelGo CLI",
+    "cliComment1Global": "Install ModelGo CLI",
+    "cliComment2Domestic": "Auth & login via browser",
+    "cliComment2Global": "Auth & login via browser"
+  }
+}

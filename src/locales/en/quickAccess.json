@@ -1,0 +1,19 @@
+{
+  "quickAccess": {
+    "sectionTitle": "Quick Access",
+    "link0.title": "Model Catalog",
+    "link0.desc": "Explore and manage available models",
+    "link1.title": "API Keys",
+    "link1.desc": "Create and manage access tokens",
+    "link2.title": "Usage Stats",
+    "link2.desc": "Monitor API calls and consumption",
+    "link3.title": "Billing",
+    "link3.desc": "Top up balance and download invoices",
+    "link4.title": "Guardrails",
+    "link4.desc": "Configure model filter rules",
+    "link5.title": "Observability",
+    "link5.desc": "View real-time call audit logs",
+    "link6.title": "Compare Models",
+    "link6.desc": "Side-by-side model performance"
+  }
+}

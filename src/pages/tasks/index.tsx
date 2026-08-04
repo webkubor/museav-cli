@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import {
   LuSearch,
   LuClapperboard,
@@ -27,7 +28,7 @@ import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import { cn } from '@/lib/utils'
 import type { TaskArtifactState, TaskBillingState, TaskItem } from '@/types'
 import { VideoPreviewModal } from './VideoPreviewModal'
-import { PAGE_SIZE, REFRESH_INTERVAL, EMPTY_TASK_ITEMS, TIME_PRESET_OPTIONS, resolveKind, getArtifactState, isVideoExpired } from './task-list-utils'
+import { PAGE_SIZE, REFRESH_INTERVAL, EMPTY_TASK_ITEMS, timePresetOptions, resolveKind, getArtifactState, isVideoExpired } from './task-list-utils'
 import { TaskDetailSheet } from './TaskDetailSheet'
 import { TaskRow } from './TaskRow'
 import { TaskMoreFilters } from './TaskMoreFilters'
@@ -46,7 +47,9 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
   refreshRef?: React.MutableRefObject<() => void>
   onFetchingChange?: (fetching: boolean) => void
 }) {
+  const { t } = useTranslation('tasks')
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
+  const presetOptions = timePresetOptions(t)
 
   // ?task_id= 下钻（#14）：初始搜索落到该任务，命中后经下方自动展开详情
   const [search, setSearch]         = useState(initialTaskId ?? '')
@@ -200,30 +203,30 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
           <input
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
-            placeholder="搜索任务 ID / 模型"
+            placeholder={t('filters.searchPlaceholder')}
             className="mg-control-md w-60 rounded-lg border border-mg-border bg-mg-fill-0 pl-8 pr-3 mg-text-body focus:border-brand-base focus:outline-none focus:ring-1 focus:ring-brand-glow/30 text-mg-text-1 placeholder:text-mg-text-3"
           />
         </div>
 
         <Select value={presetFilter} onChange={handlePreset} className="mg-control-md w-32 mg-text-body">
-          {TIME_PRESET_OPTIONS.map((option) => (
+          {presetOptions.map((option) => (
             <Select.Option key={option.value} value={option.value}>{option.label}</Select.Option>
           ))}
         </Select>
 
         <Select value={kindFilter} onChange={handleKind} className="mg-control-md w-32 mg-text-body">
-          <Select.Option value="all">全部类型</Select.Option>
-          <Select.Option value="video">视频生成</Select.Option>
-          <Select.Option value="image">图片生成</Select.Option>
-          <Select.Option value="audio">音乐生成</Select.Option>
+          <Select.Option value="all">{t('filters.allKinds')}</Select.Option>
+          <Select.Option value="video">{t('kind.video')}</Select.Option>
+          <Select.Option value="image">{t('kind.image')}</Select.Option>
+          <Select.Option value="audio">{t('kind.audio')}</Select.Option>
         </Select>
 
         <Select value={statusFilter} onChange={handleStatus} className="mg-control-md w-32 mg-text-body">
-          <Select.Option value="all">全部状态</Select.Option>
-          <Select.Option value="queued">排队中</Select.Option>
-          <Select.Option value="running">生成中</Select.Option>
-          <Select.Option value="succeeded">已完成</Select.Option>
-          <Select.Option value="failed">失败</Select.Option>
+          <Select.Option value="all">{t('filters.allStatuses')}</Select.Option>
+          <Select.Option value="queued">{t('status.queued')}</Select.Option>
+          <Select.Option value="running">{t('status.running')}</Select.Option>
+          <Select.Option value="succeeded">{t('status.succeeded')}</Select.Option>
+          <Select.Option value="failed">{t('status.failed')}</Select.Option>
         </Select>
 
         <Button
@@ -232,12 +235,12 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
           onClick={() => setShowMoreFilters((v) => !v)}
         >
           <LuChevronDown size={14} className={cn('transition-transform', showMoreFilters && 'rotate-180')} />
-          更多筛选
+          {t('buttons.moreFilters')}
         </Button>
 
         {/* 刷新按钮已上移到页头（#46，与同步调用一致）；此处保留计数，自动刷新在后台静默进行。 */}
         {total > 0 && (
-          <span className="ml-auto mg-text-caption text-mg-text-3">共 {total} 条</span>
+          <span className="ml-auto mg-text-caption text-mg-text-3">{t('pagination.total', { total })}</span>
         )}
       </div>
 
@@ -266,7 +269,7 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
       {/* 提示条：只放唯一注意事项（有效期/保存），不与页头描述重复 */}
       <p className="flex items-start gap-1.5 mg-text-caption text-[var(--mg-warning)] px-1">
         <LuTriangleAlert size={13} className="shrink-0 mt-0.5" />
-        <span>视频产物有有效期（见各任务「产物有效期」），过期后平台不再保留，请及时下载保存到本地。</span>
+        <span>{t('warning.expiry')}</span>
       </p>
 
       {/* 表格 */}
@@ -274,30 +277,30 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead align="center" className="w-20">预览</TableHead>
-              <TableHead align="center">提交时间</TableHead>
-              <TableHead align="center">类型</TableHead>
-              <TableHead align="center">模型</TableHead>
-              <TableHead align="center">状态</TableHead>
-              <TableHead align="center">实际费用</TableHead>
-              <TableHead align="center">操作</TableHead>
+              <TableHead align="center" className="w-20">{t('columns.preview')}</TableHead>
+              <TableHead align="center">{t('columns.createdAt')}</TableHead>
+              <TableHead align="center">{t('columns.kind')}</TableHead>
+              <TableHead align="center">{t('columns.model')}</TableHead>
+              <TableHead align="center">{t('columns.status')}</TableHead>
+              <TableHead align="center">{t('columns.cost')}</TableHead>
+              <TableHead align="center">{t('columns.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading && (
-              <EmptyState colSpan={7} title="加载中…" />
+              <EmptyState colSpan={7} title={t('empty.loading')} />
             )}
             {/* 接口失败不降级空态：明确报错 + 重试入口 */}
             {isError && !isLoading && (
               <EmptyState
                 colSpan={7}
                 icon={<LuTriangleAlert />}
-                title="加载失败"
-                description="任务列表拉取出错，请检查网络后重试。"
+                title={t('empty.loadErrorTitle')}
+                description={t('empty.loadErrorDescription')}
                 action={
                   <Button variant="outline" size="sm" onClick={handleRefresh}>
                     <LuRefreshCw size={13} className={cn(isFetching && 'animate-spin')} />
-                    重试
+                    {t('buttons.retry')}
                   </Button>
                 }
               />
@@ -307,18 +310,18 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
               hasActiveFilters ? (
                 <EmptyState
                   colSpan={7}
-                  title="没有符合条件的任务"
-                  description="当前筛选条件下没有任务，试试放宽或清除筛选。"
+                  title={t('empty.filteredTitle')}
+                  description={t('empty.filteredDescription')}
                   action={
-                    <Button variant="outline" size="sm" onClick={clearFilters}>清除筛选</Button>
+                    <Button variant="outline" size="sm" onClick={clearFilters}>{t('buttons.clearFilters')}</Button>
                   }
                 />
               ) : (
                 <EmptyState
                   colSpan={7}
                   icon={<LuClapperboard />}
-                  title="暂无异步任务"
-                  description="发起视频、图片或音乐等异步生成任务后，会在这里显示状态、费用和产物。"
+                  title={t('empty.noTasksTitle')}
+                  description={t('empty.noTasksDescription')}
                 />
               )
             )}
@@ -339,21 +342,21 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
       {/* 分页 */}
       {pages > 1 && (
         <div className="flex items-center justify-between mg-text-caption text-mg-text-3">
-          <span>第 {page} / {pages} 页</span>
+          <span>{t('pagination.page', { page, pages })}</span>
           <div className="flex gap-2">
             <Button
               variant="outline" size="sm"
               disabled={offset === 0}
               onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
             >
-              上一页
+              {t('buttons.previousPage')}
             </Button>
             <Button
               variant="outline" size="sm"
               disabled={offset + PAGE_SIZE >= total}
               onClick={() => setOffset(offset + PAGE_SIZE)}
             >
-              下一页
+              {t('buttons.nextPage')}
             </Button>
           </div>
         </div>

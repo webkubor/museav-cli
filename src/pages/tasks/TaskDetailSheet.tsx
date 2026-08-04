@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import {
   LuActivity,
   LuReceiptText,
@@ -23,7 +25,7 @@ import { cn } from '@/lib/utils'
 import type { TaskItem, TaskStatusTimestamps } from '@/types'
 import { getSnapshotLifecycleEvents } from './lifecycle'
 import { artifactSummary } from './artifact-summary'
-import { STATUS_CONFIG, KIND_CONFIG, fmtDate, taskCost, fmtCost, costHint, resolveKind, isTaskDone, isVideoExpired, resultExpiry, videoContentUrl, getArtifactState } from './task-list-utils'
+import { statusConfig, kindConfig, fmtDate, taskCost, fmtCost, costHint, resolveKind, isTaskDone, isVideoExpired, resultExpiry, videoContentUrl, getArtifactState } from './task-list-utils'
 
 // ─── 详情面板字段行 ───────────────────────────────────────────────────────────
 
@@ -76,12 +78,12 @@ function SummaryCard({ icon, label, value, hint, tone = 'brand' }: {
 }
 
 /** 产物状态展示：优先使用接口 artifact_state，兼容旧接口的派生结果。 */
-function artifactStatus(task: TaskItem, expired: boolean): { label: string; tone: SummaryTone } {
+function artifactStatus(task: TaskItem, expired: boolean, t: TFunction<'tasks'>): { label: string; tone: SummaryTone } {
   const state = getArtifactState(task, expired)
-  if (state === 'generating') return { label: '生成中', tone: 'brand' }
-  if (state === 'failed') return { label: '生成失败', tone: 'danger' }
-  if (state === 'expired') return { label: '已过期', tone: 'warning' }
-  if (state === 'available') return { label: '可下载', tone: 'success' }
+  if (state === 'generating') return { label: t('artifactState.generating'), tone: 'brand' }
+  if (state === 'failed') return { label: t('artifactState.failed'), tone: 'danger' }
+  if (state === 'expired') return { label: t('artifactState.expired'), tone: 'warning' }
+  if (state === 'available') return { label: t('artifactState.available'), tone: 'success' }
   return { label: '—', tone: 'brand' }
 }
 
@@ -93,31 +95,31 @@ interface LifecycleEvent {
 }
 
 /** 基于后端真实时间字段生成生命周期，缺少中间态时不虚构时间。 */
-function getLifecycleEvents(task: TaskItem, statusTimestamps?: TaskStatusTimestamps): LifecycleEvent[] {
-  const snapshotEvents = getSnapshotLifecycleEvents(statusTimestamps)
+function getLifecycleEvents(task: TaskItem, t: TFunction<'tasks'>, statusTimestamps?: TaskStatusTimestamps): LifecycleEvent[] {
+  const snapshotEvents = getSnapshotLifecycleEvents(statusTimestamps, t)
   if (snapshotEvents.length > 0) {
     return snapshotEvents.map((event) => ({ ...event, time: fmtDate(event.time) }))
   }
 
   const events: LifecycleEvent[] = [{
     time: fmtDate(task.created_at),
-    label: '已提交',
-    note: '任务创建',
+    label: t('lifecycle.submitted'),
+    note: t('lifecycle.submittedNote'),
     tone: 'brand',
   }]
   if (task.status === 'queued' || task.status === 'running') {
     events.push({
       time: fmtDate(task.updated_at),
-      label: task.status === 'queued' ? '排队中' : '生成中',
-      note: task.status === 'queued' ? '等待调度' : '生成进行中',
+      label: task.status === 'queued' ? t('lifecycle.queued') : t('lifecycle.running'),
+      note: task.status === 'queued' ? t('lifecycle.queuedSimpleNote') : t('lifecycle.runningNote'),
       tone: 'brand',
     })
   }
   if (isTaskDone(task.status)) {
-    events.push({ time: fmtDate(task.completed_at), label: '已完成', note: '产物可下载', tone: 'success' })
+    events.push({ time: fmtDate(task.completed_at), label: t('lifecycle.completed'), note: t('lifecycle.completedNote'), tone: 'success' })
   }
   if (task.status === 'failed') {
-    events.push({ time: fmtDate(task.updated_at), label: '失败', note: task.error_message || '任务执行失败', tone: 'danger' })
+    events.push({ time: fmtDate(task.updated_at), label: t('lifecycle.failed'), note: task.error_message || t('lifecycle.failedNote'), tone: 'danger' })
   }
   return events
 }
@@ -125,6 +127,9 @@ function getLifecycleEvents(task: TaskItem, statusTimestamps?: TaskStatusTimesta
 // ─── 详情抽屉 ─────────────────────────────────────────────────────────────────
 
 export function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; onClose: () => void }) {
+  const { t } = useTranslation('tasks')
+  const statusMap = statusConfig(t)
+  const kindMap = kindConfig(t)
   const taskId = listTask.gateway_request_id
   const { data } = useQuery({
     queryKey: ['task-detail', taskId],
@@ -163,11 +168,11 @@ export function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; o
   const apiKeyName = keyPage?.items.find((k) => k.api_key_id === task.api_key_id)?.name || task.api_key_id || '—'
   const memberName = memberPage?.items.find((m) => m.account.account_id === task.account_id)?.account.display_name || task.account_id || '—'
   const kind = resolveKind(task)
-  const kindCfg = KIND_CONFIG[kind]
+  const kindCfg = kindMap[kind]
   const expired = isVideoExpired(task) || isVideoExpired(data)
   const artifactState = getArtifactState(task, expired)
   // 产物有效期：详情接口优先（result_meta 可能比列表项新），回落到列表项
-  const expiry = resultExpiry(data) ?? resultExpiry(task)
+  const expiry = resultExpiry(data, t) ?? resultExpiry(task, t)
   const isVideoTask = kind === 'video' && isTaskDone(task.status) && artifactState === 'available'
   // 视频产物：仅在服务端确认可用且未过期时访问网关内容端点。
   const videoUrl = isVideoTask && !expired ? videoContentUrl(taskId) : null
@@ -182,7 +187,7 @@ export function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; o
     filename: rm?.result_filename || '—',
     format: rm?.result_format || '—',
     resolution: rm?.result_resolution || '—',
-    duration: rm?.result_duration_seconds ? `${rm.result_duration_seconds} 秒` : '—',
+    duration: rm?.result_duration_seconds ? t('duration.seconds', { count: rm.result_duration_seconds }) : '—',
   }
   const requestSummary = artifactSummary(data?.request_summary)
   const artifactTechnicalSummary = [artifactMeta.format, artifactMeta.resolution, artifactMeta.duration]
@@ -190,20 +195,28 @@ export function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; o
     .join(' · ')
   const lifecycleEvents = getLifecycleEvents(
     task,
+    t,
     data?.result_meta?.status_timestamps ?? task.result_meta?.status_timestamps,
   )
 
   return (
-    <SideSheet open onClose={onClose} title="异步任务详情">
+    <SideSheet open onClose={onClose} title={t('detail.title')}>
         <div className="space-y-5 px-[var(--mg-space-1)] py-[var(--mg-control-py-sm)] mg-text-body">
           {(() => {
             // 派生：概览/摘要/任务信息用到的状态与文案（对齐 PRD 异步任务详情 §7.4.2）
-            const statusLabel = STATUS_CONFIG[task.status]?.label ?? task.status
+            const statusLabel = statusMap[task.status]?.label ?? task.status
             const statusTone: SummaryTone = isTaskDone(task.status) ? 'success' : task.status === 'failed' ? 'danger' : 'brand'
-            const art = artifactStatus(task, expired)
+            const art = artifactStatus(task, expired, t)
             const billingState = task.billing_state ?? task.billing_status
             const billing = billingState
-              ? (({ settled: '已结算', pending: '待结算', partial: '部分计费', unbilled: '未计费', none: '未计费', billed: '已结算' } as Record<string, string>)[billingState] ?? billingState)
+              ? (({
+                  settled: t('billingState.settled'),
+                  pending: t('billingState.pending'),
+                  partial: t('billingState.partial'),
+                  unbilled: t('billingState.unbilled'),
+                  none: t('billingState.none'),
+                  billed: t('billingState.billed'),
+                } as Record<string, string>)[billingState] ?? billingState)
               : '—'
             const costPending = task.status === 'queued' || task.status === 'running'
             return (
@@ -214,29 +227,29 @@ export function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; o
               {kindCfg.icon}{kindCfg.label}
             </Badge>
             <Badge variant="outline" className="max-w-full truncate">{task.requested_model}</Badge>
-            <StatusBadge status={task.status} statusMap={STATUS_CONFIG} />
-            {task.from_image && <Badge variant="info">图生视频</Badge>}
+            <StatusBadge status={task.status} statusMap={statusMap} />
+            {task.from_image && <Badge variant="info">{t('kind.fromImage')}</Badge>}
           </div>
 
           {/* 诊断指标（Summary）：任务状态 / 实际费用 / 产物状态（对齐同步调用详情，需求方#165） */}
           <div className="grid grid-cols-3 gap-2">
             <SummaryCard
               icon={<LuActivity />}
-              label="任务状态"
+              label={t('detail.taskStatus')}
               value={statusLabel}
               hint={fmtDate(task.created_at)}
               tone={statusTone}
             />
             <SummaryCard
               icon={<LuReceiptText />}
-              label="实际费用"
-              value={costPending ? '待结算' : (task.status === 'failed' && !taskCost(task) ? '无费用' : fmtCost(task))}
+              label={t('columns.cost')}
+              value={costPending ? t('cost.pending') : (task.status === 'failed' && !taskCost(task) ? t('cost.noCharge') : fmtCost(task))}
               hint={billing}
               tone={costPending ? 'warning' : 'success'}
             />
             <SummaryCard
               icon={<LuPackage />}
-              label="产物"
+              label={t('detail.artifact')}
               value={art.label}
               hint={expiry && !expiry.expired ? expiry.remain : undefined}
               tone={art.tone}
@@ -245,37 +258,37 @@ export function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; o
 
           {/* 概览：模型、工作空间、API Key 名称、成员（顺序与同步调用一致，需求方#165） */}
           <div>
-            <p className="mg-text-label text-mg-text-3 mb-2">概览</p>
+            <p className="mg-text-label text-mg-text-3 mb-2">{t('detail.overview')}</p>
             <div className="rounded-md border border-mg-border bg-mg-bg-0 px-[var(--mg-panel-padding-md)]">
               {/* 需求方#181：异步任务详情模型名前不带图标（对齐同步调用详情概览） */}
               <DetailRow
-                label="模型"
+                label={t('columns.model')}
                 value={<span className="font-mono">{task.requested_model}</span>}
               />
-              <DetailRow label="工作空间" value={workspaceName} />
-              <DetailRow label="API Key 名称" value={apiKeyName} />
-              <DetailRow label="成员" value={memberName} />
+              <DetailRow label={t('detail.workspace')} value={workspaceName} />
+              <DetailRow label={t('detail.apiKeyName')} value={apiKeyName} />
+              <DetailRow label={t('detail.member')} value={memberName} />
             </div>
           </div>
 
           {/* 任务信息：任务 ID、提交时间、任务状态、产物状态、计费状态、实际费用、产物有效期 */}
           <div>
-            <p className="mg-text-label text-mg-text-3 mb-2">任务信息</p>
+            <p className="mg-text-label text-mg-text-3 mb-2">{t('detail.taskInfo')}</p>
             <div className="rounded-md border border-mg-border bg-mg-bg-0 px-[var(--mg-panel-padding-md)]">
-              <DetailRow label="任务 ID" value={task.gateway_request_id} mono />
-              <DetailRow label="提交时间" value={fmtDate(task.created_at)} />
-              <DetailRow label="任务状态" value={statusLabel} />
-              <DetailRow label="产物状态" value={art.label} />
-              <DetailRow label="计费状态" value={billing} />
+              <DetailRow label={t('detail.taskId')} value={task.gateway_request_id} mono />
+              <DetailRow label={t('columns.createdAt')} value={fmtDate(task.created_at)} />
+              <DetailRow label={t('detail.taskStatus')} value={statusLabel} />
+              <DetailRow label={t('detail.artifactState')} value={art.label} />
+              <DetailRow label={t('detail.billingState')} value={billing} />
               <DetailRow
-                label="实际费用"
-                value={task.status === 'failed' && !taskCost(task) ? '无费用' : fmtCost(task)}
-                hint={costHint(task)}
+                label={t('columns.cost')}
+                value={task.status === 'failed' && !taskCost(task) ? t('cost.noCharge') : fmtCost(task)}
+                hint={costHint(task, t)}
               />
               {expiry && (
                 <DetailRow
-                  label="产物有效期"
-                  value={expiry.expired ? '已过期 · 已自动清理' : `至 ${fmtDate(expiry.expiresAt)} · ${expiry.remain}`}
+                  label={t('detail.artifactExpiry')}
+                  value={expiry.expired ? t('artifact.expiredAutoCleaned') : t('artifact.expiresAt', { time: fmtDate(expiry.expiresAt), remain: expiry.remain })}
                 />
               )}
             </div>
@@ -286,7 +299,7 @@ export function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; o
 
           {/* 生命周期：只展示接口已提供的真实节点，结构对齐 PRD 时间线 */}
           <div>
-            <p className="mg-text-label text-mg-text-3 mb-2">生命周期</p>
+            <p className="mg-text-label text-mg-text-3 mb-2">{t('detail.lifecycle')}</p>
             <div className="rounded-md border border-mg-border bg-mg-bg-0 px-[var(--mg-panel-padding-md)] py-1">
               {lifecycleEvents.map((event, index) => (
                 <div key={`${event.label}-${event.time}`} className="flex gap-3 py-3">
@@ -311,7 +324,7 @@ export function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; o
 
           {/* 产物：预览、元信息和下载动作合并为 PRD 单张产物卡 */}
           <div>
-            <p className="mg-text-label text-mg-text-3 mb-2">产物</p>
+            <p className="mg-text-label text-mg-text-3 mb-2">{t('detail.artifact')}</p>
             <article className="overflow-hidden rounded-md border border-mg-border bg-mg-bg-0">
               {showVideo ? (
                 <video
@@ -331,19 +344,27 @@ export function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; o
               <div className="space-y-3 p-[var(--mg-panel-padding-md)]">
                 <div>
                   <strong className="block truncate mg-text-body text-mg-text-1">
-                    {artifactMeta.filename === '—' ? '产物文件' : artifactMeta.filename}
+                    {artifactMeta.filename === '—' ? t('artifact.file') : artifactMeta.filename}
                   </strong>
                   <span className="mg-text-caption text-mg-text-3">
-                    {requestSummary || artifactTechnicalSummary || '产物信息暂未提供'}
+                    {requestSummary || artifactTechnicalSummary || t('artifact.infoUnavailable')}
                   </span>
                 </div>
-                {expiry && <p className="mg-text-caption text-mg-text-3">产物有效期：{expiry.expired ? '已过期 · 已自动清理' : `${fmtDate(expiry.expiresAt)} · ${expiry.remain}`}</p>}
+                {expiry && (
+                  <p className="mg-text-caption text-mg-text-3">
+                    {t('artifact.resultExpiry', {
+                      value: expiry.expired
+                        ? t('artifact.expiredAutoCleaned')
+                        : `${fmtDate(expiry.expiresAt)} · ${expiry.remain}`,
+                    })}
+                  </p>
+                )}
                 {showVideo && videoUrl && (
                   <>
                     <div className="flex items-center gap-2 rounded-md border border-mg-border bg-mg-fill-0/40 px-[var(--mg-control-px-sm)] py-[var(--mg-control-py-sm)]">
                       <LuLink size={13} className="shrink-0 text-mg-text-4" />
                       <span className="flex-1 truncate mg-text-code text-mg-text-2" title={videoUrl}>{videoUrl}</span>
-                      <CopyButton value={videoUrl} aria-label="复制链接" toast="链接已复制" className="h-5 w-5 shrink-0" />
+                      <CopyButton value={videoUrl} aria-label={t('detail.copyLink')} toast={t('detail.copySuccess')} className="h-5 w-5 shrink-0" />
                     </div>
                     <a
                       href={videoUrl}
@@ -354,11 +375,11 @@ export function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; o
                       className="inline-flex w-full items-center justify-center gap-1.5 mg-control-md rounded-md bg-mg-primary text-white mg-text-body font-semibold transition-opacity hover:opacity-90"
                     >
                       <LuDownload size={14} />
-                      下载
+                      {t('buttons.download')}
                     </a>
                   </>
                 )}
-                {expiry && !expiry.expired && <p className="flex items-start gap-1.5 mg-text-caption text-[var(--mg-warning)]"><LuTriangleAlert size={13} className="mt-0.5 shrink-0" /><span>产物到期后平台不再保留，请尽快下载保存。</span></p>}
+                {expiry && !expiry.expired && <p className="flex items-start gap-1.5 mg-text-caption text-[var(--mg-warning)]"><LuTriangleAlert size={13} className="mt-0.5 shrink-0" /><span>{t('artifact.preservationWarning')}</span></p>}
               </div>
             </article>
           </div>
@@ -367,15 +388,15 @@ export function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; o
           {gone && kind === 'video' && isTaskDone(task.status) && artifactState === 'expired' && (
             <div className="rounded-md border border-mg-border bg-mg-bg-0 mg-panel-relaxed flex flex-col items-center gap-2 text-mg-text-4">
               <LuVideoOff size={32} />
-              <p className="mg-text-body font-semibold">产物已过期</p>
-              <p className="mg-text-caption text-mg-text-3">视频文件已自动清理，不支持预览与下载</p>
+              <p className="mg-text-body font-semibold">{t('artifact.expired')}</p>
+              <p className="mg-text-caption text-mg-text-3">{t('artifact.videoExpired')}</p>
             </div>
           )}
 
           {/* 失败原因 */}
           {artifactState === 'failed' && task.error_message && (
             <div className="rounded-md border border-[var(--mg-danger)]/20 bg-[var(--mg-danger)]/5 mg-panel">
-              <p className="mg-text-label text-[var(--mg-danger)] mb-1.5">失败原因</p>
+              <p className="mg-text-label text-[var(--mg-danger)] mb-1.5">{t('detail.errorReason')}</p>
               <p className="mg-text-caption text-mg-text-2">{task.error_message}</p>
             </div>
           )}

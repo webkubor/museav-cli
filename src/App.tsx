@@ -60,7 +60,7 @@ const CONSOLE_NAMESPACES: Record<string, readonly LocaleNamespace[]> = {
   workspaces: ['workspaces', 'enterprise', 'observability', 'logs'],
   billing: ['billing'],
   usage: ['usage', 'dashboard'],
-  logs: ['logs'],
+  logs: ['logs', 'tasks'],
   referral: ['billing'],
   'api-keys': ['apiKeys', 'guardrails', 'models', 'modelsCatalog'],
   guardrails: ['guardrails'],

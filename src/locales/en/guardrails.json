@@ -4,6 +4,50 @@
     "desc": "Configure prompt defense rules to block injection attacks, sensitive words, and uncontrolled outputs.",
     "create": "Create Guardrail",
     "empty": "No guardrails. Create one to get started.",
+    "scope": {
+      "global": "Global",
+      "member": "Member",
+      "key": "Key"
+    },
+    "kind": {
+      "regular": "Regular",
+      "boost": "Boost"
+    },
+    "label": {
+      "scopeGuardrail": "{{scope}} Guardrail",
+      "kindGuardrail": "{{kind}} Guardrail"
+    },
+    "section": {
+      "global": "Global Guardrails",
+      "member": "Member Guardrails",
+      "key": "Key Guardrails"
+    },
+    "period": {
+      "hour": "Every 5 hours",
+      "day": "Daily",
+      "week": "Weekly",
+      "month": "Monthly"
+    },
+    "budget": {
+      "workspaceTotal": "Workspace Total Budget",
+      "defaultMember": "Default Member Budget",
+      "defaultKey": "Default Key Budget",
+      "member": "Member Budget",
+      "key": "Key Budget",
+      "boost": "Boost Budget",
+      "unlimited": "Unlimited",
+      "limited": "Limited",
+      "modeAria": "{{label}} limit mode",
+      "amountAria": "{{label}} amount",
+      "periodAria": "{{label}} period",
+      "amountPlaceholder": "Enter limit amount, up to 2 decimal places"
+    },
+    "emptyState": {
+      "global": "No global guardrails. Usage is currently unrestricted.",
+      "member": "No member guardrails.",
+      "key": "No Key guardrails.",
+      "noMatch": "No matching guardrails."
+    },
     "summary": {
       "global": "Global Guardrails",
       "member": "Member Guardrails",
@@ -17,7 +61,7 @@
       "ipWhitelist": "IP Whitelist",
       "boundKeys": "Bound Keys",
       "unlimited": "Unlimited",
-      "keyUnit": "keys",
+      "keyUnit": "Keys",
       "priority": "Priority",
       "isDefault": "Default",
       "status": "Status",
@@ -25,9 +69,39 @@
       "inactive": "Inactive",
       "createdAt": "Created At",
       "defaultBadge": "Default",
+      "defaultBadgeShort": "Default",
       "optionalBadge": "Optional",
       "configure": "Configure",
-      "delete": "Delete"
+      "edit": "Edit",
+      "view": "View",
+      "delete": "Delete",
+      "actions": "Actions",
+      "kind": "Type",
+      "members": "Members",
+      "memberUnit": "members",
+      "budget": "Budget",
+      "promptInjection": "Prompt Injection",
+      "creator": "Creator",
+      "updatedAt": "Updated At",
+      "boostExpiresAt": "Boost Expiration",
+      "notApplicable": "N/A",
+      "neverExpires": "Never expires",
+      "searchPlaceholder": "Search guardrail name",
+      "searchAria": "Search {{title}} name",
+      "keepOneGlobal": "At least one active global guardrail is required.",
+      "modelBlacklistEmptyTitle": "No model blacklist is configured. All models are allowed.",
+      "modelBlacklistCountTitle": "{{count}} total: {{value}}",
+      "ipWhitelistEmptyTitle": "No IP whitelist is configured. Any source IP is allowed.",
+      "ipWhitelistCountTitle": "{{count}} total: {{value}}",
+      "noMembersBound": "No members bound",
+      "boundMembers": "{{count}} members bound",
+      "noKeysBound": "No Keys bound",
+      "boundKeysCount": "{{count}} Keys bound",
+      "boostExpiry": {
+        "notApplicableTitle": "Regular guardrails do not have boost expiration.",
+        "expiryTitle": "The boost guardrail becomes inactive after expiration.",
+        "neverTitle": "No expiration is set; this boost remains effective."
+      }
     },
     "form": {
       "nameLabel": "Name",
@@ -48,19 +122,63 @@
       "membersLabel": "Members",
       "membersPlaceholder": "Search members",
       "membersHint": "Select members to bind to this guardrail. Leave empty for no restriction.",
+      "guardrailNameLabel": "Guardrail Name",
+      "scopeLabel": "Guardrail Scope",
+      "kindLabel": "Guardrail Type",
+      "boundApiKeyLabel": "Bound API Key",
+      "apiKeysPlaceholder": "Search API Key",
+      "boostExpiresAtLabel": "Boost Expiration",
+      "noBindableMembers": "No bindable members in the current workspace.",
+      "noBindableApiKeys": "No bindable API Keys in the current workspace. Create one on the API Keys page first.",
+      "noCreateScopePermission": "You do not have permission to create {{scope}} guardrails.",
+      "noCreateBoostPermission": "You do not have permission to create boost guardrails.",
+      "invalidIp": "Invalid IP address format",
       "isDefaultLabel": "Apply by Default",
       "isDefaultHint": "Automatically apply to all requests"
+    },
+    "promptInjection": {
+      "label": "Prompt Injection Detection",
+      "inherit": "Inherit Global Guardrail",
+      "hitBehavior": "Hit behavior",
+      "summaryHint": "Log only=record hits and send the original content; Redact=replace matched content before sending; Block=reject the request directly",
+      "mode": {
+        "off": "Off",
+        "flag": "Log only",
+        "redact": "Redact",
+        "block": "Block"
+      },
+      "hint": {
+        "flag": "Record the hit and send the original request content.",
+        "redact": "Replace matched content with [PROMPT_INJECTION] before sending.",
+        "block": "Reject the request directly without sending it to the model."
+      }
+    },
+    "audit": {
+      "title": "Audit Log",
+      "empty": "No audit records."
+    },
+    "validation": {
+      "invalidBudget": "Invalid budget amount: greater than 0, up to 12 integer digits and 2 decimal places.",
+      "invalidBudgetDetailed": "Invalid budget amount: enter a number greater than 0, up to 12 integer digits and 2 decimal places.",
+      "budgetConflict": "Budget configuration error: multiple active budget policies exist. Contact an administrator.",
+      "bindMemberRequired": "Bind at least one member.",
+      "bindApiKeyRequired": "Bind at least one API Key.",
+      "boostBudgetRequired": "Enter a boost budget.",
+      "budgetRequired": "Enter a budget.",
+      "boostExpiresAtRequired": "Set an expiration time for the boost guardrail."
     },
     "modal": {
       "createTitle": "Create Guardrail",
       "editTitle": "Configure Guardrail",
       "cancel": "Cancel",
       "saveEdit": "Save Changes",
+      "saveGuardrail": "Save Guardrail",
       "confirmCreate": "Create Guardrail"
     },
     "deleteModal": {
       "title": "Delete Guardrail",
       "description": "Delete guardrail \"{{name}}\"? This cannot be undone.",
+      "activeGlobalWarning": "This is the currently active global guardrail. After deletion, this workspace will have no global default budget or model/IP boundary and will be treated as unrestricted.",
       "cancel": "Cancel",
       "confirm": "Delete"
     },
@@ -72,7 +190,10 @@
       "deleteSuccess": "Guardrail deleted",
       "deleteError": "Failed to delete",
       "toggleError": "Operation failed",
-      "nameRequired": "Please enter a name"
+      "nameRequired": "Please enter a name",
+      "detailLoadError": "Failed to load guardrail details",
+      "createBudgetError": "Guardrail created, but budget save failed. Add the budget in edit mode.",
+      "noChanges": "No changes"
     }
   }
 }

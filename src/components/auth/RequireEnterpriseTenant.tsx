@@ -9,17 +9,19 @@
  * 个人租户 → 403（与 RequirePermission 的无权限表现一致）。
  */
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/store/auth'
 import ForbiddenPage from '@/pages/forbidden'
 
 export function RequireEnterpriseTenant({ children }: { children: ReactNode }) {
+  const { t } = useTranslation('common')
   const tenants = useAuthStore((s) => s.tenants)
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const activeTenant = tenants.find((t) => t.tenant_id === activeTenantId)
 
   if (!activeTenant) {
     return (
-      <div className="flex min-h-48 items-center justify-center" role="status" aria-label="租户加载中">
+      <div className="flex min-h-48 items-center justify-center" role="status" aria-label={t('common.loadingTenants')}>
         <div className="h-7 w-7 animate-spin rounded-full border-2 border-mg-border border-t-brand-base" />
       </div>
     )

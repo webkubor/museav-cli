@@ -136,13 +136,13 @@ export function LogDetailSheet({
       open={open}
       onClose={onClose}
       title={null}
-      ariaTitle="调用日志详情"
+      ariaTitle={t('logs.detail.title')}
       className="overflow-y-auto"
     >
       {row && (
         <div className="space-y-6">
           <header className="border-b border-mg-border pb-4">
-            <h2 className="mg-text-title-sm font-bold text-mg-text-1">调用日志详情</h2>
+            <h2 className="mg-text-title-sm font-bold text-mg-text-1">{t('logs.detail.title')}</h2>
             {/* 顶部 chips 只留 模型 + 状态（对齐原型 log-detail-chips）：
                 调用类型(sync)/HTTP 状态码(403) 是技术细节，不当醒目标签甩给用户——
                 HTTP 状态作为下方「请求链路」的字段行保留即可（需求方反馈）。 */}
@@ -162,22 +162,22 @@ export function LogDetailSheet({
               </>
             ) : (
               <>
-                <DiagnosticCard icon={<LuClock3 />} label="总耗时" value={formatMaybeDuration(row.duration_ms)} hint={`首 Token ${formatMaybeDuration(row.speed.first_token_ms)}`} tone={row.status === 'failed' ? 'danger' : 'brand'} />
-                <DiagnosticCard icon={<LuReceiptText />} label="费用" value={<Money amount={Number(row.cost.amount) > 0 ? row.cost.amount : null} currency={row.cost.currency} />} hint={row.billing_status || '计费状态未返回'} tone="warning" />
-                <DiagnosticCard icon={<LuDatabase />} label="Token" value={tokenFlow(row)} hint="输入 token -> 输出 token" tone="success" />
-                <DiagnosticCard icon={<LuGitFork />} label="Fallback" value={`${row.fallback_count} 次`} hint={row.fallback_count > 0 ? '已触发回退' : '未触发'} tone={row.fallback_count > 0 ? 'warning' : 'brand'} />
+                <DiagnosticCard icon={<LuClock3 />} label={t('logs.detail.diagnostics.totalDuration')} value={formatMaybeDuration(row.duration_ms)} hint={t('logs.detail.diagnostics.firstTokenHint', { value: formatMaybeDuration(row.speed.first_token_ms) })} tone={row.status === 'failed' ? 'danger' : 'brand'} />
+                <DiagnosticCard icon={<LuReceiptText />} label={t('logs.detail.diagnostics.cost')} value={<Money amount={Number(row.cost.amount) > 0 ? row.cost.amount : null} currency={row.cost.currency} />} hint={row.billing_status || t('logs.detail.diagnostics.billingStatusMissing')} tone="warning" />
+                <DiagnosticCard icon={<LuDatabase />} label="Token" value={tokenFlow(row)} hint={t('logs.detail.diagnostics.tokenFlowHint')} tone="success" />
+                <DiagnosticCard icon={<LuGitFork />} label="Fallback" value={t('logs.detail.diagnostics.fallbackCount', { count: row.fallback_count })} hint={row.fallback_count > 0 ? t('logs.detail.diagnostics.fallbackTriggered') : t('logs.detail.diagnostics.fallbackNotTriggered')} tone={row.fallback_count > 0 ? 'warning' : 'brand'} />
                 {/* 5 张卡在 2 列下第 5 张会孤行留半空——让「缓存」占满整行，分布均匀 */}
-                <DiagnosticCard className="sm:col-span-2" icon={<LuGauge />} label="缓存" value={row.usage.cache_read_tokens > 0 ? '命中' : '未命中'} hint={`读 ${formatNumber(row.usage.cache_read_tokens)} Token`} tone={row.usage.cache_read_tokens > 0 ? 'success' : 'brand'} />
+                <DiagnosticCard className="sm:col-span-2" icon={<LuGauge />} label={t('logs.detail.diagnostics.cache')} value={row.usage.cache_read_tokens > 0 ? t('logs.detail.diagnostics.cacheHit') : t('logs.detail.diagnostics.cacheMiss')} hint={t('logs.detail.diagnostics.cacheRead', { count: formatNumber(row.usage.cache_read_tokens) })} tone={row.usage.cache_read_tokens > 0 ? 'success' : 'brand'} />
               </>
             )}
           </section>
 
-          <DetailSection title="概览">
+          <DetailSection title={t('logs.detail.sections.overview')}>
             <DetailGrid compact>
-              <DetailRow label="模型" value={row.model.display_name} />
-              <DetailRow label="工作空间" value={workspaceName || row.workspace_id} />
-              <DetailRow label="API Key 名称" value={apiKeyName} />
-              <DetailRow label="成员" value={memberName} />
+              <DetailRow label={t('logs.detail.model')} value={row.model.display_name} />
+              <DetailRow label={t('logs.detail.workspace')} value={workspaceName || row.workspace_id} />
+              <DetailRow label={t('logs.detail.apiKeyName')} value={apiKeyName} />
+              <DetailRow label={t('logs.detail.member')} value={memberName} />
             </DetailGrid>
           </DetailSection>
 
@@ -194,22 +194,22 @@ export function LogDetailSheet({
             </DetailSection>
           )}
 
-          <DetailSection title="请求">
+          <DetailSection title={t('logs.detail.sections.request')}>
             {/* 字段顺序对齐 PRD 原型 LogDetailDrawer 「请求」区：Request ID → Trace ID → 调用时间
                 → HTTP 状态 → 计费状态 →（billable 时）调用类型 → TPOT → TPM。单列布局（非 compact）。 */}
             <DetailGrid>
               <DetailRow label="Request ID" value={row.request_id} mono />
               <DetailRow label="Trace ID" value={row.trace_id} mono />
-              <DetailRow label="调用时间" value={formatDateTimeWithSeconds(row.started_at)} />
-              <DetailRow label="HTTP 状态" value={httpStatus(row)} mono />
-              <DetailRow label="计费状态" value={row.billing_status} />
-              {!isModelNotStarted(row) && <DetailRow label="调用类型" value={row.call_type} />}
+              <DetailRow label={t('logs.detail.time')} value={formatDateTimeWithSeconds(row.started_at)} />
+              <DetailRow label={t('logs.detail.httpStatus')} value={httpStatus(row)} mono />
+              <DetailRow label={t('logs.detail.billingStatus')} value={row.billing_status} />
+              {!isModelNotStarted(row) && <DetailRow label={t('logs.detail.callType')} value={row.call_type} />}
               <DetailRow label="TPOT" value={row.tpot_ms > 0 ? `${row.tpot_ms}ms` : ''} mono />
               <DetailRow label="TPM" value={tpmLabel(row)} mono />
             </DetailGrid>
           </DetailSection>
 
-          <DetailSection title="响应耗时">
+          <DetailSection title={t('logs.detail.sections.responseTiming')}>
             <ResponseTiming row={row} />
           </DetailSection>
 
@@ -305,19 +305,19 @@ function ResponseTiming({ row }: { row: CallLogItem }) {
         <>
           {/* 流式耗时按时间轴瀑布展示（需求方#144）：首 Token 从 0 起；
               响应生成段从首 Token 结束处起（offsetMs=ftt）靠右延伸，而非从左侧铺满。 */}
-          <TimingBar label="首 Token 耗时" durationMs={ftt} totalMs={total} tone="success" />
-          <TimingBar label="响应生成耗时" durationMs={total - ftt} offsetMs={ftt} totalMs={total} tone="brand" />
+          <TimingBar label={t('logs.detail.timing.firstToken')} durationMs={ftt} totalMs={total} tone="success" />
+          <TimingBar label={t('logs.detail.timing.generation')} durationMs={total - ftt} offsetMs={ftt} totalMs={total} tone="brand" />
         </>
       ) : (
-        <TimingBar label="总响应耗时" durationMs={total} totalMs={total} tone={row.status === 'failed' ? 'danger' : 'brand'} />
+        <TimingBar label={t('logs.detail.timing.totalResponse')} durationMs={total} totalMs={total} tone={row.status === 'failed' ? 'danger' : 'brand'} />
       )}
       {row.usage.total_tokens > 0 && (
         <div className="flex flex-wrap gap-2 border-t border-mg-border/60 pt-3">
           <span className="inline-flex items-center rounded-full bg-mg-success/10 px-2.5 py-0.5 mg-text-caption font-semibold text-mg-success">
-            输入 {formatNumber(row.usage.input_tokens)}
+            {t('logs.detail.timing.inputTokens', { count: formatNumber(row.usage.input_tokens) })}
           </span>
           <span className="inline-flex items-center rounded-full bg-brand-base/10 px-2.5 py-0.5 mg-text-caption font-semibold text-brand-base">
-            输出 {formatNumber(row.usage.output_tokens)} tokens
+            {t('logs.detail.timing.outputTokens', { count: formatNumber(row.usage.output_tokens) })}
           </span>
         </div>
       )}
@@ -342,11 +342,11 @@ function TimingBar({ durationMs, label, tone, totalMs, offsetMs = 0 }: { duratio
   )
 }
 
-const ROLE_TONE: Record<string, { label: string; cls: string }> = {
-  system: { label: 'System', cls: 'text-brand-base' },
-  user: { label: 'User', cls: 'text-mg-warning' },
-  assistant: { label: 'Assistant', cls: 'text-mg-success' },
-  tool: { label: 'Tool', cls: 'text-mg-text-3' },
+const ROLE_TONE: Record<string, { key: string; cls: string }> = {
+  system: { key: 'system', cls: 'text-brand-base' },
+  user: { key: 'user', cls: 'text-mg-warning' },
+  assistant: { key: 'assistant', cls: 'text-mg-success' },
+  tool: { key: 'tool', cls: 'text-mg-text-3' },
 }
 
 function contentToText(content: unknown): string {
@@ -380,24 +380,27 @@ function parseMessages(text: string): { role: string; content: string }[] | null
 }
 
 function MessageBubble({ content, role }: { content: string; role: string }) {
-  const tone = ROLE_TONE[role.toLowerCase()] ?? { label: role, cls: 'text-mg-text-3' }
+  const { t } = useTranslation()
+  const tone = ROLE_TONE[role.toLowerCase()]
+  const label = tone ? t(`logs.detail.payload.role.${tone.key}`) : role
   return (
     <div className="rounded-md border border-mg-border/60 bg-mg-fill-0/30 p-3">
-      <div className={cn('mb-1 mg-text-caption font-bold', tone.cls)}>{tone.label}</div>
-      <p className="whitespace-pre-wrap break-words mg-text-caption text-mg-text-1">{content || '（空）'}</p>
+      <div className={cn('mb-1 mg-text-caption font-bold', tone?.cls ?? 'text-mg-text-3')}>{label}</div>
+      <p className="whitespace-pre-wrap break-words mg-text-caption text-mg-text-1">{content || t('logs.detail.payload.emptyContent')}</p>
     </div>
   )
 }
 
 /** 还原出的助手回答用 Markdown 渲染（标题/列表/代码块等），复用平台助手聊天 / 模型体验同款 cs-markdown 样式。 */
 function MarkdownBubble({ label, content, tone }: { label: string; content: string; tone: 'success' | 'brand' }) {
+  const { t } = useTranslation()
   return (
     <div className="rounded-md border border-mg-border/60 bg-mg-fill-0/30 p-3">
       <div className={cn('mb-1 mg-text-caption font-bold', tone === 'success' ? 'text-mg-success' : 'text-brand-base')}>{label}</div>
       {content ? (
         <MarkdownContent className="text-mg-text-1">{content}</MarkdownContent>
       ) : (
-        <p className="mg-text-caption text-mg-text-1">（空）</p>
+        <p className="mg-text-caption text-mg-text-1">{t('logs.detail.payload.emptyContent')}</p>
       )}
     </div>
   )
@@ -405,10 +408,11 @@ function MarkdownBubble({ label, content, tone }: { label: string; content: stri
 
 /** SSE 合并信息（chunk 数 / finish_reason / usage）改走 pill 徽标，别再拼进纯文本里跟正文糊一块。 */
 function SSEMetaBadges({ sse }: { sse: SSEReassembled }) {
+  const { t } = useTranslation()
   return (
     <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-mg-border/60 pt-3">
       <span className="inline-flex items-center rounded-full bg-mg-fill-1 px-2.5 py-0.5 mg-text-caption font-semibold text-mg-text-2">
-        合并 {sse.chunkCount} 个 chunk
+        {t('logs.detail.payload.mergedChunks', { count: sse.chunkCount })}
       </span>
       {sse.finishReason && (
         <span className="inline-flex items-center rounded-full bg-mg-fill-1 px-2.5 py-0.5 mg-text-caption font-semibold text-mg-text-2">
@@ -425,6 +429,7 @@ function SSEMetaBadges({ sse }: { sse: SSEReassembled }) {
 }
 
 function TranscriptCard({ pretty, text, title, sse }: { pretty: boolean; text: string; title: string; sse?: SSEReassembled | null }) {
+  const { t } = useTranslation()
   const messages = pretty ? parseMessages(text) : null
   // 流式回答还原出的 Pretty 视图：内容多为 Markdown（标题/列表/代码），走小卡片 + Markdown 渲染，
   // 而不是把合并信息拼成一段纯文本丢进 CodeBlock（此前唯一路径，parseMessages 认不出这段合并摘要）。
@@ -433,8 +438,8 @@ function TranscriptCard({ pretty, text, title, sse }: { pretty: boolean; text: s
       <div className="rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-md)]">
         <div className="mb-2 mg-text-caption font-bold text-mg-text-2">{title}</div>
         <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
-          {sse.reasoning && <MarkdownBubble label="推理 reasoning_content" content={sse.reasoning} tone="brand" />}
-          <MarkdownBubble label="回答 content" content={sse.content} tone="success" />
+          {sse.reasoning && <MarkdownBubble label={t('logs.detail.payload.reasoning')} content={sse.reasoning} tone="brand" />}
+          <MarkdownBubble label={t('logs.detail.payload.answer')} content={sse.content} tone="success" />
         </div>
         <SSEMetaBadges sse={sse} />
       </div>
@@ -449,13 +454,14 @@ function TranscriptCard({ pretty, text, title, sse }: { pretty: boolean; text: s
           {messages.map((m, i) => <MessageBubble key={`${m.role}-${i}`} role={m.role} content={m.content} />)}
         </div>
       ) : (
-        <CodeBlock className="max-h-80">{text || '暂无内容'}</CodeBlock>
+        <CodeBlock className="max-h-80">{text || t('logs.detail.payload.noContent')}</CodeBlock>
       )}
     </div>
   )
 }
 
 function ViewToggle({ onChange, value }: { onChange: (view: PayloadView) => void; value: PayloadView }) {
+  const { t } = useTranslation()
   return (
     <div className="inline-flex rounded-md border border-mg-border p-0.5">
       {(['parsed', 'raw'] as PayloadView[]).map((v) => (
@@ -465,7 +471,7 @@ function ViewToggle({ onChange, value }: { onChange: (view: PayloadView) => void
           onClick={() => onChange(v)}
           className={cn('rounded-sm px-2 py-0.5 mg-text-caption font-bold', value === v ? 'bg-brand-selected-bg text-brand-base' : 'text-mg-text-3 hover:text-mg-text-1')}
         >
-          {v === 'parsed' ? 'Pretty' : 'JSON'}
+          {v === 'parsed' ? t('logs.detail.payload.parsedView') : t('logs.detail.payload.rawView')}
         </button>
       ))}
     </div>
@@ -493,27 +499,27 @@ function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, pa
   // 护栏拦截 → 护栏提示；其余（含 5xx 故障）→ 中性「模型未返回响应内容」。
   const responseMissingReason = isModelNotStarted(row)
     ? t('logs.guardrail.notStartedHint')
-    : '模型未返回响应内容'
+    : t('logs.detail.payload.responseMissingFallback')
   if (payloadLoading) {
     return (
       <section className="space-y-3">
-        <h3 className="mg-text-label text-mg-text-3">请求内容</h3>
-        <CodeBlock className="max-h-40">正在加载请求 / 响应内容…</CodeBlock>
+        <h3 className="mg-text-label text-mg-text-3">{t('logs.detail.payload.sectionTitle')}</h3>
+        <CodeBlock className="max-h-40">{t('logs.detail.payload.loading')}</CodeBlock>
       </section>
     )
   }
   if (!redacted && !requestPayloadText && !responsePayloadText) {
     return (
       <section className="space-y-3">
-        <h3 className="mg-text-label text-mg-text-3">请求内容</h3>
+        <h3 className="mg-text-label text-mg-text-3">{t('logs.detail.payload.sectionTitle')}</h3>
         <div className="flex gap-2 rounded-md border border-mg-border bg-mg-fill-0/30 p-[var(--mg-panel-padding-md)] text-mg-text-3">
           <LuFileText className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="min-w-0 space-y-2">
-            <strong className="block mg-text-caption font-bold text-mg-text-1">该工作空间未开启输入/输出日志</strong>
-            <p className="mg-text-caption">调用日志仅保留元数据、Token、费用、延迟、路由和错误/护栏摘要。需要查看完整 Prompt 与 Response，请到空间管理的日志与转发中开启输入 / 输出日志。</p>
+            <strong className="block mg-text-caption font-bold text-mg-text-1">{t('logs.detail.payload.captureDisabledTitle')}</strong>
+            <p className="mg-text-caption">{t('logs.detail.payload.captureDisabledDesc')}</p>
             {onOpenLogSettings && (
               <Button size="xs" variant="outline" onClick={() => onOpenLogSettings(row.workspace_id)}>
-                去开启日志与转发
+                {t('logs.detail.payload.openSettings')}
                 <LuArrowUpRight className="ml-1 h-3.5 w-3.5" />
               </Button>
             )}
@@ -527,8 +533,8 @@ function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, pa
     <section className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="mg-text-label text-mg-text-3">请求内容</h3>
-          <p className="mt-1 mg-text-caption text-mg-text-3">已开启输入 / 输出日志采集</p>
+          <h3 className="mg-text-label text-mg-text-3">{t('logs.detail.payload.sectionTitle')}</h3>
+          <p className="mt-1 mg-text-caption text-mg-text-3">{t('logs.detail.payload.captureEnabled')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <ViewToggle value={payloadView} onChange={onPayloadViewChange} />
@@ -538,13 +544,13 @@ function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, pa
               responsePayloadText && `// Response\n${responsePayloadText}`,
             ].filter(Boolean).join('\n\n')}
             variant="labeled"
-            label="复制全部"
-            toast="请求 / 响应内容已复制"
+            label={t('logs.detail.payload.copyAll')}
+            toast={t('logs.detail.payload.copyToast')}
             data-track="logs:detail_copy"
           />
           <Button size="xs" variant="outline" onClick={onDownload}>
             <LuDownload className="mr-1 h-3 w-3" />
-            下载 JSON
+            {t('logs.detail.payload.downloadJson')}
           </Button>
         </div>
       </div>
@@ -554,16 +560,16 @@ function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, pa
           {t('logs.guardrail.redactedHint')}
         </p>
       )}
-      <TranscriptCard title={`Request (${formatNumber(row.usage.input_tokens)} tokens)`} text={requestText} pretty={redacted ? false : pretty} />
+      <TranscriptCard title={t('logs.detail.payload.requestTitle', { count: formatNumber(row.usage.input_tokens) })} text={requestText} pretty={redacted ? false : pretty} />
       {/* 输出侧对齐 PRD：模型产出响应→展示 Response 转写；未产出（护栏拦截/调用失败）→「响应未生成 + 原因」，
           而不是像原先那样 responsePayloadText 为空就整段消失（只做了输入没做输出）。 */}
       {responseGenerated ? (
-        <TranscriptCard title={`Response (${formatNumber(row.usage.output_tokens)} tokens)`} text={responsePayloadText} pretty={pretty} sse={responseSSE} />
+        <TranscriptCard title={t('logs.detail.payload.responseTitle', { count: formatNumber(row.usage.output_tokens) })} text={responsePayloadText} pretty={pretty} sse={responseSSE} />
       ) : (
         <div className="flex gap-2 rounded-md border border-mg-warning/20 bg-mg-warning/5 p-[var(--mg-panel-padding-md)]">
           <LuShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-mg-warning" />
           <div>
-            <strong className="block mg-text-caption font-bold text-mg-text-1">响应未生成</strong>
+            <strong className="block mg-text-caption font-bold text-mg-text-1">{t('logs.detail.payload.responseMissingTitle')}</strong>
             <span className="block mg-text-caption text-mg-text-3">{responseMissingReason}</span>
           </div>
         </div>

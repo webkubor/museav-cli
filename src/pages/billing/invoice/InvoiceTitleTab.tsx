@@ -5,6 +5,7 @@
  */
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { LuPlus, LuArrowLeft, LuTrash2 } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -23,12 +24,6 @@ import type { InvoiceTitleType, CreateInvoiceTitleRequest } from '@/types'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 
-const TITLE_TYPE_LABEL: Record<InvoiceTitleType, string> = {
-  vat_normal: '增值税普票',
-  vat_special: '增值税专票',
-  overseas: '国外 Invoice',
-}
-
 const EMPTY_FORM: CreateInvoiceTitleRequest = {
   type: 'vat_normal',
   company_name: '',
@@ -37,6 +32,7 @@ const EMPTY_FORM: CreateInvoiceTitleRequest = {
 }
 
 export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
+  const { t } = useTranslation('billing')
   const qc = useQueryClient()
   const { hasPermission } = usePermissions()
   const canManageTitles = hasPermission(PERMS.BILLING_INVOICE_TITLE_MANAGE)
@@ -54,12 +50,12 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
   const setDefault = useMutation({
     mutationFn: (id: string) => setDefaultInvoiceTitle(tenantId, id),
     onSuccess: () => {
-      appToast.success('已设为默认抬头')
+      appToast.success(t('billing.invoice.setDefaultSuccess'))
       trackEvent('billing.invoice_title:set_default', undefined, { result: 'success' })
       qc.invalidateQueries({ queryKey: ['invoice', 'titles', tenantId] })
     },
     onError: (err: Error) => {
-      appToast.requestError(err, '设置默认抬头失败，请重试')
+      appToast.requestError(err, t('billing.invoice.setDefaultFailed'))
       trackEvent('billing.invoice_title:set_default', undefined, { result: 'fail' })
     },
   })
@@ -68,7 +64,7 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
   const removeTitle = useMutation({
     mutationFn: (id: string) => deleteInvoiceTitle(tenantId, id),
     onSuccess: async (_data, id) => {
-      appToast.success('已删除')
+      appToast.success(t('billing.invoice.deleteSuccess'))
       const removed = titles.find((t) => t.id === id)
       const rest = titles.filter((t) => t.id !== id)
       if (removed?.is_default && rest.length > 0) {
@@ -77,13 +73,13 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
       qc.invalidateQueries({ queryKey: ['invoice', 'titles', tenantId] })
       setDeleteTarget(null)
     },
-    onError: (err: Error) => appToast.requestError(err, '删除失败，请重试'),
+    onError: (err: Error) => appToast.requestError(err, t('billing.invoice.deleteFailed')),
   })
 
   const create = useMutation({
     mutationFn: () => createInvoiceTitle(tenantId, form),
     onSuccess: () => {
-      appToast.success('抬头已保存')
+      appToast.success(t('billing.invoice.titleSaveSuccess'))
       // §11.2 billing_invoice_title_add
       trackEvent('billing_invoice_title_add', { invoice_title_kind: form.type, result: 'success' })
       qc.invalidateQueries({ queryKey: ['invoice', 'titles', tenantId] })
@@ -91,7 +87,7 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
       setView('list')
     },
     onError: () => {
-      appToast.error('保存失败，请重试')
+      appToast.error(t('billing.invoice.titleSaveFailed'))
       trackEvent('billing_invoice_title_add', { invoice_title_kind: form.type, result: 'fail' })
     },
   })
@@ -99,11 +95,13 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
   const set = (k: keyof CreateInvoiceTitleRequest, v: string) => setForm((f) => ({ ...f, [k]: v }))
 
   const handleSave = () => {
-    if (!form.company_name.trim()) return appToast.warning('请填写抬头名称')
-    if (!form.tax_id.trim()) return appToast.warning('请填写税号')
+    if (!form.company_name.trim()) return appToast.warning(t('billing.invoice.companyNameRequired'))
+    if (!form.tax_id.trim()) return appToast.warning(t('billing.invoice.taxIdRequired'))
     // 发票将推送到接收邮箱，邮箱必填且需为有效格式
-    if (!form.email.trim()) return appToast.warning('请填写接收邮箱')
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) return appToast.warning('请填写有效的接收邮箱')
+    if (!form.email.trim()) return appToast.warning(t('billing.invoice.emailRequired'))
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      return appToast.warning(t('billing.invoice.emailInvalid'))
+    }
     create.mutate()
   }
 
@@ -116,32 +114,45 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
           onClick={() => setView('list')}
           className="flex items-center gap-1 text-sm text-mg-text-3 transition-colors hover:text-mg-text-1"
         >
-          <LuArrowLeft size={15} /> 返回
+          <LuArrowLeft size={15} /> {t('billing.invoice.back')}
         </button>
-        <h3 className="text-base font-bold text-mg-text-1">新增发票抬头</h3>
+        <h3 className="text-base font-bold text-mg-text-1">{t('billing.invoice.addTitleHeading')}</h3>
 
-        <Field label="票种">
+        <Field label={t('billing.invoice.titleTypeLabel')}>
           <Select value={form.type} onChange={(v) => set('type', v)} className="w-full">
-            <Select.Option value="vat_normal">{TITLE_TYPE_LABEL.vat_normal}</Select.Option>
-            <Select.Option value="vat_special">{TITLE_TYPE_LABEL.vat_special}</Select.Option>
+            <Select.Option value="vat_normal">{t('billing.invoice.titleType.vat_normal')}</Select.Option>
+            <Select.Option value="vat_special">{t('billing.invoice.titleType.vat_special')}</Select.Option>
           </Select>
         </Field>
-        <Field label="抬头名称">
-          <Input value={form.company_name} onChange={(e) => set('company_name', e.target.value)} placeholder="公司全称" />
+        <Field label={t('billing.invoice.companyName')}>
+          <Input
+            value={form.company_name}
+            onChange={(e) => set('company_name', e.target.value)}
+            placeholder={t('billing.invoice.companyNamePlaceholder')}
+          />
         </Field>
-        <Field label="税号">
-          <Input value={form.tax_id} onChange={(e) => set('tax_id', e.target.value)} placeholder="统一社会信用代码" />
+        <Field label={t('billing.invoice.taxId')}>
+          <Input
+            value={form.tax_id}
+            onChange={(e) => set('tax_id', e.target.value)}
+            placeholder={t('billing.invoice.taxIdPlaceholder')}
+          />
         </Field>
-        <Field label="接收邮箱">
-          <Input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="finance@company.com" />
+        <Field label={t('billing.invoice.email')}>
+          <Input
+            type="email"
+            value={form.email}
+            onChange={(e) => set('email', e.target.value)}
+            placeholder={t('billing.invoice.emailPlaceholder')}
+          />
         </Field>
 
         <div className="flex gap-3 pt-1">
           <Button variant="outline" className="flex-1" onClick={() => setView('list')}>
-            取消
+            {t('billing.invoice.cancel')}
           </Button>
           <Button variant="brand" className="flex-1" loading={create.isPending} onClick={handleSave}>
-            保存
+            {t('billing.invoice.save')}
           </Button>
         </div>
       </div>
@@ -153,59 +164,59 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
     <div className="space-y-3">
       <div className="flex items-start justify-between gap-3">
         <p className="text-xs leading-relaxed text-mg-text-3">
-          增值税发票抬头（普票/专票），需手工新增；默认抬头在开票时自动带出。
+          {t('billing.invoice.titleManageDesc')}
         </p>
         {canManageTitles && (
           <Button variant="outline" size="sm" className="shrink-0" onClick={() => setView('form')}>
-            <LuPlus size={14} className="mr-1" /> 新增抬头
+            <LuPlus size={14} className="mr-1" /> {t('billing.invoice.addTitleButton')}
           </Button>
         )}
       </div>
 
       {isLoading ? (
-        <div className="py-10 text-center text-sm text-mg-text-3">加载中…</div>
+        <div className="py-10 text-center text-sm text-mg-text-3">{t('billing.invoice.loading')}</div>
       ) : titles.length === 0 ? (
-        <EmptyState title="还没有发票抬头，新增后开票时自动带出默认抬头。" />
+        <EmptyState title={t('billing.invoice.emptyTitles')} />
       ) : (
-        titles.map((t) => (
+        titles.map((title) => (
           <div
-            key={t.id}
-            className={cnCard(t.is_default)}
+            key={title.id}
+            className={cnCard(title.is_default)}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-bold text-mg-text-1">{t.company_name}</span>
-                  {t.is_default && (
+                  <span className="font-bold text-mg-text-1">{title.company_name}</span>
+                  {title.is_default && (
                     <span className="rounded-full bg-brand-base px-2 py-0.5 text-xs font-semibold text-white">
-                      默认
+                      {t('billing.invoice.defaultTitle')}
                     </span>
                   )}
                   <span className="rounded-md bg-mg-fill-0 px-2 py-0.5 text-xs text-mg-text-2">
-                    {TITLE_TYPE_LABEL[t.type]}
+                    {t(`billing.invoice.titleType.${title.type as InvoiceTitleType}`)}
                   </span>
                 </div>
                 <div className="space-y-0.5 text-xs text-mg-text-3">
-                  <div>税号 {t.tax_id}</div>
-                  <div>{t.email}</div>
+                  <div>{t('billing.invoice.taxIdWithValue', { taxId: title.tax_id })}</div>
+                  <div>{title.email}</div>
                 </div>
               </div>
               <div className="shrink-0 flex items-center gap-2 text-xs">
-                {canManageTitles && !t.is_default && (
+                {canManageTitles && !title.is_default && (
                   <Button
                     variant="outline"
                     size="sm"
-                    loading={setDefault.isPending && setDefault.variables === t.id}
-                    onClick={() => setDefault.mutate(t.id)}
+                    loading={setDefault.isPending && setDefault.variables === title.id}
+                    onClick={() => setDefault.mutate(title.id)}
                   >
-                    设为默认
+                    {t('billing.invoice.setDefault')}
                   </Button>
                 )}
                 {canManageTitles && <Button
                   variant="ghost"
                   size="sm"
                   className="text-mg-danger hover:bg-mg-danger/5"
-                  onClick={() => setDeleteTarget({ id: t.id, name: t.company_name })}
+                  onClick={() => setDeleteTarget({ id: title.id, name: title.company_name })}
                 >
                   <LuTrash2 size={13} />
                 </Button>}
@@ -219,10 +230,10 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => deleteTarget && removeTitle.mutate(deleteTarget.id)}
-        title="删除发票抬头"
-        description={deleteTarget ? `确定删除抬头「${deleteTarget.name}」？删除后不可恢复。` : undefined}
-        confirmLabel="删除"
-        cancelLabel="取消"
+        title={t('billing.invoice.deleteTitle')}
+        description={deleteTarget ? t('billing.invoice.deleteTitleDesc', { name: deleteTarget.name }) : undefined}
+        confirmLabel={t('billing.invoice.delete')}
+        cancelLabel={t('billing.invoice.cancel')}
         variant="destructive"
         loading={removeTitle.isPending}
       />

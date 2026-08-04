@@ -4,6 +4,50 @@
     "desc": "配置提示词防御规则，拦截恶意的提示注入、敏感词以及不受控制的模型输出。",
     "create": "创建护栏",
     "empty": "暂无安全护栏，点击右上角创建一个",
+    "scope": {
+      "global": "全局",
+      "member": "个人",
+      "key": "Key"
+    },
+    "kind": {
+      "regular": "常规",
+      "boost": "提额"
+    },
+    "label": {
+      "scopeGuardrail": "{{scope}}护栏",
+      "kindGuardrail": "{{kind}}护栏"
+    },
+    "section": {
+      "global": "全局护栏",
+      "member": "个人护栏",
+      "key": "Key 护栏"
+    },
+    "period": {
+      "hour": "每 5 小时",
+      "day": "每日",
+      "week": "每周",
+      "month": "每月"
+    },
+    "budget": {
+      "workspaceTotal": "工作空间总预算",
+      "defaultMember": "默认个人预算",
+      "defaultKey": "默认 Key 预算",
+      "member": "个人预算",
+      "key": "Key 预算",
+      "boost": "提额预算",
+      "unlimited": "不限额",
+      "limited": "限额",
+      "modeAria": "{{label}}额度类型",
+      "amountAria": "{{label}}金额",
+      "periodAria": "{{label}}周期",
+      "amountPlaceholder": "输入限额金额（最多两位小数）"
+    },
+    "emptyState": {
+      "global": "暂无全局护栏，当前放开使用",
+      "member": "暂无个人护栏",
+      "key": "暂无 Key 护栏",
+      "noMatch": "没有匹配的护栏"
+    },
     "summary": {
       "global": "全局护栏",
       "member": "个人护栏",
@@ -17,7 +61,7 @@
       "ipWhitelist": "IP 白名单",
       "boundKeys": "绑定 Key",
       "unlimited": "不限制",
-      "keyUnit": "个",
+      "keyUnit": "个 Key",
       "priority": "优先级",
       "isDefault": "默认应用",
       "status": "状态",
@@ -25,9 +69,39 @@
       "inactive": "停用",
       "createdAt": "创建时间",
       "defaultBadge": "默认应用",
+      "defaultBadgeShort": "默认",
       "optionalBadge": "可选",
       "configure": "配置",
-      "delete": "删除"
+      "edit": "编辑",
+      "view": "查看",
+      "delete": "删除",
+      "actions": "操作",
+      "kind": "类型",
+      "members": "成员",
+      "memberUnit": "名成员",
+      "budget": "预算",
+      "promptInjection": "提示词注入",
+      "creator": "创建人",
+      "updatedAt": "最近更新",
+      "boostExpiresAt": "提额到期时间",
+      "notApplicable": "不适用",
+      "neverExpires": "永不过期",
+      "searchPlaceholder": "搜索护栏名称",
+      "searchAria": "搜索{{title}}名称",
+      "keepOneGlobal": "需至少保留一条启用的全局护栏",
+      "modelBlacklistEmptyTitle": "未设模型黑名单，允许调用全部模型",
+      "modelBlacklistCountTitle": "共 {{count}} 个：{{value}}",
+      "ipWhitelistEmptyTitle": "未设 IP 白名单，允许任意来源 IP",
+      "ipWhitelistCountTitle": "共 {{count}} 条：{{value}}",
+      "noMembersBound": "未绑定成员",
+      "boundMembers": "已绑定 {{count}} 名成员",
+      "noKeysBound": "未绑定 Key",
+      "boundKeysCount": "已绑定 {{count}} 个 Key",
+      "boostExpiry": {
+        "notApplicableTitle": "常规护栏不涉及提额到期",
+        "expiryTitle": "提额护栏到期后自动失效",
+        "neverTitle": "未设到期，提额长期有效"
+      }
     },
     "form": {
       "nameLabel": "名称",
@@ -48,19 +122,63 @@
       "membersLabel": "成员",
       "membersPlaceholder": "搜索成员",
       "membersHint": "选择需要绑定此护栏的工作区成员，留空表示不限制。",
+      "guardrailNameLabel": "护栏名称",
+      "scopeLabel": "护栏分类",
+      "kindLabel": "护栏类型",
+      "boundApiKeyLabel": "绑定 API Key",
+      "apiKeysPlaceholder": "搜索 API Key",
+      "boostExpiresAtLabel": "提额到期时间",
+      "noBindableMembers": "当前工作空间暂无可绑定的成员。",
+      "noBindableApiKeys": "当前工作空间暂无可绑定的 API Key，请先到「API Keys」页创建后再绑定。",
+      "noCreateScopePermission": "你没有创建{{scope}}护栏的权限",
+      "noCreateBoostPermission": "你没有创建提额护栏的权限",
+      "invalidIp": "无效的 IP 地址格式",
       "isDefaultLabel": "默认应用",
       "isDefaultHint": "自动应用此护栏到所有模型请求"
+    },
+    "promptInjection": {
+      "label": "提示词注入检测",
+      "inherit": "继承全局护栏",
+      "hitBehavior": "命中后的处理方式",
+      "summaryHint": "仅记录=记录命中仍原样发送；脱敏=命中内容替换后发送；拦截=直接拒绝请求",
+      "mode": {
+        "off": "关闭",
+        "flag": "仅记录",
+        "redact": "脱敏",
+        "block": "拦截"
+      },
+      "hint": {
+        "flag": "记录命中，请求仍按原内容发送",
+        "redact": "将命中内容替换为 [PROMPT_INJECTION] 后继续发送",
+        "block": "直接拒绝请求，不发送给模型"
+      }
+    },
+    "audit": {
+      "title": "操作记录",
+      "empty": "暂无操作记录"
+    },
+    "validation": {
+      "invalidBudget": "预算金额无效：大于 0，整数最多 12 位，小数最多 2 位",
+      "invalidBudgetDetailed": "预算金额无效：请输入大于 0 的数字，整数最多 12 位，小数最多 2 位",
+      "budgetConflict": "预算配置数据错误：存在多条生效中的预算策略，请联系管理员处理",
+      "bindMemberRequired": "请至少绑定一个成员",
+      "bindApiKeyRequired": "请至少绑定一个 API Key",
+      "boostBudgetRequired": "请填写提额预算",
+      "budgetRequired": "请填写预算",
+      "boostExpiresAtRequired": "提额护栏必须设置到期时间"
     },
     "modal": {
       "createTitle": "创建护栏",
       "editTitle": "配置护栏",
       "cancel": "取消",
       "saveEdit": "保存修改",
+      "saveGuardrail": "保存护栏",
       "confirmCreate": "创建护栏"
     },
     "deleteModal": {
       "title": "删除护栏",
       "description": "确定要删除安全护栏「{{name}}」吗？此操作不可撤销。",
+      "activeGlobalWarning": "这是当前启用中的全局护栏。删除后该工作空间将无全局默认预算与模型/IP 边界，按「无全局护栏，放开使用」处理。",
       "cancel": "取消",
       "confirm": "确认删除"
     },
@@ -72,7 +190,10 @@
       "deleteSuccess": "安全护栏已删除",
       "deleteError": "删除失败",
       "toggleError": "操作失败",
-      "nameRequired": "请输入名称"
+      "nameRequired": "请输入名称",
+      "detailLoadError": "护栏详情加载失败",
+      "createBudgetError": "护栏已创建，但预算保存失败，请在编辑中补充预算",
+      "noChanges": "未发生变化"
     }
   }
 }

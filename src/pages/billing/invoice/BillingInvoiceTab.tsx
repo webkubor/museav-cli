@@ -5,6 +5,7 @@
  */
 import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { listInvoiceableRecharges, listInvoiceTitles } from '@/services/invoice'
 import { InvoiceRecordsTab } from './InvoiceRecordsTab'
@@ -22,6 +23,7 @@ export function BillingInvoiceTab({
   tenantId: string
   currencySymbol: string
 }) {
+  const { t } = useTranslation('billing')
   const qc = useQueryClient()
   const { hasPermission } = usePermissions()
   const canApplyInvoice = hasPermission(PERMS.BILLING_INVOICE_APPLY)
@@ -65,13 +67,15 @@ export function BillingInvoiceTab({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-xs text-mg-text-3">
-          可开票充值单 <strong className="text-mg-text-1">{invoiceable.length}</strong> 笔 · 合计{' '}
-          <strong className="text-mg-text-1">{currencySymbol}{invoiceableAmount}</strong>
+          {t('billing.invoice.summary', {
+            count: invoiceable.length,
+            amount: `${currencySymbol}${invoiceableAmount}`,
+          })}
         </span>
         <div className="flex items-center gap-2">
           {canManageTitles && (
             <Button variant="outline" size="sm" onClick={() => setTitlesOpen(true)}>
-              发票抬头
+              {t('billing.invoice.titleButton')}
             </Button>
           )}
           {canApplyInvoice && (
@@ -79,7 +83,7 @@ export function BillingInvoiceTab({
               variant="brand"
               size="sm"
               disabled={invoiceable.length === 0}
-              title={invoiceable.length === 0 ? '暂无可开票的充值单，新充值到账后即可申请' : '勾选充值单合并开票'}
+              title={invoiceable.length === 0 ? t('billing.invoice.applyDisabledHint') : t('billing.invoice.applyHint')}
               onClick={() => {
                 trackEvent('billing_invoice_apply_open', {
                   invoiceable_order_count_band: countBand(invoiceable.length),
@@ -88,7 +92,7 @@ export function BillingInvoiceTab({
                 setApplyOpen(true)
               }}
             >
-              申请开票
+              {t('billing.invoice.applyButton')}
             </Button>
           )}
         </div>

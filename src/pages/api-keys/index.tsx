@@ -210,7 +210,7 @@ export default function ApiKeysPage() {
   const enableMutation = useMutation({
     mutationFn: (keyId: string) => enableApiKey(workspaceId, keyId),
     onSuccess: (_res, keyId) => {
-      appToast.success('已启用')
+      appToast.success(t('apiKeys.toast.enableSuccess'))
       queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
       // 详情抽屉状态实时同步（#185）：失效详情查询 + 同步本地快照，
       // 使抽屉按钮文案（启用/停用）随最新 status 即时刷新，无需手动刷页。
@@ -219,7 +219,7 @@ export default function ApiKeysPage() {
       trackEvent('api_keys:enable', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
     onError: (err: unknown) => {
-      appToast.requestError(err, '启用失败')
+      appToast.requestError(err, t('apiKeys.toast.enableError'))
       trackEvent('api_keys:enable', undefined, { result: 'fail', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
     },
   })
@@ -227,7 +227,7 @@ export default function ApiKeysPage() {
   const disableMutation = useMutation({
     mutationFn: (keyId: string) => disableApiKey(workspaceId, keyId),
     onSuccess: (_res, keyId) => {
-      appToast.success('已停用')
+      appToast.success(t('apiKeys.toast.disableSuccess'))
       setDisableTarget(null)
       queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
       // 详情抽屉状态实时同步（#185）：失效详情查询 + 同步本地快照，
@@ -237,7 +237,7 @@ export default function ApiKeysPage() {
       trackEvent('api_keys:disable', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
     onError: (err: unknown) => {
-      appToast.requestError(err, '停用失败')
+      appToast.requestError(err, t('apiKeys.toast.disableError'))
       trackEvent('api_keys:disable', undefined, { result: 'fail', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
     },
   })
@@ -265,7 +265,7 @@ export default function ApiKeysPage() {
       trackEvent('api_keys:rotate', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
     onError: (err: unknown) => {
-      appToast.requestError(err, '轮转失败')
+      appToast.requestError(err, t('apiKeys.toast.rotateError'))
       trackEvent('api_keys:rotate', undefined, { result: 'fail', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
     },
   })
@@ -277,11 +277,11 @@ export default function ApiKeysPage() {
       setRotationTransition(null)
       queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
       queryClient.invalidateQueries({ queryKey: ['api-key-detail', workspaceId, keyId] })
-      appToast.success('旧 Token 已失效')
+      appToast.success(t('apiKeys.toast.oldTokenInvalidated'))
       trackEvent('api_keys:rotate_confirm', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
     },
     onError: (err: unknown) => {
-      appToast.requestError(err, '确认轮转失败')
+      appToast.requestError(err, t('apiKeys.toast.rotateConfirmError'))
       trackEvent('api_keys:rotate_confirm', undefined, { result: 'fail', error_code: errorCodeOf(err), is_space_owner: isActiveWorkspaceOwner })
     },
   })
@@ -436,29 +436,29 @@ export default function ApiKeysPage() {
         <Input
           variant="search"
           prefix={<LuSearch className="w-4 h-4" />}
-          placeholder="搜索 Key 名称、负责人"
+          placeholder={t('apiKeys.searchPlaceholder')}
           className="w-64"
           value={searchValue}
           onChange={(e) => handleSearchChange(e.target.value)}
         />
         <Select value={typeFilter} onChange={handleTypeFilter} className="w-32">
-          <SelectItem value={ALL}>全部类型</SelectItem>
-          <SelectItem value={'personal' satisfies ApiKeyType}>私有 Key</SelectItem>
+          <SelectItem value={ALL}>{t('apiKeys.filter.allTypes')}</SelectItem>
+          <SelectItem value={'personal' satisfies ApiKeyType}>{t('apiKeys.keyType.personal')}</SelectItem>
           {/* 个人租户无成员 Key（PRD §7.4） */}
-          {!isPersonalTenant && <SelectItem value={'member' satisfies ApiKeyType}>成员 Key</SelectItem>}
-          <SelectItem value={'service' satisfies ApiKeyType}>服务 Key</SelectItem>
+          {!isPersonalTenant && <SelectItem value={'member' satisfies ApiKeyType}>{t('apiKeys.keyType.member')}</SelectItem>}
+          <SelectItem value={'service' satisfies ApiKeyType}>{t('apiKeys.keyType.service')}</SelectItem>
         </Select>
         <Select value={statusFilter} onChange={handleStatusFilter} className="w-32">
           {/* PRD §5.2：轮转是动作过渡态，不作为常规状态筛选项 */}
-          <SelectItem value={ALL}>全部状态</SelectItem>
-          <SelectItem value="active">启用中</SelectItem>
-          <SelectItem value="limited">已达限额</SelectItem>
-          <SelectItem value="expired">已过期</SelectItem>
-          <SelectItem value="disabled">已停用</SelectItem>
-          <SelectItem value="expiring">即将过期</SelectItem>
+          <SelectItem value={ALL}>{t('apiKeys.filter.allStatuses')}</SelectItem>
+          <SelectItem value="active">{t('apiKeys.status.active')}</SelectItem>
+          <SelectItem value="limited">{t('apiKeys.status.limited')}</SelectItem>
+          <SelectItem value="expired">{t('apiKeys.status.expired')}</SelectItem>
+          <SelectItem value="disabled">{t('apiKeys.status.disabled')}</SelectItem>
+          <SelectItem value="expiring">{t('apiKeys.status.expiring')}</SelectItem>
         </Select>
         <Select value={ownerFilter} onChange={handleOwnerFilter} className="w-36">
-          <SelectItem value={ALL}>全部负责人</SelectItem>
+          <SelectItem value={ALL}>{t('apiKeys.filter.allOwners')}</SelectItem>
           {ownerOptions.map((o) => (
             <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>
           ))}
@@ -476,8 +476,8 @@ export default function ApiKeysPage() {
       {!allKeysLoading && allKeys.length > 0 && (
         <p className="-mt-2 mg-text-caption text-mg-text-3">
           {showsOthers
-            ? `作用域：当前工作空间 · 显示本空间全部成员的 API Key（${distinctOwnerCount} 位成员）`
-            : '作用域：当前工作空间 · 仅展示由你负责的 Key'}
+            ? t('apiKeys.scope.workspaceAll', { count: distinctOwnerCount })
+            : t('apiKeys.scope.selfOnly')}
         </p>
       )}
 
@@ -532,20 +532,20 @@ export default function ApiKeysPage() {
       <Modal
         open={createdVisible}
         onClose={() => setCreatedVisible(false)}
-        title="API Key 创建成功"
-        description="请立即复制并保存，关闭后将无法再查看完整密钥。"
+        title={t('apiKeys.createdModal.title')}
+        description={t('apiKeys.createdModal.desc')}
         size="md"
         footer={
           <>
-            <Button variant="outline" onClick={() => { setCreatedVisible(false); setConnectVisible(true) }}>快速接入</Button>
-            <Button variant="brand" onClick={handleSecretSaved}>我已保存密钥</Button>
+            <Button variant="outline" onClick={() => { setCreatedVisible(false); setConnectVisible(true) }}>{t('apiKeys.createdModal.connect')}</Button>
+            <Button variant="brand" onClick={handleSecretSaved}>{t('apiKeys.createdModal.saved')}</Button>
           </>
         }
       >
         <div className="py-2">
           <div className="flex items-center gap-2 rounded-md border border-mg-border bg-mg-code-bg px-3 py-2.5">
             <span className="min-w-0 flex-1 truncate font-mono text-sm font-bold text-mg-success select-all">{createdKeyText}</span>
-            <CopyButton value={createdKeyText} aria-label="复制密钥" toast="密钥已复制" size="md" />
+            <CopyButton value={createdKeyText} aria-label={t('apiKeys.createdModal.copyAria')} toast={t('apiKeys.toast.copySecretSuccess')} size="md" />
           </div>
         </div>
       </Modal>
@@ -563,15 +563,15 @@ export default function ApiKeysPage() {
       <Modal
         open={!!rotatedKey}
         onClose={() => setRotatedKey(null)}
-        title="轮转成功"
-        description="新 Token 已生效、只展示一次，请立即复制保存。旧 Token 仍在过渡期，验证无误后再点「已轮转」使其失效。"
+        title={t('apiKeys.rotateModal.title')}
+        description={t('apiKeys.rotateModal.desc')}
         size="md"
-        footer={<Button variant="brand" onClick={() => setRotatedKey(null)}>我已复制 Token</Button>}
+        footer={<Button variant="brand" onClick={() => setRotatedKey(null)}>{t('apiKeys.rotateModal.copied')}</Button>}
       >
         <div className="py-2">
           <div className="flex items-center gap-2 rounded-md border border-mg-border bg-mg-code-bg px-3 py-2.5">
             <span className="min-w-0 flex-1 truncate font-mono text-sm font-bold text-mg-success select-all">{rotatedKey?.key}</span>
-            <CopyButton value={rotatedKey?.key ?? ''} aria-label="复制新 Token" toast="新 Token 已复制" size="md" />
+            <CopyButton value={rotatedKey?.key ?? ''} aria-label={t('apiKeys.rotateModal.copyAria')} toast={t('apiKeys.toast.copyNewTokenSuccess')} size="md" />
           </div>
         </div>
       </Modal>
@@ -579,22 +579,22 @@ export default function ApiKeysPage() {
       <Modal
         open={!!rotationConfirmTarget}
         onClose={() => setRotationConfirmTarget(null)}
-        title="确认完成轮换"
-        description="确认后旧 Token 将立即失效，新 Token 保持生效。"
+        title={t('apiKeys.rotateConfirm.title')}
+        description={t('apiKeys.rotateConfirm.desc')}
         size="md"
         footer={
           <>
-            <Button variant="outline" onClick={() => setRotationConfirmTarget(null)}>取消</Button>
+            <Button variant="outline" onClick={() => setRotationConfirmTarget(null)}>{t('apiKeys.createModal.cancel')}</Button>
             <Button
               variant="brand"
               loading={confirmRotateMutation.isPending}
               onClick={() => rotationConfirmTarget && confirmRotateMutation.mutate(rotationConfirmTarget.api_key_id)}
-            >已轮转</Button>
+            >{t('apiKeys.table.rotated')}</Button>
           </>
         }
       >
         <div className="flex items-center justify-between rounded-md border border-mg-border bg-mg-fill-0 px-3 py-2.5 text-sm">
-          <span className="text-mg-text-3">旧 Token</span>
+          <span className="text-mg-text-3">{t('apiKeys.rotateConfirm.oldToken')}</span>
           <span className="font-mono font-bold text-mg-text-1">{rotationConfirmOldMasked}</span>
         </div>
       </Modal>
@@ -628,14 +628,14 @@ export default function ApiKeysPage() {
       <Modal
         open={!!disableTarget}
         onClose={() => setDisableTarget(null)}
-        title="确认停用 API Key"
-        description={disableTarget ? `停用后「${disableTarget.name}」将立即停止调用，可稍后重新启用。` : undefined}
+        title={t('apiKeys.disableConfirm.title')}
+        description={disableTarget ? t('apiKeys.disableConfirm.desc', { name: disableTarget.name }) : undefined}
         size="sm"
         footer={
           <>
             <Button variant="outline" onClick={() => setDisableTarget(null)}>{t('apiKeys.createModal.cancel')}</Button>
             <Button variant="brand" loading={disableMutation.isPending} onClick={() => { if (disableTarget) disableMutation.mutate(disableTarget.api_key_id) }}>
-              确认停用
+              {t('apiKeys.disableConfirm.confirm')}
             </Button>
           </>
         }

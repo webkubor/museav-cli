@@ -4,6 +4,7 @@
  */
 import { useState } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { LuDownload, LuCircleAlert } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -17,18 +18,15 @@ import { PERMS } from '@/config/permissions'
 import { trackEvent } from '@/lib/track'
 import { formatDateTimeWithSeconds } from '@/lib/format-date'
 
-const STATUS_MAP: Record<InvoiceRecord['status'], { label: string; cls: string }> = {
-  pending: { label: '待开票', cls: 'bg-mg-fill-0 text-mg-text-2' },
-  invoicing: { label: '开票中', cls: 'bg-mg-warning/10 text-mg-warning' },
-  invoiced: { label: '已开票', cls: 'bg-mg-success/10 text-mg-success' },
-  failed: { label: '开票失败', cls: 'bg-mg-danger/10 text-mg-danger' },
-  voided: { label: '已作废', cls: 'bg-mg-fill-0 text-mg-text-3' },
+const STATUS_CLASS: Record<InvoiceRecord['status'], string> = {
+  pending: 'bg-mg-fill-0 text-mg-text-2',
+  invoicing: 'bg-mg-warning/10 text-mg-warning',
+  invoiced: 'bg-mg-success/10 text-mg-success',
+  failed: 'bg-mg-danger/10 text-mg-danger',
+  voided: 'bg-mg-fill-0 text-mg-text-3',
 }
-const TITLE_TYPE_LABEL: Record<InvoiceTitleType, string> = {
-  vat_normal: '增值税普票',
-  vat_special: '增值税专票',
-  overseas: '国外 Invoice',
-}
+
+const STATUS_FILTERS: Array<'all' | InvoiceRecord['status']> = ['all', 'pending', 'invoicing', 'invoiced', 'failed', 'voided']
 
 export function InvoiceRecordsTab({
   tenantId,
@@ -37,6 +35,7 @@ export function InvoiceRecordsTab({
   tenantId: string
   currencySymbol: string
 }) {
+  const { t } = useTranslation('billing')
   const { hasPermission } = usePermissions()
   const canDownload = hasPermission(PERMS.BILLING_INVOICE_DOWNLOAD)
   const [status, setStatus] = useState('all')
@@ -74,7 +73,7 @@ export function InvoiceRecordsTab({
 
   const loadMore = () => {
     void fetchNextPage().then((res) => {
-      if (res.isError) appToast.error('加载更多失败，请重试')
+      if (res.isError) appToast.error(t('billing.invoice.loadMoreFailed'))
     })
   }
 
@@ -84,7 +83,7 @@ export function InvoiceRecordsTab({
       window.open(url, '_blank')
       trackEvent('billing_invoice_download_click', { invoice_status: invoiceStatus, result: 'success' })
     } catch {
-      appToast.error('下载失败，请重试')
+      appToast.error(t('billing.invoice.downloadFailed'))
       trackEvent('billing_invoice_download_click', { invoice_status: invoiceStatus, result: 'fail' })
     }
   }
@@ -93,74 +92,72 @@ export function InvoiceRecordsTab({
     <div className="space-y-3">
       {/* 筛选栏 */}
       <div className="flex gap-2">
-        <Select value={status} onChange={setStatus} className="w-[130px]" placeholder="全部状态">
-          <Select.Option value="all">全部状态</Select.Option>
-          <Select.Option value="pending">待开票</Select.Option>
-          <Select.Option value="invoicing">开票中</Select.Option>
-          <Select.Option value="invoiced">已开票</Select.Option>
-          <Select.Option value="failed">开票失败</Select.Option>
-          <Select.Option value="voided">已作废</Select.Option>
+        <Select value={status} onChange={setStatus} className="w-[130px]" placeholder={t('billing.invoice.statusAll')}>
+          {STATUS_FILTERS.map((option) => (
+            <Select.Option key={option} value={option}>
+              {option === 'all' ? t('billing.invoice.statusAll') : t(`billing.invoice.status.${option}`)}
+            </Select.Option>
+          ))}
         </Select>
         <Input
           variant="search"
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
-          placeholder="搜索发票号 / 抬头"
+          placeholder={t('billing.invoice.searchPlaceholder')}
           className="flex-1"
         />
       </div>
 
       {/* 列表 */}
       {isLoading && records.length === 0 ? (
-        <EmptyState title="加载中…" />
+        <EmptyState title={t('billing.invoice.loading')} />
       ) : isError && records.length === 0 ? (
         // 首屏加载失败 ≠ 暂无记录：给明确失败提示+重试，不误导成空态（#25）
         <EmptyState
-          title="开票记录加载失败"
+          title={t('billing.invoice.recordsLoadFailed')}
           action={
             <Button variant="outline" size="sm" onClick={() => void refetch()}>
-              重试
+              {t('billing.income.retry')}
             </Button>
           }
         />
       ) : records.length === 0 ? (
         <EmptyState
-          title={status !== 'all' || keyword ? '当前筛选条件下没有发票记录' : '暂无开票记录'}
-          description={status !== 'all' || keyword ? undefined : '累计充值均可开具增值税发票。'}
+          title={status !== 'all' || keyword ? t('billing.invoice.emptyFiltered') : t('billing.invoice.emptyRecords')}
+          description={status !== 'all' || keyword ? undefined : t('billing.invoice.emptyRecordsDesc')}
           action={status !== 'all' || keyword ? (
             <Button variant="outline" size="sm" onClick={() => { setStatus('all'); setKeyword('') }}>
-              清除筛选
+              {t('billing.income.clearFilters')}
             </Button>
           ) : undefined}
         />
       ) : (
         records.map((r) => {
-          const st = STATUS_MAP[r.status]
           return (
             <div key={r.invoice_no} className="rounded-md border border-mg-border p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-bold text-mg-text-1">{r.invoice_no}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${st.cls}`}>
-                      {st.label}
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_CLASS[r.status]}`}>
+                      {t(`billing.invoice.status.${r.status}`)}
                     </span>
                     <span className="rounded-md bg-mg-fill-0 px-2 py-0.5 text-xs text-mg-text-2">
-                      {TITLE_TYPE_LABEL[r.title_type]}
+                      {t(`billing.invoice.titleType.${r.title_type as InvoiceTitleType}`)}
                     </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-mg-text-3">
                     <span>{formatDateTimeWithSeconds(r.created_at)}</span>
                     <span>{r.company_name}</span>
                     <span>
-                      价税合计{' '}
+                      {t('billing.invoice.totalWithTax')}{' '}
                       <span className="font-semibold text-mg-text-2">
                         {currencySymbol}
                         {r.total_amount}
                       </span>
                     </span>
-                    <span>充值单 {r.recharge_count}</span>
-                    {r.tax_serial && <span>发票号 {r.tax_serial}</span>}
+                    <span>{t('billing.invoice.rechargeCount', { count: r.recharge_count })}</span>
+                    {r.tax_serial && <span>{t('billing.invoice.taxSerial', { serial: r.tax_serial })}</span>}
                   </div>
                   {r.status === 'failed' && r.error_msg && (
                     <div className="flex items-start gap-1 text-xs text-mg-danger">
@@ -172,7 +169,7 @@ export function InvoiceRecordsTab({
                 <div className="shrink-0">
                   {r.status === 'invoiced' && canDownload && (
                     <Button variant="outline" size="sm" onClick={() => download(r.invoice_no, r.status)}>
-                      <LuDownload size={13} className="mr-1" /> 下载
+                      <LuDownload size={13} className="mr-1" /> {t('billing.invoice.download')}
                     </Button>
                   )}
                 </div>
@@ -189,13 +186,13 @@ export function InvoiceRecordsTab({
           disabled={isFetchingNextPage}
           className="w-full rounded-md border border-mg-border py-2.5 text-sm font-semibold text-mg-text-2 transition-colors hover:bg-mg-fill-0 disabled:opacity-60"
         >
-          加载更多
+          {isFetchingNextPage ? t('billing.invoice.loading') : t('billing.orders.loadMore')}
         </button>
       )}
 
       {/* qa#281：内部单号（D-INV15）不应出现在用户可见文案里，只留说明本身 */}
       <p className="pt-1 text-xs leading-relaxed text-mg-text-3">
-        红冲为不可逆财税操作，仅运营端可发起；如需作废重开，请联系客服 / 由运营处理。
+        {t('billing.invoice.redInvoiceHint')}
       </p>
     </div>
   )

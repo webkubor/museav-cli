@@ -38,6 +38,8 @@
       "loadMore": "加载更多"
     },
     "changelog": "更新日志",
-    "close": "关闭"
+    "close": "关闭",
+    "loadingPermissions": "权限加载中",
+    "loadingTenants": "租户加载中"
   }
 }

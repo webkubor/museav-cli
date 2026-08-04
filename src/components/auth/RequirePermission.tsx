@@ -8,18 +8,20 @@
  * 真正的数据权威闸仍在后端 API；此守卫只挡前端页面入口。
  */
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/store/auth'
 import { usePermissions } from '@/hooks/use-permissions'
 import type { Permission } from '@/config/permissions'
 import ForbiddenPage from '@/pages/forbidden'
 
 export function RequirePermission({ perm, children }: { perm: Permission; children: ReactNode }) {
+  const { t } = useTranslation('common')
   const granted = useAuthStore((s) => s.permissions)
   const { hasPermission } = usePermissions()
 
   if (granted === null) {
     return (
-      <div className="flex min-h-48 items-center justify-center" role="status" aria-label="权限加载中">
+      <div className="flex min-h-48 items-center justify-center" role="status" aria-label={t('common.loadingPermissions')}>
         <div className="h-7 w-7 animate-spin rounded-full border-2 border-mg-border border-t-brand-base" />
       </div>
     )

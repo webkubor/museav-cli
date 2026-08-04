@@ -1,25 +1,35 @@
+/**
+ * 重置密码页面。
+ * 职责：校验重置 token 并提交新密码。
+ * 路由：/reset-password
+ * API：POST /auth/reset-password
+ */
 import { Button } from '@/components/ui/Button'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { PasswordStrength } from '@/components/auth/PasswordStrength'
 import { resetPassword } from '@/services/auth'
 
-const schema = z
-  .object({
-    password: z.string().min(8, '密码至少 8 位'),
-    confirm: z.string().min(1, '请确认密码'),
-  })
-  .refine((d) => d.password === d.confirm, {
-    message: '两次密码不一致',
-    path: ['confirm'],
-  })
+function createResetPasswordSchema(t: TFunction) {
+  return z
+    .object({
+      password: z.string().min(8, t('account.auth.validation.passwordMin')),
+      confirm: z.string().min(1, t('account.auth.validation.confirmPassword')),
+    })
+    .refine((d) => d.password === d.confirm, {
+      message: t('account.auth.validation.passwordMismatchShort'),
+      path: ['confirm'],
+    })
+}
 
-type Fields = z.infer<typeof schema>
+type Fields = { password: string; confirm: string }
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -49,12 +59,15 @@ const errorStyle: React.CSSProperties = {
 }
 
 export default function ResetPasswordPage() {
+  const { t } = useTranslation('account')
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token') ?? ''
   const [done, setDone] = useState(false)
   const [loading, setLoading] = useState(false)
   const [serverError, setServerError] = useState('')
+
+  const schema = useMemo(() => createResetPasswordSchema(t), [t])
 
   const {
     register: field,
@@ -67,7 +80,7 @@ export default function ResetPasswordPage() {
 
   const onSubmit = async (data: Fields) => {
     if (!token) {
-      setServerError('重置链接无效或已过期')
+      setServerError(t('account.auth.reset.invalidLink'))
       return
     }
     setLoading(true)
@@ -76,7 +89,7 @@ export default function ResetPasswordPage() {
       await resetPassword(token, data.password)
       setDone(true)
     } catch {
-      setServerError('重置失败，链接可能已过期')
+      setServerError(t('account.auth.reset.failed'))
     } finally {
       setLoading(false)
     }
@@ -84,13 +97,13 @@ export default function ResetPasswordPage() {
 
   if (!token) {
     return (
-      <AuthLayout title="链接无效" footer={
+      <AuthLayout title={t('account.auth.reset.invalidTitle')} footer={
         <Link to="/forgot-password" style={{ color: 'var(--brand-base)', textDecoration: 'none' }}>
-          重新发送重置邮件
+          {t('account.auth.reset.resend')}
         </Link>
       }>
         <p style={{ textAlign: 'center', fontSize: '14px', color: 'var(--mg-text-3)' }}>
-          重置链接无效或已过期，请重新申请。
+          {t('account.auth.reset.invalidDesc')}
         </p>
       </AuthLayout>
     )
@@ -99,11 +112,11 @@ export default function ResetPasswordPage() {
   if (done) {
     return (
       <AuthLayout
-        title="密码已重置"
-        subtitle="你的密码已成功更新"
+        title={t('account.auth.reset.doneTitle')}
+        subtitle={t('account.auth.reset.doneSubtitle')}
         footer={
           <Link to="/login" style={{ color: 'var(--brand-base)', textDecoration: 'none' }}>
-            返回登录
+            {t('account.auth.common.backToLogin')}
           </Link>
         }
       >
@@ -128,7 +141,7 @@ export default function ResetPasswordPage() {
             onClick={() => navigate('/login')}
             style={{ width: '100%', height: '40px', borderRadius: '8px', fontWeight: 600, marginTop: '8px' }}
           >
-            立即登录
+            {t('account.auth.reset.loginNow')}
           </Button>
         </div>
       </AuthLayout>
@@ -137,11 +150,11 @@ export default function ResetPasswordPage() {
 
   return (
     <AuthLayout
-      title="重置密码"
-      subtitle="设置一个新密码"
+      title={t('account.auth.reset.title')}
+      subtitle={t('account.auth.reset.subtitle')}
       footer={
         <Link to="/login" style={{ color: 'var(--brand-base)', textDecoration: 'none' }}>
-          返回登录
+          {t('account.auth.common.backToLogin')}
         </Link>
       }
     >
@@ -151,11 +164,11 @@ export default function ResetPasswordPage() {
         style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
       >
         <div>
-          <label style={labelStyle}>新密码</label>
+          <label style={labelStyle}>{t('account.auth.fields.newPassword')}</label>
           <input
             {...field('password')}
             type="password"
-            placeholder="至少 8 位"
+            placeholder={t('account.auth.placeholders.passwordMin')}
             autoComplete="new-password"
             autoFocus
             style={inputStyle}
@@ -164,11 +177,11 @@ export default function ResetPasswordPage() {
           {errors.password && <p style={errorStyle}>{errors.password.message}</p>}
         </div>
         <div>
-          <label style={labelStyle}>确认密码</label>
+          <label style={labelStyle}>{t('account.auth.fields.confirmPassword')}</label>
           <input
             {...field('confirm')}
             type="password"
-            placeholder="再次输入密码"
+            placeholder={t('account.auth.placeholders.confirmPasswordShort')}
             autoComplete="new-password"
             style={inputStyle}
           />
@@ -181,7 +194,7 @@ export default function ResetPasswordPage() {
           loading={loading}
           style={{ width: '100%', height: '40px', borderRadius: '8px', fontWeight: 600 }}
         >
-          确认重置
+          {t('account.auth.reset.submit')}
         </Button>
       </form>
     </AuthLayout>

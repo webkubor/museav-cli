@@ -6,6 +6,7 @@
 import { LuArrowUpRight, LuCodeXml, LuFileText } from 'react-icons/lu'
 import OpenAI from '@lobehub/icons/es/OpenAI'
 import Claude from '@lobehub/icons/es/Claude'
+import { useTranslation } from 'react-i18next'
 
 import { CopyButton } from '@/components/ui/CopyButton'
 
@@ -16,14 +17,15 @@ interface Props {
 }
 
 export function ApiKeyProtocolBanner({ openAIBaseUrl, anthropicBaseUrl, docsUrl }: Props) {
+  const { t } = useTranslation()
   const endpoints = [
-    { label: 'OpenAI', icon: <OpenAI size={14} />, value: openAIBaseUrl, copyLabel: '复制 OpenAI 地址' },
-    { label: 'Anthropic', icon: <Claude.Color size={14} />, value: anthropicBaseUrl, copyLabel: '复制 Anthropic 地址' },
+    { label: 'OpenAI', icon: <OpenAI size={14} />, value: openAIBaseUrl, copyLabel: t('apiKeys.protocol.copyOpenAI') },
+    { label: 'Anthropic', icon: <Claude.Color size={14} />, value: anthropicBaseUrl, copyLabel: t('apiKeys.protocol.copyAnthropic') },
   ].filter((e) => e.value)
 
   return (
     <section
-      aria-label="标准协议接入"
+      aria-label={t('apiKeys.protocol.aria')}
       className="grid min-h-[62px] grid-cols-1 items-center gap-3 rounded-lg border border-brand-base/15 bg-brand-base/8 px-3.5 py-2.5 md:grid-cols-2 xl:grid-cols-[minmax(200px,0.9fr)_minmax(220px,1fr)_minmax(220px,1fr)_auto]"
     >
       <div className="flex min-w-0 items-center gap-2.5 md:col-span-2 xl:col-span-1">
@@ -31,9 +33,9 @@ export function ApiKeyProtocolBanner({ openAIBaseUrl, anthropicBaseUrl, docsUrl 
           <LuCodeXml size={19} />
         </span>
         <div className="grid min-w-0 gap-0.5">
-          <strong className="text-[13px] font-bold text-mg-text-1">使用标准协议接入</strong>
+          <strong className="text-[13px] font-bold text-mg-text-1">{t('apiKeys.protocol.title')}</strong>
           <span className="text-[11px] font-semibold leading-snug text-mg-text-3">
-            复制对应 Base URL，即可复用现有 SDK
+            {t('apiKeys.protocol.desc')}
           </span>
         </div>
       </div>
@@ -61,7 +63,7 @@ export function ApiKeyProtocolBanner({ openAIBaseUrl, anthropicBaseUrl, docsUrl 
         target="_blank"
       >
         <LuFileText size={15} />
-        查看 API 文档
+        {t('apiKeys.protocol.docs')}
         <LuArrowUpRight size={14} />
       </a>
     </section>

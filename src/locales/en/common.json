@@ -38,6 +38,8 @@
       "loadMore": "Load More"
     },
     "changelog": "Changelog",
-    "close": "Close"
+    "close": "Close",
+    "loadingPermissions": "Loading permissions",
+    "loadingTenants": "Loading tenants"
   }
 }

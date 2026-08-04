@@ -4,10 +4,49 @@
     "desc": "Security credentials for OpenAI SDK compatible access. Keep your keys safe.",
     "create": "Create API Key",
     "search": "Search key name",
+    "searchPlaceholder": "Search key name or owner",
+    "summary": {
+      "total": "All Keys",
+      "active": "Active",
+      "expiringSoon": "Expiring in 7 days",
+      "limitReached": "Limit reached",
+      "monthSpend": "This month"
+    },
+    "keyType": {
+      "personal": "Personal Key",
+      "member": "Member Key",
+      "service": "Service Key"
+    },
+    "keyTypeDesc": {
+      "personal": "Owned by the current member. Good for development, testing, or local access.",
+      "member": "Created by an admin and assigned to a specific member for ownership and notifications.",
+      "service": "For workspace services or production systems."
+    },
+    "status": {
+      "active": "Active",
+      "rotation_required": "Rotation required",
+      "limited": "Limit reached",
+      "expired": "Expired",
+      "disabled": "Disabled",
+      "revoked": "Revoked",
+      "expiring": "Expiring soon"
+    },
+    "filter": {
+      "allTypes": "All types",
+      "allStatuses": "All statuses",
+      "allOwners": "All owners"
+    },
+    "scope": {
+      "workspaceAll": "Scope: current workspace · Showing API keys for all workspace members ({{count}} members)",
+      "selfOnly": "Scope: current workspace · Only showing keys you own"
+    },
     "table": {
       "name": "Name",
       "env": "Environment",
       "credentials": "API Key Credentials",
+      "type": "Type",
+      "owner": "Owner",
+      "keyGuardrail": "Key Guardrail",
       "status": "Status",
       "createdAt": "Created At",
       "actions": "Actions",
@@ -15,25 +54,143 @@
       "disabled": "Disabled",
       "revoked": "Revoked",
       "copy": "Copy",
+      "copyFullKey": "Copy full key",
+      "copyMaskedKey": "Copy masked key",
       "revoke": "Delete",
+      "delete": "Delete",
+      "rotate": "Rotate",
+      "rotated": "Rotated",
+      "enable": "Enable",
+      "disable": "Disable",
+      "enabling": "Enabling",
+      "detail": "Details",
       "copyMaskedSuccess": "Masked credentials copied to clipboard",
       "expiresAt": "Expires At",
       "neverExpires": "Never expires",
       "expired": "Expired",
       "totalSpend": "Total Spend",
+      "periodSpend": "Current spend",
+      "periodSpendLimit": "Current spend / Limit",
+      "requests": "Requests",
+      "lastCalled": "Last called",
+      "notCalled": "Not called yet",
       "noData": "No data",
-      "copyUnavailableLegacy": "This key was created before copy support; the plaintext cannot be recovered — rotate to a new key",
+      "creator": "Creator",
+      "copyForbidden": "You do not have permission to view plaintext API keys",
+      "maskedTitle": "Key mask. Use the copy button on the right to copy the full plaintext key.",
+      "effectiveLimitTitle": "Effective limit = the matched guardrail budget gate, using the strictest rule",
+      "limitValue": "Limit {{value}}",
+      "copyUnavailableLegacy": "This key was created before copy support; the plaintext cannot be recovered. Rotate to a new key.",
       "copyUnavailableInactive": "This key is revoked or expired and cannot be copied"
+    },
+    "expiration": {
+      "all": "Never expires",
+      "24h": "After 24 hours",
+      "7d": "After 7 days",
+      "30d": "After 30 days",
+      "1y": "After 1 year",
+      "custom": "Custom end date"
+    },
+    "limit": {
+      "none": "No limit",
+      "every": "Every {{unit}}",
+      "everyCount": "Every {{count}} {{unit}}",
+      "unit": {
+        "hour": "hour",
+        "day": "day",
+        "week": "week",
+        "month": "month"
+      },
+      "period": {
+        "none": "No limit",
+        "day": "Daily",
+        "month": "Monthly",
+        "total": "Total",
+        "hour": "Hourly",
+        "week": "Weekly"
+      }
+    },
+    "budget": {
+      "gate": "Budget gates",
+      "workspaceTotal": "Workspace total budget",
+      "member": "Member budget",
+      "key": "Key budget",
+      "notConfigured": "No budget configured",
+      "runtimeCheckTip": "Runtime checks all of these budget gates",
+      "stopTip": "Calls stop when the first budget is triggered"
+    },
+    "guardrail": {
+      "global": "Global guardrail",
+      "member": "Member guardrail",
+      "key": "Key guardrail",
+      "none": "No key guardrail",
+      "noneSpaced": "No key guardrail",
+      "unbound": "No key guardrail bound",
+      "noKeyGuardrails": "No key guardrails",
+      "defaultBadge": "(Default)",
+      "globalDefaultMemberBudget": "Global default member budget",
+      "memberBudgetNotApplicable": "Member budget does not apply",
+      "boundPreviewUnavailable": "Bound to {{names}} (effective preview is temporarily unavailable)"
+    },
+    "rule": {
+      "modelBlacklist": "Model blacklist",
+      "ipWhitelist": "IP allowlist",
+      "promptInjection": "Prompt injection",
+      "source": "Rule source: {{source}}",
+      "globalKeySource": "Global / key guardrail rules",
+      "unrestricted": "Unrestricted",
+      "notConfigured": "No rules configured"
+    },
+    "common": {
+      "notConfigured": "Not configured",
+      "none": "None"
+    },
+    "effectivePreview": "Effective rule preview",
+    "effectiveRule": "Effective rule",
+    "protocol": {
+      "aria": "Standard protocol access",
+      "title": "Use standard protocols",
+      "desc": "Copy the corresponding Base URL to reuse existing SDKs",
+      "copyOpenAI": "Copy OpenAI URL",
+      "copyAnthropic": "Copy Anthropic URL",
+      "docs": "View API docs"
     },
     "revokeConfirm": {
       "title": "Delete this API key?",
       "content": "The key is invalidated immediately, removed from the list, and cannot be recovered. All gateway requests using it will be blocked."
     },
+    "disableConfirm": {
+      "title": "Disable API Key?",
+      "desc": "\"{{name}}\" will stop working immediately after it is disabled. You can re-enable it later.",
+      "confirm": "Disable"
+    },
     "createModal": {
       "title": "Create API Key",
+      "desc": "Create a runtime credential for workspace {{workspaceName}}",
+      "currentWorkspace": "Current workspace",
+      "currentAccount": "Current account",
       "nameLabel": "Key Name",
       "namePlaceholder": "e.g., Production Key",
       "nameRequired": "Key name cannot be empty",
+      "memberRequired": "Select a target member",
+      "maintainerRequired": "Select an owner for the service key",
+      "typeLabel": "Key type",
+      "noTypePermission": "You do not have permission to create this key type",
+      "noCreatePermission": "No create permission",
+      "ownerLabel": "Owner",
+      "memberPlaceholder": "Select a workspace member",
+      "maintainerPlaceholder": "Select a service key owner",
+      "noMembers": "No members in this workspace",
+      "selfMaintainer": "Maintained by yourself ({{account}})",
+      "expiryLabel": "Expiration",
+      "expiryRequiredHint": "(Required; never-expiring keys are not allowed)",
+      "expiryOptionalHint": "(Optional; leave blank to never expire)",
+      "expiryPresetTitle": "Expiration preset",
+      "expiryCustomLabel": "Select end date",
+      "expiryPlaceholder": "Select expiration time",
+      "advancedTitle": "Advanced settings",
+      "advancedDesc": "Configure security policies bound to this key",
+      "securityPolicy": "Security policy",
       "envLabel": "Environment",
       "live": "LIVE (Actual Billing)",
       "test": "TEST (Sandbox)",
@@ -43,28 +200,161 @@
       "cancel": "Cancel",
       "confirm": "Create Now"
     },
+    "createdModal": {
+      "title": "API Key created",
+      "desc": "Copy and save it now. You cannot view the full key again after closing this dialog.",
+      "connect": "Quick connect",
+      "saved": "I have saved the key",
+      "copyAria": "Copy key"
+    },
+    "rotateModal": {
+      "title": "Rotation complete",
+      "desc": "The new token is active and shown only once. Copy and save it now. The old token remains in the grace period; click Rotated after verification to invalidate it.",
+      "copied": "I have copied the token",
+      "copyAria": "Copy new token"
+    },
+    "rotateConfirm": {
+      "title": "Confirm rotation completion",
+      "desc": "After confirmation, the old token is invalidated immediately and the new token remains active.",
+      "oldToken": "Old token"
+    },
+    "rotate": {
+      "new": "New",
+      "old": "Old",
+      "copyNewMaskedAria": "Copy new token mask",
+      "noticeTitle": "The new token is active; the old token is still valid",
+      "noticeDesc": "Copy the new token and replace it in callers. After verification, click Rotated to invalidate the old token immediately.",
+      "copyNewToken": "Copy new token"
+    },
     "revealModal": {
-      "title": "🔑 Your New API Key is Ready",
-      "warning": "Please save this credential immediately! It is only shown once.",
+      "title": "Your new API Key is ready",
+      "warning": "Please save this credential immediately. For security, the plaintext API key is shown only once.",
       "label": "Plain Text API Key:",
       "done": "I have copied and saved it"
     },
     "connectModal": {
+      "title": "Connect now",
+      "desc": "Choose a connection method to view parameters. Buttons open tools or documentation.",
+      "paramsTitle": "ModelGo connection parameters",
       "keyCreatedHint": "The API key is shown only once after creation. Save it before closing this banner.",
-      "noKeyHint": "Review endpoints and connection methods first. Create an API key to copy complete parameters."
+      "noKeyHint": "Review endpoints and connection methods first. Create an API key to copy complete parameters.",
+      "revealError": "Failed to retrieve the API key plaintext. Please try again later.",
+      "noAvailableKey": "No available API keys",
+      "noAvailableModel": "No available models",
+      "copyApiKeyAria": "Copy API Key",
+      "copyModelAria": "Copy model ID",
+      "copyApiKey": "Copy API Key",
+      "copiedKey": "Key copied",
+      "copyBaseUrl": "Copy Base URL",
+      "method": "Connection method",
+      "docs": "Developer docs",
+      "mgcTitle": "Connect AI coding clients with one command",
+      "mgcDesc": "Select the clients to connect. The command is prefilled with the key and site ({{site}}); copy it into a terminal and press Enter.",
+      "globalSite": "Global site",
+      "domesticSite": "China site",
+      "allClients": "All 12 clients",
+      "keyInjected": "Your newly created key is filled in",
+      "keyAutoFill": "A real key will be filled in after you create one",
+      "copyCommand": "Copy command"
+    },
+    "connectAction": {
+      "mgc": { "label": "Quick Connect", "desc": "Select and use" },
+      "cc-switch": { "label": "CC Switch", "desc": "One-click switch" },
+      "claude-code": { "label": "Claude Code", "desc": "Terminal access" },
+      "codex": { "label": "Codex", "desc": "Import config" },
+      "openai-sdk": { "label": "OpenAI SDK", "desc": "Code example" },
+      "curl": { "label": "cURL", "desc": "Connectivity check" }
+    },
+    "connectSnippet": {
+      "copyParams": "Copy parameters",
+      "copyTerminal": "Copy terminal command",
+      "copyCode": "Copy code example",
+      "copyCurl": "Copy cURL command",
+      "claudePrompt": {
+        "title": "Help me connect ModelGo in Claude Code.",
+        "body": "Use the following Anthropic-compatible endpoint. Write it only to local environment or ignored local config, and do not commit secrets:"
+      },
+      "ccSwitch": {
+        "title": "Import CC Switch Provider",
+        "desc": "Open CC Switch and import a Claude provider directly.",
+        "launch": "Open CC Switch"
+      },
+      "claudeCode": {
+        "title": "Claude Code Parameters",
+        "desc": "Open Claude Code with a prefilled ModelGo setup prompt.",
+        "launch": "Open Claude Code"
+      },
+      "codex": {
+        "title": "Import Codex Provider",
+        "desc": "Import a Codex provider through CC Switch.",
+        "launch": "Import Codex config"
+      },
+      "openaiSdk": {
+        "title": "Node.js SDK Example",
+        "desc": "Open the developer docs for SDK integration.",
+        "launch": "Open SDK docs"
+      },
+      "curl": {
+        "title": "API Connectivity Check",
+        "desc": "Open the API docs to verify paths and parameters.",
+        "launch": "Open API docs"
+      }
     },
     "toast": {
       "createSuccess": "Key \"{{name}}\" created successfully",
       "createError": "Failed to create API key",
       "revokeSuccess": "API Key deleted",
       "revokeError": "Failed to delete API key",
+      "enableSuccess": "Enabled",
+      "enableError": "Failed to enable",
+      "disableSuccess": "Disabled",
+      "disableError": "Failed to disable",
+      "rotateError": "Failed to rotate",
+      "oldTokenInvalidated": "Old token invalidated",
+      "rotateConfirmError": "Failed to confirm rotation",
       "copyKeySuccess": "Full API key copied to clipboard",
       "copyKeyError": "Failed to retrieve the key, please try again later",
-      "copyKeyClipboardError": "Could not write to clipboard; check browser permissions"
+      "copyKeyClipboardError": "Could not write to clipboard; check browser permissions",
+      "copySecretSuccess": "Key copied",
+      "copyNewTokenSuccess": "New token copied",
+      "copyNewTokenError": "Failed to copy new token",
+      "copyNewMaskedSuccess": "New token mask copied",
+      "copyFullKeySuccess": "Full key copied",
+      "copyFullKeyError": "Failed to copy full key",
+      "copyMaskedSuccess": "Masked key copied"
+    },
+    "emptyFiltered": {
+      "title": "No keys match the filters",
+      "desc": "Try adjusting type, status, owner, or search keywords",
+      "clear": "Clear filters"
+    },
+    "emptyWorkspace": {
+      "title": "This workspace has no API keys yet",
+      "desc": "Create the first API key to get a runtime credential for model calls"
     },
     "emptySelfScope": {
       "title": "You have no API keys yet",
       "desc": "Only keys you own are shown here. Ask a workspace owner to create or assign one to you."
+    },
+    "detail": {
+      "title": "API Key details",
+      "basic": "Basic info",
+      "usage": "Usage",
+      "securityGuardrails": "Security guardrails",
+      "lastCall": "Last call",
+      "jumpLogs": "View logs",
+      "audit": "Audit trail",
+      "noAudit": "No audit records yet. The audit API is pending release.",
+      "requestCountValue": "{{count}} requests"
+    },
+    "auditAction": {
+      "issued": "Created API Key",
+      "updated": "Updated API Key",
+      "enabled": "Enabled API Key",
+      "disabled": "Disabled API Key",
+      "rotated": "Rotated API Key",
+      "revoked": "Deleted API Key",
+      "revealed": "Copied full key"
     },
     "detailError": {
       "title": "Failed to load details",

@@ -1,4 +1,5 @@
 import { LuVideoOff, LuDownload } from 'react-icons/lu'
+import { useTranslation } from 'react-i18next'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { TableCell, TableRow } from '@/components/ui/Table'
 import { trackEvent } from '@/lib/track'
@@ -6,7 +7,7 @@ import { cn } from '@/lib/utils'
 import type { TaskItem } from '@/types'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { VideoThumbnail } from './VideoThumbnail'
-import { STATUS_CONFIG, KIND_CONFIG, fmtDate, fmtCost, resolveKind, isTaskDone, resultExpiry, isVideoExpired, videoContentUrl } from './task-list-utils'
+import { statusConfig, kindConfig, fmtDate, fmtCost, resolveKind, isTaskDone, resultExpiry, isVideoExpired, videoContentUrl } from './task-list-utils'
 
 interface TaskRowProps {
   item: TaskItem
@@ -18,9 +19,12 @@ interface TaskRowProps {
 }
 
 export function TaskRow({ item, expired, onOpen, onPreview, onExpired }: TaskRowProps) {
+  const { t } = useTranslation('tasks')
+  const kindMap = kindConfig(t)
+  const statusMap = statusConfig(t)
   const kind    = resolveKind(item)
-  const kindCfg = KIND_CONFIG[kind]
-  const expiry  = resultExpiry(item)
+  const kindCfg = kindMap[kind]
+  const expiry  = resultExpiry(item, t)
   const isVideoTask = kind === 'video' && isTaskDone(item.status)
   // 过期以服务端 artifact_state / result_expires_at / 运行时 404 为准。
   // 缺少有效期字段表示元数据尚未回填，不能直接判定为过期。
@@ -40,7 +44,7 @@ export function TaskRow({ item, expired, onOpen, onPreview, onExpired }: TaskRow
     >
       <TableCell align="center">
         {isExpired ? (
-          <div className="h-[var(--mg-preview-thumb-size)] w-[var(--mg-preview-thumb-size)] shrink-0 rounded-lg mx-auto flex items-center justify-center bg-mg-fill-1 text-mg-text-4" title="产物已过期">
+          <div className="h-[var(--mg-preview-thumb-size)] w-[var(--mg-preview-thumb-size)] shrink-0 rounded-lg mx-auto flex items-center justify-center bg-mg-fill-1 text-mg-text-4" title={t('thumbnail.expired')}>
             <LuVideoOff size={20} />
           </div>
         ) : (
@@ -66,7 +70,7 @@ export function TaskRow({ item, expired, onOpen, onPreview, onExpired }: TaskRow
                   : 'text-mg-text-3',
             )}
           >
-            {isExpired ? '产物已过期' : `产物有效 ${expiry?.remain}`}
+            {isExpired ? t('thumbnail.expired') : t('thumbnail.expiryLabel', { remain: expiry?.remain })}
           </p>
         )}
       </TableCell>
@@ -90,7 +94,7 @@ export function TaskRow({ item, expired, onOpen, onPreview, onExpired }: TaskRow
         </span>
       </TableCell>
       <TableCell align="center">
-        <StatusBadge status={item.status} statusMap={STATUS_CONFIG} />
+        <StatusBadge status={item.status} statusMap={statusMap} />
       </TableCell>
       <TableCell align="center">
         <span className="mg-text-body font-semibold inline-flex items-center">
@@ -107,13 +111,13 @@ export function TaskRow({ item, expired, onOpen, onPreview, onExpired }: TaskRow
             }}
             className="mg-text-caption text-mg-text-3 hover:text-mg-text-1 font-semibold transition-colors"
           >
-            详情
+            {t('buttons.detail')}
           </button>
           {/* 下载：仅未过期的已完成视频产物可用；未完成/生成中/失败/过期置灰（TODO(#446) 图片/音乐产物地址待后端交付） */}
           <button
             type="button"
             disabled={!videoUrl}
-            title={videoUrl ? '下载产物' : '产物不可下载（未完成 / 生成中 / 失败 / 已过期）'}
+            title={videoUrl ? t('thumbnail.downloadEnabled') : t('thumbnail.downloadDisabled')}
             onClick={(e) => {
               e.stopPropagation()
               if (!videoUrl) return
@@ -133,7 +137,7 @@ export function TaskRow({ item, expired, onOpen, onPreview, onExpired }: TaskRow
             )}
           >
             <LuDownload size={13} />
-            下载
+            {t('buttons.download')}
           </button>
         </div>
       </TableCell>

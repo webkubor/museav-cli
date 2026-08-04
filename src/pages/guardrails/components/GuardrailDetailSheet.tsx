@@ -12,10 +12,10 @@ import { isValidBudgetAmount } from '../budget'
 import {
   GUARDRAIL_BUDGET_PERIOD_OPTIONS,
   PROMPT_INJECTION_INHERIT,
-  PROMPT_INJECTION_INHERIT_LABEL,
-  PROMPT_INJECTION_LABEL,
+  PROMPT_INJECTION_INHERIT_LABEL_KEY,
+  PROMPT_INJECTION_LABEL_KEY,
   PROMPT_INJECTION_MODES,
-  SCOPE_LABEL,
+  SCOPE_LABEL_KEY,
   type BudgetAggScope,
   type GuardrailKind,
   type GuardrailScope,
@@ -50,10 +50,10 @@ interface ScopeBudgetDraft { amount: string; period: PeriodUnit; limited: boolea
 
 // 三档预算的展示元信息（对齐 PRD GuardrailBudgetControl：仅 label + 分段 + 金额，无 hint。顺序：
 // 工作空间总预算 → 默认个人预算(企业) → 默认 Key 预算）
-const GLOBAL_BUDGET_META: { scope: BudgetAggScope; label: string; enterpriseOnly?: boolean }[] = [
-  { scope: 'guardrail_total', label: '工作空间总预算' },
-  { scope: 'per_member', label: '默认个人预算', enterpriseOnly: true },
-  { scope: 'per_api_key', label: '默认 Key 预算' },
+const GLOBAL_BUDGET_META: { scope: BudgetAggScope; labelKey: string; enterpriseOnly?: boolean }[] = [
+  { scope: 'guardrail_total', labelKey: 'guardrails.budget.workspaceTotal' },
+  { scope: 'per_member', labelKey: 'guardrails.budget.defaultMember', enterpriseOnly: true },
+  { scope: 'per_api_key', labelKey: 'guardrails.budget.defaultKey' },
 ]
 
 /** 单档全局预算控件：不限额 / 限额 切换 + 金额 + 周期（对齐 PRD GuardrailBudgetControl，无 hint 说明） */
@@ -65,6 +65,7 @@ function GlobalBudgetControl({
   onChange: (patch: Partial<ScopeBudgetDraft>) => void
   disabled: boolean
 }) {
+  const { t } = useTranslation()
   const invalid = draft.limited && draft.amount.trim() !== '' && !isValidBudgetAmount(draft.amount)
   // 交互形态对齐 PRD GuardrailBudgetControl：两按钮分段「不限额 | 限额」，非 Switch。
   const modeBtn = (active: boolean) =>
@@ -78,37 +79,37 @@ function GlobalBudgetControl({
   return (
     <div className="rounded-lg border border-mg-border p-4 space-y-3">
       <div className="text-xs font-bold text-mg-text-1">{label}</div>
-      <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={`${label}额度类型`}>
-        <button type="button" role="radio" aria-checked={!draft.limited} disabled={disabled} onClick={() => onChange({ limited: false })} className={modeBtn(!draft.limited)}>不限额</button>
-        <button type="button" role="radio" aria-checked={draft.limited} disabled={disabled} onClick={() => onChange({ limited: true })} className={modeBtn(draft.limited)}>限额</button>
+      <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t('guardrails.budget.modeAria', { label })}>
+        <button type="button" role="radio" aria-checked={!draft.limited} disabled={disabled} onClick={() => onChange({ limited: false })} className={modeBtn(!draft.limited)}>{t('guardrails.budget.unlimited')}</button>
+        <button type="button" role="radio" aria-checked={draft.limited} disabled={disabled} onClick={() => onChange({ limited: true })} className={modeBtn(draft.limited)}>{t('guardrails.budget.limited')}</button>
       </div>
       {draft.limited && (
         <div className="flex items-center gap-2">
           <Input
             type="text"
             inputMode="decimal"
-            aria-label={`${label}金额`}
+            aria-label={t('guardrails.budget.amountAria', { label })}
             value={draft.amount}
             onChange={(e) => onChange({ amount: e.target.value })}
-            placeholder="输入限额金额（最多两位小数）"
+            placeholder={t('guardrails.budget.amountPlaceholder')}
             disabled={disabled}
             className="h-9 text-xs flex-1"
           />
           <Select
             value={draft.period}
             onChange={(v) => onChange({ period: v as PeriodUnit })}
-            aria-label={`${label}周期`}
+            aria-label={t('guardrails.budget.periodAria', { label })}
             className="h-9 text-xs w-28"
             disabled={disabled}
           >
             {GUARDRAIL_BUDGET_PERIOD_OPTIONS.map((o) => (
-              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              <SelectItem key={o.value} value={o.value}>{t(`guardrails.period.${o.value}`)}</SelectItem>
             ))}
           </Select>
         </div>
       )}
       {invalid && (
-        <p className="text-xs text-mg-danger">预算金额无效：大于 0，整数最多 12 位，小数最多 2 位</p>
+        <p className="text-xs text-mg-danger">{t('guardrails.validation.invalidBudget')}</p>
       )}
     </div>
   )
@@ -147,28 +148,29 @@ function MemberKeyBudgetControl({
   disabled: boolean
   error?: string
 }) {
+  const { t } = useTranslation()
   return (
     <Field label={label} required>
       <div className="flex items-center gap-2">
         <Input
           type="text"
           inputMode="decimal"
-          aria-label={`${label}金额`}
+          aria-label={t('guardrails.budget.amountAria', { label })}
           value={amount}
           onChange={(e) => onAmountChange(e.target.value)}
-          placeholder="输入限额金额（最多两位小数）"
+          placeholder={t('guardrails.budget.amountPlaceholder')}
           className="h-9 text-xs flex-1"
           disabled={disabled}
         />
         <Select
           value={period}
           onChange={(v) => onPeriodChange(v as PeriodUnit)}
-          aria-label={`${label}周期`}
+          aria-label={t('guardrails.budget.periodAria', { label })}
           className="h-9 text-xs w-28"
           disabled={disabled}
         >
           {GUARDRAIL_BUDGET_PERIOD_OPTIONS.map((o) => (
-            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+            <SelectItem key={o.value} value={o.value}>{t(`guardrails.period.${o.value}`)}</SelectItem>
           ))}
         </Select>
       </div>
@@ -194,6 +196,7 @@ function MemberKeyBoostBudgetControl({
   disabled: boolean
   error?: string
 }) {
+  const { t } = useTranslation()
   const invalid = limited && amount.trim() !== '' && !isValidBudgetAmount(amount)
   const modeBtn = (active: boolean) =>
     [
@@ -205,37 +208,37 @@ function MemberKeyBoostBudgetControl({
     ].join(' ')
   return (
     <Field label={label} required={limited}>
-      <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={`${label}额度类型`}>
-        <button type="button" role="radio" aria-checked={!limited} disabled={disabled} onClick={() => onLimitedChange(false)} className={modeBtn(!limited)}>不限额</button>
-        <button type="button" role="radio" aria-checked={limited} disabled={disabled} onClick={() => onLimitedChange(true)} className={modeBtn(limited)}>限额</button>
+      <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t('guardrails.budget.modeAria', { label })}>
+        <button type="button" role="radio" aria-checked={!limited} disabled={disabled} onClick={() => onLimitedChange(false)} className={modeBtn(!limited)}>{t('guardrails.budget.unlimited')}</button>
+        <button type="button" role="radio" aria-checked={limited} disabled={disabled} onClick={() => onLimitedChange(true)} className={modeBtn(limited)}>{t('guardrails.budget.limited')}</button>
       </div>
       {limited && (
         <div className="mt-2 flex items-center gap-2">
           <Input
             type="text"
             inputMode="decimal"
-            aria-label={`${label}金额`}
+            aria-label={t('guardrails.budget.amountAria', { label })}
             value={amount}
             onChange={(e) => onAmountChange(e.target.value)}
-            placeholder="输入限额金额（最多两位小数）"
+            placeholder={t('guardrails.budget.amountPlaceholder')}
             disabled={disabled}
             className="h-9 text-xs flex-1"
           />
           <Select
             value={period}
             onChange={(v) => onPeriodChange(v as PeriodUnit)}
-            aria-label={`${label}周期`}
+            aria-label={t('guardrails.budget.periodAria', { label })}
             className="h-9 text-xs w-28"
             disabled={disabled}
           >
             {GUARDRAIL_BUDGET_PERIOD_OPTIONS.map((o) => (
-              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              <SelectItem key={o.value} value={o.value}>{t(`guardrails.period.${o.value}`)}</SelectItem>
             ))}
           </Select>
         </div>
       )}
       {invalid && (
-        <p className="mt-1.5 text-xs text-mg-danger">预算金额无效：大于 0，整数最多 12 位，小数最多 2 位</p>
+        <p className="mt-1.5 text-xs text-mg-danger">{t('guardrails.validation.invalidBudget')}</p>
       )}
       {error && <p className="mt-1.5 text-xs text-mg-danger">{error}</p>}
     </Field>
@@ -249,15 +252,16 @@ function PromptInjectionField({ value, onChange, allowInherit, disabled }: {
   allowInherit: boolean
   disabled: boolean
 }) {
+  const { t } = useTranslation()
   return (
     <Field
-      label="提示词注入检测"
-      tip={{ label: '命中后的处理方式', text: '仅记录=记录命中仍原样发送；脱敏=命中内容替换后发送；拦截=直接拒绝请求' }}
+      label={t('guardrails.promptInjection.label')}
+      tip={{ label: t('guardrails.promptInjection.hitBehavior'), text: t('guardrails.promptInjection.summaryHint') }}
     >
       <Select value={value} onChange={(v) => onChange(v as PromptInjectionFormValue)} disabled={disabled} className="w-full">
-        {allowInherit && <SelectItem value={PROMPT_INJECTION_INHERIT}>{PROMPT_INJECTION_INHERIT_LABEL}</SelectItem>}
+        {allowInherit && <SelectItem value={PROMPT_INJECTION_INHERIT}>{t(PROMPT_INJECTION_INHERIT_LABEL_KEY)}</SelectItem>}
         {PROMPT_INJECTION_MODES.map((m) => (
-          <SelectItem key={m} value={m}>{PROMPT_INJECTION_LABEL[m]}</SelectItem>
+          <SelectItem key={m} value={m}>{t(PROMPT_INJECTION_LABEL_KEY[m])}</SelectItem>
         ))}
       </Select>
     </Field>
@@ -267,9 +271,10 @@ function PromptInjectionField({ value, onChange, allowInherit, disabled }: {
 /** 操作记录区（对齐 PRD GuardrailAuditSection + 现状 API Key 详情抽屉「操作审计」列表样式）。
  *  审计接口按工作空间返回、已在上层按 target_id 过滤到本护栏；空/失败均给空态，不造假数据。 */
 function GuardrailAuditSection({ rows, loading }: { rows: GuardrailAuditLog[]; loading: boolean }) {
+  const { t } = useTranslation()
   return (
     <section className="space-y-2.5 border-t border-mg-border/50 pt-6">
-      <h3 className="text-xs font-bold uppercase tracking-wider text-mg-text-3">操作记录</h3>
+      <h3 className="text-xs font-bold uppercase tracking-wider text-mg-text-3">{t('guardrails.audit.title')}</h3>
       {loading ? (
         <div className="space-y-2 animate-pulse">
           <div className="h-4 w-2/3 rounded-sm bg-mg-fill-0" />
@@ -288,7 +293,7 @@ function GuardrailAuditSection({ rows, loading }: { rows: GuardrailAuditLog[]; l
           ))}
         </div>
       ) : (
-        <p className="text-xs text-mg-text-3">暂无操作记录</p>
+        <p className="text-xs text-mg-text-3">{t('guardrails.audit.empty')}</p>
       )}
     </section>
   )
@@ -382,9 +387,9 @@ export function GuardrailDetailSheet({
   const createCanSave = canCreateScope[scope] && (kind !== 'boost' || canCreateBoost)
   const canSubmit = isCreating ? createCanSave : editCanSave
 
-  const scopeLabel = `${SCOPE_LABEL[scope]}护栏`
-  const memberBudgetLabel = kind === 'boost' ? '提额预算' : '个人预算'
-  const keyBudgetLabel = kind === 'boost' ? '提额预算' : 'Key 预算'
+  const scopeLabel = t('guardrails.label.scopeGuardrail', { scope: t(SCOPE_LABEL_KEY[scope]) })
+  const memberBudgetLabel = kind === 'boost' ? t('guardrails.budget.boost') : t('guardrails.budget.member')
+  const keyBudgetLabel = kind === 'boost' ? t('guardrails.budget.boost') : t('guardrails.budget.key')
 
   return (
     <SideSheet
@@ -393,7 +398,7 @@ export function GuardrailDetailSheet({
       title={
         <span className="flex flex-col gap-0.5">
           {/* 眉标在标题上方（对齐 PRD 抽屉头：创建=「安全护栏」/编辑=作用域标签） */}
-          <span className="text-[11px] font-normal leading-none text-mg-text-3">{isCreating ? '安全护栏' : scopeLabel}</span>
+          <span className="text-[11px] font-normal leading-none text-mg-text-3">{isCreating ? t('guardrails.title') : scopeLabel}</span>
           <span>{isCreating ? t('guardrails.modal.createTitle') : (detailRow?.name ?? t('guardrails.modal.editTitle'))}</span>
         </span>
       }
@@ -430,33 +435,33 @@ export function GuardrailDetailSheet({
               <>
                 {/* 绑定对象：个人护栏绑成员 / Key 护栏绑 API Key（对齐原型：分类类型后、预算前） */}
                 {scope === 'member' && (
-                  <Field label="成员" required icon={<LuUserRound className="h-3.5 w-3.5" />}>
+                  <Field label={t('guardrails.form.membersLabel')} required icon={<LuUserRound className="h-3.5 w-3.5" />}>
                     {memberOptions.length === 0 ? (
                       <div className="rounded-md border border-mg-border bg-mg-fill-0/40 px-3 py-2.5 text-xs text-mg-text-3">
-                        当前工作空间暂无可绑定的成员。
+                        {t('guardrails.form.noBindableMembers')}
                       </div>
                     ) : (
                       <TagInput
                         value={memberIds}
                         onChange={onMemberIdsChange}
                         options={memberOptions.map((o) => ({ value: o.id, label: o.name }))}
-                        placeholder="搜索成员"
+                        placeholder={t('guardrails.form.membersPlaceholder')}
                       />
                     )}
                   </Field>
                 )}
                 {scope === 'key' && (
-                  <Field label="绑定 API Key" required icon={<LuKey className="h-3.5 w-3.5" />}>
+                  <Field label={t('guardrails.form.boundApiKeyLabel')} required icon={<LuKey className="h-3.5 w-3.5" />}>
                     {apiKeyOptions.length === 0 ? (
                       <div className="rounded-md border border-mg-border bg-mg-fill-0/40 px-3 py-2.5 text-xs text-mg-text-3">
-                        当前工作空间暂无可绑定的 API Key，请先到「API Keys」页创建后再绑定。
+                        {t('guardrails.form.noBindableApiKeys')}
                       </div>
                     ) : (
                       <TagInput
                         value={apiKeyIds}
                         onChange={onApiKeyIdsChange}
                         options={apiKeyOptions.map((o) => ({ value: o.id, label: o.name, disabled: !o.active }))}
-                        placeholder="搜索 API Key"
+                        placeholder={t('guardrails.form.apiKeysPlaceholder')}
                       />
                     )}
                   </Field>
@@ -467,7 +472,7 @@ export function GuardrailDetailSheet({
                     {GLOBAL_BUDGET_META.filter((m) => !m.enterpriseOnly || showMember).map((m) => (
                       <GlobalBudgetControl
                         key={m.scope}
-                        label={m.label}
+                        label={t(m.labelKey)}
                         draft={globalBudgets[m.scope]}
                         onChange={(patch) => onGlobalBudgetChange(m.scope, patch)}
                         disabled={false}
@@ -494,12 +499,12 @@ export function GuardrailDetailSheet({
                         aria-label={scope === 'member' ? memberBudgetLabel : keyBudgetLabel}
                         value={budgetAmount}
                         onChange={(e) => onBudgetAmountChange(e.target.value)}
-                        placeholder="输入限额金额（最多两位小数）"
+                        placeholder={t('guardrails.budget.amountPlaceholder')}
                         className="h-9 text-xs flex-1"
                       />
                       <Select value={budgetPeriodUnit} onChange={(v) => onBudgetPeriodUnitChange(v as PeriodUnit)} className="h-9 text-xs w-28">
                         {GUARDRAIL_BUDGET_PERIOD_OPTIONS.map((o) => (
-                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                          <SelectItem key={o.value} value={o.value}>{t(`guardrails.period.${o.value}`)}</SelectItem>
                         ))}
                       </Select>
                     </div>
@@ -525,7 +530,7 @@ export function GuardrailDetailSheet({
 
               {budgetConflict && (
                 <div role="alert" className="p-3 rounded-lg border border-mg-danger/40 bg-mg-danger/5 text-xs text-mg-danger">
-                  预算配置数据错误：存在多条生效中的预算策略，请联系管理员处理
+                  {t('guardrails.validation.budgetConflict')}
                 </div>
               )}
 
@@ -540,7 +545,7 @@ export function GuardrailDetailSheet({
                   {GLOBAL_BUDGET_META.filter((m) => !m.enterpriseOnly || showMember).map((m) => (
                     <GlobalBudgetControl
                       key={m.scope}
-                      label={m.label}
+                      label={t(m.labelKey)}
                       draft={globalBudgets[m.scope]}
                       onChange={(patch) => onGlobalBudgetChange(m.scope, patch)}
                       disabled={!canEditBudget || budgetConflict}
@@ -575,7 +580,7 @@ export function GuardrailDetailSheet({
                   <Field label={t('guardrails.form.membersLabel')} required icon={<LuUserRound className="h-3.5 w-3.5" />}>
                     {memberOptions.length === 0 ? (
                       <div className="rounded-md border border-mg-border bg-mg-fill-0/40 px-3 py-2.5 text-xs text-mg-text-3">
-                        当前工作空间暂无可绑定的成员。
+                        {t('guardrails.form.noBindableMembers')}
                       </div>
                     ) : (
                       <TagInput
@@ -609,10 +614,10 @@ export function GuardrailDetailSheet({
                     />
                   )}
                   {kind === 'boost' && (
-                    <Field label="提额到期时间" required>
+                    <Field label={t('guardrails.form.boostExpiresAtLabel')} required>
                       <Input
                         type="datetime-local"
-                        aria-label="提额到期时间"
+                        aria-label={t('guardrails.form.boostExpiresAtLabel')}
                         value={boostExpiresAt}
                         disabled={!canEdit}
                         onChange={(e) => onBoostExpiresAtChange(e.target.value)}
@@ -625,10 +630,10 @@ export function GuardrailDetailSheet({
               {/* Key 护栏：API Key 多选 → [提额:提额预算 | 常规:Key 预算+周期] → [提额:到期] → [常规:模型黑名单+IP 白名单+提示词注入(可继承)] */}
               {scope === 'key' && (
                 <>
-                  <Field label="绑定 API Key" required icon={<LuKey className="h-3.5 w-3.5" />}>
+                  <Field label={t('guardrails.form.boundApiKeyLabel')} required icon={<LuKey className="h-3.5 w-3.5" />}>
                     {apiKeyOptions.length === 0 ? (
                       <div className="rounded-md border border-mg-border bg-mg-fill-0/40 px-3 py-2.5 text-xs text-mg-text-3">
-                        当前工作空间暂无可绑定的 API Key，请先到「API Keys」页创建后再绑定。
+                        {t('guardrails.form.noBindableApiKeys')}
                       </div>
                     ) : (
                       <TagInput
@@ -636,7 +641,7 @@ export function GuardrailDetailSheet({
                         disabled={!canEditAssignment}
                         onChange={onApiKeyIdsChange}
                         options={apiKeyOptions.map((o) => ({ value: o.id, label: o.name, disabled: !o.active }))}
-                        placeholder="搜索 API Key"
+                        placeholder={t('guardrails.form.apiKeysPlaceholder')}
                       />
                     )}
                   </Field>
@@ -662,10 +667,10 @@ export function GuardrailDetailSheet({
                     />
                   )}
                   {kind === 'boost' && (
-                    <Field label="提额到期时间" required>
+                    <Field label={t('guardrails.form.boostExpiresAtLabel')} required>
                       <Input
                         type="datetime-local"
-                        aria-label="提额到期时间"
+                        aria-label={t('guardrails.form.boostExpiresAtLabel')}
                         value={boostExpiresAt}
                         disabled={!canEdit}
                         onChange={(e) => onBoostExpiresAtChange(e.target.value)}
@@ -710,7 +715,7 @@ export function GuardrailDetailSheet({
       {!detailLoadFailed && (isCreating || Boolean(detail)) && (
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mg-border/50 shrink-0">
           <div className="flex gap-2 shrink-0">
-            <Button variant="outline" onClick={onClose}>{isCreating ? t('common.cancel') : '关闭'}</Button>
+            <Button variant="outline" onClick={onClose}>{isCreating ? t('common.cancel') : t('common.close')}</Button>
             {canSubmit && (
               <Button
                 variant="brand"
@@ -718,7 +723,7 @@ export function GuardrailDetailSheet({
                 loading={submitting}
                 onClick={onSubmit}
               >
-                {isCreating ? t('guardrails.modal.confirmCreate') : '保存护栏'}
+                {isCreating ? t('guardrails.modal.confirmCreate') : t('guardrails.modal.saveGuardrail')}
               </Button>
             )}
           </div>

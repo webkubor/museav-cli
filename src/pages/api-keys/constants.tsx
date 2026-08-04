@@ -1,7 +1,7 @@
 /**
  * API Key 页共享的类型、常量与纯函数 helper
  */
-import { LuUser, LuBuilding2, LuUsers, LuZap } from 'react-icons/lu'
+import { LuZap } from 'react-icons/lu'
 import { SiCurl } from 'react-icons/si'
 import type { DateRangeValue } from '@/components/ui/DateRangePicker'
 import { addFromNowISO, endOfLocalDayISO, type TimeUnit } from '@/lib/datetime'
@@ -10,6 +10,7 @@ import Claude from '@lobehub/icons/es/Claude'
 import ClaudeCode from '@lobehub/icons/es/ClaudeCode'
 import Codex from '@lobehub/icons/es/Codex'
 import OpenAI from '@lobehub/icons/es/OpenAI'
+import type { TFunction } from 'i18next'
 
 export type ScopeType = 'personal' | 'workspace' | 'member'
 export type ConnectActionKey = 'mgc' | 'cc-switch' | 'claude-code' | 'codex' | 'openai-sdk' | 'curl'
@@ -37,35 +38,18 @@ export type ConnectSnippet = {
   command?: string
 }
 
-export const SCOPE_OPTIONS: { value: ScopeType; icon: React.ReactNode; label: string; desc: string }[] = [
-  {
-    value: 'personal',
-    icon: <LuUser className="w-4 h-4" />,
-    label: '个人',
-    desc: '仅供当前账户个人使用',
-  },
-  {
-    value: 'workspace',
-    icon: <LuBuilding2 className="w-4 h-4" />,
-    label: '工作空间',
-    desc: '工作空间服务集成使用',
-  },
-  {
-    value: 'member',
-    icon: <LuUsers className="w-4 h-4" />,
-    label: '成员',
-    desc: '代表指定成员创建密钥',
-  },
+export const EXPIRATION_PRESETS = [
+  { key: 'all', labelKey: 'apiKeys.expiration.all' },
+  { key: '24h', labelKey: 'apiKeys.expiration.24h' },
+  { key: '7d', labelKey: 'apiKeys.expiration.7d' },
+  { key: '30d', labelKey: 'apiKeys.expiration.30d' },
+  { key: '1y', labelKey: 'apiKeys.expiration.1y' },
+  { key: 'custom', labelKey: 'apiKeys.expiration.custom' },
 ]
 
-export const EXPIRATION_PRESETS = [
-  { key: 'all', label: '永不过期' },
-  { key: '24h', label: '24 小时后' },
-  { key: '7d', label: '7 天后' },
-  { key: '30d', label: '30 天后' },
-  { key: '1y', label: '1 年后' },
-  { key: 'custom', label: '自定义截止日期' },
-]
+export function getExpirationPresets(t: TFunction) {
+  return EXPIRATION_PRESETS.map((preset) => ({ key: preset.key, label: t(preset.labelKey) }))
+}
 
 /**
  * 限额周期（PRD §8.2）：不限额 / 每日 / 每月。
@@ -73,20 +57,22 @@ export const EXPIRATION_PRESETS = [
  */
 export type LimitPeriod = 'none' | 'day' | 'month' | 'total'
 
-export const LIMIT_PERIOD_OPTIONS: { value: LimitPeriod; label: string }[] = [
-  { value: 'none', label: '不限额' },
-  { value: 'day', label: '每日' },
-  { value: 'month', label: '每月' },
-]
-
 /** 周期 → 展示文案（含兼容旧数据 hour/week） */
 export const LIMIT_PERIOD_LABEL: Record<string, string> = {
-  none: '不限额',
-  day: '每日',
-  month: '每月',
-  total: '总额',
-  hour: '每小时',
-  week: '每周',
+  none: 'No limit',
+  day: 'Daily',
+  month: 'Monthly',
+  total: 'Total',
+  hour: 'Hourly',
+  week: 'Weekly',
+}
+
+export function connectActionLabel(t: TFunction, id: ConnectActionKey): string {
+  return t(`apiKeys.connectAction.${id}.label`)
+}
+
+export function connectActionDesc(t: TFunction, id: ConnectActionKey): string {
+  return t(`apiKeys.connectAction.${id}.desc`)
 }
 
 /**
@@ -116,43 +102,36 @@ export function resolveExpiryISO(range: DateRangeValue): string | null {
 export const CONNECT_ACTIONS: {
   key: ConnectActionKey
   label: string
-  desc: string
   icon: React.ReactNode
 }[] = [
   {
     key: 'mgc',
-    label: '一键接入',
-    desc: '勾选即用',
+    label: 'Quick Connect',
     icon: <LuZap size={16} className="text-brand-base" />,
   },
   {
     key: 'cc-switch',
     label: 'CC Switch',
-    desc: '一键切换',
     icon: <img src="/tools/cc-switch.png" alt="" className="h-4 w-4 rounded-sm" />,
   },
   {
     key: 'claude-code',
     label: 'Claude Code',
-    desc: '终端接入',
     icon: <ClaudeCode.Color size={16} />,
   },
   {
     key: 'codex',
     label: 'Codex',
-    desc: '配置导入',
     icon: <Codex.Color size={16} />,
   },
   {
     key: 'openai-sdk',
     label: 'OpenAI SDK',
-    desc: '代码示例',
     icon: <OpenAI size={16} />,
   },
   {
     key: 'curl',
     label: 'cURL',
-    desc: '连通检查',
     icon: <SiCurl className="h-4 w-4" style={{ color: '#073551' }} />,
   },
 ]
@@ -238,6 +217,7 @@ export function buildConnectSnippets(args: {
   anthropicBaseUrl: string
   createdKeyText: string
   docsUrl: string
+  t?: TFunction
   /**
    * 各编程客户端 tab 当前选中的模型 id（目录里真实存在的裸名）。
    * 缺省则不钉模型——Claude Code 会退回官方默认 slug，ModelGo 目录里没有 → 网关 403。
@@ -245,7 +225,7 @@ export function buildConnectSnippets(args: {
    */
   models?: { 'cc-switch'?: string; 'claude-code'?: string; codex?: string }
 }): ConnectSnippet[] {
-  const { openAIBaseUrl, anthropicBaseUrl, createdKeyText, docsUrl, models } = args
+  const { openAIBaseUrl, anthropicBaseUrl, createdKeyText, docsUrl, models, t } = args
   const ccSwitchModel = models?.['cc-switch']
   const claudeCodeModel = models?.['claude-code']
   const codexModel = models?.codex
@@ -271,9 +251,9 @@ export function buildConnectSnippets(args: {
 
   const buildClaudeCodeLink = () => {
     const prompt = [
-      '请帮我在 Claude Code 中接入 ModelGo。',
+      t ? t('apiKeys.connectSnippet.claudePrompt.title') : 'Help me connect ModelGo in Claude Code.',
       '',
-      '使用下面的 Anthropic 协议地址，只写入本机环境或本地忽略配置，不要提交密钥：',
+      t ? t('apiKeys.connectSnippet.claudePrompt.body') : 'Use the following Anthropic-compatible endpoint. Write it only to local environment or ignored local config, and do not commit secrets:',
       `ANTHROPIC_BASE_URL=${anthropicBaseUrl}`,
       `ANTHROPIC_API_KEY=${keyForSnippet}`,
       ...(claudeCodeModel ? [`ANTHROPIC_MODEL=${claudeCodeModel}`] : []),
@@ -284,11 +264,11 @@ export function buildConnectSnippets(args: {
   return [
     {
       id: 'cc-switch',
-      title: 'CC Switch 导入 Provider',
-      desc: '拉起 CC Switch，直接导入 Claude Provider。',
-      launchLabel: '拉起 CC Switch',
+      title: t ? t('apiKeys.connectSnippet.ccSwitch.title') : 'Import CC Switch Provider',
+      desc: t ? t('apiKeys.connectSnippet.ccSwitch.desc') : 'Open CC Switch and import a Claude provider directly.',
+      launchLabel: t ? t('apiKeys.connectSnippet.ccSwitch.launch') : 'Open CC Switch',
       launchHref: buildCcSwitchProviderLink('claude', anthropicBaseUrl, ccSwitchModel),
-      copyLabel: '复制参数',
+      copyLabel: t ? t('apiKeys.connectSnippet.copyParams') : 'Copy parameters',
       params: [
         { label: 'API Key', value: keyForSnippet, field: 'apiKey' },
         { label: 'Provider Name', value: 'ModelGo' },
@@ -306,11 +286,11 @@ export function buildConnectSnippets(args: {
     },
     {
       id: 'claude-code',
-      title: 'Claude Code 参数',
-      desc: '打开 Claude Code 终端，预填 ModelGo 接入提示。',
-      launchLabel: '打开 Claude Code',
+      title: t ? t('apiKeys.connectSnippet.claudeCode.title') : 'Claude Code Parameters',
+      desc: t ? t('apiKeys.connectSnippet.claudeCode.desc') : 'Open Claude Code with a prefilled ModelGo setup prompt.',
+      launchLabel: t ? t('apiKeys.connectSnippet.claudeCode.launch') : 'Open Claude Code',
       launchHref: buildClaudeCodeLink(),
-      copyLabel: '复制终端命令',
+      copyLabel: t ? t('apiKeys.connectSnippet.copyTerminal') : 'Copy terminal command',
       params: [
         { label: 'ANTHROPIC_API_KEY', value: keyForSnippet, field: 'apiKey' },
         { label: 'ANTHROPIC_BASE_URL', value: anthropicBaseUrl },
@@ -331,11 +311,11 @@ export function buildConnectSnippets(args: {
     },
     {
       id: 'codex',
-      title: 'Codex Provider 导入',
-      desc: '通过 CC Switch 导入 Codex Provider。',
-      launchLabel: '导入 Codex 配置',
+      title: t ? t('apiKeys.connectSnippet.codex.title') : 'Import Codex Provider',
+      desc: t ? t('apiKeys.connectSnippet.codex.desc') : 'Import a Codex provider through CC Switch.',
+      launchLabel: t ? t('apiKeys.connectSnippet.codex.launch') : 'Import Codex Config',
       launchHref: buildCcSwitchProviderLink('codex', openAIBaseUrl, codexModel),
-      copyLabel: '复制参数',
+      copyLabel: t ? t('apiKeys.connectSnippet.copyParams') : 'Copy parameters',
       params: [
         { label: 'API Key', value: keyForSnippet, field: 'apiKey' },
         { label: 'Provider Name', value: 'ModelGo' },
@@ -353,11 +333,11 @@ export function buildConnectSnippets(args: {
     },
     {
       id: 'openai-sdk',
-      title: 'Node.js SDK 示例',
-      desc: '打开开发文档查看 SDK 接入方式。',
-      launchLabel: '打开 SDK 文档',
+      title: t ? t('apiKeys.connectSnippet.openaiSdk.title') : 'Node.js SDK Example',
+      desc: t ? t('apiKeys.connectSnippet.openaiSdk.desc') : 'Open the developer docs for SDK integration.',
+      launchLabel: t ? t('apiKeys.connectSnippet.openaiSdk.launch') : 'Open SDK Docs',
       launchHref: docsUrl,
-      copyLabel: '复制代码示例',
+      copyLabel: t ? t('apiKeys.connectSnippet.copyCode') : 'Copy code example',
       params: [
         { label: 'API Key', value: keyForSnippet, field: 'apiKey' },
         { label: 'baseURL', value: openAIBaseUrl },
@@ -384,11 +364,11 @@ export function buildConnectSnippets(args: {
     },
     {
       id: 'curl',
-      title: '接口连通性检查',
-      desc: '打开接口文档确认路径与参数。',
-      launchLabel: '打开接口文档',
+      title: t ? t('apiKeys.connectSnippet.curl.title') : 'API Connectivity Check',
+      desc: t ? t('apiKeys.connectSnippet.curl.desc') : 'Open the API docs to verify paths and parameters.',
+      launchLabel: t ? t('apiKeys.connectSnippet.curl.launch') : 'Open API Docs',
       launchHref: docsUrl,
-      copyLabel: '复制 cURL 命令',
+      copyLabel: t ? t('apiKeys.connectSnippet.copyCurl') : 'Copy cURL command',
       params: [
         { label: 'API Key', value: keyForSnippet, field: 'apiKey' },
         { label: 'Method', value: 'GET' },

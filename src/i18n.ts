@@ -45,6 +45,7 @@ export const localeNamespaces = [
   'promo',
   'quickAccess',
   'sidebarSettings',
+  'tasks',
   'terminalSection',
   'usage',
   'welcomeBanner',

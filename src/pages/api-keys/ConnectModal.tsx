@@ -16,7 +16,7 @@ import { trackEvent } from '@/lib/track'
 import { pageItems } from '@/lib/utils'
 import { useTrackContext } from '@/hooks/use-track-context'
 import { useAuthStore } from '@/store/auth'
-import { CONNECT_ACTIONS, buildConnectSnippets, getConnectAction, MGC_CLIENT_OPTIONS, deriveRegionFromBaseUrl, buildMgcCommand, type ConnectParam } from './constants'
+import { CONNECT_ACTIONS, buildConnectSnippets, getConnectAction, MGC_CLIENT_OPTIONS, connectActionLabel, deriveRegionFromBaseUrl, buildMgcCommand, type ConnectParam } from './constants'
 import { buildConnectModelOptions, pickConnectModels } from './connect-models'
 import { useQuery } from '@tanstack/react-query'
 import { listModels } from '@/services/catalog'
@@ -124,6 +124,7 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
     anthropicBaseUrl,
     createdKeyText: selectedKey?.masked ?? createdKeyText,
     docsUrl: appendThemeParam(docsUrl),
+    t,
     models: {
       'cc-switch': modelFor('cc-switch') || undefined,
       'claude-code': modelFor('claude-code') || undefined,
@@ -140,7 +141,7 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
       const plaintext = await resolveKeyPlaintext()
       window.location.assign(href.replaceAll(selectedKey.masked, plaintext))
     } catch (e) {
-      appToast.error(getRequestErrorMessage(e, '取回 API Key 明文失败，请稍后重试'))
+      appToast.error(getRequestErrorMessage(e, t('apiKeys.connectModal.revealError')))
     } finally {
       setLaunching(null)
     }
@@ -167,7 +168,7 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
               value={selectedKeyId}
               onChange={setPickedKeyId}
               className={SELECT_TRIGGER}
-              emptyText="暂无可用 API Key"
+              emptyText={t('apiKeys.connectModal.noAvailableKey')}
               data-track="connect_select_key"
             >
               {apiKeyOptions.map((k) => (
@@ -179,7 +180,7 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
             <CopyButton
               value={selectedKey?.masked ?? ''}
               getValue={resolveKeyPlaintext}
-              aria-label="复制 API Key"
+              aria-label={t('apiKeys.connectModal.copyApiKeyAria')}
               disabled={!selectedKey}
               onCopied={() => trackEvent('copy_connect_params', { ...trackCtx, method: `${methodId}:key` })}
             />
@@ -198,7 +199,7 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
               value={param.value}
               onChange={(v) => setModelByMethod((prev) => ({ ...prev, [methodId]: v }))}
               className={SELECT_TRIGGER}
-              emptyText="暂无可用模型"
+              emptyText={t('apiKeys.connectModal.noAvailableModel')}
               data-track="connect_select_model"
             >
               {options.map((id) => (
@@ -209,7 +210,7 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
             </Select>
             <CopyButton
               value={param.value}
-              aria-label="复制模型 ID"
+              aria-label={t('apiKeys.connectModal.copyModelAria')}
               onCopied={() => trackEvent('copy_connect_params', { ...trackCtx, method: `${methodId}:model` })}
             />
           </div>
@@ -231,8 +232,8 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
     <Modal
       open={open}
       onClose={onClose}
-      title="立即接入"
-      description="选择接入方式查看参数，按钮用于打开工具或文档。"
+      title={t('apiKeys.connectModal.title')}
+      description={t('apiKeys.connectModal.desc')}
       size="lg"
       className="sm:max-w-[840px]"
     >
@@ -244,7 +245,7 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
                 <LuZap size={16} className="text-brand-base" />
               </div>
               <div>
-                <div className="text-sm font-bold text-mg-text-1">ModelGo 接入参数</div>
+                <div className="text-sm font-bold text-mg-text-1">{t('apiKeys.connectModal.paramsTitle')}</div>
                 <div className="text-xs text-mg-text-3 mt-1">
                   {hasCreatedKey
                     ? t('apiKeys.connectModal.keyCreatedHint')
@@ -256,8 +257,8 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
               <CopyButton
                 value={createdKeyText}
                 variant="labeled"
-                label="复制 API Key"
-                copiedLabel="已复制 Key"
+                label={t('apiKeys.connectModal.copyApiKey')}
+                copiedLabel={t('apiKeys.connectModal.copiedKey')}
                 className="shrink-0"
               />
             ) : onCreateKey ? (
@@ -278,7 +279,7 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
                 <span className="text-mg-text-3">OpenAI /v1</span>
                 <CopyButton
                   value={openAIBaseUrl}
-                  aria-label="复制 Base URL"
+                  aria-label={t('apiKeys.connectModal.copyBaseUrl')}
                   onCopied={() => trackEvent('copy_connect_endpoint', { ...trackCtx, endpoint: 'openai' })}
                 />
               </div>
@@ -289,7 +290,7 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
                 <span className="text-mg-text-3">Anthropic</span>
                 <CopyButton
                   value={anthropicBaseUrl}
-                  aria-label="复制 Base URL"
+                  aria-label={t('apiKeys.connectModal.copyBaseUrl')}
                   onCopied={() => trackEvent('copy_connect_endpoint', { ...trackCtx, endpoint: 'anthropic' })}
                 />
               </div>
@@ -303,14 +304,14 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
           onValueChange={(method) => trackEvent('connect_method', { ...trackCtx, method })}
         >
           <div className="flex items-center justify-between gap-3">
-            <div className="text-xs font-bold text-mg-text-2">接入方式</div>
+            <div className="text-xs font-bold text-mg-text-2">{t('apiKeys.connectModal.method')}</div>
             <a
               href={appendThemeParam(docsUrl)}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1 text-xs font-bold text-brand-base hover:text-brand-deep hover:underline"
             >
-              开发文档
+              {t('apiKeys.connectModal.docs')}
               <LuExternalLink className="h-3 w-3" />
             </a>
           </div>
@@ -320,16 +321,16 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
                 <span className="flex h-4 w-4 items-center justify-center text-mg-text-1">
                   {action.icon}
                 </span>
-                {action.label}
+                {connectActionLabel(t, action.key)}
               </TabsTrigger>
             ))}
           </TabsList>
 
           <TabsContent value="mgc">
             <div className="mg-tile p-4">
-              <div className="text-sm font-bold text-mg-text-1">一条命令接入 AI 编程客户端</div>
+              <div className="text-sm font-bold text-mg-text-1">{t('apiKeys.connectModal.mgcTitle')}</div>
               <div className="mt-1 text-xs leading-5 text-mg-text-2">
-                勾选要接入的客户端，命令已自动填好 Key 与站点（{region === 'global' ? '国际站' : '国内站'}），复制到终端回车即可。
+                {t('apiKeys.connectModal.mgcDesc', { site: region === 'global' ? t('apiKeys.connectModal.globalSite') : t('apiKeys.connectModal.domesticSite') })}
               </div>
 
               <div className="mt-3 flex flex-wrap gap-2">
@@ -342,7 +343,7 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
                       : 'border-mg-border bg-mg-fill-0 text-mg-text-2 hover:border-brand-base/35'
                   }`}
                 >
-                  全部 12 个
+                  {t('apiKeys.connectModal.allClients')}
                 </button>
                 {MGC_CLIENT_OPTIONS.map((opt) => {
                   const active = !mgcAll && mgcSelected.includes(opt.id)
@@ -370,13 +371,13 @@ export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
 
               <div className="mt-3 flex items-center justify-between gap-3">
                 <span className="text-xs text-mg-text-3">
-                  {hasCreatedKey ? '已填入你刚创建的 Key' : '创建密钥后将自动填入真实 Key'}
+                  {hasCreatedKey ? t('apiKeys.connectModal.keyInjected') : t('apiKeys.connectModal.keyAutoFill')}
                 </span>
                 <CopyButton
                   value={mgcCommand}
                   variant="labeled"
                   buttonVariant="brand"
-                  label="复制命令"
+                  label={t('apiKeys.connectModal.copyCommand')}
                   onCopied={() => trackEvent('copy_connect_params', { ...trackCtx, method: 'mgc' })}
                 />
               </div>

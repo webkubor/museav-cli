@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { LuShieldCheck, LuSmartphone } from 'react-icons/lu'
+import { useTranslation } from 'react-i18next'
 import {
   Dialog,
   DialogContent,
@@ -11,6 +12,7 @@ import {
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { VerificationCodeButton } from '@/components/auth/VerificationCodeButton'
+import { LocaleNamespaces } from '@/components/i18n/LocaleNamespaces'
 
 interface RequiredPhoneBindingDialogProps {
   open: boolean
@@ -28,7 +30,38 @@ interface RequiredPhoneBindingDialogProps {
 const PHONE_RE = /^1[3-9]\d{9}$/
 const CODE_RE = /^\d{6}$/
 
-export function RequiredPhoneBindingDialog({
+export function RequiredPhoneBindingDialog(props: RequiredPhoneBindingDialogProps) {
+  const {
+    open,
+    phone,
+    code,
+    loading,
+    logoutLoading,
+    onPhoneChange,
+    onCodeChange,
+    onSendCode,
+    onSubmit,
+    onLogout,
+  } = props
+  return (
+    <LocaleNamespaces namespaces={['account']} fallback={null}>
+      <RequiredPhoneBindingDialogContent
+        open={open}
+        phone={phone}
+        code={code}
+        loading={loading}
+        logoutLoading={logoutLoading}
+        onPhoneChange={onPhoneChange}
+        onCodeChange={onCodeChange}
+        onSendCode={onSendCode}
+        onSubmit={onSubmit}
+        onLogout={onLogout}
+      />
+    </LocaleNamespaces>
+  )
+}
+
+function RequiredPhoneBindingDialogContent({
   open,
   phone,
   code,
@@ -40,6 +73,7 @@ export function RequiredPhoneBindingDialog({
   onSubmit,
   onLogout,
 }: RequiredPhoneBindingDialogProps) {
+  const { t } = useTranslation('account')
   const phoneValid = PHONE_RE.test(phone)
   const codeValid = CODE_RE.test(code)
 
@@ -60,39 +94,39 @@ export function RequiredPhoneBindingDialog({
           <div className="mb-2 flex h-11 w-11 items-center justify-center rounded-lg bg-brand-soft text-brand-base">
             <LuSmartphone size={22} />
           </div>
-          <DialogTitle>绑定手机号后继续使用</DialogTitle>
+          <DialogTitle>{t('account.auth.phoneBinding.title')}</DialogTitle>
           <DialogDescription>
-            快捷登录账号需要补充手机号，用于国内服务验证、账号安全和后续通知。该步骤不能跳过。
+            {t('account.auth.phoneBinding.desc')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <label className="block space-y-1.5">
-            <span className="text-xs font-bold text-mg-text-2">手机号</span>
+            <span className="text-xs font-bold text-mg-text-2">{t('account.auth.fields.phone')}</span>
             <Input
               type="tel"
               inputMode="tel"
               value={phone}
               onChange={(event) => onPhoneChange(event.target.value.replace(/\D/g, '').slice(0, 11))}
-              placeholder="请输入中国大陆手机号"
+              placeholder={t('account.auth.placeholders.mainlandPhone')}
               prefix={<LuSmartphone size={15} />}
               suffix={<VerificationCodeButton onSend={onSendCode} disabled={!phoneValid} />}
             />
           </label>
 
           <label className="block space-y-1.5">
-            <span className="text-xs font-bold text-mg-text-2">短信验证码</span>
+            <span className="text-xs font-bold text-mg-text-2">{t('account.auth.fields.smsCode')}</span>
             <Input
               inputMode="numeric"
               value={code}
               onChange={(event) => onCodeChange(event.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder="请输入 6 位验证码"
+              placeholder={t('account.auth.placeholders.enterCode6')}
             />
           </label>
 
           <div className="flex items-start gap-2 rounded-md border border-mg-border bg-mg-fill-0 px-3 py-2.5 text-xs leading-relaxed text-mg-text-3">
             <LuShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-mg-success" />
-            <span>手机号只用于账号安全验证和国内服务能力，不会公开展示。</span>
+            <span>{t('account.auth.phoneBinding.securityHint')}</span>
           </div>
         </div>
 
@@ -103,7 +137,7 @@ export function RequiredPhoneBindingDialog({
             disabled={!phoneValid || !codeValid || logoutLoading}
             onClick={onSubmit}
           >
-            完成绑定并进入控制台
+            {t('account.auth.phoneBinding.submit')}
           </Button>
           <Button
             variant="ghost"
@@ -112,15 +146,15 @@ export function RequiredPhoneBindingDialog({
             disabled={loading}
             onClick={onLogout}
           >
-            暂不绑定，退出登录
+            {t('account.auth.phoneBinding.logout')}
           </Button>
         </DialogFooter>
 
         <p className="mt-3 text-center text-xs leading-relaxed text-mg-text-3">
-          绑定即代表同意{' '}
-          <Link to="/legal/terms" target="_blank" rel="noopener noreferrer" className="text-brand-base hover:text-brand-deep">服务条款</Link>
-          {' '}与{' '}
-          <Link to="/legal/privacy" target="_blank" rel="noopener noreferrer" className="text-brand-base hover:text-brand-deep">隐私政策</Link>
+          {t('account.auth.legal.bindingPrefix')}{' '}
+          <Link to="/legal/terms" target="_blank" rel="noopener noreferrer" className="text-brand-base hover:text-brand-deep">{t('account.auth.legal.terms')}</Link>
+          {' '}{t('account.auth.legal.and')}{' '}
+          <Link to="/legal/privacy" target="_blank" rel="noopener noreferrer" className="text-brand-base hover:text-brand-deep">{t('account.auth.legal.privacy')}</Link>
         </p>
       </DialogContent>
     </Dialog>

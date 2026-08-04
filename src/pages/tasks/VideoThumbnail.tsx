@@ -5,6 +5,7 @@
  */
 
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { LuPlay, LuVideoOff } from 'react-icons/lu'
 import { useVideoThumbnail } from './video-thumbnail-cache'
 
@@ -22,6 +23,7 @@ interface VideoThumbnailProps {
 const BOX = 'h-12 w-12 shrink-0 rounded-lg overflow-hidden mx-auto'
 
 export function VideoThumbnail({ taskId, videoUrl, placeholder, onPreview, onExpired }: VideoThumbnailProps) {
+  const { t } = useTranslation('tasks')
   // hooks 必须无条件调用：videoUrl 为 null 时 hook 内部自身短路，不抓帧
   const thumb = useVideoThumbnail(taskId, videoUrl)
   // 产物 404（已过期/被清理）：兜底显示过期图标，不可点
@@ -31,7 +33,7 @@ export function VideoThumbnail({ taskId, videoUrl, placeholder, onPreview, onExp
     return (
       <div
         className={`${BOX} flex items-center justify-center bg-mg-fill-1 text-mg-text-4`}
-        title={failed ? '产物已过期' : undefined}
+        title={failed ? t('thumbnail.expired') : undefined}
       >
         {failed ? <LuVideoOff size={20} /> : placeholder}
       </div>
@@ -42,11 +44,11 @@ export function VideoThumbnail({ taskId, videoUrl, placeholder, onPreview, onExp
     <button
       type="button"
       onClick={(e) => { e.stopPropagation(); onPreview(videoUrl) }}
-      title="点击预览视频"
+      title={t('thumbnail.previewVideo')}
       className={`${BOX} group relative block bg-black ring-1 ring-mg-border transition-shadow hover:ring-brand-base`}
     >
       {thumb ? (
-        <img src={thumb} alt="视频首帧" className="h-full w-full object-cover" />
+        <img src={thumb} alt={t('thumbnail.firstFrame')} className="h-full w-full object-cover" />
       ) : (
         // 抓取中或抓帧失败（CORS）：直接用 <video> 显示首帧兜底；真 404 则标记已过期
         <video

@@ -5,13 +5,14 @@ import { TagInput } from '@/components/ui/TagInput'
 import Select, { SelectItem } from '@/components/ui/Select'
 import { LuInfo, LuUsers } from 'react-icons/lu'
 import {
-  KIND_LABEL,
+  KIND_LABEL_KEY,
   PROMPT_INJECTION_HINTS,
+  PROMPT_INJECTION_HINT_KEY,
   PROMPT_INJECTION_INHERIT,
-  PROMPT_INJECTION_INHERIT_LABEL,
-  PROMPT_INJECTION_LABEL,
+  PROMPT_INJECTION_INHERIT_LABEL_KEY,
+  PROMPT_INJECTION_LABEL_KEY,
   PROMPT_INJECTION_MODES,
-  SCOPE_LABEL,
+  SCOPE_LABEL_KEY,
   type GuardrailKind,
   type GuardrailScope,
   type PromptInjectionFormValue,
@@ -141,7 +142,7 @@ export function GuardrailFormFields({
     <div className="flex flex-col gap-5 py-2">
       {/* 名称（对齐原型：创建/编辑均名称独占一行、无优先级；编辑态额外保留描述） */}
       <div>
-        <label className="block text-xs font-bold text-mg-text-2 mb-2">{isCreating ? '护栏名称' : t('guardrails.form.nameLabel')}<span className="text-mg-danger ml-1">*</span></label>
+        <label className="block text-xs font-bold text-mg-text-2 mb-2">{isCreating ? t('guardrails.form.guardrailNameLabel') : t('guardrails.form.nameLabel')}<span className="text-mg-danger ml-1">*</span></label>
         <Input value={name} data-track="guardrails:field_name" disabled={!canEditInfo} onChange={(e) => onNameChange(e.target.value)} placeholder={t('guardrails.form.namePlaceholder')} />
       </div>
       {!isCreating && (
@@ -153,12 +154,12 @@ export function GuardrailFormFields({
       {/* 分类 + 类型 — 分段按钮显式选择（对齐原型）。仅创建态出现；编辑态不再展示分类/类型（需求方#189）。 */}
       {isCreating && (
         <div>
-          <label className="block text-xs font-bold text-mg-text-2 mb-2">护栏分类<span className="text-mg-danger ml-1">*</span></label>
+          <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.scopeLabel')}<span className="text-mg-danger ml-1">*</span></label>
           <SegGroup
             value={scope}
             onChange={(v) => onScopeChange(v)}
             disabled={lockScopeKind || !canEditInfo}
-            ariaLabel="护栏分类"
+            ariaLabel={t('guardrails.form.scopeLabel')}
             track="guardrails:field_scope"
             options={(['global', 'member', 'key'] as GuardrailScope[])
               .filter((s) => s !== 'member' || showMemberScope)
@@ -167,9 +168,9 @@ export function GuardrailFormFields({
                 const denied = isCreating && !canCreateScope[s]
                 return {
                   value: s,
-                  label: `${SCOPE_LABEL[s]}护栏`,
+                  label: t('guardrails.label.scopeGuardrail', { scope: t(SCOPE_LABEL_KEY[s]) }),
                   disabled: denied,
-                  title: denied ? `你没有创建${SCOPE_LABEL[s]}护栏的权限` : undefined,
+                  title: denied ? t('guardrails.form.noCreateScopePermission', { scope: t(SCOPE_LABEL_KEY[s]) }) : undefined,
                 }
               })}
           />
@@ -177,39 +178,39 @@ export function GuardrailFormFields({
       )}
       {isCreating && scope !== 'global' && (
         <div>
-          <label className="block text-xs font-bold text-mg-text-2 mb-2">护栏类型<span className="text-mg-danger ml-1">*</span></label>
+          <label className="block text-xs font-bold text-mg-text-2 mb-2">{t('guardrails.form.kindLabel')}<span className="text-mg-danger ml-1">*</span></label>
           <SegGroup
             value={kind}
             onChange={(v) => onKindChange(v)}
             disabled={lockScopeKind || !canEditInfo}
-            ariaLabel="护栏类型"
+            ariaLabel={t('guardrails.form.kindLabel')}
             track="guardrails:field_kind"
             options={(['regular', 'boost'] as GuardrailKind[]).map((k) => {
               // 创建态:无提额创建权限则「提额」置灰（PRD §11:Member 不可建提额）
               const denied = isCreating && k === 'boost' && !canCreateBoost
               return {
                 value: k,
-                label: `${KIND_LABEL[k]}护栏`,
+                label: t('guardrails.label.kindGuardrail', { kind: t(KIND_LABEL_KEY[k]) }),
                 disabled: denied,
-                title: denied ? '你没有创建提额护栏的权限' : undefined,
+                title: denied ? t('guardrails.form.noCreateBoostPermission') : undefined,
               }
             })}
           />
         </div>
       )}
       {/* section 标题（对齐 PRD GuardrailCreateModal：全局护栏 / 个人护栏 / Key 护栏，位于分类/类型之后、规则之前） */}
-      {isCreating && <h4 className="text-sm font-bold text-mg-text-1">{SCOPE_LABEL[scope]}护栏</h4>}
+      {isCreating && <h4 className="text-sm font-bold text-mg-text-1">{t('guardrails.label.scopeGuardrail', { scope: t(SCOPE_LABEL_KEY[scope]) })}</h4>}
       {/* 创建态插槽：绑定对象 + 预算（对齐原型：分类/类型之后、规则之前） */}
       {budgetSlot}
       {/* 提额到期时间 — 仅提额护栏显示（文档：提额必须有到期时间） */}
       {kind === 'boost' && scope !== 'global' && (
         <div>
           <label className="block text-xs font-bold text-mg-text-2 mb-2">
-            提额到期时间<span className="text-mg-danger ml-1">*</span>
+            {t('guardrails.form.boostExpiresAtLabel')}<span className="text-mg-danger ml-1">*</span>
           </label>
           <Input
             type="datetime-local"
-            aria-label="提额到期时间"
+            aria-label={t('guardrails.form.boostExpiresAtLabel')}
             value={boostExpiresAt}
             disabled={!canEditInfo}
             onChange={(e) => onBoostExpiresAtChange(e.target.value)}
@@ -241,7 +242,7 @@ export function GuardrailFormFields({
             tagVariant="mono"
             validator={ipValidator}
             onValidationError={() => {
-              setIpError('无效的 IP 地址格式')
+              setIpError(t('guardrails.form.invalidIp'))
               setTimeout(() => setIpError(''), 3000)
             }}
             placeholder={t('guardrails.form.ipWhitelistPlaceholder')}
@@ -253,11 +254,11 @@ export function GuardrailFormFields({
       {showPromptInjection && (
         <div>
           <label className="mb-2 flex items-center gap-1.5 text-xs font-bold text-mg-text-2">
-            提示词注入检测
+            {t('guardrails.promptInjection.label')}
             <span className="group relative inline-flex">
               <button
                 type="button"
-                aria-label="命中后的处理方式"
+                aria-label={t('guardrails.promptInjection.hitBehavior')}
                 className="inline-flex text-mg-text-3 outline-none transition-colors hover:text-mg-text-2 focus-visible:text-mg-text-2"
               >
                 <LuInfo className="h-3.5 w-3.5" />
@@ -266,11 +267,11 @@ export function GuardrailFormFields({
                 role="tooltip"
                 className="pointer-events-none absolute left-0 top-6 z-20 w-[280px] rounded-md border border-mg-border bg-mg-bg-0 p-3 opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
               >
-                <span className="mb-1.5 block text-[11px] font-bold text-mg-text-1">命中后的处理方式</span>
+                <span className="mb-1.5 block text-[11px] font-bold text-mg-text-1">{t('guardrails.promptInjection.hitBehavior')}</span>
                 {PROMPT_INJECTION_HINTS.map((h) => (
                   <span key={h.mode} className="mt-1 flex gap-1.5 text-[10px]">
-                    <span className="shrink-0 font-bold text-mg-text-2">{PROMPT_INJECTION_LABEL[h.mode]}</span>
-                    <span className="font-medium leading-snug text-mg-text-3">{h.text}</span>
+                    <span className="shrink-0 font-bold text-mg-text-2">{t(PROMPT_INJECTION_LABEL_KEY[h.mode])}</span>
+                    <span className="font-medium leading-snug text-mg-text-3">{t(PROMPT_INJECTION_HINT_KEY[h.mode])}</span>
                   </span>
                 ))}
               </span>
@@ -278,10 +279,10 @@ export function GuardrailFormFields({
           </label>
           <Select value={promptInjectionMode} disabled={!canEditInfo} onChange={(v) => onPromptInjectionModeChange(v as PromptInjectionFormValue)} className="w-full">
             {allowPromptInjectionInherit && (
-              <SelectItem value={PROMPT_INJECTION_INHERIT}>{PROMPT_INJECTION_INHERIT_LABEL}</SelectItem>
+              <SelectItem value={PROMPT_INJECTION_INHERIT}>{t(PROMPT_INJECTION_INHERIT_LABEL_KEY)}</SelectItem>
             )}
             {PROMPT_INJECTION_MODES.map((m) => (
-              <SelectItem key={m} value={m}>{PROMPT_INJECTION_LABEL[m]}</SelectItem>
+              <SelectItem key={m} value={m}>{t(PROMPT_INJECTION_LABEL_KEY[m])}</SelectItem>
             ))}
           </Select>
         </div>

@@ -15,6 +15,7 @@ import type {
 import { formatMoney } from '@/lib/utils'
 import { LIMIT_PERIOD_LABEL, type LimitPeriod } from './constants'
 import { PERMS, type Permission } from '@/config/permissions'
+import type { TFunction } from 'i18next'
 
 /** 行级治理动作（需求方#68：权限码按「类型 × 动作」细分） */
 export type ApiKeyAction = 'edit' | 'revoke' | 'disable' | 'rotate' | 'change_owner'
@@ -50,25 +51,16 @@ const SCOPE_TO_TYPE: Record<ApiKeyItem['scope'], ApiKeyType> = {
   workspace: 'service',
 }
 
-export const KEY_TYPE_LABEL: Record<ApiKeyType, string> = {
-  personal: '私有 Key',
-  member: '成员 Key',
-  service: '服务 Key',
+export function keyTypeLabel(t: TFunction, type: ApiKeyType): string {
+  return t(`apiKeys.keyType.${type}`)
 }
 
-export const KEY_TYPE_DESC: Record<ApiKeyType, string> = {
-  personal: '当前成员负责，适合个人开发、测试或本地接入。',
-  member: '管理员代建，指定成员负责和接收通知。',
-  service: '工作空间服务或生产系统使用。',
+export function keyTypeDesc(t: TFunction, type: ApiKeyType): string {
+  return t(`apiKeys.keyTypeDesc.${type}`)
 }
 
-export const STATUS_LABEL: Record<ApiKeyStatus, string> = {
-  active: '启用中',
-  rotation_required: '待轮转',
-  limited: '已达限额',
-  expired: '已过期',
-  disabled: '已停用',
-  revoked: '已撤销',
+export function statusLabel(t: TFunction, status: ApiKeyStatus): string {
+  return t(`apiKeys.status.${status}`)
 }
 
 /** key 类型：后端 key_type 优先，否则由 scope 派生 */
@@ -148,13 +140,13 @@ export function cap(itemFlag: boolean | undefined, permFallback: boolean): boole
  * 优先读接口权威的 effective_limit（qa#516：含绑定 key 护栏的 per_api_key 预算，
  * 取最严）；缺失时回退 key 自身 limit（旧后端兼容）。
  */
-export function formatLimit(item: ApiKeyItem): string {
+export function formatLimit(item: ApiKeyItem, t?: TFunction): string {
   const l = item.effective_limit ?? item.limit
-  if (!l || !l.amount || Number(l.amount) <= 0) return '不限额'
+  if (!l || !l.amount || Number(l.amount) <= 0) return t ? t('apiKeys.limit.none') : 'No limit'
   // period_length 保留（如 hour+5=「每 5 小时」），否则「每 5 小时」护栏会被错显为「每小时」（需求方#237）
-  const base = LIMIT_PERIOD_LABEL[l.period_unit as string] ?? `每${l.period_unit}`
+  const base = t ? t(`apiKeys.limit.period.${l.period_unit}`, { defaultValue: LIMIT_PERIOD_LABEL[l.period_unit as string] ?? l.period_unit }) : LIMIT_PERIOD_LABEL[l.period_unit as string] ?? l.period_unit
   const len = Number.isInteger(l.period_length) && l.period_length > 1 ? l.period_length : 0
-  const unit = len ? `每 ${len} ${base.replace(/^每/, '')}` : base
+  const unit = len && t ? t('apiKeys.limit.everyCount', { count: len, unit: base.replace(/^每/, '') }) : len ? `Every ${len} ${base.replace(/^Every /, '')}` : base
   return `${l.currency} ${formatMoney(l.amount, '')} / ${unit}`
 }
 

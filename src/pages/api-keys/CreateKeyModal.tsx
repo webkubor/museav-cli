@@ -26,11 +26,11 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { useTenantRole } from "@/hooks/use-tenant-role";
 import { PERMS } from "@/config/permissions";
 import {
-  EXPIRATION_PRESETS,
+  getExpirationPresets,
   resolveExpiryISO,
   type ScopeType,
 } from "./constants";
-import { KEY_TYPE_LABEL, KEY_TYPE_DESC } from "./derive";
+import { keyTypeDesc, keyTypeLabel } from "./derive";
 import { trackEvent } from "@/lib/track";
 import { todayInputDate } from "@/lib/datetime";
 import type { GuardrailDetail } from "@/interfaces/guardrails";
@@ -109,9 +109,10 @@ export function CreateKeyModal({
     startDate: todayStr,
     endDate: "",
   });
+  const localizedExpirationPresets = getExpirationPresets(t);
   const expiryPresets = mustSetExpiry
-    ? EXPIRATION_PRESETS.filter((preset) => preset.key !== "all")
-    : EXPIRATION_PRESETS;
+    ? localizedExpirationPresets.filter((preset) => preset.key !== "all")
+    : localizedExpirationPresets;
   useEffect(() => {
     if (mustSetExpiry && expiryRange.preset === "all") {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -159,7 +160,7 @@ export function CreateKeyModal({
   const workspaceName =
     workspaceQuery.data?.find(
       (workspace) => workspace.workspace_id === workspaceId,
-    )?.name ?? "当前工作空间";
+    )?.name ?? t("apiKeys.createModal.currentWorkspace");
 
   // 默认护栏自动选中，始终排首位。
   // 仅选 active 的默认护栏（需求方#96）：inactive/archived 的 default 后端 byID 收不到，
@@ -224,11 +225,11 @@ export function CreateKeyModal({
       return;
     }
     if (effectiveScope === "member" && !memberAccountId) {
-      appToast.error("请选择目标成员");
+      appToast.error(t("apiKeys.createModal.memberRequired"));
       return;
     }
     if (needsMaintainer && !memberAccountId) {
-      appToast.error("请选择服务 Key 负责人");
+      appToast.error(t("apiKeys.createModal.maintainerRequired"));
       return;
     }
     createMutation.mutate();
@@ -311,53 +312,53 @@ export function CreateKeyModal({
   );
   const effectiveLayerRows = [
     {
-      label: "全局护栏",
-      name: globalGuardrail?.name ?? "未配置",
+      label: t("apiKeys.guardrail.global"),
+      name: globalGuardrail?.name ?? t("apiKeys.common.notConfigured"),
       state: globalGuardrail ? "active" : "inactive",
     },
     {
-      label: "个人护栏",
+      label: t("apiKeys.guardrail.member"),
       name: memberApplies
         ? (memberLayer?.guardrail_name ??
-          (globalGuardrail ? "全局默认个人预算" : "未配置"))
-        : "个人预算不适用",
+          (globalGuardrail ? t("apiKeys.guardrail.globalDefaultMemberBudget") : t("apiKeys.common.notConfigured")))
+        : t("apiKeys.guardrail.memberBudgetNotApplicable"),
       state:
         memberApplies && (memberLayer || globalGuardrail)
           ? "active"
           : "inactive",
     },
     {
-      label: "Key 护栏",
-      name: selectedGuardrail?.name ?? "不使用 Key 护栏",
+      label: t("apiKeys.guardrail.key"),
+      name: selectedGuardrail?.name ?? t("apiKeys.guardrail.noneSpaced"),
       state: selectedGuardrail || globalGuardrail ? "active" : "inactive",
     },
   ];
   const budgetGateRows = [
-    { label: "工作空间总预算", scope: "guardrail_total" },
-    { label: "个人预算", scope: "per_member" },
-    { label: "Key 预算", scope: "per_api_key" },
+    { label: t("apiKeys.budget.workspaceTotal"), scope: "guardrail_total" },
+    { label: t("apiKeys.budget.member"), scope: "per_member" },
+    { label: t("apiKeys.budget.key"), scope: "per_api_key" },
   ].map(({ label, scope: aggregationScope }) => {
     const budget = eff?.budgets?.find(
       (item) => item.aggregation_scope === aggregationScope,
     );
     const value = budget
       ? `${symbol}${groupThousands(trimAmountScale(budget.spend_limit_amount))} / ${PERIOD_LABEL[budget.period_unit] ?? budget.period_unit}`
-      : "不限额";
-    return { label, value, source: budget ? "生效规则" : "未配置预算" };
+      : t("apiKeys.limit.none");
+    return { label, value, source: budget ? t("apiKeys.effectiveRule") : t("apiKeys.budget.notConfigured") };
   });
   const previewRuleRows = [
     {
-      label: "模型黑名单",
-      value: modelBlacklist.length > 0 ? modelBlacklist.join("、") : "未配置",
-      source: modelBlacklist.length > 0 ? "全局 / Key 护栏规则" : "无",
+      label: t("apiKeys.rule.modelBlacklist"),
+      value: modelBlacklist.length > 0 ? modelBlacklist.join("、") : t("apiKeys.common.notConfigured"),
+      source: modelBlacklist.length > 0 ? t("apiKeys.rule.globalKeySource") : t("apiKeys.common.none"),
     },
     {
-      label: "IP 白名单",
-      value: ipWhitelist.length > 0 ? ipWhitelist.join(", ") : "未配置",
-      source: ipWhitelist.length > 0 ? "全局 / Key 护栏规则" : "无",
+      label: t("apiKeys.rule.ipWhitelist"),
+      value: ipWhitelist.length > 0 ? ipWhitelist.join(", ") : t("apiKeys.common.notConfigured"),
+      source: ipWhitelist.length > 0 ? t("apiKeys.rule.globalKeySource") : t("apiKeys.common.none"),
     },
     {
-      label: "提示词注入",
+      label: t("apiKeys.rule.promptInjection"),
       value: PROMPT_INJECTION_LABEL[piResolved.mode],
       source: piResolved.sourceLabel,
     },
@@ -369,7 +370,7 @@ export function CreateKeyModal({
         open={open}
         onClose={onClose}
         title={t("apiKeys.createModal.title")}
-        description={`为 ${workspaceName} 工作空间创建运行凭证`}
+        description={t("apiKeys.createModal.desc", { workspaceName })}
       >
         <div className="flex flex-col gap-7 px-1 py-3 pb-24">
           {/* Key 名称（PRD 原型顺序） */}
@@ -388,7 +389,7 @@ export function CreateKeyModal({
           {/* Key 类型（PRD §10.1）——卡片栅格，映射到后端 scope；个人租户无「成员 Key」 */}
           <div>
             <label className="block text-xs font-bold text-mg-text-2 mb-2">
-              Key 类型
+              {t("apiKeys.createModal.typeLabel")}
             </label>
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
               {TYPE_CARDS.filter(
@@ -402,7 +403,7 @@ export function CreateKeyModal({
                     type="button"
                     data-track={`api_keys:type_${c.type}`}
                     disabled={!allowed}
-                    title={!allowed ? "你没有创建此类型 Key 的权限" : undefined}
+                    title={!allowed ? t("apiKeys.createModal.noTypePermission") : undefined}
                     onClick={() => {
                       if (!allowed) return;
                       setScope(c.scope);
@@ -416,14 +417,14 @@ export function CreateKeyModal({
                     ].join(" ")}
                   >
                     <div className="text-xs font-bold text-mg-text-1">
-                      {KEY_TYPE_LABEL[c.type]}
+                      {keyTypeLabel(t, c.type)}
                     </div>
                     <div className="mt-1 text-xs leading-relaxed text-mg-text-3">
-                      {KEY_TYPE_DESC[c.type]}
+                      {keyTypeDesc(t, c.type)}
                     </div>
                     {!allowed && (
                       <div className="mt-1.5 text-[11px] text-mg-text-4">
-                        无创建权限
+                        {t("apiKeys.createModal.noCreatePermission")}
                       </div>
                     )}
                   </button>
@@ -436,12 +437,12 @@ export function CreateKeyModal({
           {effectiveScope === "member" && (
             <div>
               <label className="block text-xs font-bold text-mg-text-2 mb-2">
-                负责人
+                {t("apiKeys.createModal.ownerLabel")}
               </label>
               <Select
                 value={memberAccountId}
                 onChange={setMemberAccountId}
-                placeholder="请选择工作区成员"
+                placeholder={t("apiKeys.createModal.memberPlaceholder")}
                 className="w-full"
                 data-track="api_keys:field_owner"
               >
@@ -456,7 +457,7 @@ export function CreateKeyModal({
               </Select>
               {membersQuery.data?.items.length === 0 && (
                 <p className="text-xs text-mg-text-3 mt-1.5">
-                  该工作区暂无成员
+                  {t("apiKeys.createModal.noMembers")}
                 </p>
               )}
             </div>
@@ -467,18 +468,17 @@ export function CreateKeyModal({
           {effectiveScope === "workspace" &&
             (isPersonalTenant ? (
               <div className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-mg-border bg-mg-bg-1 text-xs text-mg-text-2">
-                维护人为自己（
-                {account?.display_name || account?.email || "当前账户"}）
+                {t("apiKeys.createModal.selfMaintainer", { account: account?.display_name || account?.email || t("apiKeys.createModal.currentAccount") })}
               </div>
             ) : (
               <div>
                 <label className="block text-xs font-bold text-mg-text-2 mb-2">
-                  负责人
+                  {t("apiKeys.createModal.ownerLabel")}
                 </label>
                 <Select
                   value={memberAccountId}
                   onChange={setMemberAccountId}
-                  placeholder="请选择服务 Key 负责人"
+                  placeholder={t("apiKeys.createModal.maintainerPlaceholder")}
                   className="w-full"
                   data-track="api_keys:field_maintainer"
                 >
@@ -493,7 +493,7 @@ export function CreateKeyModal({
                 </Select>
                 {membersQuery.data?.items.length === 0 && (
                   <p className="text-xs text-mg-text-3 mt-1.5">
-                    该工作区暂无成员
+                    {t("apiKeys.createModal.noMembers")}
                   </p>
                 )}
               </div>
@@ -502,21 +502,21 @@ export function CreateKeyModal({
           {/* 过期时间（PRD 原型：创建生命周期字段，Member 不可选择永不过期） */}
           <div>
             <label className="block text-xs font-bold text-mg-text-2 mb-2">
-              过期时间{" "}
+              {t("apiKeys.createModal.expiryLabel")}{" "}
               <span className="text-mg-text-3 font-normal">
                 {mustSetExpiry
-                  ? "（必填，不可永不过期）"
-                  : "（可选，不填则永不过期）"}
+                  ? t("apiKeys.createModal.expiryRequiredHint")
+                  : t("apiKeys.createModal.expiryOptionalHint")}
               </span>
             </label>
             <DateRangePicker
               value={expiryRange}
               onChange={setExpiryRange}
               presets={expiryPresets}
-              customTitle="过期预设"
-              customLabel="选择截止时间"
+              customTitle={t("apiKeys.createModal.expiryPresetTitle")}
+              customLabel={t("apiKeys.createModal.expiryCustomLabel")}
               hideStartDate={true}
-              placeholder="选择过期失效时间"
+              placeholder={t("apiKeys.createModal.expiryPlaceholder")}
               className="w-full rounded-md h-10 justify-between !bg-mg-bg-1"
             />
           </div>
@@ -533,10 +533,10 @@ export function CreateKeyModal({
             >
               <span className="flex min-w-0 flex-col gap-0.5">
                 <strong className="text-[13px] font-bold text-mg-text-1">
-                  高级设置
+                  {t("apiKeys.createModal.advancedTitle")}
                 </strong>
                 <em className="truncate text-xs not-italic text-mg-text-3">
-                  配置当前 Key 绑定的安全策略
+                  {t("apiKeys.createModal.advancedDesc")}
                 </em>
               </span>
               <LuChevronDown
@@ -547,10 +547,10 @@ export function CreateKeyModal({
 
             {advancedOpen && (
               <div id="api-key-advanced-panel" className="space-y-5">
-                <h4 className="text-base font-bold text-mg-text-1">安全策略</h4>
+                <h4 className="text-base font-bold text-mg-text-1">{t("apiKeys.createModal.securityPolicy")}</h4>
                 <div className="space-y-2.5">
                   <label className="block text-sm font-bold text-mg-text-1">
-                    Key 护栏
+                    {t("apiKeys.guardrail.key")}
                   </label>
                   <Select
                     value={extraIds[0] ?? "__none__"}
@@ -561,7 +561,7 @@ export function CreateKeyModal({
                       ])
                     }
                   >
-                    <SelectItem value="__none__">不使用 Key 护栏</SelectItem>
+                    <SelectItem value="__none__">{t("apiKeys.guardrail.noneSpaced")}</SelectItem>
                     {allGuardrails
                       .filter(
                         (g) =>
@@ -581,19 +581,19 @@ export function CreateKeyModal({
                       deriveScope(g) === "key" &&
                       deriveKind(g) === "regular",
                   ).length === 0 && (
-                    <p className="text-sm text-mg-text-2">暂无 Key 护栏</p>
+                    <p className="text-sm text-mg-text-2">{t("apiKeys.guardrail.noKeyGuardrails")}</p>
                   )}
                 </div>
                 <div className="mg-tile grid gap-2.5 p-3">
                   <div className="flex items-center gap-1.5">
                     <strong className="text-[13px] font-extrabold text-mg-text-1">
-                      生效规则预览
+                      {t("apiKeys.effectivePreview")}
                     </strong>
                     <LuInfo
                       className="text-mg-text-3"
                       size={14}
-                      aria-label="运行时会同时检查这些预算闸门"
-                      title="运行时会同时检查这些预算闸门"
+                      aria-label={t("apiKeys.budget.runtimeCheckTip")}
+                      title={t("apiKeys.budget.runtimeCheckTip")}
                     />
                   </div>
                   <div className="grid grid-cols-3 gap-2">
@@ -613,13 +613,13 @@ export function CreateKeyModal({
                   </div>
                   <div className="flex items-center gap-1.5">
                     <strong className="text-[13px] font-extrabold text-mg-text-1">
-                      预算闸门
+                      {t("apiKeys.budget.gate")}
                     </strong>
                     <LuInfo
                       className="text-mg-text-3"
                       size={14}
-                      aria-label="按最先触发的预算停止调用"
-                      title="按最先触发的预算停止调用"
+                      aria-label={t("apiKeys.budget.stopTip")}
+                      title={t("apiKeys.budget.stopTip")}
                     />
                   </div>
                   <div className="grid gap-2">
@@ -653,7 +653,7 @@ export function CreateKeyModal({
                           {row.value}
                         </strong>
                         <em className="break-words text-[11px] not-italic text-mg-text-2">
-                          规则来源：{row.source}
+                          {t("apiKeys.rule.source", { source: row.source })}
                         </em>
                       </div>
                     ))}

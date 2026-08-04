@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/store/auth'
 import { useMarket } from '@/hooks/useMarket'
 import { useAuth } from '@/components/auth/use-auth'
@@ -15,6 +16,7 @@ import { RequiredPhoneBindingDialog } from '@/components/auth/RequiredPhoneBindi
  * 海外环境不强制。挂在 DashboardLayout（鉴权区）内。
  */
 export function PhoneBindingGuard() {
+  const { t } = useTranslation('account')
   const account = useAuthStore((s) => s.account)
   const market = useMarket()
   const { signOut } = useAuth()
@@ -32,7 +34,7 @@ export function PhoneBindingGuard() {
       const resp = await sendSmsCode(phone, captchaParam)
       return resp.expires_in
     } catch (err) {
-      appToast.requestError(err, '验证码发送失败')
+      appToast.requestError(err, t('account.auth.phoneBinding.sendCodeFailed'))
       throw err // 抛出让发码按钮不启动倒计时
     }
   }
@@ -43,9 +45,9 @@ export function PhoneBindingGuard() {
       await bindPhone(phone, code)
       // 本地回填手机号 → open 变 false，弹窗自动关闭放行（无需重拉 session）
       if (account) useAuthStore.setState({ account: { ...account, phone } })
-      appToast.success('手机号绑定成功')
+      appToast.success(t('account.auth.phoneBinding.success'))
     } catch (err) {
-      appToast.requestError(err, '绑定失败')
+      appToast.requestError(err, t('account.auth.phoneBinding.failed'))
     } finally {
       setLoading(false)
     }

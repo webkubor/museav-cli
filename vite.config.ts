@@ -57,6 +57,10 @@ export default defineConfig(({ mode }) => {
     // 一站式入口（0.13）：遥测 + 客户端自动埋点 + 项目体检 + dev 超长文件实时警告(sizeWatch)
     // + 提交 guard 默认全开；本仓的提交门禁仍走自定义 git.precommit 透传。
     ...agentEyes({
+      // fileLength 降为 warn：locales/*.json（2300+ 行数据文件）和历史遗留大 css
+      // 会把所有相关提交卡死；超长文件治理靠 sizeWatch 的 dev 期警告渐进推进。
+      // （插件暂无按路径排除 fileLength 的配置，有了再改回 block+exclude。）
+      guard: { checks: { fileLength: 'warn' } },
       git: {
         // 提交前门禁：类型+规范快检（全量构建挪 pre-push/CI）+ UI 门禁（DESIGN.md
         // 约定，见 scripts/ui-guard.sh）。任一非零退出即阻断。

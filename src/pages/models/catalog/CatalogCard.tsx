@@ -98,6 +98,9 @@ export function CatalogCard({
   // 否则卡片会「角标写限时免费、价格写 ¥10」自相矛盾。
   const input = priceText(model.pricing?.input_per_1m, symbol, freeLabel, unitSuffix, isFree)
   const output = priceText(model.pricing?.output_per_1m, symbol, freeLabel, unitSuffix, isFree)
+  // 缓存读取价：未配价回落「—」而非「免费」——输入/输出没配价基本等于免费，
+  // 但缓存读取没配大多是模型不支持缓存计费，写「免费」会误导。限免模型仍随 isFree 显示免费。
+  const cacheRead = priceText(model.pricing?.cache_read_per_1m, symbol, isFree ? freeLabel : '—', unitSuffix, isFree)
 
   // 输入 → 输出模态流。后端拆分下发；老数据只有合并 modalities 时退回并集。
   const inputMods = (model.input_modalities ?? model.modalities ?? []).filter((m) => MODALITY_CODES.includes(m))
@@ -221,8 +224,9 @@ export function CatalogCard({
         </div>
       )}
 
-      {/* 贴底：价格规格。第一行输入/输出价，第二行上下文。划线原价内联在现价
-          右侧，不另起一行。最大输出已按 shared/modelgo_prd#348 移除（后端无可靠数据）。 */}
+      {/* 贴底：价格规格。第一行输入/输出价，第二行上下文/缓存读取。划线原价内联在现价
+          右侧，不另起一行。最大输出已按 shared/modelgo_prd#348 移除（后端无可靠数据），
+          空出的第四格按需求方 2026-08-04 口径改放缓存读取价。 */}
       <div className="mg-mcard-specs">
         <Metric
           label={t('modelsCatalog.card.input')}
@@ -233,6 +237,7 @@ export function CatalogCard({
         />
         <Metric label={t('modelsCatalog.card.output')} value={output.value} unit={output.unit} accent />
         <Metric label={t('modelsCatalog.card.context')} value={ctxValue} />
+        <Metric label={t('modelsCatalog.card.cacheRead')} value={cacheRead.value} unit={cacheRead.unit} />
       </div>
 
       {/* 操作：hover / 键盘聚焦时浮出，覆盖最底一行，不改变卡片高度。

@@ -1580,6 +1580,7 @@
       "apiDocs": "API docs",
       "compare": "Compare",
       "context": "Context",
+      "cacheRead": "Cache read",
       "input": "Input",
       "output": "Output"
     },

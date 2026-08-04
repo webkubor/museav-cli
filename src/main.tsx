@@ -19,7 +19,6 @@ import { apiBaseUrl } from './lib/request'
 import { useAuthStore } from './store/auth'
 import { useAppUpdateStore } from './store/use-app-update-store'
 import { fetchLatestVersion } from './lib/app-version'
-import { usePwaInstallStore, type BeforeInstallPromptEvent } from './store/use-pwa-install-store'
 
 // 前端运行时错误上报（仅 DEV）：未捕获异常 / rejection / 全控制台 + DOM 快照，
 // 内置 5s 去重 + 去 HMR 戳防刷爆。统一由 vite-plugin-agent-eyes 提供，替代原 dev-error-reporter。
@@ -117,16 +116,6 @@ window.addEventListener('vite:preloadError', (event) => {
     event.preventDefault()
     window.location.reload()
   }
-})
-
-// PWA 可安装事件：拦截并暂存，由 <PwaInstallPrompt/> 在首次访问给轻提示，用户点安装再唤起原生框。
-window.addEventListener('beforeinstallprompt', (event) => {
-  event.preventDefault()
-  usePwaInstallStore.getState().setDeferredPrompt(event as BeforeInstallPromptEvent)
-})
-// 已安装后清空暂存，避免再提示
-window.addEventListener('appinstalled', () => {
-  usePwaInstallStore.getState().setDeferredPrompt(null)
 })
 
 createRoot(document.getElementById('root')!).render(

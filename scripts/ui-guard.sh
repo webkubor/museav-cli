@@ -92,9 +92,13 @@ while IFS= read -r f; do
   # ── 以下为「防新增」规则：只扫本次新增行，存量不阻断（治「一个个发现太慢」，让机器挡新债） ──
   added="$(get_added "$f")"
 
-  # BLOCK 3：内联 style 里写 CSS 变量 token。应走 Tailwind 类（text-mg-*/bg-mg-*/border-mg-*），
+  # BLOCK 3：内联 style={{...}} 里写 CSS 变量 token。应走 Tailwind 类（text-mg-*/bg-mg-*/border-mg-*），
   #    否则绕过 token 体系、双主题/双端不自适应（治 OAuthBindingTab 那种整片内联 style 的老坑）。
-  hits="$(printf '%s' "$added" | grep -nE ":[[:space:]]*['\"]var\(--(mg|brand|go|cn)-" || true)"
+  #    ⚠️ 只拦 style={{...}} 内的 token：recharts 的 tick/cursor/activeDot 等 SVG 属性对象
+  #    （fill/stroke 传 var token）是 SVG presentation 值，套不上 Tailwind 类，属合法写法放行。
+  #    perl 提取 style 块是因为 BSD grep 无 -P、且 style 对象常跨多行。
+  style_blocks="$(printf '%s' "$added" | perl -0777 -ne 'while (/style=\{\{(?:(?!\}\}).)*?\}\}/sg) { print "$&\n" }' || true)"
+  hits="$(printf '%s' "$style_blocks" | grep -nE "var\(--(mg|brand|go|cn)-" || true)"
   if [ -n "$hits" ]; then
     echo "✗ [内联 style token] $f — 别在 style={{}} 里写 var(--mg-*/--brand-*)，改用 Tailwind 类（text-mg-text-2 / bg-mg-bg-1 / border-mg-border 等）"
     printf '%s\n' "$hits" | sed 's/^/      /'

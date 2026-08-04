@@ -3,18 +3,17 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
-import { getTenant, listTenants, listTenantMembers, updateTenant, uploadTenantLogo, dissolveTenant, transferOwnership } from '@/services/tenants'
-import { getSessionForActiveWorkspace } from '@/lib/auth/refresh-session'
+import { getTenant, listTenants, listTenantMembers, updateTenant, uploadTenantLogo } from '@/services/tenants'
 import { useAuthStore } from '@/store/auth'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Modal } from '@/components/ui/Modal'
-import { Select } from '@/components/ui/Select'
 import { AvatarUpload } from '@/components/ui/AvatarUpload'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar'
 import { appToast } from '@/lib/app-toast'
 import { trackAction } from '@/lib/track'
 import { errorCodeOf } from '@/lib/request-error-message'
+import { OrgDissolveModal } from './OrgDissolveModal'
+import { OrgTransferModal } from './OrgTransferModal'
 
 export function OrgInfoTab({
   tenantId,
@@ -32,14 +31,11 @@ export function OrgInfoTab({
   const canTransferOwnership = hasPermission(PERMS.ORG_OWNERSHIP_TRANSFER)
   const canDissolveOrg = hasPermission(PERMS.ORG_DELETE)
   const account = useAuthStore((s) => s.account)
-  const setAuth = useAuthStore((s) => s.setAuth)
   const qc = useQueryClient()
   const [name, setName] = useState('')
   const [editing, setEditing] = useState(false)
   const [dissolveOpen, setDissolveOpen] = useState(false)
-  const [confirmName, setConfirmName] = useState('')
   const [transferOpen, setTransferOpen] = useState(false)
-  const [transferTarget, setTransferTarget] = useState('')
 
   const tenantQuery = useQuery({
     queryKey: ['tenant', tenantId],
@@ -102,76 +98,12 @@ export function OrgInfoTab({
     },
   })
 
-  const dissolve = useMutation({
-    mutationFn: () => dissolveTenant(tenantId),
-    onSuccess: async () => {
-      // 解散组织确认提交埋点，event key = 权限体系 org:delete
-      trackAction(PERMS.ORG_DELETE, undefined, { result: 'success' })
-      appToast.success('组织已解散')
-      setDissolveOpen(false)
-      setConfirmName('')
-      qc.removeQueries({ queryKey: ['tenant', tenantId] })
-      qc.removeQueries({ queryKey: ['tenant-members', tenantId] })
-      await qc.invalidateQueries({ queryKey: ['tenants'] })
-      try {
-        const session = await getSessionForActiveWorkspace()
-        setAuth(
-          session.account,
-          session.active_tenant_id,
-          session.tenants,
-          session.active_workspace_id,
-          session.permissions?.granted ?? null,
-          session.permissions?.menus ?? []
-        )
-      } catch {
-        await qc.invalidateQueries({ queryKey: ['auth-session'] })
-      }
-      await onDissolved?.()
-    },
-    onError: (err: Error) => {
-      trackAction(PERMS.ORG_DELETE, undefined, { result: 'fail', error_code: errorCodeOf(err) })
-      appToast.requestError(err, '解散组织失败')
-    },
-  })
-
-  const transfer = useMutation({
-    mutationFn: () => transferOwnership(tenantId, transferTarget),
-    onSuccess: async () => {
-      // 转移企业所有权确认提交埋点，event key = 权限体系 org.ownership:transfer
-      trackAction(PERMS.ORG_OWNERSHIP_TRANSFER, undefined, { result: 'success' })
-      appToast.success(t('enterprise.info.transferSuccess'))
-      setTransferOpen(false)
-      setTransferTarget('')
-      await qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] })
-      await qc.invalidateQueries({ queryKey: ['tenant', tenantId] })
-      // 所有权变更影响当前用户角色/权限，刷新会话让 UI 立即降级为管理员视图
-      try {
-        const session = await getSessionForActiveWorkspace()
-        setAuth(
-          session.account,
-          session.active_tenant_id,
-          session.tenants,
-          session.active_workspace_id,
-          session.permissions?.granted ?? null,
-          session.permissions?.menus ?? []
-        )
-      } catch {
-        await qc.invalidateQueries({ queryKey: ['auth-session'] })
-      }
-    },
-    onError: (err: Error) => {
-      trackAction(PERMS.ORG_OWNERSHIP_TRANSFER, undefined, { result: 'fail', error_code: errorCodeOf(err) })
-      appToast.requestError(err, '转移所有权失败')
-    },
-  })
-
   if (tenantQuery.isLoading) {
     return <div className="h-48 bg-mg-fill-1 rounded-lg animate-pulse" />
   }
 
   if (!tenant) return null
 
-  const confirmMatched = confirmName.trim() === tenant.name
   const isPersonalTenant = tenant.type === 'personal'
   const personalAvatarFallback = (account?.display_name || account?.email || tenant.name || 'U').charAt(0).toUpperCase()
 
@@ -272,7 +204,7 @@ export function OrgInfoTab({
                     type="button"
                     disabled={transferableMembers.length === 0}
                     title={transferableMembers.length === 0 ? t('enterprise.info.transferNoMembers') : undefined}
-                    onClick={() => { setTransferTarget(''); setTransferOpen(true) }}
+                    onClick={() => setTransferOpen(true)}
                     className="shrink-0 text-xs font-bold text-brand-base hover:text-brand-base/80 bg-transparent border-none p-0 cursor-pointer transition-colors disabled:text-mg-text-4 disabled:cursor-not-allowed"
                   >
                     {t('enterprise.info.transferOwner')}
@@ -322,119 +254,18 @@ export function OrgInfoTab({
         )}
       </div>
 
-      <Modal
+      <OrgDissolveModal
+        tenant={tenant}
         open={dissolveOpen}
-        onClose={() => {
-          if (dissolve.isPending) return
-          setDissolveOpen(false)
-          setConfirmName('')
-        }}
-        size="md"
-        title={t('enterprise.info.dissolveConfirmTitle')}
-        description={t('enterprise.info.dissolveConfirmDesc', { name: tenant.name })}
-        footer={(
-          <>
-            <Button
-              variant="outline"
-              disabled={dissolve.isPending}
-              className="h-8 rounded-lg px-3 text-xs"
-              onClick={() => {
-                setDissolveOpen(false)
-                setConfirmName('')
-              }}
-            >
-              {t('enterprise.members.cancel')}
-            </Button>
-            <Button
-              variant="destructive"
-              loading={dissolve.isPending}
-              disabled={!confirmMatched}
-              className="h-8 rounded-lg px-4 text-xs font-semibold"
-              onClick={() => dissolve.mutate()}
-            >
-              确认解散
-            </Button>
-          </>
-        )}
-      >
-        <div className="space-y-3">
-          <div className="rounded-lg border border-mg-danger/20 bg-mg-danger/5 p-3 text-xs leading-relaxed text-mg-text-2">
-            {t('enterprise.info.dissolveWarn')}
-          </div>
-          <div>
-            <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-mg-text-2">
-              {t('enterprise.info.orgName')}
-            </label>
-            <Input
-              value={confirmName}
-              disabled={dissolve.isPending}
-              onChange={(e) => setConfirmName(e.target.value)}
-              placeholder={tenant.name}
-              className="h-9 text-xs rounded-lg"
-            />
-          </div>
-        </div>
-      </Modal>
-
-      <Modal
+        onOpenChange={setDissolveOpen}
+        onDissolved={onDissolved}
+      />
+      <OrgTransferModal
+        tenant={tenant}
+        members={transferableMembers}
         open={transferOpen}
-        onClose={() => {
-          if (transfer.isPending) return
-          setTransferOpen(false)
-          setTransferTarget('')
-        }}
-        size="md"
-        title={t('enterprise.info.transferConfirmTitle')}
-        description={t('enterprise.info.transferConfirmDesc', { name: tenant.name })}
-        footer={(
-          <>
-            <Button
-              variant="outline"
-              disabled={transfer.isPending}
-              className="h-8 rounded-lg px-3 text-xs"
-              onClick={() => {
-                setTransferOpen(false)
-                setTransferTarget('')
-              }}
-            >
-              {t('enterprise.members.cancel')}
-            </Button>
-            <Button
-              variant="destructive"
-              loading={transfer.isPending}
-              disabled={!transferTarget}
-              className="h-8 rounded-lg px-4 text-xs font-semibold"
-              onClick={() => transfer.mutate()}
-            >
-              {t('enterprise.info.confirmTransfer')}
-            </Button>
-          </>
-        )}
-      >
-        <div className="space-y-3">
-          <div className="rounded-lg border border-mg-danger/20 bg-mg-danger/5 p-3 text-xs leading-relaxed text-mg-text-2">
-            {t('enterprise.info.transferWarn')}
-          </div>
-          <div>
-            <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-mg-text-2">
-              {t('enterprise.info.transferSelectLabel')}
-            </label>
-            <Select
-              value={transferTarget}
-              onChange={setTransferTarget}
-              disabled={transfer.isPending}
-              placeholder={t('enterprise.info.transferSelectPlaceholder')}
-              className="h-9 text-xs rounded-lg"
-            >
-              {transferableMembers.map((m) => (
-                <Select.Option key={m.account.account_id} value={m.account.account_id}>
-                  {m.account.display_name || m.account.email}
-                </Select.Option>
-              ))}
-            </Select>
-          </div>
-        </div>
-      </Modal>
+        onOpenChange={setTransferOpen}
+      />
     </>
   )
 }

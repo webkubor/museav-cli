@@ -62,10 +62,9 @@ export default defineConfig(({ mode }) => {
       // ⚠️ 单项设 'warn' 在超 block 阈值时不生效（插件按全局 level 判），别改回那种写法；
       // 插件也暂无按路径排除 fileLength 的配置，有了再收紧。
       guard: { checks: { fileLength: { warn: 400, block: 4000 } } },
-      // sizeWatch 降噪：第三方 vendor / 代码生成物 / 测试文件不是拆分对象，
-      // 留在清单里会稀释真该治理的屎山文件。
-      // ⚠️ 自定义 exclude 会整体替换默认排除（node_modules/dist/.git 等），必须把默认项并进来。
-      sizeWatch: { exclude: /node_modules|[\\/]dist[\\/]|\.git[\\/]|public\/vendor\/|generated-api-types|\.test\.tsx?$/ },
+      // sizeWatch 降噪：第三方 vendor / 代码生成物 / 测试文件不是拆分对象。
+      // dot 开头目录（.claude/.worktrees/.codex 等）已由插件默认忽略且自定义 exclude 自动并入。
+      sizeWatch: { warn: 500, exclude: /node_modules|[\\/]dist[\\/]|\.git[\\/]|public\/vendor\/|generated-api-types|\.test\.tsx?$/ },
       git: {
         // 提交前门禁：类型+规范快检（全量构建挪 pre-push/CI）+ UI 门禁（DESIGN.md
         // 约定，见 scripts/ui-guard.sh）。任一非零退出即阻断。

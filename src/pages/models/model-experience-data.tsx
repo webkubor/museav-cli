@@ -55,10 +55,20 @@ export function formatPlaygroundLatency(ms: number): string {
   return ms < 1000 ? `${Math.round(ms)}ms` : `${(ms / 1000).toFixed(2)}s`
 }
 
-/** 消耗文案：免费模型显示「免费额度」，否则 ≥0.01 显示 2 位小数，否则 4 位（App.tsx:17054 formatPlaygroundSpend 逐字对齐） */
+/** 消耗金额文案（体验/对比页所有费用展示的单一真源：消息元信息行、composer 预估、逐模型设置弹窗累计）：
+ *  - 0 → `¥0.00`
+ *  - (0, 0.01) → `<¥0.01`：单次对话消耗常在 1e-5 量级，原型的 4 位小数会渲染成 `¥0.0000`，
+ *    与「免费」无法区分（shared/modelgo_prd#361）；此处改为最小可见金额兜底，不再补零到 4 位
+ *  - ≥0.01 → 2 位小数 */
+export function formatSpendAmount(spend: number): string {
+  if (!(spend > 0)) return '¥0.00'
+  return spend < 0.01 ? '<¥0.01' : `¥${spend.toFixed(2)}`
+}
+
+/** 消耗文案：免费模型显示「免费额度」，否则按 formatSpendAmount 展示金额 */
 export function formatPlaygroundSpend(metrics: Pick<ExperienceMessageMetrics, 'spend' | 'free'>): string {
   if (metrics.free) return i18n.t('modelsExperience.freeQuota')
-  return metrics.spend >= 0.01 ? `¥${metrics.spend.toFixed(2)}` : `¥${metrics.spend.toFixed(4)}`
+  return formatSpendAmount(metrics.spend)
 }
 
 /** Token 数粗估（无 tokenizer，按字符数/4 估算）——仅作 SSE 统计帧到达前的占位，

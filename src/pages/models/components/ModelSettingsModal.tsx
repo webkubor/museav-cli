@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Switch } from '@/components/ui/Switch'
 import { Select } from '@/components/ui/Select'
-import { experienceTaskLabel, type ExperienceTaskType } from '../model-experience-data'
+import { experienceTaskLabel, formatSpendAmount, type ExperienceTaskType } from '../model-experience-data'
 import '../styles/model-settings-modal.css'
 
 export type ModelTaskType = ExperienceTaskType
@@ -50,11 +50,6 @@ export interface ModelSettingsModalProps {
 
 function formatNumber(value: number): string {
   return Intl.NumberFormat('zh-CN', { maximumFractionDigits: 1 }).format(value)
-}
-
-/** 费用格式：≥0.01 或恰好为 0 显示 2 位小数，否则 4 位（原型 App.tsx:20440 逐字对齐） */
-function formatSessionSpend(spend: number): string {
-  return spend >= 0.01 || spend === 0 ? `¥${spend.toFixed(2)}` : `¥${spend.toFixed(4)}`
 }
 
 function asNumber(v: unknown, fallback: number): number {
@@ -443,7 +438,7 @@ export function ModelSettingsModal({
       )}
       <div className="model-settings-summary-line">
         <span>{t('modelsExperience.settings.cost')}</span>
-        <strong>{formatSessionSpend(sessionStats.cost)}</strong>
+        <strong>{formatSpendAmount(sessionStats.cost)}</strong>
       </div>
     </div>
   )

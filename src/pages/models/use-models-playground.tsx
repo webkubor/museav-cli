@@ -54,6 +54,7 @@ import {
   offlineModelPlaceholder,
   isOfflineModel,
   modelSupportsAttachment,
+  formatSpendAmount,
   type ExperienceMessage,
   type ExperienceTaskType,
 } from './model-experience-data'
@@ -193,7 +194,7 @@ export function useModelsPlayground() {
     const inputTokens = estimateTokens(`${input}${systemPrompt}`)
     const outputTokens = Math.min(400, maxTokens)
     const spend = (inputTokens * inputPrice + outputTokens * outputPrice) / 1_000_000
-    return spend === 0 ? '¥0.00' : `¥${spend.toFixed(4)}`
+    return formatSpendAmount(spend)
   }, [selectedModel, input, chatParams])
 
   useEffect(() => {

@@ -1,19 +1,7 @@
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Badge, type BadgeVariant } from '@/components/ui/Badge'
-import React, { useState, useEffect, useRef } from 'react'
-import {
-  LuPlus,
-  LuSettings,
-  LuLogOut,
-  LuZap,
-  LuBuilding2,
-  LuCheck,
-  LuChevronRight,
-  LuChevronDown,
-  LuUser,
-  LuMenu,
-} from 'react-icons/lu'
+import React, { useState, useEffect } from 'react'
+import { LuMenu, LuZap } from 'react-icons/lu'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Brand } from '@/components/brand/Brand'
@@ -24,10 +12,9 @@ import { useAuthStore } from '@/store/auth'
 import { switchTenant, getSession } from '@/services/auth'
 import { listTenants } from '@/services/tenants'
 import { createOrganization } from '@/services/organizations'
-import { applyTheme, getUserTheme, saveTheme, appendThemeParam } from '@/lib/theme'
+import { applyTheme, getUserTheme, saveTheme } from '@/lib/theme'
 import { useTranslation } from 'react-i18next'
 import { listWorkspaces } from '@/services/workspaces'
-import { CONSOLE_ROUTES, type ConsoleRouteMeta } from '@/config/console-routes'
 import { GATEWAY_ENDPOINTS } from '@/config/gateway'
 import type { TenantBrief, TenantItem, SessionResult } from '@/types'
 import type { TenantListResponse } from '@/interfaces'
@@ -44,29 +31,20 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/Dialog'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar'
 import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from '@/components/ui/DropdownMenu'
+  buildSyncedNav,
+  getTenantAvatarFallback,
+  getTenantAvatarUrl,
+  getTenantDisplayName,
+  getTenantRoleLabel,
+  matchConsoleRoute,
+} from './dashboard-header-utils'
+import { DashboardHeaderNav } from './dashboard-header-nav'
+import { AccountMenu } from './dashboard-header-menu'
 
 /**
  * 重构后的 DashboardHeader
  */
-/** 当前 pathname → CONSOLE_ROUTES 条目（工作空间页取 /workspace/:id/ 之后的段匹配）。用于切租户后判当前页可否留。 */
-function matchConsoleRoute(pathname: string): ConsoleRouteMeta | undefined {
-  const ws = pathname.match(/^\/workspace\/[^/]+\/(.+)$/)
-  if (ws) {
-    const sub = ws[1]
-    return CONSOLE_ROUTES.find((r) => r.scope === 'workspace' && (sub === r.path || sub.startsWith(r.path + '/')))
-  }
-  const p = pathname.replace(/^\//, '')
-  return CONSOLE_ROUTES.find((r) => r.scope === 'tenant' && (p === r.path || p.startsWith(r.path + '/')))
-}
-
 export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenuClick }) => {
   const navigate = useNavigate()
   const location = useLocation()
@@ -81,24 +59,6 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
   const activeTenantType = tenants.find((t) => t.tenant_id === activeTenantId)?.type ?? 'personal'
   const isNonPersonal = activeTenantType !== 'personal'
 
-  // 顶栏导航收敛（#360）：对齐 PRD 原型 console 顶栏的 5 项，顺序固定
-  //   首页 / 模型广场 / 模型体验 / 说明文档 / 控制台
-  // 「首页 / 说明文档」跨端外链，「模型广场 / 模型体验 / 控制台」为站内页。
-  // 企业治理 / 推荐计划 / 更新日志 已从顶栏移除（前两者在侧栏可达，更新日志归站点导航）。
-  const syncedNav: Array<{
-    key: string
-    label: string
-    to?: string
-    href?: string
-    match?: (path: string) => boolean
-  }> = [
-    { key: 'home', label: t('nav.home'), href: marketConfig.siteUrl },
-    { key: 'models', label: t('nav.models'), to: '/models', match: (p) => p.startsWith('/models') && !p.startsWith('/models/playground') && !p.startsWith('/models/compare') },
-    { key: 'modelExplore', label: t('nav.modelExplore'), to: '/models/playground', match: (p) => p.startsWith('/models/playground') || p.startsWith('/models/compare') },
-    { key: 'docs', label: t('nav.docsMenu'), href: appendThemeParam(marketConfig.docsUrl) },
-    // 控制台：回到站内；在非 models/playground 的控制台页高亮
-    { key: 'console', label: t('nav.console'), to: '/dashboard', match: (p) => !p.startsWith('/models') },
-  ]
   // 顶栏站内导航（模型广场/模型体验/控制台）点击埋点：与侧栏同事件名，source 区分 topnav
   const handleTopNavClick = (navKey: string, to: string) => {
     trackEvent(
@@ -109,37 +69,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
     navigate(to)
   }
 
-  const navRef = useRef<HTMLDivElement>(null)
-  const [sliderStyle, setSliderStyle] = useState<React.CSSProperties>({
-    left: 0,
-    width: 0,
-    opacity: 0,
-  })
-
-  const updateSlider = (el: HTMLElement) => {
-    if (!el) return
-    setSliderStyle({
-      left: el.offsetLeft,
-      width: el.offsetWidth,
-      opacity: 1,
-    })
-  }
-
-  // 与官网一致：静止时滑块隐藏（active 仅靠品牌色+粗体体现），pill 仅 hover 滑入
-  const resetSlider = () => {
-    setSliderStyle((prev) => ({ ...prev, opacity: 0 }))
-  }
-
-  const navClass = (active: boolean) =>
-    cn(
-      'relative px-3 py-1.5 rounded-lg text-[13px] font-medium whitespace-nowrap select-none',
-      'transition-all duration-200 active:scale-[0.96]',
-      'motion-reduce:transition-none motion-reduce:active:scale-100',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-base/40',
-      active
-        ? 'text-brand-base font-semibold'
-        : 'text-mg-text-2 hover:text-brand-base',
-    )
+  const syncedNav = buildSyncedNav(t, marketConfig)
 
   // 顶栏三段式毛玻璃：贴顶=实地（不透明，强调品牌/导航基准态）；滚动中（离开顶部但未触底）=
   // 磨砂毛玻璃（半透明+模糊，兼顾可读性与轻盈感）；贴底=透明（内容看完，顶栏视觉上让位）。
@@ -213,20 +143,8 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
   const activeTenant = displayTenants.find((tn) => tn.tenant_id === activeTenantId)
   const avatarLetter = (account?.display_name || account?.email || 'U').charAt(0).toUpperCase()
 
-  function getTenantAvatarUrl(tenant?: TenantBrief | TenantItem | null) {
-    if (!tenant) return undefined
-    if (tenant.type === 'personal') return account?.avatar_url ?? undefined
-    return tenant.logo_url ?? undefined
-  }
-
-  function getTenantAvatarFallback(tenant?: TenantBrief | TenantItem | null) {
-    if (!tenant) return avatarLetter
-    if (tenant.type === 'personal') return avatarLetter
-    return (tenant.name || tenant.slug || 'O').charAt(0).toUpperCase()
-  }
-
-  const activeTenantAvatarUrl = getTenantAvatarUrl(activeTenant)
-  const activeTenantFallback = getTenantAvatarFallback(activeTenant)
+  const activeTenantAvatarUrl = getTenantAvatarUrl(activeTenant, account)
+  const activeTenantFallback = getTenantAvatarFallback(activeTenant, avatarLetter)
 
   // 已作为 owner 创建过企业的账户隐藏「创建企业」入口（一人最多创建 1 个）
   const ownsEnterprise = displayTenants.some(
@@ -235,41 +153,16 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
   const canCreateOrg = tenantsData?.can_create_org ?? !ownsEnterprise
   const accountRole = activeTenant?.type === 'personal'
     ? t('header.personalTag')
-    : getTenantRoleLabel((activeTenant as TenantItem | undefined)?.role)
+    : getTenantRoleLabel((activeTenant as TenantItem | undefined)?.role, t)
   const menuTenants = [...displayTenants].sort((a, b) => {
     if (a.tenant_id === activeTenantId) return -1
     if (b.tenant_id === activeTenantId) return 1
     if (a.type === 'enterprise' && b.type !== 'enterprise') return -1
     if (a.type !== 'enterprise' && b.type === 'enterprise') return 1
-    return getTenantDisplayName(a).localeCompare(getTenantDisplayName(b))
+    return getTenantDisplayName(a, account, t).localeCompare(getTenantDisplayName(b, account, t))
   })
   const personalMenuTenants = menuTenants.filter((tenant) => tenant.type === 'personal')
   const enterpriseMenuTenants = menuTenants.filter((tenant) => tenant.type === 'enterprise')
-
-  function getTenantDisplayName(tenant: TenantBrief | TenantItem) {
-    if (tenant.type === 'personal') {
-      return account?.display_name || t('header.personalTag')
-    }
-    return tenant.name || tenant.slug || tenant.tenant_id
-  }
-
-  function getTenantRoleLabel(role?: string) {
-    const roleLabel: Record<string, string> = {
-      tenant_owner: t('header.roleOwner'),
-      tenant_admin: t('header.roleAdmin'),
-      tenant_member: t('header.roleMember'),
-    }
-    return role ? (roleLabel[role] ?? role) : t('header.roleMember')
-  }
-
-  function getTenantRoleVariant(role?: string): BadgeVariant {
-    const roleBadgeVariant: Record<string, BadgeVariant> = {
-      tenant_owner: 'warning',
-      tenant_admin: 'info',
-      tenant_member: 'secondary',
-    }
-    return role ? (roleBadgeVariant[role] ?? 'secondary') : 'secondary'
-  }
 
   useEffect(() => {
     if (!account) return
@@ -429,45 +322,6 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
     createOrgMutation.mutate()
   }
 
-  function renderTenantMenuItem(tenant: TenantBrief | TenantItem) {
-    const displayName = getTenantDisplayName(tenant)
-    const isActive = tenant.tenant_id === activeTenantId
-    const tenantRole = (tenant as TenantItem).role
-    const tenantAvatarUrl = getTenantAvatarUrl(tenant)
-    const tenantAvatarFallback = getTenantAvatarFallback(tenant)
-
-    return (
-      <DropdownMenuItem
-        key={tenant.tenant_id}
-        onClick={() => handleSwitchTenant(tenant)}
-        data-track="header:switch_tenant"
-        data-tenant-id={tenant.tenant_id}
-        className={cn(
-          'h-14 rounded-none px-3 text-[14px] font-bold',
-          'border-b border-[var(--account-menu-border)] last:border-b-0',
-          'text-[var(--account-menu-text-0)] hover:bg-[var(--account-menu-panel-strong)] focus:bg-[var(--account-menu-panel-strong)]',
-          isActive && 'bg-brand-base/[0.09] hover:bg-brand-base/[0.11] focus:bg-brand-base/[0.11]',
-        )}
-      >
-        <Avatar className="h-9 w-9 rounded-lg border-none shrink-0">
-          {tenantAvatarUrl && <AvatarImage src={tenantAvatarUrl} alt={displayName} />}
-          <AvatarFallback className="rounded-lg bg-brand-base/[0.13] text-brand-base">
-            {tenant.type === 'personal' ? tenantAvatarFallback : <LuBuilding2 size={18} />}
-          </AvatarFallback>
-        </Avatar>
-        <span className="min-w-0 flex-1 truncate">{displayName}</span>
-        <Badge
-          variant={tenant.type === 'personal' ? 'secondary' : getTenantRoleVariant(tenantRole)}
-          size="xs"
-          className="shrink-0 border-[var(--account-menu-border)] bg-[var(--account-menu-panel-strong)] px-2 py-0.5 text-xs text-[var(--account-menu-text-1)]"
-        >
-          {tenant.type === 'personal' ? t('header.personalTag') : getTenantRoleLabel(tenantRole)}
-        </Badge>
-        {isActive && <LuCheck size={18} className="text-brand-base shrink-0" />}
-      </DropdownMenuItem>
-    )
-  }
-
   return (
     <header className={cn(
       "h-[60px] border-b px-6 flex items-center justify-between z-40 relative select-none transition-all duration-300 ease-out",
@@ -518,44 +372,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
       {/* 右侧：功能控制区 + 组织 Switcher + 用户头像 */}
       <div className="flex items-center gap-4">
         {/* 1. 三端同步导航（官网为基准的同一组栏目，#251）；窄屏折叠进头像下拉 */}
-        <nav
-          ref={navRef}
-          onMouseLeave={resetSlider}
-          className="hidden md:flex items-center gap-0.5 relative"
-        >
-          {/* 磁性悬浮滑块（胶囊气泡） */}
-          <div
-            style={sliderStyle}
-            className="pointer-events-none absolute top-1.5 bottom-1.5 rounded-lg bg-brand-base/[0.08] transition-all duration-[380ms] ease-[cubic-bezier(0.25,1,0.33,1)]"
-          />
-
-          {syncedNav.map((item) => {
-            const active = !!item.match?.(location.pathname)
-            return item.to ? (
-              <button
-                key={item.key}
-                type="button"
-                onMouseEnter={(e) => updateSlider(e.currentTarget)}
-                onClick={() => handleTopNavClick(item.key, item.to!)}
-                aria-current={active ? 'page' : undefined}
-                className={navClass(active)}
-              >
-                {item.label}
-              </button>
-            ) : (
-              <a
-                key={item.key}
-                href={item.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                onMouseEnter={(e) => updateSlider(e.currentTarget)}
-                className={navClass(false)}
-              >
-                {item.label}
-              </a>
-            )
-          })}
-        </nav>
+        <DashboardHeaderNav items={syncedNav} onNavClick={handleTopNavClick} />
 
         {/* 2. 用户头像一站式 Dropdown（匿名 → 登录/注册入口） */}
         {!isAuthenticated ? (
@@ -563,150 +380,24 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
             {t('common.login', '登录 / 注册')}
           </Button>
         ) : (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            {/* #304：右上角胶囊显式带「企业/个人」标识——头像 + 类型图标(企业=楼宇/个人=人) + 当前租户名 + 下拉箭头 */}
-            <button
-              data-track="header:tenant_switcher_open"
-              className={cn(
-                'flex items-center gap-2 rounded-full py-1 pl-1 pr-1.5 outline-none select-none md:pr-2.5',
-                'border border-mg-border/70 bg-[rgba(var(--mg-bg-0-rgb),0.4)] transition-all duration-200',
-                'hover:border-brand-base/55 hover:bg-brand-base/[0.05] hover:shadow-sm',
-                'focus-visible:ring-2 focus-visible:ring-brand-base active:scale-[0.97]',
-              )}
-              title={isNonPersonal ? (activeTenant?.name || t('header.organizations')) : (account?.display_name || t('header.personalTag'))}
-            >
-              <Avatar className="h-7 w-7 block shrink-0">
-                {activeTenantAvatarUrl && (
-                  <AvatarImage
-                    src={activeTenantAvatarUrl}
-                    alt={isNonPersonal ? (activeTenant?.name || '') : (account?.display_name || '')}
-                  />
-                )}
-                <AvatarFallback className="bg-brand-pale text-brand-base font-bold text-xs">
-                  {activeTenantFallback}
-                </AvatarFallback>
-              </Avatar>
-              <span className="hidden min-w-0 items-center gap-1.5 md:flex">
-                {isNonPersonal ? (
-                  <LuBuilding2 size={15} className="shrink-0 text-brand-base" aria-label={t('header.organizations')} />
-                ) : (
-                  <LuUser size={15} className="shrink-0 text-brand-base" aria-label={t('header.personalTag')} />
-                )}
-                <span className="max-w-[140px] truncate text-[13px] font-semibold text-mg-text-1">
-                  {activeTenant ? getTenantDisplayName(activeTenant) : (account?.display_name || t('header.personalTag'))}
-                </span>
-                <LuChevronDown size={15} className="shrink-0 text-mg-text-3" />
-              </span>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className={cn(
-              'w-[332px] rounded-lg border p-3',
-              'border-[var(--account-menu-border)] bg-[linear-gradient(180deg,var(--account-menu-bg-2)_0%,var(--account-menu-bg)_100%)]',
-              'shadow-[0_24px_72px_rgba(15,23,42,0.16),inset_0_1px_0_rgba(255,255,255,0.08)]',
-            )}
-          >
-            <div className="flex items-center gap-3.5 rounded-lg px-2.5 pb-3 pt-2 select-none">
-              <div className="relative shrink-0">
-                <Avatar className="h-12 w-12 ring-1 ring-[var(--account-menu-border)] shadow-[0_10px_24px_rgba(15,23,42,0.12)]">
-                  {account?.avatar_url && <AvatarImage src={account.avatar_url} alt={account.display_name} />}
-                  <AvatarFallback className="bg-brand-pale text-brand-base font-bold text-sm">
-                    {avatarLetter}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-[var(--account-menu-bg-2)] bg-mg-success shadow-sm shadow-[rgba(15,23,42,0.14)]" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-[15px] font-bold leading-tight text-[var(--account-menu-text-0)]">
-                  {account?.display_name || '—'}
-                </div>
-                <div className="mt-1 truncate text-[12px] leading-none text-[var(--account-menu-text-2)]">{account?.email}</div>
-              </div>
-              <Badge
-                variant={activeTenant?.type === 'personal' ? 'secondary' : getTenantRoleVariant((activeTenant as TenantItem | undefined)?.role)}
-                size="sm"
-                className="shrink-0 border-brand-base/25 bg-brand-base/[0.11] px-2.5 py-1 text-xs text-brand-base"
-              >
-                {accountRole}
-              </Badge>
-            </div>
-
-            {/* 窄屏兜底：≥md 顶栏直接展示的同步导航，在 <md 折叠进此处 */}
-            <div className="md:hidden">
-              {syncedNav.map((item) => (
-                <DropdownMenuItem
-                  key={item.key}
-                  onClick={() =>
-                    item.to
-                      ? handleTopNavClick(item.key, item.to)
-                      : window.open(item.href, '_blank', 'noopener,noreferrer')
-                  }
-                >
-                  <span className="flex-1 truncate">{item.label}</span>
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator />
-            </div>
-
-            {personalMenuTenants.length > 0 && (
-              <>
-                <div className="px-2 pb-2 pt-3 text-[12px] font-semibold text-mg-text-3 select-none">
-                  {t('header.personalSpace')}
-                </div>
-                <div className="overflow-hidden rounded-lg border border-[var(--account-menu-border)] bg-[var(--account-menu-panel)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                  {personalMenuTenants.map(renderTenantMenuItem)}
-                </div>
-              </>
-            )}
-
-            <div className="px-2 pb-2 pt-3 text-[12px] font-semibold text-mg-text-3 select-none">
-              {t('header.organizations')}
-            </div>
-            <div className="overflow-hidden rounded-lg border border-[var(--account-menu-border)] bg-[var(--account-menu-panel)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-              {enterpriseMenuTenants.map(renderTenantMenuItem)}
-              {canCreateOrg && (
-                <DropdownMenuItem
-                  onClick={handleOpenOrgModal}
-                  className="h-14 rounded-none px-3 text-[14px] font-bold text-[var(--account-menu-text-1)]"
-                >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--account-menu-panel-strong)] text-[var(--account-menu-text-2)] shrink-0">
-                    <LuPlus size={18} />
-                  </span>
-                  <span className="flex-1">{t('header.createOrg')}</span>
-                </DropdownMenuItem>
-              )}
-            </div>
-
-            <DropdownMenuItem
-              onClick={() => navigate('/settings/account')}
-              className="mt-1.5 h-11 px-2.5 text-[14px] font-bold text-[var(--account-menu-text-0)]"
-            >
-              <LuSettings size={18} className="text-[var(--account-menu-text-2)] shrink-0" />
-              <span className="flex-1">{t('nav.settings')}</span>
-              <LuChevronRight size={15} className="text-[var(--account-menu-text-3)] shrink-0" />
-            </DropdownMenuItem>
-
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={handleLogout}
-              className="h-12 px-2.5 text-[14px] font-bold text-[var(--account-menu-danger)] focus:text-[var(--account-menu-danger)] hover:text-[var(--account-menu-danger)]"
-            >
-              <LuLogOut size={18} className="shrink-0" />
-              <span>{t('common.logout')}</span>
-            </DropdownMenuItem>
-
-            <DropdownMenuSeparator />
-            <div
-              className="px-2.5 pb-2 pt-1.5 text-xs leading-relaxed text-mg-text-4/80 select-text"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="font-mono">v{__APP_VERSION__} · {__BUILD_TAG__ || __BUILD_COMMIT__}{import.meta.env.MODE === 'production' ? '' : import.meta.env.MODE === 'test' ? ' · TEST' : ' · DEV'}</div>
-              <div className="font-mono opacity-70">{__BUILD_TIME__.slice(0, 16).replace('T', ' ')} UTC</div>
-            </div>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          <AccountMenu
+            account={account}
+            avatarLetter={avatarLetter}
+            activeTenantId={activeTenantId}
+            activeTenant={activeTenant}
+            isNonPersonal={isNonPersonal}
+            activeTenantAvatarUrl={activeTenantAvatarUrl}
+            activeTenantFallback={activeTenantFallback}
+            accountRole={accountRole}
+            syncedNav={syncedNav}
+            onNavClick={handleTopNavClick}
+            personalMenuTenants={personalMenuTenants}
+            enterpriseMenuTenants={enterpriseMenuTenants}
+            canCreateOrg={canCreateOrg}
+            onSwitchTenant={handleSwitchTenant}
+            onCreateOrg={handleOpenOrgModal}
+            onLogout={handleLogout}
+          />
         )}
       </div>
 

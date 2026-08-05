@@ -6,7 +6,7 @@
       "evening": "Good evening, {{name}}",
       "defaultName": "Developer",
       "desc": "Welcome back. Here is the real-time operating overview for your workspace.",
-      "descEnterprise": "Welcome back — here's your team's real-time usage.",
+      "descEnterprise": "Welcome back — here's your organization's real-time usage.",
       "descMine": "Welcome back — here's your own real-time usage.",
       "liveBadge": "Live overview"
     },

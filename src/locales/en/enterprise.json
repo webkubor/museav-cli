@@ -1,7 +1,7 @@
 {
   "enterprise": {
-    "title": "Enterprise",
-    "subtitle": "Manage members, invitations, organization profile, and audit log.",
+    "title": "Organization",
+    "subtitle": "Manage members, invitations, organization settings, and audit logs",
     "empty": {
       "noManageableTitle": "No manageable organizations",
       "noManageableDesc": "This account has no organization yet. Create one from the tenant switcher in the header, then return here."
@@ -20,11 +20,11 @@
     "tabs": {
       "members": "Members",
       "info": "Organization",
-      "audit": "Audit log",
+      "audit": "Audit Logs",
       "invite": "Invitations",
       "membersDesc": "See members and the workspaces they can access",
-      "infoDesc": "Manage organization name, avatar and profile",
-      "auditDesc": "Review member and setting change records",
+      "infoDesc": "Manage the organization's name, avatar, and settings",
+      "auditDesc": "Review member activity and organization changes",
       "inviteDesc": "Generate invite links or send emails"
     },
     "members": {
@@ -218,13 +218,13 @@
       "linkRefreshedByRole": "Role switched — invite link refreshed",
       "linkReset": "Invite link reset",
       "linkResetError": "Failed to reset",
-      "resetLink": "Reset link",
+      "resetLink": "Regenerate link",
       "copyLink": "Copy link",
       "copied": "Copied",
       "emailTitle": "Email invitations",
       "emailHint": "Send invitation emails to specific addresses; press Enter or comma to add each, paste a list to auto-split",
-      "emailPlaceholder": "Type an email and press Enter, add as many as needed",
-      "targetWorkspace": "Grant workspace",
+      "emailPlaceholder": "Enter an email address and press Enter or comma. You can also paste multiple addresses.",
+      "targetWorkspace": "Workspace access",
       "targetWorkspaceNone": "None (join org only)",
       "sendInvite": "Send invite",
       "sendSuccess": "Invitation sent",

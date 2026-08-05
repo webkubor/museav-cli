@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next'
 import i18n from '@/i18n'
 import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Select'
-import { Switch } from '@/components/ui/Switch'
 import { SegmentedToggle } from '@/features/dashboard/workbench/SegmentedToggle'
 import { getPreferences, updatePreferences } from '@/services/preferences'
 import { appToast } from '@/lib/app-toast'
@@ -104,7 +103,6 @@ export function PreferencesTab() {
   const language = toPreferenceLanguage(i18nInstance.language)
   const [theme, setTheme] = useState<Theme>(() => getSavedTheme())
   const [timeZone, setTimeZone] = useState<TimeZonePreference>(() => getSavedTimeZone())
-  const [lowBalanceAlertsEnabled, setLowBalanceAlertsEnabled] = useState(true)
   const locale = i18n.language || 'zh-CN'
   const browserTimeZone = getBrowserTimeZone()
   const concreteTimeZones = [
@@ -130,13 +128,12 @@ export function PreferencesTab() {
   useEffect(() => {
     if (!preferencesQuery.data) return
     // 刻意不用 preferencesQuery.data.ui.language 回填选择器，理由见 toPreferenceLanguage 注释（qa#589）。
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLowBalanceAlertsEnabled(preferencesQuery.data.notifications.low_balance_alerts_enabled)
     // 显示时区：后端 ui.timezone（#409）为真源；缺省时回退 localStorage/浏览器。
     // seed 到本地（saveTimeZone）供 format-date 的 resolveTimeZone 全站读取，实现跨设备一致。
     const backendTz = preferencesQuery.data.ui.timezone
     const localTz = account ? getUserTimeZone(account.account_id) : getSavedTimeZone()
     const tz = backendTz && backendTz.length > 0 ? backendTz : localTz
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTimeZone(tz)
     saveTimeZone(tz, account?.account_id)
   }, [preferencesQuery.data, account])
@@ -159,7 +156,6 @@ export function PreferencesTab() {
       updatePreferences({
         // timezone 一并入库（#409）；后端未上线该字段时按未知字段忽略，本地仍 saveTimeZone 兜底
         ui: { language, timezone: timeZone },
-        notifications: { low_balance_alerts_enabled: lowBalanceAlertsEnabled },
       }),
     onSuccess: (result) => {
       queryClient.setQueryData(['account-preferences'], result)
@@ -304,23 +300,6 @@ export function PreferencesTab() {
               </div>
             </div>
           </div>
-        </div>
-
-        {/* 低余额提醒（Low Balance Alerts） */}
-        <div className="py-5 flex items-center justify-between gap-5">
-          <div className="max-w-xs">
-            <div className="text-[14px] font-bold text-mg-text-1">
-              {t('account.preferences.lowBalanceTitle')}
-            </div>
-            <div className="mt-1 text-xs leading-relaxed text-mg-text-3">
-              {t('account.preferences.lowBalanceDesc')}
-            </div>
-          </div>
-          <Switch
-            checked={lowBalanceAlertsEnabled}
-            disabled={saveMutation.isPending}
-            onCheckedChange={setLowBalanceAlertsEnabled}
-          />
         </div>
 
       </div>

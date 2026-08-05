@@ -80,16 +80,28 @@ function toI18nLang(language: PreferenceLanguage): Lang {
   return LANGUAGE_OPTIONS.find((item) => item.value === language)?.i18nLang ?? 'zh'
 }
 
+/**
+ * 界面语言的唯一真源是 i18n 当前语言（由 getInitialLang 决定：本地显式偏好 > 域名市场默认）。
+ * 选择器必须回显它，不能回显后端 preferences.ui.language——后端该字段恒返回 zh-CN，
+ * 无法区分「用户选了中文」与「没设过的默认值」，国际站会出现「英文界面高亮简体中文」
+ * （shared/modelgo_prd#370）。后端补上「未设置」语义后才能作为跨设备真源接回来，见 qa#589。
+ */
+function toPreferenceLanguage(i18nLang: string): PreferenceLanguage {
+  return i18nLang.startsWith('zh') ? 'zh-CN' : 'en-US'
+}
+
 function formatTimeZoneTitle(timeZone: string, locale: string): string {
   return `${timeZone} (${formatTimeZoneOffset(timeZone, locale)})`
 }
 
 export function PreferencesTab() {
-  const { t } = useTranslation()
+  const { t, i18n: i18nInstance } = useTranslation()
   const queryClient = useQueryClient()
   const setGlobalLang = useLangStore((state) => state.setLang)
   const account = useAuthStore((state) => state.account)
-  const [language, setLanguage] = useState<PreferenceLanguage>('zh-CN')
+  // 不用 state 存语言：i18nInstance.language 就是生效值，useTranslation 会在 languageChanged 时重渲染。
+  // 多存一份 state 就是多一个会漂移的副本，#370 的根因正是「选择器读副本、界面读真源」。
+  const language = toPreferenceLanguage(i18nInstance.language)
   const [theme, setTheme] = useState<Theme>(() => getSavedTheme())
   const [timeZone, setTimeZone] = useState<TimeZonePreference>(() => getSavedTimeZone())
   const [lowBalanceAlertsEnabled, setLowBalanceAlertsEnabled] = useState(true)
@@ -117,8 +129,8 @@ export function PreferencesTab() {
 
   useEffect(() => {
     if (!preferencesQuery.data) return
+    // 刻意不用 preferencesQuery.data.ui.language 回填选择器，理由见 toPreferenceLanguage 注释（qa#589）。
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLanguage(preferencesQuery.data.ui.language)
     setLowBalanceAlertsEnabled(preferencesQuery.data.notifications.low_balance_alerts_enabled)
     // 显示时区：后端 ui.timezone（#409）为真源；缺省时回退 localStorage/浏览器。
     // seed 到本地（saveTimeZone）供 format-date 的 resolveTimeZone 全站读取，实现跨设备一致。
@@ -151,9 +163,8 @@ export function PreferencesTab() {
       }),
     onSuccess: (result) => {
       queryClient.setQueryData(['account-preferences'], result)
-      const nextLang = toI18nLang(result.ui.language)
-      setGlobalLang(nextLang)
-      i18n.changeLanguage(nextLang)
+      // 不拿 result.ui.language 回切界面：语言在点击时已生效，且该字段的「未设置」语义未定（qa#589），
+      // 用它回切会在后端返回空串/默认值时把界面刷成非用户选择的语言。
       saveTheme(theme, account?.account_id)
       applyTheme(theme)
       saveTimeZone(timeZone, account?.account_id)
@@ -202,7 +213,6 @@ export function PreferencesTab() {
             ariaLabel={t('account.preferences.languageTitle')}
             value={language}
             onChange={(value) => {
-              setLanguage(value)
               const lang = toI18nLang(value)
               i18n.changeLanguage(lang)
               setGlobalLang(lang)

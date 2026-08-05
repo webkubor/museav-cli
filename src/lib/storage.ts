@@ -38,6 +38,18 @@ if (typeof window !== 'undefined') {
   }
 }
 
+// 一次性归一：语言偏好 app 全局 → market 隔离（#370）。旧的全局 mg:lang / i18nextLng 归到
+// 当前市场名下，老用户不会因为改 key 被重置回市场默认语言；迁完删掉全局键，避免它继续跨市场污染。
+if (typeof window !== 'undefined') {
+  const legacyLang = localStorage.getItem('mg:lang') || localStorage.getItem('i18nextLng')
+  if (legacyLang === 'zh' || legacyLang === 'en') {
+    const scoped = `mg:${detectMarket()}:lang`
+    if (localStorage.getItem(scoped) === null) localStorage.setItem(scoped, legacyLang)
+  }
+  localStorage.removeItem('mg:lang')
+  localStorage.removeItem('i18nextLng')
+}
+
 type Scope = 'market' | 'app'
 
 function buildKey(name: string, scope: Scope): string {
@@ -61,8 +73,12 @@ export const storageKeys = {
   themeModified:   ()           => buildKey('theme_modified', 'app'),
   brandTheme:      ()           => buildKey('brand_theme', 'app'),
 
-  // ── 语言偏好（app 全局） ──────────────────────────────────────────────────
-  lang: () => buildKey('lang', 'app'),
+  // ── 语言偏好（market 隔离） ───────────────────────────────────────────────
+  // 国内站和国际站的语言偏好必须分开记：共享测试域名上两边同 origin，存一份全局的会互相污染
+  // ——国内站设过中文，带 ?market=global 进国际站就被拽成中文（违反 .ai 默认英文）。
+  // 按市场隔离后，"遗留偏好不能跨市场"和"用户在本市场的显式选择要被尊重"由同一个 key 保证，
+  // 不再需要在 getInitialLang 里对 market override 做特判（shared/modelgo_prd#370）。
+  lang: () => buildKey('lang', 'market'),
 
   // ── 时区偏好（app 全局，与市场无关） ──────────────────────────────────────
   timeZone:       ()                 => buildKey('timezone', 'app'),

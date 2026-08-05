@@ -51,19 +51,15 @@ export function getMarketDefaultLang(market: Market): Lang {
 
 /**
  * 初始语言：
- * 1. 优先读取 localStorage 持久化偏好（用户显式切过的，跨域名/会话保留）
+ * 1. 优先读取当前市场下的持久化偏好（storageKeys.lang() 已按 market 隔离，见 storage.ts）
+ *    —— 用户在本市场显式切过就尊重他；另一市场的遗留偏好不会串过来（#370）
  * 2. 无偏好 → 按域名/市场定默认（国内 modelgo.com→zh，海外 modelgo.ai→en）
  *    —— 不看浏览器语言：否则海外站(.ai)遇中文浏览器会错误默认中文（违反「.ai 默认英文」）
  * 3. SSR/无 window → 兜底 'en'
  */
 export function getInitialLang(): Lang {
   if (typeof window !== 'undefined') {
-    // 测试国际站入口显式指定 market 时，不能被同域国内站遗留语言偏好覆盖。
-    const marketOverride = getMarketQueryOverride()
-    if (marketOverride) return getMarketDefaultLang(marketOverride)
-
-    // 优先读取持久化语言偏好（统一 key），兼容旧 i18next key
-    const saved = localStorage.getItem(storageKeys.lang()) || localStorage.getItem('i18nextLng')
+    const saved = localStorage.getItem(storageKeys.lang())
     if (saved === 'zh' || saved === 'en') return saved
 
     // 无显式偏好 → 域名/市场默认（.ai=en / .com=zh），域名意图优先于浏览器语言

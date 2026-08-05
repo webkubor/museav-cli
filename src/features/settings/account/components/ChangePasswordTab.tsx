@@ -28,7 +28,7 @@ function PasswordDialog({ open, onClose }: { open: boolean; onClose: () => void 
     <button
       type="button"
       onClick={() => setShowPwd((v) => !v)}
-      aria-label={showPwd ? '隐藏密码' : '显示密码'}
+      aria-label={showPwd ? t('account.security.hidePassword') : t('account.security.showPassword')}
       className="inline-flex text-mg-text-3 transition-colors hover:text-mg-text-1 cursor-pointer"
     >
       {showPwd ? <LuEyeOff size={16} /> : <LuEye size={16} />}
@@ -89,18 +89,18 @@ function PasswordDialog({ open, onClose }: { open: boolean; onClose: () => void 
       open={open}
       onClose={handleClose}
       size="md"
-      title={HAS_PASSWORD ? '修改密码' : '设置密码'}
+      title={HAS_PASSWORD ? t('account.security.changePassword') : t('account.security.setPassword')}
       footer={
         step === 'verify' ? (
           <div className="flex justify-end gap-2">
             <Button size="small" variant="secondary" onClick={handleClose}>{t('common.cancel')}</Button>
-            <Button size="small" variant="brand" onClick={goNext}>下一步</Button>
+            <Button size="small" variant="brand" onClick={goNext}>{t('account.security.next')}</Button>
           </div>
         ) : (
           <div className="flex justify-end gap-2">
-            <Button size="small" variant="secondary" disabled={mutation.isPending} onClick={() => { setStep('verify'); setError('') }}>上一步</Button>
+            <Button size="small" variant="secondary" disabled={mutation.isPending} onClick={() => { setStep('verify'); setError('') }}>{t('account.security.previous')}</Button>
             <Button size="small" variant="brand" loading={mutation.isPending} onClick={complete}>
-              {HAS_PASSWORD ? '完成修改' : '完成设置'}
+              {HAS_PASSWORD ? t('account.security.completeChange') : t('account.security.completeSet')}
             </Button>
           </div>
         )
@@ -108,16 +108,16 @@ function PasswordDialog({ open, onClose }: { open: boolean; onClose: () => void 
     >
       {/* 步骤指示：验证身份 → 设置新密码 */}
       <div className="mb-5 flex items-center gap-2 text-xs font-semibold">
-        <span className={step === 'verify' ? 'text-brand-base' : 'text-mg-success'}>
-          <span className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-current/10 align-middle">
-            {step === 'set' ? <LuCheck size={11} /> : '1'}
-          </span>
-          验证身份
+          <span className={step === 'verify' ? 'text-brand-base' : 'text-mg-success'}>
+            <span className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-current/10 align-middle">
+              {step === 'set' ? <LuCheck size={11} /> : '1'}
+            </span>
+          {t('account.security.verifyIdentity')}
         </span>
         <span className="h-px flex-1 bg-mg-border" />
         <span className={step === 'set' ? 'text-brand-base' : 'text-mg-text-3'}>
           <span className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-current/10 align-middle">2</span>
-          设置新密码
+          {t('account.security.setNewPassword')}
         </span>
       </div>
 
@@ -171,24 +171,25 @@ function PasswordDialog({ open, onClose }: { open: boolean; onClose: () => void 
  * 与偏好设置页同一「一张卡 + 分隔行」结构（DESIGN.md Card 铁律）。
  */
 export const ChangePasswordTab: React.FC = () => {
+  const { t } = useTranslation()
   const [dialogOpen, setDialogOpen] = useState(false)
 
   return (
     <>
       <div className="flex items-center justify-between gap-4 pb-5 border-b border-mg-border/40">
         <div className="min-w-0">
-          <div className="text-[14px] font-bold text-mg-text-1">登录密码</div>
+          <div className="text-[14px] font-bold text-mg-text-1">{t('account.security.passwordTitle')}</div>
           <div className="mt-1 text-xs leading-relaxed text-mg-text-3">
-            {HAS_PASSWORD ? '用于账号密码登录。' : '账号还未设置密码，设置后可用密码登录。'}
+            {HAS_PASSWORD ? t('account.security.passwordDesc') : t('account.security.passwordNotSetDesc')}
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-3">
           <span className="hidden items-center gap-1.5 text-mg-text-3 sm:flex">
             <LuLock size={13} />
-            <span className="font-mono text-sm tracking-widest">{HAS_PASSWORD ? '••••••••' : '未设置'}</span>
+            <span className="font-mono text-sm tracking-widest">{HAS_PASSWORD ? '••••••••' : t('account.security.notSet')}</span>
           </span>
           <Button size="small" variant="brand" onClick={() => setDialogOpen(true)}>
-            {HAS_PASSWORD ? '修改密码' : '设置密码'}
+            {HAS_PASSWORD ? t('account.security.changePassword') : t('account.security.setPassword')}
           </Button>
         </div>
       </div>

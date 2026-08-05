@@ -1,6 +1,7 @@
 import { Component, type ReactNode } from 'react'
 import { LuTriangleAlert, LuRotateCw } from 'react-icons/lu'
 import { Button } from './Button'
+import i18n from '@/i18n'
 
 interface Props {
   children: ReactNode
@@ -45,18 +46,18 @@ export class ErrorBoundary extends Component<Props, State> {
             <LuTriangleAlert size={24} />
           </span>
           <div className="space-y-1">
-            <div className="text-base font-bold text-mg-text-1">页面出错了</div>
+            <div className="text-base font-bold text-mg-text-1">{i18n.t('common.errorBoundary.title')}</div>
             <p className="text-xs leading-relaxed text-mg-text-3">
-              该模块加载异常，已被隔离，不影响侧栏与其他页面。可重试或刷新。
+              {i18n.t('common.errorBoundary.desc')}
             </p>
           </div>
           <div className="flex gap-2">
             <Button variant="brand" size="sm" onClick={() => this.setState({ error: null })}>
               <LuRotateCw className="mr-1.5 h-4 w-4" />
-              重试
+              {i18n.t('common.retry')}
             </Button>
             <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
-              刷新页面
+              {i18n.t('common.errorBoundary.refresh')}
             </Button>
           </div>
         </div>

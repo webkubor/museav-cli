@@ -6,7 +6,11 @@
       "search": "Search models..."
     },
     "button": {
-      "select": "Select Model"
+      "select": "Select Model",
+      "clear": "Clear Compare Slots",
+      "cancel": "Cancel",
+      "confirm": "Confirm Compare",
+      "remove": "Remove from Compare"
     },
     "table": {
       "attr": "Attribute"
@@ -31,8 +35,14 @@
     "candidates": "Candidates",
     "empty": {
       "hint": "Select models from the left to start comparing",
-      "noMatch": "No matching models"
+      "noMatch": "No matching models",
+      "noComparable": "No comparable models in the same category",
+      "noRelevant": "No matching models",
+      "selectTitle": "Select models to compare",
+      "selectDesc": "Select up to {{max}} models from the list on the left to compare core metrics, context, and pricing."
     },
+    "selectedCount": "Select up to {{max}} models to compare. Selected {{count}} / {{max}}.",
+    "searchDetailed": "Search models, IDs, or providers...",
     "error": {
       "load": "Failed to load models. Please try again."
     }

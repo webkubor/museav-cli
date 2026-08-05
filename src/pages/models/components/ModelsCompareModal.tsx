@@ -212,17 +212,17 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
   // 参数明细行（PRD §7.7：厂商、上下文窗口、输入/输出价格、缓存价格、输入→输出模态、
   // 兼容协议、能力标签——厂商已在卡片头部展示，这里不重复渲染）
   const ROWS: Array<{ label: string; render: (m: CatalogModelItem) => React.ReactNode }> = [
-    { label: t('modelsCompare.row.contextLength', '上下文长度'), render: (m) => formatContextLength(m.context_length) },
-    { label: t('modelsCompare.row.modalityFlow', '输入→输出模态'), render: (m) => <ModalityFlow model={m} /> },
-    { label: t('modelsCompare.row.inputPrice', '输入价格 (百万)'), render: (m) => formatPrice(m.pricing?.input_per_1m, m.pricing?.currency) },
-    { label: t('modelsCompare.row.outputPrice', '输出价格 (百万)'), render: (m) => formatPrice(m.pricing?.output_per_1m, m.pricing?.currency) },
-    { label: t('modelsCompare.row.cachePrice', '缓存读取 (百万)'), render: (m) => formatPrice(m.pricing?.cache_read_per_1m, m.pricing?.currency) },
+    { label: t('modelsCompare.row.contextLength'), render: (m) => formatContextLength(m.context_length) },
+    { label: t('modelsCompare.row.modalityFlow'), render: (m) => <ModalityFlow model={m} /> },
+    { label: t('modelsCompare.row.inputPrice'), render: (m) => formatPrice(m.pricing?.input_per_1m, m.pricing?.currency) },
+    { label: t('modelsCompare.row.outputPrice'), render: (m) => formatPrice(m.pricing?.output_per_1m, m.pricing?.currency) },
+    { label: t('modelsCompare.row.cachePrice'), render: (m) => formatPrice(m.pricing?.cache_read_per_1m, m.pricing?.currency) },
     {
-      label: t('modelsCompare.row.protocols', '兼容协议'),
+      label: t('modelsCompare.row.protocols'),
       render: (m) => (m.protocols && m.protocols.length > 0 ? m.protocols.join(' / ') : 'openai'),
     },
     {
-      label: t('modelsCompare.row.tags', '标签'),
+      label: t('modelsCompare.row.tags'),
       render: (m) => (
         <div className="flex gap-0.5 flex-wrap">
           {(m.tags ?? []).slice(0, 4).map((tag) => (
@@ -250,11 +250,10 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
             </div>
             <div>
               <h2 className="text-[14.5px] font-bold text-mg-text-1 m-0 leading-tight">
-                {t('modelsCompare.title') || '模型性能对比'}
+                {t('modelsCompare.title')}
               </h2>
               <p className="text-xs text-mg-text-3 m-0 mt-0.5">
-                最多可选 {maxSelectable} 个模型进行对比，当前已选择{' '}
-                <strong className="text-brand-base">{selectedIds.length}</strong> / {maxSelectable} 个
+                {t('modelsCompare.selectedCount', { max: maxSelectable, count: selectedIds.length })}
               </p>
             </div>
           </div>
@@ -274,7 +273,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
             <div className="p-3 border-b border-mg-border shrink-0">
               <Input
                 prefix={<LuSearch size={14} className="text-mg-text-3" />}
-                placeholder="搜索模型、ID 或厂商..."
+                placeholder={t('modelsCompare.searchDetailed')}
                 className="h-8 text-xs rounded-lg bg-mg-fill-0"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -289,7 +288,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
                   <div className="px-2.5 pt-1 pb-1 text-[11px] font-bold uppercase tracking-wide text-mg-text-4">
                     {lockedModels.length > 1
                       ? t('modelsCompare.selectedModels')
-                      : t('modelsCompare.currentModel', '当前模型')}
+                      : t('modelsCompare.currentModel')}
                   </div>
                   {lockedModels.map((locked) => (
                     <div
@@ -309,7 +308,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
                     </div>
                   ))}
                   <div className="px-2.5 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wide text-mg-text-4">
-                    {t('modelsCompare.candidates', '可选候选')}
+                    {t('modelsCompare.candidates')}
                   </div>
                 </>
               )}
@@ -358,7 +357,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
 
               {filteredModels.length === 0 && (
                 <EmptyState
-                  title={anchorModel && !searchQuery ? '暂无同类可对比模型' : '未匹配到相关模型'}
+                  title={anchorModel && !searchQuery ? t('modelsCompare.empty.noComparable') : t('modelsCompare.empty.noRelevant')}
                 />
               )}
             </div>
@@ -385,7 +384,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
                             </span>
                             {lockedIdList.includes(m.id) && (
                               <span className="text-xs text-mg-text-3 font-semibold px-2 py-0.5 rounded-full bg-mg-fill-1 border border-mg-border/40">
-                                {t('modelsCompare.currentModel', '当前模型')}
+                                {t('modelsCompare.currentModel')}
                               </span>
                             )}
                           </div>
@@ -400,7 +399,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
                         <button
                           onClick={() => handleToggleModel(m.id)}
                           className="w-5.5 h-5.5 rounded-full bg-mg-fill-0 hover:bg-mg-fill-2 text-mg-text-3 hover:text-mg-text-1 flex items-center justify-center transition-colors cursor-pointer"
-                          title="取消对比"
+                          title={t('modelsCompare.button.remove')}
                         >
                           <LuX size={12} />
                         </button>
@@ -426,8 +425,8 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
             ) : (
               <EmptyState
                 icon={<LuGitCompareArrows size={26} className="opacity-40" />}
-                title="请勾选需要对比的模型"
-                description={`在左侧列表中勾选最多 ${maxSelectable} 个模型，即可在此区域直观展示核心指标、上下文与价格对比。`}
+                title={t('modelsCompare.empty.selectTitle')}
+                description={t('modelsCompare.empty.selectDesc', { max: maxSelectable })}
                 className="flex-1 animate-in fade-in duration-300"
               />
             )}
@@ -439,7 +438,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
                   onClick={handleClearSelected}
                   className="text-xs text-mg-text-3 hover:text-brand-base font-semibold transition-colors bg-none border-none cursor-pointer active:scale-95"
                 >
-                  清空对比槽位
+                  {t('modelsCompare.button.clear')}
                 </button>
               ) : (
                 <div />
@@ -450,7 +449,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
                   onClick={onClose}
                   className="px-5 py-2 rounded-md text-xs font-semibold bg-mg-fill-0 hover:bg-mg-fill-1 text-mg-text-2 hover:text-mg-text-1 border border-mg-border/30 transition-all cursor-pointer active:scale-95 outline-none"
                 >
-                  取消
+                  {t('modelsCompare.button.cancel')}
                 </button>
                 {/* 原型口径 disabled={!sourceAccessible || selectedIds.length === 0}：
                     至少勾 1 个对手才能开始对比；基准模型自身余额不足时也不放行。 */}
@@ -464,7 +463,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
                   }}
                   className="px-6 py-2 rounded-md text-xs font-bold bg-brand-base text-white hover:bg-brand-deep shadow-md hover:shadow-brand-glow/15 transition-all cursor-pointer active:scale-95 border-none outline-none disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-brand-base disabled:shadow-none"
                 >
-                  确认对比
+                  {t('modelsCompare.button.confirm')}
                 </button>
               </div>
             </div>

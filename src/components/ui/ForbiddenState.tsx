@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { LuShieldAlert } from 'react-icons/lu'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
@@ -22,20 +23,21 @@ interface ForbiddenStateProps {
  */
 export function ForbiddenState({ resource, title, description, showBackHome = true }: ForbiddenStateProps) {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   return (
     <EmptyState
       icon={<LuShieldAlert />}
-      title={title ?? '无权访问'}
+      title={title ?? t('common.forbidden.title')}
       description={
         description ??
         (resource
-          ? `你没有访问此工作空间「${resource}」的权限，请联系管理员开通，或切换到你有权限的工作空间。`
-          : '你没有访问此内容的权限，请联系管理员开通，或切换到你有权限的工作空间。')
+          ? t('common.forbidden.descWithResource', { resource })
+          : t('common.forbidden.desc'))
       }
       action={
         showBackHome ? (
           <Button variant="outline" onClick={() => navigate('/dashboard')}>
-            返回总览
+            {t('common.forbidden.backHome')}
           </Button>
         ) : undefined
       }

@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/Button'
 import { useEffect, useRef, useState } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { useNavigate, useSearchParams, useParams, Link } from 'react-router-dom'
 
 import { AuthLayout } from '@/components/auth/AuthLayout'
@@ -11,6 +12,7 @@ import { toLoginWithRedirect } from '@/lib/redirect'
 import type { InvitationPreview } from '@/types'
 
 export default function InvitationsPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { token: tokenParam } = useParams<{ token: string }>()
   const [searchParams] = useSearchParams()
@@ -22,7 +24,7 @@ export default function InvitationsPage() {
 
   const [preview, setPreview] = useState<InvitationPreview | null>(null)
   // token 为空属可在首次渲染判定的静态错误，直接作为初始状态，effect 只负责拉取预览
-  const [loadError, setLoadError] = useState(token ? '' : '邀请链接无效')
+  const [loadError, setLoadError] = useState(token ? '' : t('invitations.acceptPage.invalidLink'))
   const [loading, setLoading] = useState(Boolean(token))
   const [accepting, setAccepting] = useState(false)
   const [serverError, setServerError] = useState('')
@@ -34,9 +36,9 @@ export default function InvitationsPage() {
 
     previewInvitation(token)
       .then((data) => setPreview(data))
-      .catch(() => setLoadError('邀请链接无效或已过期'))
+      .catch(() => setLoadError(t('invitations.acceptPage.expiredLink')))
       .finally(() => setLoading(false))
-  }, [token])
+  }, [t, token])
 
   const handleAccept = async () => {
     if (!isAuthenticated) {
@@ -65,9 +67,9 @@ export default function InvitationsPage() {
       // #85：组织关联上限（40904）必须给出准确原因，而不是误导为链接过期。
       const code = (err as { code?: number })?.code
       if (code === 40904) {
-        setServerError('您已加入 5 个企业组织，已达上限；请先退出一个组织后再接受邀请')
+        setServerError(t('invitations.acceptPage.orgLimit'))
       } else {
-        setServerError((err as { message?: string })?.message || '接受邀请失败，链接可能已过期')
+        setServerError((err as { message?: string })?.message || t('invitations.acceptPage.acceptFailed'))
       }
     } finally {
       setAccepting(false)
@@ -76,9 +78,9 @@ export default function InvitationsPage() {
 
   if (loading) {
     return (
-      <AuthLayout title="正在加载邀请…">
+      <AuthLayout title={t('invitations.acceptPage.loadingTitle')}>
         <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--mg-text-3)', fontSize: '14px' }}>
-          加载中…
+          {t('invitations.acceptPage.loading')}
         </div>
       </AuthLayout>
     )
@@ -87,15 +89,15 @@ export default function InvitationsPage() {
   if (loadError || !preview) {
     return (
       <AuthLayout
-        title="邀请无效"
+        title={t('invitations.acceptPage.invalidTitle')}
         footer={
           <Link to="/login" style={{ color: 'var(--mg-link)', textDecoration: 'none' }}>
-            返回登录
+            {t('invitations.acceptPage.backToLogin')}
           </Link>
         }
       >
         <p style={{ textAlign: 'center', fontSize: '14px', color: 'var(--mg-text-3)' }}>
-          {loadError || '邀请链接无效或已过期'}
+          {loadError || t('invitations.acceptPage.expiredLink')}
         </p>
       </AuthLayout>
     )
@@ -103,16 +105,16 @@ export default function InvitationsPage() {
 
   return (
     <AuthLayout
-      title="你被邀请加入"
+      title={t('invitations.acceptPage.title')}
       footer={
         !isAuthenticated && !isSessionLoading ? (
           <span style={{ fontSize: '13px', color: 'var(--mg-text-3)' }}>
-            还没有账号？{' '}
+            {t('invitations.acceptPage.signupPrompt')}{' '}
             <Link
               to={`/signup?invitation=${encodeURIComponent(token)}`}
               style={{ color: 'var(--mg-link)', textDecoration: 'none' }}
             >
-              免费注册
+              {t('invitations.acceptPage.signupFree')}
             </Link>
           </span>
         ) : undefined
@@ -132,16 +134,20 @@ export default function InvitationsPage() {
             {preview.workspace.name}
           </div>
           <div style={{ fontSize: '12px', color: 'var(--mg-text-3)' }}>
-            {preview.tenant.name} · {preview.role === 'ws_admin' ? '管理员' : '成员'}
+            {preview.tenant.name} · {preview.role === 'ws_admin' ? t('invitations.acceptPage.roleAdmin') : t('invitations.acceptPage.roleMember')}
           </div>
           {preview.invited_by && (
             <div style={{ fontSize: '12px', color: 'var(--mg-text-3)', marginTop: '8px' }}>
-              由 <strong style={{ color: 'var(--mg-text-2)' }}>{preview.invited_by.display_name}</strong> 邀请
+              <Trans
+                i18nKey="invitations.acceptPage.invitedBy"
+                values={{ name: preview.invited_by.display_name }}
+                components={{ name: <strong className="text-mg-text-2" /> }}
+              />
             </div>
           )}
           {preview.email && (
             <div style={{ fontSize: '12px', color: 'var(--mg-text-3)', marginTop: '2px' }}>
-              邀请邮箱：{preview.email}
+              {t('invitations.acceptPage.email', { email: preview.email })}
             </div>
           )}
         </div>
@@ -156,7 +162,7 @@ export default function InvitationsPage() {
           onClick={handleAccept}
           style={{ width: '100%', height: '40px', borderRadius: '8px', fontWeight: 600 }}
         >
-          {isAuthenticated ? '接受邀请' : '登录并接受邀请'}
+          {isAuthenticated ? t('invitations.acceptPage.accept') : t('invitations.acceptPage.loginAndAccept')}
         </Button>
       </div>
     </AuthLayout>

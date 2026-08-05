@@ -54,6 +54,25 @@
       "sendError": "邀请失败",
       "revoked": "邀请已撤销",
       "revokeError": "撤销邀请失败"
+    },
+    "acceptPage": {
+      "invalidLink": "邀请链接无效",
+      "expiredLink": "邀请链接无效或已过期",
+      "orgLimit": "您已加入 5 个企业组织，已达上限；请先退出一个组织后再接受邀请",
+      "acceptFailed": "接受邀请失败，链接可能已过期",
+      "loadingTitle": "正在加载邀请…",
+      "loading": "加载中…",
+      "invalidTitle": "邀请无效",
+      "backToLogin": "返回登录",
+      "title": "你被邀请加入",
+      "signupPrompt": "还没有账号？",
+      "signupFree": "免费注册",
+      "roleAdmin": "管理员",
+      "roleMember": "成员",
+      "invitedBy": "由 <name>{{name}}</name> 邀请",
+      "email": "邀请邮箱：{{email}}",
+      "accept": "接受邀请",
+      "loginAndAccept": "登录并接受邀请"
     }
   }
 }

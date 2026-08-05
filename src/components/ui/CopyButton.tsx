@@ -7,6 +7,7 @@
  * - variant="labeled"：独立强调的复制 CTA（如新建 Key 横幅、收银台付款码），走 Button 基础件
  */
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { LuCheck, LuCopy } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import { useCopy } from '@/hooks/use-copy'
@@ -59,25 +60,29 @@ export function CopyButton({
   getValue,
   variant = 'icon',
   size = 'sm',
-  label = '复制',
-  copiedLabel = '已复制',
+  label,
+  copiedLabel,
   buttonVariant = 'outline',
-  toast = '已复制到剪贴板',
+  toast,
   onCopied,
   disabled,
   className,
   'aria-label': ariaLabel,
   'data-track': dataTrack,
 }: CopyButtonProps) {
+  const { t } = useTranslation()
   const { copy, copied: syncCopied } = useCopy()
   // getValue 路径不经过 useCopy，自己维持一份「已复制」反馈
   const [asyncCopied, setAsyncCopied] = useState(false)
   const copied = syncCopied || asyncCopied
   const isDisabled = disabled || (!value && !getValue)
+  const copyLabel = label ?? t('common.copy')
+  const doneLabel = copiedLabel ?? t('common.copied')
+  const successToast = toast === undefined ? t('common.copiedToClipboard') : toast
 
   const handleCopy = async () => {
     if (!value && !getValue) {
-      appToast.error('暂无可复制内容')
+      appToast.error(t('common.copyEmpty'))
       return
     }
     if (getValue) {
@@ -94,21 +99,21 @@ export function CopyButton({
         }
       } catch {
         const requestError = await pending.then(() => null, (e: unknown) => e)
-        appToast.error(requestError ? getRequestErrorMessage(requestError, '复制失败，请手动复制') : '复制失败，请手动复制')
+        appToast.error(requestError ? getRequestErrorMessage(requestError, t('common.copyFailed')) : t('common.copyFailed'))
         return
       }
       setAsyncCopied(true)
       setTimeout(() => setAsyncCopied(false), 2000)
-      if (toast) appToast.success(toast)
+      if (successToast) appToast.success(successToast)
       onCopied?.()
       return
     }
     const ok = await copy(value)
     if (!ok) {
-      appToast.error('复制失败，请手动复制')
+      appToast.error(t('common.copyFailed'))
       return
     }
-    if (toast) appToast.success(toast)
+    if (successToast) appToast.success(successToast)
     onCopied?.()
   }
 
@@ -123,7 +128,7 @@ export function CopyButton({
         className={cn('shrink-0', className)}
         data-track={dataTrack}
       >
-        {copied ? copiedLabel : label}
+        {copied ? doneLabel : copyLabel}
       </Button>
     )
   }
@@ -133,8 +138,8 @@ export function CopyButton({
       type="button"
       onClick={handleCopy}
       disabled={isDisabled}
-      aria-label={ariaLabel ?? label}
-      title={copied ? copiedLabel : (ariaLabel ?? label)}
+      aria-label={ariaLabel ?? copyLabel}
+      title={copied ? doneLabel : (ariaLabel ?? copyLabel)}
       data-track={dataTrack}
       className={cn(
         'inline-flex shrink-0 items-center justify-center rounded-sm text-mg-text-3 transition-colors',

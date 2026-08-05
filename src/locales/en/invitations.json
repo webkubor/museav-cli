@@ -54,6 +54,25 @@
       "sendError": "Failed to send",
       "revoked": "Invitation revoked",
       "revokeError": "Failed to revoke"
+    },
+    "acceptPage": {
+      "invalidLink": "Invalid invitation link",
+      "expiredLink": "The invitation link is invalid or expired",
+      "orgLimit": "You have already joined 5 organizations. Leave one organization before accepting this invitation.",
+      "acceptFailed": "Failed to accept the invitation. The link may have expired.",
+      "loadingTitle": "Loading invitation...",
+      "loading": "Loading...",
+      "invalidTitle": "Invalid Invitation",
+      "backToLogin": "Back to Sign In",
+      "title": "You have been invited to join",
+      "signupPrompt": "No account yet?",
+      "signupFree": "Sign up for free",
+      "roleAdmin": "Admin",
+      "roleMember": "Member",
+      "invitedBy": "Invited by <name>{{name}}</name>",
+      "email": "Invitation email: {{email}}",
+      "accept": "Accept Invitation",
+      "loginAndAccept": "Sign in and Accept"
     }
   }
 }

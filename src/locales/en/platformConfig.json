@@ -1,7 +1,7 @@
 {
   "platformConfig": {
     "title": "Dev Menu",
-    "desc": "Login-free and LAN-shareable: permission/route design, redirect params, dialog preview and requirement notes.",
+    "desc": "Available in DEV for permission/route design checks and global dialog previews.",
     "callBtn": "Call",
     "recallBtn": "Recall",
     "permPanel": {

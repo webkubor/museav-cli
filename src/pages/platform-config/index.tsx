@@ -4,8 +4,6 @@ import { Badge } from '@/components/ui/Badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { PermissionsPanel } from './PermissionsPanel'
-import { UrlParamsPanel } from './UrlParamsPanel'
-import { RequirementsPanel } from './RequirementsPanel'
 import { DialogPreviewPanel } from './DialogPreviewPanel'
 
 const PUBLIC_ROUTES = [
@@ -20,7 +18,7 @@ const PUBLIC_ROUTES = [
 ] as const
 
 // 开发者菜单 tab，挂到 URL ?tab= 上以便直接定位某个 tab
-const DEV_CONFIG_TABS = ['permissions', 'url-params', 'dialog-preview', 'requirements']
+const DEV_CONFIG_TABS = ['permissions', 'dialog-preview']
 const DEFAULT_TAB = 'permissions'
 
 export default function PlatformConfigPage() {
@@ -62,9 +60,7 @@ export default function PlatformConfigPage() {
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList>
           <TabsTrigger value="permissions">权限 / 路由</TabsTrigger>
-          <TabsTrigger value="url-params">回跳参数</TabsTrigger>
           <TabsTrigger value="dialog-preview">弹窗预览</TabsTrigger>
-          <TabsTrigger value="requirements">我的问题</TabsTrigger>
         </TabsList>
 
         <TabsContent value="permissions">
@@ -114,18 +110,8 @@ export default function PlatformConfigPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="url-params">
-          <div className="space-y-4 pt-2">
-            <UrlParamsPanel />
-          </div>
-        </TabsContent>
-
         <TabsContent value="dialog-preview">
           <DialogPreviewPanel />
-        </TabsContent>
-
-        <TabsContent value="requirements">
-          <RequirementsPanel />
         </TabsContent>
 
       </Tabs>

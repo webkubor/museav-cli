@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Popover } from './Popover'
 import { Button } from './Button'
 import { LuCalendar, LuChevronRight } from 'react-icons/lu'
@@ -29,20 +30,22 @@ interface DateRangePickerProps {
 export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   value,
   onChange,
-  placeholder = '选择时间范围',
+  placeholder,
   className,
   presets,
   customLabel,
   customTitle,
   hideStartDate = false
 }) => {
+  const { t } = useTranslation()
+  const placeholderText = placeholder ?? t('common.dateRange.placeholder')
   const defaultPresets = [
-    { key: 'all', label: '全部时间' },
-    { key: '1h', label: '近 1 小时' },
-    { key: '24h', label: '近 24 小时' },
-    { key: '7d', label: '近 7 天' },
-    { key: '30d', label: '近 30 天' },
-    { key: 'custom', label: '自定义范围' }
+    { key: 'all', label: t('common.dateRange.all') },
+    { key: '1h', label: t('common.dateRange.last1h') },
+    { key: '24h', label: t('common.dateRange.last24h') },
+    { key: '7d', label: t('common.dateRange.last7d') },
+    { key: '30d', label: t('common.dateRange.last30d') },
+    { key: 'custom', label: t('common.dateRange.custom') }
   ]
   const activePresets = presets || defaultPresets
 
@@ -84,15 +87,15 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
 
   const getDisplayText = () => {
     if (activePreset !== 'custom') {
-      return activePresets.find(p => p.key === activePreset)?.label || placeholder
+      return activePresets.find(p => p.key === activePreset)?.label || placeholderText
     }
     if (hideStartDate && customEnd) {
       return customEnd
     }
     if (customStart && customEnd) {
-      return `${customStart} 至 ${customEnd}`
+      return `${customStart} ${t('common.dateRange.separator')} ${customEnd}`
     }
-    return placeholder
+    return placeholderText
   }
 
   const handlePresetSelect = (key: string, close: () => void) => {
@@ -195,7 +198,15 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
       )
     }
 
-    const weekDays = ['日', '一', '二', '三', '四', '五', '六']
+    const weekDays = [
+      t('common.dateRange.weekdays.sun'),
+      t('common.dateRange.weekdays.mon'),
+      t('common.dateRange.weekdays.tue'),
+      t('common.dateRange.weekdays.wed'),
+      t('common.dateRange.weekdays.thu'),
+      t('common.dateRange.weekdays.fri'),
+      t('common.dateRange.weekdays.sat'),
+    ]
 
     return (
       <div className="flex flex-col gap-2 w-full select-none">
@@ -208,7 +219,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
             &lt;
           </button>
           <span className="mg-compact-badge text-mg-text-1">
-            {currentYear}年 {currentMonth + 1}月
+            {t('common.dateRange.monthLabel', { year: currentYear, month: currentMonth + 1 })}
           </span>
           <button
             type="button"
@@ -241,7 +252,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         'flex flex-col gap-0.5 shrink-0',
         isCustomActive ? 'pr-3 mr-3 border-r border-mg-border/50 w-[108px]' : 'w-full'
       )}>
-        <span className="mg-text-label font-semibold text-mg-text-2 mb-1.5 px-[var(--mg-control-px-xs)]">{customTitle || '常用时间'}</span>
+        <span className="mg-text-label font-semibold text-mg-text-2 mb-1.5 px-[var(--mg-control-px-xs)]">{customTitle || t('common.dateRange.presetsTitle')}</span>
         {activePresets.map(p => (
           <button
             key={p.key}
@@ -262,22 +273,22 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
       {/* Custom Area：仅选中「自定义范围」时展开，切回其他预设自动收起 */}
       {isCustomActive && (
       <div className="flex-1 flex flex-col gap-2.5 min-w-0">
-        <span className="mg-text-label font-semibold text-mg-text-2">{customLabel || '自定义日期区间'}</span>
+        <span className="mg-text-label font-semibold text-mg-text-2">{customLabel || t('common.dateRange.customLabel')}</span>
 
         {/* Selected preview bar — 轻量纯文本 */}
         <div className="flex items-center justify-between gap-2 px-[var(--mg-control-px-xs)] py-[var(--mg-space-1)] rounded-lg border border-brand-base/20 bg-brand-base/5 mg-text-caption font-semibold text-mg-text-1">
           {hideStartDate ? (
             <span className={customEnd ? 'text-mg-text-1' : 'text-mg-text-4'}>
-              截止: {customEnd || '请在下方选择'}
+              {t('common.dateRange.deadline')}: {customEnd || t('common.dateRange.selectBelow')}
             </span>
           ) : (
             <>
               <span className={customStart ? 'text-mg-text-1 font-bold' : 'text-mg-text-4'}>
-                始: {customStart || '待选择'}
+                {t('common.dateRange.start')}: {customStart || t('common.dateRange.pending')}
               </span>
               <span className="text-mg-text-4">→</span>
               <span className={customEnd ? 'text-mg-text-1 font-bold' : 'text-mg-text-4'}>
-                终: {customEnd || '待选择'}
+                {t('common.dateRange.end')}: {customEnd || t('common.dateRange.pending')}
               </span>
             </>
           )}
@@ -294,7 +305,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
           onClick={() => handleApplyCustom(close)}
           className="mg-control-sm mg-compact-badge !rounded-lg w-full flex items-center justify-center gap-1 cursor-pointer"
         >
-          确定应用 <LuChevronRight size={13} />
+          {t('common.dateRange.apply')} <LuChevronRight size={13} />
         </Button>
       </div>
       )}

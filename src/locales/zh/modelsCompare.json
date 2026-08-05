@@ -6,7 +6,11 @@
       "search": "搜索模型..."
     },
     "button": {
-      "select": "选择模型"
+      "select": "选择模型",
+      "clear": "清空对比槽位",
+      "cancel": "取消",
+      "confirm": "确认对比",
+      "remove": "取消对比"
     },
     "table": {
       "attr": "属性"
@@ -31,8 +35,14 @@
     "candidates": "可选候选",
     "empty": {
       "hint": "在左侧选择模型后开始对比",
-      "noMatch": "未找到匹配的模型"
+      "noMatch": "未找到匹配的模型",
+      "noComparable": "暂无同类可对比模型",
+      "noRelevant": "未匹配到相关模型",
+      "selectTitle": "请勾选需要对比的模型",
+      "selectDesc": "在左侧列表中勾选最多 {{max}} 个模型，即可在此区域直观展示核心指标、上下文与价格对比。"
     },
+    "selectedCount": "最多可选 {{max}} 个模型进行对比，当前已选择 {{count}} / {{max}} 个",
+    "searchDetailed": "搜索模型、ID 或厂商...",
     "error": {
       "load": "加载模型失败，请稍后重试。"
     }

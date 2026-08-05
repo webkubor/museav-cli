@@ -2,6 +2,10 @@
   "common": {
     "sessionExpired": "Your session has expired. Please sign in again.",
     "copy": "Copy",
+    "copied": "Copied",
+    "copiedToClipboard": "Copied to clipboard",
+    "copyEmpty": "Nothing to copy",
+    "copyFailed": "Copy failed. Please copy manually.",
     "playground": "Playground",
     "models": "Models",
     "docs": "Docs",
@@ -20,6 +24,7 @@
     "currentWorkspace": "Workspace",
     "defaultWorkspace": "Default Workspace",
     "loading": "Loading...",
+    "retry": "Retry",
     "errorLoadProfile": "Failed to load account information. Please refresh.",
     "save": "Save Changes",
     "cancel": "Cancel",
@@ -40,6 +45,89 @@
     "changelog": "Changelog",
     "close": "Close",
     "loadingPermissions": "Loading permissions",
-    "loadingTenants": "Loading tenants"
+    "loadingTenants": "Loading tenants",
+    "errorBoundary": {
+      "title": "Something went wrong",
+      "desc": "This module failed to load and has been isolated. The sidebar and other pages are unaffected. Try again or refresh.",
+      "refresh": "Refresh Page"
+    },
+    "forbidden": {
+      "title": "Access Denied",
+      "desc": "You do not have permission to access this content. Contact an admin or switch to a workspace you can access.",
+      "descWithResource": "You do not have permission to access {{resource}} in this workspace. Contact an admin or switch to a workspace you can access.",
+      "backHome": "Back to Overview"
+    },
+    "dateRange": {
+      "placeholder": "Select time range",
+      "all": "All time",
+      "last1h": "Last 1 hour",
+      "last24h": "Last 24 hours",
+      "last7d": "Last 7 days",
+      "last30d": "Last 30 days",
+      "custom": "Custom range",
+      "separator": "to",
+      "weekdays": {
+        "sun": "Sun",
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat"
+      },
+      "monthLabel": "{{month}}/{{year}}",
+      "presetsTitle": "Common ranges",
+      "customLabel": "Custom date range",
+      "deadline": "Until",
+      "start": "Start",
+      "end": "End",
+      "selectBelow": "Select below",
+      "pending": "Pending",
+      "apply": "Apply"
+    },
+    "appUpdate": {
+      "title": "New Version Available",
+      "updating": "Updating...",
+      "updateNow": "Update Now",
+      "desc": "A new version is available with improvements and fixes. Update before continuing to ensure normal use.",
+      "currentVersion": "Current Version",
+      "latestVersion": "Latest Version",
+      "viewChangelog": "View Changelog",
+      "reloadWarning": "The page will reload during the update. Check any unsaved input before continuing."
+    },
+    "serverError": {
+      "title": "Service temporarily unavailable",
+      "desc": "If the issue continues, share the following information with us for diagnosis.",
+      "copyAll": "Copy Details",
+      "copiedAll": "All Details Copied",
+      "sendEmail": "Email Support",
+      "copyLabel": "Copy {{label}}",
+      "requestId": "Request ID",
+      "traceId": "Trace ID",
+      "path": "API Path",
+      "tenantId": "Tenant ID",
+      "version": "Version",
+      "emailSubject": "ModelGo console service error{{suffix}}",
+      "emailBody": "I encountered a service error while using the ModelGo console. Please help investigate.\n\n{{diagnostics}}"
+    },
+    "customerService": {
+      "thinking": "Thinking...",
+      "todayAt": "Today {{time}}",
+      "yesterdayAt": "Yesterday {{time}}",
+      "assistant": "Assistant",
+      "online": "Online",
+      "connecting": "Connecting",
+      "offline": "Offline",
+      "empty": "How can I help?",
+      "placeholderLoading": "Thinking...",
+      "placeholder": "Type a message. Enter to send",
+      "stop": "Stop generation",
+      "send": "Send message",
+      "serviceError": "Service error. Please try again later.",
+      "emptyReply": "Sorry, I received an empty response. Please try again.",
+      "sendFailed": "Failed to send",
+      "stopFailed": "Failed to stop the conversation",
+      "stopped": "Generation stopped."
+    }
   }
 }

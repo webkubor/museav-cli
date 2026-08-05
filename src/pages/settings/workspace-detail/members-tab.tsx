@@ -15,7 +15,6 @@ import {
 } from '@/services/workspaces'
 import { listTenantMembers } from '@/services/tenants'
 import { cn } from '@/lib/utils'
-import { TENANT_ROLE_LABEL } from '@/constants/roles'
 import type { TenantMember, WorkspaceMember } from '@/types'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -171,7 +170,7 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" size="xs">{tenantRole ? TENANT_ROLE_LABEL[tenantRole] : dash}</Badge>
+                        <Badge variant="outline" size="xs">{tenantRole ? t(`workspaces.detail.members.tenantRole.${tenantRole}`) : dash}</Badge>
                       </TableCell>
                       <TableCell>
                         <Badge variant={isOwner ? 'purple' : 'secondary'} size="xs">
@@ -180,7 +179,7 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
                       </TableCell>
                       <TableCell>
                         <span className="text-xs text-mg-text-1 font-medium">
-                          {m.api_key_count != null ? `${m.api_key_count} 个` : dash}
+                          {m.api_key_count != null ? t('workspaces.detail.members.keysCount', { count: m.api_key_count }) : dash}
                         </span>
                       </TableCell>
                       <TableCell align="right">

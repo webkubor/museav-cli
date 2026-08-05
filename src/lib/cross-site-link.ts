@@ -1,4 +1,11 @@
+/**
+ * 跨站链接上下文同步
+ * 路由：全局外链（顶栏文档、API Keys 接入弹窗、模型详情文档）
+ * API：无
+ */
+
 import i18n from '@/i18n'
+import { getMarket } from '@/lib/market'
 import { getActiveTheme } from '@/lib/theme'
 
 /**
@@ -9,6 +16,8 @@ import { getActiveTheme } from '@/lib/theme'
  * - `lang=zh|en`：文档站原来把语言与域名硬绑定（.com 恒中文、.ai 恒英文），
  *   qa#593 改为 `?lang=` → localStorage → 市场兜底 三级，这里负责把控制台当前语言带过去
  *   （shared/modelgo_prd#374：国际站切成中文后文档页仍是英文）
+ * - `market=china|global`：生产文档站会按域名锁定市场，测试环境共用 docs.test.modelgo.com，
+ *   需要显式带 market 才能复验国际站文档内容与网关域名。
  *
  * 单独成一个函数而不是分两个链式调用：跨站要同步的上下文以后还会增加（如租户/市场），
  * 集中一处比在每个调用点串一串 append* 更不容易漏。
@@ -19,6 +28,7 @@ export function appendCrossSiteParams(url: string): string {
     const u = new URL(url)
     u.searchParams.set('theme', getActiveTheme())
     u.searchParams.set('lang', docsLang())
+    u.searchParams.set('market', getMarket())
     return u.toString()
   } catch {
     return url

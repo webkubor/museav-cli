@@ -18,9 +18,9 @@
       "service": "Service Key"
     },
     "keyTypeDesc": {
-      "personal": "Owned by the current member. Good for development, testing, or local access.",
-      "member": "Created by an admin and assigned to a specific member for ownership and notifications.",
-      "service": "For workspace services or production systems."
+      "personal": "Owned by you. Best for development and testing.",
+      "member": "Assigned to a specific workspace member.",
+      "service": "For applications and production workloads."
     },
     "status": {
       "active": "Active",
@@ -111,12 +111,12 @@
       }
     },
     "budget": {
-      "gate": "Budget gates",
+      "gate": "Budget Limits",
       "workspaceTotal": "Workspace total budget",
       "member": "Member budget",
       "key": "Key budget",
       "notConfigured": "No budget configured",
-      "runtimeCheckTip": "Runtime checks all of these budget gates",
+      "runtimeCheckTip": "Runtime checks all of these budget limits",
       "stopTip": "Calls stop when the first budget is triggered"
     },
     "guardrail": {
@@ -128,7 +128,7 @@
       "unbound": "No key guardrail bound",
       "noKeyGuardrails": "No key guardrails",
       "defaultBadge": "(Default)",
-      "globalDefaultMemberBudget": "Global default member budget",
+      "globalDefaultMemberBudget": "Default Member Budget",
       "memberBudgetNotApplicable": "Member budget does not apply",
       "boundPreviewUnavailable": "Bound to {{names}} (effective preview is temporarily unavailable)"
     },
@@ -146,7 +146,7 @@
       "notConfigured": "Not configured",
       "none": "None"
     },
-    "effectivePreview": "Effective rule preview",
+    "effectivePreview": "Effective Policy Preview",
     "effectiveRule": "Effective rule",
     "protocol": {
       "aria": "Standard protocol access",
@@ -199,7 +199,7 @@
       "guardrailPlaceholder": "Select a guardrail (optional)",
       "guardrailNone": "None",
       "cancel": "Cancel",
-      "confirm": "Create Now"
+      "confirm": "Create API Key"
     },
     "createdModal": {
       "title": "API Key created",
@@ -259,12 +259,30 @@
       "copyCommand": "Copy command"
     },
     "connectAction": {
-      "mgc": { "label": "Quick Connect", "desc": "Select and use" },
-      "cc-switch": { "label": "CC Switch", "desc": "One-click switch" },
-      "claude-code": { "label": "Claude Code", "desc": "Terminal access" },
-      "codex": { "label": "Codex", "desc": "Import config" },
-      "openai-sdk": { "label": "OpenAI SDK", "desc": "Code example" },
-      "curl": { "label": "cURL", "desc": "Connectivity check" }
+      "mgc": {
+        "label": "Quick Connect",
+        "desc": "Select and use"
+      },
+      "cc-switch": {
+        "label": "CC Switch",
+        "desc": "One-click switch"
+      },
+      "claude-code": {
+        "label": "Claude Code",
+        "desc": "Terminal access"
+      },
+      "codex": {
+        "label": "Codex",
+        "desc": "Import config"
+      },
+      "openai-sdk": {
+        "label": "OpenAI SDK",
+        "desc": "Code example"
+      },
+      "curl": {
+        "label": "cURL",
+        "desc": "Connectivity check"
+      }
     },
     "connectSnippet": {
       "copyParams": "Copy parameters",

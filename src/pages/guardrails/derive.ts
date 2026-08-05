@@ -118,7 +118,7 @@ export const PROMPT_INJECTION_MODES: PromptInjectionMode[] = ['off', 'flag', 're
 
 export const PROMPT_INJECTION_LABEL: Record<PromptInjectionMode, string> = {
   off: 'Off',
-  flag: 'Log only',
+  flag: 'Flag',
   redact: 'Redact',
   block: 'Block',
 }

@@ -101,6 +101,10 @@
         "notApplicableTitle": "常规护栏不涉及提额到期",
         "expiryTitle": "提额护栏到期后自动失效",
         "neverTitle": "未设到期，提额长期有效"
+      },
+      "kindBadge": {
+        "regular": "常规",
+        "boost": "提额"
       }
     },
     "form": {

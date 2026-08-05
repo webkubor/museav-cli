@@ -80,7 +80,8 @@ function NameCell({ row, onOpenDetail }: { row: GuardrailDetail; onOpenDetail: (
 function KindCell({ row }: { row: GuardrailDetail }) {
   const { t } = useTranslation()
   const kind = deriveKind(row)
-  return <Badge variant={kind === 'boost' ? 'warning' : 'brand'}>{t(KIND_LABEL_KEY[kind])}</Badge>
+  // 徽标短名与表单/列表的完整类型名分开维护（需求方#461：en 徽标要 Increase 而非 Temporary Increase）
+  return <Badge variant={kind === 'boost' ? 'warning' : 'brand'}>{t(`guardrails.table.kindBadge.${kind}`, { defaultValue: t(KIND_LABEL_KEY[kind]) })}</Badge>
 }
 
 /** 预算列（单档生效预算；提额到期独立成列） */

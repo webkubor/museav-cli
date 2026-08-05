@@ -53,7 +53,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
   const marketConfig = getMarketConfig(market)
 
   const queryClient = useQueryClient()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { account, tenants, activeTenantId, activeWorkspaceId, setAuth, setActiveWorkspaceId, isAuthenticated } = useAuthStore()
   const { signOut } = useAuth()
   const activeTenantType = tenants.find((t) => t.tenant_id === activeTenantId)?.type ?? 'personal'
@@ -69,7 +69,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
     navigate(to)
   }
 
-  const syncedNav = buildSyncedNav(t, marketConfig)
+  const syncedNav = buildSyncedNav(t, marketConfig, market, i18n.language)
 
   // 顶栏三段式毛玻璃：贴顶=实地（不透明，强调品牌/导航基准态）；滚动中（离开顶部但未触底）=
   // 磨砂毛玻璃（半透明+模糊，兼顾可读性与轻盈感）；贴底=透明（内容看完，顶栏视觉上让位）。

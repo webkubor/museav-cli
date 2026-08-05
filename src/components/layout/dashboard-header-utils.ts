@@ -1,7 +1,8 @@
 import type { BadgeVariant } from '@/components/ui/Badge'
 import { CONSOLE_ROUTES, type ConsoleRouteMeta } from '@/config/console-routes'
-import type { MarketConfig } from '@/config/market'
+import { siteUrlForLocale, type MarketConfig } from '@/config/market'
 import { appendThemeParam } from '@/lib/theme'
+import type { Market } from '@/lib/market'
 import type { AccountBrief, TenantBrief } from '@/types'
 import type { TenantItem } from '@/types'
 import type { TFunction } from 'i18next'
@@ -29,9 +30,16 @@ export function matchConsoleRoute(pathname: string): ConsoleRouteMeta | undefine
 /** 顶栏导航收敛（#360）：对齐 PRD 原型 console 顶栏的 5 项，顺序固定。
  *  「首页 / 说明文档」跨端外链，「模型广场 / 模型体验 / 控制台」为站内页。
  *  企业治理 / 推荐计划 / 更新日志 已从顶栏移除（前两者在侧栏可达，更新日志归站点导航）。 */
-export function buildSyncedNav(t: TFunction, marketConfig: MarketConfig): SyncedNavItem[] {
+export function buildSyncedNav(
+  t: TFunction,
+  marketConfig: MarketConfig,
+  market: Market,
+  locale: string,
+): SyncedNavItem[] {
   return [
-    { key: 'home', label: t('nav.home'), href: marketConfig.siteUrl },
+    // 首页按界面语言带官网语言前缀（#374：切成中文后跳过去仍是英文站——官网 Astro 用
+    // 路径式 i18n，中文在 /zh/ 下，此前这里只给了 siteUrl 根路径）
+    { key: 'home', label: t('nav.home'), href: siteUrlForLocale(market, locale) },
     { key: 'models', label: t('nav.models'), to: '/models', match: (p) => p.startsWith('/models') && !p.startsWith('/models/playground') && !p.startsWith('/models/compare') },
     { key: 'modelExplore', label: t('nav.modelExplore'), to: '/models/playground', match: (p) => p.startsWith('/models/playground') || p.startsWith('/models/compare') },
     { key: 'docs', label: t('nav.docsMenu'), href: appendThemeParam(marketConfig.docsUrl) },

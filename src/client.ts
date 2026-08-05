@@ -10,6 +10,22 @@
  */
 import { readFileSync } from 'node:fs'
 
+/**
+ * 客户端自报身份 —— 中台靠这个头把 gen_jobs.channel 记成 'cli'。
+ *
+ * 必要性：同一把租户 apiKey 既可能来自业务方后端，也可能来自有人在终端跑本 CLI；
+ * 同一个个人 JWT 既可能来自网页也可能来自这里。只看凭证分不出渠道，必须自报。
+ * 版本号从 package.json 读，随发版自动跟随；读不到就退化成不带版本（仍能识别为 cli）。
+ */
+const CLIENT_ID = (() => {
+  try {
+    const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8'))
+    return `studio-cli/${pkg.version}`
+  } catch {
+    return 'studio-cli'
+  }
+})()
+
 export interface GenerateOptions {
   prompt: string
   ratio?: string
@@ -84,7 +100,7 @@ export class StudioClient {
   }
 
   private headers(extra: Record<string, string> = {}): Record<string, string> {
-    return { ...this.authHeader, ...extra }
+    return { 'X-Studio-Client': CLIENT_ID, ...this.authHeader, ...extra }
   }
 
   private async request(path: string, init: RequestInit = {}): Promise<any> {

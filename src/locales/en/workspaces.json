@@ -158,7 +158,13 @@
         "removeConfirmDesc": "Are you sure you want to remove this member? They will lose access to this workspace.",
         "roleConfirmTitle": "Change Member Role",
         "roleConfirmDesc": "Are you sure you want to change this member's role to \"{{role}}\"?",
-        "roleConfirmOk": "Confirm"
+        "roleConfirmOk": "Confirm",
+        "tenantRole": {
+          "tenant_owner": "Owner",
+          "tenant_admin": "Admin",
+          "tenant_member": "Member"
+        },
+        "keysCount": "{{count}}"
       },
       "settings": {
         "renameLabel": "Workspace Name",

@@ -10,6 +10,58 @@
     <meta name="theme-color" content="#3b82f6" />
     <title>ModelGo 控制台</title>
     <script>
+      // 部署切版本时，旧 HTML 可能继续引用已删除的 /assets/*.js。
+      // 一旦服务器把缺失 chunk fallback 成 index.html，浏览器会因 MIME text/html 拒绝执行。
+      ;(function () {
+        var reloadKey = 'mg:asset-reload-ts'
+        var clearRuntimeCaches = function () {
+          var tasks = []
+          if ('serviceWorker' in navigator) {
+            tasks.push(
+              navigator.serviceWorker
+                .getRegistrations()
+                .then(function (registrations) {
+                  return Promise.all(
+                    registrations.map(function (registration) {
+                      return registration.unregister()
+                    }),
+                  )
+                })
+                .catch(function () {}),
+            )
+          }
+          if ('caches' in window) {
+            tasks.push(
+              caches
+                .keys()
+                .then(function (keys) {
+                  return Promise.all(keys.map(function (key) { return caches.delete(key) }))
+                })
+                .catch(function () {}),
+            )
+          }
+          return Promise.all(tasks)
+        }
+
+        window.addEventListener(
+          'error',
+          function (event) {
+            var target = event.target
+            var src = target && target.tagName === 'SCRIPT' ? target.src : ''
+            if (!src || src.indexOf('/assets/') === -1 || !/\.js($|\?)/.test(src)) return
+
+            var last = Number(sessionStorage.getItem(reloadKey) || '0')
+            if (Date.now() - last <= 30000) return
+            sessionStorage.setItem(reloadKey, String(Date.now()))
+            clearRuntimeCaches().finally(function () {
+              window.location.reload()
+            })
+          },
+          true,
+        )
+      })()
+    </script>
+    <script>
       // 市场前置(域名秒定,渲染前执行零闪烁):国际站(.ai)切 title/favicon/lang。
       // 单一构建产物供 prod/prod-global 两条发布线共用;test/localhost 默认国内,运行时可切。
       ;(function () {

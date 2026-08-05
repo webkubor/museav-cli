@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Switch } from '@/components/ui/Switch'
 import { Select } from '@/components/ui/Select'
+import { useCurrency } from '@/hooks/use-platform-config'
 import { experienceTaskLabel, formatSpendAmount, type ExperienceTaskType } from '../model-experience-data'
 import '../styles/model-settings-modal.css'
 
@@ -419,6 +420,8 @@ export function ModelSettingsModal({
   multipleModels = false,
 }: ModelSettingsModalProps) {
   const { t } = useTranslation()
+  // 会话累计费用符号走全局结算币种（#372）
+  const { symbol } = useCurrency()
   const isDialogue = DIALOGUE_TASKS.includes(task)
 
   /** 会话累计：原型 playground-session-summary 是 body 末尾的纵向条目（label 左 / 值右），
@@ -438,7 +441,7 @@ export function ModelSettingsModal({
       )}
       <div className="model-settings-summary-line">
         <span>{t('modelsExperience.settings.cost')}</span>
-        <strong>{formatSpendAmount(sessionStats.cost)}</strong>
+        <strong>{formatSpendAmount(sessionStats.cost, symbol)}</strong>
       </div>
     </div>
   )

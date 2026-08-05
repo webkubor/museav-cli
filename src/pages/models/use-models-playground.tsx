@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useCurrency } from '@/hooks/use-platform-config'
 import {
   createExperienceSession,
   streamExperienceMessage,
@@ -74,6 +75,8 @@ import {
  */
 export function useModelsPlayground() {
   const { t } = useTranslation()
+  // 全局结算币种符号（platform-config.settlement_currency）——金额展示的唯一来源，#372
+  const { symbol: currencySymbol_ } = useCurrency()
   const navigate = useNavigate()
   const location = useLocation()
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -186,17 +189,18 @@ export function useModelsPlayground() {
   /** composer 底部预估费用：与原型 estimatePlaygroundTaskSpend 对齐——按当前草稿估算 input token，
    *  输出 token 取 min(400, max_tokens) 上限估算（App.tsx:16967-16990） */
   const composerEstimatedSpend = useMemo(() => {
-    if (!selectedModel) return '¥0.00'
+    // 符号走全局结算币种（#372：此前写死 ¥，国际站 settlement_currency=USD 也显示人民币符号）
+    if (!selectedModel) return formatSpendAmount(0, currencySymbol_)
     const inputPrice = Number(selectedModel.pricing?.input_per_1m ?? 0)
     const outputPrice = Number(selectedModel.pricing?.output_per_1m ?? 0)
-    if (!inputPrice && !outputPrice) return '¥0.00'
+    if (!inputPrice && !outputPrice) return formatSpendAmount(0, currencySymbol_)
     const systemPrompt = typeof chatParams.system_prompt === 'string' ? chatParams.system_prompt : ''
     const maxTokens = typeof chatParams.max_tokens === 'number' ? chatParams.max_tokens : 4096
     const inputTokens = estimateTokens(`${input}${systemPrompt}`)
     const outputTokens = Math.min(400, maxTokens)
     const spend = (inputTokens * inputPrice + outputTokens * outputPrice) / 1_000_000
-    return formatSpendAmount(spend)
-  }, [selectedModel, input, chatParams])
+    return formatSpendAmount(spend, currencySymbol_)
+  }, [selectedModel, input, chatParams, currencySymbol_])
 
   useEffect(() => {
     const state = location.state as {

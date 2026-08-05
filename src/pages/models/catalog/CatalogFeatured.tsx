@@ -15,6 +15,7 @@
  * background_key 为空时按 model_id 稳定映射，同一模型底色恒定不闪。
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { currencySymbol, isZhLang } from '@/features/models/model-format'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { trimPriceZeros } from '@/lib/utils'
@@ -32,7 +33,6 @@ function fallbackBackgroundKey(modelId: string): string {
 }
 
 const AUTOPLAY_MS = 5000
-const CCY_SYMBOL: Record<string, string> = { CNY: '¥', RMB: '¥', USD: '$', EUR: '€' }
 
 interface Props {
   slides: CatalogFeaturedSlide[]
@@ -137,7 +137,7 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
           const discountLabel = isZh
             ? promo?.discount_label
             : promo?.discount_label_en || promo?.discount_label
-          const symbol = CCY_SYMBOL[(slide.currency || '').toUpperCase()] || slide.currency || '¥'
+          const symbol = currencySymbol(slide.currency, isZhLang())
           const detailHref = `/models/${slide.slug || slide.model_id}`
           return (
             <article

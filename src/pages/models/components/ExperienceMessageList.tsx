@@ -10,6 +10,7 @@ import { LuAudioLines, LuCheck, LuChevronRight, LuCopy, LuRefreshCcw } from 'rea
 import { cn } from '@/lib/utils'
 import { ModelIcon, type ModelIconLike } from '@/features/models/components/ModelIcon'
 import { parseThinkContent } from '../experience-think-content'
+import { useCurrency } from '@/hooks/use-platform-config'
 import { formatPlaygroundSpend, type ExperienceMessage } from '../model-experience-data'
 
 /** 消息内容里的站内链接（如视频异步任务跳转调用日志）走 SPA 导航，外链原样新标签打开 */
@@ -141,6 +142,8 @@ export interface ExperienceMessageListProps {
 
 export function ExperienceMessageList({ messages, isStreaming, showModelNameInMeta = true, isMediaTask = false, onRetry, emptyState, assistantModel, isAsyncMediaTask = false }: ExperienceMessageListProps) {
   const { t } = useTranslation()
+  // 消耗金额符号走全局结算币种（platform-config.settlement_currency），不写死也不按语言猜（#372）
+  const { symbol } = useCurrency()
 
   /** 新消息/流式增量到来时自动滚到底（#311）。此前两个页面都没有任何滚动逻辑，
    *  对比页多列各自独立滚动，聊到一屏以外就得手动往下拖才看得到最新内容。
@@ -305,7 +308,7 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
                 <div className="models-experience-message-meta">
                   {showModelNameInMeta && <strong>{message.metrics.model}</strong>}
                   <span>{t('modelsExperience.totalLatency')} {message.metrics.totalLatency}</span>
-                  <span>{formatPlaygroundSpend(message.metrics)}</span>
+                  <span>{formatPlaygroundSpend(message.metrics, symbol)}</span>
                   {message.media[0] && (
                     <MediaDownloadLink url={message.media[0].url} label={t('modelsExperience.downloadResult')} />
                   )}
@@ -316,7 +319,7 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
                   <span>{message.metrics.inputTokens} → {message.metrics.outputTokens} Tokens</span>
                   <span>{t('modelsExperience.firstToken')} {message.metrics.firstTokenLatency}</span>
                   <span>{t('modelsExperience.totalLatency')} {message.metrics.totalLatency}</span>
-                  <span>{formatPlaygroundSpend(message.metrics)}</span>
+                  <span>{formatPlaygroundSpend(message.metrics, symbol)}</span>
                   {message.metrics.fastest && <em className="models-experience-winner-chip is-fast">{t('modelsExperience.fastest')}</em>}
                   {message.metrics.cheapest && <em className="models-experience-winner-chip is-cheap">{t('modelsExperience.cheapest')}</em>}
                   {/* 复制回复只复制正文，不带 <think> 标签与思考过程（#334） */}

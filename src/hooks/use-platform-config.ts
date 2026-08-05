@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { getPlatformConfig } from '@/services/platform'
+import { currencySymbol } from '@/features/models/model-format'
 
 export function usePlatformConfig() {
   return useQuery({
@@ -14,7 +15,9 @@ export function usePlatformConfig() {
 export function useCurrency() {
   const { data } = usePlatformConfig()
   const currency = data?.settlement_currency ?? 'CNY'
-  const symbol = currency === 'USD' ? '$' : '¥'
+  // 符号映射只留 model-format.currencySymbol 一份（#372：此前 useCurrency / ModelPickerDialog /
+  // CatalogFeatured / ModelsCompareModal / logs 各写一份三元或映射表，加币种就得改五处）
+  const symbol = currencySymbol(currency, currency === 'CNY')
   return { currency, symbol }
 }
 

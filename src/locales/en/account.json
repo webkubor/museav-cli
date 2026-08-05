@@ -10,7 +10,7 @@
     },
     "info": {
       "emailLabel": "Email",
-      "emailHint": "Primary email for login. Cannot be changed.",
+      "emailHint": "This email is used to sign in and cannot be changed.",
       "nameLabel": "Display Name",
       "namePlaceholder": "Enter display name",
       "toastSuccess": "Display name saved",
@@ -50,8 +50,8 @@
       "completeSet": "Save Password",
       "verifyIdentity": "Verify Identity",
       "setNewPassword": "Set New Password",
-      "passwordTitle": "Login Password",
-      "passwordDesc": "Used for password sign-in.",
+      "passwordTitle": "Password",
+      "passwordDesc": "Use your password to sign in to your account",
       "passwordNotSetDesc": "No password has been set. Set one to enable password sign-in.",
       "notSet": "Not Set",
       "toastSuccess": "Password changed",
@@ -77,7 +77,7 @@
       "deleteError": "Failed to submit deletion request. Please try again."
     },
     "oauth": {
-      "desc": "Connect social accounts for passwordless access.",
+      "desc": "Connect an account to sign in without a password.",
       "google": "Google Account",
       "github": "GitHub Account",
       "wechat": "WeChat Account",

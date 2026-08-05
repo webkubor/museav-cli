@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/Button'
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 
 import { MarkdownContent } from '@/components/ui/MarkdownContent'
@@ -12,7 +13,7 @@ import { formatChartDate, formatDate, formatShortTime } from '@/lib/format-date'
 import { useCsChat } from './use-cs-chat'
 import type { Message, ConnectionStatus } from './use-cs-chat'
 
-function formatCsTimestamp(timestamp: number) {
+function formatCsTimestamp(timestamp: number, t: (key: string, options?: Record<string, unknown>) => string) {
   const date = new Date(timestamp)
   const now = new Date()
   const dateIso = date.toISOString()
@@ -21,8 +22,8 @@ function formatCsTimestamp(timestamp: number) {
   yesterday.setDate(now.getDate() - 1)
   const isYesterday = formatDate(dateIso) === formatDate(yesterday.toISOString())
   const timeStr = formatShortTime(dateIso)
-  if (isToday) return `今天 ${timeStr}`
-  if (isYesterday) return `昨天 ${timeStr}`
+  if (isToday) return t('common.customerService.todayAt', { time: timeStr })
+  if (isYesterday) return t('common.customerService.yesterdayAt', { time: timeStr })
   return `${formatChartDate(dateIso)} ${timeStr}`
 }
 
@@ -38,6 +39,7 @@ function StatusDot({ status }: { status: ConnectionStatus }) {
 }
 
 function MessageBubble({ msg }: { msg: Message }) {
+  const { t } = useTranslation()
   const isUser = msg.role === 'user'
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: isUser ? 'flex-end' : 'flex-start', marginBottom: 16 }}>
@@ -59,11 +61,11 @@ function MessageBubble({ msg }: { msg: Message }) {
             ? msg.content
             : <MarkdownContent>{msg.content}</MarkdownContent>
           )
-          : (msg.role === 'agent' ? <span style={{ color: 'var(--mg-text-3)', fontStyle: 'italic' }}>思考中…</span> : '')
+          : (msg.role === 'agent' ? <span className="italic text-mg-text-3">{t('common.customerService.thinking')}</span> : '')
         }
       </div>
-      <span style={{ fontSize: 10, color: 'var(--mg-text-3)', marginTop: 4, padding: '0 4px' }}>
-        {formatCsTimestamp(msg.timestamp)}
+      <span className="mt-1 px-1 text-[10px] text-mg-text-3">
+        {formatCsTimestamp(msg.timestamp, t)}
       </span>
     </div>
   )
@@ -85,6 +87,7 @@ function ThinkingDots() {
 }
 
 export function CustomerService() {
+  const { t } = useTranslation()
   const isOpen = useCustomerServiceStore((s) => s.isOpen)
   const toggleOpen = useCustomerServiceStore((s) => s.toggle)
   const logoSrc = useSiteLogo()
@@ -189,7 +192,7 @@ export function CustomerService() {
         }}
       >
         {isOpen
-          ? <LuX style={{ color: 'var(--mg-text-2)', fontSize: 20 }} />
+          ? <LuX className="text-mg-text-2" size={20} />
           : (
             <div style={{ position: 'relative' }}>
               <img src={logoSrc} alt="CS" style={{ width: 28, height: 28, objectFit: 'contain' }} />
@@ -233,10 +236,10 @@ export function CustomerService() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <img src={logoSrc} alt="Logo" style={{ width: 28, height: 28, objectFit: 'contain' }} />
               <div>
-                <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--mg-text-1)', margin: 0 }}>智能助手</p>
-                <p style={{ fontSize: 11, color: 'var(--mg-text-2)', margin: 0 }}>
+                <p className="m-0 text-[13px] font-bold text-mg-text-1">{t('common.customerService.assistant')}</p>
+                <p className="m-0 text-[11px] text-mg-text-2">
                   <StatusDot status={status} />
-                  {status === 'online' ? '在线' : status === 'connecting' ? '连接中' : '离线'}
+                  {status === 'online' ? t('common.customerService.online') : status === 'connecting' ? t('common.customerService.connecting') : t('common.customerService.offline')}
                 </p>
               </div>
             </div>
@@ -260,8 +263,8 @@ export function CustomerService() {
             {messages.length === 0 && (
               <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
                 <img src={logoSrc} alt="" style={{ width: 48, height: 48, opacity: 0.2 }} />
-                <p style={{ fontSize: 12, color: 'var(--mg-text-3)', textAlign: 'center' }}>
-                  有什么我可以帮助你的？
+                <p className="text-center text-xs text-mg-text-3">
+                  {t('common.customerService.empty')}
                 </p>
               </div>
             )}
@@ -287,7 +290,7 @@ export function CustomerService() {
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
                 disabled={isLoading}
-                placeholder={isLoading ? '正在思考中…' : '输入消息，Enter 发送'}
+                placeholder={isLoading ? t('common.customerService.placeholderLoading') : t('common.customerService.placeholder')}
                 style={{
                   flex: 1, border: 'none', outline: 'none', background: 'transparent',
                   resize: 'none', fontSize: 13, lineHeight: '1.5', color: 'var(--mg-text-1)',
@@ -298,7 +301,7 @@ export function CustomerService() {
               <button
                 onClick={isLoading ? stopMessage : handleSend}
                 disabled={!isLoading && !inputValue.trim()}
-                aria-label={isLoading ? '停止生成' : '发送消息'}
+                aria-label={isLoading ? t('common.customerService.stop') : t('common.customerService.send')}
                 style={{
                   width: 32, height: 32, borderRadius: 8, border: 'none',
                   background: isLoading || inputValue.trim() ? 'var(--brand-base)' : 'var(--mg-fill-1)',

@@ -1,6 +1,7 @@
 import * as React from "react"
 import * as SelectPrimitive from "@radix-ui/react-select"
 import { IoChevronDown, IoChevronUp, IoCheckmark } from "react-icons/io5"
+import { useTranslation } from "react-i18next"
 import { cn } from "@/lib/utils"
 
 /**
@@ -166,12 +167,14 @@ interface SelectComponent extends React.FC<SelectProps> {
   Option: typeof SelectItem
 }
 
-const Select = (({ value, defaultValue, onChange, placeholder, disabled, className, children, emptyText = '暂无选项', 'data-track': dataTrack }: SelectProps) => {
+const Select = (({ value, defaultValue, onChange, placeholder, disabled, className, children, emptyText, 'data-track': dataTrack }: SelectProps) => {
+  const { t } = useTranslation()
   const isEmpty = React.Children.count(children) === 0
+  const resolvedEmptyText = emptyText ?? t('common.select.empty')
   return (
     <SelectRoot value={value} defaultValue={defaultValue} onValueChange={onChange} disabled={disabled || isEmpty}>
       <SelectTrigger className={className} data-track={dataTrack}>
-        <SelectValue placeholder={isEmpty ? emptyText : placeholder} />
+        <SelectValue placeholder={isEmpty ? resolvedEmptyText : placeholder} />
       </SelectTrigger>
       {!isEmpty && (
         <SelectContent>

@@ -53,7 +53,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
     () => (membersQuery.data?.pending_invitations ?? []).filter((i) => i.status === 'pending'),
     [membersQuery.data],
   )
-  const roleLabel = (r: string) => (r === 'tenant_admin' ? '管理员' : '成员')
+  const roleLabel = (r: string) => (r === 'tenant_admin' ? t('enterprise.invite.roleAdmin') : t('enterprise.invite.roleMember'))
 
   // 空间列表作为「授权工作空间」下拉数据源
   const workspacesQuery = useQuery({
@@ -96,7 +96,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
     },
     onError: (err: Error, vars) => {
       if (!vars.silent) trackAction(PERMS.ORG_INVITE_MANAGE, undefined, { result: 'fail', error_code: errorCodeOf(err) })
-      appToast.requestError(err, '重置失败')
+      appToast.requestError(err, t('enterprise.invite.linkResetError'))
     },
   })
 
@@ -110,7 +110,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
     onSuccess: () => {
       // 邮箱邀请「发送邀请」提交埋点，event key = 权限体系 org.invite:manage（对齐按钮 data-track="invitations:send"）
       trackAction(PERMS.ORG_INVITE_MANAGE, { email_count: inviteEmails.length, role: inviteRole }, { result: 'success' })
-      appToast.success('邀请已发出')
+      appToast.success(t('enterprise.invite.sendSuccess'))
       setInviteEmails([])
       setExpiresInHours(72)
       setTargetWorkspaceId(NONE_WORKSPACE)
@@ -125,7 +125,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
         appToast.error(t('enterprise.invite.duplicatePending'))
         return
       }
-      appToast.requestError(err, '邀请失败')
+      appToast.requestError(err, t('enterprise.invite.sendError'))
     },
   })
 
@@ -201,7 +201,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
                 buttonVariant="brand"
                 label={t('enterprise.invite.copyLink')}
                 copiedLabel={t('enterprise.invite.copied')}
-                toast="邀请链接已复制"
+                toast={t('enterprise.invite.copySuccess')}
                 disabled={!inviteLinkUrl}
                 className="shrink-0"
               />
@@ -267,7 +267,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
         <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg overflow-hidden shadow-sm">
           <div className="p-4 border-b border-mg-border/50 bg-mg-fill-0/20">
             <div className="text-xs font-bold text-mg-text-1">{t('enterprise.invite.queueTitle')}</div>
-            <div className="mt-0.5 text-xs text-mg-text-3">{pendingInvites.length} 个邀请待接受</div>
+            <div className="mt-0.5 text-xs text-mg-text-3">{t('enterprise.invite.pendingCount', { count: pendingInvites.length })}</div>
           </div>
           {pendingInvites.length === 0 ? (
             <EmptyState

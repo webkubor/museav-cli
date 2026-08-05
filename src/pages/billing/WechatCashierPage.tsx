@@ -120,7 +120,7 @@ export default function WechatCashierPage() {
   const handleCopyLink = async () => {
     const ok = await copy(qrCodeUrl)
     if (ok) appToast.success(t('billing.wechatCashier.copied'))
-    else appToast.error(t('billing.wechatCashier.copyFailed', { defaultValue: '复制失败，请手动复制' }))
+    else appToast.error(t('billing.wechatCashier.copyFailed'))
   }
 
   // Poll the recharge order status until it settles. Same-origin request carries

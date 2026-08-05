@@ -74,13 +74,27 @@
       "workspacesPanelEmpty": "No authorized workspaces",
       "wsRoleOwner": "Owner",
       "wsRoleMember": "Member",
-      "wsDefault": "Default"
+      "wsDefault": "Default",
+      "roleDesc": {
+        "tenant_owner": "Owner: organization owner with full permissions",
+        "tenant_admin": "Admin: manages members and settings",
+        "tenant_member": "Member: regular member"
+      },
+      "statusDesc": {
+        "active": "Active: member can access and use normally",
+        "suspended": "Suspended: disabled and cannot access organization resources"
+      }
     },
     "info": {
       "avatarHint": "Click to change · PNG/JPEG/WebP, max 2MB",
       "personalAvatarHint": "Personal avatar follows your account; edit it in account settings",
       "orgName": "Organization name",
       "rename": "Rename",
+      "renameSuccess": "Organization name updated",
+      "updateError": "Update failed",
+      "logoSuccess": "Organization avatar updated",
+      "logoError": "Upload failed. Please try again.",
+      "saving": "Saving...",
       "slug": "Slug",
       "accountType": "Account type",
       "owner": "Owner",
@@ -105,7 +119,9 @@
       "dissolveConfirmTitle": "Confirm dissolve organization",
       "dissolveConfirmDesc": "Enter the organization name 「{{name}}」 to confirm.",
       "dissolveWarn": "This will revoke all members' access to this organization's workspaces, keys, and configuration.",
-      "confirmDissolve": "Dissolve"
+      "confirmDissolve": "Dissolve",
+      "dissolveSuccess": "Organization dissolved",
+      "dissolveError": "Failed to dissolve organization"
     },
     "audit": {
       "colTime": "Time",
@@ -138,7 +154,49 @@
       "changesCollapse": "Collapse",
       "exportSuccess": "Audit log exported",
       "exportError": "Export failed, please try again later",
-      "exportNoPermission": "You don't have permission to export audit logs, contact an organization admin"
+      "exportNoPermission": "You don't have permission to export audit logs, contact an organization admin",
+      "action": {
+        "composed": "{{verb}} {{domain}}",
+        "tenantUpdated": "Updated organization profile",
+        "tenantDissolved": "Dissolved organization",
+        "workspaceOwnershipTransferred": "Transferred workspace owner",
+        "membershipRoleChanged": "Changed member role"
+      },
+      "domain": {
+        "tenant": "organization",
+        "workspace": "workspace",
+        "guardrail": "guardrail",
+        "member": "member",
+        "invite": "invite",
+        "budget": "budget",
+        "account": "account"
+      },
+      "verb": {
+        "created": "Created",
+        "updated": "Updated",
+        "deleted": "Deleted",
+        "removed": "Removed",
+        "added": "Added",
+        "suspended": "Suspended",
+        "reactivated": "Reactivated",
+        "enabled": "Enabled",
+        "disabled": "Disabled",
+        "revoked": "Revoked",
+        "rotated": "Rotated",
+        "exported": "Exported",
+        "roleChanged": "Changed role for",
+        "ownershipTransferred": "Transferred owner for",
+        "accepted": "Accepted",
+        "declined": "Declined",
+        "sent": "Sent",
+        "resent": "Resent",
+        "expired": "Expired",
+        "canceled": "Canceled",
+        "joined": "Joined",
+        "left": "Left",
+        "invited": "Invited",
+        "transferred": "Transferred"
+      }
     },
     "invite": {
       "configTitle": "Invite settings",
@@ -153,6 +211,7 @@
       "oneTimeNote": "One-time invite (current role: {{role}}): expires after a single use; switching the role regenerates the link and invalidates the old one.",
       "linkRefreshedByRole": "Role switched — invite link refreshed",
       "linkReset": "Invite link reset",
+      "linkResetError": "Failed to reset",
       "resetLink": "Reset link",
       "copyLink": "Copy link",
       "copied": "Copied",
@@ -162,7 +221,13 @@
       "targetWorkspace": "Grant workspace",
       "targetWorkspaceNone": "None (join org only)",
       "sendInvite": "Send invite",
+      "sendSuccess": "Invitation sent",
+      "sendError": "Failed to send invitation",
+      "copySuccess": "Invite link copied",
       "queueTitle": "Invitation queue",
+      "pendingCount": "{{count}} pending invite(s)",
+      "roleAdmin": "Admin",
+      "roleMember": "Member",
       "queueEmptyTitle": "No pending invitations",
       "queueEmptyDesc": "Invitations sent by email will appear here",
       "resetConfirmTitle": "Confirm reset invite link",

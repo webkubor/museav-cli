@@ -20,7 +20,18 @@
       "avatarTooLarge": "Image must be under 2MB",
       "avatarChange": "Change",
       "avatarCropTitle": "Crop Avatar",
-      "referralLabel": "Referral Link"
+      "referralLabel": "Referral Link",
+      "phoneLabel": "Phone Number",
+      "phoneHint": "Bound security phone number. It cannot be changed here yet.",
+      "emailUnbound": "Not bound",
+      "emailUnboundHint": "No email address is bound yet.",
+      "bindEmail": "Bind Email",
+      "bindEmailTitle": "Bind Email",
+      "bindEmailDesc": "After binding, it can be used for sign-in, password recovery, and important notifications.",
+      "bindEmailConfirm": "Confirm Binding",
+      "bindEmailSuccess": "Email bound",
+      "bindEmailError": "Failed to bind email",
+      "emailCodePlaceholder": "6-digit email code"
     },
     "security": {
       "currentPassword": "Current Password",
@@ -79,7 +90,11 @@
       "unbindSuccess": "Connected account disconnected",
       "bindError": "Failed to start connection. Please try again.",
       "identityAlreadyLinked": "This {{provider}} is already connected to another account and cannot be connected here.",
-      "unbindError": "Failed to disconnect. Please try again."
+      "unbindError": "Failed to disconnect. Please try again.",
+      "unbindConfirmTitle": "Disconnect Account",
+      "unbindConfirm": "Confirm Disconnect",
+      "unbindOnlyLoginMethod": "Disconnecting this account will leave you unable to sign in. Set a password first.",
+      "unbindConfirmMessage": "Disconnect this account?"
     },
     "preferences": {
       "languageTitle": "Interface Language",

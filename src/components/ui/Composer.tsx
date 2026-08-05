@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { LuMessageSquare, LuEraser, LuSend } from 'react-icons/lu'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { Textarea } from './Textarea'
 import { Button } from './Button'
@@ -43,14 +44,18 @@ const Composer = React.forwardRef<HTMLTextAreaElement, ComposerProps>(
       activeChip,
       note,
       className,
-      clearLabel = '清空',
-      sendLabel = '发送',
-      stopLabel = '停止',
+      clearLabel,
+      sendLabel,
+      stopLabel,
       sendEnabled,
       textareaSlot,
     },
     ref
   ) => {
+    const { t } = useTranslation()
+    const resolvedClearLabel = clearLabel ?? t('common.composer.clear')
+    const resolvedSendLabel = sendLabel ?? t('common.composer.send')
+    const resolvedStopLabel = stopLabel ?? t('common.composer.stop')
     const canSend = sendEnabled ?? Boolean(value.trim())
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === 'Enter' && !event.shiftKey) {
@@ -84,7 +89,7 @@ const Composer = React.forwardRef<HTMLTextAreaElement, ComposerProps>(
             ) : (
               <div className="inline-flex items-center gap-1.5 min-w-0 text-mg-text-2 mg-compact-badge">
                 <LuMessageSquare size={13} className="shrink-0" />
-                <span className="truncate">对话测试</span>
+                <span className="truncate">{t('common.composer.defaultMode')}</span>
               </div>
             )}
           </div>
@@ -98,7 +103,7 @@ const Composer = React.forwardRef<HTMLTextAreaElement, ComposerProps>(
                 className="rounded-lg cursor-pointer"
               >
                 <LuEraser size={14} />
-                {clearLabel}
+                {resolvedClearLabel}
               </Button>
             )}
             {isStreaming && onStop ? (
@@ -108,7 +113,7 @@ const Composer = React.forwardRef<HTMLTextAreaElement, ComposerProps>(
                 onClick={onStop}
                 className="rounded-lg cursor-pointer"
               >
-                {stopLabel}
+                {resolvedStopLabel}
               </Button>
             ) : (
               <Button
@@ -120,7 +125,7 @@ const Composer = React.forwardRef<HTMLTextAreaElement, ComposerProps>(
                 className="rounded-lg cursor-pointer"
               >
                 {!loading && <LuSend size={14} className="mr-1" />}
-                {sendLabel}
+                {resolvedSendLabel}
               </Button>
             )}
           </div>

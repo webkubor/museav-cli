@@ -4,6 +4,7 @@
  * API 来源：src/lib/error-diagnostics 聚合 5xx 请求诊断信息
  */
 import { LuMail, LuTriangleAlert } from 'react-icons/lu'
+import { useTranslation } from 'react-i18next'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { CopyButton } from '@/components/ui/CopyButton'
@@ -12,14 +13,14 @@ import { formatDiagnosticsForCopy } from '@/lib/error-diagnostics'
 
 const SUPPORT_EMAIL = 'feedback@modelgo.com'
 
-function Row({ label, value, copyable }: { label: string; value: string; copyable?: boolean }) {
+function Row({ label, value, copyable, copyLabel }: { label: string; value: string; copyable?: boolean; copyLabel: string }) {
   return (
     <div className="flex items-center gap-2 border-b border-mg-border px-3 py-2 last:border-b-0">
       <span className="w-16 flex-shrink-0 text-xs text-mg-text-3">{label}</span>
       <span className="min-w-0 flex-1 truncate font-mono text-xs text-mg-text-1" title={value}>
         {value}
       </span>
-      {copyable && <CopyButton value={value} aria-label={`复制${label}`} toast={false} />}
+      {copyable && <CopyButton value={value} aria-label={copyLabel} toast={false} />}
     </div>
   )
 }
@@ -29,6 +30,7 @@ function Row({ label, value, copyable }: { label: string; value: string; copyabl
  * 文案对用户兜底，但把排查必需的 request_id / trace_id / 前端版本露出来并支持复制。
  */
 export function ServerErrorDialog() {
+  const { t } = useTranslation()
   const current = useServerErrorStore((s) => s.current)
   const dismiss = useServerErrorStore((s) => s.dismiss)
 
@@ -36,8 +38,8 @@ export function ServerErrorDialog() {
 
   const versionLine = `v${current.version}${current.build ? ` (${current.build})` : ''} · ${current.time}`
   const diagnosticsText = formatDiagnosticsForCopy(current)
-  const subject = `ModelGo 控制台服务异常${current.requestId ? ` - ${current.requestId}` : ''}`
-  const emailBody = `我在使用 ModelGo 控制台时遇到了服务异常，请帮忙排查。\n\n${diagnosticsText}`
+  const subject = t('common.serverError.emailSubject', { suffix: current.requestId ? ` - ${current.requestId}` : '' })
+  const emailBody = t('common.serverError.emailBody', { diagnostics: diagnosticsText })
   const mailHref = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`
   const sendEmail = () => {
     window.location.href = mailHref
@@ -52,33 +54,33 @@ export function ServerErrorDialog() {
       title={
         <span className="flex items-center gap-2">
           <LuTriangleAlert size={18} className="text-mg-danger" />
-          服务暂时异常，请稍后再试
+          {t('common.serverError.title')}
         </span>
       }
-      description="如果问题持续出现，请将以下信息提供给我们排查。"
+      description={t('common.serverError.desc')}
       footer={
         <>
           <Button variant="outline" onClick={dismiss}>
-            关闭
+            {t('common.close')}
           </Button>
           <CopyButton
             variant="labeled"
             value={diagnosticsText}
-            label="一键复制"
-            copiedLabel="已复制全部"
+            label={t('common.serverError.copyAll')}
+            copiedLabel={t('common.serverError.copiedAll')}
           />
           <Button variant="default" icon={<LuMail size={14} />} onClick={sendEmail}>
-            发 Email
+            {t('common.serverError.sendEmail')}
           </Button>
         </>
       }
     >
       <div className="overflow-hidden rounded-lg border border-mg-border">
-        {current.requestId && <Row label="请求 ID" value={current.requestId} copyable />}
-        {current.traceId && <Row label="Trace ID" value={current.traceId} copyable />}
-        {current.path && <Row label="接口路径" value={current.path} copyable />}
-        {current.tenantId && <Row label="租户 ID" value={current.tenantId} copyable />}
-        <Row label="版本" value={versionLine} />
+        {current.requestId && <Row label={t('common.serverError.requestId')} value={current.requestId} copyable copyLabel={t('common.serverError.copyLabel', { label: t('common.serverError.requestId') })} />}
+        {current.traceId && <Row label={t('common.serverError.traceId')} value={current.traceId} copyable copyLabel={t('common.serverError.copyLabel', { label: t('common.serverError.traceId') })} />}
+        {current.path && <Row label={t('common.serverError.path')} value={current.path} copyable copyLabel={t('common.serverError.copyLabel', { label: t('common.serverError.path') })} />}
+        {current.tenantId && <Row label={t('common.serverError.tenantId')} value={current.tenantId} copyable copyLabel={t('common.serverError.copyLabel', { label: t('common.serverError.tenantId') })} />}
+        <Row label={t('common.serverError.version')} value={versionLine} copyLabel={t('common.serverError.copyLabel', { label: t('common.serverError.version') })} />
       </div>
     </Modal>
   )

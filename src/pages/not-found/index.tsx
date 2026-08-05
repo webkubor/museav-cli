@@ -1,8 +1,10 @@
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { LuCompass } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 
 export default function NotFoundPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
 
   return (
@@ -12,13 +14,13 @@ export default function NotFoundPage() {
           <LuCompass size={26} className="text-mg-text-3" />
         </div>
         <div className="space-y-1.5">
-          <h1 className="text-lg font-bold text-mg-text-1">页面不存在</h1>
+          <h1 className="text-lg font-bold text-mg-text-1">{t('common.notFound.title')}</h1>
           <p className="text-sm text-mg-text-3 leading-relaxed">
-            你访问的页面不存在或已被移除。
+            {t('common.notFound.desc')}
           </p>
         </div>
         <Button variant="brand" onClick={() => navigate('/', { replace: true })} className="w-full h-10 rounded-md font-semibold">
-          返回首页
+          {t('common.notFound.backHome')}
         </Button>
       </div>
     </div>

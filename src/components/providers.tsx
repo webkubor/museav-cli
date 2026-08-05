@@ -5,6 +5,7 @@ import { ModelGoApiError } from '@/lib/request'
 import { appToast } from '@/lib/app-toast'
 import { handleSessionExpired } from '@/lib/auth/auth-controller'
 import { useAuthStore } from '@/store/auth'
+import i18n from '@/i18n'
 
 // 这些错误码已在请求层专项处理，不再弹全局 toast
 const SILENT_CODES = new Set([
@@ -42,7 +43,7 @@ function handleGlobalError(error: unknown, query?: { meta?: Record<string, unkno
     appToast.requestError(error)
     return
   }
-  appToast.error('请求失败，请稍后重试')
+  appToast.error(i18n.t('common.requestFailed'))
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {

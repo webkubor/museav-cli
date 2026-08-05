@@ -20,7 +20,18 @@
       "avatarTooLarge": "图片大小不能超过 2MB",
       "avatarChange": "更换",
       "avatarCropTitle": "裁剪头像",
-      "referralLabel": "邀请链接"
+      "referralLabel": "邀请链接",
+      "phoneLabel": "手机号码",
+      "phoneHint": "绑定的安全手机号，暂不支持自主修改。",
+      "emailUnbound": "未绑定",
+      "emailUnboundHint": "暂未绑定电子邮箱。",
+      "bindEmail": "绑定邮箱",
+      "bindEmailTitle": "绑定邮箱",
+      "bindEmailDesc": "绑定后可用于登录、找回密码与重要通知。",
+      "bindEmailConfirm": "确认绑定",
+      "bindEmailSuccess": "邮箱绑定成功",
+      "bindEmailError": "邮箱绑定失败",
+      "emailCodePlaceholder": "6 位邮箱验证码"
     },
     "security": {
       "currentPassword": "当前密码",
@@ -80,6 +91,10 @@
       "bindError": "发起绑定失败，请稍后重试",
       "identityAlreadyLinked": "该{{provider}}已被其他账户绑定，无法继续绑定",
       "unbindError": "解绑失败，请稍后重试"
+      ,"unbindConfirmTitle": "解绑确认",
+      "unbindConfirm": "确认解绑",
+      "unbindOnlyLoginMethod": "解绑后将无法登录你的账号，请先设置密码。",
+      "unbindConfirmMessage": "确认解绑该账号？"
     },
     "preferences": {
       "languageTitle": "界面语言",

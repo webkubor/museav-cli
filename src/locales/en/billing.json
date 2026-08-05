@@ -27,6 +27,11 @@
         "gift": "Gift Credit",
         "reward": "Reward Credit"
       },
+      "typeDesc": {
+        "recharge": "Recharge: credited from a user top-up",
+        "gift": "Gift credit: complimentary balance from the platform",
+        "reward": "Reward credit: balance granted via rewards or activities"
+      },
       "channels": {
         "alipay": "Alipay",
         "admin": "Admin Recharge",
@@ -43,6 +48,11 @@
         "completed": "Completed",
         "processing": "Processing",
         "failed": "Failed"
+      },
+      "statusDesc": {
+        "completed": "Completed: credited successfully",
+        "processing": "Processing: credit in progress",
+        "failed": "Failed: this attempt did not go through, balance unchanged"
       },
       "invoice": {
         "none": "—",
@@ -71,12 +81,15 @@
       "walletCard": "ModelGo Developer Wallet",
       "spendableTotal": "Spendable Total",
       "spendableHint": "Deducted in order: Gift → Reward → Main",
+      "spendableTip": "Usage is deducted in order: gift, reward, then main balance.",
       "mainBalance": "Main Balance",
       "mainHint": "Cash top-up",
       "giftBalance": "Gift Balance",
       "giftHint": "Promo code / trial credit",
+      "giftTip": "Credits from campaigns and promo codes are deducted first.",
       "rewardBalance": "Reward Balance",
       "rewardHint": "Referral rebate",
+      "rewardTip": "Referral rewards are deducted before the main balance.",
       "frozenHint": "Pre-authorization / processing",
       "loadFailed": "Failed to load balance"
     },
@@ -194,6 +207,52 @@
     "paymentMethod": {
       "alipay": "Alipay",
       "wechat": "WeChat Pay"
+    },
+    "referral": {
+      "title": "Referral Program",
+      "kpiTotalCommission": "Total Commission",
+      "kpiMonthCommission": "This Month",
+      "kpiActive": "Active / Invited",
+      "kpiRewardBalance": "Reward Balance",
+      "inviteLinkLabel": "My Referral Link",
+      "copySuccess": "Referral link copied",
+      "copyCodeSuccess": "Invite code copied",
+      "inviteCodeLabel": "Invite Code",
+      "inviteHint": "When someone signs up via your link, their future spend commission is attributed to you.",
+      "inviteRealtimeLabel": "Real-time commission",
+      "inviteBalanceLabel": "Rewards deduct first",
+      "inviteRulesLink": "View rules",
+      "tierTableLabel": "Commission Tiers",
+      "tierTableHint": "Per-invitee spend determines tier",
+      "tierSpendThreshold": "Spend ≥ {{amount}}",
+      "tiers": {
+        "growth": "Growth Partner",
+        "core": "Core Partner",
+        "strategic": "Strategic Partner"
+      },
+      "rulesTitle": "Commission rules:",
+      "ruleItem1": "Commission accrues in real time on each actual paid spend. Refunds are clawed back, gifted or redeemed credits are excluded, and rewards are calculated by the tier matching cumulative spend.",
+      "ruleItem2": "Rewards go straight into your reward balance without a transfer step. They deduct before your main balance on model calls, and withdrawal is not supported yet.",
+      "ruleItem3": "Commission has no upper limit. Tiers, rates, and thresholds are configured by the platform and shown on this page.",
+      "ruleItem4": "Same-entity, same-device, same-IP, or abnormal spend gets reviewed. Confirmed violations may have rewards frozen or revoked.",
+      "tabInvitees": "Invitees",
+      "tabCommissions": "Commission Log",
+      "colInvitee": "Invitee",
+      "colRegisteredAt": "Registered",
+      "colTotalSpend": "Total Spend",
+      "colCommission": "Commission",
+      "colCurrentTier": "Tier",
+      "colDate": "Date",
+      "colSpend": "Spend",
+      "colRate": "Rate",
+      "colTier": "Tier",
+      "colAmount": "Commission",
+      "notYet": "—",
+      "empty": "No records",
+      "gateTitle": "Unlock referral program",
+      "gateDesc": "Make your first top-up to unlock your personal referral link and start earning real-time commission.",
+      "gateCta": "Top up now",
+      "gateInviteePlaceholder": "Unlock with your first top-up to see invitee records here"
     },
     "invoice": {
       "summary": "Invoiceable recharges {{count}} · Total {{amount}}",

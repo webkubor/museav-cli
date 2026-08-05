@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useTranslation } from "react-i18next"
 import {
   Dialog,
   DialogContent,
@@ -40,6 +41,7 @@ export function Modal({
   className,
   closeButton = true,
 }: ModalProps) {
+  const { t } = useTranslation()
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
       {/* 三段式：标题/底栏固定，仅内容区内部滚动——长表单的主操作按钮恒在首屏可见（需求方#83）。
@@ -53,7 +55,7 @@ export function Modal({
         )}
         {!description && (
           <DialogDescription className="sr-only">
-            {typeof title === "string" ? title : "对话框"}
+            {typeof title === "string" ? title : t('common.dialog')}
           </DialogDescription>
         )}
         <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>

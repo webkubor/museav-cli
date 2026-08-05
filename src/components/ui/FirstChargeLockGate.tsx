@@ -1,5 +1,6 @@
 import React from 'react'
 import { LuLock } from 'react-icons/lu'
+import { useTranslation } from 'react-i18next'
 import { Button } from './Button'
 import { useRechargeStore } from '@/store/use-recharge-store'
 import { cn } from '@/lib/utils'
@@ -25,12 +26,16 @@ interface FirstChargeLockGateProps {
  */
 export const FirstChargeLockGate: React.FC<FirstChargeLockGateProps> = ({
   locked,
-  title = '首次充值后解锁',
-  desc = '完成首次充值（任意金额），立即解锁此功能。',
-  cta = '去充值',
+  title,
+  desc,
+  cta,
   className,
   children,
 }) => {
+  const { t } = useTranslation()
+  const resolvedTitle = title ?? t('common.firstChargeLock.title')
+  const resolvedDesc = desc ?? t('common.firstChargeLock.desc')
+  const resolvedCta = cta ?? t('common.firstChargeLock.cta')
   const openRecharge = useRechargeStore((s) => s.open)
 
   if (!locked) return <>{children}</>
@@ -56,11 +61,11 @@ export const FirstChargeLockGate: React.FC<FirstChargeLockGateProps> = ({
           <LuLock size={20} />
         </div>
         <div className="space-y-1.5 max-w-[280px]">
-          <p className="font-bold text-mg-text-1 mg-text-body">{title}</p>
-          <p className="mg-text-caption text-mg-text-3">{desc}</p>
+          <p className="font-bold text-mg-text-1 mg-text-body">{resolvedTitle}</p>
+          <p className="mg-text-caption text-mg-text-3">{resolvedDesc}</p>
         </div>
         <Button variant="brand" size="sm" onClick={openRecharge}>
-          {cta}
+          {resolvedCta}
         </Button>
       </div>
     </div>

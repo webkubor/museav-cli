@@ -1,4 +1,5 @@
 import { LuShieldAlert } from 'react-icons/lu'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/components/auth/use-auth'
 
@@ -8,6 +9,7 @@ import { useAuth } from '@/components/auth/use-auth'
  * 无法进入控制台。这是「有身份、无授权」，按 403 处理，不回跳登录页。
  */
 export default function ForbiddenPage() {
+  const { t } = useTranslation()
   // 登出走中央 signOut（logout + 清态 + 跳登录），不再 inline 重复
   const { signOut } = useAuth()
 
@@ -18,13 +20,13 @@ export default function ForbiddenPage() {
           <LuShieldAlert size={26} className="text-mg-warning" />
         </div>
         <div className="space-y-1.5">
-          <h1 className="text-lg font-bold text-mg-text-1">无法访问</h1>
+          <h1 className="text-lg font-bold text-mg-text-1">{t('common.forbidden.pageTitle')}</h1>
           <p className="text-sm text-mg-text-3 leading-relaxed">
-            你的账号当前不属于任何组织，无权访问控制台。请联系管理员邀请加入后再使用。
+            {t('common.forbidden.pageDesc')}
           </p>
         </div>
         <Button variant="outline" onClick={signOut} className="w-full h-10 rounded-md font-semibold">
-          退出登录
+          {t('common.forbidden.logout')}
         </Button>
       </div>
     </div>

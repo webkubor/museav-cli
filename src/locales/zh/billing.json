@@ -27,6 +27,11 @@
         "gift": "赠送入账",
         "reward": "奖励入账"
       },
+      "typeDesc": {
+        "recharge": "充值：用户主动充值入账",
+        "gift": "赠送入账：平台发放的赠送额度",
+        "reward": "奖励入账：活动或奖励发放的额度"
+      },
       "channels": {
         "alipay": "支付宝",
         "admin": "管理员充值",
@@ -43,6 +48,11 @@
         "completed": "已完成",
         "processing": "处理中",
         "failed": "失败"
+      },
+      "statusDesc": {
+        "completed": "已完成：入账成功",
+        "processing": "处理中：入账处理中",
+        "failed": "失败：本次入账尝试未成功，余额未变化"
       },
       "invoice": {
         "none": "—",
@@ -71,12 +81,15 @@
       "walletCard": "ModelGo 开发者虚拟钱包",
       "spendableTotal": "可消费合计",
       "spendableHint": "赠送 → 奖励 → 主，依次扣减",
+      "spendableTip": "调用消费时按 赠送 → 奖励 → 主余额 的顺序扣减。",
       "mainBalance": "主余额",
       "mainHint": "现金充值",
       "giftBalance": "赠送余额",
       "giftHint": "兑换码/体验金",
+      "giftTip": "活动、兑换码等赠送额度，调用消费时优先扣减。",
       "rewardBalance": "奖励余额",
       "rewardHint": "推荐返佣",
+      "rewardTip": "推荐返佣等产生的奖励，调用消费时在主余额前扣减。",
       "frozenHint": "预扣/处理中",
       "loadFailed": "余额加载失败"
     },
@@ -194,6 +207,52 @@
     "paymentMethod": {
       "alipay": "支付宝",
       "wechat": "微信支付"
+    },
+    "referral": {
+      "title": "推荐计划",
+      "kpiTotalCommission": "累计返佣",
+      "kpiMonthCommission": "本月返佣",
+      "kpiActive": "活跃 / 已邀请",
+      "kpiRewardBalance": "奖励余额",
+      "inviteLinkLabel": "我的专属邀请链接",
+      "copySuccess": "邀请链接已复制",
+      "copyCodeSuccess": "邀请码已复制",
+      "inviteCodeLabel": "邀请码",
+      "inviteHint": "被邀请人通过此链接注册，其后续消费的返佣自动归属你。",
+      "inviteRealtimeLabel": "实时计返佣",
+      "inviteBalanceLabel": "奖励余额优先抵扣",
+      "inviteRulesLink": "查看分润规则",
+      "tierTableLabel": "返佣档位阶梯",
+      "tierTableHint": "按被邀请人各自消费定档",
+      "tierSpendThreshold": "累计消费 ≥ {{amount}}",
+      "tiers": {
+        "growth": "成长伙伴",
+        "core": "核心伙伴",
+        "strategic": "战略伙伴"
+      },
+      "rulesTitle": "分润规则：",
+      "ruleItem1": "被邀请人每次实际付费消费实时计返佣；退款冲回，赠送/兑换码额度消费不计，奖励按其累计消费对应的档位比例计算。",
+      "ruleItem2": "奖励直接计入奖励余额，无需转入主余额；模型调用时在主余额前自动抵扣，暂不支持提现。",
+      "ruleItem3": "返佣上不封顶；返佣档位、比例与门槛由平台统一设置，以推荐计划页面实际展示为准。",
+      "ruleItem4": "同主体、同设备、同 IP 或异常消费将进入核查；确认违规后，相关奖励可被冻结或取消。",
+      "tabInvitees": "被邀请人",
+      "tabCommissions": "返佣流水",
+      "colInvitee": "被邀请人",
+      "colRegisteredAt": "注册时间",
+      "colTotalSpend": "累计消费",
+      "colCommission": "返佣合计",
+      "colCurrentTier": "当前档位",
+      "colDate": "日期",
+      "colSpend": "消费",
+      "colRate": "比例",
+      "colTier": "档位",
+      "colAmount": "返佣",
+      "notYet": "—",
+      "empty": "暂无记录",
+      "gateTitle": "充值后开通推荐返佣",
+      "gateDesc": "首次充值任意金额后，立即解锁专属邀请链接与实时返佣资格。",
+      "gateCta": "去充值",
+      "gateInviteePlaceholder": "充值后开通，被邀请人记录将在此显示"
     },
     "invoice": {
       "summary": "可开票充值单 {{count}} 笔 · 合计 {{amount}}",

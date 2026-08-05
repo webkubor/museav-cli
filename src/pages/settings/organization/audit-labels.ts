@@ -7,66 +7,68 @@
 
 // 少数需要特定措辞的整 key 覆盖（域+动作直译读着别扭时）
 const FULL_LABEL: Record<string, string> = {
-  'tenant.updated': '更新企业信息',
-  'tenant.dissolved': '解散企业',
-  'workspace.ownership_transferred': '转移工作空间负责人',
-  'membership.role_changed': '变更成员角色',
+  'tenant.updated': 'enterprise.audit.action.tenantUpdated',
+  'tenant.dissolved': 'enterprise.audit.action.tenantDissolved',
+  'workspace.ownership_transferred': 'enterprise.audit.action.workspaceOwnershipTransferred',
+  'membership.role_changed': 'enterprise.audit.action.membershipRoleChanged',
 }
 
 const DOMAIN_LABEL: Record<string, string> = {
-  tenant: '企业',
-  workspace: '工作空间',
-  guardrail: '安全护栏',
-  membership: '成员',
-  member: '成员',
+  tenant: 'enterprise.audit.domain.tenant',
+  workspace: 'enterprise.audit.domain.workspace',
+  guardrail: 'enterprise.audit.domain.guardrail',
+  membership: 'enterprise.audit.domain.member',
+  member: 'enterprise.audit.domain.member',
   api_key: 'API Key',
   apikey: 'API Key',
-  invite: '邀请',
-  invitation: '邀请',
-  budget: '预算',
-  account: '账号',
+  invite: 'enterprise.audit.domain.invite',
+  invitation: 'enterprise.audit.domain.invite',
+  budget: 'enterprise.audit.domain.budget',
+  account: 'enterprise.audit.domain.account',
 }
 
 const VERB_LABEL: Record<string, string> = {
-  created: '创建',
-  updated: '更新',
-  deleted: '删除',
-  removed: '移除',
-  added: '添加',
-  suspended: '停用',
-  reactivated: '启用',
-  enabled: '启用',
-  disabled: '停用',
-  revoked: '吊销',
-  rotated: '轮转',
-  exported: '导出',
-  role_changed: '变更角色',
-  ownership_transferred: '转移负责人',
+  created: 'enterprise.audit.verb.created',
+  updated: 'enterprise.audit.verb.updated',
+  deleted: 'enterprise.audit.verb.deleted',
+  removed: 'enterprise.audit.verb.removed',
+  added: 'enterprise.audit.verb.added',
+  suspended: 'enterprise.audit.verb.suspended',
+  reactivated: 'enterprise.audit.verb.reactivated',
+  enabled: 'enterprise.audit.verb.enabled',
+  disabled: 'enterprise.audit.verb.disabled',
+  revoked: 'enterprise.audit.verb.revoked',
+  rotated: 'enterprise.audit.verb.rotated',
+  exported: 'enterprise.audit.verb.exported',
+  role_changed: 'enterprise.audit.verb.roleChanged',
+  ownership_transferred: 'enterprise.audit.verb.ownershipTransferred',
   // 邀请生命周期动词（#13：invitation.accepted 等此前漏词表 → 显示成原始 key）
-  accepted: '接受',
-  declined: '拒绝',
-  sent: '发送',
-  resent: '重新发送',
-  expired: '过期',
-  canceled: '取消',
-  cancelled: '取消',
-  joined: '加入',
-  left: '退出',
-  invited: '邀请',
-  transferred: '转移',
+  accepted: 'enterprise.audit.verb.accepted',
+  declined: 'enterprise.audit.verb.declined',
+  sent: 'enterprise.audit.verb.sent',
+  resent: 'enterprise.audit.verb.resent',
+  expired: 'enterprise.audit.verb.expired',
+  canceled: 'enterprise.audit.verb.canceled',
+  cancelled: 'enterprise.audit.verb.canceled',
+  joined: 'enterprise.audit.verb.joined',
+  left: 'enterprise.audit.verb.left',
+  invited: 'enterprise.audit.verb.invited',
+  transferred: 'enterprise.audit.verb.transferred',
 }
 
+type Translate = (key: string, options?: Record<string, unknown>) => string
+
 /** action 枚举 key → 中文文案；未知 key 兜底组合/原样。 */
-export function auditActionLabel(action: string): string {
+export function auditActionLabel(action: string, t: Translate): string {
   if (!action) return '—'
-  if (FULL_LABEL[action]) return FULL_LABEL[action]
+  if (FULL_LABEL[action]) return t(FULL_LABEL[action])
   const dot = action.indexOf('.')
   if (dot > 0) {
     const domain = action.slice(0, dot)
     const verb = action.slice(dot + 1)
     const d = DOMAIN_LABEL[domain]
     const v = VERB_LABEL[verb]
-    if (d && v) return `${v}${d}` // 创建 + 安全护栏 → 创建安全护栏
+    if (d && v) return t('enterprise.audit.action.composed', { verb: t(v), domain: t(d) })
   }
   return action // 未知 key 兜底原样，不误翻
 }

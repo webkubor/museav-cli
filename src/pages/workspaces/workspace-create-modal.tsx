@@ -116,7 +116,7 @@ export function WorkspaceCreateModal({ open, onClose, workspaceCount }: Workspac
       return
     }
     if (!ownerEmail) {
-      toast.error('请选择空间负责人')
+      toast.error(t('workspaces.toast.ownerRequired'))
       return
     }
     if (selectedMemberEmails.length > MAX_INVITE_MEMBERS) {
@@ -180,7 +180,7 @@ export function WorkspaceCreateModal({ open, onClose, workspaceCount }: Workspac
           {isEnterprise && (
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <div className="text-xs font-bold text-mg-text-2">空间负责人</div>
+                <div className="text-xs font-bold text-mg-text-2">{t('workspaces.modal.ownerLabel')}</div>
                 <Select
                   value={ownerEmail}
                   onChange={(value) => {
@@ -194,14 +194,14 @@ export function WorkspaceCreateModal({ open, onClose, workspaceCount }: Workspac
                 </Select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <div className="text-xs font-bold text-mg-text-2">初始成员</div>
+                <div className="text-xs font-bold text-mg-text-2">{t('workspaces.modal.initialMembersLabel')}</div>
                 <TagInput
                   value={memberChipValue}
                   onChange={(next) => setSelectedMemberEmails(next.filter((email) => email !== ownerEmail))}
                   options={ownerOptions}
                   lockedValues={ownerEmail ? [ownerEmail] : undefined}
-                  lockedBadge="负责人"
-                  placeholder="搜索企业成员，回车添加"
+                  lockedBadge={t('workspaces.modal.ownerBadge')}
+                  placeholder={t('workspaces.modal.initialMembersPlaceholder')}
                 />
               </div>
             </div>

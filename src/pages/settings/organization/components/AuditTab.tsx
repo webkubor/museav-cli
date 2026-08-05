@@ -97,7 +97,7 @@ function AuditDetailContent({
   return (
     <div className="space-y-4">
       <div className="rounded-md border border-mg-border/60">
-        <AuditFieldRow label={t('enterprise.audit.detailAction')} value={auditActionLabel(detail.action)} />
+        <AuditFieldRow label={t('enterprise.audit.detailAction')} value={auditActionLabel(detail.action, t)} />
         <AuditFieldRow label={t('enterprise.audit.detailActor')} value={detail.actor_display || '—'} />
         <AuditFieldRow label={t('enterprise.audit.colTarget')} value={detail.target_label || detail.target_id} />
         <AuditFieldRow label={t('enterprise.audit.detailScope')} value={scopeText} />
@@ -312,7 +312,7 @@ export function AuditTab({ tenantId }: { tenantId: string }) {
                       {formatDateTimeWithSeconds(row.created_at)}
                     </TableCell>
                     <TableCell><TruncatedText text={row.actor_display} maxWidth={140} className="text-xs font-semibold text-mg-text-1" /></TableCell>
-                    <TableCell className="text-xs text-mg-text-2">{auditActionLabel(row.action)}</TableCell>
+                    <TableCell className="text-xs text-mg-text-2">{auditActionLabel(row.action, t)}</TableCell>
                     <TableCell className="max-w-[160px] truncate text-xs text-mg-text-2" title={row.target_label}>
                       {row.target_label || row.target_id || '—'}
                     </TableCell>

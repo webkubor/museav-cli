@@ -34,7 +34,7 @@ export function OrgDissolveModal({
     onSuccess: async () => {
       // 解散组织确认提交埋点，event key = 权限体系 org:delete
       trackAction(PERMS.ORG_DELETE, undefined, { result: 'success' })
-      appToast.success('组织已解散')
+      appToast.success(t('enterprise.info.dissolveSuccess'))
       onOpenChange(false)
       setConfirmName('')
       qc.removeQueries({ queryKey: ['tenant', tenant.tenant_id] })
@@ -57,7 +57,7 @@ export function OrgDissolveModal({
     },
     onError: (err: Error) => {
       trackAction(PERMS.ORG_DELETE, undefined, { result: 'fail', error_code: errorCodeOf(err) })
-      appToast.requestError(err, '解散组织失败')
+      appToast.requestError(err, t('enterprise.info.dissolveError'))
     },
   })
 
@@ -94,7 +94,7 @@ export function OrgDissolveModal({
             className="h-8 rounded-lg px-4 text-xs font-semibold"
             onClick={() => dissolve.mutate()}
           >
-            确认解散
+            {t('enterprise.info.confirmDissolve')}
           </Button>
         </>
       )}

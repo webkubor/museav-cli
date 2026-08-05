@@ -54,20 +54,24 @@ function WorkspaceGuard({
   currentKey,
   workspaceId,
   children,
+  emptyTitle,
+  emptyDesc,
 }: {
   currentKey: string
   workspaceId: string | null
   children: React.ReactNode
+  emptyTitle: string
+  emptyDesc: string
 }) {
   if (!workspaceId && navConfig.workspaceScopedKeys.has(currentKey)) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4 select-none animate-in fade-in duration-300">
         <LuLock size={36} className="text-mg-text-3" />
         <div className="text-base font-bold text-mg-text-1">
-          无可用工作区
+          {emptyTitle}
         </div>
         <div className="text-[13px] text-mg-text-3 text-center max-w-[320px] leading-relaxed">
-          当前账号尚未加入任何工作区。请联系企业管理员将你加入工作区，或前往设置创建一个新工作区。
+          {emptyDesc}
         </div>
       </div>
     )
@@ -309,7 +313,12 @@ export function DashboardLayout() {
               "bg-mg-bg-0 rounded-lg border border-mg-border/60 shadow-sm shadow-black/2 p-6 md:p-9 min-h-[320px] mb-8"
             )
           )}>
-            <WorkspaceGuard currentKey={getSelectedKey()} workspaceId={currentWorkspaceId}>
+            <WorkspaceGuard
+              currentKey={getSelectedKey()}
+              workspaceId={currentWorkspaceId}
+              emptyTitle={t('common.workspaceGuard.emptyTitle')}
+              emptyDesc={t('common.workspaceGuard.emptyDesc')}
+            >
               {/* 内容区级 Suspense：切菜单时只在内容区转圈，侧栏/头/面包屑常驻不闪，
                   路由立即响应（不再被 App 级全屏 RouteFallback 盖住整屏） */}
               {/* 基本容错：页面级组件抛错时显降级 UI 而非整页白屏；resetKey=pathname 切页后自动恢复 */}

@@ -72,14 +72,14 @@ export function OrgInfoTab({
     onSuccess: () => {
       // 企业更名保存埋点，event key = 权限体系 org:rename
       trackAction(PERMS.ORG_RENAME, undefined, { result: 'success' })
-      appToast.success('组织名称已更新')
+      appToast.success(t('enterprise.info.renameSuccess'))
       qc.invalidateQueries({ queryKey: ['tenant', tenantId] })
       qc.invalidateQueries({ queryKey: ['tenants'] })
       setEditing(false)
     },
     onError: (err: Error) => {
       trackAction(PERMS.ORG_RENAME, undefined, { result: 'fail', error_code: errorCodeOf(err) })
-      appToast.requestError(err, '更新失败')
+      appToast.requestError(err, t('enterprise.info.updateError'))
     },
   })
 
@@ -88,13 +88,13 @@ export function OrgInfoTab({
     onSuccess: () => {
       // 企业 Logo 上传埋点，event key = 权限体系 org.settings:edit（与 Logo 上传入口的权限 gate canEditOrg 同源）
       trackAction(PERMS.ORG_SETTINGS_EDIT, undefined, { result: 'success' })
-      appToast.success('企业头像已更新')
+      appToast.success(t('enterprise.info.logoSuccess'))
       qc.invalidateQueries({ queryKey: ['tenant', tenantId] })
       qc.invalidateQueries({ queryKey: ['tenants'] })
     },
     onError: (err: Error) => {
       trackAction(PERMS.ORG_SETTINGS_EDIT, undefined, { result: 'fail', error_code: errorCodeOf(err) })
-      appToast.requestError(err, '上传失败，请重试')
+      appToast.requestError(err, t('enterprise.info.logoError'))
     },
   })
 
@@ -157,7 +157,7 @@ export function OrgInfoTab({
                 onClick={() => update.mutate()}
                 className="h-9 px-4 rounded-lg font-semibold text-xs bg-brand-base text-white hover:bg-brand-base/90"
               >
-                {update.isPending ? '保存中...' : t('enterprise.members.save')}
+                {update.isPending ? t('enterprise.info.saving') : t('enterprise.members.save')}
               </Button>
               <Button variant="outline" className="h-9 px-3 rounded-lg text-xs" onClick={() => setEditing(false)}>{t('enterprise.members.cancel')}</Button>
             </div>
@@ -247,7 +247,7 @@ export function OrgInfoTab({
                 className="h-8 rounded-lg px-3 text-xs font-semibold"
                 onClick={() => setDissolveOpen(true)}
               >
-                解散组织
+                {t('enterprise.info.dissolve')}
               </Button>
             </div>
           </div>

@@ -25,22 +25,51 @@
     "defaultWorkspace": "默认工作空间",
     "loading": "加载中...",
     "retry": "重试",
+    "requestFailed": "请求失败，请稍后重试",
     "errorLoadProfile": "加载账号信息失败，请刷新重试。",
     "save": "保存修改",
     "cancel": "取消",
     "confirm": "确定",
+    "dialog": "对话框",
     "edit": "编辑",
     "delete": "删除",
     "collapse": "收起侧栏",
     "expand": "展开侧栏",
     "online": "在线",
     "website": "官网",
+    "composer": {
+      "clear": "清空",
+      "send": "发送",
+      "stop": "停止",
+      "defaultMode": "对话测试"
+    },
+    "firstChargeLock": {
+      "title": "首次充值后解锁",
+      "desc": "完成首次充值（任意金额），立即解锁此功能。",
+      "cta": "去充值"
+    },
+    "progress": {
+      "current": "当前进度",
+      "usage": "当前用量"
+    },
+    "select": {
+      "empty": "暂无选项"
+    },
+    "sideSheet": {
+      "defaultTitle": "详情"
+    },
+    "workspaceGuard": {
+      "emptyTitle": "无可用工作区",
+      "emptyDesc": "当前账号尚未加入任何工作区。请联系企业管理员将你加入工作区，或前往设置创建一个新工作区。"
+    },
     "pagination": {
       "prev": "上一页",
       "next": "下一页",
       "page": "第 {{page}} 页",
       "total": "共 {{count}} 条",
-      "loadMore": "加载更多"
+      "loadMore": "加载更多",
+      "pageSizePrefix": "每页",
+      "pageSizeSuffix": "条"
     },
     "changelog": "更新日志",
     "close": "关闭",
@@ -55,7 +84,23 @@
       "title": "无权访问",
       "desc": "你没有访问此内容的权限，请联系管理员开通，或切换到你有权限的工作空间。",
       "descWithResource": "你没有访问此工作空间「{{resource}}」的权限，请联系管理员开通，或切换到你有权限的工作空间。",
-      "backHome": "返回总览"
+      "backHome": "返回总览",
+      "pageTitle": "无法访问",
+      "pageDesc": "你的账号当前不属于任何组织，无权访问控制台。请联系管理员邀请加入后再使用。",
+      "logout": "退出登录"
+    },
+    "notFound": {
+      "title": "页面不存在",
+      "desc": "你访问的页面不存在或已被移除。",
+      "backHome": "返回首页"
+    },
+    "authCallback": {
+      "failed": "登录失败，请重新登录",
+      "verifying": "正在验证身份…"
+    },
+    "confirmModal": {
+      "typeToConfirm": "请输入",
+      "toConfirm": "以确认"
     },
     "dateRange": {
       "placeholder": "选择时间范围",
@@ -128,6 +173,18 @@
       "sendFailed": "发送失败",
       "stopFailed": "停止会话失败",
       "stopped": "已停止生成。"
+    },
+    "referralInviteCard": {
+      "inviteLinkLabel": "我的专属邀请链接",
+      "inviteCodeLabel": "邀请码",
+      "inviteHint": "分享链接给好友，好友注册并消费后您可获得返佣奖励",
+      "copySuccess": "邀请链接已复制",
+      "copyCodeSuccess": "邀请码已复制",
+      "realtimeLabel": "实时计返佣",
+      "balanceLabel": "奖励余额可直接抵扣消费",
+      "rulesLinkLabel": "查看分润规则",
+      "copyInviteLinkAria": "复制邀请链接",
+      "copyInviteCodeAria": "复制{{label}}"
     }
   }
 }

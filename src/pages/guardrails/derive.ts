@@ -17,19 +17,19 @@ export type GuardrailKind = 'regular' | 'boost'
 
 /** 预算周期单位 → 中文档位（对齐 PRD 原型 apiKeyLimitPeriodOptions 文案：每 5 小时 / 每日 / 每周 / 每月，#11） */
 export const PERIOD_LABEL: Record<string, string> = {
-  hour: '每 5 小时',
-  day: '每日',
-  week: '每周',
-  month: '每月',
+  hour: 'Every 5 hours',
+  day: 'Daily',
+  week: 'Weekly',
+  month: 'Monthly',
 }
 
 // PRD 护栏预算周期（原型 configurableBudgetPeriodOptions）：每 5 小时 / 每日 / 每周 / 每月。
 // value = 后端 period_unit；「每 5 小时」= period_unit 'hour' + period_length 5（后端契约支持，实测已通过）。
 export const GUARDRAIL_BUDGET_PERIOD_OPTIONS: { value: 'hour' | 'day' | 'week' | 'month'; label: string }[] = [
-  { value: 'hour', label: '每 5 小时' },
-  { value: 'day', label: '每日' },
-  { value: 'week', label: '每周' },
-  { value: 'month', label: '每月' },
+  { value: 'hour', label: 'Every 5 hours' },
+  { value: 'day', label: 'Daily' },
+  { value: 'week', label: 'Weekly' },
+  { value: 'month', label: 'Monthly' },
 ]
 
 export const GUARDRAIL_BUDGET_PERIOD_KEYS: Record<'hour' | 'day' | 'week' | 'month', string> = {
@@ -45,8 +45,8 @@ export function guardrailBudgetPeriodLength(unit: string): number {
 }
 
 export const KIND_LABEL: Record<GuardrailKind, string> = {
-  regular: '常规',
-  boost: '提额',
+  regular: 'Regular',
+  boost: 'Boost',
 }
 
 export const KIND_LABEL_KEY: Record<GuardrailKind, string> = {
@@ -55,8 +55,8 @@ export const KIND_LABEL_KEY: Record<GuardrailKind, string> = {
 }
 
 export const SCOPE_LABEL: Record<GuardrailScope, string> = {
-  global: '全局',
-  member: '个人',
+  global: 'Global',
+  member: 'Member',
   key: 'Key',
 }
 
@@ -116,10 +116,10 @@ export type PromptInjectionMode = 'off' | 'flag' | 'redact' | 'block'
 export const PROMPT_INJECTION_MODES: PromptInjectionMode[] = ['off', 'flag', 'redact', 'block']
 
 export const PROMPT_INJECTION_LABEL: Record<PromptInjectionMode, string> = {
-  off: '关闭',
-  flag: '仅记录',
-  redact: '脱敏',
-  block: '拦截',
+  off: 'Off',
+  flag: 'Log only',
+  redact: 'Redact',
+  block: 'Block',
 }
 
 export const PROMPT_INJECTION_LABEL_KEY: Record<PromptInjectionMode, string> = {
@@ -131,9 +131,9 @@ export const PROMPT_INJECTION_LABEL_KEY: Record<PromptInjectionMode, string> = {
 
 /** info tooltip：命中后处理方式（只解释三种，不含关闭） */
 export const PROMPT_INJECTION_HINTS: { mode: Exclude<PromptInjectionMode, 'off'>; text: string }[] = [
-  { mode: 'flag', text: '记录命中，请求仍按原内容发送' },
-  { mode: 'redact', text: '将命中内容替换为 [PROMPT_INJECTION] 后继续发送' },
-  { mode: 'block', text: '直接拒绝请求，不发送给模型' },
+  { mode: 'flag', text: 'guardrails.promptInjection.hint.flag' },
+  { mode: 'redact', text: 'guardrails.promptInjection.hint.redact' },
+  { mode: 'block', text: 'guardrails.promptInjection.hint.block' },
 ]
 
 export const PROMPT_INJECTION_HINT_KEY: Record<Exclude<PromptInjectionMode, 'off'>, string> = {
@@ -148,7 +148,7 @@ export function isPromptInjectionMode(v: unknown): v is PromptInjectionMode {
 
 // 常规 Key 护栏可选「继承全局」；表单值 = 4 模式 + inherit。inherit 存库=不写该字段。
 export const PROMPT_INJECTION_INHERIT = 'inherit' as const
-export const PROMPT_INJECTION_INHERIT_LABEL = '继承全局护栏'
+export const PROMPT_INJECTION_INHERIT_LABEL = 'Inherit global guardrail'
 export const PROMPT_INJECTION_INHERIT_LABEL_KEY = 'guardrails.promptInjection.inherit'
 export type PromptInjectionFormValue = PromptInjectionMode | typeof PROMPT_INJECTION_INHERIT
 
@@ -173,6 +173,7 @@ export function guardrailPromptInjectionMode(g: GuardrailDetail): PromptInjectio
 export function resolveKeyPromptInjection(
   selectedGuardrails: GuardrailDetail[],
   activeGlobal: GuardrailDetail | undefined,
+  fallbackSourceLabel = 'No global guardrail configured',
 ): { mode: PromptInjectionMode; sourceLabel: string } {
   // 来源=护栏名（对齐 PRD 原型 resolvePromptInjectionRule：keyGuardrail.name / globalGuardrail.name / 未配置全局护栏），
   // 不加「常规 Key 护栏 ·」等自造前缀（需求方要求文案照 PRD）
@@ -185,7 +186,7 @@ export function resolveKeyPromptInjection(
   if (activeGlobal) {
     return { mode: rawPromptInjectionMode(activeGlobal) ?? 'off', sourceLabel: activeGlobal.name }
   }
-  return { mode: 'off', sourceLabel: '未配置全局护栏' }
+  return { mode: 'off', sourceLabel: fallbackSourceLabel }
 }
 
 /** 从护栏列表挑出启用中的全局护栏（生效解析用） */

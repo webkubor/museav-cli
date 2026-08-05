@@ -82,14 +82,14 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
   const bindEmailMutation = useMutation({
     mutationFn: () => bindEmail(emailInput.trim(), emailCode.trim()),
     onSuccess: (updated) => {
-      appToast.success('邮箱绑定成功')
+      appToast.success(t('account.info.bindEmailSuccess'))
       setEmailBindOpen(false)
       if (updated) queryClient.setQueryData<AccountProfile>(['account-profile'], updated)
       void queryClient.invalidateQueries({ queryKey: ['account-profile'] })
       trackEvent('account.email:bind', undefined, { result: 'success' })
     },
     onError: (err: unknown) => {
-      appToast.requestError(err, '邮箱绑定失败')
+      appToast.requestError(err, t('account.info.bindEmailError'))
       trackEvent('account.email:bind', undefined, { result: 'fail', error_code: errorCodeOf(err) })
     },
   })
@@ -124,7 +124,7 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
         {market === 'china' && profile.phone && (
           <div className="space-y-2">
             <span className="block text-xs font-semibold uppercase tracking-wider text-mg-text-2">
-              手机号码
+              {t('account.info.phoneLabel')}
             </span>
             <Input
               value={`${profile.phone.includes('+') ? '' : '+86 '}${profile.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')}`}
@@ -132,7 +132,7 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
               suffix={<LuLock size={14} />}
             />
             <span className="block text-xs leading-relaxed text-mg-text-3">
-              绑定的安全手机号，暂不支持自主修改。
+              {t('account.info.phoneHint')}
             </span>
           </div>
         )}
@@ -143,7 +143,7 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
           </span>
           <Input
             value={profile.email || ''}
-            placeholder={profile.email ? undefined : '未绑定'}
+            placeholder={profile.email ? undefined : t('account.info.emailUnbound')}
             readOnly
             suffix={profile.email ? <LuLock size={14} /> : undefined}
           />
@@ -151,13 +151,13 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
             <span className="block text-xs leading-relaxed text-mg-text-3">{t('account.info.emailHint')}</span>
           ) : (
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs leading-relaxed text-mg-text-3">暂未绑定电子邮箱。</span>
+              <span className="text-xs leading-relaxed text-mg-text-3">{t('account.info.emailUnboundHint')}</span>
               <button
                 type="button"
                 onClick={() => { setEmailInput(''); setEmailCode(''); setEmailBindOpen(true); trackEvent('account.email:bind_open') }}
                 className="shrink-0 text-xs font-bold text-brand-base hover:text-brand-base/80 bg-transparent border-none p-0 cursor-pointer transition-colors"
               >
-                绑定邮箱
+                {t('account.info.bindEmail')}
               </button>
             </div>
           )}
@@ -166,27 +166,27 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
             open={emailBindOpen}
             onClose={() => { if (!bindEmailMutation.isPending) setEmailBindOpen(false) }}
             size="md"
-            title="绑定邮箱"
-            description="绑定后可用于登录、找回密码与重要通知。"
+            title={t('account.info.bindEmailTitle')}
+            description={t('account.info.bindEmailDesc')}
             footer={(
               <>
-                <Button variant="outline" disabled={bindEmailMutation.isPending} className="h-8 rounded-lg px-3 text-xs" onClick={() => setEmailBindOpen(false)}>取消</Button>
-                <Button variant="brand" loading={bindEmailMutation.isPending} disabled={!emailValid || emailCode.trim().length === 0} className="h-8 rounded-lg px-4 text-xs font-semibold" onClick={() => bindEmailMutation.mutate()}>确认绑定</Button>
+                <Button variant="outline" disabled={bindEmailMutation.isPending} className="h-8 rounded-lg px-3 text-xs" onClick={() => setEmailBindOpen(false)}>{t('common.cancel')}</Button>
+                <Button variant="brand" loading={bindEmailMutation.isPending} disabled={!emailValid || emailCode.trim().length === 0} className="h-8 rounded-lg px-4 text-xs font-semibold" onClick={() => bindEmailMutation.mutate()}>{t('account.info.bindEmailConfirm')}</Button>
               </>
             )}
           >
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <label className="block text-xs font-bold uppercase tracking-wider text-mg-text-2">邮箱</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-mg-text-2">{t('account.info.emailLabel')}</label>
                 <Input value={emailInput} disabled={bindEmailMutation.isPending} onChange={(e) => setEmailInput(e.target.value)} placeholder="you@example.com" className="h-9 text-xs rounded-lg" />
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs font-bold uppercase tracking-wider text-mg-text-2">验证码</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-mg-text-2">{t('account.auth.fields.code')}</label>
                 <Input
                   value={emailCode}
                   disabled={bindEmailMutation.isPending}
                   onChange={(e) => setEmailCode(e.target.value)}
-                  placeholder="6 位邮箱验证码"
+                  placeholder={t('account.info.emailCodePlaceholder')}
                   className="h-9 text-xs rounded-lg"
                   suffix={<VerificationCodeButton onSend={handleSendEmailCode} disabled={!emailValid} />}
                 />

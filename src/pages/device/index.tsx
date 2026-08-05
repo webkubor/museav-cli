@@ -19,14 +19,14 @@ type PageState =
   | { kind: 'result'; status: 'approved' | 'denied' | 'expired' }
   | { kind: 'error'; message: string; loginRedirect?: string }
 
-const ROLE_LABELS: Record<string, { zh: string; en: string }> = {
-  tenant_owner:  { zh: '拥有者', en: 'Owner' },
-  tenant_admin:  { zh: '管理员', en: 'Admin' },
-  tenant_member: { zh: '成员',   en: 'Member' },
+const ROLE_LABEL_KEYS: Record<string, string> = {
+  tenant_owner: 'device.role.owner',
+  tenant_admin: 'device.role.admin',
+  tenant_member: 'device.role.member',
 }
 
 export default function DevicePage() {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const account = useAuthStore((s) => s.account)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -241,7 +241,6 @@ export default function DevicePage() {
   // confirming | approving
   const { tenants } = state
   const isApproving = state.kind === 'approving'
-  const isZh = i18n.language?.startsWith('zh')
   const initials = account?.display_name
     ?.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2) ?? '?'
   const selectedTenant = tenants.find((t) => t.tenant_id === selectedTenantId)
@@ -318,8 +317,8 @@ export default function DevicePage() {
                   border: `1px solid ${selectedTenant.type === 'enterprise' ? 'rgba(99,102,241,0.2)' : 'rgba(107,114,128,0.2)'}`,
                 }}>
                   {selectedTenant.type === 'enterprise'
-                    ? (isZh ? '企业' : 'Enterprise')
-                    : (isZh ? '个人' : 'Personal')}
+                    ? t('device.tenant.typeEnterprise')
+                    : t('device.tenant.typePersonal')}
                 </span>
               </>
             ) : (
@@ -339,7 +338,7 @@ export default function DevicePage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
               {tenants.map((tenant) => {
                 const selected = selectedTenantId === tenant.tenant_id
-                const roleLabel = ROLE_LABELS[tenant.role]
+                const roleLabelKey = ROLE_LABEL_KEYS[tenant.role]
                 return (
                   <button
                     key={tenant.tenant_id}
@@ -381,7 +380,7 @@ export default function DevicePage() {
                         )}
                       </div>
                       <div style={{ fontSize: '12px', color: 'var(--mg-text-3)', marginTop: '1px' }}>
-                        {tenant.slug} · {roleLabel ? (isZh ? roleLabel.zh : roleLabel.en) : tenant.role}
+                        {tenant.slug} · {roleLabelKey ? t(roleLabelKey) : tenant.role}
                       </div>
                     </div>
                   </button>

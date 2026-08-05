@@ -25,22 +25,51 @@
     "defaultWorkspace": "Default Workspace",
     "loading": "Loading...",
     "retry": "Retry",
+    "requestFailed": "Request failed. Please try again later.",
     "errorLoadProfile": "Failed to load account information. Please refresh.",
     "save": "Save Changes",
     "cancel": "Cancel",
     "confirm": "Confirm",
+    "dialog": "Dialog",
     "edit": "Edit",
     "delete": "Delete",
     "collapse": "Collapse",
     "expand": "Expand",
     "online": "Online",
     "website": "Website",
+    "composer": {
+      "clear": "Clear",
+      "send": "Send",
+      "stop": "Stop",
+      "defaultMode": "Chat test"
+    },
+    "firstChargeLock": {
+      "title": "Unlock after first top-up",
+      "desc": "Complete your first top-up with any amount to unlock this feature.",
+      "cta": "Top up"
+    },
+    "progress": {
+      "current": "Current progress",
+      "usage": "Current usage"
+    },
+    "select": {
+      "empty": "No options"
+    },
+    "sideSheet": {
+      "defaultTitle": "Details"
+    },
+    "workspaceGuard": {
+      "emptyTitle": "No workspace available",
+      "emptyDesc": "This account has not joined any workspace yet. Contact an organization admin or create a new workspace in settings."
+    },
     "pagination": {
       "prev": "Prev",
       "next": "Next",
       "page": "Page {{page}}",
       "total": "{{count}} items",
-      "loadMore": "Load More"
+      "loadMore": "Load More",
+      "pageSizePrefix": "Per page",
+      "pageSizeSuffix": "items"
     },
     "changelog": "Changelog",
     "close": "Close",
@@ -55,7 +84,23 @@
       "title": "Access Denied",
       "desc": "You do not have permission to access this content. Contact an admin or switch to a workspace you can access.",
       "descWithResource": "You do not have permission to access {{resource}} in this workspace. Contact an admin or switch to a workspace you can access.",
-      "backHome": "Back to Overview"
+      "backHome": "Back to Overview",
+      "pageTitle": "Access Unavailable",
+      "pageDesc": "Your account does not currently belong to any organization, so you cannot access the console. Contact an admin for an invitation.",
+      "logout": "Sign Out"
+    },
+    "notFound": {
+      "title": "Page Not Found",
+      "desc": "The page you visited does not exist or has been removed.",
+      "backHome": "Back Home"
+    },
+    "authCallback": {
+      "failed": "Sign-in failed. Please sign in again.",
+      "verifying": "Verifying identity..."
+    },
+    "confirmModal": {
+      "typeToConfirm": "Type",
+      "toConfirm": "to confirm"
     },
     "dateRange": {
       "placeholder": "Select time range",
@@ -128,6 +173,18 @@
       "sendFailed": "Failed to send",
       "stopFailed": "Failed to stop the conversation",
       "stopped": "Generation stopped."
+    },
+    "referralInviteCard": {
+      "inviteLinkLabel": "My referral link",
+      "inviteCodeLabel": "Invite code",
+      "inviteHint": "Share your link. When friends sign up and spend, you earn referral rewards.",
+      "copySuccess": "Referral link copied",
+      "copyCodeSuccess": "Invite code copied",
+      "realtimeLabel": "Real-time commission",
+      "balanceLabel": "Reward balance deducts spending directly",
+      "rulesLinkLabel": "View rules",
+      "copyInviteLinkAria": "Copy referral link",
+      "copyInviteCodeAria": "Copy {{label}}"
     }
   }
 }

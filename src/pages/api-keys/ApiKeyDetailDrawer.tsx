@@ -452,11 +452,11 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
                   )
                 })()}
                 {(() => {
-                  const pi = resolveKeyPromptInjection(guardrails ?? [], activeGlobalGuardrail(guardrails ?? []))
+                  const pi = resolveKeyPromptInjection(guardrails ?? [], activeGlobalGuardrail(guardrails ?? []), t('apiKeys.rule.noGlobalGuardrail'))
                   return (
                     <div className="min-w-0 rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
                       <div className="text-xs text-mg-text-3">{t('apiKeys.rule.promptInjection')}</div>
-                      <div className="mt-1 text-sm font-bold text-mg-text-1">{PROMPT_INJECTION_LABEL[pi.mode]}</div>
+                      <div className="mt-1 text-sm font-bold text-mg-text-1">{t(`guardrails.promptInjection.mode.${pi.mode}`, { defaultValue: PROMPT_INJECTION_LABEL[pi.mode] })}</div>
                       <div className="mt-1 text-xs text-mg-text-3">{t('apiKeys.rule.source', { source: pi.sourceLabel })}</div>
                     </div>
                   )

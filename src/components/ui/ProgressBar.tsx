@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useTranslation } from "react-i18next"
 import { cn } from "@/lib/utils"
 
 export interface ProgressBarMilestone {
@@ -43,6 +44,7 @@ export const ProgressBar = React.forwardRef<HTMLDivElement, ProgressBarProps>(
     },
     ref
   ) => {
+    const { t } = useTranslation()
     // 限制范围在 [min, max]
     const clampedValue = Math.max(min, Math.min(max, value))
     const totalRange = max - min
@@ -108,7 +110,7 @@ export const ProgressBar = React.forwardRef<HTMLDivElement, ProgressBarProps>(
         {/* 上方标签 */}
         {showLabel && labelPosition === "top" && (
           <div className="flex justify-between items-center mg-text-caption font-semibold">
-            <span className="text-[var(--mg-text-3)]">当前进度</span>
+            <span className="text-[var(--mg-text-3)]">{t('common.progress.current')}</span>
             <span className={cn("font-mono", currentStyle.text)}>
               {renderDefaultLabel()} ({percentString})
             </span>
@@ -271,7 +273,7 @@ export const ProgressBar = React.forwardRef<HTMLDivElement, ProgressBarProps>(
         {/* 下方标签 */}
         {showLabel && labelPosition === "bottom" && (
           <div className="flex justify-between items-center mg-text-caption font-semibold mt-0.5">
-            <span className="text-[var(--mg-text-3)]">当前用量</span>
+            <span className="text-[var(--mg-text-3)]">{t('common.progress.usage')}</span>
             <span className={cn("font-mono", currentStyle.text)}>
               {renderDefaultLabel()} ({percentString})
             </span>

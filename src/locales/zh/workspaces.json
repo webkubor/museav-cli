@@ -55,6 +55,10 @@
       "slugPlaceholder": "如：prod-app",
       "descLabel": "空间描述",
       "descPlaceholder": "简述该工作空间的用途...",
+      "ownerLabel": "空间负责人",
+      "initialMembersLabel": "初始成员",
+      "ownerBadge": "负责人",
+      "initialMembersPlaceholder": "搜索企业成员，回车添加",
       "inviteLabel": "初始成员 (选填)",
       "invitePlaceholder": "搜索组织成员姓名或邮箱...",
       "inviteHint": "创建成功后将同时发送工作空间邀请，最多 20 人。",
@@ -64,6 +68,7 @@
       "createSuccess": "工作空间 \"{{name}}\" 创建成功",
       "createError": "创建工作空间失败",
       "nameRequired": "工作空间名称不能为空",
+      "ownerRequired": "请选择空间负责人",
       "inviteLimit": "一次最多邀请 {{count}} 个邮箱",
       "limitReached": "已达工作空间上限（{{max}} 个）"
     },

@@ -5,6 +5,7 @@
  */
 
 import { LuArrowRight, LuBadgePercent, LuCheck, LuLink, LuShare2, LuTicketPercent } from 'react-icons/lu'
+import { useTranslation } from 'react-i18next'
 import { CopyButton } from '@/components/ui/CopyButton'
 
 const DEFAULT_RULES_HREF = '#referral-rules'
@@ -28,17 +29,27 @@ interface ReferralInviteCardProps {
 export function ReferralInviteCard({
   inviteLink,
   inviteCode,
-  inviteLinkLabel = '我的专属邀请链接',
-  inviteCodeLabel = '邀请码',
-  inviteHint = '分享链接给好友，好友注册并消费后您可获得返佣奖励',
-  copySuccess = '邀请链接已复制',
-  copyCodeSuccess = '邀请码已复制',
-  realtimeLabel = '实时计返佣',
-  balanceLabel = '奖励余额可直接抵扣消费',
-  rulesLinkLabel = '查看分润规则',
+  inviteLinkLabel,
+  inviteCodeLabel,
+  inviteHint,
+  copySuccess,
+  copyCodeSuccess,
+  realtimeLabel,
+  balanceLabel,
+  rulesLinkLabel,
   rulesHref = DEFAULT_RULES_HREF,
   compact = false,
 }: ReferralInviteCardProps) {
+  const { t } = useTranslation()
+  const resolvedInviteLinkLabel = inviteLinkLabel ?? t('common.referralInviteCard.inviteLinkLabel')
+  const resolvedInviteCodeLabel = inviteCodeLabel ?? t('common.referralInviteCard.inviteCodeLabel')
+  const resolvedInviteHint = inviteHint ?? t('common.referralInviteCard.inviteHint')
+  const resolvedCopySuccess = copySuccess ?? t('common.referralInviteCard.copySuccess')
+  const resolvedCopyCodeSuccess = copyCodeSuccess ?? t('common.referralInviteCard.copyCodeSuccess')
+  const resolvedRealtimeLabel = realtimeLabel ?? t('common.referralInviteCard.realtimeLabel')
+  const resolvedBalanceLabel = balanceLabel ?? t('common.referralInviteCard.balanceLabel')
+  const resolvedRulesLinkLabel = rulesLinkLabel ?? t('common.referralInviteCard.rulesLinkLabel')
+
   if (compact) {
     return (
       <div className="flex items-center gap-2 rounded-md border border-mg-border bg-mg-fill-0/40 py-1.5 pl-4 pr-1.5">
@@ -46,7 +57,7 @@ export function ReferralInviteCard({
         <span className="min-w-0 flex-1 truncate text-xs font-mono text-mg-text-2" title={inviteLink}>
           {inviteLink || '—'}
         </span>
-        <CopyButton value={inviteLink} aria-label="复制邀请链接" toast={copySuccess} />
+        <CopyButton value={inviteLink} aria-label={t('common.referralInviteCard.copyInviteLinkAria')} toast={resolvedCopySuccess} />
       </div>
     )
   }
@@ -61,21 +72,21 @@ export function ReferralInviteCard({
               <LuLink size={17} />
             </div>
             <div className="min-w-0 space-y-1">
-              <p className="text-sm font-bold text-mg-text-1">{inviteLinkLabel}</p>
-              <p className="max-w-[52ch] text-xs leading-relaxed text-mg-text-3">{inviteHint}</p>
+              <p className="text-sm font-bold text-mg-text-1">{resolvedInviteLinkLabel}</p>
+              <p className="max-w-[52ch] text-xs leading-relaxed text-mg-text-3">{resolvedInviteHint}</p>
             </div>
           </div>
 
           <div className="inline-flex max-w-full shrink-0 items-center gap-2 self-start rounded-full border border-mg-border bg-mg-fill-0/55 px-3 py-1 text-xs">
             <LuTicketPercent size={13} className="shrink-0 text-brand-base" />
-            <span className="shrink-0 text-mg-text-3">{inviteCodeLabel}</span>
+            <span className="shrink-0 text-mg-text-3">{resolvedInviteCodeLabel}</span>
             <span className="min-w-0 max-w-[9rem] truncate font-mono font-bold tracking-wider text-mg-text-1">
               {inviteCode || '—'}
             </span>
             <CopyButton
               value={inviteCode}
-              aria-label={`复制${inviteCodeLabel}`}
-              toast={copyCodeSuccess}
+              aria-label={t('common.referralInviteCard.copyInviteCodeAria', { label: resolvedInviteCodeLabel })}
+              toast={resolvedCopyCodeSuccess}
               className="-mr-1"
             />
           </div>
@@ -90,8 +101,8 @@ export function ReferralInviteCard({
           </div>
           <CopyButton
             value={inviteLink}
-            aria-label="复制邀请链接"
-            toast={copySuccess}
+            aria-label={t('common.referralInviteCard.copyInviteLinkAria')}
+            toast={resolvedCopySuccess}
             size="md"
             className="mb-1 mr-1 self-end sm:m-1.5 sm:self-auto"
           />
@@ -101,18 +112,18 @@ export function ReferralInviteCard({
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-mg-border bg-mg-fill-0/45 px-2.5 py-1 text-xs font-semibold text-mg-text-2">
               <LuBadgePercent size={12} className="text-brand-base" />
-              {realtimeLabel}
+              {resolvedRealtimeLabel}
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-mg-border bg-mg-fill-0/45 px-2.5 py-1 text-xs font-semibold text-mg-text-2">
               <LuCheck size={12} className="text-brand-base" />
-              {balanceLabel}
+              {resolvedBalanceLabel}
             </span>
           </div>
           <a
             href={rulesHref}
             className="inline-flex items-center gap-1 text-xs font-semibold text-brand-base transition-colors hover:text-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-glow"
           >
-            {rulesLinkLabel}
+            {resolvedRulesLinkLabel}
             <LuArrowRight size={13} />
           </a>
         </div>

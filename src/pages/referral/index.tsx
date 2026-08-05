@@ -30,20 +30,50 @@ import {
   listRewardRecords,
 } from '@/services/referral'
 
-import {
-  referralCopy,
-  type ReferralCommissionRecord,
-  type ReferralInvitee,
-  type ReferralStats,
-} from './referral-data'
+import type { ReferralCommissionRecord, ReferralInvitee, ReferralStats } from './referral-data'
 
 // 金额展示统一走 @/lib/utils 的 formatMoney（全站单一口径，含亚分级 <¥0.0001 特例，#273）。
 
 type TabKey = 'invitees' | 'commissions'
 
 export default function ReferralPage() {
-  const { i18n } = useTranslation()
-  const text = i18n.language.startsWith('zh') ? referralCopy.zh : referralCopy.en
+  const { t } = useTranslation()
+  const text: TextCopy = {
+    title: t('billing.referral.title'),
+    kpiTotalCommission: t('billing.referral.kpiTotalCommission'),
+    kpiMonthCommission: t('billing.referral.kpiMonthCommission'),
+    kpiActive: t('billing.referral.kpiActive'),
+    kpiRewardBalance: t('billing.referral.kpiRewardBalance'),
+    inviteLinkLabel: t('billing.referral.inviteLinkLabel'),
+    copySuccess: t('billing.referral.copySuccess'),
+    copyCodeSuccess: t('billing.referral.copyCodeSuccess'),
+    inviteCodeLabel: t('billing.referral.inviteCodeLabel'),
+    inviteHint: t('billing.referral.inviteHint'),
+    inviteRealtimeLabel: t('billing.referral.inviteRealtimeLabel'),
+    inviteBalanceLabel: t('billing.referral.inviteBalanceLabel'),
+    inviteRulesLink: t('billing.referral.inviteRulesLink'),
+    tierTableLabel: t('billing.referral.tierTableLabel'),
+    tierTableHint: t('billing.referral.tierTableHint'),
+    rulesTitle: t('billing.referral.rulesTitle'),
+    tabInvitees: t('billing.referral.tabInvitees'),
+    tabCommissions: t('billing.referral.tabCommissions'),
+    colInvitee: t('billing.referral.colInvitee'),
+    colRegisteredAt: t('billing.referral.colRegisteredAt'),
+    colTotalSpend: t('billing.referral.colTotalSpend'),
+    colCommission: t('billing.referral.colCommission'),
+    colCurrentTier: t('billing.referral.colCurrentTier'),
+    colDate: t('billing.referral.colDate'),
+    colSpend: t('billing.referral.colSpend'),
+    colRate: t('billing.referral.colRate'),
+    colTier: t('billing.referral.colTier'),
+    colAmount: t('billing.referral.colAmount'),
+    notYet: t('billing.referral.notYet'),
+    empty: t('billing.referral.empty'),
+    gateTitle: t('billing.referral.gateTitle'),
+    gateDesc: t('billing.referral.gateDesc'),
+    gateCta: t('billing.referral.gateCta'),
+    gateInviteePlaceholder: t('billing.referral.gateInviteePlaceholder'),
+  }
   // 金额符号走全局结算币种（platform-config.settlement_currency），#372
   const { symbol } = useCurrency()
 
@@ -121,13 +151,17 @@ export default function ReferralPage() {
     { key: 'commissions', label: text.tabCommissions },
   ]
 
-  const isZh = i18n.language.startsWith('zh')
-
   // 档位阶梯配置——后端接口就绪后替换为 API 数据（#220）
   const tierConfig = [
-    { name: isZh ? '成长伙伴' : 'Growth Partner', threshold: 0, rate: 10 },
-    { name: isZh ? '核心伙伴' : 'Core Partner', threshold: 50000, rate: 13 },
-    { name: isZh ? '战略伙伴' : 'Strategic Partner', threshold: 200000, rate: 15 },
+    { name: t('billing.referral.tiers.growth'), threshold: 0, rate: 10 },
+    { name: t('billing.referral.tiers.core'), threshold: 50000, rate: 13 },
+    { name: t('billing.referral.tiers.strategic'), threshold: 200000, rate: 15 },
+  ]
+  const ruleItems = [
+    t('billing.referral.ruleItem1'),
+    t('billing.referral.ruleItem2'),
+    t('billing.referral.ruleItem3'),
+    t('billing.referral.ruleItem4'),
   ]
 
   return (
@@ -207,26 +241,24 @@ export default function ReferralPage() {
             <span className="text-xs text-mg-text-3">{text.tierTableHint}</span>
           </div>
           <div className="divide-y divide-mg-border/50">
-            {tierConfig.map((t) => {
+            {tierConfig.map((tier) => {
               return (
                 <div
-                  key={t.name}
+                  key={tier.name}
                   className="flex items-center justify-between py-2.5 px-3 -mx-3 rounded-lg transition-colors"
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-mg-text-2">
-                      {t.name}
+                      {tier.name}
                     </span>
                   </div>
                   <div className="flex items-center gap-4">
                     <span className="text-xs text-mg-text-3">
                       {/* 符号走全局结算币种（#372）；门槛数值仍是前端 mock，等 #220 后端接口下发 */}
-                      {isZh
-                        ? `累计消费 ≥ ${symbol}${t.threshold.toLocaleString()}`
-                        : `Spend ≥ ${symbol}${t.threshold.toLocaleString()}`}
+                      {t('billing.referral.tierSpendThreshold', { amount: `${symbol}${tier.threshold.toLocaleString()}` })}
                     </span>
                     <span className="text-sm font-bold tabular-nums text-mg-text-1">
-                      {t.rate}%
+                      {tier.rate}%
                     </span>
                   </div>
                 </div>
@@ -245,61 +277,16 @@ export default function ReferralPage() {
           <LuSparkles size={15} className="animate-pulse" />
           <span>{text.rulesTitle}</span>
         </div>
-        {isZh ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-mg-text-3 leading-relaxed">
-            <div className="flex gap-2.5 items-start">
-              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-xs font-bold shrink-0">01</span>
-              <div>
-                被邀请人每次实际付费消费<span className="text-[var(--brand-base)] font-bold">实时计返佣</span>（退款冲回、赠送/兑换码额度消费不计），奖励按其累计消费对应的档位比例计算。
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-mg-text-3 leading-relaxed">
+          {ruleItems.map((item, index) => (
+            <div key={item} className="flex gap-2.5 items-start">
+              <span className={`mt-0.5 p-1 rounded-md text-xs font-bold shrink-0 ${index === 3 ? 'bg-mg-danger/10 text-mg-danger' : 'bg-[var(--brand-base)]/10 text-[var(--brand-base)]'}`}>
+                {String(index + 1).padStart(2, '0')}
+              </span>
+              <div>{item}</div>
             </div>
-            <div className="flex gap-2.5 items-start">
-              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-xs font-bold shrink-0">02</span>
-              <div>
-                奖励直接计入<span className="text-[var(--brand-base)] font-bold">奖励余额</span>，无需转入主余额；模型调用时在<span className="text-[var(--brand-base)] font-bold">主余额前自动抵扣</span>，暂不支持提现。
-              </div>
-            </div>
-            <div className="flex gap-2.5 items-start">
-              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-xs font-bold shrink-0">03</span>
-              <div>
-                返佣<span className="text-[var(--brand-base)] font-bold">上不封顶</span>；返佣档位、比例与门槛由平台统一设置，以推荐计划页面实际展示为准。
-              </div>
-            </div>
-            <div className="flex gap-2.5 items-start">
-              <span className="mt-0.5 p-1 rounded-md bg-mg-danger/10 text-mg-danger text-xs font-bold shrink-0">04</span>
-              <div>
-                同主体、同设备、同 IP 或异常消费将进入核查；确认违规后，相关奖励可被冻结或取消。
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-mg-text-3 leading-relaxed">
-            <div className="flex gap-2.5 items-start">
-              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-xs font-bold shrink-0">01</span>
-              <div>
-                Commission accrues in <span className="text-[var(--brand-base)] font-bold">real time</span> on actual paid spend (refunds clawed back; gifted/promo codes excluded), calculated by the tier matching total spend.
-              </div>
-            </div>
-            <div className="flex gap-2.5 items-start">
-              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-xs font-bold shrink-0">02</span>
-              <div>
-                Rewards go straight into your <span className="text-[var(--brand-base)] font-bold">reward balance</span> — no transfer needed; they <span className="text-[var(--brand-base)] font-bold">auto-deduct before your main balance</span> on model calls. Withdrawal isn't supported yet.
-              </div>
-            </div>
-            <div className="flex gap-2.5 items-start">
-              <span className="mt-0.5 p-1 rounded-md bg-[var(--brand-base)]/10 text-[var(--brand-base)] text-xs font-bold shrink-0">03</span>
-              <div>
-                Commission has <span className="text-[var(--brand-base)] font-bold">no upper limit</span>. Tiers, rates, and thresholds are configured by the platform and shown on this page.
-              </div>
-            </div>
-            <div className="flex gap-2.5 items-start">
-              <span className="mt-0.5 p-1 rounded-md bg-mg-danger/10 text-mg-danger text-xs font-bold shrink-0">04</span>
-              <div>
-                Same-entity, same-device, same-IP, or abnormal spend gets reviewed; confirmed violations may have rewards frozen or revoked.
-              </div>
-            </div>
-          </div>
-        )}
+          ))}
+        </div>
       </div>
 
       {/* 三 Tab */}
@@ -346,7 +333,42 @@ export default function ReferralPage() {
 
 // ── 子表格组件 ──────────────────────────────────────────────
 
-type TextCopy = typeof referralCopy.zh
+interface TextCopy {
+  title: string
+  kpiTotalCommission: string
+  kpiMonthCommission: string
+  kpiActive: string
+  kpiRewardBalance: string
+  inviteLinkLabel: string
+  copySuccess: string
+  copyCodeSuccess: string
+  inviteCodeLabel: string
+  inviteHint: string
+  inviteRealtimeLabel: string
+  inviteBalanceLabel: string
+  inviteRulesLink: string
+  tierTableLabel: string
+  tierTableHint: string
+  rulesTitle: string
+  tabInvitees: string
+  tabCommissions: string
+  colInvitee: string
+  colRegisteredAt: string
+  colTotalSpend: string
+  colCommission: string
+  colCurrentTier: string
+  colDate: string
+  colSpend: string
+  colRate: string
+  colTier: string
+  colAmount: string
+  notYet: string
+  empty: string
+  gateTitle: string
+  gateDesc: string
+  gateCta: string
+  gateInviteePlaceholder: string
+}
 
 
 function TierBadge({ name, rate, fallback }: { name?: string; rate?: number; fallback: string }) {

@@ -5,6 +5,7 @@
  */
 
 import * as React from "react"
+import { useTranslation } from "react-i18next"
 import {
   Sheet,
   SheetContent,
@@ -37,7 +38,8 @@ export function SideSheet({
   side = "right",
   className,
 }: SideSheetProps) {
-  const accessibleTitle = title ?? ariaTitle ?? "详情"
+  const { t } = useTranslation()
+  const accessibleTitle = title ?? ariaTitle ?? t('common.sideSheet.defaultTitle')
 
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) onClose() }}>

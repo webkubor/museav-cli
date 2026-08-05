@@ -67,8 +67,8 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
   }
 
   const confirmMessage = isOnlyLoginMethod
-    ? '解绑后将无法登录你的账号，请先设置密码。'
-    : '确认解绑该账号？'
+    ? t('account.oauth.unbindOnlyLoginMethod')
+    : t('account.oauth.unbindConfirmMessage')
 
   return (
     <>
@@ -137,11 +137,11 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
         open={pendingUnbind !== null}
         onClose={handleUnbindCancel}
         size="sm"
-        title="解绑确认"
+        title={t('account.oauth.unbindConfirmTitle')}
         footer={
           <div className="flex justify-end gap-2">
             <Button size="small" variant="secondary" onClick={handleUnbindCancel}>
-              取消
+              {t('common.cancel')}
             </Button>
             <Button
               size="small"
@@ -151,7 +151,7 @@ export const OAuthBindingTab: React.FC<OAuthBindingTabProps> = ({ connections })
               onClick={handleUnbindConfirm}
               className={isOnlyLoginMethod ? 'text-mg-danger' : undefined}
             >
-              确认解绑
+              {t('account.oauth.unbindConfirm')}
             </Button>
           </div>
         }

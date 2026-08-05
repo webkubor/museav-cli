@@ -57,7 +57,7 @@ export function LowBalanceAlert({ tenantId }: { tenantId: string }) {
       queryClient.setQueryData(alertQueryKey, data)
     },
     onError: () => {
-      appToast.error(t('billing.lowBalance.saveFailed', { defaultValue: '保存失败，请稍后重试' }))
+      appToast.error(t('billing.lowBalance.saveFailed'))
     },
   })
 
@@ -85,9 +85,9 @@ export function LowBalanceAlert({ tenantId }: { tenantId: string }) {
     <div className="billing-low-balance rounded-lg border border-mg-border bg-card-bg p-6 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="min-w-0 flex-1 space-y-0.5">
-          <div className="text-sm font-bold text-mg-text-1">{t('billing.lowBalance.title', { defaultValue: '低余额提醒' })}</div>
+          <div className="text-sm font-bold text-mg-text-1">{t('billing.lowBalance.title')}</div>
           <p className="text-xs text-mg-text-3">
-            {t('billing.lowBalance.desc', { defaultValue: '余额低于阈值时接收提醒，避免服务调用受到影响。' })}
+            {t('billing.lowBalance.desc')}
           </p>
         </div>
 
@@ -106,7 +106,7 @@ export function LowBalanceAlert({ tenantId }: { tenantId: string }) {
                     'billing-low-balance-recipient flex shrink-0 items-center gap-1.5 h-9 px-3 rounded-md border border-mg-border text-xs font-semibold text-mg-text-2 hover:bg-mg-fill-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed',
                   )}
                 >
-                  <span className="whitespace-nowrap text-mg-text-3">{t('billing.lowBalance.recipients', { defaultValue: '通知人' })}</span>
+                  <span className="whitespace-nowrap text-mg-text-3">{t('billing.lowBalance.recipients')}</span>
                   <span className="text-mg-text-1 max-w-[140px] truncate">
                     {selectedNames.length > 0 ? selectedNames.join('、') : '—'}
                   </span>
@@ -130,7 +130,7 @@ export function LowBalanceAlert({ tenantId }: { tenantId: string }) {
                     </label>
                   ))}
                   {candidates.length === 0 && (
-                    <p className="px-2 py-1.5 text-xs text-mg-text-3">{t('billing.lowBalance.noCandidates', { defaultValue: '暂无可选通知人' })}</p>
+                    <p className="px-2 py-1.5 text-xs text-mg-text-3">{t('billing.lowBalance.noCandidates')}</p>
                   )}
                 </div>
               }
@@ -139,7 +139,7 @@ export function LowBalanceAlert({ tenantId }: { tenantId: string }) {
 
           <div className="billing-low-balance-threshold flex items-center gap-1.5 h-9 px-3 rounded-md border border-mg-border shrink-0">
             {/* qa#278 二轮反馈：容器变窄时标签文字会逐字换行，缺 nowrap 保护 */}
-            <span className="whitespace-nowrap text-xs text-mg-text-3">{t('billing.lowBalance.threshold', { defaultValue: '提醒阈值' })}</span>
+            <span className="whitespace-nowrap text-xs text-mg-text-3">{t('billing.lowBalance.threshold')}</span>
             {/* 阈值币种取接口 threshold.currency（#372：此前写死 ¥，国际站也显示人民币符号） */}
             <span className="text-xs text-mg-text-3">{currencySymbol(alert.threshold?.currency, isZhLang())}</span>
             <input
@@ -174,7 +174,7 @@ export function LowBalanceAlert({ tenantId }: { tenantId: string }) {
                 low_balance_recipient_count: alert.recipient_account_ids.length,
               })
             }}
-            aria-label={t('billing.lowBalance.toggle', { defaultValue: '低余额提醒开关' })}
+            aria-label={t('billing.lowBalance.toggle')}
           />
         </div>
       </div>

@@ -139,7 +139,8 @@
       "source": "规则来源：{{source}}",
       "globalKeySource": "全局 / Key 护栏规则",
       "unrestricted": "不限制",
-      "notConfigured": "未配置规则"
+      "notConfigured": "未配置规则",
+      "noGlobalGuardrail": "未配置全局护栏"
     },
     "common": {
       "notConfigured": "未配置",

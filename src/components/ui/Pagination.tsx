@@ -121,7 +121,7 @@ export function Pagination(props: PaginationProps) {
         )}
         {onPageSizeChange && pageSize != null && (
           <span className="flex items-center gap-1.5">
-            每页
+            {t('common.pagination.pageSizePrefix')}
             <Select
               value={String(pageSize)}
               onChange={(v) => onPageSizeChange(Number(v))}
@@ -132,7 +132,7 @@ export function Pagination(props: PaginationProps) {
                 <Select.Option key={size} value={String(size)}>{size}</Select.Option>
               ))}
             </Select>
-            条
+            {t('common.pagination.pageSizeSuffix')}
           </span>
         )}
       </div>

@@ -59,7 +59,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
         onClose={() => setRedeemVisible(false)}
         size="sm"
         title={t('billing.promo.title')}
-        description={t('billing.promo.subtitle', { defaultValue: '线下收款 / 促销码自助到账' })}
+        description={t('billing.promo.subtitle')}
       >
         <PromoRedeemForm tenantId={tenantId} onSuccess={() => setRedeemVisible(false)} />
       </Modal>
@@ -108,7 +108,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
         <div className="space-y-1">
           <p className="flex items-center gap-1 text-xs text-mg-text-3">
             {t('billing.balance.spendableTotal')}
-            <InfoTip text="调用消费时按 赠送 → 奖励 → 主余额 的顺序扣减。" />
+            <InfoTip text={t('billing.balance.spendableTip')} />
           </p>
           <div className="flex items-baseline gap-3 flex-wrap">
             {(balanceError || breakdownError) && !balance && !breakdown ? (
@@ -159,7 +159,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
           >
             <div className={cn('flex items-center gap-1 text-xs transition-colors duration-300', activeTab === 'gift' ? 'text-brand-base font-semibold' : 'text-mg-text-3')}>
               {t('billing.balance.giftBalance')}
-              <InfoTip text="活动、兑换码等赠送额度，调用消费时优先扣减。" />
+              <InfoTip text={t('billing.balance.giftTip')} />
             </div>
             <div className="flex items-baseline gap-0.5 mt-1 select-none">
               <span className="text-xs font-semibold text-mg-text-3">{currencySymbol}</span>
@@ -176,7 +176,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
           >
             <div className={cn('flex items-center gap-1 text-xs transition-colors duration-300', activeTab === 'reward' ? 'text-brand-base font-semibold' : 'text-mg-text-3')}>
               {t('billing.balance.rewardBalance')}
-              <InfoTip text="推荐返佣等产生的奖励，调用消费时在主余额前扣减。" />
+              <InfoTip text={t('billing.balance.rewardTip')} />
             </div>
             <div className="flex items-baseline gap-0.5 mt-1 select-none">
               <span className="text-xs font-semibold text-mg-text-3">{currencySymbol}</span>

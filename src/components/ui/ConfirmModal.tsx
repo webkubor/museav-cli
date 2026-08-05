@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -23,14 +24,17 @@ export function ConfirmModal({
   onConfirm,
   title,
   description,
-  confirmLabel = '确认',
-  cancelLabel = '取消',
+  confirmLabel,
+  cancelLabel,
   variant = 'default',
   loading = false,
   requireTyping,
   children,
 }: ConfirmModalProps) {
+  const { t } = useTranslation()
   const [typedValue, setTypedValue] = useState('')
+  const confirmText = confirmLabel ?? t('common.confirm')
+  const cancelText = cancelLabel ?? t('common.cancel')
 
   function handleClose() {
     setTypedValue('')
@@ -43,14 +47,14 @@ export function ConfirmModal({
     <Modal open={open} onClose={handleClose} title={title} description={description} size="sm"
       footer={
         <>
-          <Button variant="outline" onClick={handleClose} disabled={loading}>{cancelLabel}</Button>
+          <Button variant="outline" onClick={handleClose} disabled={loading}>{cancelText}</Button>
           <Button
             variant={variant === 'destructive' ? 'destructive' : 'default'}
             loading={loading}
             disabled={confirmDisabled}
             onClick={onConfirm}
           >
-            {confirmLabel}
+            {confirmText}
           </Button>
         </>
       }
@@ -59,7 +63,7 @@ export function ConfirmModal({
       {requireTyping !== undefined && (
         <div className="mt-3 space-y-1.5">
           <p className="mg-text-caption text-mg-text-3">
-            请输入 <span className="font-mono font-semibold text-mg-text-1">{requireTyping}</span> 以确认
+            {t('common.confirmModal.typeToConfirm')} <span className="font-mono font-semibold text-mg-text-1">{requireTyping}</span> {t('common.confirmModal.toConfirm')}
           </p>
           <Input
             value={typedValue}

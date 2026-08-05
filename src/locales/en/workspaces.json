@@ -55,6 +55,10 @@
       "slugPlaceholder": "e.g. prod-app",
       "descLabel": "Description",
       "descPlaceholder": "Describe the purpose...",
+      "ownerLabel": "Workspace owner",
+      "initialMembersLabel": "Initial members",
+      "ownerBadge": "Owner",
+      "initialMembersPlaceholder": "Search organization members and press Enter",
       "inviteLabel": "Initial members (Optional)",
       "invitePlaceholder": "Search org members by name or email...",
       "inviteHint": "Invitations are sent after creation. Up to 20 people.",
@@ -64,6 +68,7 @@
       "createSuccess": "Workspace \"{{name}}\" created",
       "createError": "Failed to create",
       "nameRequired": "Workspace name cannot be empty",
+      "ownerRequired": "Please select a workspace owner",
       "inviteLimit": "You can invite up to {{count}} emails at once",
       "limitReached": "Workspace limit reached ({{max}})"
     },

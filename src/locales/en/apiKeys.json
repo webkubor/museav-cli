@@ -139,7 +139,8 @@
       "source": "Rule source: {{source}}",
       "globalKeySource": "Global / key guardrail rules",
       "unrestricted": "Unrestricted",
-      "notConfigured": "No rules configured"
+      "notConfigured": "No rules configured",
+      "noGlobalGuardrail": "No global guardrail configured"
     },
     "common": {
       "notConfigured": "Not configured",

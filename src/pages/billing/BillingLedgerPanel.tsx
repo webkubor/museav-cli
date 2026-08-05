@@ -83,17 +83,6 @@ const TYPE_BADGE: Record<IncomeRecordType, 'brand' | 'info' | 'purple'> = {
   reward: 'purple',
 }
 
-// hover title 释义（双语，避免动 locale 文件）：徽章缩写不直观时补一句人话
-const TYPE_DESC: Record<IncomeRecordType, { zh: string; en: string }> = {
-  recharge: { zh: '充值：用户主动充值入账', en: 'Recharge: credited from a user top-up' },
-  gift: { zh: '赠送入账：平台发放的赠送额度', en: 'Gift credit: complimentary balance from the platform' },
-  reward: { zh: '奖励入账：活动或奖励发放的额度', en: 'Reward credit: balance granted via rewards or activities' },
-}
-const STATUS_DESC: Record<IncomeRecordStatus, { zh: string; en: string }> = {
-  completed: { zh: '已完成：入账成功', en: 'Completed: credited successfully' },
-  processing: { zh: '处理中：入账处理中', en: 'Processing: credit in progress' },
-  failed: { zh: '失败：本次入账尝试未成功，余额未变化', en: 'Failed: this attempt did not go through, balance unchanged' },
-}
 const STATUS_BADGE: Record<IncomeRecordStatus, 'success' | 'warning' | 'danger'> = {
   completed: 'success',
   processing: 'warning',
@@ -116,8 +105,7 @@ export function BillingLedgerPanel({
   bucketFilter: BalanceTab
   onBucketFilterChange: (next: BalanceTab) => void
 }) {
-  const { t, i18n } = useTranslation()
-  const lang = i18n.language.startsWith('zh') ? 'zh' : 'en'
+  const { t } = useTranslation()
   const { hasPermission } = usePermissions()
   // 发票功能仅国内站有（市场特例，PRD）；叠加 billing.invoice:view 权限
   const canInvoice = isDomestic() && hasPermission(PERMS.BILLING_INVOICE_VIEW)
@@ -305,7 +293,7 @@ export function BillingLedgerPanel({
                     </TableCell>
                     <TableCell className="text-xs text-mg-text-2 whitespace-nowrap">{bucketLabel(rec.balance_bucket)}</TableCell>
                     <TableCell className="whitespace-nowrap">
-                      <Badge variant={TYPE_BADGE[rec.type]} size="sm" title={TYPE_DESC[rec.type][lang]} className="cursor-help">{t(`billing.income.types.${rec.type}`)}</Badge>
+                      <Badge variant={TYPE_BADGE[rec.type]} size="sm" title={t(`billing.income.typeDesc.${rec.type}`)} className="cursor-help">{t(`billing.income.types.${rec.type}`)}</Badge>
                     </TableCell>
                     <TableCell className="text-xs font-bold font-mono whitespace-nowrap text-mg-success tabular-nums">{renderAmount(rec)}</TableCell>
                     <TableCell className="text-xs text-mg-text-2 max-w-[140px]">
@@ -315,7 +303,7 @@ export function BillingLedgerPanel({
                       </span>
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
-                      <Badge variant={STATUS_BADGE[rec.status]} size="sm" title={STATUS_DESC[rec.status][lang]} className="cursor-help">
+                      <Badge variant={STATUS_BADGE[rec.status]} size="sm" title={t(`billing.income.statusDesc.${rec.status}`)} className="cursor-help">
                         {t(`billing.income.status.${rec.status}`)}
                       </Badge>
                     </TableCell>

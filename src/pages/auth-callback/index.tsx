@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { getSession } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
@@ -8,6 +9,7 @@ import { appToast } from '@/lib/app-toast'
 import { trackEvent } from '@/lib/track'
 
 export default function AuthCallbackPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
   const setLoading = useAuthStore((s) => s.setLoading)
@@ -52,11 +54,11 @@ export default function AuthCallbackPage() {
         } catch {
           // 回调换取与会话兜底都失败 = 登录确实没成：先提示再跳登录，不静默
           trackEvent('login_fail', { method: 'oauth' }, { result: 'fail', error_code: 'callback_failed' })
-          appToast.error('登录失败，请重新登录')
+          appToast.error(t('common.authCallback.failed'))
           navigate('/login', { replace: true })
         }
       })
-  }, [])
+  }, [navigate, setAuth, setLoading, t])
 
   return (
     <div
@@ -80,7 +82,7 @@ export default function AuthCallbackPage() {
             margin: '0 auto 12px',
           }}
         />
-        正在验证身份…
+        {t('common.authCallback.verifying')}
         <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
       </div>
     </div>

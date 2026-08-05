@@ -342,7 +342,7 @@ export function CreateKeyModal({
       (item) => item.aggregation_scope === aggregationScope,
     );
     const value = budget
-      ? `${symbol}${groupThousands(trimAmountScale(budget.spend_limit_amount))} / ${PERIOD_LABEL[budget.period_unit] ?? budget.period_unit}`
+      ? `${symbol}${groupThousands(trimAmountScale(budget.spend_limit_amount))} / ${t(`guardrails.period.${budget.period_unit}`, { defaultValue: PERIOD_LABEL[budget.period_unit] ?? budget.period_unit })}`
       : t("apiKeys.limit.none");
     return { label, value, source: budget ? t("apiKeys.effectiveRule") : t("apiKeys.budget.notConfigured") };
   });
@@ -359,7 +359,7 @@ export function CreateKeyModal({
     },
     {
       label: t("apiKeys.rule.promptInjection"),
-      value: PROMPT_INJECTION_LABEL[piResolved.mode],
+      value: t(`guardrails.promptInjection.mode.${piResolved.mode}`, { defaultValue: PROMPT_INJECTION_LABEL[piResolved.mode] }),
       source: piResolved.sourceLabel,
     },
   ];

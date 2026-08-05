@@ -74,13 +74,27 @@
       "workspacesPanelEmpty": "暂无授权工作空间",
       "wsRoleOwner": "负责人",
       "wsRoleMember": "成员",
-      "wsDefault": "默认"
+      "wsDefault": "默认",
+      "roleDesc": {
+        "tenant_owner": "Owner：企业所有者，拥有最高权限",
+        "tenant_admin": "Admin：管理员，可管理成员与配置",
+        "tenant_member": "Member：普通成员"
+      },
+      "statusDesc": {
+        "active": "正常：成员可正常访问与使用",
+        "suspended": "停用：已停用，无法访问企业资源"
+      }
     },
     "info": {
       "avatarHint": "点击头像更换 · 支持 PNG/JPEG/WebP，最大 2MB",
       "personalAvatarHint": "个人空间头像跟随账号头像，请在账号设置中修改",
       "orgName": "组织名称",
       "rename": "更名",
+      "renameSuccess": "组织名称已更新",
+      "updateError": "更新失败",
+      "logoSuccess": "企业头像已更新",
+      "logoError": "上传失败，请重试",
+      "saving": "保存中...",
       "slug": "唯一标识 (Slug)",
       "accountType": "账户类型",
       "owner": "Owner (所有者)",
@@ -105,7 +119,9 @@
       "dissolveConfirmTitle": "确认解散组织",
       "dissolveConfirmDesc": "请输入组织名称「{{name}}」确认解散。",
       "dissolveWarn": "该操作会让所有成员失去此组织下工作空间、密钥和配置入口的访问权限。",
-      "confirmDissolve": "确认解散"
+      "confirmDissolve": "确认解散",
+      "dissolveSuccess": "组织已解散",
+      "dissolveError": "解散组织失败"
     },
     "audit": {
       "colTime": "时间",
@@ -138,7 +154,49 @@
       "changesCollapse": "收起",
       "exportSuccess": "审计日志已导出",
       "exportError": "导出失败，请稍后重试",
-      "exportNoPermission": "无权限导出审计日志，请联系企业管理员开通"
+      "exportNoPermission": "无权限导出审计日志，请联系企业管理员开通",
+      "action": {
+        "composed": "{{verb}}{{domain}}",
+        "tenantUpdated": "更新企业信息",
+        "tenantDissolved": "解散企业",
+        "workspaceOwnershipTransferred": "转移工作空间负责人",
+        "membershipRoleChanged": "变更成员角色"
+      },
+      "domain": {
+        "tenant": "企业",
+        "workspace": "工作空间",
+        "guardrail": "安全护栏",
+        "member": "成员",
+        "invite": "邀请",
+        "budget": "预算",
+        "account": "账号"
+      },
+      "verb": {
+        "created": "创建",
+        "updated": "更新",
+        "deleted": "删除",
+        "removed": "移除",
+        "added": "添加",
+        "suspended": "停用",
+        "reactivated": "启用",
+        "enabled": "启用",
+        "disabled": "停用",
+        "revoked": "吊销",
+        "rotated": "轮转",
+        "exported": "导出",
+        "roleChanged": "变更角色",
+        "ownershipTransferred": "转移负责人",
+        "accepted": "接受",
+        "declined": "拒绝",
+        "sent": "发送",
+        "resent": "重新发送",
+        "expired": "过期",
+        "canceled": "取消",
+        "joined": "加入",
+        "left": "退出",
+        "invited": "邀请",
+        "transferred": "转移"
+      }
     },
     "invite": {
       "configTitle": "邀请配置",
@@ -153,6 +211,7 @@
       "oneTimeNote": "一次性邀请（当前角色：{{role}}）：被使用一次后即失效；切换角色会自动生成新链接，旧链接同时作废。",
       "linkRefreshedByRole": "角色已切换，邀请链接已刷新",
       "linkReset": "邀请链接已重置",
+      "linkResetError": "重置失败",
       "resetLink": "重置链接",
       "copyLink": "复制链接",
       "copied": "已复制",
@@ -162,7 +221,13 @@
       "targetWorkspace": "授权工作空间",
       "targetWorkspaceNone": "不指定（仅加入组织）",
       "sendInvite": "发送邀请",
+      "sendSuccess": "邀请已发出",
+      "sendError": "邀请失败",
+      "copySuccess": "邀请链接已复制",
       "queueTitle": "邀请队列",
+      "pendingCount": "{{count}} 个邀请待接受",
+      "roleAdmin": "管理员",
+      "roleMember": "成员",
       "queueEmptyTitle": "暂无待处理邀请",
       "queueEmptyDesc": "通过邮箱发出的邀请会显示在这里",
       "resetConfirmTitle": "确认重置邀请链接",

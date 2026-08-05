@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { apiBaseUrl } from '@/lib/request'
 import { injectHeaders } from '@/lib/request-headers'
 import { storageKeys } from '@/lib/storage'
@@ -33,6 +34,7 @@ export interface CsChatOptions {
 }
 
 export function useCsChat(options?: CsChatOptions) {
+  const { t } = useTranslation()
   const [messages, setMessages] = useState<Message[]>(() => {
     try {
       const saved = localStorage.getItem(storageKeys.csHistory())
@@ -157,7 +159,7 @@ export function useCsChat(options?: CsChatOptions) {
               }
             }
             if (event.type === 'error') {
-              throw new Error(event.error ?? '服务异常，请稍后再试')
+              throw new Error(event.error ?? t('common.customerService.serviceError'))
             }
           }
         }
@@ -180,7 +182,7 @@ export function useCsChat(options?: CsChatOptions) {
         const agentMsg = prev.find((m) => m.id === agentMsgId)
         if (agentMsg && !agentMsg.content.trim()) {
           return prev.map((m) =>
-            m.id === agentMsgId ? { ...m, content: '抱歉，收到空回复，请稍后再试。' } : m
+            m.id === agentMsgId ? { ...m, content: t('common.customerService.emptyReply') } : m
           )
         }
         saveMessages(prev)
@@ -188,7 +190,7 @@ export function useCsChat(options?: CsChatOptions) {
       })
     } catch (err) {
       if ((err as Error).name === 'AbortError') return
-      const msg = err instanceof Error ? err.message : '发送失败'
+      const msg = err instanceof Error ? err.message : t('common.customerService.sendFailed')
       setStatus('offline')
       setMessages((prev) =>
         prev.map((m) => (m.id === agentMsgId ? { ...m, content: msg, isError: true } : m))
@@ -199,7 +201,7 @@ export function useCsChat(options?: CsChatOptions) {
     }
     // options 注入到请求头：必须进依赖，否则切换组织后 sendMessage 仍持旧闭包，
     // 会用旧 tenantId 覆盖 injectHeaders 写入的当前租户（React Compiler 要求依赖整个 options）
-  }, [isLoading, conversationId, saveMessages, options])
+  }, [isLoading, conversationId, saveMessages, options, t])
 
   const stopMessage = useCallback(async () => {
     if (!isLoading) return
@@ -212,7 +214,7 @@ export function useCsChat(options?: CsChatOptions) {
 
     if (currentConversationId) {
       stopConversation(currentConversationId).catch((error) => {
-        appToast.requestError(error, '停止会话失败')
+        appToast.requestError(error, t('common.customerService.stopFailed'))
       })
     }
 
@@ -221,13 +223,13 @@ export function useCsChat(options?: CsChatOptions) {
     setMessages((prev) => {
       const next = prev.map((m) =>
         m.id === activeAgentMsgId
-          ? { ...m, content: m.content.trim() ? `${m.content}\n\n已停止生成。` : '已停止生成。' }
+          ? { ...m, content: m.content.trim() ? `${m.content}\n\n${t('common.customerService.stopped')}` : t('common.customerService.stopped') }
           : m
       )
       saveMessages(next)
       return next
     })
-  }, [conversationId, isLoading, saveMessages])
+  }, [conversationId, isLoading, saveMessages, t])
 
   const reconnect = useCallback(() => {
     setStatus('online')

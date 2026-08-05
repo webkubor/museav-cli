@@ -1,6 +1,11 @@
 /* 重置默认 CSS，为控制台提供稳定的产品 UI 基础环境 */
 
 @import "tailwindcss";
+/* Tailwind v4 需要显式挂插件才会产出 animate-in / fade-in-0 / zoom-in-95 / slide-in-from-* 这批
+   工具类。v3→v4 迁移时漏了这行，导致 19 个组件（Modal/Select/DropdownMenu/Popover/Tabs/Tooltip…）
+   里 69 处进出场动画类名一直是死的——产物 CSS 里 animate-in 出现 0 次。内置的
+   animate-spin/pulse/ping 不受影响，那是 Tailwind 自带的。 */
+@plugin "tailwindcss-animate";
 
 @custom-variant dark (&:where([theme-mode="dark"], [theme-mode="dark"] *));
 

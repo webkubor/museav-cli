@@ -2,9 +2,9 @@
   "usage": {
     "title": "Usage Analytics",
     "desc": "View API calls, token usage, and cost trends.",
-    "descTeam": "View your team's spend, requests, and model usage breakdown.",
+    "descTeam": "Track your organization's spend, requests, tokens, and model usage.",
     "descSpace": "View spend, requests, and model usage for everyone in your managed workspace.",
-    "descMine": "View your own spend, requests, and model usage breakdown.",
+    "descMine": "Track your own spend, requests, tokens, and model usage.",
     "noData": "No data",
     "emptyValue": "None",
     "refresh": "Refresh",
@@ -102,7 +102,7 @@
     },
     "breakdown": {
       "title": "Usage Breakdown",
-      "desc": "Review breakdowns within the selected time and workspace scope"
+      "desc": "View usage details within the current time range and workspace scope"
     },
     "emptyState": {
       "noDataTitle": "No usage data",

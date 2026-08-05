@@ -51,10 +51,15 @@ export function formatDateTimeWithSeconds(iso: string | null | undefined): strin
   }))
 }
 
-/** "2024/1/1" — 纯日期，无时间 */
+/** "Jan 1, 2024" — 纯日期，无时间。显式给 year/month/day，避免 en 环境下退化成
+ * 有歧义的数字格式 M/D/YYYY（8/5/2026 分不清是 8 月 5 日还是 5 月 8 日，2026-08-05 踩过）。 */
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) return '—'
-  return new Date(iso).toLocaleDateString(currentLocale(), dateOptions({}))
+  return new Date(iso).toLocaleDateString(currentLocale(), dateOptions({
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }))
 }
 
 /** "12:00:00 AM" — 纯时间 */

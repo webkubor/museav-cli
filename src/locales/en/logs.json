@@ -1,6 +1,6 @@
 {
   "logs": {
-    "title": "Call Logs",
+    "title": "Logs",
     "desc": "Real-time visibility into all API calls for traffic tracking and troubleshooting.",
     "refresh": "Refresh",
     "loading": "Loading logs...",
@@ -12,9 +12,9 @@
       "enterpriseDesc": "Track enterprise calls by workspace, member, and API Key.",
       "viewToggleAria": "Switch view scope",
       "recordTypeAria": "Switch record type",
-      "enterpriseView": "Enterprise",
+      "enterpriseView": "Org View",
       "spaceView": "Space",
-      "mineView": "Mine",
+      "mineView": "My View",
       "syncRecord": "Sync calls",
       "asyncRecord": "Async tasks"
     },
@@ -67,12 +67,12 @@
       "status": {
         "all": "All statuses",
         "success": "Success",
-        "guarded": "Guardrail hit",
+        "guarded": "Guardrail Triggered",
         "error": "Error"
       },
       "guardrail": {
         "all": "All guardrail states",
-        "hit": "Guardrail hit",
+        "hit": "Guardrail Triggered",
         "not_hit": "No guardrail hit"
       },
       "chip": {
@@ -91,7 +91,7 @@
       "time": "Time",
       "requestTime": "Created",
       "model": "Model",
-      "owner": "Owner",
+      "owner": "Caller",
       "statusCode": "Status",
       "duration": "Latency",
       "latency": "Latency",
@@ -144,7 +144,7 @@
         "firstTokenHint": "First token {{value}}",
         "cost": "Cost",
         "billingStatusMissing": "Billing status unavailable",
-        "tokenFlowHint": "Input token -> output token",
+        "tokenFlowHint": "Input tokens -> output tokens",
         "fallbackCount": "{{count}} times",
         "fallbackTriggered": "Fallback triggered",
         "fallbackNotTriggered": "Not triggered",
@@ -164,7 +164,7 @@
         "sectionTitle": "Request content",
         "loading": "Loading request / response content...",
         "captureDisabledTitle": "Input/output logging is not enabled for this workspace",
-        "captureDisabledDesc": "Call logs only keep metadata, tokens, cost, latency, routing, and error/guardrail summaries. To view full Prompt and Response content, enable input/output logging in workspace log and forwarding settings.",
+        "captureDisabledDesc": "Call logs retain metadata, tokens, cost, latency, routing, and error or guardrail summaries. To view full prompts and responses, enable Input/Output Logging in the workspace's Logs & Forwarding settings.",
         "openSettings": "Enable log forwarding",
         "captureEnabled": "Input/output log capture is enabled",
         "copyAll": "Copy all",
@@ -202,7 +202,7 @@
     },
     "status": {
       "success": "Success",
-      "guarded": "Guardrail hit",
+      "guarded": "Guardrail Triggered",
       "error": "Error"
     },
     "metrics": {
@@ -220,7 +220,7 @@
       "unknownSource": "Unknown source",
       "requestStatus": "Request status",
       "modelRequest": "Model request",
-      "blockedHint": "Guardrail hit",
+      "blockedHint": "Guardrail Triggered",
       "notStartedHint": "No response, tokens, latency or cost",
       "action": {
         "flag": "Logged, continued",

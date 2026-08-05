@@ -4,7 +4,7 @@
     "desc": "Manage logging, forwarding destinations, and retry policies.",
     "settingsTitle": "Log Collection Settings",
     "settingsDesc": "Control full request retention and whether logs are pushed to external observability tools.",
-    "loggingOffWarning": "Disabling logging will also disable broadcast forwarding",
+    "loggingOffWarning": "Disabling input/output logging will also disable log forwarding.",
     "status": {
       "enabled": "Enabled",
       "disabled": "Disabled",
@@ -18,7 +18,7 @@
       "meta": "Full content collected · retained for 30 days"
     },
     "broadcast": {
-      "title": "Broadcast Forwarding",
+      "title": "Log Forwarding",
       "desc": "Push logs to configured destinations (e.g. Datadog, OpenTelemetry).",
       "meta": "When disabled, logs are not pushed to external platforms"
     },

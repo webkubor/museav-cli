@@ -8,7 +8,7 @@ import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { Button } from '@/components/ui/Button'
 import { appToast } from '@/lib/app-toast'
-import { cn } from '@/lib/utils'
+import { cn, formatMoney } from '@/lib/utils'
 import { trackEvent } from '@/lib/track'
 import {
   RECHARGE_PAYMENT_CHANNELS,
@@ -174,7 +174,8 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
                         : "border-mg-border text-mg-text-2 hover:text-mg-text-1 hover:border-brand-base/40"
                     )}
                   >
-                    <span className={cn("text-[15px] font-bold font-mono", active && "text-brand-base")}>{currencySymbol}{p}</span>
+                    {/* 需求方#433：面额加千分位（$1,000），符合海外金额阅读习惯 */}
+                    <span className={cn("text-[15px] font-bold font-mono", active && "text-brand-base")}>{formatMoney(p, currencySymbol)}</span>
                   </button>
                 )
               })}
@@ -246,9 +247,10 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
             onClick={handleSubmit}
             className="w-full h-11 text-sm font-bold rounded-md"
           >
+            {/* 需求方#432：币种符号跟随结算币种（此前文案里写死 ¥，国际站 USD 也显示人民币符号） */}
             {recharge.isPending
               ? t('billing.rechargeModal.submitting')
-              : t('billing.rechargeModal.submit', { amount: numAmount > 0 ? amount : '0' })
+              : t('billing.rechargeModal.submit', { amount: formatMoney(numAmount, currencySymbol) })
             }
           </Button>
         </div>

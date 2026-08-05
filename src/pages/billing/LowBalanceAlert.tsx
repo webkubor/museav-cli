@@ -56,8 +56,9 @@ export function LowBalanceAlert({ tenantId }: { tenantId: string }) {
     onSuccess: (data) => {
       queryClient.setQueryData(alertQueryKey, data)
     },
-    onError: () => {
-      appToast.error(t('billing.lowBalance.saveFailed'))
+    // 需求方#427：带上后端具体报错——只弹笼统「保存失败」时，用户会把接口报错当成「开关坏了」
+    onError: (err: Error) => {
+      appToast.requestError(err, t('billing.lowBalance.saveFailed'))
     },
   })
 

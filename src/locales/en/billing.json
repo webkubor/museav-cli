@@ -102,7 +102,7 @@
       "amount": "Amount",
       "customAmount": "Custom Amount",
       "method": "Payment Method",
-      "submit": "Pay ¥{{amount}}",
+      "submit": "Pay {{amount}}",
       "success": "Recharge order created",
       "error": "Failed to create order",
       "submitting": "Submitting...",

@@ -39,7 +39,7 @@ vi.mock('react-i18next', () => ({
         'billing.rechargeModal.amount': '充值金额',
         'billing.rechargeModal.customAmount': '自定义金额',
         'billing.rechargeModal.method': '支付方式',
-        'billing.rechargeModal.submit': `前往支付 ¥${values?.amount ?? ''}`,
+        'billing.rechargeModal.submit': `前往支付 ${values?.amount ?? ''}`,
         'billing.rechargeModal.success': '充值订单已创建，请完成支付',
         'billing.rechargeModal.error': '创建充值订单失败',
         'billing.rechargeModal.submitting': '提交中...',

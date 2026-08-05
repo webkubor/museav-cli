@@ -438,7 +438,7 @@ export function isOfflineModel(model: CatalogModelItem): boolean {
  * 无模态信息默认按文本对待（避免数据缺失误伤 LLM）。
  * 含 image 模态（多模态视觉 LLM）仍保留，它们能正常走文本对话。
  */
-/** 空态示例 Prompt（逐字取自原型 App.tsx:17000-17023 playgroundSamplePrompts 的 label/prompt，回复由后端真实生成，不搬运原型的 mock replies） */
+/** 空态示例 Prompt（逐字取自原型 App.tsx:17000-17023 playgroundSamplePrompts 的 label/prompt，回复由后端真实生成） */
 export function playgroundSamplePrompts(): Array<{ label: string; prompt: string }> {
   return [
     { label: i18n.t('modelsExperience.samplePrompts.compare.label'), prompt: i18n.t('modelsExperience.samplePrompts.compare.prompt') },

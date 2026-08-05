@@ -26,7 +26,7 @@ export interface HistorySessionItem {
 interface HistorySessionSidebarProps {
   collapsed: boolean
   onToggleCollapsed: (collapsed: boolean) => void
-  /** 外部传入；本组件不负责拉取数据。省略时兜底内置 mock，供开发自测使用 */
+  /** 外部传入；本组件不负责拉取数据。省略时按空列表渲染 */
   sessions?: HistorySessionItem[]
   activeSessionId?: string
   onSelectSession: (id: string) => void
@@ -44,42 +44,6 @@ const CATEGORY_META: Record<HistorySessionItem['category'], { labelKey: string; 
   audio: { labelKey: 'modelsExperience.historySidebar.categoryAudio', variant: 'success' },
   video: { labelKey: 'modelsExperience.historySidebar.categoryVideo', variant: 'warning' },
 }
-
-// 开发自测用内置 mock（组件本身仍是受控的：仅供本文件外的调用方在开发期传入 sessions 参考，不在组件内部使用）
-const MOCK_HISTORY_SESSIONS: HistorySessionItem[] = [
-  {
-    id: 'sess-1',
-    name: '产品文案润色 —— 首页 Hero 区块多版本对比',
-    updatedAt: new Date().toISOString(),
-    category: 'dialogue',
-    task: '文本生成',
-    models: [{ id: 'm1', name: 'GPT-4o' }, { id: 'm2', name: 'Claude 3.5 Sonnet' }],
-  },
-  {
-    id: 'sess-2',
-    name: '海报主视觉生成',
-    updatedAt: new Date(Date.now() - 3 * 3600_000).toISOString(),
-    category: 'image',
-    task: '图像生成',
-    models: [{ id: 'm3', name: 'FLUX.1' }],
-  },
-  {
-    id: 'sess-3',
-    name: '客服播报语音合成测试',
-    updatedAt: new Date(Date.now() - 2 * 86400_000).toISOString(),
-    category: 'audio',
-    task: '语音合成',
-    models: [{ id: 'm4', name: 'Old-TTS-v1', offline: true }],
-  },
-  {
-    id: 'sess-4',
-    name: '产品宣传短片分镜生成',
-    updatedAt: new Date(Date.now() - 15 * 86400_000).toISOString(),
-    category: 'video',
-    task: '视频生成',
-    models: [{ id: 'm5', name: 'Gen-Video-2' }, { id: 'm6', name: 'Gen-Video-2-HD' }],
-  },
-]
 
 /** 分组标签 key，渲染时按 t() 解析——放在这里而不是 groupByDate 里，因为 groupByDate 是纯函数不接 t */
 const GROUP_LABEL_KEYS: Record<string, string> = {
@@ -111,7 +75,7 @@ function groupByDate(sessions: HistorySessionItem[]) {
 export function HistorySessionSidebar({
   collapsed,
   onToggleCollapsed,
-  sessions = MOCK_HISTORY_SESSIONS,
+  sessions = [],
   activeSessionId,
   onSelectSession,
   onNewSession,

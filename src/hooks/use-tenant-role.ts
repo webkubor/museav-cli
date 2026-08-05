@@ -32,7 +32,7 @@ export function useTenantRole() {
    * （/auth/session 早已在那里白名单豁免，同理。）
    *
    * 条件带上 activeTenantId：有活跃租户即已登录，isAuthenticated 尚未回填的
-   * 中间态（以及只 mock 了租户的测试）不该被误判成匿名而拿不到角色。
+   * 中间态（以及仅提供租户数据的测试）不该被误判成匿名而拿不到角色。
    */
   const { data, isLoading } = useQuery<TenantListResponse>({
     queryKey: ['tenants'],

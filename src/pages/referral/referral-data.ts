@@ -1,7 +1,7 @@
 /**
- * 推荐计划（消费分润）静态数据与文案。
- * V1.1 净新增模块，后端接口未就绪：先用本地 mock 出可评审 UI，
- * 接口就绪后改为 services/referral.ts 拉取，页面消费同样的类型。
+ * 推荐计划（消费分润）页面数据类型。
+ * 路由：/referral
+ * API：services/referral.ts 对接真实 referral BFF 接口。
  */
 
 // 金额字段统一为 string（与后端一致：后端金额返回字符串，前端按需 Number() 解析）

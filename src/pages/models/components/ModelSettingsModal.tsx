@@ -41,7 +41,7 @@ export interface ModelSettingsModalProps {
   values: Record<string, unknown>
   onChange: (key: string, value: unknown) => void
   onReset: () => void
-  /** 本会话累计（只包含该模型在本会话中的成功/计费结果，mock 数据由外部传入） */
+  /** 本会话累计（只包含该模型在本会话中的成功/计费结果，由外部传入） */
   sessionStats: ModelSettingsSessionStats
   /** 是否处于多模型对比会话（原型 App.tsx:19468 session.columns.length > 1）。
    *  true 时图像/视频的「生成数量」锁定为 1 并显示说明文案（App.tsx:20321-20322/20363-20364：

@@ -36,6 +36,12 @@ import type { ReferralCommissionRecord, ReferralInvitee, ReferralStats } from '.
 
 type TabKey = 'invitees' | 'commissions'
 
+const REFERRAL_TIER_RULES = [
+  { nameKey: 'billing.referral.tiers.growth', threshold: 0, rate: 10 },
+  { nameKey: 'billing.referral.tiers.core', threshold: 50000, rate: 13 },
+  { nameKey: 'billing.referral.tiers.strategic', threshold: 200000, rate: 15 },
+] as const
+
 export default function ReferralPage() {
   const { t } = useTranslation()
   const text: TextCopy = {
@@ -151,12 +157,6 @@ export default function ReferralPage() {
     { key: 'commissions', label: text.tabCommissions },
   ]
 
-  // 档位阶梯配置——后端接口就绪后替换为 API 数据（#220）
-  const tierConfig = [
-    { name: t('billing.referral.tiers.growth'), threshold: 0, rate: 10 },
-    { name: t('billing.referral.tiers.core'), threshold: 50000, rate: 13 },
-    { name: t('billing.referral.tiers.strategic'), threshold: 200000, rate: 15 },
-  ]
   const ruleItems = [
     t('billing.referral.ruleItem1'),
     t('billing.referral.ruleItem2'),
@@ -241,20 +241,19 @@ export default function ReferralPage() {
             <span className="text-xs text-mg-text-3">{text.tierTableHint}</span>
           </div>
           <div className="divide-y divide-mg-border/50">
-            {tierConfig.map((tier) => {
+            {REFERRAL_TIER_RULES.map((tier) => {
               return (
                 <div
-                  key={tier.name}
+                  key={tier.nameKey}
                   className="flex items-center justify-between py-2.5 px-3 -mx-3 rounded-lg transition-colors"
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-mg-text-2">
-                      {tier.name}
+                      {t(tier.nameKey)}
                     </span>
                   </div>
                   <div className="flex items-center gap-4">
                     <span className="text-xs text-mg-text-3">
-                      {/* 符号走全局结算币种（#372）；门槛数值仍是前端 mock，等 #220 后端接口下发 */}
                       {t('billing.referral.tierSpendThreshold', { amount: `${symbol}${tier.threshold.toLocaleString()}` })}
                     </span>
                     <span className="text-sm font-bold tabular-nums text-mg-text-1">

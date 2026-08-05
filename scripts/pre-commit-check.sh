@@ -23,3 +23,24 @@ else
   npx tsc -b --force
   npx eslint .
 fi
+
+# ── 分叉预警（只警告，不阻断）─────────────────────────────────────
+# 为什么要有：双向分叉（本地分支与 origin 各有对方没有的 commit）时 push 会被拒，
+# 而 force 会丢别人的东西。2026-08-04 撞过一次：任杰走 MR 把改动合进 main、我们走
+# test 合了同一改动，origin/test 与 origin/main 各有 13/1 个独有提交，是准备同步时
+# 偶然发现的——没有任何机制会报它。2026-08-05 又撞一次（test 领先 main 7 个、main
+# 领先 test 1 个），同样靠人工比对才发现，坐实了需要这条预警。
+#
+# 刻意只警告不阻断：分叉不是「这次提交引入的」，拦下提交解决不了问题，反而挡住正常
+# 工作。也刻意不 fetch：那会让每次提交都联网、慢几秒；这里只比对本地已有的
+# origin/* ref，零网络开销。代价是 ref 陈旧时可能漏报，由每日 cs-doctor 兜底。
+_cur=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+if [ -n "$_cur" ] && git rev-parse --verify --quiet "origin/$_cur" >/dev/null 2>&1; then
+  _ahead=$(git rev-list --count "origin/$_cur..$_cur" 2>/dev/null || echo 0)
+  _behind=$(git rev-list --count "$_cur..origin/$_cur" 2>/dev/null || echo 0)
+  if [ "$_ahead" -gt 0 ] && [ "$_behind" -gt 0 ]; then
+    echo "[pre-commit] ⚠️  $_cur 与 origin/$_cur 双向分叉（本地独有 $_ahead / 远端独有 $_behind）"
+    echo "[pre-commit]     推之前先收敛：git fetch origin $_cur && git rebase origin/$_cur（或 merge）"
+    echo "[pre-commit]     别 force push——会丢远端那 $_behind 个提交"
+  fi
+fi

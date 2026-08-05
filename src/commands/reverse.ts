@@ -1,4 +1,4 @@
-/** studio-image reverse —— 图片逆向（SCULPT 六要素反推 prompt） */
+/** studio-cli reverse —— 图片逆向（SCULPT 六要素反推 prompt） */
 import type { StudioClient } from '../client.js'
 
 export async function reverse(client: StudioClient, input: string): Promise<void> {

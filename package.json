@@ -1,10 +1,10 @@
 {
-  "name": "studio-image",
-  "version": "0.4.0",
+  "name": "@webkubor/studio-cli",
+  "version": "1.0.0",
   "description": "studio 中台出图 CLI —— 命令行调中台 API 出图、逆向、图生图",
   "type": "module",
   "bin": {
-    "studio-image": "dist/index.js"
+    "studio-cli": "dist/index.js"
   },
   "main": "dist/client.js",
   "exports": {
@@ -24,6 +24,7 @@
     "node": ">=18"
   },
   "keywords": [
+    "studio-cli",
     "studio",
     "image",
     "cli",
@@ -44,5 +45,8 @@
   },
   "bugs": {
     "url": "https://github.com/webkubor/studio-cli/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

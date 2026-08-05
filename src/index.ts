@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * studio-image —— studio 中台出图 CLI
+ * studio-cli —— studio 中台出图 CLI
  *
- * 用法见 README。注册中台：studio-image config --baseUrl ... --apiKey ...
+ * 用法见 README。注册中台：studio-cli config --baseUrl ... --apiKey ...
  */
 import { readFileSync } from 'node:fs'
 import { Command } from 'commander'
@@ -25,7 +25,7 @@ updateNotifier({ pkg, updateCheckInterval: 1000 * 60 * 60 * 12 }).notify({ defer
 const program = new Command()
 
 program
-  .name('studio-image')
+  .name('studio-cli')
   .description('studio 中台出图 CLI —— login 登录后即可命令行出图、逆向、图生图')
   .version(pkg.version)
 
@@ -96,22 +96,22 @@ program
 
 program
   .command('config')
-  .description('配置中台地址和 apiKey（存到 ~/.studio-image.json）')
+  .description('配置中台地址和 apiKey（存到 ~/.studio-cli.json）')
   .option('--baseUrl <url>', '中台地址，默认 https://studio.webkubor.online')
   .option('--apiKey <key>', 'apiKey（sk-studio-xxx）')
   .action((opts) => {
     if (!opts.baseUrl && !opts.apiKey) {
       try {
         const cfg = loadConfig()
-        process.stderr.write(`当前配置 (~/.studio-image.json):\n  baseUrl: ${cfg.baseUrl}\n  apiKey: ${cfg.apiKey ? cfg.apiKey.slice(0, 16) + '...' : '(未设置)'}\n`)
+        process.stderr.write(`当前配置 (~/.studio-cli.json):\n  baseUrl: ${cfg.baseUrl}\n  apiKey: ${cfg.apiKey ? cfg.apiKey.slice(0, 16) + '...' : '(未设置)'}\n`)
       } catch (e) {
         process.stderr.write(`${(e as Error).message}\n`)
       }
-      process.stderr.write(`\n修改: studio-image config --apiKey sk-studio-xxx\n`)
+      process.stderr.write(`\n修改: studio-cli config --apiKey sk-studio-xxx\n`)
       return
     }
     const cfg = saveConfig(opts)
-    process.stderr.write(`✅ 已保存到 ~/.studio-image.json\n  baseUrl: ${cfg.baseUrl}\n  apiKey: ${cfg.apiKey ? cfg.apiKey.slice(0, 16) + '...' : '(未设置)'}\n`)
+    process.stderr.write(`✅ 已保存到 ~/.studio-cli.json\n  baseUrl: ${cfg.baseUrl}\n  apiKey: ${cfg.apiKey ? cfg.apiKey.slice(0, 16) + '...' : '(未设置)'}\n`)
   })
 
 program

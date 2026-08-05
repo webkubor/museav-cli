@@ -1,4 +1,4 @@
-/** studio-image whoami —— 查当前登录账户 + 租户归属 */
+/** studio-cli whoami —— 查当前登录账户 + 租户归属 */
 import type { StudioClient } from '../client.js'
 
 export async function whoami(client: StudioClient): Promise<void> {

@@ -1,4 +1,4 @@
-/** studio-image models —— 查可用模型列表 */
+/** studio-cli models —— 查可用模型列表 */
 import type { StudioClient } from '../client.js'
 
 export async function models(client: StudioClient): Promise<void> {

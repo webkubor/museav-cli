@@ -1,4 +1,4 @@
-/** studio-image upload —— 上传垫图，输出 URL */
+/** studio-cli upload —— 上传垫图，输出 URL */
 import type { StudioClient } from '../client.js'
 
 export async function upload(client: StudioClient, filePath: string): Promise<void> {

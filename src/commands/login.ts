@@ -1,8 +1,8 @@
 /**
- * studio-image login —— 设备授权登录（RFC 8628）
+ * studio-cli login —— 设备授权登录（RFC 8628）
  *
  * 流程：CLI 调 /cli-auth/start 拿验证码 → 用户浏览器打开审批页授权
- *      → CLI 轮询 /cli-auth/poll 拿 JWT → 存到 ~/.studio-image.json
+ *      → CLI 轮询 /cli-auth/poll 拿 JWT → 存到 ~/.studio-cli.json
  *
  * 之后所有命令用 Bearer JWT 调 API，权限/额度与网页端一致。
  */
@@ -55,13 +55,13 @@ export async function login(opts: { baseUrl?: string }): Promise<void> {
 
     if (poll.status === 'approved' && poll.token) {
       saveConfig({ baseUrl, token: poll.token })
-      process.stderr.write('\n✅ 登录成功！token 已保存到 ~/.studio-image.json\n')
+      process.stderr.write('\n✅ 登录成功！token 已保存到 ~/.studio-cli.json\n')
       await printAffiliation(baseUrl, poll.token)
-      process.stderr.write('现在可以出图了：studio-image gen --prompt "一只猫"\n')
+      process.stderr.write('现在可以出图了：studio-cli gen --prompt "一只猫"\n')
       return
     }
     if (poll.status === 'expired') {
-      throw new Error('授权已过期，请重新运行 studio-image login')
+      throw new Error('授权已过期，请重新运行 studio-cli login')
     }
     // 服务端目前只有 pending → approved 或过期两条路，没有"拒绝"这个动作
     // （浏览器审批页没有拒绝按钮，不批准就是不动，最终走 expired）。
@@ -72,7 +72,7 @@ export async function login(opts: { baseUrl?: string }): Promise<void> {
     // pending：继续等
     process.stderr.write('.')
   }
-  throw new Error('等待授权超时，请重新运行 studio-image login')
+  throw new Error('等待授权超时，请重新运行 studio-cli login')
 }
 
 function sleep(ms: number): Promise<void> {

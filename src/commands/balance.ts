@@ -1,4 +1,4 @@
-/** studio-image balance —— 查上游余额 */
+/** studio-cli balance —— 查上游余额 */
 import type { StudioClient } from '../client.js'
 
 export async function balance(client: StudioClient): Promise<void> {

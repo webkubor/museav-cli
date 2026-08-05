@@ -1,4 +1,4 @@
-/** studio-image gen —— 出图（核心命令） */
+/** studio-cli gen —— 出图（核心命令） */
 import type { StudioClient } from '../client.js'
 
 export async function gen(client: StudioClient, opts: {

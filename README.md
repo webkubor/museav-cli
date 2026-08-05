@@ -2,11 +2,11 @@
 
 <img src="https://studio.webkubor.online/logo.svg" alt="studio" width="72" />
 
-# studio-image
+# studio-cli
 
-[![npm version](https://img.shields.io/npm/v/studio-image)](https://www.npmjs.com/package/studio-image)
-[![license](https://img.shields.io/npm/l/studio-image)](./LICENSE)
-[![node](https://img.shields.io/node/v/studio-image)](package.json)
+[![npm version](https://img.shields.io/npm/v/%40webkubor%2Fstudio-cli)](https://www.npmjs.com/package/@webkubor/studio-cli)
+[![license](https://img.shields.io/npm/l/%40webkubor%2Fstudio-cli)](./LICENSE)
+[![node](https://img.shields.io/node/v/%40webkubor%2Fstudio-cli)](package.json)
 [![CI](https://github.com/webkubor/studio-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/webkubor/studio-cli/actions/workflows/ci.yml)
 
 **Agent-ready** — designed to be shelled out to directly, not just used by humans
@@ -20,7 +20,7 @@
 
 > 命令行出图，一行配置就能用。背后的 [studio 中台](https://studio.webkubor.online) 帮你搞定模型、密钥、路由、记账——你只管 prompt。
 
-`studio-image` 是 [studio 出图中台](https://studio.webkubor.online) 的命令行客户端。装上它，登录（或配一个 apiKey），就能在终端里出图、逆向、图生图。给 Agent 用的详细说明见 [AGENTS.md](./AGENTS.md)。
+`studio-cli` 是 [studio 出图中台](https://studio.webkubor.online) 的命令行客户端。装上它，登录（或配一个 apiKey），就能在终端里出图、逆向、图生图。给 Agent 用的详细说明见 [AGENTS.md](./AGENTS.md)。
 
 ---
 
@@ -33,9 +33,9 @@
 
 **不适合你，如果你在做一个真正的产品/网站**：这个 CLI 是给终端用的，**不是** SDK 或后端集成方案。举个真实例子——好易美的 `hym-admin`（一个跑在 Cloudflare Pages Functions 上的业务后台）需要出图能力时，走的是两条路，都跟这个 CLI 无关：
 1. 人要用完整界面 → 用 SSO 直接内嵌 [studio 中台网页版](https://studio.webkubor.online)（iframe，登录态自动同步）
-2. 后端要程序化调用 → 直接 `fetch('https://studio.webkubor.online/api/generate', { headers: { 'X-API-Key': ... } })`，或者 `import { StudioClient } from 'studio-image'` 当库用
+2. 后端要程序化调用 → 直接 `fetch('https://studio.webkubor.online/api/generate', { headers: { 'X-API-Key': ... } })`，或者 `import { StudioClient } from '@webkubor/studio-cli'` 当库用
 
-**这不是随便选的**：Cloudflare Pages Functions/Workers 这类边缘运行时压根不能起子进程，`studio-image` 这个 CLI 二进制在那种环境里根本跑不起来。做产品集成，永远是调 HTTP API 或者拿 `StudioClient` 当库导入；CLI 是给"人在终端里"或"agent 跑 shell 命令"这两个场景用的，别的地方用不上也不该用。
+**这不是随便选的**：Cloudflare Pages Functions/Workers 这类边缘运行时压根不能起子进程，`studio-cli` 这个 CLI 二进制在那种环境里根本跑不起来。做产品集成，永远是调 HTTP API 或者拿 `StudioClient` 当库导入；CLI 是给"人在终端里"或"agent 跑 shell 命令"这两个场景用的，别的地方用不上也不该用。
 
 ---
 
@@ -60,11 +60,11 @@
 
 你永远不用接触上游 key，也不用关心用的哪个模型（除非你想指定）。
 
-`studio-image` 这个 CLI 就是这套能力的命令行封装，**服务两类不同的使用者，鉴权方式也不一样**：
+`studio-cli` 这个 CLI 就是这套能力的命令行封装，**服务两类不同的使用者，鉴权方式也不一样**：
 
 | 你是谁 | 怎么鉴权 | 适合场景 |
 |---|---|---|
-| **平台用户**——用中台网页版的个人账号 | `studio-image login`（网页登录，个人 JWT，7 天有效） | 自己出图、写个人脚本、agent 场景——你本人在用 |
+| **平台用户**——用中台网页版的个人账号 | `studio-cli login`（网页登录，个人 JWT，7 天有效） | 自己出图、写个人脚本、agent 场景——你本人在用 |
 | **租户**——要把出图能力接进自己的产品/服务对外提供 | apiKey（`sk-studio-xxx`，中台「租户管理」申请） | 服务端长期程序化调用、CI——代表一个"服务"在调，不依赖某个人的登录态 |
 
 两条路径互不依赖，选跟你身份匹配的那条，不用两个都配。下面「快速开始」走的是平台用户（login）这条路；如果你是租户，直接跳到下面「B 端 / CI 场景」那一节。
@@ -77,14 +77,14 @@
 
 ```bash
 # 从 npm 安装（推荐）
-npm install -g studio-image
+npm install -g @webkubor/studio-cli
 
 # 或从 GitHub 全局安装
 npm install -g github:webkubor/studio-cli
 
 # 或克隆后本地构建
 git clone https://github.com/webkubor/studio-cli.git
-cd studio-image && npm install && npm run build && npm link
+cd studio-cli && npm install && npm run build && npm link
 ```
 
 要求 Node.js >= 18。
@@ -92,17 +92,17 @@ cd studio-image && npm install && npm run build && npm link
 ### 2. 登录
 
 ```bash
-studio-image login
+studio-cli login
 ```
 
-终端会显示一个验证码和链接，在浏览器打开链接、登录你的 [studio 中台](https://studio.webkubor.online) 账号、点批准，CLI 自动完成登录。登录态存到 `~/.studio-image.json`，7 天有效，过期重新 login 即可。
+终端会显示一个验证码和链接，在浏览器打开链接、登录你的 [studio 中台](https://studio.webkubor.online) 账号、点批准，CLI 自动完成登录。登录态存到 `~/.studio-cli.json`，7 天有效，过期重新 login 即可。
 
 > **没有账号？** 这里说的是**平台用户的个人账号**（浏览器注册即可），跟下面「租户」的 apiKey 申请是两码事，不要混。先到 [studio.webkubor.online](https://studio.webkubor.online) 注册个人账号，再回来 login。
 
 ### 3. 出图
 
 ```bash
-studio-image gen --prompt '演唱会海报，霓虹灯，赛博朋克'
+studio-cli gen --prompt '演唱会海报，霓虹灯，赛博朋克'
 # ✅ stdout 输出: https://img.webkubor.online/xxx.png
 ```
 
@@ -116,7 +116,7 @@ studio-image gen --prompt '演唱会海报，霓虹灯，赛博朋克'
 
 ```bash
 # 方式一：config 命令存到本地
-studio-image config --apiKey sk-studio-xxx
+studio-cli config --apiKey sk-studio-xxx
 
 # 方式二：环境变量（CI 友好，优先级最高）
 export STUDIO_API_KEY=sk-studio-xxx
@@ -132,22 +132,22 @@ apikey（`sk-studio-<name>-<hex>`）从中台「租户管理」获取，适合�
 
 ```bash
 # 基本出图
-studio-image gen --prompt '一只在月球上的猫'
+studio-cli gen --prompt '一只在月球上的猫'
 
 # 宽高比（默认 3:4）
-studio-image gen --prompt '海报' --ratio 9:16    # 可选: 3:4 / 9:16 / 1:1 / 4:3 / 16:9
+studio-cli gen --prompt '海报' --ratio 9:16    # 可选: 3:4 / 9:16 / 1:1 / 4:3 / 16:9
 
 # 指定模型（不指定则中台自动选最优）
-studio-image gen --prompt '...' --model gpt-image-2
+studio-cli gen --prompt '...' --model gpt-image-2
 
 # 质量（仅 gpt-image 生效）
-studio-image gen --prompt '...' --quality high
+studio-cli gen --prompt '...' --quality high
 
 # 图生图（自动上传垫图，保持人物面容）
-studio-image gen --prompt '保持面容，换成西装' --ref face.png
+studio-cli gen --prompt '保持面容，换成西装' --ref face.png
 
 # 管道用法：拿到 URL 存变量
-URL=$(studio-image gen --prompt '海报')
+URL=$(studio-cli gen --prompt '海报')
 curl -o poster.png "$URL"
 ```
 
@@ -157,11 +157,11 @@ curl -o poster.png "$URL"
 
 ```bash
 # 本地文件或图片 URL 都行
-studio-image reverse photo.png
-studio-image reverse https://example.com/photo.png
+studio-cli reverse photo.png
+studio-cli reverse https://example.com/photo.png
 
 # 逆向 + 出图，一条龙
-studio-image gen --prompt "$(studio-image reverse photo.png)"
+studio-cli gen --prompt "$(studio-cli reverse photo.png)"
 ```
 
 分析详情打到 stderr（人看），**stdout 只输出英文 prompt**（机器用，方便管道）。
@@ -169,15 +169,15 @@ studio-image gen --prompt "$(studio-image reverse photo.png)"
 ### 上传垫图 `upload`
 
 ```bash
-studio-image upload face.png
+studio-cli upload face.png
 # stdout: https://img.webkubor.online/refs/...
 ```
 
 ### 查模型 / 余额
 
 ```bash
-studio-image models      # 中台当前可用的模型
-studio-image balance     # 各上游余额
+studio-cli models      # 中台当前可用的模型
+studio-cli balance     # 各上游余额
 ```
 
 ### 查自己名下的工作流 `jobs`
@@ -185,9 +185,9 @@ studio-image balance     # 各上游余额
 租户额外多一项能力：能查到**自己业务下**的出图工作流，不止是刚提交的那一个任务：
 
 ```bash
-studio-image jobs                    # 最近 20 条
-studio-image jobs --limit 50         # 最近 50 条（服务端上限就是 50，--limit 只能在这以内截取，查不到更早的历史）
-studio-image jobs --status failed    # 只看失败的（本地过滤，不是服务端查询）
+studio-cli jobs                    # 最近 20 条
+studio-cli jobs --limit 50         # 最近 50 条（服务端上限就是 50，--limit 只能在这以内截取，查不到更早的历史）
+studio-cli jobs --status failed    # 只看失败的（本地过滤，不是服务端查询）
 ```
 
 范围自动跟着你用的凭证走，不用额外传租户/用户 id：个人 login 只看到自己出的图；租户 apiKey 看到的是这个租户名下的全部记录（不管是谁、哪个服务调用生成的）。stdout 输出完整 JSON 数组，方便接自己的后台统计。
@@ -199,12 +199,12 @@ studio-image jobs --status failed    # 只看失败的（本地过滤，不是�
 CLI 背后是一个干净的 `StudioClient` class，也可以当库用：
 
 ```ts
-import { StudioClient } from 'studio-image'
+import { StudioClient } from '@webkubor/studio-cli'
 
 // 方式一：用 login 拿到的 token（个人用户）
 const studio = new StudioClient({
   baseUrl: 'https://studio.webkubor.online',
-  token: process.env.STUDIO_TOKEN!,  // 或从 ~/.studio-image.json 读
+  token: process.env.STUDIO_TOKEN!,  // 或从 ~/.studio-cli.json 读
 })
 
 // 方式二：用 apikey（租户/B 端）
@@ -260,10 +260,10 @@ console.log(r.sculpt.light)  // 光影分析
 
 **适合谁用**（对应本文最开始那张鉴权对照表）：
 
-- **平台用户**：自己写自动化脚本/agent 需要命令行出图、个人多个项目想统一收口到一个能力服务——`studio-image login` 就够，不需要申请 apiKey
-- **租户**：做 AI 产品的开发者，要把出图能力接进自己对外提供的产品/服务，不想碰上游细节——申请 apiKey，走服务端集成。租户还多一项平台用户没有的能力：`studio-image jobs` 能查到自己业务下全部的出图工作流（不止是当前这一个任务），方便对账/统计/排查
+- **平台用户**：自己写自动化脚本/agent 需要命令行出图、个人多个项目想统一收口到一个能力服务——`studio-cli login` 就够，不需要申请 apiKey
+- **租户**：做 AI 产品的开发者，要把出图能力接进自己对外提供的产品/服务，不想碰上游细节——申请 apiKey，走服务端集成。租户还多一项平台用户没有的能力：`studio-cli jobs` 能查到自己业务下全部的出图工作流（不止是当前这一个任务），方便对账/统计/排查
 
-**接入方式**：平台用户直接 `studio-image login`；租户到中台「租户管理」注册拿 apiKey，装上这个 CLI（或直接调 API）用 `config --apiKey` / `STUDIO_API_KEY` 配置。具体配额和计费见中台后台。
+**接入方式**：平台用户直接 `studio-cli login`；租户到中台「租户管理」注册拿 apiKey，装上这个 CLI（或直接调 API）用 `config --apiKey` / `STUDIO_API_KEY` 配置。具体配额和计费见中台后台。
 
 ---
 

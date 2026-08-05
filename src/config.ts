@@ -2,18 +2,20 @@
  * 配置管理 —— 环境变量 > 配置文件
  *
  * 两类凭证：
- *   - token：个人用户通过 `studio-image login` 设备授权拿到的 JWT（Bearer 鉴权）
+ *   - token：个人用户通过 `studio-cli login` 设备授权拿到的 JWT（Bearer 鉴权）
  *   - apiKey：租户/B 端的 sk-studio-xxx（X-API-Key 鉴权）
  * token 优先于 apiKey（个人用户场景为主）。
  *
- * 配置文件：~/.studio-image.json，存 { baseUrl, token, apiKey }
+ * 配置文件：~/.studio-cli.json，存 { baseUrl, token, apiKey }
  * 环境变量：STUDIO_BASE_URL / STUDIO_API_KEY（适合 CI / agent）
  */
 import { readFileSync, writeFileSync, existsSync, chmodSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
-const CONFIG_PATH = join(homedir(), '.studio-image.json')
+const CONFIG_PATH = join(homedir(), '.studio-cli.json')
+/** 1.0.0 更名前的配置文件（命令叫 studio-image 时）——只读兼容，免得老用户被迫重新登录 */
+const LEGACY_CONFIG_PATH = join(homedir(), '.studio-image.json')
 export const DEFAULT_BASE_URL = 'https://studio.webkubor.online'
 
 export interface StudioConfig {
@@ -24,14 +26,21 @@ export interface StudioConfig {
   apiKey?: string
 }
 
-/** 读配置文件（不存在返回空对象） */
+/**
+ * 读配置文件（不存在返回空对象）。
+ * 新路径缺失时回落到更名前的 ~/.studio-image.json，读到什么用什么——
+ * 下一次 saveConfig 会自然写到新路径，不主动搬文件、不删旧文件。
+ */
 function readFileConfig(): Partial<StudioConfig> {
-  try {
-    if (!existsSync(CONFIG_PATH)) return {}
-    return JSON.parse(readFileSync(CONFIG_PATH, 'utf-8'))
-  } catch {
-    return {}
+  for (const path of [CONFIG_PATH, LEGACY_CONFIG_PATH]) {
+    try {
+      if (!existsSync(path)) continue
+      return JSON.parse(readFileSync(path, 'utf-8'))
+    } catch {
+      // 坏掉的那份跳过，继续试下一个
+    }
   }
+  return {}
 }
 
 /** 写配置文件 */
@@ -71,7 +80,7 @@ export function loadConfig(): StudioConfig {
   if (file.apiKey) return { baseUrl, apiKey: file.apiKey }
 
   throw new Error(
-    `未登录。请运行：studio-image login\n` +
-    `（或租户/B端配置：studio-image config --apiKey sk-studio-xxx）`
+    `未登录。请运行：studio-cli login\n` +
+    `（或租户/B端配置：studio-cli config --apiKey sk-studio-xxx）`
   )
 }

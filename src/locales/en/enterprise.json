@@ -90,7 +90,7 @@
       }
     },
     "info": {
-      "avatarHint": "Click to change · PNG/JPEG/WebP, max 2MB",
+      "avatarHint": "Click to change · PNG, JPEG, or WebP · Max 2 MB",
       "personalAvatarHint": "Personal avatar follows your account; edit it in account settings",
       "orgName": "Organization name",
       "rename": "Rename",

@@ -9,6 +9,10 @@ allowBuilds:
 # 2026-07-30 modelgo-design-tokens@0.6.1 同样撞了这个策略——@model-go/* 这条通配符盖不到不带
 # scope 的裸包名，索性改成 *modelgo* 通配，覆盖任何名字含 modelgo 的自家包，不用每加一个新包
 # 就手动补一条。
+# 2026-08-05 vite-plugin-agent-eyes@0.13.2 又撞一次：它同样是自研包(GitHub webkubor)，但名字里
+# 没有 modelgo，*modelgo* 盖不到，于是 prod-global #36 挂在 lockfile 策略校验上。它是
+# devDependency(dev 期遥测 + 提交门禁)，不进运行时产物，按同一"自家可信包"口径豁免。
 minimumReleaseAgeExclude:
   - '@model-go/*'
   - '*modelgo*'
+  - 'vite-plugin-agent-eyes'

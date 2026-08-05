@@ -7,14 +7,14 @@
 [![npm version](https://img.shields.io/npm/v/studio-image)](https://www.npmjs.com/package/studio-image)
 [![license](https://img.shields.io/npm/l/studio-image)](./LICENSE)
 [![node](https://img.shields.io/node/v/studio-image)](package.json)
-[![CI](https://github.com/webkubor/studio-image/actions/workflows/ci.yml/badge.svg)](https://github.com/webkubor/studio-image/actions/workflows/ci.yml)
+[![CI](https://github.com/webkubor/studio-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/webkubor/studio-cli/actions/workflows/ci.yml)
 
 **Agent-ready** — designed to be shelled out to directly, not just used by humans
 
-[![Claude Code](https://img.shields.io/badge/Claude%20Code-compatible-6366f1)](https://github.com/webkubor/studio-image/blob/main/AGENTS.md)
-[![Codex](https://img.shields.io/badge/Codex-compatible-10a37f)](https://github.com/webkubor/studio-image/blob/main/AGENTS.md)
-[![Hermes](https://img.shields.io/badge/Hermes-compatible-f2a65a)](https://github.com/webkubor/studio-image/blob/main/AGENTS.md)
-[![Antigravity](https://img.shields.io/badge/Antigravity-compatible-8b5cf6)](https://github.com/webkubor/studio-image/blob/main/AGENTS.md)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-compatible-6366f1)](https://github.com/webkubor/studio-cli/blob/main/AGENTS.md)
+[![Codex](https://img.shields.io/badge/Codex-compatible-10a37f)](https://github.com/webkubor/studio-cli/blob/main/AGENTS.md)
+[![Hermes](https://img.shields.io/badge/Hermes-compatible-f2a65a)](https://github.com/webkubor/studio-cli/blob/main/AGENTS.md)
+[![Antigravity](https://img.shields.io/badge/Antigravity-compatible-8b5cf6)](https://github.com/webkubor/studio-cli/blob/main/AGENTS.md)
 
 </div>
 
@@ -80,10 +80,10 @@
 npm install -g studio-image
 
 # 或从 GitHub 全局安装
-npm install -g github:webkubor/studio-image
+npm install -g github:webkubor/studio-cli
 
 # 或克隆后本地构建
-git clone https://github.com/webkubor/studio-image.git
+git clone https://github.com/webkubor/studio-cli.git
 cd studio-image && npm install && npm run build && npm link
 ```
 

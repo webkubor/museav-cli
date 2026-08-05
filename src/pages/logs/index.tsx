@@ -684,7 +684,12 @@ export default function LogsPage() {
         onClose={() => setSelectedLog(null)}
         open={Boolean(selectedLog)}
         row={selectedLog}
-        workspaceName={selectedLog?.workspace?.name}
+        workspaceName={
+          // 归属空间名：后端行内 workspace.name（#459）缺失时，用筛选条已拉取的空间列表按 id
+          // 映射，映射不到详情侧显「—」——不裸露原始 id（需求方#447）。
+          selectedLog?.workspace?.name
+            || workspacesData?.items.find((item) => item.workspace_id === selectedLog?.workspace_id)?.name
+        }
         onOpenLogSettings={(workspaceId) => {
           // 跳该日志所属空间的可观测性时，同步切换活跃空间——否则侧栏/上下文仍停在原空间，
           // 页面显 A 空间设置、侧栏却显 B 空间，用户以为「跳错了」（需求方#109）。

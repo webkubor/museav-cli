@@ -175,7 +175,8 @@ export function LogDetailSheet({
           <DetailSection title={t('logs.detail.sections.overview')}>
             <DetailGrid compact>
               <DetailRow label={t('logs.detail.model')} value={row.model.display_name} />
-              <DetailRow label={t('logs.detail.workspace')} value={workspaceName || row.workspace_id} />
+              {/* 空间名取不到显「—」，不拿 workspace_id 顶替——口径同下方 Member/API Key（需求方#447）。 */}
+              <DetailRow label={t('logs.detail.workspace')} value={workspaceName || '—'} />
               <DetailRow label={t('logs.detail.apiKeyName')} value={apiKeyName} />
               <DetailRow label={t('logs.detail.member')} value={memberName} />
             </DetailGrid>

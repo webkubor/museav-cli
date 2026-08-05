@@ -1,0 +1,57 @@
+name: Publish to npm
+
+# 触发：推 v* tag（推荐），或手动跑一次
+#   git tag v1.0.1 && git push origin v1.0.1
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write      # Trusted Publishing(OIDC) 与 --provenance 都依赖它
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      # Trusted Publishing 需要 npm >= 11.5.1，runner 自带的通常更旧
+      - name: 升级 npm
+        run: npm install -g npm@latest
+
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run build
+
+      # 防手滑：tag 触发时校验 tag 与 package.json 的 version 一致
+      - name: 校验版本号与 tag 一致
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          PKG=$(node -p "require('./package.json').version")
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::tag v$TAG 与 package.json 的 $PKG 不一致，先对齐再发"
+            exit 1
+          fi
+          echo "版本一致：$PKG"
+
+      - name: 冒烟测试（命令能起、版本对得上）
+        run: |
+          node dist/index.js --version
+          node dist/index.js --help | head -3
+
+      # 认证走哪条由仓库配置决定，二选一，不用改这个文件：
+      #   ① Trusted Publishing（推荐，无 token）——在 npmjs.com 的包设置里
+      #      绑定本仓库 + 本 workflow 文件名(publish.yml)，然后别设 NPM_TOKEN secret。
+      #   ② NPM_TOKEN 兜底——建 Granular token（Read and write，范围勾 @kubor scope
+      #      或 All packages，别只勾单个包），存进仓库 Secrets 的 NPM_TOKEN。
+      - name: 发布
+        run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

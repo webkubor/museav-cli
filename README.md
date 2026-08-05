@@ -267,6 +267,28 @@ console.log(r.sculpt.light)  // 光影分析
 
 ---
 
+## 发布（维护者）
+
+CI 已接管发布，本机不用再 `npm publish`：
+
+```bash
+npm version patch      # 或 minor / major，会自动打好 v* tag
+git push --follow-tags # 推 tag 触发 .github/workflows/publish.yml
+```
+
+workflow 会跑 typecheck → build → 版本号与 tag 一致性校验 → 冒烟测试（`--version` / `--help`）→ 带
+[provenance](https://docs.npmjs.com/generating-provenance-statements) 发布。
+
+认证两种选一种，选好后 workflow 文件不用改：
+
+| 方式 | 怎么配 | 说明 |
+|---|---|---|
+| **Trusted Publishing**（推荐） | npmjs.com → 本包 Settings → Trusted Publisher 绑定本仓库 + workflow 文件名 `publish.yml`；**不要**设 `NPM_TOKEN` | 走 OIDC，无 token、不受 2FA 影响、不会过期 |
+| **NPM_TOKEN** | 建 Granular token（Read and write，范围勾 `@kubor` scope 或 All packages）→ 存仓库 Secrets 的 `NPM_TOKEN` | 兜底方案。**别只勾单个包**——那样能 deprecate 却发不了新包 |
+
+本机手动发布（应急）：账号 2FA 若为 `auth-and-writes`，每次 publish 都要 OTP；
+`npm profile set twofa auth-only` 之后只有登录才要。
+
 ## License
 
 MIT

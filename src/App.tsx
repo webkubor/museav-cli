@@ -108,7 +108,6 @@ import { getPlatformConfig } from '@/services/platform'
 import { useLangStore } from '@/store/use-brand-store'
 import { ServerErrorDialog } from '@/components/server-error/ServerErrorDialog'
 import { AppUpdatePrompt } from '@/components/app-update/AppUpdatePrompt'
-import { PwaInstallPrompt } from '@/components/app-update/PwaInstallPrompt'
 
 import { Toaster } from 'sonner'
 
@@ -218,7 +217,6 @@ export default function App() {
       <Toaster richColors position="top-right" closeButton />
       <ServerErrorDialog />
       <AppUpdatePrompt />
-      <PwaInstallPrompt />
       <BrowserRouter>
         {NavLogger && <Suspense fallback={null}><NavLogger /></Suspense>}
         <PlatformLoader onReady={() => setPlatformReady(true)} />

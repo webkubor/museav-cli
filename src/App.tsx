@@ -51,7 +51,7 @@ const DevToolbar = import.meta.env.DEV
   : null
 const NotFoundPage = lazy(() => import('@/pages/not-found'))
 
-const DASHBOARD_NAMESPACES = ['dashboard', 'dashboardTop', 'billing'] satisfies LocaleNamespace[]
+const DASHBOARD_NAMESPACES = ['dashboard', 'dashboardTop', 'billing', 'logs'] satisfies LocaleNamespace[]
 const MODEL_NAMESPACES = ['models', 'modelsCatalog', 'modelsCompare', 'modelsExperience', 'modelsChat', 'modelsHistory', 'apiKeys'] satisfies LocaleNamespace[]
 
 const CONSOLE_NAMESPACES: Record<string, readonly LocaleNamespace[]> = {

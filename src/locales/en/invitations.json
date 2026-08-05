@@ -1,0 +1,59 @@
+{
+  "invitations": {
+    "title": "Members",
+    "desc": "Assign organization members to workspaces and manage roles.",
+    "inviteBtn": "Invite Member",
+    "assign": {
+      "desc": "Assign organization members to workspaces and manage their roles.",
+      "orgPool": "Organization",
+      "wsMembers": "Workspace",
+      "searchPlaceholder": "Search name or email...",
+      "orgEmpty": "No members in this organization",
+      "wsEmpty": "No members yet, add from the left",
+      "selectWs": "Select a workspace above",
+      "current": "current",
+      "inWs": "In",
+      "add": "Add",
+      "remove": "Remove from workspace",
+      "memberCount": "members",
+      "addSuccess": "Added to workspace",
+      "addError": "Failed to add",
+      "removeSuccess": "Removed from workspace",
+      "removeError": "Failed to remove",
+      "roleError": "Failed to change role"
+    },
+    "modal": {
+      "title": "Invite Member",
+      "close": "✕",
+      "searchPlaceholder": "Search by name or email",
+      "noMembers": "No matching members",
+      "roleLabel": "Role",
+      "expiryLabel": "Expiry",
+      "expiry24h": "24 Hours",
+      "expiry3d": "3 Days",
+      "expiry7d": "7 Days",
+      "expiry30d": "30 Days",
+      "cancel": "Cancel",
+      "sendPending": "Sending...",
+      "send": "Send Invite {{suffix}}"
+    },
+    "list": {
+      "title": "Invitation Records",
+      "empty": "No invitations",
+      "table": {
+        "email": "Email",
+        "role": "Role",
+        "status": "Status",
+        "expiresAt": "Expires At",
+        "actions": "Actions",
+        "revoke": "Revoke"
+      }
+    },
+    "toast": {
+      "sent": "Invitation sent",
+      "sendError": "Failed to send",
+      "revoked": "Invitation revoked",
+      "revokeError": "Failed to revoke"
+    }
+  }
+}

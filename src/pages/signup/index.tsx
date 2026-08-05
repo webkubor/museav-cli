@@ -7,12 +7,14 @@
 
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useSearchParams, Link, Navigate } from 'react-router-dom'
 import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { LuEye, LuEyeOff } from 'react-icons/lu'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { SocialLogin } from '@/components/auth/SocialLogin'
@@ -31,18 +33,26 @@ import { getRedirectTarget } from '@/lib/redirect'
 import { useMarket } from '@/hooks/useMarket'
 import { referralCodeFromSearchParams } from './referral-code'
 
-const schema = z.object({
-  email: z.string().email('请填写有效的邮箱'),
-  email_code: z.string().min(6, '请填写 6 位验证码'),
-  password: z.string().min(8, '密码至少 8 位'),
-  confirm_password: z.string().min(1, '请确认密码'),
-  referral_code: z.string().optional(),
-}).refine((data) => data.password === data.confirm_password, {
-  message: '两次输入的密码不一致',
-  path: ['confirm_password'],
-})
+function createSignupSchema(t: TFunction) {
+  return z.object({
+    email: z.string().email(t('account.auth.validation.email')),
+    email_code: z.string().min(6, t('account.auth.validation.code6')),
+    password: z.string().min(8, t('account.auth.validation.passwordMin')),
+    confirm_password: z.string().min(1, t('account.auth.validation.confirmPassword')),
+    referral_code: z.string().optional(),
+  }).refine((data) => data.password === data.confirm_password, {
+    message: t('account.auth.validation.passwordMismatch'),
+    path: ['confirm_password'],
+  })
+}
 
-type Fields = z.infer<typeof schema>
+interface Fields {
+  email: string
+  email_code: string
+  password: string
+  confirm_password: string
+  referral_code?: string
+}
 
 /**
  * 注册页入口：国内（china）登录与注册统一为手机号一键入口，重定向到 /login；
@@ -58,6 +68,7 @@ function DomesticSignupRedirect() {
 }
 
 function EmailSignupPage() {
+  const { t } = useTranslation('account')
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const setAuth = useAuthStore((s) => s.setAuth)
@@ -77,6 +88,8 @@ function EmailSignupPage() {
 
   const defaultReferralCode = referralCodeFromSearchParams(searchParams)
   const hasReferralCode = !!defaultReferralCode
+
+  const schema = useMemo(() => createSignupSchema(t), [t])
 
   const {
     register: field,
@@ -112,7 +125,7 @@ function EmailSignupPage() {
       subject: email,
     })
     if (!decision.allowed) {
-      setServerError(decision.message ?? '操作过于频繁，请稍后再试')
+      setServerError(decision.message ?? t('account.auth.validation.rateLimited'))
       return
     }
 
@@ -153,7 +166,7 @@ function EmailSignupPage() {
       navigate('/dashboard')
     } catch (e) {
       recordAuthGuardFailure({ action: 'signup', subject: data.email })
-      const msg = e instanceof ModelGoApiError ? e.message : '注册失败，请稍后重试'
+      const msg = e instanceof ModelGoApiError ? e.message : t('account.auth.signup.failed')
       trackEvent('signup_fail', { method: 'email' }, { result: 'fail', error_code: errorCodeOf(e) })
       setServerError(msg)
       toast.error(msg)
@@ -168,7 +181,7 @@ function EmailSignupPage() {
       subject: data.email,
     })
     if (!decision.allowed) {
-      setServerError(decision.message ?? '操作过于频繁，请稍后再试')
+      setServerError(decision.message ?? t('account.auth.validation.rateLimited'))
       return
     }
 
@@ -202,14 +215,14 @@ function EmailSignupPage() {
 
   return (
     <AuthLayout
-      title="创建账号"
-      subtitle="免费开始，按用量付费"
+      title={t('account.auth.signup.title')}
+      subtitle={t('account.auth.signup.subtitle')}
       wide={true}
       footer={
         <span>
-          已有账号？{' '}
+          {t('account.auth.signup.hasAccount')}{' '}
           <Link to="/login" className="auth-redirect-link">
-            登录
+            {t('account.auth.signup.login')}
           </Link>
         </span>
       }
@@ -220,7 +233,7 @@ function EmailSignupPage() {
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
           <div>
-            <label className="modern-auth-label">邮箱</label>
+            <label className="modern-auth-label">{t('account.auth.fields.email')}</label>
             <Input
               {...field('email')}
               type="email"
@@ -233,10 +246,10 @@ function EmailSignupPage() {
           </div>
 
           <div>
-            <label className="modern-auth-label">验证码</label>
+            <label className="modern-auth-label">{t('account.auth.fields.code')}</label>
             <Input
               {...field('email_code')}
-              placeholder="6 位数字"
+              placeholder={t('account.auth.placeholders.code6')}
               maxLength={6}
               autoComplete="one-time-code"
               error={!!errors.email_code}
@@ -251,11 +264,11 @@ function EmailSignupPage() {
           </div>
 
           <div>
-            <label className="modern-auth-label">密码</label>
+            <label className="modern-auth-label">{t('account.auth.fields.password')}</label>
             <Input
               {...field('password')}
               type={showPassword ? 'text' : 'password'}
-              placeholder="至少 8 位"
+              placeholder={t('account.auth.placeholders.passwordMin')}
               autoComplete="new-password"
               error={!!errors.password}
               success={touchedFields.password && !errors.password && !!passwordValue}
@@ -264,7 +277,7 @@ function EmailSignupPage() {
                   type="button"
                   className="auth-password-visibility-btn"
                   onClick={() => setShowPassword((visible) => !visible)}
-                  aria-label={showPassword ? '隐藏密码' : '显示密码'}
+                  aria-label={showPassword ? t('account.auth.aria.hidePassword') : t('account.auth.aria.showPassword')}
                 >
                   {showPassword ? <LuEyeOff size={17} /> : <LuEye size={17} />}
                 </button>
@@ -275,11 +288,11 @@ function EmailSignupPage() {
           </div>
 
           <div>
-            <label className="modern-auth-label">确认密码</label>
+            <label className="modern-auth-label">{t('account.auth.fields.confirmPassword')}</label>
             <Input
               {...field('confirm_password')}
               type={showConfirmPassword ? 'text' : 'password'}
-              placeholder="请再次输入密码"
+              placeholder={t('account.auth.placeholders.confirmPassword')}
               autoComplete="new-password"
               error={!!errors.confirm_password}
               success={touchedFields.confirm_password && !errors.confirm_password && !!confirmPasswordValue}
@@ -288,7 +301,7 @@ function EmailSignupPage() {
                   type="button"
                   className="auth-password-visibility-btn"
                   onClick={() => setShowConfirmPassword((visible) => !visible)}
-                  aria-label={showConfirmPassword ? '隐藏密码' : '显示密码'}
+                  aria-label={showConfirmPassword ? t('account.auth.aria.hidePassword') : t('account.auth.aria.showPassword')}
                 >
                   {showConfirmPassword ? <LuEyeOff size={17} /> : <LuEye size={17} />}
                 </button>
@@ -300,10 +313,10 @@ function EmailSignupPage() {
 
           {hasReferralCode && (
             <div>
-              <label className="modern-auth-label">邀请码</label>
+              <label className="modern-auth-label">{t('account.auth.fields.referralCode')}</label>
               <Input
                 {...field('referral_code')}
-                placeholder="如有推荐邀请码请填写，如 MG-XXXX"
+                placeholder={t('account.auth.placeholders.referralCode')}
                 autoComplete="off"
                 disabled={true}
               />
@@ -322,14 +335,14 @@ function EmailSignupPage() {
           loading={loading}
           className="mt-2"
         >
-          免费注册
+          {t('account.auth.signup.submit')}
         </Button>
 
         <p className="auth-policy-text">
-          注册即代表同意{' '}
-          <Link to="/legal/terms" className="auth-muted-link">服务条款</Link>
-          {' '}与{' '}
-          <Link to="/legal/privacy" className="auth-muted-link">隐私政策</Link>
+          {t('account.auth.legal.signupPrefix')}{' '}
+          <Link to="/legal/terms" className="auth-muted-link">{t('account.auth.legal.terms')}</Link>
+          {' '}{t('account.auth.legal.and')}{' '}
+          <Link to="/legal/privacy" className="auth-muted-link">{t('account.auth.legal.privacy')}</Link>
         </p>
 
         <SocialLogin redirectTo={redirectTo} />

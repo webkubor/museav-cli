@@ -1,0 +1,165 @@
+{
+  "usage": {
+    "title": "Usage Analytics",
+    "desc": "View API calls, token usage, and cost trends.",
+    "descTeam": "View your team's spend, requests, and model usage breakdown.",
+    "descSpace": "View spend, requests, and model usage for everyone in your managed workspace.",
+    "descMine": "View your own spend, requests, and model usage breakdown.",
+    "noData": "No data",
+    "emptyValue": "None",
+    "refresh": "Refresh",
+    "range": {
+      "today": "Today",
+      "7d": "Last 7 days",
+      "30d": "Last 30 days",
+      "90d": "Last 90 days",
+      "thisMonth": "This month",
+      "lastMonth": "Last month",
+      "custom": "Custom"
+    },
+    "customRange": {
+      "placeholder": "Select date range"
+    },
+    "metric": {
+      "spend": "Spend",
+      "requests": "Requests",
+      "tokens": "Tokens"
+    },
+    "unit": {
+      "requests": "requests",
+      "tokens": "tokens"
+    },
+    "overview": {
+      "title": "Cost Overview"
+    },
+    "insights": {
+      "title": "Key Insights",
+      "desc": "Uses returned rankings and quality metrics to identify the main usage drivers.",
+      "topModel": "Top model",
+      "topApiKey": "Top API Key",
+      "averageLatency": "Average latency",
+      "errorRate": "Error rate"
+    },
+    "sources": {
+      "title": "Cost Sources",
+      "desc": "Top sources under the current filters",
+      "topProject": "Top Project",
+      "topWorkspace": "Top Workspace",
+      "topApiKey": "Top API Key",
+      "topModel": "Top Model",
+      "empty": "No source data"
+    },
+    "distribution": {
+      "model": {
+        "title": "Model Distribution",
+        "chartDesc": "Share of spend by model",
+        "rankTitle": "Model Ranking"
+      },
+      "member": {
+        "title": "Member Distribution",
+        "chartDesc": "Share of spend by member",
+        "rankTitle": "Member Ranking"
+      },
+      "apiKey": {
+        "title": "API Keys Distribution",
+        "chartDesc": "Share of spend by API Keys",
+        "rankTitle": "API Keys Ranking"
+      },
+      "bySpend": "By spend · Desc",
+      "total": "Total spend",
+      "other": "Other"
+    },
+    "meta": {
+      "models": "{{count}} models"
+    },
+    "chart": {
+      "trendTitle": "{{metric}} Trend",
+      "costTrend": "Spend Trend",
+      "filteredAggregation": "Aggregated by the current filters",
+      "histogramTitle": "Request Distribution",
+      "groupBy": {
+        "none": "Total",
+        "model": "By model",
+        "provider": "By provider",
+        "workspace": "By workspace",
+        "other": "Other"
+      }
+    },
+    "error": {
+      "summary": "Failed to load summary.",
+      "series": "Failed to load trend data.",
+      "histogram": "Failed to load distribution data.",
+      "rankings": "Failed to load rankings."
+    },
+    "retry": "Retry",
+    "filter": {
+      "allWorkspaces": "All Workspaces",
+      "allKeys": "All Keys",
+      "allModels": "All Models",
+      "time": "Time Range",
+      "workspace": "Workspace",
+      "apiKey": "API Key"
+    },
+    "breakdown": {
+      "title": "Usage Breakdown",
+      "desc": "Review breakdowns within the selected time and workspace scope"
+    },
+    "emptyState": {
+      "noDataTitle": "No usage data",
+      "noDataDesc": "There are no calls in the selected time range yet.",
+      "filteredTitle": "No results",
+      "filteredDesc": "No usage records match the current filters. Try adjusting them."
+    },
+    "attr": {
+      "workspace": "Workspaces"
+    },
+    "dimension": {
+      "model": "Models",
+      "member": "Members",
+      "apiKey": "API Keys"
+    },
+    "member": {
+      "title": "Member Ranking",
+      "col": {
+        "member": "Member",
+        "modelCount": "Models"
+      },
+      "empty": "No member usage data",
+      "emptyDesc": "No member usage is available for the current filters."
+    },
+    "rankings": {
+      "title": "Usage Rankings",
+      "topKeys": "Top API Keys",
+      "topModels": "Top Models",
+      "topKeysDesc": "Ranked by spend share in {{range}}",
+      "topModelsDesc": "Model spend share in {{range}}",
+      "col": {
+        "rank": "#",
+        "name": "Name",
+        "spend": "Spend",
+        "requests": "Requests",
+        "tokens": "Tokens",
+        "share": "Share"
+      },
+      "empty": "No ranking data",
+      "emptyDesc": "No usage records for current filters"
+    },
+    "summary": {
+      "totalSpend": "Total Cost",
+      "totalRequests": "Total Requests",
+      "totalTokens": "Total Tokens",
+      "costStructure": "Cost Breakdown",
+      "inputCost": "Input",
+      "outputCost": "Output",
+      "cacheCost": "Cache",
+      "requestStatus": "Request Status",
+      "success": "Successful",
+      "failed": "Failed",
+      "avgLatency": "Avg Latency",
+      "tokenUsage": "Token Usage",
+      "inputTokens": "Input",
+      "outputTokens": "Output",
+      "cacheTokens": "Cache"
+    }
+  }
+}

@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/Button'
 import { useMarket } from '@/hooks/useMarket'
-import { useLangStore } from '@/store/use-brand-store'
+import { useTranslation } from 'react-i18next'
 import { oauthAuthorizeUrl, type OAuthProvider } from '@/services/auth'
 import { useOAuthMethods } from '@/hooks/use-platform-config'
 import { OAUTH_ICONS, OAUTH_LABELS } from '@/constants/oauth'
@@ -11,7 +11,7 @@ interface Props {
 
 export function SocialLogin({ redirectTo }: Props) {
   const market = useMarket()
-  const lang = useLangStore((s) => s.lang)
+  const { t } = useTranslation('account')
   const oauthMethods = useOAuthMethods()
 
   // 各市场允许的社交登录集（域名权威）。china 只 wechat/github、global 只 google/github。
@@ -33,7 +33,7 @@ export function SocialLogin({ redirectTo }: Props) {
     <>
       <div className="social-divider">
         <div className="social-divider-line" />
-        <span className="social-divider-text">{lang === 'zh' ? '或' : 'OR'}</span>
+        <span className="social-divider-text">{t('account.auth.social.divider')}</span>
         <div className="social-divider-line" />
       </div>
 
@@ -46,7 +46,7 @@ export function SocialLogin({ redirectTo }: Props) {
             onClick={() => { window.location.href = oauthAuthorizeUrl(method, redirectTo) }}
           >
             {OAUTH_ICONS[method]}
-            <span>{OAUTH_LABELS[method] ?? method}</span>
+            <span>{t(`account.auth.oauth.${method}`, { defaultValue: OAUTH_LABELS[method] ?? method })}</span>
           </Button>
         ))}
       </div>

@@ -1,0 +1,40 @@
+{
+  "modelsCompare": {
+    "title": "模型对比",
+    "desc": "同时向最多 {{max}} 个模型发送相同提示词，并排对比输出。",
+    "placeholder": {
+      "search": "搜索模型..."
+    },
+    "button": {
+      "select": "选择模型"
+    },
+    "table": {
+      "attr": "属性"
+    },
+    "row": {
+      "contextLength": "上下文长度",
+      "modalities": "模态支持",
+      "modalityFlow": "输入→输出模态",
+      "protocols": "兼容协议",
+      "releasedAt": "发布时间",
+      "knowledgeCutoff": "知识截止",
+      "inputPrice": "输入价格 (百万)",
+      "outputPrice": "输出价格 (百万)",
+      "cachePrice": "缓存读取 (百万)",
+      "providersCount": "供应商数量",
+      "zeroDataRetention": "零数据留存",
+      "inRegionRouting": "区域内路由",
+      "tags": "标签"
+    },
+    "currentModel": "当前模型",
+    "selectedModels": "已选模型",
+    "candidates": "可选候选",
+    "empty": {
+      "hint": "在左侧选择模型后开始对比",
+      "noMatch": "未找到匹配的模型"
+    },
+    "error": {
+      "load": "加载模型失败，请稍后重试。"
+    }
+  }
+}

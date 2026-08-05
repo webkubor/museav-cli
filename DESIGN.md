@@ -109,6 +109,48 @@ components:
 > ⚠️ **Token 值的唯一真源 = npm 依赖 `modelgo-design-tokens`**（读 `node_modules/modelgo-design-tokens/USAGE.md` + `tokens.css`，四端共享）。
 > 本文件 YAML front matter 里的 hex / 尺寸只是**快照参考、会滞后于包**——**写代码一律用 `var(--mg-*)` token 或对应 Tailwind 类，勿照抄这里的值**。改 token 值 = 改那个包（影响四端），不是改本仓。
 
+## Agent UI Pre-flight
+
+任何 agent 在本仓写 UI、改样式、加页面、改图标前，先按顺序读这几处，缺一步都容易把控制台风格写散：
+
+1. `PROJECT-BRIEF.md`：项目真源顺序和协同流程。
+2. `docs/COLLABORATION.md`：worktree、合并、部署、验证闭环。
+3. 本文件 `DESIGN.md`：ModelGo 控制台视觉和组件约束。
+4. `src/index.css`、`src/styles/tokens.css`、`src/styles/components.css`：token 注入、控制台本地 token、`.mg-*` 语义类。
+5. `src/components/ui/*`：Button、Card、Table、Dialog、Sheet、CopyButton、Tabs 等现有组件。
+6. 模型/厂商图标相关 UI 还必须读 `src/features/models/components/ModelIcon.tsx` 与 `src/features/models/components/vendor-icons.tsx`。
+
+**工作方式**：先复用现有组件和 token，再写业务 UI。找不到现成组件时，先确认是否应扩展 `src/components/ui/*`，不要在页面里手写一次性组件体系。
+
+## Local UI Dependency Matrix
+
+| 类别 | 本仓真源 | 用法 | 禁止 |
+|---|---|---|---|
+| 设计 token | `modelgo-design-tokens@^0.6.2` + `src/index.css` import | 跨端品牌色、市场轴、主题轴、语义色、半径基础。先由包导入，再由 `src/styles/tokens.css` 做控制台特有语义补充。 | 在业务 CSS 里硬编码品牌 hex；直接改本仓覆盖共享 token；绕过 `--mg-*` / `--brand-*`。 |
+| 控制台组件 token | `src/styles/tokens.css` | 控制台密度、卡片阴影、字体、控件高度、表格尺寸、空态尺寸。 | 在页面局部新建另一套 spacing/radius/font 变量。 |
+| 语义样式类 | `src/styles/components.css` | `.mg-text-*`、`.mg-panel-*`、`.mg-control-*`、`.mg-tile`、`.mg-tile-hover`。 | JSX 里堆长串 Tailwind 原子类复刻同一视觉；卡片继续手写 `bg-mg-bg-0 border border-mg-border shadow-sm`。 |
+| UI 组件 | `src/components/ui/*` | 表单、按钮、卡片、表格、弹窗、抽屉、复制、状态、分页、日期选择等统一从这里取。 | 引入 Semi / AntD / shadcn 新包；页面内手写按钮、复制按钮、弹窗、表格状态。 |
+| 通用图标 | `react-icons@^5.6.0` | 默认使用 `react-icons/lu`，少量基础符号用 `react-icons/io5`，品牌支付等用集中封装。 | 安装或直接使用 `lucide-react`；用 Unicode 符号代替图标；业务页面直接引用支付/OAuth 品牌图标。 |
+| 模型/厂商图标 | `@lobehub/icons@^5.8.0` + `ModelIcon` | 模型、供应商、AI 客户端 logo 使用 LobeHub 图标或 `ModelIcon` 兜底链。 | 自己截取首字母拼模型头像；在业务页散落 `@lobehub/icons` 映射。 |
+| 品牌/支付/OAuth 图标 | `src/constants/brand-icons.tsx`、`src/constants/oauth.tsx` | 支付渠道、OAuth 登录入口等从常量封装导入。 | 在页面组件中直接 `import { SiWechat } from 'react-icons/si'` 等。 |
+
+### `modelgo-design-tokens` 维护边界
+
+- 包名：`modelgo-design-tokens`，当前本仓依赖版本见 `package.json`。
+- 入口：`src/index.css` 先 `@import "modelgo-design-tokens/tokens.css"`，再 import `src/styles/tokens.css`。顺序不可换，控制台本地 token 只能引用共享原子或补充控制台特有语义。
+- 维护人：由项目 owner 统一维护升级。业务开发 agent 发现 token 不够时，先在任务/文档里提出 token 需求，不要在页面 CSS 临时造一个相近颜色或尺寸。
+- 升级要求：改 `modelgo-design-tokens` 版本后必须至少跑 `pnpm -s lint:css`、`pnpm -s check:css-tokens:full`、`pnpm -s build:test`，并在浅色/深色、国内/国际市场各看一遍核心页。
+- 例外：`box-shadow` 的 rgba、图表多序列分类色、第三方品牌 logo 原色可以保留固定值；这类例外必须是语义明确的资产色或效果色。
+
+### Icon Rules
+
+1. **产品通用图标默认 `react-icons/lu`**：例如搜索、刷新、设置、下载、复制、状态提示。已有页面大量使用 `Lu*`，保持线性、克制、统一笔触。
+2. **关闭、下拉、勾选等基础控件可用 `react-icons/io5`**：仅限控件级符号，优先复用现有组件，不在业务页面扩散。
+3. **模型/厂商/AI 客户端使用 `@lobehub/icons`，但业务侧优先用 `ModelIcon`**：只有 `vendor-icons.tsx`、API Keys 接入配置等图标映射层可以直接引入 LobeHub 图标。
+4. **品牌支付/OAuth 图标走常量封装**：支付渠道走 `src/constants/brand-icons.tsx`，OAuth 走 `src/constants/oauth.tsx`。
+5. **禁用 `lucide-react`**：`modelgo-design-tokens/USAGE.md` 是四端通用建议，里面的 lucide-react 建议不适用于控制台；本仓 README 和现状代码以 `react-icons/lu` 为准。`@lobehub/icons` 的传递依赖里可能带 lucide，但本项目代码不直接 import。需要新图标时从 `react-icons/lu` 找，找不到再评估是否补封装。
+6. **图标按钮必须有可访问名称**：纯图标按钮要有 `aria-label` / `title`，复制场景优先 `CopyButton`。
+
 ## Overview
 
 > **设计身份（一句话）**：一套代码 × 两条视觉轴 —— **市场轴**（国内靛紫 / 海外翠绿 → 两个域名）× **主题轴**（深 / 浅），同一套 UX 设计语言，4 套外观全部由**单一 token 源**驱动。
@@ -119,7 +161,7 @@ ModelGo 客户控制台（modelgo-console-web）的设计系统。设计目标�
 
 两条独立的视觉轴，组合出 4 套外观，全部由 CSS 变量驱动（`src/styles/tokens.css`），切换时只改 `<html>` 的属性：
 
-- **市场轴**（`data-market`）：`domestic` = 国内靛紫，`global` = 海外翠绿。`--brand-*` 是路由变量，指向当前市场的原色；组件永远引用 `--brand-*`，不直接写 `--cn-*` / `--go-*`。
+- **市场轴**（`data-market`）：`china` = 国内靛紫，`global` = 海外翠绿。`--brand-*` 是路由变量，指向当前市场的原色；组件永远引用 `--brand-*`，不直接写 `--cn-*` / `--go-*`。`domestic` 只作为历史旧值兼容，不作为新代码/新文档用语。
 - **主题轴**（`body[theme-mode]`）：浅色（默认）/ 深色（低饱和石墨灰，非纯黑）。
 
 YAML front matter 里的值是 **「国内 + 浅色」** 默认态；其余三套的具体值在下面各章节说明，或直接查 `tokens.css`（设计值的唯一真源）。

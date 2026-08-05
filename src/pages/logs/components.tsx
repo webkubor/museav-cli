@@ -103,23 +103,23 @@ export function LogsTable({
         {hasActiveFilters ? (
           <EmptyState
             icon={<LuSearch />}
-            title="没有匹配的调用日志"
-            description="当前筛选条件下没有记录，试试放宽条件，或用完整 Request ID 精确检索。"
-            action={onClearFilters ? <Button variant="outline" size="sm" onClick={onClearFilters}>清除筛选</Button> : undefined}
+            title={t('logs.emptyState.filteredTitle')}
+            description={t('logs.emptyState.filteredDesc')}
+            action={onClearFilters ? <Button variant="outline" size="sm" onClick={onClearFilters}>{t('logs.filter.clear')}</Button> : undefined}
           />
         ) : (
           <EmptyState
             icon={<LuInbox />}
-            title="暂无调用日志"
-            description="通过 API Key 发起模型调用后，请求会在这里按时间倒序展示。"
+            title={t('logs.emptyState.noLogsTitle')}
+            description={t('logs.emptyState.noLogsDesc')}
             action={
               (onGoCreateKey || docsUrl) ? (
                 <div className="flex flex-wrap items-center justify-center gap-2">
                   {onGoCreateKey && (
-                    <Button variant="brand" size="sm" onClick={onGoCreateKey}>创建 API Key</Button>
+                    <Button variant="brand" size="sm" onClick={onGoCreateKey}>{t('logs.emptyState.createApiKey')}</Button>
                   )}
                   {docsUrl && (
-                    <Button variant="outline" size="sm" onClick={() => window.open(docsUrl, '_blank', 'noopener')}>查看接入文档</Button>
+                    <Button variant="outline" size="sm" onClick={() => window.open(docsUrl, '_blank', 'noopener')}>{t('logs.emptyState.viewDocs')}</Button>
                   )}
                 </div>
               ) : undefined
@@ -135,14 +135,14 @@ export function LogsTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="min-w-[150px]">时间</TableHead>
-            <TableHead>状态</TableHead>
-            <TableHead className="min-w-[190px]">模型</TableHead>
-            <TableHead className="min-w-[180px]">归属</TableHead>
+            <TableHead className="min-w-[150px]">{t('logs.table.time')}</TableHead>
+            <TableHead>{t('logs.table.status')}</TableHead>
+            <TableHead className="min-w-[190px]">{t('logs.table.model')}</TableHead>
+            <TableHead className="min-w-[180px]">{t('logs.table.owner')}</TableHead>
             <TableHead>Token</TableHead>
-            <TableHead>费用</TableHead>
-            <TableHead>延迟</TableHead>
-            <TableHead>操作</TableHead>
+            <TableHead>{t('logs.table.cost')}</TableHead>
+            <TableHead>{t('logs.table.latency')}</TableHead>
+            <TableHead>{t('logs.table.actions')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -207,12 +207,12 @@ export function LogsTable({
                       {/* 绿色「T」= Token 总量标记（与用量页 token=emerald 口径一致）；hover 加深 + tooltip 释义 */}
                       <span
                         className="inline-flex cursor-default items-center justify-center rounded bg-green-500/10 px-1 py-0.5 text-[10px] font-bold leading-none text-green-600 transition-colors hover:bg-green-500/20"
-                        title="总 Token（输入 + 输出）"
-                        aria-label="总 Token"
+                        title={t('logs.table.totalTokenTooltip')}
+                        aria-label={t('logs.table.totalTokenAria')}
                       >T</span>
                       <strong className="font-bold text-mg-text-1">{formatNumber(row.usage.total_tokens)}</strong>
                     </div>
-                    <div className="mt-0.5 mg-text-caption text-mg-text-3">输入 {formatNumber(row.usage.input_tokens)} / 输出 {formatNumber(row.usage.output_tokens)}</div>
+                    <div className="mt-0.5 mg-text-caption text-mg-text-3">{t('logs.table.inputOutputTokens', { input: formatNumber(row.usage.input_tokens), output: formatNumber(row.usage.output_tokens) })}</div>
                   </div>
                 ) : (
                   <div className="min-w-0">
@@ -229,7 +229,7 @@ export function LogsTable({
                   const tiny = shown != null && val > 0 && val < 0.0001
                   const sym = row.cost.currency === 'USD' ? '$' : '¥'
                   return tiny ? (
-                    <span title={`精确费用 ${sym}${row.cost.amount}`} className="cursor-help border-b border-dashed border-mg-border/60">
+                    <span title={t('logs.table.exactCost', { amount: `${sym}${row.cost.amount}` })} className="cursor-help border-b border-dashed border-mg-border/60">
                       <Money amount={shown} currency={row.cost.currency} />
                     </span>
                   ) : (
@@ -244,12 +244,12 @@ export function LogsTable({
                     <span className="block mg-text-caption text-mg-text-3">{t('logs.metrics.noResponse')}</span>
                   </div>
                 ) : (
-                  <div className="min-w-0 cursor-help" title="首包：收到首个 token 的耗时（流式响应体感）· 总计：完整响应耗时">
+                  <div className="min-w-0 cursor-help" title={t('logs.table.latencyTooltip')}>
                     <strong className={cn('block font-mono font-bold tabular-nums', row.speed.first_token_ms > 0 ? durationTone(row.speed.first_token_ms) : 'text-mg-text-3')}>
-                      首包 {row.speed.first_token_ms > 0 ? formatDuration(row.speed.first_token_ms) : '—'}
+                      {t('logs.table.firstTokenLatency', { value: row.speed.first_token_ms > 0 ? formatDuration(row.speed.first_token_ms) : '—' })}
                     </strong>
                     <span className="block font-mono tabular-nums mg-text-caption text-mg-text-3">
-                      总计 {formatMaybeDuration(row.duration_ms)}
+                      {t('logs.table.totalLatency', { value: formatMaybeDuration(row.duration_ms) })}
                     </span>
                   </div>
                 )}
@@ -264,7 +264,7 @@ export function LogsTable({
                     onSelectLog(row)
                   }}
                 >
-                  详情
+                  {t('logs.table.detail')}
                 </Button>
               </TableCell>
             </TableRow>
@@ -314,16 +314,17 @@ export function ActiveFilterChips({
   chips: string[]
   onClear: () => void
 }) {
+  const { t } = useTranslation()
   return (
     <div className="flex flex-wrap items-center gap-2">
       {chips.length > 0 ? (
         chips.map((chip) => <Badge key={chip} variant="secondary">{chip}</Badge>)
       ) : (
-        <span className="mg-text-caption text-mg-text-3">默认显示近 7 天全部请求</span>
+        <span className="mg-text-caption text-mg-text-3">{t('logs.filter.defaultHint')}</span>
       )}
       {chips.length > 0 && (
         <button type="button" onClick={onClear} className="mg-text-caption font-bold text-brand-base hover:text-brand-deep">
-          清空筛选
+          {t('logs.filter.clear')}
         </button>
       )}
     </div>

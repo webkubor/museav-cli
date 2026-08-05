@@ -1,0 +1,152 @@
+{
+  "artifact": {
+    "available": "Downloadable",
+    "expired": "Expired",
+    "expiredAutoCleaned": "Expired · automatically cleaned up",
+    "expiresAt": "Until {{time}} · {{remain}}",
+    "file": "Artifact file",
+    "generating": "Generating",
+    "infoUnavailable": "Artifact details are not available yet",
+    "preservationWarning": "The platform will no longer keep this artifact after expiration. Download and save it soon.",
+    "resultExpiry": "Artifact expiry: {{value}}",
+    "videoExpired": "The video file has been automatically cleaned up and cannot be previewed or downloaded."
+  },
+  "artifactState": {
+    "all": "All artifact states",
+    "available": "Downloadable",
+    "expired": "Expired",
+    "failed": "Generation failed",
+    "generating": "Generating",
+    "label": "Artifact state"
+  },
+  "billingState": {
+    "all": "All billing states",
+    "billed": "Settled",
+    "label": "Billing state",
+    "none": "Unbilled",
+    "partial": "Partially billed",
+    "pending": "Pending",
+    "settled": "Settled",
+    "unbilled": "Unbilled"
+  },
+  "buttons": {
+    "clearFilters": "Clear filters",
+    "detail": "Details",
+    "download": "Download",
+    "moreFilters": "More filters",
+    "nextPage": "Next",
+    "previousPage": "Previous",
+    "retry": "Retry"
+  },
+  "columns": {
+    "actions": "Actions",
+    "cost": "Actual cost",
+    "createdAt": "Submitted",
+    "kind": "Type",
+    "model": "Model",
+    "preview": "Preview",
+    "status": "Status"
+  },
+  "cost": {
+    "failedNoCharge": "The upstream call failed before generation, so no charge was incurred.",
+    "failedWithCharge": "The call succeeded but generation failed. Compute was consumed and billed by actual usage.",
+    "noCharge": "No charge",
+    "pending": "Pending",
+    "queuedCancelled": "Canceled while queued, before generation started. No charge was incurred."
+  },
+  "detail": {
+    "apiKeyName": "API Key name",
+    "artifact": "Artifact",
+    "artifactExpiry": "Artifact expiry",
+    "artifactState": "Artifact state",
+    "billingState": "Billing state",
+    "copyLink": "Copy link",
+    "copySuccess": "Link copied",
+    "errorReason": "Failure reason",
+    "lifecycle": "Lifecycle",
+    "member": "Member",
+    "overview": "Overview",
+    "taskId": "Task ID",
+    "taskInfo": "Task info",
+    "taskStatus": "Task status",
+    "title": "Async task details",
+    "workspace": "Workspace"
+  },
+  "empty": {
+    "filteredDescription": "No tasks match the current filters. Try broadening or clearing them.",
+    "filteredTitle": "No matching tasks",
+    "loadErrorDescription": "Failed to fetch the task list. Check your network and try again.",
+    "loadErrorTitle": "Failed to load",
+    "loading": "Loading…",
+    "noTasksDescription": "After starting async video, image, or music generation, task status, cost, and artifacts will appear here.",
+    "noTasksTitle": "No async tasks"
+  },
+  "duration": {
+    "seconds": "{{count}} seconds"
+  },
+  "filters": {
+    "allApiKeys": "All API Keys",
+    "allKinds": "All types",
+    "allMembers": "All members",
+    "allStatuses": "All statuses",
+    "allWorkspaces": "All workspaces",
+    "apiKey": "API Key",
+    "member": "Member",
+    "searchPlaceholder": "Search task ID / model",
+    "selectWorkspaceFirst": "Select a workspace first",
+    "workspace": "Workspace"
+  },
+  "kind": {
+    "audio": "Music generation",
+    "fromImage": "Image to video",
+    "image": "Image generation",
+    "video": "Video generation"
+  },
+  "lifecycle": {
+    "completed": "Completed",
+    "completedNote": "Artifact available for download",
+    "failed": "Failed",
+    "failedNote": "Task execution failed",
+    "queued": "Queued",
+    "queuedNote": "Waiting for ModelGo or upstream scheduling",
+    "queuedSimpleNote": "Waiting for scheduling",
+    "running": "Generating",
+    "runningNote": "Generation in progress",
+    "submitted": "Submitted",
+    "submittedNote": "Task created"
+  },
+  "pagination": {
+    "page": "Page {{page}} / {{pages}}",
+    "total": "{{total}} total"
+  },
+  "relativeTime": {
+    "daysLeft": "{{count}} days left",
+    "hoursLeft": "{{count}} hours left",
+    "lessThanOneHour": "<1 hour left"
+  },
+  "status": {
+    "completed": "Completed",
+    "failed": "Failed",
+    "queued": "Queued",
+    "running": "Generating",
+    "succeeded": "Completed"
+  },
+  "timePreset": {
+    "all": "Any time",
+    "last1h": "Last 1 hour",
+    "last24h": "Last 24 hours",
+    "last7d": "Last 7 days"
+  },
+  "thumbnail": {
+    "downloadDisabled": "Artifact cannot be downloaded because it is unfinished, generating, failed, or expired.",
+    "downloadEnabled": "Download artifact",
+    "expired": "Artifact expired",
+    "expiryLabel": "Artifact valid {{remain}}",
+    "firstFrame": "Video first frame",
+    "previewVideo": "Preview video",
+    "videoPreview": "Video preview"
+  },
+  "warning": {
+    "expiry": "Video artifacts have an expiration time shown per task. The platform will no longer keep them after expiration, so download and save them locally in time."
+  }
+}

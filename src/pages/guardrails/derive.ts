@@ -32,6 +32,13 @@ export const GUARDRAIL_BUDGET_PERIOD_OPTIONS: { value: 'hour' | 'day' | 'week' |
   { value: 'month', label: '每月' },
 ]
 
+export const GUARDRAIL_BUDGET_PERIOD_KEYS: Record<'hour' | 'day' | 'week' | 'month', string> = {
+  hour: 'guardrails.period.hour',
+  day: 'guardrails.period.day',
+  week: 'guardrails.period.week',
+  month: 'guardrails.period.month',
+}
+
 /** period_unit → period_length：护栏「每 5 小时」用 hour+5，其余档位 length=1（#11） */
 export function guardrailBudgetPeriodLength(unit: string): number {
   return unit === 'hour' ? 5 : 1
@@ -42,10 +49,21 @@ export const KIND_LABEL: Record<GuardrailKind, string> = {
   boost: '提额',
 }
 
+export const KIND_LABEL_KEY: Record<GuardrailKind, string> = {
+  regular: 'guardrails.kind.regular',
+  boost: 'guardrails.kind.boost',
+}
+
 export const SCOPE_LABEL: Record<GuardrailScope, string> = {
   global: '全局',
   member: '个人',
   key: 'Key',
+}
+
+export const SCOPE_LABEL_KEY: Record<GuardrailScope, string> = {
+  global: 'guardrails.scope.global',
+  member: 'guardrails.scope.member',
+  key: 'guardrails.scope.key',
 }
 
 /** 预算闸门聚合口径（对齐 backend aggregation_scope） */
@@ -104,12 +122,25 @@ export const PROMPT_INJECTION_LABEL: Record<PromptInjectionMode, string> = {
   block: '拦截',
 }
 
+export const PROMPT_INJECTION_LABEL_KEY: Record<PromptInjectionMode, string> = {
+  off: 'guardrails.promptInjection.mode.off',
+  flag: 'guardrails.promptInjection.mode.flag',
+  redact: 'guardrails.promptInjection.mode.redact',
+  block: 'guardrails.promptInjection.mode.block',
+}
+
 /** info tooltip：命中后处理方式（只解释三种，不含关闭） */
 export const PROMPT_INJECTION_HINTS: { mode: Exclude<PromptInjectionMode, 'off'>; text: string }[] = [
   { mode: 'flag', text: '记录命中，请求仍按原内容发送' },
   { mode: 'redact', text: '将命中内容替换为 [PROMPT_INJECTION] 后继续发送' },
   { mode: 'block', text: '直接拒绝请求，不发送给模型' },
 ]
+
+export const PROMPT_INJECTION_HINT_KEY: Record<Exclude<PromptInjectionMode, 'off'>, string> = {
+  flag: 'guardrails.promptInjection.hint.flag',
+  redact: 'guardrails.promptInjection.hint.redact',
+  block: 'guardrails.promptInjection.hint.block',
+}
 
 export function isPromptInjectionMode(v: unknown): v is PromptInjectionMode {
   return typeof v === 'string' && (PROMPT_INJECTION_MODES as string[]).includes(v)
@@ -118,6 +149,7 @@ export function isPromptInjectionMode(v: unknown): v is PromptInjectionMode {
 // 常规 Key 护栏可选「继承全局」；表单值 = 4 模式 + inherit。inherit 存库=不写该字段。
 export const PROMPT_INJECTION_INHERIT = 'inherit' as const
 export const PROMPT_INJECTION_INHERIT_LABEL = '继承全局护栏'
+export const PROMPT_INJECTION_INHERIT_LABEL_KEY = 'guardrails.promptInjection.inherit'
 export type PromptInjectionFormValue = PromptInjectionMode | typeof PROMPT_INJECTION_INHERIT
 
 /** 原始值：显式配置返回 mode，未配置返回 undefined（全局=按关闭兜底 / 常规 Key=按继承全局兜底，由调用方决定）。
@@ -229,10 +261,15 @@ export function primaryBudget(g: GuardrailDetail): GuardrailBudgetPolicy | null 
 }
 
 /** 预算展示：无金额→「不限额」，否则「¥123 / 月」（去 NUMERIC 尾零） */
-export function formatBudget(symbol: string, policy?: GuardrailBudgetPolicy | null): string {
+export function formatBudget(
+  symbol: string,
+  policy?: GuardrailBudgetPolicy | null,
+  periodLabel: (unit: string) => string = (unit) => PERIOD_LABEL[unit] ?? unit,
+  unlimitedLabel = '不限额',
+): string {
   const amount = policy?.spend_limit_amount
-  if (!policy || !amount || Number(amount) <= 0) return '不限额'
-  const period = PERIOD_LABEL[policy.period_unit] ?? policy.period_unit
+  if (!policy || !amount || Number(amount) <= 0) return unlimitedLabel
+  const period = periodLabel(policy.period_unit)
   return `${symbol}${groupThousands(trimAmountScale(amount))} / ${period}`
 }
 

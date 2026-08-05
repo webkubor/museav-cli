@@ -1,0 +1,251 @@
+{
+  "logs": {
+    "title": "Call Logs",
+    "desc": "Real-time visibility into all API calls for traffic tracking and troubleshooting.",
+    "refresh": "Refresh",
+    "loading": "Loading logs...",
+    "empty": "No matching records",
+    "header": {
+      "asyncDesc": "Review multimodal async task status, artifacts, and download expiry.",
+      "mineDesc": "Review my call records and troubleshooting details.",
+      "spaceDesc": "Review calls from all members in the spaces I manage.",
+      "enterpriseDesc": "Track enterprise calls by workspace, member, and API Key.",
+      "viewToggleAria": "Switch view scope",
+      "recordTypeAria": "Switch record type",
+      "enterpriseView": "Enterprise",
+      "spaceView": "Space",
+      "mineView": "Mine",
+      "syncRecord": "Sync calls",
+      "asyncRecord": "Async tasks"
+    },
+    "timeRange": {
+      "today": "Today",
+      "7d": "Last 7 days",
+      "30d": "Last 30 days",
+      "thisMonth": "This month",
+      "lastMonth": "Last month",
+      "custom": "Custom",
+      "customRange": "{{start}} to {{end}}",
+      "all": "All time"
+    },
+    "emptyState": {
+      "filteredTitle": "No matching call logs",
+      "filteredDesc": "No records match the current filters. Try broadening the filters or searching with a full Request ID.",
+      "noLogsTitle": "No call logs yet",
+      "noLogsDesc": "After you call a model with an API Key, requests appear here in reverse chronological order.",
+      "createApiKey": "Create API Key",
+      "viewDocs": "View docs"
+    },
+    "error": {
+      "loadTitle": "Failed to load call logs",
+      "loadDesc": "The request failed. Check your network and try again.",
+      "retry": "Retry"
+    },
+    "filter": {
+      "statusLabel": "Status",
+      "statusPlaceholder": "Select status",
+      "statusAll": "All",
+      "statusSuccess": "Success only",
+      "statusFailed": "Failed only",
+      "timeRange": "Time range",
+      "callStatus": "Call status",
+      "workspace": "Workspace",
+      "modelName": "Model",
+      "allWorkspaces": "All workspaces",
+      "allModels": "All models",
+      "allApiKeys": "All API Keys",
+      "selectWorkspaceFirst": "Select a workspace first",
+      "more": "More filters",
+      "requestIdSearch": "Request ID exact search",
+      "searchPlaceholder": "Enter Request ID, model, error summary, or member",
+      "member": "Member",
+      "allMembers": "All members",
+      "guardrailLabel": "Guardrail",
+      "fullTextHint": "Request/Response full-text search only covers records with input/output log capture enabled.",
+      "defaultHint": "Showing all requests from the last 7 days by default",
+      "clear": "Clear filters",
+      "status": {
+        "all": "All statuses",
+        "success": "Success",
+        "guarded": "Guardrail hit",
+        "error": "Error"
+      },
+      "guardrail": {
+        "all": "All guardrail states",
+        "hit": "Guardrail hit",
+        "not_hit": "No guardrail hit"
+      },
+      "chip": {
+        "workspace": "Workspace: {{value}}",
+        "model": "Model: {{value}}",
+        "apiKey": "API Key: {{value}}",
+        "member": "Member: {{value}}",
+        "keyword": "Keyword: {{value}}"
+      },
+      "modelLabel": "Model",
+      "modelPlaceholder": "e.g. gpt-4o-mini",
+      "keywordLabel": "Search",
+      "keywordPlaceholder": "Search by Request ID"
+    },
+    "table": {
+      "time": "Time",
+      "requestTime": "Created",
+      "model": "Model",
+      "owner": "Owner",
+      "statusCode": "Status",
+      "duration": "Latency",
+      "latency": "Latency",
+      "ttft": "TTFT",
+      "usage": "Usage",
+      "status": "Status",
+      "tokenTotal": "Total",
+      "tokenInput": "Input",
+      "tokenOutput": "Output",
+      "tokens": "Tokens",
+      "cost": "Cost",
+      "apiKey": "API Key",
+      "actions": "Actions",
+      "detail": "Detail",
+      "totalTokenTooltip": "Total tokens (input + output)",
+      "totalTokenAria": "Total tokens",
+      "inputOutputTokens": "Input {{input}} / Output {{output}}",
+      "exactCost": "Exact cost {{amount}}",
+      "latencyTooltip": "First token: time until the first token is received (streaming responsiveness). Total: full response duration.",
+      "firstTokenLatency": "First token {{value}}",
+      "totalLatency": "Total {{value}}"
+    },
+    "pagination": {
+      "total": "{{count}} records",
+      "prev": "Prev",
+      "page": "Page {{page}}",
+      "next": "Next"
+    },
+    "detail": {
+      "title": "Log Detail",
+      "status": "Status",
+      "duration": "Duration",
+      "model": "Model",
+      "workspace": "Workspace",
+      "member": "Member",
+      "time": "Time",
+      "httpStatus": "HTTP status",
+      "billingStatus": "Billing status",
+      "callType": "Call type",
+      "apiKeyName": "API Key",
+      "tokens": "Tokens",
+      "errorTitle": "Error",
+      "sections": {
+        "overview": "Overview",
+        "request": "Request",
+        "responseTiming": "Response timing"
+      },
+      "diagnostics": {
+        "totalDuration": "Total duration",
+        "firstTokenHint": "First token {{value}}",
+        "cost": "Cost",
+        "billingStatusMissing": "Billing status unavailable",
+        "tokenFlowHint": "Input token -> output token",
+        "fallbackCount": "{{count}} times",
+        "fallbackTriggered": "Fallback triggered",
+        "fallbackNotTriggered": "Not triggered",
+        "cache": "Cache",
+        "cacheHit": "Hit",
+        "cacheMiss": "Miss",
+        "cacheRead": "Read {{count}} tokens"
+      },
+      "timing": {
+        "firstToken": "First token latency",
+        "generation": "Response generation",
+        "totalResponse": "Total response latency",
+        "inputTokens": "Input {{count}}",
+        "outputTokens": "Output {{count}} tokens"
+      },
+      "payload": {
+        "sectionTitle": "Request content",
+        "loading": "Loading request / response content...",
+        "captureDisabledTitle": "Input/output logging is not enabled for this workspace",
+        "captureDisabledDesc": "Call logs only keep metadata, tokens, cost, latency, routing, and error/guardrail summaries. To view full Prompt and Response content, enable input/output logging in workspace log and forwarding settings.",
+        "openSettings": "Enable log forwarding",
+        "captureEnabled": "Input/output log capture is enabled",
+        "copyAll": "Copy all",
+        "copyToast": "Request / response content copied",
+        "downloadJson": "Download JSON",
+        "requestTitle": "Request ({{count}} tokens)",
+        "responseTitle": "Response ({{count}} tokens)",
+        "responseMissingTitle": "No response generated",
+        "responseMissingFallback": "The model did not return response content",
+        "emptyContent": "(empty)",
+        "noContent": "No content",
+        "mergedChunks": "Merged {{count}} chunks",
+        "reasoning": "Reasoning reasoning_content",
+        "answer": "Answer content",
+        "parsedView": "Pretty",
+        "rawView": "JSON",
+        "role": {
+          "system": "System",
+          "user": "User",
+          "assistant": "Assistant",
+          "tool": "Tool"
+        }
+      },
+      "promptPayload": "Prompt Payload",
+      "rawPayload": "Raw Payload",
+      "payloadKind": {
+        "request": "Request",
+        "response": "Response"
+      },
+      "payloadLoading": "Loading raw payload...",
+      "payloadError": "Failed to load raw payload",
+      "payloadEmpty": "No raw payload",
+      "payloadTruncated": "Truncated",
+      "payloadCopied": "Payload copied"
+    },
+    "status": {
+      "success": "Success",
+      "guarded": "Guardrail hit",
+      "error": "Error"
+    },
+    "metrics": {
+      "notStarted": "Not sent",
+      "noResponse": "No response sent",
+      "noTokens": "No tokens"
+    },
+    "guardrail": {
+      "sectionTitle": "Guardrail Details",
+      "hitRule": "Matched rule",
+      "result": "Outcome",
+      "ruleSource": "Rule source",
+      "modelCall": "Model call",
+      "unknownRule": "Unknown rule",
+      "unknownSource": "Unknown source",
+      "requestStatus": "Request status",
+      "modelRequest": "Model request",
+      "blockedHint": "Guardrail hit",
+      "notStartedHint": "No response, tokens, latency or cost",
+      "action": {
+        "flag": "Logged, continued",
+        "redact": "Redacted, continued",
+        "block": "Blocked"
+      },
+      "modelState": {
+        "completed": "Call succeeded",
+        "failed": "Call failed",
+        "not_started": "Not started"
+      },
+      "redactedHint": "A prompt-injection rule matched; the request was redacted and the call continued. Only the redacted content is shown below, not the original.",
+      "scope": {
+        "global": "Global guardrail",
+        "key": "Key guardrail",
+        "personal": "Personal guardrail"
+      },
+      "category": {
+        "prompt_injection": "Prompt injection",
+        "workspace_budget": "Workspace budget",
+        "member_budget": "Member budget",
+        "key_budget": "Key budget",
+        "model_blacklist": "Model blacklist",
+        "ip_allowlist": "IP allowlist"
+      }
+    }
+  }
+}

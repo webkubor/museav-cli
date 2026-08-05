@@ -20,30 +20,21 @@ import { formatDateTime } from '@/lib/format-date'
 import { formatMoney } from '@/lib/utils'
 import type { ApiKeyItem, ApiKeyType } from '@/types'
 import {
-  KEY_TYPE_LABEL,
-  STATUS_LABEL,
   deriveKeyType,
+  keyTypeLabel,
   responsibleOf,
   periodSpendOf,
   lastCalledOf,
   isExpiringSoon,
   cap,
   formatLimit,
+  statusLabel,
   type ApiKeyAction,
 } from './derive'
 
 /** key 是否已过期：瞬时点比较（expires_at 为带 Z 的 UTC ISO）。放组件外避免 render 期调 Date.now。 */
 function isExpired(iso: string): boolean {
   return new Date(iso).getTime() < Date.now()
-}
-
-const STATUS_MAP = {
-  active: { label: STATUS_LABEL.active, variant: 'success' as const, dot: true },
-  rotation_required: { label: STATUS_LABEL.rotation_required, variant: 'info' as const },
-  limited: { label: STATUS_LABEL.limited, variant: 'warning' as const },
-  expired: { label: STATUS_LABEL.expired, variant: 'warning' as const },
-  disabled: { label: STATUS_LABEL.disabled, variant: 'outline' as const },
-  revoked: { label: STATUS_LABEL.revoked, variant: 'danger' as const },
 }
 
 const KEY_TYPE_CLASS: Record<string, string> = {
@@ -99,19 +90,27 @@ export function ApiKeyTable({
 }: Props) {
   const { t } = useTranslation()
   const colSpan = 9
+  const statusMap = {
+    active: { label: statusLabel(t, 'active'), variant: 'success' as const, dot: true },
+    rotation_required: { label: statusLabel(t, 'rotation_required'), variant: 'info' as const },
+    limited: { label: statusLabel(t, 'limited'), variant: 'warning' as const },
+    expired: { label: statusLabel(t, 'expired'), variant: 'warning' as const },
+    disabled: { label: statusLabel(t, 'disabled'), variant: 'outline' as const },
+    revoked: { label: statusLabel(t, 'revoked'), variant: 'danger' as const },
+  }
 
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead>{t('apiKeys.table.name')}</TableHead>
-          <TableHead>类型</TableHead>
-          <TableHead>负责人</TableHead>
+          <TableHead>{t('apiKeys.table.type')}</TableHead>
+          <TableHead>{t('apiKeys.table.owner')}</TableHead>
           {/* normal-case 覆盖表头 mg-text-label 的 uppercase，保留「Key」首字母大写而非「KEY」 */}
-          <TableHead className="normal-case">Key护栏</TableHead>
+          <TableHead className="normal-case">{t('apiKeys.table.keyGuardrail')}</TableHead>
           <TableHead>{t('apiKeys.table.status')}</TableHead>
-          <TableHead>本期消费 / 限额</TableHead>
-          <TableHead>最近调用</TableHead>
+          <TableHead>{t('apiKeys.table.periodSpendLimit')}</TableHead>
+          <TableHead>{t('apiKeys.table.lastCalled')}</TableHead>
           <TableHead>{t('apiKeys.table.expiresAt')}</TableHead>
           <TableHead className="w-32 text-right">{t('apiKeys.table.actions')}</TableHead>
         </TableRow>
@@ -125,11 +124,11 @@ export function ApiKeyTable({
           isFiltered && hasKeys ? (
             <EmptyState
               icon={<LuFilterX />}
-              title="没有符合筛选条件的 Key"
-              description="试试调整类型、状态、负责人筛选或搜索关键词"
+              title={t('apiKeys.emptyFiltered.title')}
+              description={t('apiKeys.emptyFiltered.desc')}
               action={
                 <Button variant="outline" size="sm" onClick={onClearFilters}>
-                  清空筛选
+                  {t('apiKeys.emptyFiltered.clear')}
                 </Button>
               }
               colSpan={colSpan}
@@ -152,8 +151,8 @@ export function ApiKeyTable({
           ) : (
             <EmptyState
               icon={<LuKeyRound />}
-              title="当前工作空间还没有 API Key"
-              description="创建第一个 API Key，即可获取运行凭证接入模型调用"
+              title={t('apiKeys.emptyWorkspace.title')}
+              description={t('apiKeys.emptyWorkspace.desc')}
               action={
                 canCreate ? (
                   <Button variant="brand" size="sm" onClick={onCreate}>
@@ -186,7 +185,7 @@ export function ApiKeyTable({
               : cap(record.capabilities?.can_disable, canAction(keyType, 'disable'))
             const copyDisabledReason =
               !canReveal
-                ? '无查看 API Key 明文权限'
+                ? t('apiKeys.table.copyForbidden')
                 : record.status !== 'active'
                 ? t('apiKeys.table.copyUnavailableInactive')
                 : record.revealable
@@ -202,7 +201,7 @@ export function ApiKeyTable({
                   <TruncatedText text={record.name} maxWidth={200} className="font-semibold text-mg-text-1 text-[13.5px]" />
                   {/* #298：名称下方掩码 + 复制完整明文按钮 */}
                   <div className="mt-1 flex items-center gap-1.5">
-                    <span className="font-mono text-xs text-mg-text-3 tracking-tight cursor-help" title="Key 掩码，完整明文需点右侧复制">{record.masked}</span>
+                    <span className="font-mono text-xs text-mg-text-3 tracking-tight cursor-help" title={t('apiKeys.table.maskedTitle')}>{record.masked}</span>
                     <button
                       type="button"
                       aria-label={copyDisabledReason ?? t('apiKeys.table.copy')}
@@ -221,7 +220,7 @@ export function ApiKeyTable({
                 </TableCell>
                 <TableCell>
                   <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-bold ${KEY_TYPE_CLASS[keyType]}`}>
-                    {KEY_TYPE_LABEL[keyType]}
+                    {keyTypeLabel(t, keyType)}
                   </span>
                 </TableCell>
                 <TableCell>
@@ -232,7 +231,7 @@ export function ApiKeyTable({
                   />
                   {creatorDiffers && (
                     <div className="mt-0.5 flex items-center gap-1 text-xs text-mg-text-3">
-                      <span className="shrink-0">创建人</span>
+                      <span className="shrink-0">{t('apiKeys.table.creator')}</span>
                       <TruncatedText
                         text={record.owner.display_name || record.owner.email}
                         maxWidth={110}
@@ -265,11 +264,11 @@ export function ApiKeyTable({
                     </div>
                   ) : (
                     // 无 key 作用域护栏（需求方#246）：显示「不使用Key护栏」，与详情抽屉 Key 护栏槽口径一致
-                    <span className="text-mg-text-3 text-xs">不使用Key护栏</span>
+                    <span className="text-mg-text-3 text-xs">{t('apiKeys.guardrail.none')}</span>
                   )}
                 </TableCell>
                 <TableCell>
-                  <StatusBadge status={record.status} statusMap={STATUS_MAP} fallback={record.status} />
+                  <StatusBadge status={record.status} statusMap={statusMap} fallback={record.status} />
                 </TableCell>
                 <TableCell>
                   <div className="font-mono text-xs text-mg-text-1 tabular-nums">
@@ -280,11 +279,11 @@ export function ApiKeyTable({
                   {/* #148：限额直接带「限额」前缀，一眼区分于上方本期消费，无需额外 Hint */}
                   <div
                     className={`text-xs text-mg-text-3${hasLimit ? ' cursor-help' : ''}`}
-                    title={hasLimit ? '生效限额=命中的护栏预算闸门（取最严）' : undefined}
-                  >{hasLimit ? `限额 ${formatLimit(record)}` : formatLimit(record)}</div>
+                    title={hasLimit ? t('apiKeys.table.effectiveLimitTitle') : undefined}
+                  >{hasLimit ? t('apiKeys.table.limitValue', { value: formatLimit(record, t) }) : formatLimit(record, t)}</div>
                 </TableCell>
                 <TableCell className="text-xs text-mg-text-2">
-                  {lastCalled ? formatDateTime(lastCalled) : <span className="text-mg-text-3">尚未调用</span>}
+                  {lastCalled ? formatDateTime(lastCalled) : <span className="text-mg-text-3">{t('apiKeys.table.notCalled')}</span>}
                 </TableCell>
                 <TableCell className="text-xs">
                   {!record.expires_at ? (
@@ -308,7 +307,7 @@ export function ApiKeyTable({
                       onClick={() => onOpenDetail(record)}
                       className="text-brand-base hover:text-brand-deep transition-colors cursor-pointer"
                     >
-                      详情
+                      {t('apiKeys.table.detail')}
                     </button>
                     {record.status !== 'revoked' && canToggle && (() => {
                       // 启用无二次确认，直达 mutation：需行内 loading/disabled 反馈，防重复点击（停用走确认弹窗，弹窗自带 loading）
@@ -322,9 +321,9 @@ export function ApiKeyTable({
                           {enabling ? (
                             <span className="inline-flex items-center gap-1">
                               <LuLoaderCircle className="w-3 h-3 animate-spin" />
-                              启用中
+                              {t('apiKeys.table.enabling')}
                             </span>
-                          ) : isDisabled ? '启用' : '停用'}
+                          ) : isDisabled ? t('apiKeys.table.enable') : t('apiKeys.table.disable')}
                         </button>
                       )
                     })()}

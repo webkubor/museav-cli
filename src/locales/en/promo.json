@@ -1,0 +1,13 @@
+{
+  "promo": {
+    "freeModels": {
+      "badge": "Free",
+      "title": "Try Free Models",
+      "description": "Test top models at zero cost"
+    },
+    "referral": {
+      "title": "Referral program",
+      "description": "Invite friends, both earn rewards"
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { DateRangePicker, type DateRangeValue } from '@/components/ui/DateRangePicker'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -49,27 +50,11 @@ const DEFAULT_PAGE_SIZE = 15
 const PAGE_SIZE_OPTIONS = [10, 15, 20, 50]
 const DEFAULT_TIME_RANGE: DateRangeValue = { preset: '7d' }
 
-const STATUS_OPTIONS: Array<{ label: string; value: LogStatusFilter }> = [
-  { label: '全部状态', value: 'all' },
-  { label: '成功', value: 'success' },
-  { label: '护栏命中', value: 'guarded' },
-  { label: '异常', value: 'error' },
-]
+const STATUS_OPTION_VALUES: LogStatusFilter[] = ['all', 'success', 'guarded', 'error']
 
-const GUARDRAIL_OPTIONS: Array<{ label: string; value: LogGuardrailFilter }> = [
-  { label: '全部护栏状态', value: 'all' },
-  { label: '护栏命中', value: 'hit' },
-  { label: '未命中护栏', value: 'not_hit' },
-]
+const GUARDRAIL_OPTION_VALUES: LogGuardrailFilter[] = ['all', 'hit', 'not_hit']
 
-const LOG_TIME_PRESETS = [
-  { key: 'today', label: '今天' },
-  { key: '7d', label: '近 7 天' },
-  { key: '30d', label: '近 30 天' },
-  { key: 'thisMonth', label: '本月' },
-  { key: 'lastMonth', label: '上月' },
-  { key: 'custom', label: '自定义' },
-]
+const LOG_TIME_PRESET_VALUES = ['today', '7d', '30d', 'thisMonth', 'lastMonth', 'custom'] as const
 
 function isDefaultTimeRange(value: DateRangeValue) {
   return value.preset === DEFAULT_TIME_RANGE.preset && !value.startDate && !value.endDate
@@ -92,16 +77,16 @@ function isLikelyRequestId(value: string) {
   return /^[A-Za-z0-9][A-Za-z0-9._:-]{15,}$/.test(value)
 }
 
-function timeRangeLabel(value: DateRangeValue) {
-  if (value.preset === 'today') return '今天'
-  if (value.preset === '7d') return '近 7 天'
-  if (value.preset === '30d') return '近 30 天'
-  if (value.preset === 'thisMonth') return '本月'
-  if (value.preset === 'lastMonth') return '上月'
+function timeRangeLabel(value: DateRangeValue, t: (key: string, options?: Record<string, string>) => string) {
+  if (value.preset === 'today') return t('logs.timeRange.today')
+  if (value.preset === '7d') return t('logs.timeRange.7d')
+  if (value.preset === '30d') return t('logs.timeRange.30d')
+  if (value.preset === 'thisMonth') return t('logs.timeRange.thisMonth')
+  if (value.preset === 'lastMonth') return t('logs.timeRange.lastMonth')
   if (value.preset === 'custom' && value.startDate && value.endDate) {
-    return `${value.startDate} 至 ${value.endDate}`
+    return t('logs.timeRange.customRange', { start: value.startDate, end: value.endDate })
   }
-  return '全部时间'
+  return t('logs.timeRange.all')
 }
 
 // 调用状态(status)与护栏命中(guardrail)是两个正交维度——一次调用可能失败但未命中护栏，
@@ -115,6 +100,7 @@ function resolveBackendStatus(status: LogStatusFilter): CallLogListParams['statu
 }
 
 export default function LogsPage() {
+  const { t } = useTranslation()
   useEffect(() => {
     trackPageView('logs')
   }, [])
@@ -181,7 +167,7 @@ export default function LogsPage() {
   // 初始时间范围同时兼容两种来源：总览「最近调用·查看全部」带 ?period=；用量统计下钻带 ?time_range/range_start/range_end
   const [timeRange, setTimeRange] = useState<DateRangeValue>(() => {
     const periodParam = searchParams.get('period')
-    if (periodParam && LOG_TIME_PRESETS.some((p) => p.key === periodParam && p.key !== 'custom')) {
+    if (periodParam && LOG_TIME_PRESET_VALUES.some((key) => key === periodParam && key !== 'custom')) {
       return { preset: periodParam }
     }
     return initialLogsTimeRange(searchParams)
@@ -364,6 +350,18 @@ export default function LogsPage() {
 
   const items = data?.items ?? []
   const hasMore = Boolean(data?.has_more && data.next_cursor)
+  const statusOptions = useMemo(
+    () => STATUS_OPTION_VALUES.map((value) => ({ value, label: t(`logs.filter.status.${value}`) })),
+    [t],
+  )
+  const guardrailOptions = useMemo(
+    () => GUARDRAIL_OPTION_VALUES.map((value) => ({ value, label: t(`logs.filter.guardrail.${value}`) })),
+    [t],
+  )
+  const timePresets = useMemo(
+    () => LOG_TIME_PRESET_VALUES.map((key) => ({ key, label: t(`logs.timeRange.${key}`) })),
+    [t],
+  )
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- 首页响应带 total、游标页省略（qa#510），需缓存最近一次 total 供翻页期间展示
@@ -409,23 +407,23 @@ export default function LogsPage() {
 
   const activeChips = useMemo(() => {
     const chips: string[] = []
-    if (!isDefaultTimeRange(timeRange)) chips.push(timeRangeLabel(timeRange))
-    if (statusFilter !== 'all') chips.push(STATUS_OPTIONS.find((item) => item.value === statusFilter)?.label ?? statusFilter)
+    if (!isDefaultTimeRange(timeRange)) chips.push(timeRangeLabel(timeRange, t))
+    if (statusFilter !== 'all') chips.push(statusOptions.find((item) => item.value === statusFilter)?.label ?? statusFilter)
     if (workspaceFilter !== 'all') {
       const workspace = workspacesData?.items.find((item) => item.workspace_id === workspaceFilter)
-      chips.push(`工作空间: ${workspace?.name ?? workspaceFilter}`)
+      chips.push(t('logs.filter.chip.workspace', { value: workspace?.name ?? workspaceFilter }))
     }
-    if (modelFilter !== 'all') chips.push(`模型: ${modelFilter}`)
+    if (modelFilter !== 'all') chips.push(t('logs.filter.chip.model', { value: modelFilter }))
     if (apiKeyFilter !== 'all') {
       const key = apiKeysData?.items.find((item) => item.api_key_id === apiKeyFilter)
-      chips.push(`API Key: ${key?.name ?? apiKeyFilter}`)
+      chips.push(t('logs.filter.chip.apiKey', { value: key?.name ?? apiKeyFilter }))
     }
     if (memberFilter !== 'all') {
       const member = membersData?.items.find((item) => item.account.account_id === memberFilter)
-      chips.push(`成员: ${member?.account.display_name ?? memberFilter}`)
+      chips.push(t('logs.filter.chip.member', { value: member?.account.display_name ?? memberFilter }))
     }
-    if (guardrailFilter !== 'all') chips.push(GUARDRAIL_OPTIONS.find((item) => item.value === guardrailFilter)?.label ?? guardrailFilter)
-    if (searchValue.trim()) chips.push(`关键词: ${searchValue.trim()}`)
+    if (guardrailFilter !== 'all') chips.push(guardrailOptions.find((item) => item.value === guardrailFilter)?.label ?? guardrailFilter)
+    if (searchValue.trim()) chips.push(t('logs.filter.chip.keyword', { value: searchValue.trim() }))
     return chips
   }, [
     apiKeyFilter,
@@ -436,6 +434,9 @@ export default function LogsPage() {
     modelFilter,
     searchValue,
     statusFilter,
+    statusOptions,
+    guardrailOptions,
+    t,
     timeRange,
     workspaceFilter,
     workspacesData?.items,
@@ -475,48 +476,48 @@ export default function LogsPage() {
     // 对齐企业管理页；flex gap 不折叠会叠成 48px，标题到正文间距过大（需求方#167）。
     <div className="space-y-6">
       <PageHeader
-        title="调用日志"
+        title={t('logs.title')}
         description={
           // 副标题逐字对齐 PRD 原型 headerSubtitle：异步 / 企业视图 / 空间视图 / 我的视图 四态。
           recordType === 'async'
-            ? '查看多模态异步任务的执行状态、产物和下载有效期。'
+            ? t('logs.header.asyncDesc')
             : view === 'mine'
-              ? '查看我的调用记录和排障详情。'
+              ? t('logs.header.mineDesc')
               : view === 'space'
-                ? '查看负责空间内全部成员的调用。'
-                : '按工作空间、成员和 API Key 追踪企业调用。'
+                ? t('logs.header.spaceDesc')
+                : t('logs.header.enterpriseDesc')
         }
         actions={
           <div className="flex items-center gap-3">
             {/* 顺序固定：视图范围切换 → 记录类型切换（PRD §4/§6） */}
             {showViewToggle && (
               <SegmentedToggle<LogView>
-                ariaLabel="切换视图范围"
+                ariaLabel={t('logs.header.viewToggleAria')}
                 value={view}
                 options={[
-                  { value: 'enterprise', label: '企业视图' },
-                  { value: 'mine', label: '我的视图' },
+                  { value: 'enterprise', label: t('logs.header.enterpriseView') },
+                  { value: 'mine', label: t('logs.header.mineView') },
                 ]}
                 onChange={(next) => { setUserView(next); clearFilters(); setSelectedLog(null) }}
               />
             )}
             {showSpaceViewToggle && (
               <SegmentedToggle<LogView>
-                ariaLabel="切换视图范围"
+                ariaLabel={t('logs.header.viewToggleAria')}
                 value={view}
                 options={[
-                  { value: 'space', label: '空间视图' },
-                  { value: 'mine', label: '我的视图' },
+                  { value: 'space', label: t('logs.header.spaceView') },
+                  { value: 'mine', label: t('logs.header.mineView') },
                 ]}
                 onChange={(next) => { setUserView(next); clearFilters(); setSelectedLog(null) }}
               />
             )}
             <SegmentedToggle<RecordType>
-              ariaLabel="切换记录类型"
+              ariaLabel={t('logs.header.recordTypeAria')}
               value={recordType}
               options={[
-                { value: 'sync', label: '同步调用' },
-                { value: 'async', label: '异步任务' },
+                { value: 'sync', label: t('logs.header.syncRecord') },
+                { value: 'async', label: t('logs.header.asyncRecord') },
               ]}
               onChange={changeRecordType}
             />
@@ -524,12 +525,12 @@ export default function LogsPage() {
             {recordType === 'sync' ? (
               <Button variant="outline" disabled={isLoading || isFetching} onClick={() => refetch()}>
                 <LuRefreshCw className={`mr-1.5 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
-                刷新
+                {t('logs.refresh')}
               </Button>
             ) : (
               <Button variant="outline" disabled={asyncFetching} onClick={() => asyncRefreshRef.current()}>
                 <LuRefreshCw className={`mr-1.5 h-4 w-4 ${asyncFetching ? 'animate-spin' : ''}`} />
-                刷新
+                {t('logs.refresh')}
               </Button>
             )}
           </div>
@@ -540,7 +541,7 @@ export default function LogsPage() {
         <AsyncTasksPanel view={view} currentAccountId={currentAccountId} initialTaskId={searchParams.get('task_id') ?? undefined} refreshRef={asyncRefreshRef} onFetchingChange={setAsyncFetching} />
       ) : forbidden ? (
         <div className="rounded-md border border-mg-border bg-mg-bg-0">
-          <ForbiddenState resource="调用日志" />
+          <ForbiddenState resource={t('logs.title')} />
         </div>
       ) : (
         <>
@@ -548,19 +549,19 @@ export default function LogsPage() {
         {/* 收紧筛选布局（需求方#131）：控件宽度封顶 200px（原 1fr 会铺满整行留大白），justify-start 左对齐；
             时间范围选择器 w-full 填满单元格去掉内部留白；auto-fit 窄屏整格折行，保留「更多筛选」不被挤出卡片（#69）。 */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(160px,200px))] lg:justify-start lg:items-end">
-          <FilterField label="时间范围">
-            <DateRangePicker className="w-full" value={timeRange} onChange={(value) => { setTimeRange(value); resetPagination(); trackFilter('time_range', value.preset) }} presets={LOG_TIME_PRESETS} />
+          <FilterField label={t('logs.filter.timeRange')}>
+            <DateRangePicker className="w-full" value={timeRange} onChange={(value) => { setTimeRange(value); resetPagination(); trackFilter('time_range', value.preset) }} presets={timePresets} />
           </FilterField>
-          <FilterField label="调用状态">
+          <FilterField label={t('logs.filter.callStatus')}>
             <Select value={statusFilter} onChange={(value) => { setStatusFilter(value as LogStatusFilter); resetPagination(); trackFilter('status', value) }}>
-              {STATUS_OPTIONS.map((option) => (
+              {statusOptions.map((option) => (
                 <Select.Option key={option.value} value={option.value}>{option.label}</Select.Option>
               ))}
             </Select>
           </FilterField>
-          <FilterField label="工作空间">
+          <FilterField label={t('logs.filter.workspace')}>
             <Select value={workspaceFilter} onChange={(value) => { setWorkspaceFilter(value); setApiKeyFilter('all'); resetPagination(); trackFilter('workspace') }}>
-              <Select.Option value="all">全部工作空间</Select.Option>
+              <Select.Option value="all">{t('logs.filter.allWorkspaces')}</Select.Option>
               {(workspacesData?.items ?? []).map((workspace) => (
                 <Select.Option key={workspace.workspace_id} value={workspace.workspace_id}>
                   {workspace.name}
@@ -568,9 +569,9 @@ export default function LogsPage() {
               ))}
             </Select>
           </FilterField>
-          <FilterField label="模型名称">
+          <FilterField label={t('logs.filter.modelName')}>
             <Select value={modelFilter} onChange={(value) => { setModelFilter(value); resetPagination(); trackFilter('model') }}>
-              <Select.Option value="all">全部模型</Select.Option>
+              <Select.Option value="all">{t('logs.filter.allModels')}</Select.Option>
               {(modelsData?.items ?? []).map((model) => (
                 <Select.Option key={model.model_id} value={model.model_id}>
                   {model.display_name || model.model_id}
@@ -580,7 +581,7 @@ export default function LogsPage() {
           </FilterField>
           <FilterField label="API Key">
             <Select value={apiKeyFilter} disabled={!apiKeyWorkspaceId} onChange={(value) => { setApiKeyFilter(value); resetPagination(); trackFilter('api_key') }}>
-              <Select.Option value="all">{apiKeyWorkspaceId ? '全部 API Key' : '先选择工作空间'}</Select.Option>
+              <Select.Option value="all">{apiKeyWorkspaceId ? t('logs.filter.allApiKeys') : t('logs.filter.selectWorkspaceFirst')}</Select.Option>
               {(apiKeysData?.items ?? []).map((key) => (
                 <Select.Option key={key.api_key_id} value={key.api_key_id}>
                   {key.name} ({key.masked})
@@ -594,24 +595,24 @@ export default function LogsPage() {
             onClick={() => setShowMoreFilters((value) => !value)}
           >
             <LuChevronDown className={`mr-1.5 h-4 w-4 transition-transform ${showMoreFilters ? 'rotate-180' : ''}`} />
-            更多筛选
+            {t('logs.filter.more')}
           </Button>
         </div>
 
         {showMoreFilters && (
           <div className="grid grid-cols-1 gap-3 border-t border-mg-border pt-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(180px,1fr)_minmax(180px,1fr)_minmax(260px,1.2fr)] lg:items-end">
-            <FilterField label="Request ID 精确检索">
+            <FilterField label={t('logs.filter.requestIdSearch')}>
               <Input
                 value={searchValue}
                 onChange={(event) => { setSearchValue(event.target.value); resetPagination() }}
-                placeholder="输入 Request ID、模型、错误摘要或成员"
+                placeholder={t('logs.filter.searchPlaceholder')}
                 prefix={<LuSearch className="h-4 w-4 text-mg-text-3" />}
               />
             </FilterField>
             {(view === 'enterprise' || view === 'space') && (
-              <FilterField label="成员">
+              <FilterField label={t('logs.filter.member')}>
                 <Select value={memberFilter} onChange={(value) => { setMemberFilter(value); resetPagination(); trackFilter('member') }}>
-                  <Select.Option value="all">全部成员</Select.Option>
+                  <Select.Option value="all">{t('logs.filter.allMembers')}</Select.Option>
                   {(membersData?.items ?? []).map((member) => (
                     <Select.Option key={member.account.account_id} value={member.account.account_id}>
                       {member.account.display_name || member.account.email}
@@ -620,16 +621,16 @@ export default function LogsPage() {
                 </Select>
               </FilterField>
             )}
-            <FilterField label="护栏">
+            <FilterField label={t('logs.filter.guardrailLabel')}>
               <Select value={guardrailFilter} onChange={(value) => { setGuardrailFilter(value as LogGuardrailFilter); resetPagination(); trackFilter('guardrail', value) }}>
-                {GUARDRAIL_OPTIONS.map((option) => (
+                {guardrailOptions.map((option) => (
                   <Select.Option key={option.value} value={option.value}>{option.label}</Select.Option>
                 ))}
               </Select>
             </FilterField>
             <div className="flex items-start gap-2 rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-sm)] mg-text-caption text-mg-text-3">
               <LuFileText className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>Request/Response 全文搜索仅覆盖已开启输入/输出日志采集的记录。</span>
+              <span>{t('logs.filter.fullTextHint')}</span>
             </div>
           </div>
         )}
@@ -641,12 +642,12 @@ export default function LogsPage() {
         <div className="rounded-md border border-mg-border bg-mg-bg-0">
           <EmptyState
             icon={<LuTriangleAlert />}
-            title="调用日志加载失败"
-            description="接口拉取出错，请检查网络后重试。"
+            title={t('logs.error.loadTitle')}
+            description={t('logs.error.loadDesc')}
             action={
               <Button variant="outline" size="sm" onClick={() => refetch()}>
                 <LuRefreshCw className={`mr-1.5 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
-                重试
+                {t('logs.error.retry')}
               </Button>
             }
           />

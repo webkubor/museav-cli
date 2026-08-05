@@ -1,0 +1,123 @@
+{
+  "observability": {
+    "title": "Observability",
+    "desc": "Manage logging, forwarding destinations, and retry policies.",
+    "settingsTitle": "Log Collection Settings",
+    "settingsDesc": "Control full request retention and whether logs are pushed to external observability tools.",
+    "loggingOffWarning": "Disabling logging will also disable broadcast forwarding",
+    "status": {
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "active": "Available",
+      "warning": "Warning",
+      "error": "Error"
+    },
+    "logging": {
+      "title": "Input / Output Logging",
+      "desc": "Record full input and output of each request.",
+      "meta": "Full content collected · retained for 30 days"
+    },
+    "broadcast": {
+      "title": "Broadcast Forwarding",
+      "desc": "Push logs to configured destinations (e.g. Datadog, OpenTelemetry).",
+      "meta": "When disabled, logs are not pushed to external platforms"
+    },
+    "destinations": {
+      "panelTitle": "Forwarding Destinations",
+      "addButton": "Add Destination",
+      "recentOff": "Recent delivery off",
+      "recentNone": "No successful delivery yet",
+      "recentAt": "Recent delivery {{time}}",
+      "availablePlatforms": "Available Platforms",
+      "configuredCount": "Configured {{count}}",
+      "endpointUnknown": "Endpoint not configured",
+      "emptyTitle": "No forwarding destinations",
+      "emptyDesc": "Add a destination to push logs to an external observability platform.",
+      "viewLogs": "View call logs",
+      "sampleRate": "{{rate}}% sampled",
+      "privacyOn": "Privacy mode on",
+      "privacyOff": "Full content forwarding",
+      "lastSuccess": "Last success {{time}}",
+      "noLastSuccess": "No successful delivery",
+      "noPlatforms": "No available platforms",
+      "addTitle": "Add Destination",
+      "listTitle": "Configured Destinations",
+      "empty": "No destinations. Add one above.",
+      "table": {
+        "name": "Name",
+        "platform": "Platform",
+        "status": "Status",
+        "lastSuccess": "Last Success",
+        "enabled": "Enabled",
+        "paused": "Paused",
+        "pause": "Pause",
+        "resume": "Resume",
+        "delete": "Delete"
+      },
+      "deleteModal": {
+        "title": "Delete Destination",
+        "description": "Delete \"{{name}}\"? This cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Delete"
+      }
+    },
+    "form": {
+      "platformLabel": "Platform",
+      "nameLabel": "Name",
+      "namePlaceholder": "Give this destination a name",
+      "samplingRate": "Sampling Rate",
+      "samplingHint": "100% forwards everything; lower values reduce traffic costs",
+      "privacyMode": "Privacy Mode",
+      "privacyHint": "Redact input/output content before forwarding",
+      "apiKeyFilter": "API Key Filter",
+      "apiKeyFilterHint": "Leave empty to forward all keys; select to forward only chosen keys",
+      "apiKeyFilterPlaceholder": "Select API Key...",
+      "apiKeyFilterCount": "{{count}} selected",
+      "noApiKeys": "No API keys available in this workspace",
+      "connectionTitle": "Connection settings",
+      "connectionDesc": "Configure credentials and endpoint used for log forwarding.",
+      "urlHint": "Use the full OTLP traces URL, usually ending with /v1/traces.",
+      "methodLabel": "Method (optional)",
+      "headersLabel": "Headers (optional)",
+      "headersInvalid": "Headers must be valid JSON",
+      "submit": "Create",
+      "validationError": "Required fields missing: {{fields}}"
+    },
+    "deadLetters": {
+      "title": "Failed Retries",
+      "empty": "No failed records",
+      "filterAll": "All",
+      "filterPending": "Pending",
+      "filterRetrying": "Retrying",
+      "filterIgnored": "Ignored",
+      "statusPending": "Pending",
+      "statusRetrying": "Retrying",
+      "statusIgnored": "Ignored",
+      "table": {
+        "platform": "Platform",
+        "status": "Status",
+        "error": "Error",
+        "attempts": "Attempts",
+        "lastAttempt": "Last Attempt",
+        "retry": "Retry",
+        "ignore": "Ignore"
+      }
+    },
+    "toast": {
+      "forwardCreated": "Destination created",
+      "forwardCreateError": "Failed to create",
+      "forwardDeleted": "Destination deleted",
+      "forwardDeleteError": "Failed to delete",
+      "toggleError": "Operation failed",
+      "retryTriggered": "Retry triggered",
+      "retryError": "Retry failed",
+      "ignored": "Marked as ignored",
+      "ignoreError": "Operation failed",
+      "saveError": "Failed to save",
+      "saveSuccess": "Saved successfully",
+      "nameRequired": "Name is required",
+      "urlRequired": "URL is required",
+      "deleteSuccess": "Deleted successfully"
+    }
+  }
+}

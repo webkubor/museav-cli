@@ -1,0 +1,152 @@
+{
+  "artifact": {
+    "available": "可下载",
+    "expired": "已过期",
+    "expiredAutoCleaned": "已过期 · 已自动清理",
+    "expiresAt": "至 {{time}} · {{remain}}",
+    "file": "产物文件",
+    "generating": "生成中",
+    "infoUnavailable": "产物信息暂未提供",
+    "preservationWarning": "产物到期后平台不再保留，请尽快下载保存。",
+    "resultExpiry": "产物有效期：{{value}}",
+    "videoExpired": "视频文件已自动清理，不支持预览与下载"
+  },
+  "artifactState": {
+    "all": "全部产物状态",
+    "available": "可下载",
+    "expired": "已过期",
+    "failed": "生成失败",
+    "generating": "生成中",
+    "label": "产物状态"
+  },
+  "billingState": {
+    "all": "全部计费状态",
+    "billed": "已结算",
+    "label": "计费状态",
+    "none": "未计费",
+    "partial": "部分计费",
+    "pending": "待结算",
+    "settled": "已结算",
+    "unbilled": "未计费"
+  },
+  "buttons": {
+    "clearFilters": "清除筛选",
+    "detail": "详情",
+    "download": "下载",
+    "moreFilters": "更多筛选",
+    "nextPage": "下一页",
+    "previousPage": "上一页",
+    "retry": "重试"
+  },
+  "columns": {
+    "actions": "操作",
+    "cost": "实际费用",
+    "createdAt": "提交时间",
+    "kind": "类型",
+    "model": "模型",
+    "preview": "预览",
+    "status": "状态"
+  },
+  "cost": {
+    "failedNoCharge": "上游调用失败，未进入生成、不计费",
+    "failedWithCharge": "调用成功但生成失败，已消耗算力、按实际计费",
+    "noCharge": "无费用",
+    "pending": "待结算",
+    "queuedCancelled": "排队中取消，未进入生成、不计费"
+  },
+  "detail": {
+    "apiKeyName": "API Key 名称",
+    "artifact": "产物",
+    "artifactExpiry": "产物有效期",
+    "artifactState": "产物状态",
+    "billingState": "计费状态",
+    "copyLink": "复制链接",
+    "copySuccess": "链接已复制",
+    "errorReason": "失败原因",
+    "lifecycle": "生命周期",
+    "member": "成员",
+    "overview": "概览",
+    "taskId": "任务 ID",
+    "taskInfo": "任务信息",
+    "taskStatus": "任务状态",
+    "title": "异步任务详情",
+    "workspace": "工作空间"
+  },
+  "empty": {
+    "filteredDescription": "当前筛选条件下没有任务，试试放宽或清除筛选。",
+    "filteredTitle": "没有符合条件的任务",
+    "loadErrorDescription": "任务列表拉取出错，请检查网络后重试。",
+    "loadErrorTitle": "加载失败",
+    "loading": "加载中…",
+    "noTasksDescription": "发起视频、图片或音乐等异步生成任务后，会在这里显示状态、费用和产物。",
+    "noTasksTitle": "暂无异步任务"
+  },
+  "duration": {
+    "seconds": "{{count}} 秒"
+  },
+  "filters": {
+    "allApiKeys": "全部 API Key",
+    "allKinds": "全部类型",
+    "allMembers": "全部成员",
+    "allStatuses": "全部状态",
+    "allWorkspaces": "全部工作空间",
+    "apiKey": "API Key",
+    "member": "成员",
+    "searchPlaceholder": "搜索任务 ID / 模型",
+    "selectWorkspaceFirst": "先选择工作空间",
+    "workspace": "工作空间"
+  },
+  "kind": {
+    "audio": "音乐生成",
+    "fromImage": "图生视频",
+    "image": "图片生成",
+    "video": "视频生成"
+  },
+  "lifecycle": {
+    "completed": "已完成",
+    "completedNote": "产物可下载",
+    "failed": "失败",
+    "failedNote": "任务执行失败",
+    "queued": "排队中",
+    "queuedNote": "等待 ModelGo 或上游调度",
+    "queuedSimpleNote": "等待调度",
+    "running": "生成中",
+    "runningNote": "生成进行中",
+    "submitted": "已提交",
+    "submittedNote": "任务创建"
+  },
+  "pagination": {
+    "page": "第 {{page}} / {{pages}} 页",
+    "total": "共 {{total}} 条"
+  },
+  "relativeTime": {
+    "daysLeft": "剩 {{count}} 天",
+    "hoursLeft": "剩 {{count}} 小时",
+    "lessThanOneHour": "剩 <1 小时"
+  },
+  "status": {
+    "completed": "已完成",
+    "failed": "失败",
+    "queued": "排队中",
+    "running": "生成中",
+    "succeeded": "已完成"
+  },
+  "timePreset": {
+    "all": "不限时间",
+    "last1h": "近 1 小时",
+    "last24h": "近 24 小时",
+    "last7d": "近 7 天"
+  },
+  "thumbnail": {
+    "downloadDisabled": "产物不可下载（未完成 / 生成中 / 失败 / 已过期）",
+    "downloadEnabled": "下载产物",
+    "expired": "产物已过期",
+    "expiryLabel": "产物有效 {{remain}}",
+    "firstFrame": "视频首帧",
+    "previewVideo": "点击预览视频",
+    "videoPreview": "视频预览"
+  },
+  "warning": {
+    "expiry": "视频产物有有效期（见各任务「产物有效期」），过期后平台不再保留，请及时下载保存到本地。"
+  }
+}

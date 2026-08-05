@@ -119,6 +119,7 @@
 }
 
 .history-sidebar-item {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -180,6 +181,43 @@
   flex-shrink: 0;
   font-size: 11px;
   color: var(--mg-text-3);
+}
+
+/* 删除按钮（shared/modelgo_prd#362）：常态隐藏、hover/focus 卡片时浮现在右下角，
+   避免在密集列表里常驻一列图标；键盘可达（focus-within 也展开）。 */
+.history-sidebar-item-delete {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--mg-text-3);
+  background: transparent;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.15s ease, color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.history-sidebar-item:hover .history-sidebar-item-delete,
+.history-sidebar-item:focus-within .history-sidebar-item-delete,
+.history-sidebar-item-delete:focus-visible {
+  opacity: 1;
+}
+
+.history-sidebar-item-delete:hover {
+  color: var(--mg-danger);
+  border-color: color-mix(in srgb, var(--mg-danger) 35%, transparent);
+  background: color-mix(in srgb, var(--mg-danger) 10%, transparent);
+}
+
+.history-sidebar-item-delete:focus-visible {
+  outline: 2px solid var(--brand-base);
+  outline-offset: 1px;
 }
 
 .history-sidebar-item-tags {

@@ -1,0 +1,24 @@
+{
+  "modelsChat": {
+    "title": "Model Chat",
+    "desc": "Have a multi-turn conversation with a specific model.",
+    "button": {
+      "new": "New Chat"
+    },
+    "history": "History",
+    "empty": "Select a conversation or create a new one",
+    "input": {
+      "placeholder": "Type a message..."
+    },
+    "thinking": "Thinking...",
+    "toast": {
+      "sendError": "Failed to send"
+    },
+    "suggestion": {
+      "title": "You can start with:",
+      "s1": "Compare the pros and cons of GPT-4o and Gemini Pro",
+      "s2": "Write an auto-growing Textarea component in React 19",
+      "s3": "Help me draft a product launch invitation email in English"
+    }
+  }
+}

@@ -1,0 +1,140 @@
+{
+  "platformConfig": {
+    "title": "Dev Menu",
+    "desc": "Login-free and LAN-shareable: permission/route design, redirect params, dialog preview and requirement notes.",
+    "callBtn": "Call",
+    "recallBtn": "Recall",
+    "permPanel": {
+      "title": "Permission Reference",
+      "idList": "Permission ID List",
+      "copyBtn": "Copy for Backend/Product",
+      "tenantMatrix": "Organization Role Matrix",
+      "wsMatrix": "Workspace Role Matrix",
+      "permLogic": "Final Permissions = Org Role ∪ Workspace Role (Union)",
+      "personalNotice": "Personal Tenant: owner has billing perms (with invoices), but no organization or invitation management."
+    },
+    "endpoints": {
+      "session": "Current Session",
+      "platformConfig": "Platform Config",
+      "tenants": "My Organizations",
+      "workspaces": "Workspace List",
+      "apiKeys": "API Key List",
+      "models": "Model Catalog",
+      "modelTags": "Model Tags"
+    },
+    "moduleCompare": {
+      "title": "Frontend vs Actual API Modules",
+      "frontendModules": "Frontend Modules",
+      "apiModules": "Actual API Modules",
+      "difference": "Differences",
+      "extraInApi": "Extra in API (Not standalone in Console)",
+      "extraInFrontend": "Extra in Frontend (Interactive tools based on APIs)",
+      "docsDesc": "Docs API (No standalone page in Console yet)",
+      "healthDesc": "Health Check (Internal use)",
+      "playgroundDesc": "Interactive API testing tool",
+      "chatTestDesc": "Chat testing tool (based on agent API)",
+      "deviceDesc": "CLI Device Flow auth page (based on auth API)",
+      "matched": "Aligned Modules",
+      "matchedDesc": "These modules have a clear mapping between Frontend and API.",
+      "gaps": {
+        "title": "Module Alignment Details (UI Prototype vs Actual API)",
+        "guardrail": {
+          "title": "Guardrails",
+          "ui": "UI Prototype only needs: Name, Target (Member/Key), Spend Budget (with period). IP/Model whitelist display implemented.",
+          "api": "API is heavily over-engineered: supports token/request rate limits, monitor modes, and multiple aggregation scopes. These complexities are explicitly hidden in the UI. PATCH must reliably support whitelists."
+        },
+        "observability": {
+          "title": "Observability",
+          "ui": "UI Prototype focuses on: Toggle and Destination management.",
+          "api": "API provides full Dead Letter management; however, UI does not currently need to expose these low-level retry logs. API functionality > UI."
+        },
+        "billing": {
+          "title": "Billing",
+          "ui": "UI Prototype aggregates Balance, Transactions, and Invoices. Must enforce strict decimal precision (Requirement #66).",
+          "api": "Split into Credits and Transaction tags. UI handles business aggregation. Missing a unified precision control parameter."
+        },
+        "models": {
+          "title": "Models",
+          "ui": "UI Prototype is a highly integrated 'Experience Center'.",
+          "api": "Split into Catalog (metadata) and Agent (runtime). Lacks a one-stop aggregated API like the UI, requiring multiple frontend calls. Significant optimizations in Requirement #63."
+        },
+        "apiKeys": {
+          "title": "API Keys",
+          "ui": "UI Prototype has implemented: Scope (Personal/Workspace/Member), limits, and expiration. Requirement #14.",
+          "api": "Swagger v1.2 is severely outdated: missing scope, spending_limit, and expires_at fields. API should align with UI definitions ASAP."
+        },
+        "organization": {
+          "title": "Org & Members",
+          "ui": "UI Prototype needs: Logo upload (Requirement #1780294522906), total member count, and member filtering from the full org list.",
+          "api": "Major API gaps: Missing POST /tenants/:id/avatar; TenantItem lacks member_count; missing filtered 'non-project org members' endpoint."
+        },
+        "invitation": {
+          "title": "Invitations",
+          "ui": "Supports default workspace selection (Requirement #70).",
+          "api": "POST /invitations must reliably support workspace_id and auto_join. Current API support status is unclear."
+        }
+      }
+    },
+    "perm": {
+      "tenantType": "Tenant Type",
+      "tenantRole": "Organization Role",
+      "wsRole": "Workspace Role",
+      "personal": {
+        "desc": "Personal Account",
+        "perm1": "No Invitations in sidebar",
+        "perm2": "No Workspace Mgmt in Header",
+        "perm3": "No Org Settings in Header"
+      },
+      "enterprise": {
+        "desc": "Enterprise / Organization",
+        "perm1": "Invitations in sidebar",
+        "perm2": "Workspace Mgmt in Header",
+        "perm3": "Org Settings in Header"
+      },
+      "tenantOwner": {
+        "desc": "Owner",
+        "perm1": "View balance",
+        "perm2": "Invite Members tab",
+        "perm3": "Domain Config tab",
+        "perm4": "Change member roles",
+        "perm5": "Remove members"
+      },
+      "tenantAdmin": {
+        "desc": "Admin",
+        "perm1": "View balance",
+        "perm2": "Invite Members tab",
+        "perm3": "Domain Config tab",
+        "perm4": "Change member roles",
+        "perm5": "Remove members"
+      },
+      "tenantMember": {
+        "desc": "Member",
+        "perm1": "Balance hidden",
+        "perm2": "No Invite Members tab",
+        "perm3": "No Domain Config tab",
+        "perm4": "No role / remove actions"
+      },
+      "wsOwner": {
+        "desc": "Owner",
+        "perm1": "Revoke any invitation",
+        "perm2": "Change any member role"
+      },
+      "wsAdmin": {
+        "desc": "Admin",
+        "perm1": "Revoke any invitation",
+        "perm2": "Change any member role"
+      },
+      "wsMember": {
+        "desc": "Member",
+        "perm1": "Revoke own invitations only",
+        "perm2": "Cannot change roles"
+      }
+    },
+    "tab": {
+      "endpoints": "Endpoints",
+      "modules": "Modules",
+      "permissions": "Permissions",
+      "requirements": "Requirements"
+    }
+  }
+}

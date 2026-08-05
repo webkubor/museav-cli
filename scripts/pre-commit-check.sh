@@ -14,6 +14,12 @@ if command -v cs >/dev/null 2>&1; then
   cs check test --quick
 else
   echo "[pre-commit] cs 未安装，降级为 tsc + eslint 等效快检"
-  npx tsc -b --noEmit 2>/dev/null || npx tsc --noEmit
+  # 必须是 tsc -b：本仓根 tsconfig.json 是 solution-style（files: [] + references），
+  # `tsc --noEmit` 不跟 references 走 → 检查空文件集 → 无论源码错成什么样都通过。
+  # 曾放行过 `Cannot find name 'deleteHistorySession'`（TS2552），提交后才在浏览器炸
+  # ReferenceError（qa/ai-quality-platform#588）。
+  # --force 关增量：pre-commit 要判"当前源码对不对"，tsbuildinfo 命中会跳过检查。
+  # 也不要再套 `2>/dev/null || npx tsc --noEmit` 兜底——那个 fallback 正是假绿的来源。
+  npx tsc -b --force
   npx eslint .
 fi

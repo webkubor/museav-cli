@@ -1,0 +1,25 @@
+{
+  "chatTest": {
+    "title": "Chat Test",
+    "desc": "Paste your API Key and select a model to test streaming chat.",
+    "placeholder": {
+      "key": "Paste API Key (sk-...)",
+      "model": "Select Model"
+    },
+    "button": {
+      "clear": "Clear Chat",
+      "send": "Send",
+      "stop": "Stop"
+    },
+    "empty": "Paste an API Key and select a model to start chatting",
+    "input": {
+      "placeholder": "Type a message, Enter to send, Shift+Enter for newline"
+    },
+    "toast": {
+      "noKey": "Please paste your API Key",
+      "noModel": "Please select a model"
+    },
+    "footer": "Requests go directly to {{url}}/v1/chat/completions, bypassing the console backend.",
+    "keyHint": "Paste the full key you copied when creating the API Key. Only the masked version is shown in the list and cannot be retrieved."
+  }
+}

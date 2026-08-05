@@ -8,6 +8,7 @@ import { KpiCard } from '@/components/ui/KpiCard'
 import { formatMoney } from '@/lib/utils'
 import type { ApiKeyItem, ApiKeySummary } from '@/types'
 import { deriveSummary } from './derive'
+import { useTranslation } from 'react-i18next'
 
 interface Props {
   items: ApiKeyItem[]
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export function ApiKeySummaryCards({ items, summary, loading }: Props) {
+  const { t } = useTranslation()
   const s = useMemo(() => summary ?? deriveSummary(items), [summary, items])
   const spend = `${s.month_spend.currency} ${formatMoney(s.month_spend.amount, '')}`
 
@@ -24,7 +26,7 @@ export function ApiKeySummaryCards({ items, summary, loading }: Props) {
     <div className="flex flex-wrap gap-4">
       <KpiCard
         iconLead
-        title="全部 Key"
+        title={t('apiKeys.summary.total')}
         value={String(s.total)}
         rawNumber={s.total}
         icon={<LuKeyRound size={18} />}
@@ -34,7 +36,7 @@ export function ApiKeySummaryCards({ items, summary, loading }: Props) {
       />
       <KpiCard
         iconLead
-        title="启用中"
+        title={t('apiKeys.summary.active')}
         value={String(s.active)}
         rawNumber={s.active}
         ratio={{ current: s.active, total: s.total }}
@@ -46,7 +48,7 @@ export function ApiKeySummaryCards({ items, summary, loading }: Props) {
       />
       <KpiCard
         iconLead
-        title="7 天内即将过期"
+        title={t('apiKeys.summary.expiringSoon')}
         value={String(s.expiring_soon)}
         rawNumber={s.expiring_soon}
         icon={<LuClock size={18} />}
@@ -57,7 +59,7 @@ export function ApiKeySummaryCards({ items, summary, loading }: Props) {
       />
       <KpiCard
         iconLead
-        title="已达限额"
+        title={t('apiKeys.summary.limitReached')}
         value={String(s.limit_reached)}
         rawNumber={s.limit_reached}
         ratio={{ current: s.limit_reached, total: s.total }}
@@ -69,7 +71,7 @@ export function ApiKeySummaryCards({ items, summary, loading }: Props) {
       />
       <KpiCard
         iconLead
-        title="本月消费"
+        title={t('apiKeys.summary.monthSpend')}
         value={spend}
         rawNumber={s.month_spend.amount}
         formatter={(n) => `${s.month_spend.currency} ${formatMoney(n, '')}`}

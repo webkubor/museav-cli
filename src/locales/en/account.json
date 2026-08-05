@@ -1,0 +1,242 @@
+{
+  "account": {
+    "title": "Account Settings",
+    "desc": "Manage your profile, password, and connected accounts.",
+    "tabs": {
+      "info": "Profile",
+      "security": "Security & Login",
+      "oauth": "Connected Accounts",
+      "preferences": "Preferences"
+    },
+    "info": {
+      "emailLabel": "Email",
+      "emailHint": "Primary email for login. Cannot be changed.",
+      "nameLabel": "Display Name",
+      "namePlaceholder": "Enter display name",
+      "toastSuccess": "Display name saved",
+      "toastError": "Failed to save",
+      "avatarSuccess": "Avatar updated",
+      "avatarError": "Failed to upload avatar",
+      "avatarTooLarge": "Image must be under 2MB",
+      "avatarChange": "Change",
+      "avatarCropTitle": "Crop Avatar",
+      "referralLabel": "Referral Link"
+    },
+    "security": {
+      "currentPassword": "Current Password",
+      "currentPlaceholder": "Enter current password",
+      "newPassword": "New Password",
+      "newPlaceholder": "At least 8 characters",
+      "confirmPassword": "Confirm New Password",
+      "confirmPlaceholder": "Repeat new password",
+      "toastSuccess": "Password changed",
+      "toastError": "Failed to change password",
+      "warningEmpty": "Please fill in all password fields",
+      "errorMismatch": "Passwords do not match",
+      "errorLength": "Password must be at least 8 characters",
+      "deleteTitle": "Delete Account",
+      "deleteDesc": "After submitting the request, the account enters a 7-day grace period. Stop using related services during this period. This affects login and console access.",
+      "deleteAction": "Request Account Deletion",
+      "deleteModalTitle": "Confirm Account Deletion",
+      "deleteModalDesc": "This action requires your current password. Type {{text}} before continuing.",
+      "deletePassword": "Current Password",
+      "deletePasswordPlaceholder": "Enter your current login password",
+      "deleteReason": "Reason",
+      "deleteReasonPlaceholder": "Optional, tell us why you are deleting the account",
+      "deleteConfirmLabel": "Type {{text}} to confirm",
+      "deleteConfirmAction": "Confirm Deletion",
+      "deletePasswordRequired": "Enter your current password",
+      "deleteConfirmRequired": "Type {{text}} before confirming",
+      "deleteSuccess": "Account deletion request submitted",
+      "deleteSuccessDesc": "Scheduled deletion time: {{date}}",
+      "deleteError": "Failed to submit deletion request. Please try again."
+    },
+    "oauth": {
+      "desc": "Connect social accounts for passwordless access.",
+      "google": "Google Account",
+      "github": "GitHub Account",
+      "wechat": "WeChat Account",
+      "bound": "Connected",
+      "notBound": "Not Connected",
+      "emailLabel": "Email: {{email}}",
+      "unbind": "Disconnect",
+      "bind": "Connect",
+      "processing": "Processing",
+      "unbindSuccess": "Connected account disconnected",
+      "bindError": "Failed to start connection. Please try again.",
+      "identityAlreadyLinked": "This {{provider}} is already connected to another account and cannot be connected here.",
+      "unbindError": "Failed to disconnect. Please try again."
+    },
+    "preferences": {
+      "languageTitle": "Interface Language",
+      "languageDesc": "Choose the default console language. Changes apply immediately after saving.",
+      "languageZh": "Simplified Chinese",
+      "languageZhDesc": "For domestic teams and Chinese workflows.",
+      "languageEn": "English",
+      "languageEnDesc": "For global teams and English workflows.",
+      "themeTitle": "Interface Theme",
+      "themeDesc": "Choose the console color mode. Changes apply to the current account after saving.",
+      "themeLightDesc": "Use the light interface for daytime and bright environments.",
+      "themeDarkDesc": "Use the dark interface for nighttime and low-light environments.",
+      "themeSystemDesc": "Follow the current device system theme automatically.",
+      "timeZoneTitle": "Display Time Zone",
+      "timeZoneDesc": "Controls localized time display across the console. When unset, it follows the browser time zone: {{timezone}}.",
+      "timeZoneBrowser": "Follow Browser Time Zone",
+      "timeZoneBrowserDesc": "Current browser: {{timezone}}",
+      "timeZoneFixedDesc": "Always display console time in this time zone.",
+      "timeZonePreview": "Preview: {{time}} · {{timezone}}",
+      "lowBalanceTitle": "Low Balance Alerts",
+      "lowBalanceDesc": "Receive alerts when balance falls below the threshold so API access is not interrupted.",
+      "save": "Save Preferences",
+      "saveSuccess": "Preferences saved",
+      "saveError": "Failed to save preferences. Please try again.",
+      "loadError": "Failed to load preferences"
+    },
+    "auth": {
+      "common": {
+        "backToLogin": "Back to Sign In"
+      },
+      "fields": {
+        "email": "Email",
+        "password": "Password",
+        "newPassword": "New Password",
+        "confirmPassword": "Confirm Password",
+        "phone": "Phone Number",
+        "code": "Verification Code",
+        "smsCode": "SMS Code",
+        "referralCode": "Invitation Code"
+      },
+      "placeholders": {
+        "passwordMin": "At least 8 characters",
+        "confirmPassword": "Enter the password again",
+        "confirmPasswordShort": "Enter password again",
+        "phone": "Enter phone number",
+        "mainlandPhone": "Enter a mainland China phone number",
+        "code6": "6-digit code",
+        "smsCode6": "6-digit SMS code",
+        "enterCode6": "Enter the 6-digit code",
+        "referralCode": "Enter an invitation code if you have one, such as MG-XXXX"
+      },
+      "validation": {
+        "email": "Enter a valid email address",
+        "phone": "Enter a valid phone number",
+        "code6": "Enter the 6-digit code",
+        "passwordRequired": "Enter your password",
+        "passwordMin": "Password must be at least 8 characters",
+        "confirmPassword": "Confirm your password",
+        "passwordMismatch": "The two passwords do not match",
+        "passwordMismatchShort": "Passwords do not match",
+        "rateLimited": "Too many attempts. Please try again later.",
+        "securityVerificationRequired": "Complete security verification first"
+      },
+      "aria": {
+        "showPassword": "Show password",
+        "hidePassword": "Hide password"
+      },
+      "login": {
+        "title": "Welcome Back",
+        "subtitle": "Sign in to your ModelGo account",
+        "otherMethod": "Other method?",
+        "usePhone": "Use phone sign-in",
+        "noAccount": "No account?",
+        "signupFree": "Sign up for free",
+        "continue": "Continue",
+        "changeEmail": "Change",
+        "forgotPassword": "Forgot password?",
+        "rememberPassword": "Remember password",
+        "submit": "Sign In",
+        "failed": "Sign-in failed. Please try again.",
+        "emailCheckFailed": "Failed to verify email. Please try again.",
+        "sessionFailed": "Signed in, but failed to load the session. Please refresh and try again.",
+        "invalidCredentials": "Email or password is incorrect"
+      },
+      "phoneLogin": {
+        "title": "Sign In / Sign Up",
+        "subtitle": "Unregistered phone numbers will be signed up automatically",
+        "useEmail": "Use email sign-in",
+        "submit": "Sign In / Sign Up"
+      },
+      "signup": {
+        "title": "Create Account",
+        "subtitle": "Start free and pay as you go",
+        "hasAccount": "Already have an account?",
+        "login": "Sign In",
+        "submit": "Sign Up for Free",
+        "failed": "Sign-up failed. Please try again."
+      },
+      "forgot": {
+        "title": "Forgot Password",
+        "subtitle": "Enter your email and we will send a reset link",
+        "submit": "Send Reset Email",
+        "sendFailed": "Failed to send. Please try again later.",
+        "sentTitle": "Email Sent",
+        "sentSubtitle": "Check your inbox",
+        "sentTo": "Reset link sent to",
+        "expiresInMinutes": "The link is valid for {{minutes}} minutes. Please use it soon."
+      },
+      "reset": {
+        "title": "Reset Password",
+        "subtitle": "Set a new password",
+        "submit": "Reset Password",
+        "failed": "Reset failed. The link may have expired.",
+        "invalidTitle": "Invalid Link",
+        "invalidLink": "The reset link is invalid or expired",
+        "invalidDesc": "The reset link is invalid or expired. Please request a new one.",
+        "resend": "Send reset email again",
+        "doneTitle": "Password Reset",
+        "doneSubtitle": "Your password has been updated",
+        "loginNow": "Sign In Now"
+      },
+      "verificationCode": {
+        "send": "Send Code",
+        "sending": "Sending",
+        "sentCountdown": "Sent ({{seconds}}s)",
+        "sendFailed": "Failed to send. Please try again later."
+      },
+      "social": {
+        "divider": "OR"
+      },
+      "oauth": {
+        "wechat": "WeChat",
+        "github": "GitHub",
+        "google": "Google"
+      },
+      "passwordStrength": {
+        "weak": "Weak (mix uppercase, lowercase, and numbers)",
+        "medium": "Medium (add special characters)",
+        "strong": "Strong (high-strength password)",
+        "excellent": "Excellent (very strong password)"
+      },
+      "captcha": {
+        "verified": "Security verification complete",
+        "retry": "Verify again",
+        "clickToVerify": "Complete security verification"
+      },
+      "sliderCaptcha": {
+        "lockedHint": "Complete the previous step first",
+        "refresh": "Refresh verification",
+        "dragAria": "Drag the slider to complete puzzle verification",
+        "dragHint": "Drag right to align the puzzle piece with the gap",
+        "verified": "Verified"
+      },
+      "phoneBinding": {
+        "title": "Bind a phone number to continue",
+        "desc": "Quick sign-in accounts need a phone number for domestic service verification, account security, and notifications. This step cannot be skipped.",
+        "securityHint": "Your phone number is only used for account security verification and domestic service access. It will not be shown publicly.",
+        "submit": "Finish binding and enter console",
+        "logout": "Skip for now and sign out",
+        "sendCodeFailed": "Failed to send verification code",
+        "success": "Phone number bound",
+        "failed": "Binding failed"
+      },
+      "legal": {
+        "signupPrefix": "By signing up, you agree to the",
+        "phonePrefix": "By signing in / signing up, you agree to the",
+        "bindingPrefix": "By binding, you agree to the",
+        "terms": "Terms of Service",
+        "privacy": "Privacy Policy",
+        "and": "and"
+      }
+    }
+  }
+}

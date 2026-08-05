@@ -1,0 +1,39 @@
+{
+  "dashboardTop": {
+    "greeting": {
+      "morning": "Good morning, {{name}}",
+      "afternoon": "Good afternoon, {{name}}",
+      "evening": "Good evening, {{name}}",
+      "defaultName": "Developer",
+      "desc": "Welcome back. Here is the real-time operating overview for your workspace.",
+      "descEnterprise": "Welcome back — here's your team's real-time usage.",
+      "descMine": "Welcome back — here's your own real-time usage.",
+      "liveBadge": "Live overview"
+    },
+    "status": {
+      "lowTitle": "Low balance reminder",
+      "lowDesc": "Available balance is {{amount}}. Top up soon to avoid API interruptions and business impact.",
+      "balanceUnknown": "--",
+      "rechargeAction": "Top up now"
+    },
+    "onboarding": {
+      "title": "One-click setup for ModelGo CLI, API keys, and multi-model access",
+      "recommended": "Recommended",
+      "desc": "Authorize from your terminal to start calling models without manually copying Base URLs or keys.",
+      "action": "View models",
+      "toastCopied": "CLI login command copied to clipboard",
+      "toastCopyFailed": "Copy failed. Please copy the command manually."
+    },
+    "quick": {
+      "label": "Quick actions",
+      "createKey": "Create API Key",
+      "recharge": "Top up",
+      "logs": "View logs",
+      "models": "Model catalog",
+      "guardrails": "Guardrails",
+      "compare": "Compare",
+      "workspaces": "Workspaces",
+      "orgSettings": "Org Settings"
+    }
+  }
+}

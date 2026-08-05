@@ -25,7 +25,8 @@
     "sync:api": "bun run scripts/sync-api.ts",
     "sync:permissions:cn": "bun run scripts/sync-permissions.ts --market china",
     "sync:permissions:global": "bun run scripts/sync-permissions.ts --market global",
-    "sync:permissions:check": "bun run scripts/sync-permissions.ts --check"
+    "sync:permissions:check": "bun run scripts/sync-permissions.ts --check",
+    "check:i18n": "node scripts/check-i18n.mjs"
   },
   "dependencies": {
     "@fingerprintjs/fingerprintjs": "^5.2.0",

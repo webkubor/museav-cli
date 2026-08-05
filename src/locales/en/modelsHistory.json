@@ -1,0 +1,15 @@
+{
+  "modelsHistory": {
+    "title": "Chat History",
+    "desc": "View and continue previous model conversations.",
+    "empty": "No chat history",
+    "noTitle": "Untitled Chat",
+    "noMessages": "No messages",
+    "messageCount": "{{count}} messages",
+    "updatedAt": "Updated {{time}}",
+    "error": {
+      "load": "Failed to load history",
+      "loadDetail": "Failed to load conversation"
+    }
+  }
+}

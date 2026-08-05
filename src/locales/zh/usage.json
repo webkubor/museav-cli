@@ -1,0 +1,165 @@
+{
+  "usage": {
+    "title": "用量分析",
+    "desc": "查看 API 调用量、Token 消耗及费用趋势，帮助您精准掌握使用成本。",
+    "descTeam": "查看团队消费、请求和模型使用分布。",
+    "descSpace": "查看负责空间内全部成员的消费、请求和模型使用分布。",
+    "descMine": "查看我的消费、请求和模型使用分布。",
+    "noData": "暂无数据",
+    "emptyValue": "暂无",
+    "refresh": "刷新",
+    "range": {
+      "today": "今天",
+      "7d": "近 7 天",
+      "30d": "近 30 天",
+      "90d": "近 90 天",
+      "thisMonth": "本月",
+      "lastMonth": "上月",
+      "custom": "自定义"
+    },
+    "customRange": {
+      "placeholder": "选择起止日期"
+    },
+    "metric": {
+      "spend": "消费",
+      "requests": "请求数",
+      "tokens": "Token"
+    },
+    "unit": {
+      "requests": "次",
+      "tokens": "tokens"
+    },
+    "overview": {
+      "title": "成本概览"
+    },
+    "insights": {
+      "title": "关键洞察",
+      "desc": "用接口已返回的排行和质量指标判断主要消耗来源。",
+      "topModel": "消耗最高模型",
+      "topApiKey": "消耗最高 Key",
+      "averageLatency": "平均延迟",
+      "errorRate": "错误率"
+    },
+    "sources": {
+      "title": "成本来源",
+      "desc": "当前筛选下的主要来源",
+      "topProject": "最高消费项目",
+      "topWorkspace": "最高消费工作空间",
+      "topApiKey": "最高消费 API Key",
+      "topModel": "最高消费模型",
+      "empty": "暂无来源数据"
+    },
+    "distribution": {
+      "model": {
+        "title": "模型分布",
+        "chartDesc": "按模型消费占比",
+        "rankTitle": "模型 排行"
+      },
+      "member": {
+        "title": "成员分布",
+        "chartDesc": "按成员消费占比",
+        "rankTitle": "成员 排行"
+      },
+      "apiKey": {
+        "title": "API Keys 分布",
+        "chartDesc": "按 API Keys 消费占比",
+        "rankTitle": "API Keys 排行"
+      },
+      "bySpend": "按费用 · 降序",
+      "total": "总消费",
+      "other": "其他"
+    },
+    "meta": {
+      "models": "{{count}} 模型"
+    },
+    "chart": {
+      "trendTitle": "{{metric}}趋势",
+      "costTrend": "消费趋势",
+      "filteredAggregation": "按当前筛选口径聚合",
+      "histogramTitle": "请求分布",
+      "groupBy": {
+        "none": "总量",
+        "model": "按模型",
+        "provider": "按供应商",
+        "workspace": "按工作空间",
+        "other": "其他"
+      }
+    },
+    "error": {
+      "summary": "加载用量汇总失败，请稍后重试。",
+      "series": "加载趋势数据失败，请稍后重试。",
+      "histogram": "加载分布数据失败，请稍后重试。",
+      "rankings": "加载排行数据失败，请稍后重试。"
+    },
+    "retry": "重试",
+    "filter": {
+      "allWorkspaces": "全部工作空间",
+      "allKeys": "全部 Key",
+      "allModels": "全部模型",
+      "time": "时间范围",
+      "workspace": "工作空间",
+      "apiKey": "API Key"
+    },
+    "breakdown": {
+      "title": "用量明细",
+      "desc": "在当前时间和工作空间范围内查看明细"
+    },
+    "emptyState": {
+      "noDataTitle": "暂无用量数据",
+      "noDataDesc": "所选时间范围内还没有任何调用记录。",
+      "filteredTitle": "筛选无结果",
+      "filteredDesc": "当前筛选条件下没有用量记录，试试调整筛选范围。"
+    },
+    "attr": {
+      "workspace": "工作空间"
+    },
+    "dimension": {
+      "model": "模型",
+      "member": "成员",
+      "apiKey": "API Keys"
+    },
+    "member": {
+      "title": "成员排行",
+      "col": {
+        "member": "成员",
+        "modelCount": "模型数"
+      },
+      "empty": "暂无成员维度数据",
+      "emptyDesc": "当前筛选范围内还没有可展示的成员用量。"
+    },
+    "rankings": {
+      "title": "用量排行",
+      "topKeys": "Top API Key",
+      "topModels": "Top 模型",
+      "topKeysDesc": "{{range}} 内按消费占比排序",
+      "topModelsDesc": "{{range}} 内按模型消费占比排序",
+      "col": {
+        "rank": "#",
+        "name": "名称",
+        "spend": "消费",
+        "requests": "请求数",
+        "tokens": "Token",
+        "share": "占比"
+      },
+      "empty": "暂无排行数据",
+      "emptyDesc": "当前筛选条件下没有用量记录"
+    },
+    "summary": {
+      "totalSpend": "总费用",
+      "totalRequests": "请求总量",
+      "totalTokens": "总 Tokens",
+      "costStructure": "费用结构",
+      "inputCost": "输入费用",
+      "outputCost": "输出费用",
+      "cacheCost": "缓存费用",
+      "requestStatus": "请求状态",
+      "success": "成功请求",
+      "failed": "失败请求",
+      "avgLatency": "平均延迟",
+      "tokenUsage": "Token 用量",
+      "inputTokens": "输入总量",
+      "outputTokens": "输出总量",
+      "cacheTokens": "缓存 Token"
+    }
+  }
+}

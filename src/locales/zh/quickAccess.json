@@ -1,0 +1,19 @@
+{
+  "quickAccess": {
+    "sectionTitle": "快捷功能入口",
+    "link0.title": "模型仓库",
+    "link0.desc": "探索与管理可用模型",
+    "link1.title": "API 密钥",
+    "link1.desc": "创建并管理访问令牌",
+    "link2.title": "用量统计",
+    "link2.desc": "监控 API 调用与消耗",
+    "link3.title": "财务账单",
+    "link3.desc": "充值余额与下载发票",
+    "link4.title": "内容安全",
+    "link4.desc": "管理模型调用护栏",
+    "link5.title": "可观测性",
+    "link5.desc": "查看实时调用审计日志",
+    "link6.title": "模型对比",
+    "link6.desc": "多模型并排对比性能"
+  }
+}

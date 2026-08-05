@@ -23,8 +23,8 @@ import { listGuardrails } from '@/services/guardrails'
 import type { ApiKeyItem, ApiKeyType } from '@/types'
 import { useCopy } from '@/hooks/use-copy'
 import {
-  KEY_TYPE_LABEL,
   deriveKeyType,
+  keyTypeLabel,
   responsibleOf,
   periodSpendOf,
   cap,
@@ -65,43 +65,43 @@ function Cell({ label, value }: { label: string; value: ReactNode }) {
 
 /** 生效层槽位：PRD 原型「生效规则预览」为三层 全局 / 个人 / Key（modelgo_prd App.tsx preview.layers）；
  *  修正 #147 旧决策的两槽——个人护栏确实作用于 Key（预算闸门也展示个人预算），需求方#234/#241 判两槽为缺失。 */
-const LAYER_SLOTS: Array<{ key: string; label: string }> = [
-  { key: 'global_default', label: '全局护栏' },
-  { key: 'member', label: '个人护栏' },
-  { key: 'key', label: 'Key 护栏' },
+const LAYER_SLOTS: Array<{ key: string; labelKey: string }> = [
+  { key: 'global_default', labelKey: 'apiKeys.guardrail.global' },
+  { key: 'member', labelKey: 'apiKeys.guardrail.member' },
+  { key: 'key', labelKey: 'apiKeys.guardrail.key' },
 ]
-const GATE_LABEL: Record<string, string> = {
-  guardrail_total: '工作空间总预算',
-  per_member: '个人预算',
-  per_api_key: 'Key 预算',
+const GATE_LABEL_KEY: Record<string, string> = {
+  guardrail_total: 'apiKeys.budget.workspaceTotal',
+  per_member: 'apiKeys.budget.member',
+  per_api_key: 'apiKeys.budget.key',
 }
 
-const PERIOD_UNIT_LABEL: Record<string, string> = {
-  hour: '小时',
-  day: '天',
-  week: '周',
-  month: '月',
+const PERIOD_UNIT_LABEL_KEY: Record<string, string> = {
+  hour: 'apiKeys.limit.unit.hour',
+  day: 'apiKeys.limit.unit.day',
+  week: 'apiKeys.limit.unit.week',
+  month: 'apiKeys.limit.unit.month',
 }
 
 /** 生效预算周期文案：保留后端 period_length，避免「每 5 小时」被错误显示为「每小时」。 */
-const periodLabel = (unit: string, length: number) => {
+const periodLabel = (t: ReturnType<typeof useTranslation>['t'], unit: string, length: number) => {
   const normalizedLength = Number.isInteger(length) && length > 0 ? length : 1
-  const label = PERIOD_UNIT_LABEL[unit] ?? unit
-  return normalizedLength === 1 ? `每${label}` : `每 ${normalizedLength} ${label}`
+  const label = PERIOD_UNIT_LABEL_KEY[unit] ? t(PERIOD_UNIT_LABEL_KEY[unit]) : unit
+  return normalizedLength === 1 ? t('apiKeys.limit.every', { unit: label }) : t('apiKeys.limit.everyCount', { count: normalizedLength, unit: label })
 }
 
-const AUDIT_ACTION_LABEL: Record<string, string> = {
-  'api_key.issued': '创建 API Key',
-  'api_key.updated': '更新 API Key',
-  'api_key.enabled': '启用 API Key',
-  'api_key.disabled': '停用 API Key',
-  'api_key.rotated': '轮转 API Key',
-  'api_key.revoked': '删除 API Key',
-  'api_key.revealed': '复制完整 Key',
+const AUDIT_ACTION_LABEL_KEY: Record<string, string> = {
+  'api_key.issued': 'apiKeys.auditAction.issued',
+  'api_key.updated': 'apiKeys.auditAction.updated',
+  'api_key.enabled': 'apiKeys.auditAction.enabled',
+  'api_key.disabled': 'apiKeys.auditAction.disabled',
+  'api_key.rotated': 'apiKeys.auditAction.rotated',
+  'api_key.revoked': 'apiKeys.auditAction.revoked',
+  'api_key.revealed': 'apiKeys.auditAction.revealed',
 }
 
-function auditActionLabel(action: string): string {
-  return AUDIT_ACTION_LABEL[action] ?? action.replaceAll('_', ' ')
+function auditActionLabel(t: ReturnType<typeof useTranslation>['t'], action: string): string {
+  return AUDIT_ACTION_LABEL_KEY[action] ? t(AUDIT_ACTION_LABEL_KEY[action]) : action.replaceAll('_', ' ')
 }
 
 interface Props {
@@ -141,10 +141,10 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
     try {
       const res = await revealApiKey(workspaceId, current.api_key_id)
       await copy(res.key)
-      appToast.success('完整 Key 已复制')
+      appToast.success(t('apiKeys.toast.copyFullKeySuccess'))
       trackEvent('api_keys:reveal', commonTrack, { source: 'detail_drawer', result: 'success' })
     } catch (err) {
-      appToast.requestError(err, '复制完整 Key 失败')
+      appToast.requestError(err, t('apiKeys.toast.copyFullKeyError'))
       trackEvent('api_keys:reveal', commonTrack, { source: 'detail_drawer', result: 'fail', error_code: errorCodeOf(err) })
     } finally {
       setRevealCopying(false)
@@ -159,9 +159,9 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
     try {
       const res = await revealApiKey(workspaceId, current.api_key_id)
       await copy(res.key)
-      appToast.success('新 Token 已复制')
+      appToast.success(t('apiKeys.toast.copyNewTokenSuccess'))
     } catch (err) {
-      appToast.requestError(err, '复制新 Token 失败')
+      appToast.requestError(err, t('apiKeys.toast.copyNewTokenError'))
     } finally {
       setNewRevealCopying(false)
     }
@@ -207,7 +207,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
     retry: false,
   })
 
-  if (!item) return <SideSheet open={open} onClose={onClose} ariaTitle="API Key 详情" />
+  if (!item) return <SideSheet open={open} onClose={onClose} ariaTitle={t('apiKeys.detail.title')} />
 
   const view = detail ?? item
   const keyType = deriveKeyType(view)
@@ -238,10 +238,10 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
         <div className="flex flex-wrap items-center gap-2">
           {displayedRotation?.keyId === view.api_key_id ? (
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-              <span className="rounded-sm bg-brand-base/10 px-1.5 py-0.5 text-[10px] font-bold text-brand-base">新</span>
+              <span className="rounded-sm bg-brand-base/10 px-1.5 py-0.5 text-[10px] font-bold text-brand-base">{t('apiKeys.rotate.new')}</span>
               <span className="truncate font-mono text-xs text-mg-text-2">{displayedRotation.newMasked}</span>
-              <CopyButton value={displayedRotation.newMasked} aria-label="复制新 Token 掩码" toast="新 Token 掩码已复制" size="sm" />
-              <span className="rounded-sm bg-mg-fill-1 px-1.5 py-0.5 text-[10px] font-bold text-mg-text-3">旧</span>
+              <CopyButton value={displayedRotation.newMasked} aria-label={t('apiKeys.rotate.copyNewMaskedAria')} toast={t('apiKeys.toast.copyNewMaskedSuccess')} size="sm" />
+              <span className="rounded-sm bg-mg-fill-1 px-1.5 py-0.5 text-[10px] font-bold text-mg-text-3">{t('apiKeys.rotate.old')}</span>
               <span className="truncate font-mono text-xs text-mg-text-3">{displayedRotation.oldMasked}</span>
             </div>
           ) : (
@@ -251,28 +251,28 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
                 <button
                   type="button"
                   onClick={() => copyFullKey(view)}
-                  aria-label="复制完整 Key"
-                  title="复制完整 Key"
+                  aria-label={t('apiKeys.table.copyFullKey')}
+                  title={t('apiKeys.table.copyFullKey')}
                   className="inline-flex h-6 w-6 items-center justify-center rounded-md text-mg-text-3 transition-colors hover:bg-mg-fill-0 hover:text-mg-text-1"
                 >
                   {revealCopying ? <LuLoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <LuCopy className="h-3.5 w-3.5" />}
                 </button>
               ) : (
-                <CopyButton value={view.masked} aria-label="复制掩码 Key" toast="掩码 Key 已复制" size="sm" />
+                <CopyButton value={view.masked} aria-label={t('apiKeys.table.copyMaskedKey')} toast={t('apiKeys.toast.copyMaskedSuccess')} size="sm" />
               )}
             </>
           )}
           <div className="flex flex-wrap gap-2">
             {view.status === 'rotation_required' ? (
               canCompleteRotation ? (
-                <Button variant="outline" size="sm" onClick={() => onCompleteRotation(view)}>已轮转</Button>
+                <Button variant="outline" size="sm" onClick={() => onCompleteRotation(view)}>{t('apiKeys.table.rotated')}</Button>
               ) : null
             ) : rotateEnabled ? (
-              <Button variant="outline" size="sm" loading={rotatePending} onClick={() => onRotate(view)}>轮转</Button>
+              <Button variant="outline" size="sm" loading={rotatePending} onClick={() => onRotate(view)}>{t('apiKeys.table.rotate')}</Button>
             ) : null}
             {view.status !== 'revoked' && canToggle && (
               <Button variant="outline" size="sm" loading={isDisabled && enablePending} onClick={() => onToggleStatus(view)}>
-                {isDisabled ? '启用' : '停用'}
+                {isDisabled ? t('apiKeys.table.enable') : t('apiKeys.table.disable')}
               </Button>
             )}
             {canDelete && (
@@ -282,7 +282,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
                 className="text-mg-danger border-mg-danger/30 hover:bg-mg-danger/5"
                 onClick={() => onRevoke({ id: view.api_key_id, name: view.name })}
               >
-                删除
+                {t('apiKeys.table.delete')}
               </Button>
             )}
           </div>
@@ -291,8 +291,8 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
         {view.status === 'rotation_required' && (
           <div className="flex items-start gap-2.5 rounded-md border border-mg-warning/30 bg-mg-warning/10 px-3 py-2.5">
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-bold text-mg-warning">新 Token 已生效，旧 Token 暂不失效</div>
-              <p className="mt-1 text-xs leading-5 text-mg-text-2">请复制新 Token 并替换到调用方配置中。验证通过后点击"已轮转"，旧 Token 将立即失效。</p>
+              <div className="text-sm font-bold text-mg-warning">{t('apiKeys.rotate.noticeTitle')}</div>
+              <p className="mt-1 text-xs leading-5 text-mg-text-2">{t('apiKeys.rotate.noticeDesc')}</p>
               {canReveal && (
                 <Button
                   variant="outline"
@@ -302,7 +302,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
                   onClick={() => copyNewKey(view)}
                 >
                   {newRevealCopying ? <LuLoaderCircle className="mr-1 h-3.5 w-3.5 animate-spin" /> : <LuCopy className="mr-1 h-3.5 w-3.5" />}
-                  复制新 Token
+                  {t('apiKeys.rotate.copyNewToken')}
                 </Button>
               )}
             </div>
@@ -330,34 +330,34 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
         )}
 
         {/* 基础信息（原型 api-key-basic-grid：类型/负责人/到期时间 三格，需求方#84） */}
-        <Section title="基础信息">
+        <Section title={t('apiKeys.detail.basic')}>
           <div className="grid grid-cols-3 gap-2.5">
-            <Cell label="类型" value={KEY_TYPE_LABEL[keyType]} />
-            <Cell label="负责人" value={responsible.display_name || responsible.email || '—'} />
-            <Cell label="到期时间" value={view.expires_at ? formatDateTime(view.expires_at) : '永不过期'} />
+            <Cell label={t('apiKeys.table.type')} value={keyTypeLabel(t, keyType)} />
+            <Cell label={t('apiKeys.table.owner')} value={responsible.display_name || responsible.email || '—'} />
+            <Cell label={t('apiKeys.table.expiresAt')} value={view.expires_at ? formatDateTime(view.expires_at) : t('apiKeys.table.neverExpires')} />
           </div>
         </Section>
 
         {/* 用量（原型 api-key-usage-grid 三格：本期消费/请求数/Tokens）。
             Key 级消费限额已按需求方定案移除（限额统一走安全护栏预算，见下方「安全护栏」预算闸门），
             故此段不再含「限额」与「调整限额」入口（需求方#122 / #84 ④作废）。 */}
-        <Section title="用量">
+        <Section title={t('apiKeys.detail.usage')}>
           <div className="grid grid-cols-3 gap-2.5">
-            <Cell label="本期消费" value={money(usage?.period_spend ?? periodSpendOf(view))} />
-            <Cell label="请求数" value={usage?.request_count != null ? usage.request_count.toLocaleString() : '—'} />
+            <Cell label={t('apiKeys.table.periodSpend')} value={money(usage?.period_spend ?? periodSpendOf(view))} />
+            <Cell label={t('apiKeys.table.requests')} value={usage?.request_count != null ? usage.request_count.toLocaleString() : '—'} />
             <Cell label="Tokens" value={usage?.token_count != null ? usage.token_count.toLocaleString() : '—'} />
           </div>
         </Section>
 
         {/* 安全护栏（原型 EffectiveApiKeyGuardrailPreviewPanel，需求方#84） */}
-        <Section title="安全护栏">
+        <Section title={t('apiKeys.detail.securityGuardrails')}>
           {effective ? (
             <div className="space-y-3">
               {/* 生效规则预览：PRD 原型三层 全局 / 个人 / Key（modelgo_prd App.tsx preview.layers） */}
               <div>
                 <div className="mb-1.5 flex items-center gap-1 text-xs font-bold text-mg-text-2">
-                  生效规则预览
-                  <InfoTip text="运行时会同时检查这些预算闸门" />
+                  {t('apiKeys.effectivePreview')}
+                  <InfoTip text={t('apiKeys.budget.runtimeCheckTip')} />
                 </div>
                 <div className="grid grid-cols-3 gap-2.5">
                   {LAYER_SLOTS.map((slot) => {
@@ -365,11 +365,11 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
                     if (slot.key === 'member') {
                       const isServiceKey = deriveKeyType(view) === 'service'
                       const memberGuardrail = isServiceKey || !guardrails ? null : activeMemberBudgetGuardrail(guardrails, responsibleOf(view).account_id)
-                      const memberLabel = isServiceKey ? '个人预算不适用' : memberGuardrail?.name ?? '全局默认个人预算'
+                      const memberLabel = isServiceKey ? t('apiKeys.guardrail.memberBudgetNotApplicable') : memberGuardrail?.name ?? t('apiKeys.guardrail.globalDefaultMemberBudget')
                       const memberClass = isServiceKey ? 'font-normal text-mg-text-3' : memberGuardrail ? 'font-bold text-mg-text-1' : 'font-normal text-mg-text-2'
                       return (
                         <div key={slot.key} className="min-w-0 rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
-                          <div className="text-xs text-mg-text-3">{slot.label}</div>
+                          <div className="text-xs text-mg-text-3">{t(slot.labelKey)}</div>
                           <div className={`mt-1 truncate text-sm ${memberClass}`}>{memberLabel}</div>
                         </div>
                       )
@@ -381,19 +381,19 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
                         key={slot.key}
                         className="min-w-0 rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5"
                       >
-                        <div className="text-xs text-mg-text-3">{slot.label}</div>
+                        <div className="text-xs text-mg-text-3">{t(slot.labelKey)}</div>
                         {layers.length > 0 ? (
                           <div className="mt-1 space-y-0.5">
                             {layers.map((l) => (
                               <div key={l.guardrail_id} className="flex items-center gap-1 truncate text-sm font-bold text-mg-text-1">
                                 <span className="truncate">{l.guardrail_name || '—'}</span>
-                                {l.is_default && <span className="shrink-0 text-xs font-normal text-mg-text-3">(默认)</span>}
+                                {l.is_default && <span className="shrink-0 text-xs font-normal text-mg-text-3">{t('apiKeys.guardrail.defaultBadge')}</span>}
                               </div>
                             ))}
                           </div>
                         ) : (
                           // PRD 空值文案：全局→「未配置」，Key→「不使用Key护栏」
-                          <div className="mt-1 text-sm font-normal text-mg-text-2">{slot.key === 'key' ? '不使用Key护栏' : '未配置'}</div>
+                          <div className="mt-1 text-sm font-normal text-mg-text-2">{slot.key === 'key' ? t('apiKeys.guardrail.none') : t('apiKeys.common.notConfigured')}</div>
                         )}
                       </div>
                     )
@@ -405,17 +405,17 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
               {effective.effective.budgets.length > 0 && (
                 <div>
                   <div className="mb-1.5 flex items-center gap-1 text-xs font-bold text-mg-text-2">
-                    预算闸门
-                    <InfoTip text="按最先触发的预算停止调用" />
+                    {t('apiKeys.budget.gate')}
+                    <InfoTip text={t('apiKeys.budget.stopTip')} />
                   </div>
                   <div className="space-y-2">
                     {effective.effective.budgets.map((b, i) => {
                       const source = effective.layers.find((l) => l.guardrail_id === b.source_guardrail_id)?.guardrail_name
                       return (
                         <div key={i} className="rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
-                          <div className="text-xs text-mg-text-3">{GATE_LABEL[b.aggregation_scope] ?? b.aggregation_scope}</div>
+                          <div className="text-xs text-mg-text-3">{GATE_LABEL_KEY[b.aggregation_scope] ? t(GATE_LABEL_KEY[b.aggregation_scope]) : b.aggregation_scope}</div>
                           <div className="mt-1 text-sm font-bold text-mg-text-1">
-                            {money({ amount: b.spend_limit_amount, currency: b.currency })} / {periodLabel(b.period_unit, b.period_length)}
+                            {money({ amount: b.spend_limit_amount, currency: b.currency })} / {periodLabel(t, b.period_unit, b.period_length)}
                           </div>
                           {source && <div className="mt-0.5 truncate text-xs text-mg-text-3">{source}</div>}
                         </div>
@@ -434,9 +434,9 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
                   const sources = effective.layers.filter((l) => l.model_blacklist.length > 0).map((l) => l.guardrail_name)
                   return (
                     <div className="min-w-0 rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
-                      <div className="text-xs text-mg-text-3">模型黑名单</div>
-                      <div className="mt-1 break-all text-xs font-semibold leading-relaxed text-mg-text-1">{items.length ? items.join(' / ') : '不限制'}</div>
-                      <div className="mt-1 text-xs text-mg-text-3">规则来源：{sources.length ? sources.join(' / ') : '未配置规则'}</div>
+                      <div className="text-xs text-mg-text-3">{t('apiKeys.rule.modelBlacklist')}</div>
+                      <div className="mt-1 break-all text-xs font-semibold leading-relaxed text-mg-text-1">{items.length ? items.join(' / ') : t('apiKeys.rule.unrestricted')}</div>
+                      <div className="mt-1 text-xs text-mg-text-3">{t('apiKeys.rule.source', { source: sources.length ? sources.join(' / ') : t('apiKeys.rule.notConfigured') })}</div>
                     </div>
                   )
                 })()}
@@ -445,9 +445,9 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
                   const sources = effective.layers.filter((l) => l.ip_whitelist.length > 0).map((l) => l.guardrail_name)
                   return (
                     <div className="min-w-0 rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
-                      <div className="text-xs text-mg-text-3">IP 白名单</div>
-                      <div className="mt-1 break-all font-mono text-xs font-semibold leading-relaxed text-mg-text-1">{items.length ? items.join(', ') : '不限制'}</div>
-                      <div className="mt-1 text-xs text-mg-text-3">规则来源：{sources.length ? sources.join(' / ') : '未配置规则'}</div>
+                      <div className="text-xs text-mg-text-3">{t('apiKeys.rule.ipWhitelist')}</div>
+                      <div className="mt-1 break-all font-mono text-xs font-semibold leading-relaxed text-mg-text-1">{items.length ? items.join(', ') : t('apiKeys.rule.unrestricted')}</div>
+                      <div className="mt-1 text-xs text-mg-text-3">{t('apiKeys.rule.source', { source: sources.length ? sources.join(' / ') : t('apiKeys.rule.notConfigured') })}</div>
                     </div>
                   )
                 })()}
@@ -455,9 +455,9 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
                   const pi = resolveKeyPromptInjection(guardrails ?? [], activeGlobalGuardrail(guardrails ?? []))
                   return (
                     <div className="min-w-0 rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
-                      <div className="text-xs text-mg-text-3">提示词注入</div>
+                      <div className="text-xs text-mg-text-3">{t('apiKeys.rule.promptInjection')}</div>
                       <div className="mt-1 text-sm font-bold text-mg-text-1">{PROMPT_INJECTION_LABEL[pi.mode]}</div>
-                      <div className="mt-1 text-xs text-mg-text-3">规则来源：{pi.sourceLabel}</div>
+                      <div className="mt-1 text-xs text-mg-text-3">{t('apiKeys.rule.source', { source: pi.sourceLabel })}</div>
                     </div>
                   )
                 })()}
@@ -466,22 +466,22 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
             </div>
           ) : (view.guardrails ?? []).length > 0 ? (
             <p className="text-xs text-mg-text-3">
-              已绑定 {(view.guardrails ?? []).map((g) => g.name).join('、')}（生效预览接口暂不可用）
+              {t('apiKeys.guardrail.boundPreviewUnavailable', { names: (view.guardrails ?? []).map((g) => g.name).join('、') })}
             </p>
           ) : (
-            <p className="text-xs text-mg-text-3">未绑定 Key 护栏</p>
+            <p className="text-xs text-mg-text-3">{t('apiKeys.guardrail.unbound')}</p>
           )}
         </Section>
 
         {/* 最近调用（原型 api-key-call-row 单卡摘要，需求方#84） */}
         <Section
-          title="最近调用"
+          title={t('apiKeys.detail.lastCall')}
           action={
             <button
               className="inline-flex items-center gap-1 text-xs font-semibold text-brand-base hover:text-brand-deep"
               onClick={() => jumpLogs(`/logs?api_key=${view.api_key_id}`)}
             >
-              跳转日志 <LuArrowRight size={12} />
+              {t('apiKeys.detail.jumpLogs')} <LuArrowRight size={12} />
             </button>
           }
         >
@@ -489,25 +489,25 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
             <div className="rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
               <div className="text-sm font-bold text-mg-text-1">{formatDateTime(view.last_used_at)}</div>
               <div className="mt-0.5 text-xs text-mg-text-3">
-                {usage?.request_count != null ? `${usage.request_count.toLocaleString()} requests` : '—'}
+                {usage?.request_count != null ? t('apiKeys.detail.requestCountValue', { count: usage.request_count.toLocaleString() }) : '—'}
                 {' · '}
                 {money(usage?.period_spend ?? periodSpendOf(view))}
               </div>
             </div>
           ) : (
             <div className="rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
-              <div className="text-sm font-semibold text-mg-text-1">尚未调用</div>
+              <div className="text-sm font-semibold text-mg-text-1">{t('apiKeys.table.notCalled')}</div>
             </div>
           )}
         </Section>
 
         {/* 操作审计 */}
-        <Section title="操作审计">
+        <Section title={t('apiKeys.detail.audit')}>
           {auditRows.length > 0 ? (
             <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
               {auditRows.slice(0, 50).map((a) => (
                 <div key={a.id} className="border-l-2 border-brand-base/35 pl-4">
-                  <div className="text-sm font-bold text-mg-text-1">{auditActionLabel(a.action)}</div>
+                  <div className="text-sm font-bold text-mg-text-1">{auditActionLabel(t, a.action)}</div>
                   <div className="mt-1 text-xs text-mg-text-2">
                     {formatDateTime(a.created_at)} · {a.actor_display || a.actor_account_id || '—'}
                   </div>
@@ -516,7 +516,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
               ))}
             </div>
           ) : (
-            <p className="text-xs text-mg-text-3">暂无审计记录（审计接口待上线）</p>
+            <p className="text-xs text-mg-text-3">{t('apiKeys.detail.noAudit')}</p>
           )}
         </Section>
       </div>

@@ -4,6 +4,7 @@
  */
 
 import { Modal } from '@/components/ui/Modal'
+import { useTranslation } from 'react-i18next'
 
 interface VideoPreviewModalProps {
   open: boolean
@@ -12,8 +13,10 @@ interface VideoPreviewModalProps {
 }
 
 export function VideoPreviewModal({ open, url, onClose }: VideoPreviewModalProps) {
+  const { t } = useTranslation('tasks')
+
   return (
-    <Modal open={open} onClose={onClose} title="视频预览" size="lg">
+    <Modal open={open} onClose={onClose} title={t('thumbnail.videoPreview')} size="lg">
       {url && (
         <video
           src={url}

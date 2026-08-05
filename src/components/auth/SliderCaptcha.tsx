@@ -10,6 +10,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { LuCheck, LuChevronsRight, LuRefreshCw } from 'react-icons/lu'
+import { useTranslation } from 'react-i18next'
 
 const W = 320
 const H = 150
@@ -60,7 +61,8 @@ function genPuzzle(): Puzzle {
   }
 }
 
-export function SliderCaptcha({ onChange, disabled = false, lockedHint = '请先完成前置步骤' }: SliderCaptchaProps) {
+export function SliderCaptcha({ onChange, disabled = false, lockedHint }: SliderCaptchaProps) {
+  const { t } = useTranslation('account')
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
 
@@ -259,7 +261,7 @@ export function SliderCaptcha({ onChange, disabled = false, lockedHint = '请先
         <button
           type="button"
           onClick={regenerate}
-          aria-label="刷新验证"
+          aria-label={t('account.auth.sliderCaptcha.refresh')}
           className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-md bg-black/35 text-white/85 backdrop-blur-sm transition-colors hover:text-white"
         >
           <LuRefreshCw size={13} />
@@ -282,7 +284,7 @@ export function SliderCaptcha({ onChange, disabled = false, lockedHint = '请先
         role="slider"
         aria-disabled={disabled}
         tabIndex={disabled || status === 'success' ? -1 : 0}
-        aria-label="拖动滑块完成拼图验证"
+        aria-label={t('account.auth.sliderCaptcha.dragAria')}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(ratio * 100)}
@@ -293,7 +295,7 @@ export function SliderCaptcha({ onChange, disabled = false, lockedHint = '请先
           className="pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-mg-text-3 transition-opacity duration-200"
           style={{ opacity: status === 'success' ? 0 : disabled || status === 'idle' ? 1 : 0 }}
         >
-          {disabled ? lockedHint : '向右拖动滑块，使拼图对齐缺口'}
+          {disabled ? lockedHint ?? t('account.auth.sliderCaptcha.lockedHint') : t('account.auth.sliderCaptcha.dragHint')}
         </span>
         {/* 成功：蓝→紫渐变 + 一道扫光 + 居中文案（统一成功信号） */}
         {status === 'success' && (
@@ -306,7 +308,7 @@ export function SliderCaptcha({ onChange, disabled = false, lockedHint = '请先
               }}
             />
             <span className="pointer-events-none absolute inset-0 flex items-center justify-center gap-1 text-xs font-bold text-white">
-              <LuCheck size={13} /> 验证通过
+              <LuCheck size={13} /> {t('account.auth.sliderCaptcha.verified')}
             </span>
           </>
         )}

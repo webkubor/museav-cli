@@ -1,18 +1,28 @@
+/**
+ * 忘记密码页面。
+ * 职责：提交邮箱并发送密码重置链接。
+ * 路由：/forgot-password
+ * API：POST /auth/forgot-password
+ */
 import { Button } from '@/components/ui/Button'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { forgotPassword } from '@/services/auth'
 
-const schema = z.object({
-  email: z.string().email('请填写有效的邮箱'),
-})
+function createForgotPasswordSchema(t: TFunction) {
+  return z.object({
+    email: z.string().email(t('account.auth.validation.email')),
+  })
+}
 
-type Fields = z.infer<typeof schema>
+type Fields = { email: string }
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -42,11 +52,14 @@ const errorStyle: React.CSSProperties = {
 }
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation('account')
   const [searchParams] = useSearchParams()
   const [sent, setSent] = useState(false)
   const [expiresIn, setExpiresIn] = useState(300)
   const [loading, setLoading] = useState(false)
   const [serverError, setServerError] = useState('')
+
+  const schema = useMemo(() => createForgotPasswordSchema(t), [t])
 
   const {
     register: field,
@@ -66,7 +79,7 @@ export default function ForgotPasswordPage() {
       setExpiresIn(result.expires_in)
       setSent(true)
     } catch {
-      setServerError('发送失败，请稍后重试')
+      setServerError(t('account.auth.forgot.sendFailed'))
     } finally {
       setLoading(false)
     }
@@ -77,11 +90,11 @@ export default function ForgotPasswordPage() {
   if (sent) {
     return (
       <AuthLayout
-        title="邮件已发送"
-        subtitle="请检查你的收件箱"
+        title={t('account.auth.forgot.sentTitle')}
+        subtitle={t('account.auth.forgot.sentSubtitle')}
         footer={
           <Link to="/login" style={{ color: 'var(--brand-base)', textDecoration: 'none' }}>
-            返回登录
+            {t('account.auth.common.backToLogin')}
           </Link>
         }
       >
@@ -105,12 +118,12 @@ export default function ForgotPasswordPage() {
             ✉️
           </div>
           <p style={{ fontSize: '14px', color: 'var(--mg-text-2)', margin: 0 }}>
-            重置链接已发送至
+            {t('account.auth.forgot.sentTo')}
             <br />
             <strong>{getValues('email')}</strong>
           </p>
           <p style={{ fontSize: '12px', color: 'var(--mg-text-3)', margin: 0 }}>
-            链接在 {minutes} 分钟内有效，请尽快操作
+            {t('account.auth.forgot.expiresInMinutes', { minutes })}
           </p>
         </div>
       </AuthLayout>
@@ -119,11 +132,11 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthLayout
-      title="忘记密码"
-      subtitle="输入邮箱，我们将发送重置链接"
+      title={t('account.auth.forgot.title')}
+      subtitle={t('account.auth.forgot.subtitle')}
       footer={
         <Link to="/login" style={{ color: 'var(--brand-base)', textDecoration: 'none' }}>
-          返回登录
+          {t('account.auth.common.backToLogin')}
         </Link>
       }
     >
@@ -133,7 +146,7 @@ export default function ForgotPasswordPage() {
         style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
       >
         <div>
-          <label style={labelStyle}>邮箱</label>
+          <label style={labelStyle}>{t('account.auth.fields.email')}</label>
           <input
             {...field('email')}
             type="email"
@@ -151,7 +164,7 @@ export default function ForgotPasswordPage() {
           loading={loading}
           style={{ width: '100%', height: '40px', borderRadius: '8px', fontWeight: 600 }}
         >
-          发送重置邮件
+          {t('account.auth.forgot.submit')}
         </Button>
       </form>
     </AuthLayout>

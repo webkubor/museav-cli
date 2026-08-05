@@ -1,0 +1,24 @@
+{
+  "modelsChat": {
+    "title": "模型对话",
+    "desc": "与指定模型进行多轮对话。",
+    "button": {
+      "new": "新建对话"
+    },
+    "history": "对话记录",
+    "empty": "选择一个会话或新建对话",
+    "input": {
+      "placeholder": "输入消息..."
+    },
+    "thinking": "思考中...",
+    "toast": {
+      "sendError": "发送失败"
+    },
+    "suggestion": {
+      "title": "你可以这样开始：",
+      "s1": "对比 GPT-4o 与 Gemini Pro 的优缺点",
+      "s2": "用 React 19 写一个自适应高度的 Textarea 组件",
+      "s3": "帮我写一封关于产品发布会的英文邀请邮件"
+    }
+  }
+}

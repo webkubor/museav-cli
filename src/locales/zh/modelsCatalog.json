@@ -1,0 +1,167 @@
+{
+  "modelsCatalog": {
+    "title": "模型目录",
+    "desc": "浏览 ModelGo 支持的全部模型，查看上下文长度、价格与可用模态。",
+    "placeholder.search": "搜索模型名称、供应商 or ID",
+    "placeholder": {
+      "search": "检索模型名称、API ID 或厂商..."
+    },
+    "filter.all": "全部",
+    "filter": {
+      "all": "全部模型",
+      "text": "文本对话",
+      "image": "图像生成",
+      "video": "视频理解",
+      "code": "代码编写",
+      "reasoning": "深度推理",
+      "multimodal": "多模态"
+    },
+    "allModels": {
+      "title": "全部模型",
+      "desc": "聚合 ModelGo 支持的全部大语言及多模态模型。一键复制 API ID，即可在您的本地智能代理、服务代码或第三方 SDK 中进行无缝配置与调用。"
+    },
+    "hero": {
+      "kicker": "模型目录工作台"
+    },
+    "stats": {
+      "label": "模型目录统计",
+      "models": "模型",
+      "vendors": "厂商",
+      "text": "文本",
+      "image": "图像",
+      "video": "视频",
+      "free": "免费"
+    },
+    "filters": {
+      "label": "筛选",
+      "moreLabel": "更多筛选",
+      "all": "全部",
+      "category": "模型类别",
+      "language": "语言支持",
+      "languageMultilingual": "多语言",
+      "languageEnglish": "英文",
+      "languageChinese": "中文",
+      "context": "推理上下文长度",
+      "provider": "模型提供方",
+      "family": "模型系列",
+      "scenario": "模型场景",
+      "sort": {
+        "label": "排序",
+        "popular": "综合排序",
+        "newest": "最新发布",
+        "cheapest": "最低价格"
+      },
+      "reset": "重置筛选"
+    },
+    "results": {
+      "label": "模型列表",
+      "title": "可用模型",
+      "count": "当前显示 {{visible}} / {{total}} 个模型"
+    },
+    "button": {
+      "compare": "对比模型",
+      "compareShort": "对比",
+      "compareUnavailable": "不可对比",
+      "docs": "接入文档",
+      "try": "去体验",
+      "comingSoon": "暂未开放",
+      "comingSoonHint": "该模型的在线体验任务暂未开放"
+    },
+    "labels": {
+      "apiId": "API ID",
+      "context": "上下文",
+      "inputPrice": "输入单价",
+      "outputPrice": "输出单价",
+      "releasedAt": "发布"
+    },
+    "insights": {
+      "title": "模型洞察",
+      "subtitle": "基于本月实际调用统计",
+      "noRanking": "暂无调用数据，先显示目录推荐",
+      "hot": "热门模型排行",
+      "lowCost": "低价推荐",
+      "free": "免费模型推荐",
+      "freeTag": "免费",
+      "freeEmpty": "暂无免费模型",
+      "recent": "近期更新",
+      "calls": "{{count}} 次调用",
+      "waiting": "等待调用数据"
+    },
+    "loading": "正在拉取可用模型...",
+    "empty": "未找到匹配的模型",
+    "error.load": "加载模型目录失败，请稍后重试。",
+    "error": {
+      "load": "模型列表加载失败，请稍后重试"
+    },
+    "toast": {
+      "copied": "API ID 已复制",
+      "copyFailed": "复制失败"
+    },
+    "page": {
+      "title": "模型广场",
+      "subtitle": "一个 API 接入主流大模型，价格透明、开箱可用。"
+    },
+    "filtersButton": "筛选",
+    "search": {
+      "placeholder": "搜索模型名、API ID、供应商或描述关键词…"
+    },
+    "sort": {
+      "default": "推荐排序",
+      "newest": "最新发布",
+      "cheapest": "价格从低到高"
+    },
+    "count": "共 {{n}} 个模型",
+    "emptyFiltered": "没有符合筛选条件的模型",
+    "clearFilters": "清除所有筛选",
+    "sidebar": {
+      "family": "模型系列",
+      "allFamilies": "全部系列",
+      "tags": "功能标签",
+      "context": "上下文长度",
+      "pricing": "价格",
+      "all": "全部",
+      "free": "免费",
+      "paid": "付费",
+      "more": "展开更多",
+      "less": "收起",
+      "offers": "折扣",
+      "onlyDiscounted": "只看折扣模型",
+      "provider": "模型厂商",
+      "modality": "模型类型",
+      "apiProtocol": "API 协议",
+      "otherProtocol": "其他协议",
+      "capabilities": "能力标签",
+      "selectTags": "选择标签",
+      "allTagsSelected": "标签已全部选中",
+      "removeTag": "移除标签 {{tag}}",
+      "filterTitle": "筛选：{{label}}",
+      "inputOutputFlow": "输入 {{input}}，输出 {{output}}",
+      "apiProtocolAria": "API 协议",
+      "new": "最新",
+      "limitedFree": "限时特惠·免费",
+      "modalityEmbedding": "向量",
+      "modalityFile": "文件"
+    },
+    "card": {
+      "free": "免费",
+      "copyApiId": "复制 API ID",
+      "try": "立即体验",
+      "apiDocs": "API 请求",
+      "compare": "对比模型",
+      "context": "上下文长度",
+      "cacheRead": "缓存读取",
+      "input": "输入",
+      "output": "输出"
+    },
+    "modality": {
+      "text": "文本",
+      "image": "图像",
+      "audio": "音频",
+      "video": "视频",
+      "embedding": "向量",
+      "file": "文件"
+    },
+    "detail.title": "模型详情",
+    "error.loadDetail": "加载模型详情失败，请稍后重试。"
+  }
+}

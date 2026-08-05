@@ -1,0 +1,15 @@
+{
+  "modelsHistory": {
+    "title": "对话历史",
+    "desc": "查看并继续之前的模型对话记录。",
+    "empty": "暂无对话记录",
+    "noTitle": "无标题对话",
+    "noMessages": "暂无消息",
+    "messageCount": "{{count}} 条消息",
+    "updatedAt": "更新于 {{time}}",
+    "error": {
+      "load": "加载历史记录失败",
+      "loadDetail": "加载对话详情失败"
+    }
+  }
+}

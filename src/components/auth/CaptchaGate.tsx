@@ -8,6 +8,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { LuRotateCw, LuShieldCheck } from 'react-icons/lu'
+import { useTranslation } from 'react-i18next'
 import { createAlicaptchaSession, type AlicaptchaSession } from '@/lib/alicaptcha'
 import { getMarketDefaultLang } from '@/lib/market'
 import { useLangStore } from '@/store/use-brand-store'
@@ -31,6 +32,7 @@ interface CaptchaGateProps {
 }
 
 export function CaptchaGate({ onChange, onVerified, onAvailability, handleRef }: CaptchaGateProps) {
+  const { t } = useTranslation('account')
   const market = useLangStore((s) => s.market)
   const [state, setState] = useState<'hidden' | 'idle' | 'verified'>('hidden')
   const sessionRef = useRef<AlicaptchaSession | null>(null)
@@ -88,7 +90,7 @@ export function CaptchaGate({ onChange, onVerified, onAvailability, handleRef }:
     return (
       <div className="auth-captcha-gate is-verified" role="status">
         <LuShieldCheck size={16} aria-hidden />
-        <span>已完成安全验证</span>
+        <span>{t('account.auth.captcha.verified')}</span>
         <button
           type="button"
           className="auth-captcha-gate-reset"
@@ -97,7 +99,7 @@ export function CaptchaGate({ onChange, onVerified, onAvailability, handleRef }:
             setState('idle')
             onChange(null)
           }}
-          aria-label="重新验证"
+          aria-label={t('account.auth.captcha.retry')}
         >
           <LuRotateCw size={13} aria-hidden />
         </button>
@@ -112,7 +114,7 @@ export function CaptchaGate({ onChange, onVerified, onAvailability, handleRef }:
       onClick={() => sessionRef.current?.show()}
     >
       <LuShieldCheck size={16} aria-hidden />
-      <span>点击完成安全验证</span>
+      <span>{t('account.auth.captcha.clickToVerify')}</span>
     </button>
   )
 }

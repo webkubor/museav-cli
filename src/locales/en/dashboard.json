@@ -1,0 +1,143 @@
+{
+  "dashboard": {
+    "section.integration": "Integration",
+    "section.guide": "Advanced Guide",
+    "kpi": {
+      "balance": "Available Balance",
+      "monthlySpend": "Monthly Spend",
+      "monthlyRequests": "Monthly Requests",
+      "monthlyTokens": "Monthly Tokens"
+    },
+    "recentLogs": {
+      "title": "Recent Call Logs",
+      "viewAll": "View All",
+      "requestId": "Request ID",
+      "model": "Model",
+      "status": "Status",
+      "duration": "Duration",
+      "time": "Time",
+      "empty": "No call records"
+    },
+    "usageChart": {
+      "title": "Usage Trend (Last 5 days)",
+      "requests": "Requests",
+      "empty": "No trend data",
+      "requestsLabel": "Requests"
+    },
+    "histogramChart": {
+      "title": "Request Distribution (Last 5 days)",
+      "requests": "Requests",
+      "empty": "No distribution data",
+      "requestsLabel": "Call Frequency (Requests)"
+    },
+    "workbench": {
+      "view": {
+        "enterprise": "Org view",
+        "space": "Space view",
+        "mine": "My view",
+        "mineTodo": "Showing organization-level usage data"
+      },
+      "granularity": {
+        "day": "Daily",
+        "month": "Monthly"
+      },
+      "quickStart": {
+        "title": "Quick start",
+        "subtitle": "3 steps to your first model call",
+        "dismiss": "Dismiss",
+        "step1Title": "Create API Key",
+        "step1Desc": "Create a key for local development or server-side calls.",
+        "step1Action": "Create",
+        "step2Title": "Configure client",
+        "step2Desc": "Copy the Base URL and API Key into your SDK or HTTP client.",
+        "step2Action": "Copy URL",
+        "step3Title": "Send a test request",
+        "step3Desc": "Make your first call and confirm the model responds and logs it.",
+        "step3Action": "View logs",
+        "cliTitle": "Set up local dev in one command",
+        "cliBadge": "Recommended",
+        "cliHint": "Run the command below in your terminal to auto-write Base URL and API Key",
+        "cliCopied": "Command copied to clipboard",
+        "cliCopyFailed": "Copy failed. Please copy manually.",
+        "cliHintPrefix": "Run ",
+        "cliHintSuffix": " to auto-write Base URL and API Key."
+      },
+      "periodLabel": {
+        "day": "Today",
+        "month": "This month"
+      },
+      "metrics": {
+        "requests": "Total requests",
+        "spend": "Total spend",
+        "tokens": "Total tokens",
+        "balance": "Balance",
+        "balanceLow": "Low balance",
+        "recharge": "Top up",
+        "requestsSub": "Calls this month",
+        "spendSub": "Spend this month",
+        "tokensSub": "Input + output this month",
+        "requestsSubDay": "Calls today",
+        "spendSubDay": "Spend today",
+        "tokensSubDay": "Input + output today",
+        "balanceSub": "Available balance",
+        "balanceSubTenant": "Tenant available balance"
+      },
+      "trend": {
+        "title": "Usage trend",
+        "metric": {
+          "requests": "Requests",
+          "spend": "Spend",
+          "tokens": "Tokens"
+        },
+        "range": {
+          "day": "Last 30 days",
+          "month": "Last 12 months"
+        },
+        "unit": {
+          "requests": "reqs",
+          "spend": "",
+          "tokens": "tokens"
+        },
+        "empty": "No trend data",
+        "emptyHint": "Send a test request and your usage trend will show here"
+      },
+      "workspaces": {
+        "title": "Workspace breakdown",
+        "titleMine": "My workspaces",
+        "subtitle": "Aggregated by workspace",
+        "subtitleMine": "Workspaces where I have calls or API keys",
+        "viewMore": "View more",
+        "empty": "No workspace usage",
+        "noDesc": "No description"
+      },
+      "rankings": {
+        "models": "Model usage",
+        "myModels": "My model usage",
+        "members": "Member usage",
+        "apiKeys": "API Keys usage",
+        "myApiKeys": "My API Keys usage",
+        "viewMore": "View more",
+        "empty": "No data",
+        "emptyHint": "Send a test request and your usage ranking will show here",
+        "membersTodo": "No member usage data yet"
+      },
+      "recent": {
+        "title": "Recent calls",
+        "viewAll": "View all",
+        "time": "Time",
+        "status": "Status",
+        "model": "Model",
+        "owner": "Owner",
+        "tokens": "Token",
+        "cost": "Cost",
+        "latency": "Latency",
+        "empty": "No call records",
+        "emptyHint": "Once you create an API Key and send your first request, calls will show here"
+      },
+      "empty": {
+        "lowBalance": "Balance is low. Top up soon to avoid interrupted calls.",
+        "noApiKey": "No API Key yet. Create one to get started."
+      }
+    }
+  }
+}

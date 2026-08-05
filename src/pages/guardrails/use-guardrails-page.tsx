@@ -210,7 +210,7 @@ export function useGuardrailsPage() {
     : detailError instanceof Error
       ? detailError.message
       : detailError
-        ? '护栏详情加载失败'
+        ? t('guardrails.toast.detailLoadError')
         : null
 
   const membersQuery = useQuery({
@@ -316,7 +316,7 @@ export function useGuardrailsPage() {
         trackEvent('guardrails:create', undefined, { result: 'success', is_space_owner: isActiveWorkspaceOwner })
       } catch (err) {
         // 护栏已建、预算这步失败：保留护栏，转编辑「预算」Tab 让用户补，避免脏建
-        appToast.requestError(err, '护栏已创建，但预算保存失败，请在编辑中补充预算')
+        appToast.requestError(err, t('guardrails.toast.createBudgetError'))
         qc.invalidateQueries({ queryKey: ['guardrails', workspaceId] })
         setIsCreating(false)
         setDetailId(created.id)
@@ -562,7 +562,7 @@ export function useGuardrailsPage() {
       if (draft.limited) {
         const amount = draft.amount.trim()
         if (!isValidBudgetAmount(amount)) {
-          return { error: '预算金额无效：请输入大于 0 的数字，整数最多 12 位，小数最多 2 位' }
+          return { error: t('guardrails.validation.invalidBudgetDetailed') }
         }
         // 跨护栏比对（下调全局默认不得低于常规护栏折算额等）由后端权威校验
         // （permissions assertBudgetComparisonRules），失败时 toast 透传后端提示；
@@ -610,7 +610,7 @@ export function useGuardrailsPage() {
     }
     const amount = budgetAmount.trim()
     if (!isValidBudgetAmount(amount)) {
-      return { error: '预算金额无效：请输入大于 0 的数字，整数最多 12 位，小数最多 2 位' }
+      return { error: t('guardrails.validation.invalidBudgetDetailed') }
     }
     // 「常规 ≤ 全局默认」「提额 > 被替代生效预算」由后端权威校验（含月度折算与
     // 启停状态过滤），失败时 toast 透传后端提示；前端不再本地复刻。
@@ -643,19 +643,19 @@ export function useGuardrailsPage() {
     if (!isCreating) { handleSaveGuardrail(); return }
     if (!name.trim()) { appToast.error(t('guardrails.toast.nameRequired')); return }
     // 需求方#498：创建个人/Key 护栏必须绑定至少一个对象，否则后端返 40001。
-    if (scope === 'member' && memberIds.length === 0) { appToast.error('请至少绑定一个成员'); return }
-    if (scope === 'key' && apiKeyIds.length === 0) { appToast.error('请至少绑定一个 API Key'); return }
+    if (scope === 'member' && memberIds.length === 0) { appToast.error(t('guardrails.validation.bindMemberRequired')); return }
+    if (scope === 'key' && apiKeyIds.length === 0) { appToast.error(t('guardrails.validation.bindApiKeyRequired')); return }
     // 预算必填（对齐 PRD）：个人/Key 常规护栏预算必填（无「不限额」）；提额「限额」档必填、「不限额」档可空。
     if (scope === 'member' || scope === 'key') {
       const amt = budgetAmount.trim()
       const budgetRequired = kind === 'regular' || budgetLimited
-      if (budgetRequired && !amt) { appToast.error(kind === 'boost' ? '请填写提额预算' : '请填写预算'); return }
-      if (budgetRequired && amt && !isValidBudgetAmount(amt)) { appToast.error('预算金额无效：大于 0，整数最多 12 位，小数最多 2 位'); return }
+      if (budgetRequired && !amt) { appToast.error(kind === 'boost' ? t('guardrails.validation.boostBudgetRequired') : t('guardrails.validation.budgetRequired')); return }
+      if (budgetRequired && amt && !isValidBudgetAmount(amt)) { appToast.error(t('guardrails.validation.invalidBudget')); return }
     }
     // 提额必须设置到期时间（文档§校验规则）
     if (kind === 'boost') {
       if (!boostExpiresAt || !localInputToIso(boostExpiresAt)) {
-        appToast.error('提额护栏必须设置到期时间')
+        appToast.error(t('guardrails.validation.boostExpiresAtRequired'))
         return
       }
     }
@@ -669,19 +669,19 @@ export function useGuardrailsPage() {
   function handleSaveGuardrail() {
     if (!detail || !detailId) return
     if (budgetConflict) {
-      appToast.error('预算配置数据错误：存在多条生效中的预算策略，请联系管理员处理')
+      appToast.error(t('guardrails.validation.budgetConflict'))
       return
     }
     if (!name.trim()) { appToast.error(t('guardrails.toast.nameRequired')); return }
     const dScope = deriveScope(detail)
     // 绑定必填（编辑态绑定可改，不能清空到 0）
     if (canEditAssignment) {
-      if (dScope === 'member' && memberIds.length === 0) { appToast.error('请至少绑定一个成员'); return }
-      if (dScope === 'key' && apiKeyIds.length === 0) { appToast.error('请至少绑定一个 API Key'); return }
+      if (dScope === 'member' && memberIds.length === 0) { appToast.error(t('guardrails.validation.bindMemberRequired')); return }
+      if (dScope === 'key' && apiKeyIds.length === 0) { appToast.error(t('guardrails.validation.bindApiKeyRequired')); return }
     }
     // 提额到期时间必填
     if (canEdit && deriveKind(detail) === 'boost' && (!boostExpiresAt || !localInputToIso(boostExpiresAt))) {
-      appToast.error('提额护栏必须设置到期时间')
+      appToast.error(t('guardrails.validation.boostExpiresAtRequired'))
       return
     }
     // 预算 ops（仅当有预算编辑权限时计算/下发；否则不触碰预算）
@@ -692,7 +692,7 @@ export function useGuardrailsPage() {
       ops = result.ops
     }
     const payload = (canEdit || canEditAssignment) ? buildGuardrailPayload() : undefined
-    if (!payload && ops.length === 0) { appToast.info('未发生变化'); return }
+    if (!payload && ops.length === 0) { appToast.info(t('guardrails.toast.noChanges')); return }
     trackEvent('guardrails:edit', undefined, { is_space_owner: isActiveWorkspaceOwner })
     if (canEditBudget && ops.length > 0) trackAction(PERMS.GUARDRAILS_BUDGET_EDIT, undefined, { is_space_owner: isActiveWorkspaceOwner })
     saveGuardrailMutation.mutate({ id: detailId, payload, ops })

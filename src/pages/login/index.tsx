@@ -5,12 +5,14 @@
  * API: POST /auth/login, POST /auth/check-email 等鉴权核心网络服务
  */
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { LuEye, LuEyeOff } from 'react-icons/lu'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { AuthLayout } from '@/components/auth/AuthLayout'
@@ -33,16 +35,20 @@ import { navigateAfterLogin } from '@/lib/login-intent'
 import { storageKeys } from '@/lib/storage'
 import { trackEvent } from '@/lib/track'
 
-const emailSchema = z.object({
-  email: z.string().email('请填写有效的邮箱'),
-})
+function createEmailSchema(t: TFunction) {
+  return z.object({
+    email: z.string().email(t('account.auth.validation.email')),
+  })
+}
 
-const passwordSchema = z.object({
-  password: z.string().min(1, '请填写密码'),
-})
+function createPasswordSchema(t: TFunction) {
+  return z.object({
+    password: z.string().min(1, t('account.auth.validation.passwordRequired')),
+  })
+}
 
-type EmailFields = z.infer<typeof emailSchema>
-type PasswordFields = z.infer<typeof passwordSchema>
+type EmailFields = { email: string }
+type PasswordFields = { password: string }
 
 function readRememberedLogin(): string | null {
   if (typeof window === 'undefined') return null
@@ -90,6 +96,7 @@ export default function LoginPage() {
 }
 
 function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
+  const { t } = useTranslation('account')
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -114,6 +121,9 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
   // 验证通过后自动提交的标志
   const autoSubmitRef = useRef(false)
 
+  const emailSchema = useMemo(() => createEmailSchema(t), [t])
+  const passwordSchema = useMemo(() => createPasswordSchema(t), [t])
+
   const emailForm = useForm<EmailFields>({
     resolver: zodResolver(emailSchema),
     defaultValues: { email: remembered || '' },
@@ -131,7 +141,7 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
   const canSubmitAuth = (action: AuthGuardAction, subject: string) => {
     const decision = checkAuthGuard({ action, subject })
     if (decision.allowed) return true
-    setServerError(decision.message ?? '操作过于频繁，请稍后再试')
+    setServerError(decision.message ?? t('account.auth.validation.rateLimited'))
     return false
   }
 
@@ -150,7 +160,7 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
       setStep('password')
     } catch {
       recordAuthGuardFailure({ action: 'login-email', subject: data.email })
-      setServerError('邮箱验证失败，请稍后重试')
+      setServerError(t('account.auth.login.emailCheckFailed'))
     } finally {
       setLoading(false)
     }
@@ -188,7 +198,7 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
       // loginOk=true 但走进 catch = 登录成功但拉 session 失败；否则是凭据错误
       const errorCode = loginOk ? 'session_failed' : 'invalid_credentials'
       trackEvent('login_fail', { method: 'password' }, { result: 'fail', error_code: errorCode })
-      setServerError(loginOk ? '登录成功但获取会话失败，请刷新重试' : '邮箱或密码错误')
+      setServerError(loginOk ? t('account.auth.login.sessionFailed') : t('account.auth.login.invalidCredentials'))
       if (!loginOk) gateRef.current?.reset()
     } finally {
       setLoading(false)
@@ -236,24 +246,24 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
 
   return (
     <AuthLayout
-      title="欢迎回来"
-      subtitle="登录到你的 ModelGo 账号"
+      title={t('account.auth.login.title')}
+      subtitle={t('account.auth.login.subtitle')}
       footer={
         onUsePhone ? (
           <span>
-            其他方式？{' '}
+            {t('account.auth.login.otherMethod')}{' '}
             <button type="button" onClick={onUsePhone} className="auth-redirect-link">
-              使用手机号登录
+              {t('account.auth.login.usePhone')}
             </button>
           </span>
         ) : (
           <span>
-            没有账号？{' '}
+            {t('account.auth.login.noAccount')}{' '}
             <Link
               to="/signup"
               className="auth-redirect-link"
             >
-              免费注册
+              {t('account.auth.login.signupFree')}
             </Link>
           </span>
         )
@@ -266,7 +276,7 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
           onSubmit={emailForm.handleSubmit(onEmailSubmit)}
         >
           <div>
-            <label className="modern-auth-label">邮箱</label>
+            <label className="modern-auth-label">{t('account.auth.fields.email')}</label>
             <Input
               {...emailForm.register('email')}
               type="email"
@@ -287,7 +297,7 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
             size="lg"
             loading={loading}
           >
-            继续
+            {t('account.auth.login.continue')}
           </Button>
           
           <SocialLogin redirectTo={redirectTo} />
@@ -305,18 +315,18 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
               onClick={() => { setStep('email'); setServerError('') }}
               className="auth-email-modify-btn"
             >
-              修改
+              {t('account.auth.login.changeEmail')}
             </button>
           </div>
           
           <div>
             <div className="auth-password-header">
-              <label className="modern-auth-label" style={{ marginBottom: 0 }}>密码</label>
+              <label className="modern-auth-label" style={{ marginBottom: 0 }}>{t('account.auth.fields.password')}</label>
               <Link
                 to={`/forgot-password?email=${encodeURIComponent(email)}`}
                 className="auth-forgot-password-link"
               >
-                忘记密码？
+                {t('account.auth.login.forgotPassword')}
               </Link>
             </div>
             <Input
@@ -330,7 +340,7 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
                   type="button"
                   className="auth-password-visibility-btn"
                   onClick={() => setShowPassword((visible) => !visible)}
-                  aria-label={showPassword ? '隐藏密码' : '显示密码'}
+                  aria-label={showPassword ? t('account.auth.aria.hidePassword') : t('account.auth.aria.showPassword')}
                 >
                   {showPassword ? <LuEyeOff size={17} /> : <LuEye size={17} />}
                 </button>
@@ -345,7 +355,7 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
                 checked={rememberPassword}
                 onChange={(event) => onRememberPasswordChange(event.target.checked)}
               />
-              <span>记住密码</span>
+              <span>{t('account.auth.login.rememberPassword')}</span>
             </label>
           </div>
           
@@ -359,7 +369,7 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
             size="lg"
             loading={loading}
           >
-            登录
+            {t('account.auth.login.submit')}
           </Button>
         </form>
       )}

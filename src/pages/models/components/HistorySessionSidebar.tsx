@@ -6,9 +6,10 @@
  */
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LuHistory, LuPanelLeftOpen, LuPanelLeftClose, LuPlus, LuCircleOff } from 'react-icons/lu'
+import { LuHistory, LuPanelLeftOpen, LuPanelLeftClose, LuPlus, LuCircleOff, LuTrash2 } from 'react-icons/lu'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
 import { Badge, type BadgeVariant } from '@/components/ui/Badge'
 import { formatRelativeTime } from '@/lib/format-date'
 import '@/pages/models/styles/history-session-sidebar.css'
@@ -32,6 +33,9 @@ interface HistorySessionSidebarProps {
   onNewSession: () => void
   /** 双击会话标题重命名；传空串会清空标题，交回后端下次提问自动命名（省略则不启用双击重命名） */
   onRenameSession?: (id: string, name: string) => void
+  /** 删除会话记录（shared/modelgo_prd#362）；省略则不渲染删除入口。
+   *  返回 Promise 时按它决定 loading / 关弹窗时机 */
+  onDeleteSession?: (id: string) => void | Promise<unknown>
 }
 
 const CATEGORY_META: Record<HistorySessionItem['category'], { labelKey: string; variant: BadgeVariant }> = {
@@ -112,11 +116,15 @@ export function HistorySessionSidebar({
   onSelectSession,
   onNewSession,
   onRenameSession,
+  onDeleteSession,
 }: HistorySessionSidebarProps) {
   const { t } = useTranslation()
   const groups = useMemo(() => groupByDate(sessions), [sessions])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
+  /** 删除是破坏性操作，先出确认弹窗（对齐护栏/工作空间的删除交互），不做即点即删 */
+  const [deleteTarget, setDeleteTarget] = useState<HistorySessionItem | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   function startEditing(session: HistorySessionItem) {
     if (!onRenameSession) return
@@ -128,6 +136,17 @@ export function HistorySessionSidebar({
     const next = editValue.trim()
     setEditingId(null)
     if (next !== session.name) onRenameSession?.(session.id, next)
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      await onDeleteSession?.(deleteTarget.id)
+      setDeleteTarget(null)
+    } finally {
+      setDeleting(false)
+    }
   }
 
   if (collapsed) {
@@ -258,6 +277,18 @@ export function HistorySessionSidebar({
                       ))}
                     </div>
                     {hasOffline && <div className="history-sidebar-offline-flag">{t('modelsExperience.historySidebar.offlineFlag')}</div>}
+                    {onDeleteSession && (
+                      <button
+                        type="button"
+                        className="history-sidebar-item-delete"
+                        title={t('modelsExperience.historySidebar.deleteLabel')}
+                        aria-label={t('modelsExperience.historySidebar.deleteLabel')}
+                        onClick={(e) => { e.stopPropagation(); setDeleteTarget(session) }}
+                        onKeyDown={(e) => e.stopPropagation()}
+                      >
+                        <LuTrash2 size={13} />
+                      </button>
+                    )}
                   </div>
                 )
               })}
@@ -266,6 +297,26 @@ export function HistorySessionSidebar({
         )}
       </div>
       </div>
+
+      <Modal
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title={t('modelsExperience.historySidebar.deleteModal.title')}
+        description={t('modelsExperience.historySidebar.deleteModal.description', {
+          name: deleteTarget?.name || t('modelsExperience.unnamedSession'),
+        })}
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              {t('modelsExperience.historySidebar.deleteModal.cancel')}
+            </Button>
+            <Button variant="destructive" loading={deleting} onClick={() => void confirmDelete()}>
+              {t('modelsExperience.historySidebar.deleteModal.confirm')}
+            </Button>
+          </>
+        }
+      />
     </>
   )
 }

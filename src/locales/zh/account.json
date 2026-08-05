@@ -1,0 +1,242 @@
+{
+  "account": {
+    "title": "账号设置",
+    "desc": "管理你的个人信息、密码及第三方账号绑定。",
+    "tabs": {
+      "info": "基本资料",
+      "security": "安全与登录",
+      "oauth": "第三方账号",
+      "preferences": "偏好设置"
+    },
+    "info": {
+      "emailLabel": "邮箱地址",
+      "emailHint": "登录和接收系统通知时使用的主要邮箱，暂不支持自主修改。",
+      "nameLabel": "显示名称",
+      "namePlaceholder": "请输入显示名称",
+      "toastSuccess": "显示名称已保存",
+      "toastError": "保存失败，请重试",
+      "avatarSuccess": "头像已更新",
+      "avatarError": "头像上传失败",
+      "avatarTooLarge": "图片大小不能超过 2MB",
+      "avatarChange": "更换",
+      "avatarCropTitle": "裁剪头像",
+      "referralLabel": "邀请链接"
+    },
+    "security": {
+      "currentPassword": "当前密码",
+      "currentPlaceholder": "请输入当前密码",
+      "newPassword": "新密码",
+      "newPlaceholder": "密码长度至少为 8 位",
+      "confirmPassword": "确认新密码",
+      "confirmPlaceholder": "请再次输入新密码",
+      "toastSuccess": "密码修改成功",
+      "toastError": "密码修改失败，请检查旧密码是否正确",
+      "warningEmpty": "请填写所有密码字段",
+      "errorMismatch": "两次输入的新密码不一致",
+      "errorLength": "新密码长度不得少于 8 位",
+      "deleteTitle": "注销账号",
+      "deleteDesc": "申请注销后账号会进入 7 天宽限期，期间请停止使用相关服务。该操作会影响账号下的登录与控制台访问。",
+      "deleteAction": "申请注销账号",
+      "deleteModalTitle": "确认注销账号",
+      "deleteModalDesc": "该操作需要当前密码确认。继续前请输入 {{text}}。",
+      "deletePassword": "当前密码",
+      "deletePasswordPlaceholder": "请输入当前登录密码",
+      "deleteReason": "注销原因",
+      "deleteReasonPlaceholder": "可选，说明你注销账号的原因",
+      "deleteConfirmLabel": "输入 {{text}} 确认",
+      "deleteConfirmAction": "确认注销",
+      "deletePasswordRequired": "请输入当前密码",
+      "deleteConfirmRequired": "请输入 {{text}} 后再确认",
+      "deleteSuccess": "账号注销申请已提交",
+      "deleteSuccessDesc": "计划删除时间：{{date}}",
+      "deleteError": "注销申请失败，请稍后重试"
+    },
+    "oauth": {
+      "desc": "绑定第三方社交或代码托管平台账户，支持使用对应的快捷登录入口免密码接入控制台。",
+      "google": "Google 账号",
+      "github": "GitHub 账号",
+      "wechat": "微信账号",
+      "bound": "已绑定",
+      "notBound": "未绑定",
+      "emailLabel": "账号邮箱: {{email}}",
+      "unbind": "解绑",
+      "bind": "连接",
+      "processing": "处理中",
+      "unbindSuccess": "第三方账号已解绑",
+      "bindError": "发起绑定失败，请稍后重试",
+      "identityAlreadyLinked": "该{{provider}}已被其他账户绑定，无法继续绑定",
+      "unbindError": "解绑失败，请稍后重试"
+    },
+    "preferences": {
+      "languageTitle": "界面语言",
+      "languageDesc": "选择控制台默认显示语言，保存后立即生效。",
+      "languageZh": "简体中文",
+      "languageZhDesc": "适用于国内团队和中文工作流。",
+      "languageEn": "English",
+      "languageEnDesc": "For global teams and English workflows.",
+      "themeTitle": "界面主题",
+      "themeDesc": "选择控制台明暗主题，保存后对当前账号生效。",
+      "themeLightDesc": "使用浅色界面，适合日间和高亮环境。",
+      "themeDarkDesc": "使用深色界面，适合夜间和低亮环境。",
+      "themeSystemDesc": "跟随当前设备的系统主题自动切换。",
+      "timeZoneTitle": "显示时区",
+      "timeZoneDesc": "控制控制台内时间的本地化展示。未设置时默认跟随浏览器时区：{{timezone}}。",
+      "timeZoneBrowser": "跟随浏览器时区",
+      "timeZoneBrowserDesc": "当前浏览器：{{timezone}}",
+      "timeZoneFixedDesc": "固定使用该时区显示所有控制台时间。",
+      "timeZonePreview": "当前预览：{{time}} · {{timezone}}",
+      "lowBalanceTitle": "低余额提醒",
+      "lowBalanceDesc": "余额低于阈值时接收提醒，避免服务调用受到影响。",
+      "save": "保存偏好",
+      "saveSuccess": "偏好设置已保存",
+      "saveError": "偏好保存失败，请稍后重试",
+      "loadError": "偏好设置加载失败"
+    },
+    "auth": {
+      "common": {
+        "backToLogin": "返回登录"
+      },
+      "fields": {
+        "email": "邮箱",
+        "password": "密码",
+        "newPassword": "新密码",
+        "confirmPassword": "确认密码",
+        "phone": "手机号",
+        "code": "验证码",
+        "smsCode": "短信验证码",
+        "referralCode": "邀请码"
+      },
+      "placeholders": {
+        "passwordMin": "至少 8 位",
+        "confirmPassword": "请再次输入密码",
+        "confirmPasswordShort": "再次输入密码",
+        "phone": "请输入手机号",
+        "mainlandPhone": "请输入中国大陆手机号",
+        "code6": "6 位数字",
+        "smsCode6": "6 位短信验证码",
+        "enterCode6": "请输入 6 位验证码",
+        "referralCode": "如有推荐邀请码请填写，如 MG-XXXX"
+      },
+      "validation": {
+        "email": "请填写有效的邮箱",
+        "phone": "请填写有效的手机号",
+        "code6": "请填写 6 位验证码",
+        "passwordRequired": "请填写密码",
+        "passwordMin": "密码至少 8 位",
+        "confirmPassword": "请确认密码",
+        "passwordMismatch": "两次输入的密码不一致",
+        "passwordMismatchShort": "两次密码不一致",
+        "rateLimited": "操作过于频繁，请稍后再试",
+        "securityVerificationRequired": "请先完成安全验证"
+      },
+      "aria": {
+        "showPassword": "显示密码",
+        "hidePassword": "隐藏密码"
+      },
+      "login": {
+        "title": "欢迎回来",
+        "subtitle": "登录到你的 ModelGo 账号",
+        "otherMethod": "其他方式？",
+        "usePhone": "使用手机号登录",
+        "noAccount": "没有账号？",
+        "signupFree": "免费注册",
+        "continue": "继续",
+        "changeEmail": "修改",
+        "forgotPassword": "忘记密码？",
+        "rememberPassword": "记住密码",
+        "submit": "登录",
+        "failed": "登录失败，请稍后重试",
+        "emailCheckFailed": "邮箱验证失败，请稍后重试",
+        "sessionFailed": "登录成功但获取会话失败，请刷新重试",
+        "invalidCredentials": "邮箱或密码错误"
+      },
+      "phoneLogin": {
+        "title": "登录 / 注册",
+        "subtitle": "未注册的手机号将自动注册并登录",
+        "useEmail": "使用邮箱登录",
+        "submit": "登录 / 注册"
+      },
+      "signup": {
+        "title": "创建账号",
+        "subtitle": "免费开始，按用量付费",
+        "hasAccount": "已有账号？",
+        "login": "登录",
+        "submit": "免费注册",
+        "failed": "注册失败，请稍后重试"
+      },
+      "forgot": {
+        "title": "忘记密码",
+        "subtitle": "输入邮箱，我们将发送重置链接",
+        "submit": "发送重置邮件",
+        "sendFailed": "发送失败，请稍后重试",
+        "sentTitle": "邮件已发送",
+        "sentSubtitle": "请检查你的收件箱",
+        "sentTo": "重置链接已发送至",
+        "expiresInMinutes": "链接在 {{minutes}} 分钟内有效，请尽快操作"
+      },
+      "reset": {
+        "title": "重置密码",
+        "subtitle": "设置一个新密码",
+        "submit": "确认重置",
+        "failed": "重置失败，链接可能已过期",
+        "invalidTitle": "链接无效",
+        "invalidLink": "重置链接无效或已过期",
+        "invalidDesc": "重置链接无效或已过期，请重新申请。",
+        "resend": "重新发送重置邮件",
+        "doneTitle": "密码已重置",
+        "doneSubtitle": "你的密码已成功更新",
+        "loginNow": "立即登录"
+      },
+      "verificationCode": {
+        "send": "发送验证码",
+        "sending": "发送中",
+        "sentCountdown": "已发送 ({{seconds}}s)",
+        "sendFailed": "发送失败，请稍后重试"
+      },
+      "social": {
+        "divider": "或"
+      },
+      "oauth": {
+        "wechat": "微信",
+        "github": "GitHub",
+        "google": "Google"
+      },
+      "passwordStrength": {
+        "weak": "弱 (弱密码，建议混合大小写与数字)",
+        "medium": "中 (中等密码，建议增加特殊字符)",
+        "strong": "强 (高强度密码，非常安全)",
+        "excellent": "极强 (极度安全密码，无懈可击)"
+      },
+      "captcha": {
+        "verified": "已完成安全验证",
+        "retry": "重新验证",
+        "clickToVerify": "点击完成安全验证"
+      },
+      "sliderCaptcha": {
+        "lockedHint": "请先完成前置步骤",
+        "refresh": "刷新验证",
+        "dragAria": "拖动滑块完成拼图验证",
+        "dragHint": "向右拖动滑块，使拼图对齐缺口",
+        "verified": "验证通过"
+      },
+      "phoneBinding": {
+        "title": "绑定手机号后继续使用",
+        "desc": "快捷登录账号需要补充手机号，用于国内服务验证、账号安全和后续通知。该步骤不能跳过。",
+        "securityHint": "手机号只用于账号安全验证和国内服务能力，不会公开展示。",
+        "submit": "完成绑定并进入控制台",
+        "logout": "暂不绑定，退出登录",
+        "sendCodeFailed": "验证码发送失败",
+        "success": "手机号绑定成功",
+        "failed": "绑定失败"
+      },
+      "legal": {
+        "signupPrefix": "注册即代表同意",
+        "phonePrefix": "登录 / 注册即代表同意",
+        "bindingPrefix": "绑定即代表同意",
+        "terms": "服务条款",
+        "privacy": "隐私政策",
+        "and": "与"
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "promo": {
+    "freeModels": {
+      "badge": "限时免费",
+      "title": "免费模型体验",
+      "description": "零成本试用精选模型"
+    },
+    "referral": {
+      "title": "邀请返利计划",
+      "description": "邀请好友注册，双方得返利奖励"
+    }
+  }
+}

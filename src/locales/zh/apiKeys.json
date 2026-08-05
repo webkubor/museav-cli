@@ -1,0 +1,365 @@
+{
+  "apiKeys": {
+    "title": "API Keys",
+    "desc": "用于 OpenAI SDK 兼容接入的安全凭证，请妥善保管您的密钥凭证，切勿泄露给第三方。",
+    "create": "创建 API Key",
+    "search": "搜索密钥名称",
+    "searchPlaceholder": "搜索 Key 名称、负责人",
+    "summary": {
+      "total": "全部 Key",
+      "active": "启用中",
+      "expiringSoon": "7 天内即将过期",
+      "limitReached": "已达限额",
+      "monthSpend": "本月消费"
+    },
+    "keyType": {
+      "personal": "私有 Key",
+      "member": "成员 Key",
+      "service": "服务 Key"
+    },
+    "keyTypeDesc": {
+      "personal": "当前成员负责，适合个人开发、测试或本地接入。",
+      "member": "管理员代建，指定成员负责和接收通知。",
+      "service": "工作空间服务或生产系统使用。"
+    },
+    "status": {
+      "active": "启用中",
+      "rotation_required": "待轮转",
+      "limited": "已达限额",
+      "expired": "已过期",
+      "disabled": "已停用",
+      "revoked": "已撤销",
+      "expiring": "即将过期"
+    },
+    "filter": {
+      "allTypes": "全部类型",
+      "allStatuses": "全部状态",
+      "allOwners": "全部负责人"
+    },
+    "scope": {
+      "workspaceAll": "作用域：当前工作空间 · 显示本空间全部成员的 API Key（{{count}} 位成员）",
+      "selfOnly": "作用域：当前工作空间 · 仅展示由你负责的 Key"
+    },
+    "table": {
+      "name": "名称",
+      "env": "环境",
+      "credentials": "API Key 凭证",
+      "type": "类型",
+      "owner": "负责人",
+      "keyGuardrail": "Key护栏",
+      "status": "状态",
+      "createdAt": "创建时间",
+      "actions": "操作",
+      "active": "启用中",
+      "disabled": "已禁用",
+      "revoked": "已吊销",
+      "copy": "复制",
+      "copyFullKey": "复制完整 Key",
+      "copyMaskedKey": "复制掩码 Key",
+      "revoke": "删除",
+      "delete": "删除",
+      "rotate": "轮转",
+      "rotated": "已轮转",
+      "enable": "启用",
+      "disable": "停用",
+      "enabling": "启用中",
+      "detail": "详情",
+      "copyMaskedSuccess": "遮蔽凭证已复制到剪贴板",
+      "expiresAt": "过期时间",
+      "neverExpires": "永不过期",
+      "expired": "已过期",
+      "totalSpend": "累计消费",
+      "periodSpend": "本期消费",
+      "periodSpendLimit": "本期消费 / 限额",
+      "requests": "请求数",
+      "lastCalled": "最近调用",
+      "notCalled": "尚未调用",
+      "noData": "无数据",
+      "creator": "创建人",
+      "copyForbidden": "无查看 API Key 明文权限",
+      "maskedTitle": "Key 掩码，完整明文需点右侧复制",
+      "effectiveLimitTitle": "生效限额=命中的护栏预算闸门（取最严）",
+      "limitValue": "限额 {{value}}",
+      "copyUnavailableLegacy": "该密钥创建于「支持复制」功能上线之前，明文不可找回；请轮换新建密钥",
+      "copyUnavailableInactive": "密钥已撤销或过期，无法复制"
+    },
+    "expiration": {
+      "all": "永不过期",
+      "24h": "24 小时后",
+      "7d": "7 天后",
+      "30d": "30 天后",
+      "1y": "1 年后",
+      "custom": "自定义截止日期"
+    },
+    "limit": {
+      "none": "不限额",
+      "every": "每{{unit}}",
+      "everyCount": "每 {{count}} {{unit}}",
+      "unit": {
+        "hour": "小时",
+        "day": "天",
+        "week": "周",
+        "month": "月"
+      },
+      "period": {
+        "none": "不限额",
+        "day": "每日",
+        "month": "每月",
+        "total": "总额",
+        "hour": "每小时",
+        "week": "每周"
+      }
+    },
+    "budget": {
+      "gate": "预算闸门",
+      "workspaceTotal": "工作空间总预算",
+      "member": "个人预算",
+      "key": "Key 预算",
+      "notConfigured": "未配置预算",
+      "runtimeCheckTip": "运行时会同时检查这些预算闸门",
+      "stopTip": "按最先触发的预算停止调用"
+    },
+    "guardrail": {
+      "global": "全局护栏",
+      "member": "个人护栏",
+      "key": "Key 护栏",
+      "none": "不使用Key护栏",
+      "noneSpaced": "不使用 Key 护栏",
+      "unbound": "未绑定 Key 护栏",
+      "noKeyGuardrails": "暂无 Key 护栏",
+      "defaultBadge": "（默认）",
+      "globalDefaultMemberBudget": "全局默认个人预算",
+      "memberBudgetNotApplicable": "个人预算不适用",
+      "boundPreviewUnavailable": "已绑定 {{names}}（生效预览接口暂不可用）"
+    },
+    "rule": {
+      "modelBlacklist": "模型黑名单",
+      "ipWhitelist": "IP 白名单",
+      "promptInjection": "提示词注入",
+      "source": "规则来源：{{source}}",
+      "globalKeySource": "全局 / Key 护栏规则",
+      "unrestricted": "不限制",
+      "notConfigured": "未配置规则"
+    },
+    "common": {
+      "notConfigured": "未配置",
+      "none": "无"
+    },
+    "effectivePreview": "生效规则预览",
+    "effectiveRule": "生效规则",
+    "protocol": {
+      "aria": "标准协议接入",
+      "title": "使用标准协议接入",
+      "desc": "复制对应 Base URL，即可复用现有 SDK",
+      "copyOpenAI": "复制 OpenAI 地址",
+      "copyAnthropic": "复制 Anthropic 地址",
+      "docs": "查看 API 文档"
+    },
+    "revokeConfirm": {
+      "title": "确定删除该密钥吗？",
+      "content": "密钥删除后立即失效、从列表中移除且不可恢复，所有使用该密钥的网关请求将被阻断！"
+    },
+    "disableConfirm": {
+      "title": "确认停用 API Key",
+      "desc": "停用后「{{name}}」将立即停止调用，可稍后重新启用。",
+      "confirm": "确认停用"
+    },
+    "createModal": {
+      "title": "创建 API Key",
+      "desc": "为 {{workspaceName}} 工作空间创建运行凭证",
+      "currentWorkspace": "当前工作空间",
+      "currentAccount": "当前账户",
+      "nameLabel": "Key 名称",
+      "namePlaceholder": "如：生产测试 Key",
+      "nameRequired": "密钥名称不能为空",
+      "memberRequired": "请选择目标成员",
+      "maintainerRequired": "请选择服务 Key 负责人",
+      "typeLabel": "Key 类型",
+      "noTypePermission": "你没有创建此类型 Key 的权限",
+      "noCreatePermission": "无创建权限",
+      "ownerLabel": "负责人",
+      "memberPlaceholder": "请选择工作区成员",
+      "maintainerPlaceholder": "请选择服务 Key 负责人",
+      "noMembers": "该工作区暂无成员",
+      "selfMaintainer": "维护人为自己（{{account}}）",
+      "expiryLabel": "过期时间",
+      "expiryRequiredHint": "（必填，不可永不过期）",
+      "expiryOptionalHint": "（可选，不填则永不过期）",
+      "expiryPresetTitle": "过期预设",
+      "expiryCustomLabel": "选择截止时间",
+      "expiryPlaceholder": "选择过期失效时间",
+      "advancedTitle": "高级设置",
+      "advancedDesc": "配置当前 Key 绑定的安全策略",
+      "securityPolicy": "安全策略",
+      "envLabel": "调用环境",
+      "live": "LIVE (真实计费)",
+      "test": "TEST (沙盒测试)",
+      "guardrailLabel": "绑定护栏",
+      "guardrailPlaceholder": "选择安全护栏（可选）",
+      "guardrailNone": "不绑定",
+      "cancel": "取消",
+      "confirm": "立即创建"
+    },
+    "createdModal": {
+      "title": "API Key 创建成功",
+      "desc": "请立即复制并保存，关闭后将无法再查看完整密钥。",
+      "connect": "快速接入",
+      "saved": "我已保存密钥",
+      "copyAria": "复制密钥"
+    },
+    "rotateModal": {
+      "title": "轮转成功",
+      "desc": "新 Token 已生效、只展示一次，请立即复制保存。旧 Token 仍在过渡期，验证无误后再点「已轮转」使其失效。",
+      "copied": "我已复制 Token",
+      "copyAria": "复制新 Token"
+    },
+    "rotateConfirm": {
+      "title": "确认完成轮换",
+      "desc": "确认后旧 Token 将立即失效，新 Token 保持生效。",
+      "oldToken": "旧 Token"
+    },
+    "rotate": {
+      "new": "新",
+      "old": "旧",
+      "copyNewMaskedAria": "复制新 Token 掩码",
+      "noticeTitle": "新 Token 已生效，旧 Token 暂不失效",
+      "noticeDesc": "请复制新 Token 并替换到调用方配置中。验证通过后点击「已轮转」，旧 Token 将立即失效。",
+      "copyNewToken": "复制新 Token"
+    },
+    "revealModal": {
+      "title": "您的新 API Key 已就绪",
+      "warning": "请立即妥善保存该凭证！出于安全性设计，明文 API Key 仅在创建时短暂显示一次，若不慎关闭该弹窗，您将再也无法寻回明文。",
+      "label": "API Key 凭证明文：",
+      "done": "我已复制并妥善保存"
+    },
+    "connectModal": {
+      "title": "立即接入",
+      "desc": "选择接入方式查看参数，按钮用于打开工具或文档。",
+      "paramsTitle": "ModelGo 接入参数",
+      "keyCreatedHint": "API Key 只在创建后展示一次，关闭横幅后将无法再次查看完整密钥。",
+      "noKeyHint": "先确认协议地址和接入方式；创建 API Key 后即可复制完整参数。",
+      "revealError": "取回 API Key 明文失败，请稍后重试",
+      "noAvailableKey": "暂无可用 API Key",
+      "noAvailableModel": "暂无可用模型",
+      "copyApiKeyAria": "复制 API Key",
+      "copyModelAria": "复制模型 ID",
+      "copyApiKey": "复制 API Key",
+      "copiedKey": "已复制 Key",
+      "copyBaseUrl": "复制 Base URL",
+      "method": "接入方式",
+      "docs": "开发文档",
+      "mgcTitle": "一条命令接入 AI 编程客户端",
+      "mgcDesc": "勾选要接入的客户端，命令已自动填好 Key 与站点（{{site}}），复制到终端回车即可。",
+      "globalSite": "国际站",
+      "domesticSite": "国内站",
+      "allClients": "全部 12 个",
+      "keyInjected": "已填入你刚创建的 Key",
+      "keyAutoFill": "创建密钥后将自动填入真实 Key",
+      "copyCommand": "复制命令"
+    },
+    "connectAction": {
+      "mgc": { "label": "一键接入", "desc": "勾选即用" },
+      "cc-switch": { "label": "CC Switch", "desc": "一键切换" },
+      "claude-code": { "label": "Claude Code", "desc": "终端接入" },
+      "codex": { "label": "Codex", "desc": "配置导入" },
+      "openai-sdk": { "label": "OpenAI SDK", "desc": "代码示例" },
+      "curl": { "label": "cURL", "desc": "连通检查" }
+    },
+    "connectSnippet": {
+      "copyParams": "复制参数",
+      "copyTerminal": "复制终端命令",
+      "copyCode": "复制代码示例",
+      "copyCurl": "复制 cURL 命令",
+      "claudePrompt": {
+        "title": "请帮我在 Claude Code 中接入 ModelGo。",
+        "body": "使用下面的 Anthropic 协议地址，只写入本机环境或本地忽略配置，不要提交密钥："
+      },
+      "ccSwitch": {
+        "title": "CC Switch 导入 Provider",
+        "desc": "拉起 CC Switch，直接导入 Claude Provider。",
+        "launch": "拉起 CC Switch"
+      },
+      "claudeCode": {
+        "title": "Claude Code 参数",
+        "desc": "打开 Claude Code 终端，预填 ModelGo 接入提示。",
+        "launch": "打开 Claude Code"
+      },
+      "codex": {
+        "title": "Codex Provider 导入",
+        "desc": "通过 CC Switch 导入 Codex Provider。",
+        "launch": "导入 Codex 配置"
+      },
+      "openaiSdk": {
+        "title": "Node.js SDK 示例",
+        "desc": "打开开发文档查看 SDK 接入方式。",
+        "launch": "打开 SDK 文档"
+      },
+      "curl": {
+        "title": "接口连通性检查",
+        "desc": "打开接口文档确认路径与参数。",
+        "launch": "打开接口文档"
+      }
+    },
+    "toast": {
+      "createSuccess": "密钥 \"{{name}}\" 创建成功",
+      "createError": "创建密钥失败",
+      "revokeSuccess": "密钥已删除",
+      "revokeError": "删除密钥失败",
+      "enableSuccess": "已启用",
+      "enableError": "启用失败",
+      "disableSuccess": "已停用",
+      "disableError": "停用失败",
+      "rotateError": "轮转失败",
+      "oldTokenInvalidated": "旧 Token 已失效",
+      "rotateConfirmError": "确认轮转失败",
+      "copyKeySuccess": "完整密钥已复制到剪贴板",
+      "copyKeyError": "获取密钥失败，请稍后重试",
+      "copyKeyClipboardError": "写入剪贴板失败，请检查浏览器权限",
+      "copySecretSuccess": "密钥已复制",
+      "copyNewTokenSuccess": "新 Token 已复制",
+      "copyNewTokenError": "复制新 Token 失败",
+      "copyNewMaskedSuccess": "新 Token 掩码已复制",
+      "copyFullKeySuccess": "完整 Key 已复制",
+      "copyFullKeyError": "复制完整 Key 失败",
+      "copyMaskedSuccess": "掩码 Key 已复制"
+    },
+    "emptyFiltered": {
+      "title": "没有符合筛选条件的 Key",
+      "desc": "试试调整类型、状态、负责人筛选或搜索关键词",
+      "clear": "清空筛选"
+    },
+    "emptyWorkspace": {
+      "title": "当前工作空间还没有 API Key",
+      "desc": "创建第一个 API Key，即可获取运行凭证接入模型调用"
+    },
+    "emptySelfScope": {
+      "title": "你名下暂无 API Key",
+      "desc": "仅展示由你负责的 Key；如需新的 Key，请联系空间负责人创建或指派给你"
+    },
+    "detail": {
+      "title": "API Key 详情",
+      "basic": "基础信息",
+      "usage": "用量",
+      "securityGuardrails": "安全护栏",
+      "lastCall": "最近调用",
+      "jumpLogs": "跳转日志",
+      "audit": "操作审计",
+      "noAudit": "暂无审计记录（审计接口待上线）",
+      "requestCountValue": "{{count}} requests"
+    },
+    "auditAction": {
+      "issued": "创建 API Key",
+      "updated": "更新 API Key",
+      "enabled": "启用 API Key",
+      "disabled": "停用 API Key",
+      "rotated": "轮转 API Key",
+      "revoked": "删除 API Key",
+      "revealed": "复制完整 Key"
+    },
+    "detailError": {
+      "title": "详情加载失败",
+      "desc": "无法获取该 Key 的最新详情，请重试",
+      "retry": "重试"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "models": {
+    "detail": {
+      "tabOverview": "基本参数",
+      "pricing": "计费规格",
+      "pricingInput": "输入价格",
+      "pricingOutput": "输出价格",
+      "pricingCacheRead": "缓存读取",
+      "pricingCacheWrite": "缓存写入",
+      "contextLength": "上下文窗口"
+    },
+    "card": {
+      "context": "上下文",
+      "inputPrice": "输入",
+      "outputPrice": "输出"
+    },
+    "modality": {
+      "text": "文本",
+      "image": "图像",
+      "audio": "音频",
+      "video": "视频",
+      "file": "文件",
+      "embedding": "向量",
+      "reranker": "重排"
+    }
+  }
+}

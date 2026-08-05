@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next'
 import { LuZap, LuChevronRight, LuExternalLink, LuKey } from 'react-icons/lu'
 import { appToast } from '@/lib/app-toast'
 import { getRequestErrorMessage } from '@/lib/request-error-message'
-import { appendThemeParam } from '@/lib/theme'
+import { appendCrossSiteParams } from '@/lib/cross-site-link'
 import { trackEvent } from '@/lib/track'
 import { pageItems } from '@/lib/utils'
 import { useTrackContext } from '@/hooks/use-track-context'
@@ -142,7 +142,7 @@ function ConnectModalContent({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
     openAIBaseUrl,
     anthropicBaseUrl,
     createdKeyText: selectedKey?.masked ?? createdKeyText,
-    docsUrl: appendThemeParam(docsUrl),
+    docsUrl: appendCrossSiteParams(docsUrl),
     t,
     models: {
       'cc-switch': modelFor('cc-switch') || undefined,
@@ -325,7 +325,7 @@ function ConnectModalContent({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
           <div className="flex items-center justify-between gap-3">
             <div className="text-xs font-bold text-mg-text-2">{t('apiKeys.connectModal.method')}</div>
             <a
-              href={appendThemeParam(docsUrl)}
+              href={appendCrossSiteParams(docsUrl)}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1 text-xs font-bold text-brand-base hover:text-brand-deep hover:underline"

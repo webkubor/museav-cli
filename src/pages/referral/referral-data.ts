@@ -16,7 +16,7 @@ export interface ReferralStats {
   activeInvited: number
   /** 已邀请总数 */
   invitedTotal: number
-  /** 奖励余额（可转入主余额） */
+  /** 奖励余额（PRD 1.0.4 §8.1：不出现转入操作暗示，调用时在主余额前自动抵扣） */
   rewardBalance: string
 }
 
@@ -84,21 +84,7 @@ export const referralCopy = {
     kpiMonthCommission: '本月返佣',
     kpiTodayCommission: '今日返佣',
     kpiActive: '活跃 / 已邀请',
-    kpiRewardBalance: '奖励余额（可转入主余额）',
-    transferToBalance: '转入主余额',
-    transferTitle: '返佣转入余额',
-    transferModalHint: '可提取 {balance} · 单次≥¥100',
-    transferConfirm: '确认转入',
-    transferBalanceLabel: '可转入奖励余额',
-    ruleMin: '单次 ≥ ¥100',
-    amountLabel: '转入金额',
-    fillAll: '全部转入',
-    errTooLow: '单次最低 ¥100',
-    errExceed: '超出可用奖励余额',
-    cancel: '取消',
-    transferSuccess: '已成功转入 {amount} 到主余额',
-    belowMin: '奖励余额需满 ¥100 才可操作',
-    transferFailed: '转入失败，请稍后重试',
+    kpiRewardBalance: '奖励余额',
     inviteLinkLabel: '我的专属邀请链接',
     copy: '复制',
     copied: '已复制',
@@ -144,21 +130,7 @@ export const referralCopy = {
     kpiMonthCommission: 'This Month',
     kpiTodayCommission: 'Today',
     kpiActive: 'Active / Invited',
-    kpiRewardBalance: 'Reward Balance (transferable)',
-    transferToBalance: 'To Main Balance',
-    transferTitle: 'Transfer to Main Balance',
-    transferModalHint: 'Available {balance} · min ¥100 per transfer',
-    transferConfirm: 'Confirm Transfer',
-    transferBalanceLabel: 'Transferable reward balance',
-    ruleMin: 'Min ¥100 per request',
-    amountLabel: 'Amount',
-    fillAll: 'Max',
-    errTooLow: 'Minimum ¥100 per request',
-    errExceed: 'Exceeds available balance',
-    cancel: 'Cancel',
-    transferSuccess: 'Successfully transferred {amount} to main balance',
-    belowMin: 'Reward balance must reach ¥100 to proceed',
-    transferFailed: 'Transfer failed, please retry later',
+    kpiRewardBalance: 'Reward Balance',
     inviteLinkLabel: 'My Referral Link',
     copy: 'Copy',
     copied: 'Copied',

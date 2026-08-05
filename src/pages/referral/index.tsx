@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
-import { cn, formatMoney } from '@/lib/utils'
+import { formatMoney } from '@/lib/utils'
 import { useTranslation } from 'react-i18next'
 import { LuCoins, LuTrendingUp, LuUsers, LuWallet, LuSparkles, LuLock } from 'react-icons/lu'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { KpiCard } from '@/components/ui/KpiCard'
-import { Button } from '@/components/ui/Button'
 import { TruncatedText } from '@/components/ui/TruncatedText'
 import {
   Table,
@@ -15,16 +14,13 @@ import {
   TableCell,
 } from '@/components/ui/Table'
 import { Pagination } from '@/components/ui/Pagination'
-import { Modal } from '@/components/ui/Modal'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { ReferralInviteCard } from '@/components/referral/ReferralInviteCard'
 import { FirstChargeLockGate } from '@/components/ui/FirstChargeLockGate'
-import { appToast } from '@/lib/app-toast'
 import { formatDateTime } from '@/lib/format-date'
 import { useAuthStore } from '@/store/auth'
-import { usePermissions } from '@/hooks/use-permissions'
-import { PERMS } from '@/config/permissions'
-import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query'
+import { useCurrency } from '@/hooks/use-platform-config'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { useCursorPager } from '@/hooks/use-cursor-pager'
 import { trackPageView } from '@/lib/track'
 
@@ -32,7 +28,6 @@ import {
   getReferralOverview,
   listReferralInvitees,
   listRewardRecords,
-  transferRewardToBalance,
 } from '@/services/referral'
 
 import {
@@ -48,16 +43,14 @@ type TabKey = 'invitees' | 'commissions'
 
 export default function ReferralPage() {
   const { i18n } = useTranslation()
-  const { hasPermission } = usePermissions()
-  // 转入主余额入口：现网老功能，referral.reward:transfer 权限门；V1.0.3 范围内保留（1.0.4 才移除，不提前套用）
-  const canTransfer = hasPermission(PERMS.REFERRAL_REWARD_TRANSFER)
   const text = i18n.language.startsWith('zh') ? referralCopy.zh : referralCopy.en
+  // 金额符号走全局结算币种（platform-config.settlement_currency），#372
+  const { symbol } = useCurrency()
 
   // 推荐计划按当前租户隔离：从哪个租户发出邀请，返佣就进入哪个租户的奖励余额。
   const tenantId = useAuthStore(
     (s) => s.activeTenantId ?? s.tenants.find((t) => t.is_default)?.tenant_id ?? ''
   )
-  const queryClient = useQueryClient()
 
   useEffect(() => {
     trackPageView('referral')
@@ -122,125 +115,7 @@ export default function ReferralPage() {
   // 未首充时 inviteCode 为空字符串：整页门槛态
   const isQualified = !!inviteCode
 
-  /** 转出成功后刷新所有受影响的余额与记录视图 */
-  const invalidateMoneyViews = () => {
-    queryClient.invalidateQueries({ queryKey: ['referral', 'overview', tenantId] })
-    queryClient.invalidateQueries({ queryKey: ['referral', 'reward-records', tenantId] })
-    queryClient.invalidateQueries({ queryKey: ['balance', tenantId] })
-    queryClient.invalidateQueries({ queryKey: ['balance', 'breakdown', tenantId] })
-    queryClient.invalidateQueries({ queryKey: ['billing', 'recharges', tenantId] })
-  }
-
-  const MIN_AMOUNT = 100
-
   const [activeTab, setActiveTab] = useState<TabKey>('invitees')
-  // 稳定幂等键：打开弹窗时生成，确认重试期间复用；金额修改即重铸。
-  const [idempotencyKey, setIdempotencyKey] = useState('')
-
-  // 转入主余额弹窗
-  const [transferOpen, setTransferOpen] = useState(false)
-  const [transferAmount, setTransferAmount] = useState('')
-
-  const transferNum = Number(transferAmount)
-  const transferValid = transferNum >= MIN_AMOUNT && transferNum <= rewardBalance
-
-  const handleTransfer = () => {
-    if (rewardBalance < MIN_AMOUNT) {
-      appToast.info(text.belowMin)
-      return
-    }
-    setIdempotencyKey(crypto.randomUUID())
-    setTransferAmount(String(rewardBalance))
-    setTransferOpen(true)
-  }
-
-  /** 金额一旦修改即重铸幂等键：同键不同额会被后端按原额重放，必须避免 */
-  const onTransferAmountChange = (v: string) => {
-    setIdempotencyKey(crypto.randomUUID())
-    setTransferAmount(v)
-  }
-
-  const transferMutation = useMutation({
-    mutationFn: () =>
-      transferRewardToBalance(tenantId, {
-        amount: String(transferNum),
-        idempotency_key: idempotencyKey,
-      }),
-    onSuccess: () => {
-      invalidateMoneyViews()
-      setTransferOpen(false)
-      appToast.success(text.transferSuccess.replace('{amount}', formatMoney(transferNum)))
-    },
-    onError: (err: Error) => appToast.requestError(err, text.transferFailed),
-  })
-
-  const confirmTransfer = () => {
-    if (!transferValid || transferMutation.isPending) return
-    transferMutation.mutate()
-  }
-
-  /** 金额只留数字 + 最多一个小数点、两位小数（type=text 规避原生 spinner 与 step 校验气泡） */
-  const sanitizeAmount = (raw: string) => {
-    const cleaned = raw.replace(/[^\d.]/g, '').replace(/^(\d*\.\d*).*$/, '$1')
-    const [int, dec] = cleaned.split('.')
-    return dec !== undefined ? `${int}.${dec.slice(0, 2)}` : cleaned
-  }
-
-  /** 金额校验的内联错误（替代原生 tooltip）：仅在有输入时提示 */
-  const amountError = (raw: string) => {
-    if (!raw.trim()) return null
-    const n = Number(raw)
-    if (!(n >= MIN_AMOUNT)) return text.errTooLow
-    if (n > rewardBalance) return text.errExceed
-    return null
-  }
-
-  /** 余额面板：弹窗头部的可用额度 + 规则说明 */
-  const balancePanel = (label: string) => (
-    <div className="flex items-center justify-between rounded-lg border border-mg-border/60 bg-mg-fill-0/50 px-4 py-3">
-      <div>
-        <div className="text-xs text-mg-text-3">{label}</div>
-        <div className="mt-0.5 font-mono text-xl font-bold tabular-nums text-mg-text-1">{formatMoney(rewardBalance)}</div>
-      </div>
-      <span className="rounded-full border border-mg-border/60 bg-mg-fill-0/60 px-2.5 py-1 text-xs font-semibold text-mg-text-2">
-        {text.ruleMin}
-      </span>
-    </div>
-  )
-
-  /** 大号金额输入：¥ 前缀 + 快捷全部 + 内联错误 */
-  const moneyField = (value: string, onChange: (v: string) => void, fillLabel: string) => {
-    const error = amountError(value)
-    return (
-      <div>
-        <div
-          className={cn(
-            'flex items-center gap-2 rounded-lg border bg-mg-fill-0/40 px-4 py-3 transition-colors',
-            error ? 'border-mg-danger/60' : 'border-mg-border focus-within:border-brand-base',
-          )}
-        >
-          <span className="text-lg font-semibold text-mg-text-3">¥</span>
-          <input
-            type="text"
-            inputMode="decimal"
-            value={value}
-            onChange={(e) => onChange(sanitizeAmount(e.target.value))}
-            placeholder="0.00"
-            className="min-w-0 flex-1 bg-transparent font-mono text-2xl font-bold tabular-nums text-mg-text-1 outline-none placeholder:text-mg-text-4"
-          />
-          <button
-            type="button"
-            onClick={() => onChange(String(rewardBalance))}
-            className="shrink-0 text-xs font-bold text-brand-base transition-colors hover:text-brand-deep"
-          >
-            {fillLabel}
-          </button>
-        </div>
-        {error && <p className="mt-1.5 text-xs text-mg-danger">{error}</p>}
-      </div>
-    )
-  }
-
   const tabs: { key: TabKey; label: string }[] = [
     { key: 'invitees', label: text.tabInvitees },
     { key: 'commissions', label: text.tabCommissions },
@@ -264,18 +139,18 @@ export default function ReferralPage() {
       <div className="no-canvas-blur grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
         <KpiCard
           title={text.kpiTotalCommission}
-          value={formatMoney(stats.totalCommission)}
+          value={formatMoney(stats.totalCommission, symbol)}
           rawNumber={stats.totalCommission}
-          formatter={(n) => formatMoney(n)}
+          formatter={(n) => formatMoney(n, symbol)}
           icon={<LuCoins size={16} />}
           color="var(--brand-base)"
           glowColor="var(--brand-glow)"
         />
         <KpiCard
           title={text.kpiMonthCommission}
-          value={formatMoney(stats.monthCommission)}
+          value={formatMoney(stats.monthCommission, symbol)}
           rawNumber={stats.monthCommission}
-          formatter={(n) => formatMoney(n)}
+          formatter={(n) => formatMoney(n, symbol)}
           icon={<LuTrendingUp size={16} />}
           color="var(--brand-base)"
           glowColor="var(--brand-glow)"
@@ -293,13 +168,12 @@ export default function ReferralPage() {
 
         <KpiCard
           title={text.kpiRewardBalance}
-          value={formatMoney(rewardBalance)}
+          value={formatMoney(rewardBalance, symbol)}
           rawNumber={rewardBalance}
-          formatter={(n) => formatMoney(n)}
+          formatter={(n) => formatMoney(n, symbol)}
           icon={<LuWallet size={16} />}
           color="var(--brand-base)"
           glowColor="var(--brand-glow)"
-          action={canTransfer && rewardBalance > 0 ? { label: text.transferToBalance, onClick: handleTransfer } : undefined}
         />
       </div>
 
@@ -346,9 +220,10 @@ export default function ReferralPage() {
                   </div>
                   <div className="flex items-center gap-4">
                     <span className="text-xs text-mg-text-3">
-                      {t.threshold === 0
-                        ? (isZh ? '累计消费 ≥ ¥0' : 'Spend ≥ ¥0')
-                        : (isZh ? `累计消费 ≥ ¥${t.threshold.toLocaleString()}` : `Spend ≥ ¥${t.threshold.toLocaleString()}`)}
+                      {/* 符号走全局结算币种（#372）；门槛数值仍是前端 mock，等 #220 后端接口下发 */}
+                      {isZh
+                        ? `累计消费 ≥ ${symbol}${t.threshold.toLocaleString()}`
+                        : `Spend ≥ ${symbol}${t.threshold.toLocaleString()}`}
                     </span>
                     <span className="text-sm font-bold tabular-nums text-mg-text-1">
                       {t.rate}%
@@ -465,31 +340,6 @@ export default function ReferralPage() {
         </Tabs>
       </div>
 
-      {/* 转入主余额 */}
-      <Modal
-        open={transferOpen}
-        onClose={() => setTransferOpen(false)}
-        title={text.transferTitle}
-        size="sm"
-        footer={
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setTransferOpen(false)}>
-              {text.cancel}
-            </Button>
-            <Button variant="brand" disabled={!transferValid} onClick={confirmTransfer}>
-              {transferValid ? `${text.transferConfirm} ${formatMoney(transferNum)}` : text.transferConfirm}
-            </Button>
-          </div>
-        }
-      >
-        <div className="space-y-4 py-1">
-          {balancePanel(text.transferBalanceLabel)}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-mg-text-2">{text.amountLabel}</label>
-            {moneyField(transferAmount, onTransferAmountChange, text.fillAll)}
-          </div>
-        </div>
-      </Modal>
     </div>
   )
 }
@@ -538,6 +388,9 @@ function InviteesTable({
   onPrev: () => void
   onNext: () => void
 }) {
+  // 金额符号走全局结算币种（#372）——同一全局值，子组件各自读，不做 props 穿透
+  const { symbol } = useCurrency()
+
   if (!isQualified) {
     return (
       <div className="py-12 flex flex-col items-center gap-3 text-center">
@@ -575,8 +428,8 @@ function InviteesTable({
                   <TruncatedText text={inv.name} maxWidth={180} className="font-medium text-mg-text-1" />
                   <TruncatedText text={inv.email} maxWidth={180} className="text-xs text-mg-text-3 mt-0.5" />
                 </TableCell>
-                <TableCell className="text-right font-mono">{formatMoney(inv.totalSpend)}</TableCell>
-                <TableCell className="text-right font-mono">{formatMoney(inv.commission)}</TableCell>
+                <TableCell className="text-right font-mono">{formatMoney(inv.totalSpend, symbol)}</TableCell>
+                <TableCell className="text-right font-mono">{formatMoney(inv.commission, symbol)}</TableCell>
                 <TableCell>{inv.registeredAt}</TableCell>
                 <TableCell>
                   <TierBadge name={tierName} rate={tierRate} fallback={text.notYet} />
@@ -620,6 +473,8 @@ function CommissionsTable({
   onPrev: () => void
   onNext: () => void
 }) {
+  const { symbol } = useCurrency()
+
   return (
     <>
     <Table>
@@ -648,9 +503,9 @@ function CommissionsTable({
               <TableCell>
                 <TierBadge name={rec.tierName} fallback={text.notYet} />
               </TableCell>
-              <TableCell className="text-right font-mono">{formatMoney(rec.spend)}</TableCell>
+              <TableCell className="text-right font-mono">{formatMoney(rec.spend, symbol)}</TableCell>
               <TableCell className="text-right font-mono">{rec.rate}%</TableCell>
-              <TableCell className="text-right font-mono">{formatMoney(rec.amount)}</TableCell>
+              <TableCell className="text-right font-mono">{formatMoney(rec.amount, symbol)}</TableCell>
             </TableRow>
           ))
         )}

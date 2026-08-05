@@ -103,11 +103,49 @@ for (const key of languageKeys.en) {
   if (!languageKeys.zh.has(key)) errors.push(`zh 缺少 key：${key}`)
 }
 
-for (const ref of staticTranslationRefs(namespaces)) {
+const translationRefs = staticTranslationRefs(namespaces)
+
+for (const ref of translationRefs) {
   for (const language of languages) {
     if (!languageKeys[language].has(ref.key)) {
       errors.push(`${ref.file}:${ref.line} 引用了缺失 key：${ref.key} (${language})`)
     }
+  }
+}
+
+/**
+ * 全局壳层（每个路由都渲染）只允许用核心 namespace。
+ *
+ * 非核心 namespace 是路由级懒加载的（App.tsx CONSOLE_NAMESPACES 按页声明），壳层组件在**所有**
+ * 路由渲染，引用懒加载文案 → 在没声明该 namespace 的页面上退化成 raw i18n key。
+ * 真实事故：DashboardHeader 的「创建企业」弹窗按钮借用 `apiKeys.createModal.*`，在总览页
+ * 显示成 `apiKeys.createModal.confirm`（需求方 shared/modelgo_prd#375）。
+ *
+ * 核心 namespace 列表从 src/i18n.ts 抽取，不在此处重复维护。
+ * 例外：壳层里渲染的**弹窗**若自带 <LocaleNamespaces> 兜底（如 ConnectModal），文案写在它自己的
+ * 文件里，不落在本目录，故不受本规则约束。
+ */
+const SHELL_DIRS = ['src/components/layout']
+const coreNamespaces = (() => {
+  const source = fs.readFileSync(path.join(root, 'src/i18n.ts'), 'utf8')
+  const match = source.match(/const coreLocaleNamespaces = \[([^\]]*)\]/)
+  if (!match) {
+    errors.push('scripts/check-i18n.mjs 无法从 src/i18n.ts 解析 coreLocaleNamespaces，请同步脚本')
+    return null
+  }
+  return new Set(match[1].match(/'([^']+)'/g).map((quoted) => quoted.slice(1, -1)))
+})()
+
+if (coreNamespaces) {
+  for (const ref of translationRefs) {
+    if (!SHELL_DIRS.some((dir) => ref.file.startsWith(dir))) continue
+    const namespace = ref.key.split('.')[0]
+    if (coreNamespaces.has(namespace)) continue
+    errors.push(
+      `${ref.file}:${ref.line} 全局壳层引用了懒加载 namespace「${namespace}」的文案：${ref.key}` +
+      `（壳层每页都渲染，未加载该 namespace 的页面会显示 raw key）。` +
+      `改用核心 namespace（${[...coreNamespaces].join('/')}），或把该 UI 拆成自带 <LocaleNamespaces> 的组件。`
+    )
   }
 }
 

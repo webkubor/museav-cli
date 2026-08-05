@@ -16,6 +16,7 @@ import { trackEvent } from '@/lib/track'
 import { pageItems } from '@/lib/utils'
 import { useTrackContext } from '@/hooks/use-track-context'
 import { useAuthStore } from '@/store/auth'
+import { LocaleNamespaces } from '@/components/i18n/LocaleNamespaces'
 import { CONNECT_ACTIONS, buildConnectSnippets, getConnectAction, MGC_CLIENT_OPTIONS, connectActionLabel, deriveRegionFromBaseUrl, buildMgcCommand, type ConnectParam } from './constants'
 import { buildConnectModelOptions, pickConnectModels } from './connect-models'
 import { useQuery } from '@tanstack/react-query'
@@ -32,7 +33,25 @@ type Props = {
   onCreateKey?: () => void
 }
 
-export function ConnectModal({ open, onClose, openAIBaseUrl, anthropicBaseUrl, createdKeyText, docsUrl, onCreateKey }: Props) {
+/**
+ * 本弹窗的文案全在 `apiKeys` 语言包里，而它是**路由级懒加载**的（App.tsx CONSOLE_NAMESPACES
+ * 只给 api-keys / observability / models 系路由加载）。但弹窗有三个渲染点，两个不在这些路由里：
+ * 全局顶栏 DashboardHeader、总览页 QuickStartSection —— 在那些页面点开，文案会整片退化成
+ * `apiKeys.connectModal.title` 这样的 raw key（需求方 shared/modelgo_prd#375，国际站生产复现）。
+ *
+ * 所以 namespace 由弹窗自己兜底，而不是要求每个调用方记得在路由上挂 `apiKeys`——调用点会越加越多，
+ * 靠约定必然再漏。`open=false` 时不挂载，语言包只在真正点开时才拉，不破坏懒加载省流量的初衷。
+ */
+export function ConnectModal(props: Props) {
+  if (!props.open) return null
+  return (
+    <LocaleNamespaces namespaces={['apiKeys']} fallback={null}>
+      <ConnectModalContent {...props} />
+    </LocaleNamespaces>
+  )
+}
+
+function ConnectModalContent({ open, onClose, openAIBaseUrl, anthropicBaseUrl, createdKeyText, docsUrl, onCreateKey }: Props) {
   const { t } = useTranslation()
   const trackCtx = useTrackContext()
   const hasCreatedKey = createdKeyText.trim().length > 0

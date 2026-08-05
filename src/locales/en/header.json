@@ -14,6 +14,7 @@
     "organizations": "Organizations",
     "manageOrg": "Manage this organization",
     "createOrg": "Create Organization",
+    "createOrgSubmit": "Create Now",
     "orgSettings": "Organization Settings",
     "switchedOrg": "Switched to organization: {{name}}",
     "switchTenantFailed": "Failed to switch organization. Please try again.",

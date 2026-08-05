@@ -420,11 +420,14 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
             />
           </div>
           <DialogFooter>
+            {/* 顶栏是全局的，文案只能用核心 namespace（common/header 静态导入）。
+                原先借用 apiKeys.createModal.*，而 apiKeys 是路由级懒加载 → 在总览等页面
+                点「创建企业」按钮会显示 raw key（同 #375 根因）。 */}
             <Button variant="ghost" onClick={() => setOrgModalVisible(false)}>
-              {t('apiKeys.createModal.cancel')}
+              {t('common.cancel')}
             </Button>
             <Button variant="brand" loading={createOrgMutation.isPending} onClick={handleCreateOrgSubmit}>
-              {t('apiKeys.createModal.confirm')}
+              {t('header.createOrgSubmit')}
             </Button>
           </DialogFooter>
         </DialogContent>

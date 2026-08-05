@@ -14,6 +14,7 @@
     "organizations": "企业",
     "manageOrg": "管理此企业",
     "createOrg": "创建企业",
+    "createOrgSubmit": "立即创建",
     "orgSettings": "企业设置",
     "switchedOrg": "已切换至企业: {{name}}",
     "switchTenantFailed": "切换企业失败，请重试。",

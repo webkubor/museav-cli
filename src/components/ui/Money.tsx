@@ -1,4 +1,5 @@
 import { cn, formatMoney } from '@/lib/utils'
+import { currencySymbol, isZhLang } from '@/features/models/model-format'
 
 /**
  * 金额统一显示组件 —— 金额样式的唯一真源（对齐 DESIGN.md「数字/金额 → JetBrains Mono + tabular-nums」）。
@@ -39,7 +40,8 @@ export function Money({
   if (amount == null || amount === '') {
     return <span className={cn('font-mono tabular-nums text-mg-text-4', SIZE[size], className)}>—</span>
   }
-  const sym = symbol ?? (currency === 'USD' ? '$' : '¥')
+  // 符号映射统一走 currencySymbol（#372），不在组件里再写一份三元
+  const sym = symbol ?? currencySymbol(currency, isZhLang())
   const text = formatMoney(amount, '')
   return (
     <span className={cn('font-mono tabular-nums whitespace-nowrap font-bold', SIZE[size], TONE[tone], className)}>

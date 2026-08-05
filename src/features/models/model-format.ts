@@ -10,10 +10,17 @@
  * 时钟判定，接口刻意不下发时间窗口），前端不得按时间自行推算；`original_price` 只是
  * 划线装饰，真实扣费价永远取 `pricing.*`。
  */
+import i18n from '@/i18n'
 import { formatContextLength, trimPriceZeros } from '@/lib/utils'
 
 /** 货币代码 → 符号（后端给的是 CNY/USD 这类代码） */
 const CCY_SYMBOL: Record<string, string> = { CNY: '¥', RMB: '¥', USD: '$', EUR: '€', '¥': '¥', $: '$' }
+
+/** 当前界面是否中文——供非组件模块（纯函数/格式化器）判断货币符号兜底，
+ *  避免各处自己写 i18n.language 判断（#372） */
+export function isZhLang(): boolean {
+  return (i18n.language || '').toLowerCase().startsWith('zh')
+}
 
 export function currencySymbol(currency: string | undefined, isZh: boolean): string {
   return CCY_SYMBOL[(currency || '').toUpperCase()] || currency || (isZh ? '¥' : '$')

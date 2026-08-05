@@ -40,7 +40,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
-import { modelVendorLabel } from '@/features/models/model-format'
+import { modelVendorLabel, currencySymbol, isZhLang } from '@/features/models/model-format'
 import { cn, formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 import {
@@ -85,7 +85,7 @@ function disableReasonOf(model: CatalogModelItem, isBalanceZero: boolean, requir
 }
 
 function priceLabel(model: CatalogModelItem): string {
-  const currency = model.pricing?.currency === 'USD' ? '$' : '¥'
+  const currency = currencySymbol(model.pricing?.currency, isZhLang())
   const unit = model.price_unit ? `/${model.price_unit}` : '/1M tokens'
   if (!isPaidModel(model)) return i18n.t('modelsExperience.picker.free')
   const input = model.pricing?.input_per_1m
@@ -94,7 +94,7 @@ function priceLabel(model: CatalogModelItem): string {
 }
 
 function cachePriceLabel(model: CatalogModelItem): string {
-  const currency = model.pricing?.currency === 'USD' ? '$' : '¥'
+  const currency = currencySymbol(model.pricing?.currency, isZhLang())
   const cache = model.pricing?.cache_read_per_1m
   if (!cache) return '—'
   return `${currency}${trimPriceZeros(cache)}/1M`
@@ -158,7 +158,7 @@ function compareRows(): Array<{ label: string; render: (m: CatalogModelItem) => 
     { label: i18n.t('modelsExperience.picker.contextWindow'), render: (m) => formatContextLength(m.context_length) },
     { label: i18n.t('modelsExperience.picker.inputPrice'), render: (m) => priceLabel(m) },
     { label: i18n.t('modelsExperience.picker.outputPrice'), render: (m) => {
-      const currency = m.pricing?.currency === 'USD' ? '$' : '¥'
+      const currency = currencySymbol(m.pricing?.currency, isZhLang())
       const output = m.pricing?.output_per_1m
       if (!isPaidModel(m)) return i18n.t('modelsExperience.picker.free')
       return output ? `${currency}${trimPriceZeros(output)}/1M` : '—'

@@ -166,6 +166,8 @@ export function getSystemThemePreference(): 'dark' | 'light' {
  * 最多 4 位小数 + 千分位；正向极小值（0<n<0.0001）显示 "< {symbol}0.0001" 而非舍入成 0；
  * 非数字按 0。symbol 传 '' 则只出数字（调用方自带货币符号时用）。
  */
+/** 金额格式化。symbol 由调用方从 useCurrency()（platform-config.settlement_currency）传入；
+ *  默认 '¥' 只是历史兜底，新代码一律显式传 symbol（#372）。 */
 export function formatMoney(amount: string | number | null | undefined, symbol = '¥'): string {
   const v = Number(amount)
   if (!Number.isFinite(v)) return `${symbol}0`

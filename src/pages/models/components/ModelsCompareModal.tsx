@@ -8,7 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { cn, formatContextLength, trimPriceZeros } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
-import { modelVendorLabel } from '@/features/models/model-format'
+import { modelVendorLabel, currencySymbol, isZhLang } from '@/features/models/model-format'
 import {
   resolveModelCategory, modelExperienceTasks, isPaidModel,
   type ExperienceCategoryKey, type ExperienceTaskType,
@@ -62,7 +62,7 @@ function formatPrice(val: string | undefined, currency: string | undefined) {
   if (!val) return '—'
   const n = parseFloat(val)
   if (isNaN(n)) return val
-  const symbol = currency === 'USD' ? '$' : '¥'
+  const symbol = currencySymbol(currency, isZhLang())
   return `${symbol}${trimPriceZeros(n)}`
 }
 

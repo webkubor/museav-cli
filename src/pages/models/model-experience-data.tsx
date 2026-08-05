@@ -60,15 +60,18 @@ export function formatPlaygroundLatency(ms: number): string {
  *  - (0, 0.01) → `<¥0.01`：单次对话消耗常在 1e-5 量级，原型的 4 位小数会渲染成 `¥0.0000`，
  *    与「免费」无法区分（shared/modelgo_prd#361）；此处改为最小可见金额兜底，不再补零到 4 位
  *  - ≥0.01 → 2 位小数 */
-export function formatSpendAmount(spend: number): string {
-  if (!(spend > 0)) return '¥0.00'
-  return spend < 0.01 ? '<¥0.01' : `¥${spend.toFixed(2)}`
+export function formatSpendAmount(spend: number, symbol: string): string {
+  // 符号由调用方从 useCurrency()（platform-config.settlement_currency）取，与 formatMoney /
+  // formatBudget 同一套模式。shared/modelgo_prd#372：此前这里写死 ¥，国际站
+  // （settlement_currency=USD）也显示人民币符号。
+  if (!(spend > 0)) return `${symbol}0.00`
+  return spend < 0.01 ? `<${symbol}0.01` : `${symbol}${spend.toFixed(2)}`
 }
 
 /** 消耗文案：免费模型显示「免费额度」，否则按 formatSpendAmount 展示金额 */
-export function formatPlaygroundSpend(metrics: Pick<ExperienceMessageMetrics, 'spend' | 'free'>): string {
+export function formatPlaygroundSpend(metrics: Pick<ExperienceMessageMetrics, 'spend' | 'free'>, symbol: string): string {
   if (metrics.free) return i18n.t('modelsExperience.freeQuota')
-  return formatSpendAmount(metrics.spend)
+  return formatSpendAmount(metrics.spend, symbol)
 }
 
 /** Token 数粗估（无 tokenizer，按字符数/4 估算）——仅作 SSE 统计帧到达前的占位，

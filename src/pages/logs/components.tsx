@@ -1,4 +1,5 @@
 import { LuInbox, LuSearch } from 'react-icons/lu'
+import { currencySymbol, isZhLang } from '@/features/models/model-format'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
@@ -227,7 +228,7 @@ export function LogsTable({
                   const shown = isModelNotStarted(row) ? null : val > 0 ? row.cost.amount : null
                   // 仅极小额(显示为「< 0.0001」的近似值)才 hover 提示精确原值，普通费用保持干净（需求方·细节）
                   const tiny = shown != null && val > 0 && val < 0.0001
-                  const sym = row.cost.currency === 'USD' ? '$' : '¥'
+                  const sym = currencySymbol(row.cost.currency, isZhLang())
                   return tiny ? (
                     <span title={t('logs.table.exactCost', { amount: `${sym}${row.cost.amount}` })} className="cursor-help border-b border-dashed border-mg-border/60">
                       <Money amount={shown} currency={row.cost.currency} />

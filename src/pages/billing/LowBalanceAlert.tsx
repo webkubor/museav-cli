@@ -6,6 +6,7 @@ import { Popover } from '@/components/ui/Popover'
 import { useTenantRole } from '@/hooks/use-tenant-role'
 import { listTenantMembers } from '@/services/tenants'
 import { getLowBalanceAlert, updateLowBalanceAlert, type SetLowBalanceAlertRequest } from '@/services/billing'
+import { currencySymbol, isZhLang } from '@/features/models/model-format'
 import { appToast } from '@/lib/app-toast'
 import { cn } from '@/lib/utils'
 import { trackEvent } from '@/lib/track'
@@ -139,7 +140,8 @@ export function LowBalanceAlert({ tenantId }: { tenantId: string }) {
           <div className="billing-low-balance-threshold flex items-center gap-1.5 h-9 px-3 rounded-md border border-mg-border shrink-0">
             {/* qa#278 二轮反馈：容器变窄时标签文字会逐字换行，缺 nowrap 保护 */}
             <span className="whitespace-nowrap text-xs text-mg-text-3">{t('billing.lowBalance.threshold', { defaultValue: '提醒阈值' })}</span>
-            <span className="text-xs text-mg-text-3">¥</span>
+            {/* 阈值币种取接口 threshold.currency（#372：此前写死 ¥，国际站也显示人民币符号） */}
+            <span className="text-xs text-mg-text-3">{currencySymbol(alert.threshold?.currency, isZhLang())}</span>
             <input
               type="number"
               min="0"

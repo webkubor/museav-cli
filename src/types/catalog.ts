@@ -112,9 +112,7 @@ export interface CatalogFeaturedSlide {
   tagline?: string
   featured_pitch?: string
   featured_pitch_en?: string
-  /** default_01..default_05；为空时按 model_id 稳定映射 */
-  background_key?: string
-  /** 可选底部装饰图；失效只隐藏装饰，不破图 */
+  /** 可选 banner 背景图；失效时回退默认底色，不破图 */
   bottom_image_url?: string
   logo_url?: string
   input_price: string

@@ -12,7 +12,7 @@
  * - 圆点在下方居中，激活的加宽。
  *
  * 项数边界：0 项整块不渲染；1 项静态展示（无圆点、不自动播）。
- * background_key 为空时按 model_id 稳定映射，同一模型底色恒定不闪。
+ * 背景使用后台配置的 bottom_image_url 铺满展示；无图时只保留中性兜底。
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { currencySymbol, isZhLang } from '@/features/models/model-format'
@@ -22,15 +22,6 @@ import { trimPriceZeros } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
 import { trackEvent } from '@/lib/track'
 import type { CatalogFeaturedSlide } from '@/types'
-
-/** 五张内置背景，对应后端 background_key 的 default_01..default_05。 */
-const BACKGROUND_KEYS = ['default_01', 'default_02', 'default_03', 'default_04', 'default_05'] as const
-
-function fallbackBackgroundKey(modelId: string): string {
-  let hash = 0
-  for (let i = 0; i < modelId.length; i += 1) hash = (hash * 31 + modelId.charCodeAt(i)) % 997
-  return BACKGROUND_KEYS[hash % BACKGROUND_KEYS.length]
-}
 
 const AUTOPLAY_MS = 5000
 
@@ -47,8 +38,7 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const [active, setActive] = useState(0)
   const [paused, setPaused] = useState(false)
-  // 底部图片加载失败/为空时隐藏图片、回退水印字母兜底（PRD §模型广场 AC-24：
-  // 缺失或加载失败时仅隐藏该图片，继续展示默认背景图和文本内容，不显示破图）。
+  // 背景图片加载失败/为空时回退默认底色 + 水印字母，不显示破图。
   const [bottomImageFailed, setBottomImageFailed] = useState<Record<string, boolean>>({})
 
   const count = slides.length
@@ -94,7 +84,6 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
         carousel_item_id: current.carousel_item_id,
         model_id: current.model_id,
         position: safeIndex,
-        background_key: current.background_key || fallbackBackgroundKey(current.model_id),
         has_bottom_image: Boolean(current.bottom_image_url),
       })
       impressedKeyRef.current = current.carousel_item_id
@@ -128,7 +117,7 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
     >
       <div className="mg-featured-track">
         {rendered.map(({ slide, index, offset, isActive, hidden }) => {
-          const bgKey = slide.background_key || fallbackBackgroundKey(slide.model_id)
+          const hasBackgroundImage = Boolean(slide.bottom_image_url && !bottomImageFailed[slide.carousel_item_id])
           const pitch =
             (isZh ? slide.featured_pitch : slide.featured_pitch_en || slide.featured_pitch) ||
             slide.tagline ||
@@ -142,7 +131,7 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
           return (
             <article
               key={slide.carousel_item_id}
-              className={`mg-featured-slide mg-featured-bg-${bgKey}${isActive ? ' is-active' : ''}${hidden ? ' is-hidden' : ''}`}
+              className={`mg-featured-slide${hasBackgroundImage ? ' has-bg-image' : ''}${isActive ? ' is-active' : ''}${hidden ? ' is-hidden' : ''}`}
               style={{ ['--slide-offset' as string]: String(offset) }}
               aria-hidden={hidden}
               onClick={() => {
@@ -160,10 +149,8 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
                 }
               }}
             >
-              {/* 底部图片（PRD §模型广场 AC-24，后台可为单模型配置）：图片不遮挡名称/
-                  文案/价格/CTA——放在水印字母同一视觉层级（z-index 低于 copy/actions），
-                  配置了且未加载失败才展示；否则回退巨大水印首字母（与原型一致）。 */}
-              {slide.bottom_image_url && !bottomImageFailed[slide.carousel_item_id] ? (
+              {/* 后台配置图直接作为 banner 背景；无图或加载失败才回退水印首字母。 */}
+              {hasBackgroundImage ? (
                 <img
                   className="mg-featured-bottom-image"
                   src={slide.bottom_image_url}

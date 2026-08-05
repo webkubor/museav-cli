@@ -145,9 +145,6 @@ export default defineConfig(({ mode }) => {
       },
     },
   },
-  optimizeDeps: {
-    include: ['lottie-react'],
-  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

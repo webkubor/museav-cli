@@ -63,6 +63,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       onClick?.(e)
     }
 
+    // 原生 date/datetime 控件语言跟随浏览器而非站点语言，显式用 html lang（i18n 已同步）纠偏（需求方#456）
+    const resolvedLang = props.lang ?? (isDateLike && typeof document !== 'undefined' ? document.documentElement.lang || undefined : undefined)
+
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
       if (shouldTrim && e.target.value !== e.target.value.trim()) {
         const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set
@@ -98,6 +101,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           onClick={handleClick}
           onBlur={handleBlur}
           {...props}
+          lang={resolvedLang}
         />
         {suffix && (
           <span className="modern-input-suffix inline-flex items-center text-mg-text-3 shrink-0 transition-colors duration-200">

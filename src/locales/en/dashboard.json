@@ -43,10 +43,10 @@
       },
       "quickStart": {
         "title": "Quick start",
-        "subtitle": "3 steps to your first model call",
+        "subtitle": "3 steps to your first API call",
         "dismiss": "Dismiss",
         "step1Title": "Create API Key",
-        "step1Desc": "Create a key for local development or server-side calls.",
+        "step1Desc": "Create a key for local development or server-side applications.",
         "step1Action": "Create",
         "step2Title": "Configure client",
         "step2Desc": "Copy the Base URL and API Key into your SDK or HTTP client.",
@@ -56,12 +56,12 @@
         "step3Action": "View logs",
         "cliTitle": "Set up local dev in one command",
         "cliBadge": "Recommended",
-        "cliHint": "Run the command below in your terminal to auto-write Base URL and API Key",
+        "cliHint": "Run the command below in your terminal to automatically configure the Base URL and API key",
         "cliCopied": "Command copied to clipboard",
         "copyCliAria": "Copy command",
         "cliCopyFailed": "Copy failed. Please copy manually.",
         "cliHintPrefix": "Run ",
-        "cliHintSuffix": " to auto-write Base URL and API Key."
+        "cliHintSuffix": " to automatically configure the Base URL and API key."
       },
       "periodLabel": {
         "day": "Today",
@@ -115,8 +115,8 @@
         "models": "Model usage",
         "myModels": "My model usage",
         "members": "Member usage",
-        "apiKeys": "API Keys usage",
-        "myApiKeys": "My API Keys usage",
+        "apiKeys": "API Key usage",
+        "myApiKeys": "My API key usage",
         "viewMore": "View more",
         "empty": "No data",
         "emptyHint": "Send a test request and your usage ranking will show here",

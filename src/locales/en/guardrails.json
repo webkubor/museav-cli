@@ -10,12 +10,12 @@
       "key": "Key"
     },
     "kind": {
-      "regular": "Regular",
-      "boost": "Boost"
+      "regular": "Standard",
+      "boost": "Temporary Increase"
     },
     "label": {
       "scopeGuardrail": "{{scope}} Guardrail",
-      "kindGuardrail": "{{kind}} Guardrail"
+      "kindGuardrail": "{{kind}}"
     },
     "section": {
       "global": "Global Guardrails",
@@ -34,7 +34,7 @@
       "defaultKey": "Default Key Budget",
       "member": "Member Budget",
       "key": "Key Budget",
-      "boost": "Boost Budget",
+      "boost": "Temporary Budget Limit",
       "unlimited": "Unlimited",
       "limited": "Limited",
       "modeAria": "{{label}} limit mode",
@@ -52,7 +52,7 @@
       "global": "Global Guardrails",
       "member": "Member Guardrails",
       "key": "Key Guardrails",
-      "boost": "Boost Guardrails"
+      "boost": "Temporary Increases"
     },
     "table": {
       "name": "Name",
@@ -83,7 +83,7 @@
       "promptInjection": "Prompt Injection",
       "creator": "Creator",
       "updatedAt": "Updated At",
-      "boostExpiresAt": "Boost Expiration",
+      "boostExpiresAt": "Expiration",
       "notApplicable": "N/A",
       "neverExpires": "Never expires",
       "searchPlaceholder": "Search guardrail name",
@@ -101,6 +101,10 @@
         "notApplicableTitle": "Regular guardrails do not have boost expiration.",
         "expiryTitle": "The boost guardrail becomes inactive after expiration.",
         "neverTitle": "No expiration is set; this boost remains effective."
+      },
+      "kindBadge": {
+        "regular": "Standard",
+        "boost": "Increase"
       }
     },
     "form": {
@@ -127,7 +131,7 @@
       "kindLabel": "Guardrail Type",
       "boundApiKeyLabel": "Bound API Key",
       "apiKeysPlaceholder": "Search API Key",
-      "boostExpiresAtLabel": "Boost Expiration",
+      "boostExpiresAtLabel": "Expires",
       "noBindableMembers": "No bindable members in the current workspace.",
       "noBindableApiKeys": "No bindable API Keys in the current workspace. Create one on the API Keys page first.",
       "noCreateScopePermission": "You do not have permission to create {{scope}} guardrails.",
@@ -137,20 +141,20 @@
       "isDefaultHint": "Automatically apply to all requests"
     },
     "promptInjection": {
-      "label": "Prompt Injection Detection",
+      "label": "Prompt Injection Protection",
       "inherit": "Inherit Global Guardrail",
-      "hitBehavior": "Hit behavior",
-      "summaryHint": "Log only=record hits and send the original content; Redact=replace matched content before sending; Block=reject the request directly",
+      "hitBehavior": "When Triggered",
+      "summaryHint": "Flag=record the event and send the original request; Redact=replace the detected content before sending; Block=reject the request before it reaches the model",
       "mode": {
         "off": "Off",
-        "flag": "Log only",
+        "flag": "Flag",
         "redact": "Redact",
         "block": "Block"
       },
       "hint": {
-        "flag": "Record the hit and send the original request content.",
-        "redact": "Replace matched content with [PROMPT_INJECTION] before sending.",
-        "block": "Reject the request directly without sending it to the model."
+        "flag": "Record the event and send the original request.",
+        "redact": "Replace the detected content with [PROMPT_INJECTION], then send the request.",
+        "block": "Reject the request before it reaches the model."
       }
     },
     "audit": {

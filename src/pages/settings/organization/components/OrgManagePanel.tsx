@@ -59,9 +59,9 @@ export function OrgManagePanel({
           <span className="text-brand-base font-bold text-lg">M</span>
         </div>
         <div className="space-y-1">
-          <h3 className="text-sm font-bold text-mg-text-1">暂无可管理的企业</h3>
+          <h3 className="text-sm font-bold text-mg-text-1">{t('enterprise.empty.noManageableTitle')}</h3>
           <p className="text-xs text-mg-text-3 max-w-xs mx-auto leading-relaxed">
-            当前账号下没有企业组织。可在顶栏租户切换器创建企业后再来管理。
+            {t('enterprise.empty.noManageableDesc')}
           </p>
         </div>
       </div>

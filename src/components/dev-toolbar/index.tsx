@@ -48,7 +48,7 @@ function Seg<T extends string>({
  * 「开发菜单」跳转平台配置调试页（原侧栏「开发者菜单」移入此处，不侵入业务侧栏）。
  */
 export function DevToolbar() {
-  const { i18n } = useTranslation()
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const market = useLangStore((s) => s.market)
   const lang = useLangStore((s) => s.lang)
@@ -92,8 +92,8 @@ export function DevToolbar() {
       <Seg
         value={theme}
         options={[
-          { v: 'light', l: '白' },
-          { v: 'dark', l: '黑' },
+          { v: 'light', l: t('common.devToolbar.light') },
+          { v: 'dark', l: t('common.devToolbar.dark') },
         ]}
         onChange={switchTheme}
       />
@@ -101,16 +101,16 @@ export function DevToolbar() {
       <Seg
         value={market}
         options={[
-          { v: 'china', l: '国内' },
-          { v: 'global', l: '海外' },
+          { v: 'china', l: t('common.devToolbar.china') },
+          { v: 'global', l: t('common.devToolbar.global') },
         ]}
         onChange={switchMarket}
       />
       <Seg
         value={lang}
         options={[
-          { v: 'zh', l: '中' },
-          { v: 'en', l: 'EN' },
+          { v: 'zh', l: t('common.devToolbar.zh') },
+          { v: 'en', l: t('common.devToolbar.en') },
         ]}
         onChange={switchLang}
       />
@@ -120,7 +120,7 @@ export function DevToolbar() {
         onClick={() => navigate('/dev-config')}
         className="rounded-full bg-mg-fill-0 px-3 py-1 text-xs font-bold text-mg-text-2 transition-colors hover:text-mg-text-1"
       >
-        开发菜单
+        {t('common.devToolbar.menu')}
       </button>
     </div>
   )

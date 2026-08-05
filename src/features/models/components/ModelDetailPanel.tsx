@@ -98,11 +98,11 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
    * 原型 App.tsx:5111-5143 的口径 —— 主价挂「图片/视频」标签，次行挂「文本」。
    */
   const mediaTag = detail.price_unit === '张'
-    ? (isZh ? '图片' : 'image')
+    ? t('modelsCatalog.detail.mediaImage')
     : detail.price_unit === '秒'
-      ? (isZh ? '视频' : 'video')
-      : (isZh ? '媒体' : 'media')
-  const textTag = isZh ? '文本' : 'text'
+      ? t('modelsCatalog.detail.mediaVideo')
+      : t('modelsCatalog.detail.mediaGeneric')
+  const textTag = t('modelsCatalog.detail.mediaText')
   const textInput = priceText(detail.text_input_price, symbol, '', '/1M tokens')
   const textOutput = priceText(detail.text_output_price, symbol, '', '/1M tokens')
 
@@ -131,11 +131,11 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
             {detail.is_new && (
               <em className="mg-badge is-new">
                 <LuSparkles size={10} />
-                {isZh ? '最新发布' : 'New'}
+                {t('modelsCatalog.detail.newBadge')}
               </em>
             )}
             {isFree ? (
-              <em className="mg-badge is-free">{isZh ? '限时特惠·免费' : 'Free'}</em>
+              <em className="mg-badge is-free">{t('modelsCatalog.detail.freeBadge')}</em>
             ) : discountLabel ? (
               <em className="mg-badge is-discount">{discountLabel}</em>
             ) : null}
@@ -148,8 +148,8 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
                 <code className="mg-detail-api font-mono">{detail.model_id}</code>
                 <CopyButton
                   value={detail.model_id}
-                  aria-label={isZh ? '复制 API ID' : 'Copy API ID'}
-                  toast={isZh ? 'API ID 已复制' : 'API ID copied'}
+                  aria-label={t('modelsCatalog.card.copyApiId')}
+                  toast={t('modelsCatalog.toast.copied')}
                   className="h-5 w-5 shrink-0"
                   onCopied={onModelIdCopied}
                 />

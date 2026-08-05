@@ -16,6 +16,7 @@ import type { NavigateFunction } from 'react-router-dom'
 import { getModel } from '@/services/catalog'
 import { consumeModelLoginIntent } from '@/lib/redirect'
 import { appToast } from '@/lib/app-toast'
+import i18n from 'i18next'
 import { resolveModelCategory } from '@/pages/models/model-experience-data'
 import type { CatalogModelDetail } from '@/types'
 
@@ -43,12 +44,12 @@ export async function resolveLoginDestination(fallback: string): Promise<LoginDe
       const categoryChanged =
         !!intent.model_category && resolveModelCategory(model) !== intent.model_category
       if (!isOnline(model) || categoryChanged) {
-        appToast.info('该模型状态已变化，请重新确认')
+        appToast.info(i18n.t('loginIntent.modelChanged', { ns: 'common' }))
         return { path: fallback }
       }
       return { path: '/models/playground', state: { selectedModelId: intent.model_id } }
     } catch {
-      appToast.info('该模型状态已变化，请重新确认')
+      appToast.info(i18n.t('loginIntent.modelChanged', { ns: 'common' }))
       return { path: fallback }
     }
   }
@@ -62,12 +63,12 @@ export async function resolveLoginDestination(fallback: string): Promise<LoginDe
         return !!model && isOnline(model) && (!anchorCategory || resolveModelCategory(model) === anchorCategory)
       })
       if (validIds.length === 0) {
-        appToast.info('所选对比模型状态已变化，请重新选择')
+        appToast.info(i18n.t('loginIntent.compareModelsChanged', { ns: 'common' }))
         return { path: fallback }
       }
       return { path: '/models/compare', state: { selectedIds: validIds } }
     } catch {
-      appToast.info('所选对比模型状态已变化，请重新选择')
+      appToast.info(i18n.t('loginIntent.compareModelsChanged', { ns: 'common' }))
       return { path: fallback }
     }
   }

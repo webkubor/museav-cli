@@ -118,8 +118,8 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
 
   return (
     <section
-      aria-label={isZh ? '推荐模型' : 'Featured models'}
-      aria-roledescription={isZh ? '轮播' : 'carousel'}
+      aria-label={t('modelsCatalog.featured.ariaLabel')}
+      aria-roledescription={t('modelsCatalog.featured.carousel')}
       className="mg-featured"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
@@ -180,10 +180,10 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
               <div className="mg-featured-copy">
                 <div className="mg-featured-badges">
                   {slide.is_new && (
-                    <em className="mg-badge is-new">{isZh ? '最新发布' : 'New release'}</em>
+                    <em className="mg-badge is-new">{t('modelsCatalog.featured.newRelease')}</em>
                   )}
                   {promo?.free ? (
-                    <em className="mg-badge is-free">{isZh ? '限时免费' : 'Free'}</em>
+                    <em className="mg-badge is-free">{t('modelsCatalog.featured.free')}</em>
                   ) : discountLabel ? (
                     <em className="mg-badge is-discount">{discountLabel}</em>
                   ) : null}
@@ -192,8 +192,11 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
                 <span className="mg-featured-meta">
                   {slide.vendor}
                   {promo?.free
-                    ? ` · ${isZh ? '限时免费' : 'free'}`
-                    : ` · ${isZh ? '输入' : 'in'} ${symbol}${trimPriceZeros(slide.input_price)}/M / ${isZh ? '输出' : 'out'} ${symbol}${trimPriceZeros(slide.output_price)}/M`}
+                    ? t('modelsCatalog.featured.freeMeta')
+                    : t('modelsCatalog.featured.priceMeta', {
+                        input: `${symbol}${trimPriceZeros(slide.input_price)}`,
+                        output: `${symbol}${trimPriceZeros(slide.output_price)}`,
+                      })}
                 </span>
                 {pitch && <p>{pitch}</p>}
               </div>
@@ -230,7 +233,7 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
                     navigate(detailHref, { state: { source: 'catalog_featured', fromSearch: location.search } })
                   }}
                 >
-                  {isZh ? '查看详情' : 'Details'}
+                  {t('modelsCatalog.featured.details')}
                 </button>
               </div>
             </article>
@@ -242,7 +245,7 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
         <div
           className="mg-featured-dots"
           role="tablist"
-          aria-label={isZh ? '切换推荐模型' : 'Switch featured model'}
+          aria-label={t('modelsCatalog.featured.switchAria')}
         >
           {slides.map((s, i) => (
             <button

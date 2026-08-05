@@ -2,6 +2,10 @@
   "enterprise": {
     "title": "Enterprise",
     "subtitle": "Manage members, invitations, organization profile, and audit log.",
+    "empty": {
+      "noManageableTitle": "No manageable organizations",
+      "noManageableDesc": "This account has no organization yet. Create one from the tenant switcher in the header, then return here."
+    },
     "summary": {
       "owner": "Owner",
       "members": "Members",
@@ -108,6 +112,8 @@
       "transferNoMembers": "No other members to transfer to",
       "confirmTransfer": "Confirm transfer",
       "transferSuccess": "Ownership transferred",
+      "transferError": "Failed to transfer ownership",
+      "switchedToPersonal": "Switched to personal account",
       "limits": "Limits",
       "maxWorkspaces": "Max workspaces",
       "maxMembers": "Max members",

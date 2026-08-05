@@ -9,6 +9,7 @@
  */
 import { apiBaseUrl } from '@/lib/request'
 import { injectHeaders } from '@/lib/request-headers'
+import i18n from 'i18next'
 
 export interface ExperienceChatMessage {
   role: 'user' | 'assistant'
@@ -85,7 +86,7 @@ export async function streamExperienceChat(opts: StreamExperienceChatOptions): P
   }
 
   const reader = response.body?.getReader()
-  if (!reader) throw new Error('浏览器不支持流式读取')
+  if (!reader) throw new Error(i18n.t('errors.streamUnsupported', { ns: 'common' }))
   const decoder = new TextDecoder()
   let buffer = ''
   let accumulated = ''

@@ -101,6 +101,27 @@
       "title": "Models",
       "subtitle": "One API for leading models. Transparent pricing, ready to use."
     },
+    "trust": {
+      "protocols": "OpenAI / Anthropic compatible",
+      "providers": "Direct official providers",
+      "sla": "99.95% SLA"
+    },
+    "featured": {
+      "ariaLabel": "Featured models",
+      "carousel": "carousel",
+      "newRelease": "New release",
+      "free": "Free",
+      "freeMeta": " · free",
+      "priceMeta": " · in {{input}}/M / out {{output}}/M",
+      "details": "Details",
+      "switchAria": "Switch featured model"
+    },
+    "apiAccess": {
+      "title": "API Access",
+      "getApiKey": "Get API Key",
+      "copyCode": "Copy code",
+      "codeCopied": "Code copied"
+    },
     "filtersButton": "Filters",
     "search": {
       "placeholder": "Search model, API ID, provider or keyword…"
@@ -162,6 +183,20 @@
       "file": "File"
     },
     "detail.title": "Model Detail",
+    "detail": {
+      "backToCatalog": "Back to models",
+      "notFound": "Model not found or failed to load",
+      "viewApiGuide": "View API integration guide",
+      "relatedModels": "Related models",
+      "limitedFree": "Free",
+      "relatedPrice": "{{input}} / {{output}} per M",
+      "mediaImage": "image",
+      "mediaVideo": "video",
+      "mediaGeneric": "media",
+      "mediaText": "text",
+      "newBadge": "New",
+      "freeBadge": "Free"
+    },
     "error.loadDetail": "Failed to load model detail. Please try again."
   }
 }

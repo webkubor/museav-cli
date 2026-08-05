@@ -1,4 +1,5 @@
 import type { CursorPage } from '@/types'
+import i18n from 'i18next'
 
 /**
  * 从后端响应中安全提取列表数据。
@@ -102,9 +103,10 @@ export function formatModelPrice(
   currency = '$',
   suffix = '/M'
 ): string {
-  if (amount == null || amount === '') return '免费'
+  const freeLabel = i18n.t('common.free', { ns: 'common' })
+  if (amount == null || amount === '') return freeLabel
   const parsed = typeof amount === 'string' ? parseFloat(amount) : amount
-  if (isNaN(parsed) || parsed <= 0) return '免费'
+  if (isNaN(parsed) || parsed <= 0) return freeLabel
   // 不舍入，只裁尾零；parsed 仅用于判断免费/有效
   return `${currency}${trimPriceZeros(amount)}${suffix}`
 }
@@ -203,6 +205,5 @@ export function formatFriendlyAmount(
 
   return `${currencySymbol}${formatted}`
 }
-
 
 

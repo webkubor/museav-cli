@@ -11,6 +11,7 @@
 import type { GuardrailBudgetPolicy, GuardrailDetail } from '@/interfaces/guardrails'
 import { isoToLocalInput as dtIsoToLocalInput, localInputToISO as dtLocalInputToISO } from '@/lib/datetime'
 import { trimAmountScale, groupThousands } from './budget'
+import i18n from 'i18next'
 
 export type GuardrailScope = 'global' | 'member' | 'key'
 export type GuardrailKind = 'regular' | 'boost'
@@ -266,7 +267,7 @@ export function formatBudget(
   symbol: string,
   policy?: GuardrailBudgetPolicy | null,
   periodLabel: (unit: string) => string = (unit) => PERIOD_LABEL[unit] ?? unit,
-  unlimitedLabel = '不限额',
+  unlimitedLabel = i18n.t('common.unlimited', { ns: 'common' }),
 ): string {
   const amount = policy?.spend_limit_amount
   if (!policy || !amount || Number(amount) <= 0) return unlimitedLabel

@@ -175,7 +175,7 @@ export default function ModelDetailPage() {
       >
         {/* 原型是 "← 返回模型广场"，← 是箭头不是尖括号，图标要用 LuArrowLeft 不是 LuChevronLeft */}
         <LuArrowLeft size={15} />
-        {isZh ? '返回模型广场' : 'Back to models'}
+        {t('modelsCatalog.detail.backToCatalog')}
       </button>
 
       {detailQuery.isLoading ? (
@@ -186,7 +186,7 @@ export default function ModelDetailPage() {
         </div>
       ) : detailQuery.isError || !detail ? (
         <div className="border-mg-border text-mg-text-3 rounded-md border p-8 text-center text-[13px]">
-          {isZh ? '模型不存在或加载失败' : 'Model not found or failed to load'}
+          {t('modelsCatalog.detail.notFound')}
         </div>
       ) : (
         <>
@@ -221,7 +221,7 @@ export default function ModelDetailPage() {
                   onClick={handleDocsClick}
                   className="inline-flex items-center gap-1 text-[13px] text-mg-text-3 transition-colors hover:text-brand-base"
                 >
-                  {isZh ? '查看API接入手册' : 'View API integration guide'}
+                  {t('modelsCatalog.detail.viewApiGuide')}
                   <LuExternalLink size={13} />
                 </a>
               </>
@@ -244,7 +244,7 @@ export default function ModelDetailPage() {
           {related.length > 0 && (
             <section className="mg-tile mg-detail-card">
               <h3 className="text-mg-text-1 mb-3 text-[14px] font-semibold">
-                {isZh ? '相关模型' : 'Related models'}
+                {t('modelsCatalog.detail.relatedModels')}
               </h3>
               {/* 卡片信息照原型 App.tsx:5205-5222：厂商图标 + 名称 / 「厂商 · 1M 上下文」/
                   「¥x / ¥y 每M」。上下文走 formatContextLength（原本裸 /1000 会把
@@ -274,8 +274,11 @@ export default function ModelDetailPage() {
                     </span>
                     <span className="mg-related-price">
                       {item.is_free
-                        ? (isZh ? '限时免费' : 'Free')
-                        : `${currencySymbol(item.currency, isZh)} ${trimPriceZeros(item.input_price)} / ${trimPriceZeros(item.output_price)} ${isZh ? '每M' : 'per M'}`}
+                        ? t('modelsCatalog.detail.limitedFree')
+                        : t('modelsCatalog.detail.relatedPrice', {
+                            input: `${currencySymbol(item.currency, isZh)} ${trimPriceZeros(item.input_price)}`,
+                            output: trimPriceZeros(item.output_price),
+                          })}
                     </span>
                   </button>
                 ))}

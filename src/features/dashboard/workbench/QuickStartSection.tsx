@@ -168,7 +168,7 @@ export function QuickStartSection() {
                 <code>{cliCommand}</code>
                 <CopyButton
                   value={cliCommand}
-                  aria-label="复制命令"
+                  aria-label={t('dashboard.workbench.quickStart.copyCliAria')}
                   toast={t('dashboard.workbench.quickStart.cliCopied')}
                   onCopied={() => trackOnboardingAction('copy_cli')}
                 />

@@ -17,15 +17,14 @@ export function formatRelativeTime(iso: string | null | undefined): string {
   if (!iso) return '—'
   const then = new Date(iso).getTime()
   if (!Number.isFinite(then)) return '—'
-  const zh = currentLocale().startsWith('zh')
   const diffSec = Math.floor((Date.now() - then) / 1000)
-  if (diffSec < 60) return zh ? '刚刚' : 'just now'
+  if (diffSec < 60) return i18n.t('relativeTime.justNow', { ns: 'common' })
   const min = Math.floor(diffSec / 60)
-  if (min < 60) return zh ? `${min} 分钟前` : `${min}m ago`
+  if (min < 60) return i18n.t('relativeTime.minutesAgo', { ns: 'common', count: min })
   const hr = Math.floor(min / 60)
-  if (hr < 24) return zh ? `${hr} 小时前` : `${hr}h ago`
+  if (hr < 24) return i18n.t('relativeTime.hoursAgo', { ns: 'common', count: hr })
   const day = Math.floor(hr / 24)
-  if (day <= 30) return zh ? `${day} 天前` : `${day}d ago`
+  if (day <= 30) return i18n.t('relativeTime.daysAgo', { ns: 'common', count: day })
   return formatDate(iso)
 }
 

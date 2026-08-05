@@ -147,7 +147,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
           <h2 className="text-[15px] font-bold text-mg-text-1">{t('billing.rechargeModal.title')}</h2>
           <button
             type="button"
-            aria-label={t('common.close', { defaultValue: '关闭' })}
+            aria-label={t('common.close')}
             className="text-mg-text-3 hover:text-mg-text-1 transition-colors outline-none cursor-pointer w-8 h-8 flex items-center justify-center rounded-md hover:bg-mg-fill-0"
             onClick={onClose}
           >
@@ -231,7 +231,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
                   >
                     <span className="flex items-center justify-center gap-2">
                       {channelIcon[c.value] ?? c.icon}
-                      <span className={cn("text-[13px] font-bold", active ? "" : "text-mg-text-2")} style={active && color ? { color } : undefined}>{c.label}</span>
+                      <span className={cn("text-[13px] font-bold", active ? "" : "text-mg-text-2")} style={active && color ? { color } : undefined}>{t(c.labelKey)}</span>
                     </span>
                   </button>
                 )

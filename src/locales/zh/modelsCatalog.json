@@ -101,6 +101,27 @@
       "title": "模型广场",
       "subtitle": "一个 API 接入主流大模型，价格透明、开箱可用。"
     },
+    "trust": {
+      "protocols": "OpenAI / Anthropic 兼容协议",
+      "providers": "官方供应商直连",
+      "sla": "99.95% SLA 稳定保障"
+    },
+    "featured": {
+      "ariaLabel": "推荐模型",
+      "carousel": "轮播",
+      "newRelease": "最新发布",
+      "free": "限时免费",
+      "freeMeta": " · 限时免费",
+      "priceMeta": " · 输入 {{input}}/M / 输出 {{output}}/M",
+      "details": "查看详情",
+      "switchAria": "切换推荐模型"
+    },
+    "apiAccess": {
+      "title": "API 接入",
+      "getApiKey": "获取 API Key",
+      "copyCode": "复制代码",
+      "codeCopied": "已复制代码示例"
+    },
     "filtersButton": "筛选",
     "search": {
       "placeholder": "搜索模型名、API ID、供应商或描述关键词…"
@@ -162,6 +183,20 @@
       "file": "文件"
     },
     "detail.title": "模型详情",
+    "detail": {
+      "backToCatalog": "返回模型广场",
+      "notFound": "模型不存在或加载失败",
+      "viewApiGuide": "查看API接入手册",
+      "relatedModels": "相关模型",
+      "limitedFree": "限时免费",
+      "relatedPrice": "{{input}} / {{output}} 每M",
+      "mediaImage": "图片",
+      "mediaVideo": "视频",
+      "mediaGeneric": "媒体",
+      "mediaText": "文本",
+      "newBadge": "最新发布",
+      "freeBadge": "限时特惠·免费"
+    },
     "error.loadDetail": "加载模型详情失败，请稍后重试。"
   }
 }

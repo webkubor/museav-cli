@@ -324,9 +324,9 @@ export default function ModelsCatalogPage() {
             </p>
             {/* 信任 chips（原型口径）：协议兼容 / 供应商直连 / SLA。取代原先三张数据卡。 */}
             <div className="mg-trust">
-              <span><LuZap size={12} />{isZh ? 'OpenAI / Anthropic 兼容协议' : 'OpenAI / Anthropic compatible'}</span>
-              <span><LuBuilding2 size={12} />{isZh ? '官方供应商直连' : 'Direct official providers'}</span>
-              <span><LuShieldCheck size={12} />{isZh ? '99.95% SLA 稳定保障' : '99.95% SLA'}</span>
+              <span><LuZap size={12} />{t('modelsCatalog.trust.protocols')}</span>
+              <span><LuBuilding2 size={12} />{t('modelsCatalog.trust.providers')}</span>
+              <span><LuShieldCheck size={12} />{t('modelsCatalog.trust.sla')}</span>
             </div>
           </div>
 

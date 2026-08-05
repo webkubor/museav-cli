@@ -1,4 +1,5 @@
 import ky, { type ResponsePromise } from 'ky'
+import i18n from 'i18next'
 import type { ApiError, ApiResponse, QueryParams } from '@/types'
 import { injectHeaders } from '@/lib/request-headers'
 import { useLangStore } from '@/store/use-brand-store'
@@ -12,7 +13,13 @@ const API_V1_PREFIX = 'api/v1'
 // RSA+AES envelope instead of a plaintext JSON body, and receive an encrypted
 // {iv,data} response. Normalized (no leading slash) to match normalizePath.
 const SECURE_PATHS = new Set(['auth/login', 'auth/register', 'auth/password/reset'])
-export const SERVER_ERROR_MESSAGE = '服务暂时异常，请稍后再试'
+export const SERVER_ERROR_MESSAGE_KEY = 'errors.server'
+
+export function getServerErrorMessage() {
+  return i18n.t(SERVER_ERROR_MESSAGE_KEY, { ns: 'common' })
+}
+
+export const SERVER_ERROR_MESSAGE = getServerErrorMessage()
 
 function normalizeApiHost(value: string | undefined): string | null {
   if (!value) return null
@@ -166,7 +173,7 @@ export class ModelGoApiError extends Error {
 
   constructor(error: ApiError) {
     const rawMessage = error.msg
-    super(isServerErrorCode(error.code) ? SERVER_ERROR_MESSAGE : rawMessage)
+    super(isServerErrorCode(error.code) ? getServerErrorMessage() : rawMessage)
     this.name = 'ModelGoApiError'
     this.code = error.code
     this.rawMessage = rawMessage
@@ -309,7 +316,7 @@ async function loadPublicKey(): Promise<string> {
   if (resp.code !== 0 || !resp.data?.public_key) {
     throw new ModelGoApiError({
       code: resp.code ?? -1,
-      msg: '无法获取加密公钥，请稍后重试',
+      msg: i18n.t('errors.publicKeyUnavailable', { ns: 'common' }),
       request_id: resp.request_id,
       trace_id: resp.trace_id,
       data: null,

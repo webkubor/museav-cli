@@ -3,10 +3,15 @@
  * 路由：全站请求错误 toast / 表单错误提示
  * API 来源：src/lib/request.ts 抛出的 ModelGoApiError 与 ky 网络错误
  */
-import { ModelGoApiError, SERVER_ERROR_MESSAGE, isServerErrorCode } from '@/lib/request'
+import i18n from 'i18next'
+import { ModelGoApiError, isServerErrorCode, getServerErrorMessage } from '@/lib/request'
 
 /** 功能未就绪/接口未注册（业务码 40401 或 HTTP 404）的统一文案——不留死按钮，明确告知服务不可用 */
-export const SERVICE_UNAVAILABLE_MESSAGE = '服务暂不可用，请稍后再试'
+export const SERVICE_UNAVAILABLE_MESSAGE = 'errors.serviceUnavailable'
+
+function tCommon(key: string) {
+  return i18n.t(key, { ns: 'common' })
+}
 
 /** 是否为「资源/路由不存在」类错误：业务码 40401 或 HTTP 404 */
 export function isNotFoundError(error: unknown) {
@@ -24,11 +29,11 @@ export function errorCodeOf(error: unknown): string {
   return error instanceof ModelGoApiError ? String(error.code) : 'unknown'
 }
 
-export function getRequestErrorMessage(error: unknown, fallback = '请求失败，请稍后重试') {
+export function getRequestErrorMessage(error: unknown, fallback = tCommon('requestFailed')) {
   if (error instanceof ModelGoApiError) {
-    if (isServerErrorCode(error.code)) return SERVER_ERROR_MESSAGE
+    if (isServerErrorCode(error.code)) return getServerErrorMessage()
     // 40401 = 资源/路由不存在（含后端功能未就绪）：裸文案「resource not found」不可读，归一为「服务暂不可用」
-    if (error.code === 40401) return SERVICE_UNAVAILABLE_MESSAGE
+    if (error.code === 40401) return tCommon(SERVICE_UNAVAILABLE_MESSAGE)
     // 参数校验失败等：后端在 data.field_errors 给了字段级具体原因，优先展示，
     // 别让「参数校验失败」这种笼统 msg 盖住真正的原因（如「Key 护栏必须绑定至少一个对象」）。
     const fieldErrors = (error.data as { field_errors?: { field?: string; message?: string }[] } | null | undefined)?.field_errors
@@ -44,10 +49,10 @@ export function getRequestErrorMessage(error: unknown, fallback = '请求失败�
   }
 
   if (error instanceof Error) {
-    if (isHttpServerError(error)) return SERVER_ERROR_MESSAGE
-    if (isHttpNotFound(error)) return SERVICE_UNAVAILABLE_MESSAGE
-    if (error.name === 'TimeoutError') return '请求超时，请检查网络后重试'
-    if (isNetworkError(error)) return '网络连接异常，请检查网络后重试'
+    if (isHttpServerError(error)) return getServerErrorMessage()
+    if (isHttpNotFound(error)) return tCommon(SERVICE_UNAVAILABLE_MESSAGE)
+    if (error.name === 'TimeoutError') return tCommon('errors.timeout')
+    if (isNetworkError(error)) return tCommon('errors.network')
   }
 
   return fallback

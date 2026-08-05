@@ -9,6 +9,7 @@
  * 不打开新弹窗（§8.3「API请求渲染后滚动到正确模型的 API 区，不打开新弹窗」）。
  */
 import { forwardRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { LuKey, LuExternalLink } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import { CopyButton } from '@/components/ui/CopyButton'
@@ -40,6 +41,7 @@ const ApiAccessPanel = forwardRef<HTMLDivElement, ApiAccessPanelProps>(function 
   { modelId, protocols, isZh, onGetKeyClick, onTabChange, onCodeCopied },
   ref,
 ) {
+  const { t } = useTranslation()
   const safeProtocols = protocols.length > 0 ? protocols : (['openai'] as ApiProtocol[])
   const [protocol, setProtocol] = useState<ApiProtocol>(safeProtocols[0])
   const activeProtocol = safeProtocols.includes(protocol) ? protocol : safeProtocols[0]
@@ -57,11 +59,11 @@ const ApiAccessPanel = forwardRef<HTMLDivElement, ApiAccessPanelProps>(function 
     <section ref={ref} id="api-access" className="scroll-mt-20">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-mg-text-1 text-[14px] font-semibold">
-          {isZh ? 'API 接入' : 'API Access'}
+          {t('modelsCatalog.apiAccess.title')}
         </h3>
         <Button variant="outline" size="sm" onClick={onGetKeyClick}>
           <LuKey size={14} className="mr-1.5" />
-          {isZh ? '获取 API Key' : 'Get API Key'}
+          {t('modelsCatalog.apiAccess.getApiKey')}
           <LuExternalLink size={12} className="ml-1" />
         </Button>
       </div>
@@ -100,8 +102,8 @@ const ApiAccessPanel = forwardRef<HTMLDivElement, ApiAccessPanelProps>(function 
               <div className="api-quick-call-code">
                 <CopyButton
                   value={buildCodeSample(activeProtocol, lang, modelId)}
-                  aria-label={isZh ? '复制代码' : 'Copy code'}
-                  toast={isZh ? '已复制代码示例' : 'Code copied'}
+                  aria-label={t('modelsCatalog.apiAccess.copyCode')}
+                  toast={t('modelsCatalog.apiAccess.codeCopied')}
                   className="api-quick-call-code-copy"
                   onCopied={() => onCodeCopied?.(lang)}
                 />

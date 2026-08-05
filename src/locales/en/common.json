@@ -37,6 +37,17 @@
     "expand": "Expand",
     "online": "Online",
     "website": "Website",
+    "free": "Free",
+    "unlimited": "Unlimited",
+    "devToolbar": {
+      "light": "Light",
+      "dark": "Dark",
+      "china": "China",
+      "global": "Global",
+      "zh": "中文",
+      "en": "EN",
+      "menu": "Dev Menu"
+    },
     "composer": {
       "clear": "Clear",
       "send": "Send",
@@ -75,6 +86,24 @@
     "close": "Close",
     "loadingPermissions": "Loading permissions",
     "loadingTenants": "Loading tenants",
+    "errors": {
+      "server": "Service temporarily unavailable. Please try again later.",
+      "serviceUnavailable": "Service unavailable. Please try again later.",
+      "timeout": "Request timed out. Check your network and try again.",
+      "network": "Network connection error. Check your network and try again.",
+      "streamUnsupported": "This browser does not support streaming reads.",
+      "publicKeyUnavailable": "Unable to get the encryption public key. Please try again later."
+    },
+    "loginIntent": {
+      "modelChanged": "This model's status changed. Please review it again.",
+      "compareModelsChanged": "The selected comparison models changed. Please choose again."
+    },
+    "relativeTime": {
+      "justNow": "just now",
+      "minutesAgo": "{{count}}m ago",
+      "hoursAgo": "{{count}}h ago",
+      "daysAgo": "{{count}}d ago"
+    },
     "errorBoundary": {
       "title": "Something went wrong",
       "desc": "This module failed to load and has been isolated. The sidebar and other pages are unaffected. Try again or refresh.",

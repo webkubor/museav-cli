@@ -37,6 +37,17 @@
     "expand": "展开侧栏",
     "online": "在线",
     "website": "官网",
+    "free": "免费",
+    "unlimited": "不限额",
+    "devToolbar": {
+      "light": "白",
+      "dark": "黑",
+      "china": "国内",
+      "global": "海外",
+      "zh": "中",
+      "en": "EN",
+      "menu": "开发菜单"
+    },
     "composer": {
       "clear": "清空",
       "send": "发送",
@@ -75,6 +86,24 @@
     "close": "关闭",
     "loadingPermissions": "权限加载中",
     "loadingTenants": "租户加载中",
+    "errors": {
+      "server": "服务暂时异常，请稍后再试",
+      "serviceUnavailable": "服务暂不可用，请稍后再试",
+      "timeout": "请求超时，请检查网络后重试",
+      "network": "网络连接异常，请检查网络后重试",
+      "streamUnsupported": "浏览器不支持流式读取",
+      "publicKeyUnavailable": "无法获取加密公钥，请稍后重试"
+    },
+    "loginIntent": {
+      "modelChanged": "该模型状态已变化，请重新确认",
+      "compareModelsChanged": "所选对比模型状态已变化，请重新选择"
+    },
+    "relativeTime": {
+      "justNow": "刚刚",
+      "minutesAgo": "{{count}} 分钟前",
+      "hoursAgo": "{{count}} 小时前",
+      "daysAgo": "{{count}} 天前"
+    },
     "errorBoundary": {
       "title": "页面出错了",
       "desc": "该模块加载异常，已被隔离，不影响侧栏与其他页面。可重试或刷新。",

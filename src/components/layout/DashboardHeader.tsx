@@ -379,7 +379,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
         {/* 2. 用户头像一站式 Dropdown（匿名 → 登录/注册入口） */}
         {!isAuthenticated ? (
           <Button variant="brand" size="sm" onClick={() => navigate('/login')}>
-            {t('common.login', '登录 / 注册')}
+            {t('common.login')}
           </Button>
         ) : (
           <AccountMenu

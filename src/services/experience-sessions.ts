@@ -7,6 +7,7 @@
  */
 import { apiBaseUrl, get, post, patch, put, del, upload } from '@/lib/request'
 import { injectHeaders } from '@/lib/request-headers'
+import i18n from 'i18next'
 
 export type ExperienceCategory = 'dialogue' | 'image' | 'audio' | 'video'
 
@@ -321,7 +322,7 @@ export async function streamExperienceMessage(opts: StreamExperienceMessageOptio
   }
 
   const reader = response.body?.getReader()
-  if (!reader) throw new Error('浏览器不支持流式读取')
+  if (!reader) throw new Error(i18n.t('errors.streamUnsupported', { ns: 'common' }))
   const decoder = new TextDecoder()
   let buffer = ''
   let accumulated = ''

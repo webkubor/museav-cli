@@ -71,7 +71,7 @@ export default function OrganizationSettingsPage() {
     queryClient.removeQueries({ queryKey: ['usage'] })
     queryClient.removeQueries({ queryKey: ['logs'] })
     await queryClient.invalidateQueries({ queryKey: ['tenants'] })
-    appToast.info('已切换到个人账户')
+    appToast.info(t('enterprise.info.switchedToPersonal'))
     navigate('/dashboard', { replace: true })
   }
 

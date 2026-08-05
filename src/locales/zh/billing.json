@@ -206,7 +206,8 @@
     },
     "paymentMethod": {
       "alipay": "支付宝",
-      "wechat": "微信支付"
+      "wechat": "微信支付",
+      "stripe": "Stripe"
     },
     "referral": {
       "title": "推荐计划",

@@ -221,7 +221,7 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
           <div className="pt-4 border-t border-mg-border/40">
             <p className="text-xs font-bold text-mg-text-3 uppercase tracking-wider mb-3 flex items-center gap-1.5">
               <LuGift className="h-3.5 w-3.5 text-mg-brand" />
-              {t('account.info.referralLabel') || '邀请链接'}
+              {t('account.info.referralLabel')}
             </p>
             <ReferralInviteCard
               inviteLink={referral.inviteLink}

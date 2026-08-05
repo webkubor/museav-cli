@@ -12,15 +12,15 @@ export type RechargeSourceKey = (typeof RECHARGE_SOURCE_KEYS)[number]
 
 export interface RechargePaymentChannelOption {
   value: RechargePaymentChannel
-  label: string
+  labelKey: string
   cnLabel: string
   icon: ReactNode
 }
 
 export const RECHARGE_PAYMENT_CHANNELS: RechargePaymentChannelOption[] = [
-  { value: 'alipay', label: '支付宝', cnLabel: '支付宝', icon: <AlipayIcon /> },
-  { value: 'wechat', label: '微信支付', cnLabel: '微信支付', icon: <WechatIcon /> },
-  { value: 'stripe', label: 'Stripe', cnLabel: 'Stripe', icon: <StripeIcon /> },
+  { value: 'alipay', labelKey: 'billing.paymentMethod.alipay', cnLabel: '支付宝', icon: <AlipayIcon /> },
+  { value: 'wechat', labelKey: 'billing.paymentMethod.wechat', cnLabel: '微信支付', icon: <WechatIcon /> },
+  { value: 'stripe', labelKey: 'billing.paymentMethod.stripe', cnLabel: 'Stripe', icon: <StripeIcon /> },
 ]
 
 export const RECHARGE_CHANNEL_CN_LABELS: Record<RechargeChannelKey, string> = {

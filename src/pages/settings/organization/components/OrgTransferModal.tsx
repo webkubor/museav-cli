@@ -56,7 +56,7 @@ export function OrgTransferModal({
     },
     onError: (err: Error) => {
       trackAction(PERMS.ORG_OWNERSHIP_TRANSFER, undefined, { result: 'fail', error_code: errorCodeOf(err) })
-      appToast.requestError(err, '转移所有权失败')
+      appToast.requestError(err, t('enterprise.info.transferError'))
     },
   })
 

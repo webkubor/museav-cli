@@ -14,6 +14,7 @@ import { gen } from './commands/gen.js'
 import { reverse } from './commands/reverse.js'
 import { upload } from './commands/upload.js'
 import { models } from './commands/models.js'
+import { skills } from './commands/skills.js'
 import { balance } from './commands/balance.js'
 import { jobs } from './commands/jobs.js'
 import { whoami } from './commands/whoami.js'
@@ -55,7 +56,9 @@ function withClient<T extends (...args: any[]) => Promise<any>>(fn: T) {
 program
   .command('gen')
   .description('出图（提交 + 自动轮询，成功输出图片 URL）')
-  .requiredOption('-p, --prompt <text>', '出图提示词')
+  .option('-p, --prompt <text>', '完整出图提示词（与 --skill 二选一）')
+  .option('-s, --skill <slug>', '用中台技能出图，提示词在服务端展开（与 --prompt 二选一）；清单见 studio-cli skills')
+  .option('-i, --input <text>', '配合 --skill 的一句业务描述，如「米白色针织衫」；不给则按技能规范自由发挥')
   .option('-r, --ratio <ratio>', '宽高比: 3:4 / 9:16 / 1:1 / 4:3 / 16:9', '3:4')
   .option('-m, --model <name>', '指定模型，如 gpt-image-2')
   .option('-q, --quality <level>', '质量: low / medium / high（仅 gpt-image）')
@@ -76,6 +79,12 @@ program
   .command('models')
   .description('查可用模型列表')
   .action(withClient((client: StudioClient) => models(client)))
+
+program
+  .command('skills')
+  .description('查可用技能：自己的私有技能 + 所属租户专属模板 + 公共技能库')
+  .option('--genre <name>', '按分类过滤，如 电商 / 人像写真')
+  .action(withClient((client: StudioClient, opts: any) => skills(client, opts)))
 
 program
   .command('balance')

@@ -2,12 +2,25 @@
 import type { StudioClient } from '../client.js'
 
 export async function gen(client: StudioClient, opts: {
-  prompt: string
+  prompt?: string
+  skill?: string
+  input?: string
   ratio?: string
   model?: string
   quality?: string
   ref?: string
 }): Promise<void> {
+  // prompt 与 skill 二选一。commander 不好表达互斥，在这里校验，报错要说清怎么改
+  if (!opts.prompt && !opts.skill) {
+    throw new Error('需要 --prompt "完整提示词" 或 --skill <技能名>（技能清单用 studio-cli skills 查）')
+  }
+  if (opts.prompt && opts.skill) {
+    throw new Error('--prompt 与 --skill 只能给一个：前者用你自己的提示词，后者用中台技能展开')
+  }
+  if (opts.input && !opts.skill) {
+    throw new Error('--input 是配合 --skill 的业务描述；只写提示词请用 --prompt')
+  }
+
   // 可选：先上传垫图
   let referenceImage: string | undefined
   if (opts.ref) {
@@ -17,10 +30,16 @@ export async function gen(client: StudioClient, opts: {
     process.stderr.write(`垫图就绪: ${referenceImage}\n`)
   }
 
-  process.stderr.write(`提交出图: ${opts.prompt.slice(0, 40)}...\n`)
+  process.stderr.write(
+    opts.skill
+      ? `提交出图: 技能 ${opts.skill}${opts.input ? ` · ${opts.input.slice(0, 30)}` : '（未给描述，按技能规范自由发挥）'}\n`
+      : `提交出图: ${opts.prompt!.slice(0, 40)}...\n`,
+  )
   const job = await client.generateAndWait(
     {
       prompt: opts.prompt,
+      skill_slug: opts.skill,
+      input: opts.input,
       ratio: opts.ratio,
       model: opts.model,
       quality: opts.quality as 'low' | 'medium' | 'high' | undefined,

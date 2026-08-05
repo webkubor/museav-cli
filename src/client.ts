@@ -27,11 +27,34 @@ const CLIENT_ID = (() => {
 })()
 
 export interface GenerateOptions {
-  prompt: string
+  /** 自己写完整提示词。与 skill_slug 二选一 */
+  prompt?: string
+  /**
+   * 用中台技能出图（技能黑盒）：提示词正文在服务端展开，不下发。
+   * 查找顺序：自己的私有技能 → 所属租户的专属模板 → 公共技能库。
+   * 与 prompt 二选一；两个都不给会被服务端拒绝。
+   */
+  skill_slug?: string
+  /** 配合 skill_slug 的一句业务描述，如「米白色针织衫」。不给则按技能规范自由发挥 */
+  input?: string
   ratio?: string
   model?: string
   reference_image?: string
   quality?: 'low' | 'medium' | 'high'
+}
+
+/** 技能清单项（GET /api/skills） */
+export interface SkillOption {
+  slug: string
+  zh_name?: string
+  description?: string
+  genre?: string
+  ratio?: string
+  ref_required?: boolean
+  /** 私有技能（自己建的） */
+  private?: boolean
+  /** 所属租户的专属模板 */
+  agency?: boolean
 }
 
 export interface Job {
@@ -119,9 +142,20 @@ export class StudioClient {
     return body
   }
 
+  /** 可用技能清单：私有 + 所属租户专属模板 + 公共库，服务端已按调用者权限过滤 */
+  async skills(): Promise<SkillOption[]> {
+    const r = await this.request('skills')
+    return Array.isArray(r) ? r : []
+  }
+
   /** 提交出图任务，立即返回 jobId */
   async generate(opts: GenerateOptions): Promise<{ jobId: string; trace_id?: string }> {
-    const body: Record<string, unknown> = { prompt: opts.prompt }
+    // prompt 与 skill_slug 互斥：都传时服务端以 prompt 为准（不展开技能），
+    // 这里不替服务端做决定，只保证不凭空造字段
+    const body: Record<string, unknown> = {}
+    if (opts.prompt) body.prompt = opts.prompt
+    if (opts.skill_slug) body.skill_slug = opts.skill_slug
+    if (opts.input) body.input = opts.input
     if (opts.ratio) body.ratio = opts.ratio
     if (opts.model) body.model = opts.model
     if (opts.reference_image) body.reference_image = opts.reference_image

@@ -7,7 +7,7 @@
 
 import { useMemo, useState, useCallback, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { GATEWAY_ENDPOINTS } from '@/config/gateway'
+import { getGatewayEndpoints } from '@/config/gateway'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
@@ -399,8 +399,9 @@ export default function ApiKeysPage() {
     queryClient.invalidateQueries({ queryKey: ['api-keys', workspaceId] })
   }
 
-  const openAIBaseUrl = GATEWAY_ENDPOINTS[0]?.baseUrl ?? ''
-  const anthropicBaseUrl = GATEWAY_ENDPOINTS[1]?.baseUrl ?? openAIBaseUrl
+  const gatewayEndpoints = getGatewayEndpoints(market)
+  const openAIBaseUrl = gatewayEndpoints[0]?.baseUrl ?? ''
+  const anthropicBaseUrl = gatewayEndpoints[1]?.baseUrl ?? openAIBaseUrl
 
   if (forbidden) {
     return (

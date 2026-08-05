@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/Card'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { useMarket } from '@/hooks/useMarket'
 import { getMarketConfig } from '@/config/market'
-import { GATEWAY_ENDPOINTS } from '@/config/gateway'
+import { getGatewayEndpoints } from '@/config/gateway'
 import { trackEvent } from '@/lib/track'
 import { useTrackContext } from '@/hooks/use-track-context'
 import { useAuthStore } from '@/store/auth'
@@ -36,11 +36,12 @@ export function QuickStartSection() {
   if (dismissed) return null
 
   const docsUrl = getMarketConfig(market).docsUrl
-  const openAIBaseUrl = GATEWAY_ENDPOINTS[0]?.baseUrl ?? ''
+  const gatewayEndpoints = getGatewayEndpoints(market)
+  const openAIBaseUrl = gatewayEndpoints[0]?.baseUrl ?? ''
   // CLI 命令用已发布真实包(常量 MGC_PACKAGE)+ 按市场区域,统一走 constants 的 builder,
   // 不在业务代码内联包名/命令字面量(与接入弹窗同包同契约)。
   const cliCommand = buildMgcInstallCommand(deriveRegionFromBaseUrl(openAIBaseUrl))
-  const anthropicBaseUrl = GATEWAY_ENDPOINTS[1]?.baseUrl ?? openAIBaseUrl
+  const anthropicBaseUrl = gatewayEndpoints[1]?.baseUrl ?? openAIBaseUrl
 
   const trackOnboardingAction = (action: string, extra?: Record<string, string>) =>
     trackEvent('overview_onboarding_action_click', { ...trackCtx, action, ...extra })

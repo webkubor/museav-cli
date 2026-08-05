@@ -35,9 +35,18 @@ const REQUIRED_URL_ENV = [
   'VITE_GLOBAL_SITE', 'VITE_GLOBAL_CONSOLE', 'VITE_GLOBAL_DOCS',
 ] as const
 
+// 模型调用网关域名（api.*）：只有生产按市场分两个域名，dev/test 统一走 api.test.modelgo.com
+// （见 config/market.ts 的 isTestOrDev 分支，那里根本不读这两个变量，所以只在生产校验）。
+// 生产必须配齐——两个生产站共用同一份 .env.production，少一个就会把另一市场的网关地址
+// 发给用户（shared/modelgo_prd#376）。
+const REQUIRED_PROD_ENV = [
+  'VITE_DOMESTIC_GATEWAY_DOMAIN', 'VITE_GLOBAL_GATEWAY_DOMAIN',
+] as const
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_')
-  const missing = REQUIRED_URL_ENV.filter((k) => !env[k]?.trim())
+  const required = [...REQUIRED_URL_ENV, ...(mode === 'production' ? REQUIRED_PROD_ENV : [])]
+  const missing = required.filter((k) => !env[k]?.trim())
   if (missing.length) {
     throw new Error(
       `[vite] 缺少必需的跳转地址环境变量（mode=${mode}）：${missing.join(', ')}。` +

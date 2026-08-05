@@ -8,6 +8,8 @@
  *
  * 协议单一来源：代码 Tab 从 protocols 派生，无对应协议时不显示空 Tab（§11「协议单一来源」）。
  */
+import { getGatewayDomain } from '@/config/gateway'
+
 export type ApiProtocol = 'openai' | 'anthropic' | 'native'
 export type ApiCodeLanguage = 'curl' | 'nodejs' | 'python' | 'typescript' | 'claudeCode'
 
@@ -66,12 +68,15 @@ export function mapApiProtocols(protocols: ('openai' | 'anthropic' | 'other')[] 
 /** 固定代码示例模板：不读取当前草稿、附件和模型参数，只做格式展示 */
 export function buildCodeSample(protocol: ApiProtocol, language: ApiCodeLanguage, modelId: string): string {
   // 网关真实 base：OpenAI 兼容协议带 /v1，Anthropic 兼容协议不带 /v1（见 modelgo-env-urls 记忆）
+  // 域名按当前市场取（国内 api.modelgo.com / 国际 api.modelgo.ai），不写死——
+  // 写死会让国际站的示例代码给出国内网关地址，复制即用不了（需求方 shared/modelgo_prd#376）
+  const base = `https://${getGatewayDomain()}`
   const endpoint =
     protocol === 'anthropic'
-      ? 'https://api.modelgo.com/messages'
+      ? `${base}/messages`
       : protocol === 'native'
-        ? 'https://api.modelgo.com/v1/native/generate'
-        : 'https://api.modelgo.com/v1/chat/completions'
+        ? `${base}/v1/native/generate`
+        : `${base}/v1/chat/completions`
 
   const bodyKeys =
     protocol === 'anthropic'
@@ -127,7 +132,7 @@ export function buildCodeSample(protocol: ApiProtocol, language: ApiCodeLanguage
           ``,
           `client = Anthropic(`,
           `    api_key=os.environ["MODELGO_API_KEY"],`,
-          `    base_url="https://api.modelgo.com",`,
+          `    base_url="${base}",`,
           `)`,
           ``,
           `message = client.messages.create(`,

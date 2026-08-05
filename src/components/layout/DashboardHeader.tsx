@@ -15,7 +15,7 @@ import { createOrganization } from '@/services/organizations'
 import { applyTheme, getUserTheme, saveTheme } from '@/lib/theme'
 import { useTranslation } from 'react-i18next'
 import { listWorkspaces } from '@/services/workspaces'
-import { GATEWAY_ENDPOINTS } from '@/config/gateway'
+import { getGatewayEndpoints } from '@/config/gateway'
 import type { TenantBrief, TenantItem, SessionResult } from '@/types'
 import type { TenantListResponse } from '@/interfaces'
 import { cn } from '@/lib/utils'
@@ -51,6 +51,8 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
   const trackCtx = useTrackContext()
   const market = useLangStore((s) => s.market)
   const marketConfig = getMarketConfig(market)
+  // 网关接入地址跟着 store 的 market 走（dev 工具栏切国内/海外不刷新页面），#376
+  const gatewayEndpoints = getGatewayEndpoints(market)
 
   const queryClient = useQueryClient()
   const { t, i18n } = useTranslation()
@@ -436,8 +438,8 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
       <ConnectModal
         open={connectModalVisible}
         onClose={() => setConnectModalVisible(false)}
-        openAIBaseUrl={GATEWAY_ENDPOINTS[0]?.baseUrl ?? ''}
-        anthropicBaseUrl={GATEWAY_ENDPOINTS[1]?.baseUrl ?? GATEWAY_ENDPOINTS[0]?.baseUrl ?? ''}
+        openAIBaseUrl={gatewayEndpoints[0]?.baseUrl ?? ''}
+        anthropicBaseUrl={gatewayEndpoints[1]?.baseUrl ?? gatewayEndpoints[0]?.baseUrl ?? ''}
         createdKeyText=""
         docsUrl={marketConfig.docsUrl}
         onCreateKey={handleCreateApiKeyFromConnect}

@@ -3,8 +3,15 @@ import type { Market } from '@/lib/market'
 export interface MarketConfig {
   /** 面向用户的主域名 */
   domain: string
-  /** API 网关域名 */
+  /** 控制台 BFF 域名（modelgo-web-api.*），前端自己调的那套接口 */
   apiDomain: string
+  /**
+   * 模型调用网关域名（api.*）——用户拿 API Key 去打的那个，和上面的 apiDomain 是两套服务。
+   * 必须按市场分：国内站 api.modelgo.com / 国际站 api.modelgo.ai。
+   * 曾经是构建期单一常量 VITE_API_GATEWAY_DOMAIN，两个生产站共用一份 .env.production，
+   * 导致国际站把国内网关域名发给用户（需求方 shared/modelgo_prd#376）。
+   */
+  gatewayDomain: string
   /** 品牌名（用于展示） */
   companyName: string
   /** ICP 备案号，无则 null */
@@ -55,6 +62,10 @@ const configs: Record<Market, MarketConfig> = {
     apiDomain: isTestOrDev()
       ? 'test.modelgo.com'
       : (import.meta.env.VITE_DOMESTIC_API_DOMAIN || 'api.modelgo.com'),
+    // test/dev 只有一套网关，两个市场都指它；生产必须显式配，缺了就启动失败
+    gatewayDomain: isTestOrDev()
+      ? 'api.test.modelgo.com'
+      : requireEnv(import.meta.env.VITE_DOMESTIC_GATEWAY_DOMAIN, 'VITE_DOMESTIC_GATEWAY_DOMAIN'),
     companyName: 'ModelGo',
     icp: import.meta.env.VITE_ICP || null,
     locales: ['zh'],
@@ -69,6 +80,9 @@ const configs: Record<Market, MarketConfig> = {
     apiDomain: isTestOrDev()
       ? 'test.modelgo.com'
       : (import.meta.env.VITE_GLOBAL_API_DOMAIN || 'api.modelgo.ai'),
+    gatewayDomain: isTestOrDev()
+      ? 'api.test.modelgo.com'
+      : requireEnv(import.meta.env.VITE_GLOBAL_GATEWAY_DOMAIN, 'VITE_GLOBAL_GATEWAY_DOMAIN'),
     companyName: 'ModelGo',
     icp: null,
     locales: ['zh', 'en'],

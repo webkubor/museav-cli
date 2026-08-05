@@ -3,7 +3,7 @@ import type { TFunction } from 'i18next'
 import { Money } from '@/components/ui/Money'
 import type { BadgeVariant } from '@/components/ui/Badge'
 import type { TaskArtifactState, TaskDetail, TaskItem, TaskKind } from '@/types'
-import { GATEWAY_ENDPOINTS } from '@/config/gateway'
+import { getGatewayEndpoints } from '@/config/gateway'
 import { formatDateTime } from '@/lib/format-date'
 
 // ─── 常量 ────────────────────────────────────────────────────────────────────
@@ -154,7 +154,7 @@ export function resultExpiry(
  * 端点形如 https://api.test.modelgo.com/v1/videos/{id}/content
  */
 export function videoContentUrl(requestId: string) {
-  const base = GATEWAY_ENDPOINTS[0]?.baseUrl ?? ''
+  const base = getGatewayEndpoints()[0]?.baseUrl ?? ''
   return `${base}/videos/${encodeURIComponent(requestId)}/content`
 }
 

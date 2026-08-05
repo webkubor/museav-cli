@@ -158,7 +158,13 @@
         "removeConfirmDesc": "确认移除该成员？移除后该成员将无法访问此工作空间。",
         "roleConfirmTitle": "确认修改角色",
         "roleConfirmDesc": "确认将该成员角色修改为「{{role}}」？",
-        "roleConfirmOk": "确认修改"
+        "roleConfirmOk": "确认修改",
+        "tenantRole": {
+          "tenant_owner": "拥有者",
+          "tenant_admin": "管理员",
+          "tenant_member": "成员"
+        },
+        "keysCount": "{{count}} 个"
       },
       "settings": {
         "renameLabel": "工作空间名称",

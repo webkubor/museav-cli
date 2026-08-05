@@ -4,9 +4,9 @@
 
 # studio-cli
 
-[![npm version](https://img.shields.io/npm/v/%40webkubor%2Fstudio-cli)](https://www.npmjs.com/package/@webkubor/studio-cli)
-[![license](https://img.shields.io/npm/l/%40webkubor%2Fstudio-cli)](./LICENSE)
-[![node](https://img.shields.io/node/v/%40webkubor%2Fstudio-cli)](package.json)
+[![npm version](https://img.shields.io/npm/v/%40kubor%2Fstudio-cli)](https://www.npmjs.com/package/@kubor/studio-cli)
+[![license](https://img.shields.io/npm/l/%40kubor%2Fstudio-cli)](./LICENSE)
+[![node](https://img.shields.io/node/v/%40kubor%2Fstudio-cli)](package.json)
 [![CI](https://github.com/webkubor/studio-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/webkubor/studio-cli/actions/workflows/ci.yml)
 
 **Agent-ready** — designed to be shelled out to directly, not just used by humans
@@ -33,7 +33,7 @@
 
 **不适合你，如果你在做一个真正的产品/网站**：这个 CLI 是给终端用的，**不是** SDK 或后端集成方案。举个真实例子——好易美的 `hym-admin`（一个跑在 Cloudflare Pages Functions 上的业务后台）需要出图能力时，走的是两条路，都跟这个 CLI 无关：
 1. 人要用完整界面 → 用 SSO 直接内嵌 [studio 中台网页版](https://studio.webkubor.online)（iframe，登录态自动同步）
-2. 后端要程序化调用 → 直接 `fetch('https://studio.webkubor.online/api/generate', { headers: { 'X-API-Key': ... } })`，或者 `import { StudioClient } from '@webkubor/studio-cli'` 当库用
+2. 后端要程序化调用 → 直接 `fetch('https://studio.webkubor.online/api/generate', { headers: { 'X-API-Key': ... } })`，或者 `import { StudioClient } from '@kubor/studio-cli'` 当库用
 
 **这不是随便选的**：Cloudflare Pages Functions/Workers 这类边缘运行时压根不能起子进程，`studio-cli` 这个 CLI 二进制在那种环境里根本跑不起来。做产品集成，永远是调 HTTP API 或者拿 `StudioClient` 当库导入；CLI 是给"人在终端里"或"agent 跑 shell 命令"这两个场景用的，别的地方用不上也不该用。
 
@@ -77,7 +77,7 @@
 
 ```bash
 # 从 npm 安装（推荐）
-npm install -g @webkubor/studio-cli
+npm install -g @kubor/studio-cli
 
 # 或从 GitHub 全局安装
 npm install -g github:webkubor/studio-cli
@@ -199,7 +199,7 @@ studio-cli jobs --status failed    # 只看失败的（本地过滤，不是服�
 CLI 背后是一个干净的 `StudioClient` class，也可以当库用：
 
 ```ts
-import { StudioClient } from '@webkubor/studio-cli'
+import { StudioClient } from '@kubor/studio-cli'
 
 // 方式一：用 login 拿到的 token（个人用户）
 const studio = new StudioClient({

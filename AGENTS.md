@@ -44,7 +44,7 @@ Full flag reference: `studio-cli <command> --help`. Full command table and auth 
 ## Programmatic use (no shell-out)
 
 ```ts
-import { StudioClient } from '@webkubor/studio-cli'
+import { StudioClient } from '@kubor/studio-cli'
 
 const studio = new StudioClient({ baseUrl: 'https://studio.webkubor.online', apiKey: process.env.STUDIO_API_KEY! })
 const job = await studio.generateAndWait({ prompt: 'a cat on the moon', ratio: '3:4' })

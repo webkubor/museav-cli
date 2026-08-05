@@ -13,7 +13,7 @@ import { getModel, listModels, listRelatedModels } from '@/services/catalog'
 import { useAuthStore } from '@/store/auth'
 import { useLangStore } from '@/store/use-brand-store'
 import { getMarketConfig } from '@/config/market'
-import { appendThemeParam } from '@/lib/theme'
+import { appendCrossSiteParams } from '@/lib/cross-site-link'
 import { toLoginWithRedirect } from '@/lib/redirect'
 import { trackEvent, trackPageView } from '@/lib/track'
 import { Button } from '@/components/ui/Button'
@@ -43,7 +43,7 @@ export default function ModelDetailPage() {
   const isZh = i18n.language.startsWith('zh')
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const market = useLangStore((s) => s.market)
-  const docsUrl = appendThemeParam(getMarketConfig(market).docsUrl)
+  const docsUrl = appendCrossSiteParams(getMarketConfig(market).docsUrl)
 
   const navState = (location.state as DetailNavState | null) ?? null
   const detailSource = navState?.source ?? 'direct'

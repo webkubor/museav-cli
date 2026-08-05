@@ -1,7 +1,7 @@
 import type { BadgeVariant } from '@/components/ui/Badge'
 import { CONSOLE_ROUTES, type ConsoleRouteMeta } from '@/config/console-routes'
 import { siteUrlForLocale, type MarketConfig } from '@/config/market'
-import { appendThemeParam } from '@/lib/theme'
+import { appendCrossSiteParams } from '@/lib/cross-site-link'
 import type { Market } from '@/lib/market'
 import type { AccountBrief, TenantBrief } from '@/types'
 import type { TenantItem } from '@/types'
@@ -42,7 +42,7 @@ export function buildSyncedNav(
     { key: 'home', label: t('nav.home'), href: siteUrlForLocale(market, locale) },
     { key: 'models', label: t('nav.models'), to: '/models', match: (p) => p.startsWith('/models') && !p.startsWith('/models/playground') && !p.startsWith('/models/compare') },
     { key: 'modelExplore', label: t('nav.modelExplore'), to: '/models/playground', match: (p) => p.startsWith('/models/playground') || p.startsWith('/models/compare') },
-    { key: 'docs', label: t('nav.docsMenu'), href: appendThemeParam(marketConfig.docsUrl) },
+    { key: 'docs', label: t('nav.docsMenu'), href: appendCrossSiteParams(marketConfig.docsUrl) },
     // 控制台：回到站内；在非 models/playground 的控制台页高亮
     { key: 'console', label: t('nav.console'), to: '/dashboard', match: (p) => !p.startsWith('/models') },
   ]

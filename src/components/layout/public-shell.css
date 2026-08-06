@@ -1,0 +1,17 @@
+/* 公开外壳（/models 模型广场家族）整页底色。
+ *
+ * 2026-08 视觉终稿：背景图撤掉（国内/海外一致），浅色档回纯色 ——
+ * #F2F5FB 打底（设计口径），页面顶部再叠一层白色向下渐隐，保留原背景图
+ * 「上亮下匀、蓝白相间」的层次，避免整屏一块死平的蓝灰。
+ * 深色档不做任何背景处理，直接走 token 底色。
+ */
+.mg-public-shell {
+  background:
+    linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0) 460px),
+    #f2f5fb;
+}
+
+[theme-mode='dark'] .mg-public-shell,
+body[theme-mode='dark'] .mg-public-shell {
+  background: var(--mg-bg-1);
+}

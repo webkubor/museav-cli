@@ -96,21 +96,24 @@
 /* 列表行的计数右对齐（原型口径） */
 .mg-side-row-count { margin-left: auto; font-style: normal; font-size: 12px; color: var(--mg-text-4); }
 .mg-side-row.is-active .mg-side-row-count { color: var(--brand-base); }
-.mg-side-group { padding: 6px 0; border-bottom: 1px solid var(--mg-border); }
+.mg-side-group { padding: 4px 0; border-bottom: 1px solid var(--mg-border); }
 .mg-side-group:last-child { border-bottom: none; }
 .mg-side-head {
-  display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 2px;
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 2px;
   font-size: 13px; font-weight: 700; color: var(--mg-text-1); cursor: pointer;
 }
 .mg-side-head > svg:first-child { color: var(--brand-base); }
 .mg-side-head-chevron { margin-left: auto; color: var(--mg-text-4); transition: transform 0.2s ease; }
 .mg-side-list { display: flex; flex-direction: column; gap: 2px; margin-top: 2px; }
+/* 2026-08 视觉改版稿：行改胶囊（radius-full），高度收矮一档 */
 .mg-side-row {
-  display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 10px;
-  border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--mg-text-2);
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 5px 12px;
+  border-radius: var(--radius-full); font-size: 13px; font-weight: 500; color: var(--mg-text-2);
   text-align: left; cursor: pointer; transition: background 0.15s ease, color 0.15s ease;
 }
-.mg-side-row:hover { background: var(--mg-fill-0); color: var(--mg-text-1); }
+/* hover 不用 --mg-fill-0：它浅色档是 oklab 低比例混透明，叠白底会发黄发脏；
+   改 srgb 跟 bg-0 实混的极淡蓝。 */
+.mg-side-row:hover { background: color-mix(in srgb, var(--brand-base) 4%, var(--mg-bg-0)); color: var(--mg-text-1); }
 .mg-side-row.is-active { background: color-mix(in oklab, var(--brand-base) 12%, transparent); color: var(--brand-base); font-weight: 700; }
 .mg-side-more { display: inline-flex; align-items: center; gap: 3px; padding: 6px 4px; font-size: 12px; font-weight: 600; color: var(--mg-text-3); cursor: pointer; }
 .mg-side-more:hover { color: var(--brand-base); }

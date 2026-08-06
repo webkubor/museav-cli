@@ -10,6 +10,8 @@
   flex-direction: column;
   gap: 18px;
   padding: 2px 0 32px;
+  /* 整页底色由 layout/public-shell.css 提供（浅色 #F2F5FB + 顶部白渐隐，
+     深色纯 token 底），页面自身不再叠任何光晕/背景。 */
 }
 
 /* ── 顶部数据卡 + 热门模型 ─────────────────────────────────── */
@@ -82,8 +84,9 @@
 @media (max-width: 900px) {
 }
 
-/* ── 工具条：搜索 + 排序 ─────────────────────────────────── */
-.models-toolbar { display: flex; align-items: center; gap: 12px; }
+/* ── 工具条：搜索 + 排序（右列内，与侧栏顶平行；2026-08 改版稿） ── */
+.models-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+/* 整页底色改纯色淡蓝后，搜索/排序回纯白实底（半透明灰会跟页面底色融掉） */
 .mg-search-input {
   width: 100%; height: 48px; padding: 0 16px 0 44px;
   border: 1px solid var(--mg-border); border-radius: 999px;
@@ -102,5 +105,5 @@
   transition: border-color 0.15s ease;
 }
 .mg-sort-btn:hover { border-color: color-mix(in oklab, var(--brand-base) 35%, var(--mg-border)); }
-.mg-count { margin: 12px 2px 14px; font-size: 12.5px; color: var(--mg-text-3); }
+.mg-count { margin: 0 2px 14px; font-size: 12.5px; color: var(--mg-text-3); }
 

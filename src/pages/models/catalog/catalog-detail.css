@@ -81,30 +81,48 @@
 .mg-related-meta { font-size: 12px; color: var(--mg-text-3); }
 .mg-related-price { font-size: 12px; color: var(--brand-base); }
 
-/* ── 顶部信任 chips（原型口径，取代原三张数据卡）───────────────── */
+/* .mg-proto / .mg-mcard-tag 样式回归 catalog-grid-card.css（卡片版面撤回旧版，
+   协议/标签行重新在卡片上渲染），详情页 ModelDetailPanel 共用同一套。 */
+
+/* ── 顶部信任 chips（2026-08 视觉改版稿：白底描边 pill）───────────── */
 .mg-trust {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 18px;
-  margin-top: 10px; font-size: 12.5px; color: var(--mg-text-3);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  margin-top: 12px; font-size: 12.5px; color: var(--mg-text-2);
 }
-.mg-trust > span { display: inline-flex; align-items: center; gap: 5px; }
+.mg-trust > span {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 30px; padding: 0 13px;
+  border: 1px solid var(--mg-border); border-radius: var(--radius-full);
+  background: rgba(var(--mg-bg-0-rgb), 0.72);
+  font-weight: 600;
+}
 .mg-trust svg { color: var(--brand-base); flex-shrink: 0; }
+/* SLA 是稿上唯一的暖色点缀：文字/图标/描边全走 warning token */
+.mg-trust > span.is-sla {
+  color: var(--mg-warning);
+  border-color: color-mix(in oklab, var(--mg-warning) 38%, var(--mg-border));
+}
+.mg-trust > span.is-sla svg { color: var(--mg-warning); }
 
 /* ── 模型广场页面骨架（对齐原型）──────────────────────────────
    原型是 head → 轮播 → controls 三块全宽，最后才是「216px 侧栏 + 网格」两列。
    之前把所有内容塞进右列，轮播被侧栏挤窄、标题不与页面左缘对齐。 */
 .mg-plaza { display: flex; flex-direction: column; }
 .mg-plaza-layout {
-  display: grid; gap: 18px; align-items: start;
+  /* 2026-08 视觉改版稿：侧栏与列表区间距放大一档（18→24） */
+  display: grid; gap: 24px; align-items: start;
   grid-template-columns: 1fr;
 }
 @media (min-width: 1024px) {
   .mg-plaza-layout { grid-template-columns: 240px minmax(0, 1fr); }
 }
-/* 侧栏是带边框的卡片（原型 .marketplace-filters），不再是裸列 */
+/* 侧栏是带边框的卡片（原型 .marketplace-filters），不再是裸列。
+   整页底色已改纯色淡蓝（#F2F5FB，见 layout/public-shell.css），半透明灰底
+   会跟页面底色融成一片，回纯白实底靠对比撑出卡片感。 */
 .mg-side-card {
   background: var(--mg-bg-0);
   border: 1px solid var(--mg-card-border);
   border-radius: var(--radius-md);
   box-shadow: var(--mg-card-shadow);
-  padding: 14px 12px;
+  padding: 12px 10px;
 }

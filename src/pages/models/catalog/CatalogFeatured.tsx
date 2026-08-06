@@ -186,9 +186,10 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
                       })}
                 </span>
                 {pitch && <p>{pitch}</p>}
-              </div>
 
-              <div className="mg-featured-actions">
+                {/* 2026-08 视觉改版稿：操作按钮在左列文案下方，不再右侧独立一列
+                    （右侧留给背景图的插画主体） */}
+                <div className="mg-featured-actions">
                 <button
                   type="button"
                   className="mg-featured-try"
@@ -222,6 +223,7 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
                 >
                   {t('modelsCatalog.featured.details')}
                 </button>
+                </div>
               </div>
             </article>
           )

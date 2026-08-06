@@ -17,8 +17,10 @@ describe('resolveExperienceMessageMedia', () => {
       { resource_id: 'image', kind: 'image', mime: 'image/png', size: 34 },
     ])).resolves.toEqual({
       media: [
-        { kind: 'audio', url: 'https://cdn.example.com/voice.mp3' },
-        { kind: 'image', url: 'https://cdn.example.com/reference.png' },
+        // downloadRef 是「下载产物」按钮的入口（qa#580）：url 指向不带 CORS 头的 CDN，
+        // 只够展示；少了这个引用，下载又会退化成整页跳转。
+        { kind: 'audio', url: 'https://cdn.example.com/voice.mp3', downloadRef: { resourceId: 'voice' } },
+        { kind: 'image', url: 'https://cdn.example.com/reference.png', downloadRef: { resourceId: 'image' } },
       ],
       hasFailures: false,
     })
@@ -33,7 +35,7 @@ describe('resolveExperienceMessageMedia', () => {
       { resource_id: 'expired', kind: 'image', mime: 'image/png', size: 12 },
       { resource_id: 'video', kind: 'video', mime: 'video/mp4', size: 34 },
     ])).resolves.toEqual({
-      media: [{ kind: 'video', url: 'https://cdn.example.com/video.mp4' }],
+      media: [{ kind: 'video', url: 'https://cdn.example.com/video.mp4', downloadRef: { resourceId: 'video' } }],
       hasFailures: true,
     })
   })

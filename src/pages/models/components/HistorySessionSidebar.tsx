@@ -13,15 +13,9 @@ import { Modal } from '@/components/ui/Modal'
 import { Badge, type BadgeVariant } from '@/components/ui/Badge'
 import { formatRelativeTime } from '@/lib/format-date'
 import '@/pages/models/styles/history-session-sidebar.css'
+import type { HistorySessionItem } from '../history-session-mapper'
 
-export interface HistorySessionItem {
-  id: string
-  name: string
-  updatedAt: string // ISO 时间
-  category: 'dialogue' | 'image' | 'audio' | 'video'
-  task: string
-  models: Array<{ id: string; name: string; offline?: boolean }>
-}
+export type { HistorySessionItem }
 
 interface HistorySessionSidebarProps {
   collapsed: boolean

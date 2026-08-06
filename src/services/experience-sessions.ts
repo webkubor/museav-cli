@@ -7,7 +7,7 @@
  */
 import { apiBaseUrl, get, post, patch, put, del, upload } from '@/lib/request'
 import { injectHeaders } from '@/lib/request-headers'
-import i18n from 'i18next'
+import { streamSSE } from '@/lib/stream-chat'
 
 export type ExperienceCategory = 'dialogue' | 'image' | 'audio' | 'video'
 
@@ -223,15 +223,6 @@ export async function getExperienceAttachmentUrl(resourceId: string): Promise<{ 
   return get('experience/attachments/url', { resource_id: resourceId })
 }
 
-/** 解析单行 SSE：区分 `event:` 与 `data:`，供 streamExperienceMessage 逐行喂入 */
-type SSELine = { kind: 'event'; value: string } | { kind: 'data'; value: string } | null
-
-function parseSSELine(line: string): SSELine {
-  if (line.startsWith('event:')) return { kind: 'event', value: line.slice(6).trim() }
-  if (line.startsWith('data:')) return { kind: 'data', value: line.slice(5).trim() }
-  return null
-}
-
 /**
  * 同步媒体任务发送（text_to_image / image_to_image / text_to_audio / audio_to_text），
  * 走普通 JSON（非 SSE），接口文档第五节 5.2。同步等待模型完成，生图/TTS 通常 5-30 秒，
@@ -282,6 +273,10 @@ interface ChatCompletionChunk {
  * 发送对话组消息（text_to_text / image_to_text / video_to_text），SSE 流式。
  * 帧序：若干 OpenAI 增量帧 → `event: modelgo.stats` 统计帧 → `data: [DONE]`（文档第五节 5.1）。
  * resolve 为完整回复文本；统计帧通过 onStats 回调交给调用方拼真实 Token/延迟/费用。
+ *
+ * 用底层 streamSSE（而非 createOpenAIStream）：因为这里除了 OpenAI delta，
+ * 还有私有的 `event: modelgo.stats` 帧要分流给 onStats。事件分流是本接口独有需求，
+ * 不应塞进通用适配器。
  */
 export async function streamExperienceMessage(opts: StreamExperienceMessageOptions): Promise<string> {
   const url = `${apiBaseUrl()}/api/v1/experience/conversations/${opts.conversationId}/messages`
@@ -291,84 +286,39 @@ export async function streamExperienceMessage(opts: StreamExperienceMessageOptio
   })
   injectHeaders(probe)
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: Object.fromEntries(probe.headers.entries()),
-    credentials: 'include',
-    signal: opts.signal,
-    body: JSON.stringify({
+  let accumulated = ''
+  for await (const ev of streamSSE({
+    url,
+    body: {
       dispatch_id: opts.dispatchId,
       content: opts.content,
       attachments: opts.attachments ?? [],
-    }),
-  })
-
-  const contentType = response.headers.get('Content-Type') ?? ''
-  if (!response.ok || !contentType.includes('text/event-stream')) {
-    let message = `HTTP ${response.status}`
-    try {
-      // 两种错误信封都要认：BFF 业务失败走文档里的 {code,msg,data.details[]}；
-      // 网关层拦截（如安全护栏 IP 白名单）走 {error:{message}}，不经过 BFF 信封包装。
-      const body = (await response.json()) as {
-        msg?: string
-        data?: { details?: Array<{ message?: string }> }
-        error?: { message?: string }
-      }
-      message = body.data?.details?.[0]?.message ?? body.msg ?? body.error?.message ?? message
-    } catch {
-      // 非 JSON 响应——保留 HTTP 状态文案
-    }
-    throw new Error(message)
-  }
-
-  const reader = response.body?.getReader()
-  if (!reader) throw new Error(i18n.t('errors.streamUnsupported', { ns: 'common' }))
-  const decoder = new TextDecoder()
-  let buffer = ''
-  let accumulated = ''
-  let currentEvent = 'message'
-
-  for (;;) {
-    const { done, value } = await reader.read()
-    if (done) break
-    buffer += decoder.decode(value, { stream: true })
-    const lines = buffer.split('\n')
-    buffer = lines.pop() ?? ''
-    for (const rawLine of lines) {
-      const line = rawLine.trim()
-      if (!line) {
-        currentEvent = 'message'
-        continue
-      }
-      const parsed = parseSSELine(line)
-      if (!parsed) continue
-      if (parsed.kind === 'event') {
-        currentEvent = parsed.value
-        continue
-      }
-      // parsed.kind === 'data'
-      if (!parsed.value) continue
-      if (currentEvent === 'modelgo.stats') {
-        try {
-          opts.onStats?.(JSON.parse(parsed.value) as ExperienceStatsEvent)
-        } catch {
-          // 统计帧解析失败不影响正文流
-        }
-        continue
-      }
-      if (parsed.value === '[DONE]') return accumulated
-      let chunk: ChatCompletionChunk
+    },
+    headers: Object.fromEntries(probe.headers.entries()),
+    signal: opts.signal,
+  })) {
+    // 统计帧：分流给 onStats，不进正文
+    if (ev.event === 'modelgo.stats') {
       try {
-        chunk = JSON.parse(parsed.value) as ChatCompletionChunk
+        opts.onStats?.(JSON.parse(ev.data) as ExperienceStatsEvent)
       } catch {
-        continue
+        // 统计帧解析失败不影响正文流
       }
-      if (chunk.error?.message) throw new Error(chunk.error.message)
-      const delta = chunk.choices?.[0]?.delta?.content
-      if (delta) {
-        accumulated += delta
-        opts.onDelta(delta)
-      }
+      continue
+    }
+    // 正文帧（event=message）
+    if (ev.data === '[DONE]') return accumulated
+    let chunk: ChatCompletionChunk
+    try {
+      chunk = JSON.parse(ev.data) as ChatCompletionChunk
+    } catch {
+      continue
+    }
+    if (chunk.error?.message) throw new Error(chunk.error.message)
+    const delta = chunk.choices?.[0]?.delta?.content
+    if (delta) {
+      accumulated += delta
+      opts.onDelta(delta)
     }
   }
   return accumulated

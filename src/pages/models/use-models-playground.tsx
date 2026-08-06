@@ -7,9 +7,6 @@ import {
   streamExperienceMessage,
   sendExperienceMediaMessage,
   getExperienceMessage,
-  listExperienceSessions,
-  renameExperienceSession,
-  deleteExperienceSession,
   getExperienceSessionMessages,
   getExperienceSessionStats,
   listExperienceModelConfigs,
@@ -61,7 +58,7 @@ import {
   type ExperienceTaskType,
 } from './model-experience-data'
 import { resolveExperienceMessageMedia } from './experience-message-attachments'
-import type { HistorySessionItem } from './components/HistorySessionSidebar'
+import { useExperienceHistorySidebar } from './use-experience-history-sidebar'
 import {
   INITIAL_MESSAGES,
   RESET_SESSION_STATS,
@@ -86,7 +83,6 @@ export function useModelsPlayground() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [apiCallOpen, setApiCallOpen] = useState(false)
   const [compareAddOpen, setCompareAddOpen] = useState(false)
-  const [historyCollapsed, setHistoryCollapsed] = useState(true)
 
   // 模型列/会话/消息跨路由持久化（qa#544）：改走模块级 zustand store，SPA 内路由切走
   // 再切回不再清空；变量名保持不变，文件里后续几十处引用几乎不用改。
@@ -115,8 +111,6 @@ export function useModelsPlayground() {
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
-
-  const [historySessions, setHistorySessions] = useState<HistorySessionItem[]>([])
 
   // 每轮最多一个附件（§7.5），上传成功后才拿到 resource_id，发送后清空
   const [attachment, setAttachment] = useState<PlaygroundPendingAttachment | null>(null)
@@ -263,77 +257,6 @@ export function useModelsPlayground() {
     })
   }, [allModels, selectedModel])
 
-  /** 拉取真实历史会话列表（供侧栏展示）；仅用当前分类可解析的会话，映射不到目录里的模型时用 model_id 兜底展示 */
-  async function refreshHistorySessions() {
-    try {
-      const { items } = await listExperienceSessions({ limit: 20, offset: 0 })
-      setHistorySessions(
-        items.map((session) => ({
-          id: session.id,
-          name: session.name,
-          updatedAt: session.updated_at,
-          category: (session.category as HistorySessionItem['category']) ?? 'dialogue',
-          task: experienceTaskLabel(session.task as Parameters<typeof experienceTaskLabel>[0]) ?? session.task,
-          // GET /experience/sessions 列表响应不带 conversations，改用轻量 models 字段（qa#535 已修复）；
-          // conversations 只在创建/详情响应里出现，两边都兼容一下，session.models 优先
-          models: session.models
-            ? session.models.map((modelId) => {
-                const catalogModel = allModels.find((m) => m.model_id === modelId)
-                return {
-                  id: modelId,
-                  name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id, modelVendorLabel(catalogModel, '')) : modelId,
-                  offline: !catalogModel,
-                }
-              })
-            : (session.conversations ?? [])
-                .slice()
-                .sort((a, b) => a.position - b.position)
-                .map((conv) => {
-                  const catalogModel = allModels.find((m) => m.model_id === conv.model_id)
-                  return {
-                    id: conv.model_id,
-                    name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id, modelVendorLabel(catalogModel, '')) : conv.model_id,
-                    offline: !catalogModel,
-                  }
-                }),
-        })),
-      )
-    } catch {
-      // 历史列表拉取失败不阻塞主流程，侧栏保持空态
-    }
-  }
-
-  /** 双击重命名（HistorySessionSidebar）：乐观更新 + 失败回滚，name 传空串会清空标题交回自动命名 */
-  async function renameHistorySession(id: string, name: string) {
-    const prev = historySessions
-    setHistorySessions((cur) => cur.map((s) => (s.id === id ? { ...s, name } : s)))
-    try {
-      await renameExperienceSession(id, name)
-    } catch {
-      setHistorySessions(prev)
-      appToast.error(t('modelsExperience.historySidebar.renameError'))
-    }
-  }
-
-  /** 删除会话记录（shared/modelgo_prd#362）：删成功再改本地列表——删除不可撤销，
-   *  乐观更新一旦失败会让「已经消失的卡片」再冒出来，不如等接口回。
-   *  删掉的正是当前打开的会话时，把工作区重置成新会话，避免继续往已删 session 发消息。 */
-  async function deleteHistorySession(id: string) {
-    try {
-      await deleteExperienceSession(id)
-      setHistorySessions((cur) => cur.filter((s) => s.id !== id))
-      if (sessionId === id) startNewSession()
-      appToast.success(t('modelsExperience.historySidebar.deleteSuccess'))
-    } catch {
-      appToast.error(t('modelsExperience.historySidebar.deleteError'))
-    }
-  }
-
-  useEffect(() => {
-    if (!historyCollapsed) void refreshHistorySessions()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [historyCollapsed])
-
   function startNewSession() {
     setSessionId(null)
     setConversationId(null)
@@ -342,6 +265,21 @@ export function useModelsPlayground() {
     setChatParams({})
     setSessionStats(RESET_SESSION_STATS)
   }
+
+  // 历史侧栏：刷新/重命名/删除/展开副作用共享逻辑（与 models-compare 共用同一 hook）
+  const {
+    historyCollapsed,
+    setHistoryCollapsed,
+    historySessions,
+    refreshHistorySessions,
+    renameHistorySession,
+    deleteHistorySession,
+  } = useExperienceHistorySidebar({
+    sessionId,
+    allModels,
+    taskLabel: (task) => experienceTaskLabel(task as Parameters<typeof experienceTaskLabel>[0]),
+    onDeletedCurrent: startNewSession,
+  })
 
   /** 选模型（+ 可选显式选定的任务，来自 ModelPickerDialog「可体验任务」按钮组）。
    *  没传 task 时（直接点模型行）沿用 PRD selectModelTask 的默认规则：新模型如果还支持

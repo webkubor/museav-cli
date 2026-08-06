@@ -1,6 +1,7 @@
 /**
  * API Key 列表表格（PRD v1.0.3）：名称 / 类型 / 负责人 / 安全护栏 / 状态 / 本期消费·限额 / 最近调用 / 到期时间 / 操作
- * 行点击开详情抽屉；治理动作（停用/启用）行内直达，轮转/删除在抽屉。
+ * 行点击开详情抽屉；治理动作（停用/启用）行内直达，轮转/删除在抽屉；
+ * 已过期 Key 行内额外直达「删除」（需求方#485）。
  */
 import { useTranslation } from 'react-i18next'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -26,16 +27,12 @@ import {
   periodSpendOf,
   lastCalledOf,
   isExpiringSoon,
+  isExpiredKey,
   cap,
   formatLimit,
   statusLabel,
   type ApiKeyAction,
 } from './derive'
-
-/** key 是否已过期：瞬时点比较（expires_at 为带 Z 的 UTC ISO）。放组件外避免 render 期调 Date.now。 */
-function isExpired(iso: string): boolean {
-  return new Date(iso).getTime() < Date.now()
-}
 
 const KEY_TYPE_CLASS: Record<string, string> = {
   personal: 'bg-mg-fill-0 border-mg-border text-mg-text-2',
@@ -51,6 +48,8 @@ type Props = {
   canReveal: boolean
   onOpenDetail: (item: ApiKeyItem) => void
   onToggleStatus: (item: ApiKeyItem) => void
+  /** 已过期 Key 行内「删除」（需求方#485）：走父组件删除确认弹窗 */
+  onRevoke: (target: { id: string; name: string }) => void
   /** 复制完整明文（#298）：父组件调 reveal → 剪贴板 */
   onCopyKey: (item: ApiKeyItem) => void
   /** 正在 reveal 的 key id（行内 loading） */
@@ -78,6 +77,7 @@ export function ApiKeyTable({
   canReveal,
   onOpenDetail,
   onToggleStatus,
+  onRevoke,
   onCopyKey,
   copyingKeyId,
   enablePendingId,
@@ -180,6 +180,9 @@ export function ApiKeyTable({
             const hasLimit = !!effLimit && Number(effLimit.amount) > 0
             const lastCalled = lastCalledOf(record)
             const isDisabled = record.status === 'disabled'
+            const expired = isExpiredKey(record)
+            // 已过期 Key 行内直达删除（需求方#485）：权限口径与抽屉 canDelete 一致
+            const canDelete = expired && record.status !== 'revoked' && cap(record.capabilities?.can_delete, canAction(keyType, 'revoke'))
             const canToggle = isDisabled
               ? cap(record.capabilities?.can_enable, canAction(keyType, 'disable'))
               : cap(record.capabilities?.can_disable, canAction(keyType, 'disable'))
@@ -288,7 +291,7 @@ export function ApiKeyTable({
                 <TableCell className="text-xs">
                   {!record.expires_at ? (
                     <span className="text-mg-text-3">{t('apiKeys.table.neverExpires')}</span>
-                  ) : isExpired(record.expires_at) ? (
+                  ) : expired ? (
                     <span className="inline-flex items-center gap-1.5 text-mg-danger font-semibold">
                       {formatDateTime(record.expires_at)}
                       <span className="px-1.5 py-0.5 rounded-full text-xs font-bold bg-mg-danger/10 border border-mg-danger/20">
@@ -327,6 +330,14 @@ export function ApiKeyTable({
                         </button>
                       )
                     })()}
+                    {canDelete && (
+                      <button
+                        onClick={() => onRevoke({ id: record.api_key_id, name: record.name })}
+                        className="text-mg-danger hover:text-mg-danger/80 transition-colors cursor-pointer"
+                      >
+                        {t('apiKeys.table.delete')}
+                      </button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

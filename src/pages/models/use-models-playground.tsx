@@ -59,6 +59,8 @@ import {
 } from './model-experience-data'
 import { resolveExperienceMessageMedia } from './experience-message-attachments'
 import { useExperienceHistorySidebar } from './use-experience-history-sidebar'
+import { useStreamingController, isAbortError } from '@/hooks/use-streaming-controller'
+import { patchLastAssistant } from '@/lib/message-patch'
 import {
   INITIAL_MESSAGES,
   RESET_SESSION_STATS,
@@ -96,6 +98,11 @@ export function useModelsPlayground() {
   const messages = single.messages
   const setMessages = (updater: ExperienceMessage[] | ((prev: ExperienceMessage[]) => ExperienceMessage[])) =>
     setSingle((s) => ({ messages: typeof updater === 'function' ? updater(s.messages) : updater }))
+  /** 改「当前这条正在生成的回复」——流式/异步回填统一入口。回复永远是列表最后一条，
+   *  定位不到（列表空/最后一条是用户消息）就不动。 */
+  const patchAssistant = (
+    patch: Partial<ExperienceMessage> | ((last: ExperienceMessage) => Partial<ExperienceMessage>),
+  ) => setMessages((prev) => patchLastAssistant(prev, patch))
   const sessionId = single.sessionId
   const setSessionId = (id: string | null) => setSingle({ sessionId: id })
   const conversationId = single.conversationId
@@ -110,7 +117,8 @@ export function useModelsPlayground() {
 
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
-  const abortRef = useRef<AbortController | null>(null)
+  // 流式中断编排（新请求自动掐旧请求、卸载自动收尾）都在 hook 里，这里只管 isStreaming 这个 UI 状态
+  const stream = useStreamingController()
 
   // 每轮最多一个附件（§7.5），上传成功后才拿到 resource_id，发送后清空
   const [attachment, setAttachment] = useState<PlaygroundPendingAttachment | null>(null)
@@ -122,8 +130,8 @@ export function useModelsPlayground() {
   // 挂载那一刻的 entry state 会被下面的 navigate(replace, state:{}) 清空，先冻住供 playground_view 用
   const entryStateRef = useRef((location.state as { selectedModelId?: string } | null)?.selectedModelId)
 
+  // 在途请求的卸载中断由 useStreamingController 内部处理，这里只清预览用的 blob URL
   useEffect(() => () => {
-    abortRef.current?.abort()
     transientPreviewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url))
   }, [])
 
@@ -587,23 +595,10 @@ export function useModelsPlayground() {
     if (currentAttachment) replaceMessageAttachmentPreview(dispatchId, currentAttachment)
     setInput('')
     setIsStreaming(true)
-    abortRef.current?.abort()
-    const controller = new AbortController()
-    abortRef.current = controller
+    const signal = stream.begin()
     const startedAt = Date.now()
     let firstDeltaAt: number | null = null
     let stats: ExperienceStatsEvent | null = null
-
-    const applyAssistant = (updater: (content: string) => string) => {
-      setMessages((prev) => {
-        const next = [...prev]
-        const last = next[next.length - 1]
-        if (last?.role === 'assistant') {
-          next[next.length - 1] = { ...last, content: updater(last.content) }
-        }
-        return next
-      })
-    }
 
     try {
       const convId = await ensureConversation()
@@ -612,10 +607,10 @@ export function useModelsPlayground() {
         dispatchId,
         content: prompt,
         attachments: resourceIds,
-        signal: controller.signal,
+        signal,
         onDelta: (delta) => {
           firstDeltaAt ??= Date.now()
-          applyAssistant((content) => content + delta)
+          patchAssistant((last) => ({ content: last.content + delta }))
         },
         onStats: (event) => {
           stats = event
@@ -626,26 +621,18 @@ export function useModelsPlayground() {
       if (stats) {
         const s: ExperienceStatsEvent = stats
         const spend = Number(s.actual_spend ?? s.estimated_spend ?? 0)
-        setMessages((prev) => {
-          const next = [...prev]
-          const last = next[next.length - 1]
-          if (last?.role === 'assistant') {
-            next[next.length - 1] = {
-              ...last,
-              error: s.status === 'failed' ? (last.content ? undefined : t('modelsExperience.modelRunFailed')) : undefined,
-              metrics: {
-                model: modelLabel,
-                inputTokens: s.input_tokens,
-                outputTokens: s.output_tokens,
-                firstTokenLatency: formatPlaygroundLatency(s.first_token_ms),
-                totalLatency: formatPlaygroundLatency(s.total_ms),
-                spend,
-                free: s.free,
-              },
-            }
-          }
-          return next
-        })
+        patchAssistant((last) => ({
+          error: s.status === 'failed' ? (last.content ? undefined : t('modelsExperience.modelRunFailed')) : undefined,
+          metrics: {
+            model: modelLabel,
+            inputTokens: s.input_tokens,
+            outputTokens: s.output_tokens,
+            firstTokenLatency: formatPlaygroundLatency(s.first_token_ms),
+            totalLatency: formatPlaygroundLatency(s.total_ms),
+            spend,
+            free: s.free,
+          },
+        }))
         trackEvent('playground_model_run_result', {
           model_id: selectedModel.model_id,
           status: s.status === 'failed' ? 'failed' : 'succeeded',
@@ -662,24 +649,16 @@ export function useModelsPlayground() {
         const outputPrice = Number(selectedModel.pricing?.output_per_1m ?? 0)
         const free = !inputPrice && !outputPrice
         const spend = free ? 0 : (inputTokens * inputPrice + outputTokens * outputPrice) / 1_000_000
-        setMessages((prev) => {
-          const next = [...prev]
-          const last = next[next.length - 1]
-          if (last?.role === 'assistant') {
-            next[next.length - 1] = {
-              ...last,
-              metrics: {
-                model: modelLabel,
-                inputTokens,
-                outputTokens,
-                firstTokenLatency: formatPlaygroundLatency((firstDeltaAt ?? Date.now()) - startedAt),
-                totalLatency: formatPlaygroundLatency(totalMs),
-                spend,
-                free,
-              },
-            }
-          }
-          return next
+        patchAssistant({
+          metrics: {
+            model: modelLabel,
+            inputTokens,
+            outputTokens,
+            firstTokenLatency: formatPlaygroundLatency((firstDeltaAt ?? Date.now()) - startedAt),
+            totalLatency: formatPlaygroundLatency(totalMs),
+            spend,
+            free,
+          },
         })
         trackEvent('playground_model_run_result', {
           model_id: selectedModel.model_id,
@@ -690,17 +669,10 @@ export function useModelsPlayground() {
         }, { result: 'success' })
       }
     } catch (err) {
-      if ((err as Error).name === 'AbortError') return
-      applyAssistant(() => '')
+      if (isAbortError(err)) return
       const errorCode = (err as { data?: { code?: string } } | undefined)?.data?.code
-      setMessages((prev) => {
-        const next = [...prev]
-        const last = next[next.length - 1]
-        if (last?.role === 'assistant') {
-          next[next.length - 1] = { ...last, error: `${t('modelsExperience.requestFailed')}${extractApiErrorMessage(err)}` }
-        }
-        return next
-      })
+      // 已流出的半截内容清掉，只留报错气泡（原有行为：先清 content 再写 error）
+      patchAssistant({ content: '', error: `${t('modelsExperience.requestFailed')}${extractApiErrorMessage(err)}` })
       trackEvent('playground_model_run_result', {
         model_id: selectedModel.model_id,
         status: 'failed',
@@ -748,15 +720,6 @@ export function useModelsPlayground() {
     setIsStreaming(true)
     const startedAt = Date.now()
 
-    function applyResult(patch: Partial<ExperienceMessage>) {
-      setMessages((prev) => {
-        const next = [...prev]
-        const last = next[next.length - 1]
-        if (last?.role === 'assistant') next[next.length - 1] = { ...last, ...patch }
-        return next
-      })
-    }
-
     try {
       const convId = await ensureConversation()
       const { message, attachment_urls } = await sendExperienceMediaMessage({
@@ -769,7 +732,7 @@ export function useModelsPlayground() {
       if (message.status === 'running' && message.async_task_id) {
         // 视频异步任务：建议间隔 5 秒轮询，succeeded/failed 才是终态；run_result 留给轮询终态上报，这里不重复
         // 跳转链接携带 task_id，命中 /logs 页 AsyncTasksPanel 的 gateway_request_id 精确匹配自动展开详情（同 qa#14 逻辑）
-        applyResult({ content: `${t('modelsExperience.videoGenerating')}[${t('modelsExperience.videoGeneratingLink')}](/logs?task_id=${encodeURIComponent(message.async_task_id)})…` })
+        patchAssistant({ content: `${t('modelsExperience.videoGenerating')}[${t('modelsExperience.videoGeneratingLink')}](/logs?task_id=${encodeURIComponent(message.async_task_id)})…` })
         void pollVideoMessage(convId, message.id, modelLabel, selectedModel.model_id, artifactTitle, taskAtSend, chatParamsAtSend)
         return
       }
@@ -782,7 +745,7 @@ export function useModelsPlayground() {
       }))
       const spend = Number(message.actual_spend ?? 0)
       const totalMs = message.total_ms ?? Date.now() - startedAt
-      applyResult({
+      patchAssistant({
         content: message.content,
         media: media.length > 0 ? media : undefined,
         metrics: {
@@ -803,7 +766,7 @@ export function useModelsPlayground() {
         billing_status: spend === 0 ? 'free' : 'billed',
       }, { result: message.status === 'failed' ? 'fail' : 'success' })
     } catch (err) {
-      applyResult({ error: `${t('modelsExperience.requestFailed')}${extractApiErrorMessage(err)}` })
+      patchAssistant({ error: `${t('modelsExperience.requestFailed')}${extractApiErrorMessage(err)}` })
       const errorCode = (err as { data?: { field_errors?: Array<{ code?: string }> } } | undefined)?.data?.field_errors?.[0]?.code
       trackEvent('playground_model_run_result', {
         model_id: selectedModel.model_id,
@@ -845,37 +808,32 @@ export function useModelsPlayground() {
       try {
         const { message, attachment_urls } = await getExperienceMessage(conversationId, messageId)
         if (message.status === 'running') continue
-        setMessages((prev) => {
-          const next = [...prev]
-          const last = next[next.length - 1]
-          if (last?.role !== 'assistant') return prev
-          if (message.status === 'failed') {
-            return [...next.slice(0, -1), { ...last, error: message.error ? cleanErrorMessage(message.error) : t('modelsExperience.videoGenerateFailed'), content: '' }]
-          }
+        if (message.status === 'failed') {
+          patchAssistant({
+            content: '',
+            error: message.error ? cleanErrorMessage(message.error) : t('modelsExperience.videoGenerateFailed'),
+          })
+        } else {
           const media = message.attachments.map((a, i) => ({
             kind: a.kind,
             url: attachment_urls[a.resource_id] ?? '',
             title: artifactTitle,
             detail: buildMediaArtifactDetail(task, chatParamsAtSend, i),
           }))
-          return [
-            ...next.slice(0, -1),
-            {
-              ...last,
-              content: '',
-              media: media.length > 0 ? media : undefined,
-              metrics: {
-                model: modelLabel,
-                inputTokens: 0,
-                outputTokens: 0,
-                firstTokenLatency: '',
-                totalLatency: formatPlaygroundLatency(message.total_ms ?? 0),
-                spend: Number(message.actual_spend ?? 0),
-                free: false,
-              },
+          patchAssistant({
+            content: '',
+            media: media.length > 0 ? media : undefined,
+            metrics: {
+              model: modelLabel,
+              inputTokens: 0,
+              outputTokens: 0,
+              firstTokenLatency: '',
+              totalLatency: formatPlaygroundLatency(message.total_ms ?? 0),
+              spend: Number(message.actual_spend ?? 0),
+              free: false,
             },
-          ]
-        })
+          })
+        }
         trackEvent('playground_model_run_result', {
           model_id: modelId,
           status: message.status === 'failed' ? 'failed' : 'succeeded',
@@ -966,7 +924,7 @@ export function useModelsPlayground() {
     sendPrompt,
     handleFileSelect,
     clearAttachment,
-    stopStreaming: () => abortRef.current?.abort(),
+    stopStreaming: () => stream.abort(),
     retryMediaMessage,
   }
 }

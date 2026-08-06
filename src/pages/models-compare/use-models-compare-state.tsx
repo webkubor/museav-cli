@@ -42,6 +42,8 @@ import {
 } from '../models/model-experience-data'
 import { resolveExperienceMessageMedia } from '../models/experience-message-attachments'
 import { useExperienceHistorySidebar } from '../models/use-experience-history-sidebar'
+import { useStreamingController } from '@/hooks/use-streaming-controller'
+import { patchLastAssistant } from '@/lib/message-patch'
 import { MAX_COMPARE, type ColumnState } from './models-compare-utils'
 import { useCompareAttachments } from './use-compare-attachments'
 
@@ -104,7 +106,8 @@ export function useModelsCompareState() {
   // §8.5 窄屏一次展示一个模型列，顶部 Tab 切换；宽屏 CSS 直接把 tab 隐藏，不影响并排布局
   const [activeColumnIndex, setActiveColumnIndex] = useState(0)
 
-  const abortRefs = useRef<Array<AbortController | null>>([])
+  // 各列的流式中断编排（key = 列索引）：新请求自动掐同列旧请求、卸载自动全部收尾
+  const stream = useStreamingController<number>()
   const pendingByDispatch = useRef<Map<string, number>>(new Map())
   const bootedRef = useRef(false)
 
@@ -139,10 +142,6 @@ export function useModelsCompareState() {
     navigate(location.pathname, { replace: true, state: {} })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allModels, modelsQuery.isSuccess])
-
-  useEffect(() => () => {
-    abortRefs.current.forEach((controller) => controller?.abort())
-  }, [])
 
   // 会话按租户隔离，切换租户后各列绑的旧 conversationId 在新租户下已不存在，继续发消息
   // 会被后端 404「资源不存在」拒绝（同 shared/modelgo_prd#296，单模型页那份修法搬过来）。
@@ -230,7 +229,9 @@ export function useModelsCompareState() {
         return { model, conversationId: conv.id, history, streaming: false, draft: '', chatParams: {} }
       }))
       bootedRef.current = true
-      abortRefs.current = nextColumns.map(() => null)
+      // 换一整组列：旧列的在途请求连同句柄一起作废（原实现只丢句柄不中断，旧流仍会按
+      // 索引写回新列，属于同一处的隐患，一并收敛到 abortAll）
+      stream.abortAll()
       setActiveColumnIndex(0)
       setLastFocusedIndex(0)
       setSharedDraft('')
@@ -289,7 +290,9 @@ export function useModelsCompareState() {
         draft: '',
         chatParams: {},
       }))
-      abortRefs.current = nextColumns.map(() => null)
+      // 换一整组列：旧列的在途请求连同句柄一起作废（原实现只丢句柄不中断，旧流仍会按
+      // 索引写回新列，属于同一处的隐患，一并收敛到 abortAll）
+      stream.abortAll()
       setSessionId(session.id)
       setColumns(nextColumns)
       setCompare({ task })
@@ -303,25 +306,21 @@ export function useModelsCompareState() {
     setColumns((prev) => (prev ? prev.map((c, i) => (i === idx ? { ...c, ...patch } : c)) : prev))
   }
 
-  /** 中断某列进行中的流式输出并清空该列的 abort 句柄（换模型/删列时使用）。abortRefs 是
-   *  本 hook 持有的共享 ref，对它的写操作收敛在这里，避免外层拿到返回值后再改引用。 */
-  function abortColumnStream(idx: number) {
-    abortRefs.current[idx]?.abort()
-    abortRefs.current[idx] = null
+  /** 改某列「当前这条正在生成的回复」（该列 history 的最后一条 assistant）——流式增量、
+   *  统计回填、报错、异步视频终态都走这里，业务层不用再手写数组拷贝 + 定位。 */
+  function patchAssistant(
+    idx: number,
+    patch: Partial<ExperienceMessage> | ((last: ExperienceMessage) => Partial<ExperienceMessage>),
+  ) {
+    setColumns((prev) =>
+      prev
+        ? prev.map((c, i) => (i === idx ? { ...c, history: patchLastAssistant(c.history, patch) } : c))
+        : prev,
+    )
   }
 
   function applyAssistant(idx: number, updater: (content: string) => string) {
-    setColumns((prev) =>
-      prev
-        ? prev.map((c, i) => {
-            if (i !== idx) return c
-            const next = [...c.history]
-            const last = next[next.length - 1]
-            if (last?.role === 'assistant') next[next.length - 1] = { ...last, content: updater(last.content) }
-            return { ...c, history: next }
-          })
-        : prev,
-    )
+    patchAssistant(idx, (last) => ({ content: updater(last.content) }))
   }
 
   // qa#543：对比会话的一级类别以首列模型为准（同一组内模型类别一致，选模型/建组时已保证）。
@@ -393,13 +392,13 @@ export function useModelsCompareState() {
     activeColumnIndex,
     setActiveColumnIndex,
     ...attachments,
-    abortRefs,
+    stream,
     pendingByDispatch,
     allModels,
     isBalanceZero,
     updateColumn,
     applyAssistant,
-    abortColumnStream,
+    patchAssistant,
     refreshHistorySessions,
     compareCategory,
     compareTask,

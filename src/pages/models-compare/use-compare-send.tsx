@@ -31,6 +31,7 @@ import {
   type ExperienceMessage,
   type ExperienceTaskType,
 } from '../models/model-experience-data'
+import { isAbortError } from '@/hooks/use-streaming-controller'
 import type { DispatchAttachment } from './models-compare-utils'
 import type { CompareState } from './use-models-compare-state'
 
@@ -50,11 +51,12 @@ export function useCompareSend(state: CompareState) {
     columnAttachments,
     setColumnAttachmentErrors,
     pendingByDispatch,
-    abortRefs,
+    stream,
     compareTask,
     compareNeedsFileTask,
     updateColumn,
     applyAssistant,
+    patchAssistant,
     refreshHistorySessions,
     isBalanceZero,
   } = state
@@ -83,9 +85,7 @@ export function useCompareSend(state: CompareState) {
         attachmentResourceIds: attachment?.resourceIds,
       }, { role: 'assistant', content: '', dispatchId }],
     })
-    abortRefs.current[idx]?.abort()
-    const controller = new AbortController()
-    abortRefs.current[idx] = controller
+    const signal = stream.begin(idx)
     const startedAt = Date.now()
     let stats: ExperienceStatsEvent | null = null
 
@@ -95,7 +95,7 @@ export function useCompareSend(state: CompareState) {
         dispatchId,
         content: prompt,
         attachments: attachment?.resourceIds ?? [],
-        signal: controller.signal,
+        signal,
         onDelta: (delta) => applyAssistant(idx, (content) => content + delta),
         onStats: (event) => { stats = event },
       })
@@ -108,31 +108,18 @@ export function useCompareSend(state: CompareState) {
       const spend = hasStats ? Number(s!.actual_spend ?? s!.estimated_spend ?? 0) : 0
       const free = hasStats ? s!.free : (!Number(column.model.pricing?.input_per_1m ?? 0) && !Number(column.model.pricing?.output_per_1m ?? 0))
       const firstTokenMs = hasStats ? s!.first_token_ms : totalMs
-      setColumns((prev) =>
-        prev
-          ? prev.map((c, i) => {
-              if (i !== idx) return c
-              const next = [...c.history]
-              const last = next[next.length - 1]
-              if (last?.role === 'assistant') {
-                next[next.length - 1] = {
-                  ...last,
-                  metrics: {
-                    model: modelLabel,
-                    inputTokens,
-                    outputTokens,
-                    firstTokenLatency: formatPlaygroundLatency(firstTokenMs),
-                    totalLatency: formatPlaygroundLatency(totalMs),
-                    spend,
-                    free,
-                    totalMs,
-                  },
-                }
-              }
-              return { ...c, history: next }
-            })
-          : prev,
-      )
+      patchAssistant(idx, {
+        metrics: {
+          model: modelLabel,
+          inputTokens,
+          outputTokens,
+          firstTokenLatency: formatPlaygroundLatency(firstTokenMs),
+          totalLatency: formatPlaygroundLatency(totalMs),
+          spend,
+          free,
+          totalMs,
+        },
+      })
       trackEvent('playground_model_run_result', {
         model_id: column.model.model_id,
         status: 'succeeded',
@@ -141,19 +128,9 @@ export function useCompareSend(state: CompareState) {
         billing_status: free ? 'free' : 'billed',
       }, { result: 'success' })
     } catch (err) {
-      if ((err as Error).name === 'AbortError') return
+      if (isAbortError(err)) return
       const errorCode = (err as { data?: { code?: string } } | undefined)?.data?.code
-      setColumns((prev) =>
-        prev
-          ? prev.map((c, i) => {
-              if (i !== idx) return c
-              const next = [...c.history]
-              const last = next[next.length - 1]
-              if (last?.role === 'assistant') next[next.length - 1] = { ...last, error: `${t('modelsExperience.requestFailed')}${extractApiErrorMessage(err)}` }
-              return { ...c, history: next }
-            })
-          : prev,
-      )
+      patchAssistant(idx, { error: `${t('modelsExperience.requestFailed')}${extractApiErrorMessage(err)}` })
       trackEvent('playground_model_run_result', {
         model_id: column.model.model_id,
         status: 'failed',
@@ -211,28 +188,15 @@ export function useCompareSend(state: CompareState) {
       }))
       const spend = Number(message.actual_spend ?? 0)
       const totalMs = message.total_ms ?? Date.now() - startedAt
-      setColumns((prev) =>
-        prev
-          ? prev.map((c, i) => {
-              if (i !== idx) return c
-              const next = [...c.history]
-              const last = next[next.length - 1]
-              if (last?.role === 'assistant') {
-                next[next.length - 1] = {
-                  ...last,
-                  content: message.content,
-                  media: media.length > 0 ? media : undefined,
-                  error: message.status === 'failed' ? (message.content ? undefined : t('modelsExperience.modelRunFailed')) : undefined,
-                  metrics: {
-                    model: modelLabel, inputTokens: 0, outputTokens: 0, firstTokenLatency: '',
-                    totalLatency: formatPlaygroundLatency(totalMs), spend, free: spend === 0, totalMs,
-                  },
-                }
-              }
-              return { ...c, history: next }
-            })
-          : prev,
-      )
+      patchAssistant(idx, {
+        content: message.content,
+        media: media.length > 0 ? media : undefined,
+        error: message.status === 'failed' ? (message.content ? undefined : t('modelsExperience.modelRunFailed')) : undefined,
+        metrics: {
+          model: modelLabel, inputTokens: 0, outputTokens: 0, firstTokenLatency: '',
+          totalLatency: formatPlaygroundLatency(totalMs), spend, free: spend === 0, totalMs,
+        },
+      })
       trackEvent('playground_model_run_result', {
         model_id: column.model.model_id,
         status: message.status === 'failed' ? 'failed' : 'succeeded',
@@ -242,17 +206,7 @@ export function useCompareSend(state: CompareState) {
       }, { result: message.status === 'failed' ? 'fail' : 'success' })
     } catch (err) {
       const message = `${t('modelsExperience.requestFailed')}${extractApiErrorMessage(err)}`
-      setColumns((prev) =>
-        prev
-          ? prev.map((c, i) => {
-              if (i !== idx) return c
-              const next = [...c.history]
-              const last = next[next.length - 1]
-              if (last?.role === 'assistant') next[next.length - 1] = { ...last, error: message }
-              return { ...c, history: next }
-            })
-          : prev,
-      )
+      patchAssistant(idx, { error: message })
       const errorCode = (err as { data?: { field_errors?: Array<{ code?: string }> } } | undefined)?.data?.field_errors?.[0]?.code
       trackEvent('playground_model_run_result', {
         model_id: column.model.model_id,
@@ -285,37 +239,29 @@ export function useCompareSend(state: CompareState) {
       try {
         const { message, attachment_urls } = await getExperienceMessage(conversationId, messageId)
         if (message.status === 'running') continue
-        setColumns((prev) => {
-          if (!prev) return prev
-          return prev.map((c, i) => {
-            if (i !== idx) return c
-            const next = [...c.history]
-            const last = next[next.length - 1]
-            if (last?.role !== 'assistant') return c
-            if (message.status === 'failed') {
-              next[next.length - 1] = { ...last, error: message.error ? cleanErrorMessage(message.error) : t('modelsExperience.videoGenerateFailed'), content: '' }
-              return { ...c, history: next }
-            }
-            const media = message.attachments.map((a, mediaIdx) => ({
-              kind: a.kind,
-              url: attachment_urls[a.resource_id] ?? '',
-              title: artifactTitle,
-              detail: buildMediaArtifactDetail(task, chatParamsAtSend, mediaIdx),
-            }))
-            next[next.length - 1] = {
-              ...last,
-              content: '',
-              media: media.length > 0 ? media : undefined,
-              metrics: {
-                model: modelLabel, inputTokens: 0, outputTokens: 0, firstTokenLatency: '',
-                totalLatency: formatPlaygroundLatency(message.total_ms ?? 0),
-                spend: Number(message.actual_spend ?? 0), free: Number(message.actual_spend ?? 0) === 0,
-                totalMs: message.total_ms,
-              },
-            }
-            return { ...c, history: next }
+        if (message.status === 'failed') {
+          patchAssistant(idx, {
+            content: '',
+            error: message.error ? cleanErrorMessage(message.error) : t('modelsExperience.videoGenerateFailed'),
           })
-        })
+        } else {
+          const media = message.attachments.map((a, mediaIdx) => ({
+            kind: a.kind,
+            url: attachment_urls[a.resource_id] ?? '',
+            title: artifactTitle,
+            detail: buildMediaArtifactDetail(task, chatParamsAtSend, mediaIdx),
+          }))
+          patchAssistant(idx, {
+            content: '',
+            media: media.length > 0 ? media : undefined,
+            metrics: {
+              model: modelLabel, inputTokens: 0, outputTokens: 0, firstTokenLatency: '',
+              totalLatency: formatPlaygroundLatency(message.total_ms ?? 0),
+              spend: Number(message.actual_spend ?? 0), free: Number(message.actual_spend ?? 0) === 0,
+              totalMs: message.total_ms,
+            },
+          })
+        }
         trackEvent('playground_model_run_result', {
           model_id: columns?.[idx]?.model.model_id ?? '',
           status: message.status === 'failed' ? 'failed' : 'succeeded',

@@ -1,12 +1,13 @@
 import { useEffect, useState, lazy, Suspense, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { Providers } from '@/components/providers'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { PublicShell } from '@/components/layout/PublicShell'
 import { AuthProvider, RequireAuth } from '@/components/auth/AuthProvider'
 import { RequirePermission } from '@/components/auth/RequirePermission'
 import { RequireEnterpriseTenant } from '@/components/auth/RequireEnterpriseTenant'
+import { RequireWorkspace } from '@/components/auth/RequireWorkspace'
 import { LocaleNamespaces } from '@/components/i18n/LocaleNamespaces'
 import { CONSOLE_ROUTES, type ConsoleRouteMeta } from '@/config/console-routes'
 import type { LocaleNamespace } from '@/i18n'
@@ -301,8 +302,10 @@ export default function App() {
               <Route path="workspace" element={<Navigate to="/workspaces" replace />} />
             </Route>
 
-            {/* 工作区级菜单页（URL 携带 workspaceId）：同一清单驱动 + 权限守卫 */}
-            <Route path="workspace/:workspaceId">
+            {/* 工作区级菜单页（URL 携带 workspaceId）：同一清单驱动 + 权限守卫。
+                RequireWorkspace 校验 URL 上的空间确实属于当前租户——失效链接（空间已删/
+                切组织后的旧书签）此前会让三个子页各自打接口失败，只剩两条红提示（qa#594）。 */}
+            <Route path="workspace/:workspaceId" element={<RequireWorkspace><Outlet /></RequireWorkspace>}>
               {CONSOLE_ROUTES.filter((r) => r.scope === 'workspace').map(consoleRoute)}
             </Route>
           </Route>

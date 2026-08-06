@@ -185,7 +185,7 @@
     "detail.title": "模型详情",
     "detail": {
       "backToCatalog": "返回模型广场",
-      "notFound": "模型不存在或加载失败",
+      "notFound": "该模型不存在或已下架",
       "viewApiGuide": "查看API接入手册",
       "relatedModels": "相关模型",
       "limitedFree": "限时免费",
@@ -195,7 +195,8 @@
       "mediaGeneric": "媒体",
       "mediaText": "文本",
       "newBadge": "最新发布",
-      "freeBadge": "限时特惠·免费"
+      "freeBadge": "限时特惠·免费",
+      "loadFailed": "模型信息加载失败，请稍后重试"
     },
     "error.loadDetail": "加载模型详情失败，请稍后重试。"
   }

@@ -15,6 +15,7 @@ import { useLangStore } from '@/store/use-brand-store'
 import { getMarketConfig } from '@/config/market'
 import { appendCrossSiteParams } from '@/lib/cross-site-link'
 import { toLoginWithRedirect } from '@/lib/redirect'
+import { isNotFoundError } from '@/lib/request-error-message'
 import { trackEvent, trackPageView } from '@/lib/track'
 import { Button } from '@/components/ui/Button'
 import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
@@ -57,6 +58,9 @@ export default function ModelDetailPage() {
     queryFn: () => getModel(modelId),
     enabled: !!modelId,
     staleTime: 5 * 60_000,
+    // 页面下方已按「模型不存在 / 加载失败」两种情况渲染错误态，不需要全局 toast 再说一遍。
+    // 尤其 40401 被错误层归一成「服务暂不可用」，套在「这个模型不存在」上会让用户以为系统故障（qa#595）。
+    meta: { silentError: true },
   })
   /**
    * 相关模型。运营配置优先，未配置时后端回退「同厂商优先、再按输入价接近度」。
@@ -186,7 +190,11 @@ export default function ModelDetailPage() {
         </div>
       ) : detailQuery.isError || !detail ? (
         <div className="border-mg-border text-mg-text-3 rounded-md border p-8 text-center text-[13px]">
-          {t('modelsCatalog.detail.notFound')}
+          {/* 资源确实不存在（40401/404）才说「模型不存在」；网络/服务故障是另一回事，
+              说成「不存在」会误导用户以为模型已下架（qa#595） */}
+          {detailQuery.isError && !isNotFoundError(detailQuery.error)
+            ? t('modelsCatalog.detail.loadFailed')
+            : t('modelsCatalog.detail.notFound')}
         </div>
       ) : (
         <>

@@ -15,12 +15,16 @@ import { PERMS, type Permission } from './permissions'
  * 基于 DB 权威矩阵按「当前激活 租户 × 工作区」解析（运营在 controller-web 编辑，≤30s 生效）。
  * 前端不存本地权限矩阵（#344 已下线本地回退）。
  *
- * 【三层门禁】（由外到内，逐层收窄；任一层都不可省）
- *   1) RequireAuth        —— 是否登录。未登录跳登录页。（App.tsx 顶层）
- *   2) RequirePermission  —— 路由级「view 权限」。本清单的 permission 字段驱动；
- *                            无权限渲染 403（ForbiddenPage），不回跳登录。
- *   3) 后端 API 鉴权       —— 数据权威闸。前端守卫只挡「页面入口」，真正的数据可见性/写权限
- *                            以后端为准（前端隐藏 ≠ 安全）。
+ * 【门禁分层】（由外到内，逐层收窄；任一层都不可省）
+ *   1) RequireAuth            —— 是否登录。未登录跳登录页。（App.tsx 顶层）
+ *   2) RequireWorkspace       —— 仅 workspace scope：URL 上的 :workspaceId 是否属于当前租户。
+ *                                失效链接渲染「空间不存在」态 + 去空间管理出口，不让子页各自
+ *                                打接口失败（qa#594）。列表拉取失败时放行，不误判。
+ *   3) RequirePermission      —— 路由级「view 权限」。本清单的 permission 字段驱动；
+ *                                无权限渲染 403（ForbiddenPage），不回跳登录。
+ *      RequireEnterpriseTenant —— enterpriseOnly 页叠加：个人租户 403。
+ *   4) 后端 API 鉴权           —— 数据权威闸。前端守卫只挡「页面入口」，真正的数据可见性/写权限
+ *                                以后端为准（前端隐藏 ≠ 安全）。
  *
  * 【菜单 ↔ 路由 同源】
  *   - nav.ts：菜单项经 `routePermission(itemKey)` 取 view 权限 → 无权限则从侧边栏隐藏；
@@ -74,7 +78,9 @@ export interface ConsoleRouteMeta {
   /** tenant 页相对 '/'；workspace 页相对 '/workspace/:workspaceId/' */
   path: string
   scope: RouteScope
-  /** 菜单级 view 权限；缺省 = 仅需登录（如推荐计划） */
+  /** 菜单级 view 权限；缺省 = 仅需登录。当前清单里每一项都声明了 view 权限，
+      缺省分支留给后续「登录即可见、不进权限矩阵」的页面（qa#596 订正：此处原举例
+      「如推荐计划」已失效，referral 现在有 REFERRAL_VIEW）。 */
   permission?: Permission
   /** 仅企业租户可见/可达（PRD 企业&空间管理：个人租户不展示企业管理入口）。
       权限码按角色下发、表达不了租户类型，此维度必须单独声明。 */

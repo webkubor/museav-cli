@@ -5,6 +5,7 @@
  * 新增 header 只需在这里加一行，不需要动 request.ts 的核心逻辑。
  */
 
+import i18n from 'i18next'
 import { storageKeys } from '@/lib/storage'
 import { getDeviceId } from '@/lib/device-fingerprint'
 
@@ -64,18 +65,14 @@ function resolveOrigin(): string | null {
   return window.location.hostname || null
 }
 
+// 必须跟 i18n.language 保持同一个真源——它之前独立读 localStorage 兜底探测浏览器语言，
+// 跟真正驱动界面显示的 getInitialLang()（market.ts）无浏览器语言兜底、优先市场/域名默认
+// 的逻辑不是一回事：国内域名 + 英文浏览器 + 未存偏好时，页面按市场默认显示中文，这里却会
+// 探测浏览器语言发出 en-US，导致「界面显示语言」跟「告诉后端的语言」不同步。i18n.language
+// 就是界面渲染的直接依据，两者不可能再分叉。
 function resolveLocale(): AcceptLanguageTag {
   if (typeof window === 'undefined') return 'en-US'
-
-  // 1. 优先从 localStorage 读取用户的应用语言偏好，实现前端默认语言与请求头对接
-  const saved = localStorage.getItem(storageKeys.lang()) || localStorage.getItem('i18nextLng')
-  if (saved) {
-    return saved.toLowerCase().includes('zh') ? 'zh-CN' : 'en-US'
-  }
-
-  // 2. 智能探测浏览器默认语言。前期仅支持中文和英文，只要包含 zh 则返回 zh-CN，其余一律默认返回 en-US
-  const browserLang = navigator.language || (navigator as Navigator & { userLanguage?: string }).userLanguage || ''
-  return browserLang.toLowerCase().includes('zh') ? 'zh-CN' : 'en-US'
+  return i18n.language?.toLowerCase().includes('zh') ? 'zh-CN' : 'en-US'
 }
 
 /**

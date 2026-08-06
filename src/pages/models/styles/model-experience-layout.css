@@ -54,7 +54,7 @@
 .models-experience-picker,
 .models-experience-chat {
   border: 1px solid var(--mg-border);
-  background: color-mix(in srgb, var(--mg-bg-0) 88%, transparent);
+  background: color-mix(in srgb, var(--mg-bg-0-solid) 88%, transparent);
   border-radius: 8px;
   min-height: 0;
   overflow: hidden;

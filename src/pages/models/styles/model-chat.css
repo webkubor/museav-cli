@@ -154,7 +154,7 @@
 
 .models-experience-message.is-user .models-experience-message-bubble {
   border-color: color-mix(in srgb, var(--brand-base) 42%, var(--mg-border));
-  background: color-mix(in srgb, var(--brand-base) 15%, var(--mg-bg-0));
+  background: color-mix(in srgb, var(--brand-base) 15%, var(--mg-bg-0-solid));
   color: var(--mg-text-1);
 }
 

@@ -21,8 +21,8 @@
   background: var(--plaza-card-bg);
   border-color: var(--plaza-card-border);
   /* 白色毛玻璃质感：半透明底必须配模糊，否则只是发灰的半透明片 */
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(var(--mg-glass-blur));
+  backdrop-filter: blur(var(--mg-glass-blur));
 }
 .mg-tile.mg-tile-hover.mg-mcard:hover { border-color: var(--plaza-card-hover-border); }
 /* 顶行：图标在左，角标右对齐（qa#286：PRD §4.2 非目标明确排除收藏功能，已删除） */

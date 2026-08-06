@@ -126,7 +126,7 @@
 }
 
 .model-picker-dialog__row.is-active {
-  background: color-mix(in srgb, var(--brand-base) 8%, var(--mg-bg-0));
+  background: color-mix(in srgb, var(--brand-base) 8%, var(--mg-bg-0-solid));
   border-color: color-mix(in srgb, var(--brand-base) 25%, transparent);
 }
 

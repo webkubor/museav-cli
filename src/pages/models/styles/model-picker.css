@@ -35,7 +35,7 @@
 .models-experience-categories button.is-active {
   border-color: var(--brand-base);
   color: var(--brand-base);
-  background: color-mix(in srgb, var(--brand-base) 12%, var(--mg-bg-0));
+  background: color-mix(in srgb, var(--brand-base) 12%, var(--mg-bg-0-solid));
 }
 
 .models-experience-section-title {

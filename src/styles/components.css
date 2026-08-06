@@ -264,8 +264,13 @@ body[theme-mode='dark'] .modern-btn-default:hover {
    卡片靠阴影"浮起"而非硬线框。边框/阴影走 --mg-card-* token（深浅各一套，见 tokens.css）。
    .mg-tile 给静态容器；.mg-tile-hover 追加可交互抬升（悬浮上浮 + 阴影加深 + 品牌色边框） */
 .mg-tile {
-  background: var(--mg-bg-0);
-  border: 1px solid var(--mg-card-border);
+  /* 表面并入玻璃系统（design-tokens 的 --mg-glass-*）：四象限自动跟随，
+     控制台所有用 .mg-tile 的页面一次生效，不必逐页改。
+     原来是 --mg-bg-0 实色 + --mg-card-border，和玻璃画布放一起是两套语言。 */
+  background: var(--mg-glass-surface);
+  border: 1px solid var(--mg-glass-line);
+  -webkit-backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.15);
+  backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.15);
   border-radius: var(--radius-md); /* 统一卡片圆角 14px；外层容器用 lg(18)，控件用 sm(8)，形成层级 */
   box-shadow: var(--mg-card-shadow);
   transition: box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -326,8 +331,8 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
 /* 🔍 液态玻璃搜索输入框 — 半透明 + 毛玻璃 + 立体浮起，深浅主题都清晰可见 */
 .modern-input-search {
   background-color: rgba(var(--mg-bg-0-rgb), 0.55) !important;
-  -webkit-backdrop-filter: blur(14px) saturate(1.5);
-  backdrop-filter: blur(14px) saturate(1.5);
+  -webkit-backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.5);
+  backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.5);
   border-color: var(--mg-border) !important;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.07),

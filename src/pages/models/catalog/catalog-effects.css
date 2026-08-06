@@ -37,7 +37,7 @@
   gap: 10px;
   border: 1px solid color-mix(in srgb, var(--mg-warning) 26%, var(--mg-border));
   border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--mg-warning) 6%, var(--mg-bg-0));
+  background: color-mix(in srgb, var(--mg-warning) 6%, var(--mg-bg-0-solid));
   padding: 12px 14px;
 }
 

@@ -19,7 +19,12 @@
   display: flex; justify-content: space-between; gap: 18px;
   padding: 22px 26px; overflow: hidden; cursor: pointer;
   border-radius: var(--radius-lg);
-  border: 1px solid var(--mg-card-border);
+  /* 并入玻璃系统：此前是实色面 + 无模糊，横在页面中段把整块画布截断，
+     上下都是玻璃、中间一块白板。改为与卡片同档的玻璃面后画布得以连续。 */
+  background: var(--plaza-card-bg);
+  border: 1px solid var(--plaza-card-border);
+  -webkit-backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.15);
+  backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.15);
   box-shadow: var(--mg-card-shadow);
   color: var(--mg-text-1); opacity: 0.42;
   /* 激活卡 1.0 明显大于两侧 0.85 露边卡（z-index 见 is-active） */
@@ -28,8 +33,8 @@
   /* 无图兜底：品牌淡染渐变（#440 时代的深色兜底与浅色新语言冲突）。 */
   background: linear-gradient(
     135deg,
-    color-mix(in oklab, var(--brand-base) 16%, var(--mg-bg-0)) 0%,
-    color-mix(in oklab, var(--brand-base) 5%, var(--mg-bg-0)) 100%
+    color-mix(in oklab, var(--brand-base) 16%, var(--mg-bg-0-solid)) 0%,
+    color-mix(in oklab, var(--brand-base) 5%, var(--mg-bg-0-solid)) 100%
   );
 }
 /* 可读性遮罩：左侧用页面底色渐隐兜住文字区。浅色档是白雾、深色档自动成黑雾，

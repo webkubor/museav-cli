@@ -1,0 +1,10 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 首屏装饰星星（SSoT）：首页 / 企业治理 / 推荐计划 三处首屏共用。
+       本身即白色，不依赖 CSS filter 染色——原先用 Group.png 配
+       filter: brightness(0) invert(1) 反色成白，该滤镜链在 Safari 下渲染为黑色。
+       浓淡由使用处的 opacity 控制。 -->
+  <path
+    d="M12 1.5C13.05 8.4 15.6 10.95 22.5 12C15.6 13.05 13.05 15.6 12 22.5C10.95 15.6 8.4 13.05 1.5 12C8.4 10.95 10.95 8.4 12 1.5Z"
+    fill="#FFFFFF"
+  />
+</svg>

@@ -8,6 +8,7 @@ import { useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import { useLangStore } from '@/store/use-brand-store'
 import { DashboardHeader } from './DashboardHeader'
+import { DecorStarField } from './DecorStarField'
 import './public-shell.css'
 
 export function PublicShell() {
@@ -21,7 +22,10 @@ export function PublicShell() {
   }, [])
 
   return (
-    <div className="mg-public-shell flex min-h-screen flex-col bg-mg-bg-1 text-mg-text-1">
+    <div className="mg-public-shell mg-glass-canvas flex min-h-screen flex-col text-mg-text-1">
+      {/* 装饰星场：与官网首屏同一份 36 颗星，和固定的渐变画布一起做"大画布"观感。
+          纯装饰（aria-hidden + pointer-events:none），落在内容之下。 */}
+      <DecorStarField />
       <div className="sticky top-0 z-40">
         <DashboardHeader />
       </div>

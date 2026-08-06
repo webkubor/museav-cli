@@ -8,7 +8,7 @@
   padding: 12px;
   border: 1px solid color-mix(in srgb, var(--brand-base) 42%, var(--mg-border));
   border-radius: 8px;
-  background: color-mix(in srgb, var(--mg-bg-0) 92%, transparent);
+  background: color-mix(in srgb, var(--mg-bg-0-solid) 92%, transparent);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
 }
 
@@ -127,7 +127,7 @@
   padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--mg-warning) 32%, var(--mg-border));
   border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--mg-warning) 8%, var(--mg-bg-0));
+  background: color-mix(in srgb, var(--mg-warning) 8%, var(--mg-bg-0-solid));
   color: var(--mg-text-2);
   font-size: 12px;
 }
@@ -184,7 +184,7 @@
 
 .models-task-switch button.active {
   border-color: color-mix(in srgb, var(--brand-base) 60%, var(--mg-border));
-  background: color-mix(in srgb, var(--brand-base) 12%, var(--mg-bg-0));
+  background: color-mix(in srgb, var(--brand-base) 12%, var(--mg-bg-0-solid));
   color: var(--brand-base);
 }
 

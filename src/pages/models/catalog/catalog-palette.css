@@ -1,24 +1,27 @@
 /* 模型广场配色定稿（2026-08-06 设计填表口径，双市场 × 双主题四态一览）。
  * 唯一颜色来源：改配色只改这里的变量，别去分区文件里写死值。
+ * 2026-08-06：玻璃面/描边不在本文件定值，改为引用 design-tokens 的
+ * --mg-glass-surface / --mg-glass-line —— 否则同一个「白 50%」会在这里和
+ * 规范里各存一份，调规范看不到效果（已踩过）。
  * 市场由 <html data-market> 区分（缺省=国内），深色档由 [theme-mode='dark']
  * （html 或 body）区分。整页背景不走变量，直接定义在 layout/public-shell.css。 */
 
 :root {
   /* 国内 · 浅色（缺省）。2026-08-06 二次口径：浅色档卡片/筛选卡改「白色毛玻璃」
      （半透明白 + 元素上的 backdrop-filter），色值待设计重新给，先出质感。 */
-  --plaza-panel-bg: rgba(255, 255, 255, 0.5);            /* 模型筛选卡（毛玻璃） */
-  --plaza-card-border: #dadff3;                          /* 卡片/筛选卡 1px 描边 */
+  --plaza-panel-bg: var(--mg-glass-surface);             /* 模型筛选卡 —— 引规范玻璃面，勿写死 */
+  --plaza-card-border: var(--mg-glass-line);             /* 卡片/筛选卡 1px 描边 —— 引规范，随四象限走 */
   /* 移入色：毛玻璃卡面（白50%叠蓝渐变）合成后≈#EFF3FE，纯色 #EFF3FE 会隐形，
      改品牌色淡染（比选中态 12% 低一档，保持移入<选中的层级） */
   --plaza-row-hover-bg: rgba(34, 61, 229, 0.08);         /* 筛选行/排序按钮 鼠标移入 */
   --plaza-row-active-bg: rgba(34, 61, 229, 0.12);        /* 筛选行 选中底 */
   --plaza-row-active-fg: #223de5;                        /* 筛选行 选中文字 */
-  --plaza-input-bg: rgba(255, 255, 255, 0.5);            /* 搜索框/排序按钮 常态（毛玻璃，与卡片同档） */
+  --plaza-input-bg: var(--mg-glass-surface);             /* 搜索框/排序按钮 —— 与卡片同档，引同一 token */
   --plaza-focus-border: #223de5;                         /* 搜索框聚焦描边 */
   --plaza-focus-ring: rgba(34, 61, 229, 0.18);           /* 搜索框聚焦光圈 */
-  --plaza-card-bg: rgba(255, 255, 255, 0.5);             /* 模型卡片底（毛玻璃） */
+  --plaza-card-bg: var(--mg-glass-surface);              /* 模型卡片底 —— 引规范玻璃面 */
   --plaza-card-hover-border: rgba(34, 61, 229, 0.28);    /* 模型卡片移入描边 */
-  --plaza-actions-bg: rgba(255, 255, 255, 0.75);         /* 卡片底部浮出操作条（毛玻璃，太透会露出底下规格字） */
+  --plaza-actions-bg: var(--mg-glass-surface-strong);         /* 卡片底部浮出操作条（毛玻璃，太透会露出底下规格字） */
 }
 
 /* 国际 · 浅色 */

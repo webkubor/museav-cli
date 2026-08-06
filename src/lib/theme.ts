@@ -207,7 +207,7 @@ function buildBrandPalette(base: string, isDark: boolean) {
     '--brand-base': adjustedBase,
     '--brand-mid': isDark ? mixColor(adjustedBase, [255, 255, 255], 0.12) : mixColor(adjustedBase, [255, 255, 255], 0.22),
     '--brand-light': isDark ? mixColor(adjustedBase, [255, 255, 255], 0.25) : mixColor(adjustedBase, [255, 255, 255], 0.48),
-    '--brand-pale': isDark ? `color-mix(in srgb, ${adjustedBase} 12%, var(--mg-bg-0))` : `color-mix(in srgb, ${adjustedBase} 10%, var(--mg-bg-0))`,
+    '--brand-pale': isDark ? `color-mix(in srgb, ${adjustedBase} 12%, var(--mg-bg-0-solid))` : `color-mix(in srgb, ${adjustedBase} 10%, var(--mg-bg-0-solid))`,
     '--brand-glow': `rgba(${r}, ${g}, ${b}, 0.16)`,
     '--brand-selected-bg': `color-mix(in srgb, ${adjustedBase} 10%, transparent)`,
   }

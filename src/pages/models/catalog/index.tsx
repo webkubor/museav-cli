@@ -396,10 +396,6 @@ export default function ModelsCatalogPage() {
             </div>
           </div>
 
-          {!modelsQuery.isLoading && !modelsQuery.isError && (
-            <p className="mg-count">{t('modelsCatalog.count', { n: visibleModels.length })}</p>
-          )}
-
           {/* 列表状态 */}
           {modelsQuery.isLoading ? (
             <div className="models-catalog-grid">

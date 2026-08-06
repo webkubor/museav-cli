@@ -204,7 +204,7 @@ body[theme-mode='dark'] .sidebar-flow-line::after {
 /* 🚀 极雅弹窗全屏微流光流动边框 */
 .modal-glow-flow {
   border: 1px solid transparent !important;
-  background-image: linear-gradient(var(--mg-bg-0), var(--mg-bg-0)), 
+  background-image: linear-gradient(var(--mg-bg-0-solid), var(--mg-bg-0-solid)), 
                     linear-gradient(135deg, var(--brand-base) 0%, var(--brand-glow) 30%, var(--brand-base) 60%, var(--brand-glow) 100%) !important;
   background-origin: border-box !important;
   background-clip: padding-box, border-box !important;
@@ -216,7 +216,7 @@ body[theme-mode='dark'] .sidebar-flow-line::after {
 /* 🚀 极雅输入区域彩虹流动边框 */
 .composer-rainbow-flow {
   border: 1px solid transparent !important;
-  background-image: linear-gradient(var(--mg-bg-0), var(--mg-bg-0)), 
+  background-image: linear-gradient(var(--mg-bg-0-solid), var(--mg-bg-0-solid)), 
                     linear-gradient(135deg, var(--brand-base) 0%, var(--brand-glow) 30%, var(--brand-base) 60%, var(--brand-glow) 100%) !important;
   background-origin: border-box !important;
   background-clip: padding-box, border-box !important;
@@ -242,7 +242,7 @@ body[theme-mode='dark'] .sidebar-flow-line::after {
    尊重 prefers-reduced-motion（降级为静态渐变边框，仍有活感、不动）。半径继承宿主。 */
 .mg-running-border {
   border: 1px solid transparent !important;
-  background-image: linear-gradient(var(--mg-bg-0), var(--mg-bg-0)),
+  background-image: linear-gradient(var(--mg-bg-0-solid), var(--mg-bg-0-solid)),
                     linear-gradient(135deg, var(--brand-base) 0%, var(--brand-glow) 40%, var(--brand-base) 70%, var(--brand-glow) 100%);
   background-origin: border-box;
   background-clip: padding-box, border-box;

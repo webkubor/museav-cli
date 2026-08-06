@@ -62,7 +62,7 @@
   gap: 10px;
   border: 1px solid var(--mg-border);
   border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--mg-bg-0) 88%, transparent);
+  background: color-mix(in srgb, var(--mg-bg-0-solid) 88%, transparent);
 }
 
 .history-sidebar-panel-header {

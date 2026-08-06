@@ -124,7 +124,8 @@
   /* 背景层级 — 引用共享 surface/bg（名字保留，80+ 文件在用） */
   --site-bg:  var(--mg-bg);          /* 页面底层 */
   --card-bg:  var(--mg-surface);     /* 卡片面 */
-  --mg-bg-0:  var(--mg-surface);     /* 主卡片 */
+  --mg-bg-0:  var(--mg-surface);     /* 主卡片（已并入玻璃，半透明） */
+  --mg-bg-0-solid: var(--mg-surface-solid);  /* 卡片色的实色版，专供 color-mix 使用 */
   --mg-bg-0-rgb: 255, 255, 255;      /* surface 的 RGB（共享无 rgb，浅色=#ffffff，供玻璃态 rgba()） */
   --mg-bg-1:  var(--mg-bg);          /* 页面背景 */
   --mg-bg-1-rgb: 255, 255, 255;      /* bg 的 RGB（浅色=#ffffff，供玻璃态 rgba()，同 --mg-bg-0-rgb 手动同步模式） */

@@ -3,37 +3,115 @@
  * 色值待设计重出，先出质感；深色档维持填表的纯色。
  * 其余广场配色见 pages/models/catalog/catalog-palette.css。 */
 .mg-public-shell {
-  /* 2026-08-06 设计口径：大背景 #DEE9FB → #E4EDFC */
-  background: linear-gradient(180deg, #dee9fb 0%, #e4edfc 100%);
-}
-[data-market='global'] .mg-public-shell {
-  background: linear-gradient(180deg, #e7f6ee 0%, #f0f7f3 42%, #edf5f0 100%);
-}
-[theme-mode='dark'] .mg-public-shell,
-body[theme-mode='dark'] .mg-public-shell {
-  background: #101827;
-}
-[data-market='global'][theme-mode='dark'] .mg-public-shell,
-[data-market='global'] body[theme-mode='dark'] .mg-public-shell {
-  background: #121a16;
+  /* 画布渐变与磨砂已上收到规范：外壳挂 .mg-glass-canvas 即可（design-tokens）。
+     四象限（浅/深 × 蓝/绿）由 --mg-glass-canvas 承担，这里不再写死色值 ——
+     此前这条硬编码的 #b4cdea 会盖住 token，改 token 看不到效果。 */
 }
 
-/* 顶部导航在广场外壳内统一为白色毛玻璃（DashboardHeader 是共享组件，
-   其滚动分档底色只在控制台内生效，这里定向覆盖、不动组件本体）。 */
-.mg-public-shell header {
-  /* 2026-08-06 设计口径：导航白 30% 毛玻璃 + 底部 2px #F1F7FF */
-  background: rgba(255, 255, 255, 0.3);
-  border-bottom: 2px solid #f1f7ff;
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
+
+
+
+/* 导航样式已上收到规范的 .mg-glass-bar（见 design-tokens/tokens.css）。
+   原本这里定向覆盖 .mg-public-shell header，导致同一个 DashboardHeader 在
+   /models 和 /models/playground 两个外壳下长相不同，切页就换脸。 */
+
+/* ══════════════════════════════════════════════════════════════════
+   大画布 + 星场（2026-08-06）：与官网首屏呼应。
+   两处改动，其余沿用上面已定稿的底色 / 导航口径：
+   1) 渐变改 background-attachment: fixed —— 原来渐变随 min-h-screen 拉伸，
+      长页面上会被抻成一条从上到下的色带；固定后它是一整块不动的画布，
+      内容在上面滚动，这才是"大画布"的观感。
+   2) 叠一层星场（DecorStarField，36 颗，与官网首屏同一份数据）。
+   ══════════════════════════════════════════════════════════════════ */
+.mg-public-shell {
+  background-attachment: fixed;
 }
-[theme-mode='dark'] .mg-public-shell header,
-body[theme-mode='dark'] .mg-public-shell header {
-  background: rgba(16, 24, 39, 0.55);
-  border-bottom: 1px solid var(--mg-border);
+
+/* 星场：fixed 铺满视口，落在内容之下；纯装饰，不挡点击 */
+.mg-public-shell .mg-decor-stars {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
-[data-market='global'][theme-mode='dark'] .mg-public-shell header,
-[data-market='global'] body[theme-mode='dark'] .mg-public-shell header {
-  background: rgba(18, 26, 22, 0.55);
-  border-bottom: 1px solid var(--mg-border);
+
+.mg-decor-star {
+  --mg-star-opacity: 0.34;
+  --mg-star-rotate: 0deg;
+  --mg-star-scale: 1;
+  --mg-star-x: 14px;
+  --mg-star-y: -16px;
+  --mg-star-x2: -10px;
+  --mg-star-y2: 12px;
+  position: absolute;
+  display: block;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  opacity: var(--mg-star-opacity);
+  transform: rotate(var(--mg-star-rotate)) scale(var(--mg-star-scale));
+  transform-origin: 50% 50%;
+  animation: mg-decor-star-float 18s ease-in-out infinite;
+  will-change: transform, opacity;
+  /* 素材是纯白 SVG。曾试过 brightness(0.62) + hue-rotate(202deg) 想把它染成品牌蓝 ——
+     行不通：白色没有色相，hue-rotate 无从作用，brightness 只是把白压暗，结果是灰黑星。
+     浅底上正确的做法是保持白星本色、靠品牌蓝的外发光把它从背景里"托"出来。
+     深色档沿用官网首屏的 screen 混合。 */
+  filter: drop-shadow(0 0 5px rgba(34, 61, 229, 0.30))
+    drop-shadow(0 0 12px rgba(120, 165, 235, 0.35));
+  mix-blend-mode: normal;
 }
+
+[theme-mode='dark'] .mg-decor-star,
+body[theme-mode='dark'] .mg-decor-star {
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.22));
+  mix-blend-mode: screen;
+}
+
+/* 星场压到内容之下（同样不能改子元素的 position —— 会顶掉 sticky 顶栏） */
+.mg-public-shell .mg-decor-stars { z-index: -1; }
+
+@keyframes mg-decor-star-float {
+  0% {
+    opacity: var(--mg-star-opacity);
+    transform: translate3d(0, 0, 0) rotate(var(--mg-star-rotate)) scale(var(--mg-star-scale));
+  }
+  32% {
+    opacity: calc(var(--mg-star-opacity) + 0.2);
+    transform: translate3d(calc(var(--mg-star-x) * 2.6), calc(var(--mg-star-y) * 2.6), 0)
+      rotate(calc(var(--mg-star-rotate) + 116deg)) scale(calc(var(--mg-star-scale) + 0.12));
+  }
+  68% {
+    opacity: calc(var(--mg-star-opacity) + 0.12);
+    transform: translate3d(calc(var(--mg-star-x2) * 2.6), calc(var(--mg-star-y2) * 2.6), 0)
+      rotate(calc(var(--mg-star-rotate) + 248deg)) scale(calc(var(--mg-star-scale) + 0.05));
+  }
+  100% {
+    opacity: var(--mg-star-opacity);
+    transform: translate3d(0, 0, 0) rotate(calc(var(--mg-star-rotate) + 360deg))
+      scale(var(--mg-star-scale));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mg-decor-star { animation: none; }
+}
+
+
+/* 磨砂由规范的 .mg-glass-canvas::before 单层提供（design-tokens/tokens.css）。
+   此前这里手写了两层：::before 高频噪声 + ::after 多层 radial 斑点 ——
+   两层叠加反而互相糊掉，看着"有雾但没颗粒"。现在只留规范那一层，靠参数出质感。
+   画布渐变也一并交给规范：外壳挂 .mg-glass-canvas 即可。 */
+
+
+/* 深色档：颗粒改暖白低透，soft-light 在暗底上会过亮，降一档 */
+[theme-mode='dark'] .mg-public-shell::after,
+body[theme-mode='dark'] .mg-public-shell::after {
+  opacity: 0.5;
+}
+
+/* 星场要压在颗粒之上 */
+.mg-public-shell .mg-decor-stars { z-index: 1; }
+.mg-public-shell > .sticky,
+.mg-public-shell > main { z-index: 2; }

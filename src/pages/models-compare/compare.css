@@ -10,7 +10,7 @@
   margin-bottom: 14px;
   border: 1px solid var(--mg-border);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--mg-bg-0) 88%, transparent);
+  background: color-mix(in srgb, var(--mg-bg-0-solid) 88%, transparent);
 }
 
 .models-compare-toolbar-left {
@@ -46,7 +46,7 @@
 
 .models-compare-column {
   border: 1px solid var(--mg-border);
-  background: color-mix(in srgb, var(--mg-bg-0) 88%, transparent);
+  background: color-mix(in srgb, var(--mg-bg-0-solid) 88%, transparent);
   border-radius: 8px;
   /* 列高交给容器拉伸（grid/flex 默认 stretch 已把列填满可用高度），不设固定保底。
      此前的 min-height:420px 在矮视口会把列顶出 .models-compare-columns 的盒子：
@@ -81,7 +81,7 @@
   padding: 8px 12px;
   border: 1px solid color-mix(in srgb, var(--mg-danger) 32%, var(--mg-border));
   border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--mg-danger) 8%, var(--mg-bg-0));
+  background: color-mix(in srgb, var(--mg-danger) 8%, var(--mg-bg-0-solid));
   color: var(--mg-text-2);
   font-size: 12px;
 }
@@ -103,7 +103,7 @@
 .models-compare-shared-composer.composer-rainbow-flow {
   animation: none !important;
   background-image: none !important;
-  background-color: color-mix(in srgb, var(--mg-bg-0) 88%, transparent) !important;
+  background-color: color-mix(in srgb, var(--mg-bg-0-solid) 88%, transparent) !important;
   border: 1px solid var(--mg-border) !important;
   box-shadow: none !important;
 }
@@ -117,7 +117,7 @@
   padding: 8px 12px;
   border: 1px solid color-mix(in srgb, var(--mg-info, #3b82f6) 24%, var(--mg-border));
   border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--mg-info, #3b82f6) 6%, var(--mg-bg-0));
+  background: color-mix(in srgb, var(--mg-info, #3b82f6) 6%, var(--mg-bg-0-solid));
   color: var(--mg-text-2);
   font-size: 12px;
 }
@@ -178,7 +178,7 @@
 .models-compare-mobile-tab.is-active {
   border-color: var(--brand-base);
   color: var(--mg-text-1);
-  background: color-mix(in srgb, var(--brand-base) 10%, var(--mg-bg-0));
+  background: color-mix(in srgb, var(--brand-base) 10%, var(--mg-bg-0-solid));
 }
 
 .models-compare-mobile-tab-dot {

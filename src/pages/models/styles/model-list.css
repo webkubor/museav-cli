@@ -28,7 +28,7 @@
 .models-experience-row:hover,
 .models-experience-row.is-active {
   border-color: color-mix(in srgb, var(--brand-base) 46%, var(--mg-border));
-  background: color-mix(in srgb, var(--brand-base) 8%, var(--mg-bg-0));
+  background: color-mix(in srgb, var(--brand-base) 8%, var(--mg-bg-0-solid));
 }
 
 .models-experience-row:active {

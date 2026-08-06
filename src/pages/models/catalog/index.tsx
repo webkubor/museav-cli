@@ -310,9 +310,8 @@ export default function ModelsCatalogPage() {
         {t('modelsCatalog.filtersButton')}
       </button>
 
-      {/* 原型的页面结构：标题 / 轮播 / 搜索排序 三块**全宽**，只有最后的
-          「筛选栏 + 卡片网格」才是两列。此前把全部内容塞进右列，导致轮播被侧栏
-          挤窄（1244 vs 原型 1426）、标题也不与页面左边缘对齐。 */}
+      {/* 页面结构（2026-08 视觉改版稿）：标题 / 轮播 两块全宽；搜索排序在下方
+          两列布局的右列内、与筛选侧栏顶部平行。轮播保持全宽不被侧栏挤窄。 */}
       <div className="mg-plaza">
           {/* 标题 */}
           <div className="mb-6">
@@ -342,7 +341,25 @@ export default function ModelsCatalogPage() {
             />
           )}
 
-          {/* 搜索 + 排序（吸顶） */}
+      </div>
+
+      {/* 两列：筛选栏（卡片）+ 右列（搜索排序 + 卡片网格）。
+          2026-08 视觉改版稿：搜索/排序不再全宽独立一行，收进右列与筛选侧栏
+          顶部平行对齐（侧栏顶 = 搜索框顶）。 */}
+      <div className="mg-plaza-layout">
+        <div className={`models-sticky mg-side-card ${filtersOpen ? 'block' : 'hidden lg:block'}`}>
+          <CatalogSidebar
+            tags={tags}
+            selected={selected}
+            setSelected={setSelected}
+            isZh={isZh}
+            facets={facets}
+            groupTotals={groupTotals}
+          />
+        </div>
+
+        <div>
+          {/* 搜索 + 排序 */}
           <div className="models-toolbar">
             <div className="catalog-search-wrap relative flex-1">
               <LuSearch size={16} className="catalog-search-icon absolute left-4 top-1/2 -translate-y-1/2" />
@@ -378,22 +395,7 @@ export default function ModelsCatalogPage() {
               )}
             </div>
           </div>
-      </div>
 
-      {/* 两列：筛选栏（卡片）+ 卡片网格 */}
-      <div className="mg-plaza-layout">
-        <div className={`models-sticky mg-side-card ${filtersOpen ? 'block' : 'hidden lg:block'}`}>
-          <CatalogSidebar
-            tags={tags}
-            selected={selected}
-            setSelected={setSelected}
-            isZh={isZh}
-            facets={facets}
-            groupTotals={groupTotals}
-          />
-        </div>
-
-        <div>
           {!modelsQuery.isLoading && !modelsQuery.isError && (
             <p className="mg-count">{t('modelsCatalog.count', { n: visibleModels.length })}</p>
           )}

@@ -130,17 +130,19 @@
    之前把所有内容塞进右列，轮播被侧栏挤窄、标题不与页面左缘对齐。 */
 .mg-plaza { display: flex; flex-direction: column; }
 .mg-plaza-layout {
-  display: grid; gap: 18px; align-items: start;
+  /* 2026-08 视觉改版稿：侧栏与列表区间距放大一档（18→24） */
+  display: grid; gap: 24px; align-items: start;
   grid-template-columns: 1fr;
 }
 @media (min-width: 1024px) {
   .mg-plaza-layout { grid-template-columns: 240px minmax(0, 1fr); }
 }
-/* 侧栏是带边框的卡片（原型 .marketplace-filters），不再是裸列 */
+/* 侧栏是带边框的卡片（原型 .marketplace-filters），不再是裸列。
+   2026-08 视觉改版稿：底色从纯白改半透明淡灰（bg-1），透出整页氛围背景图。 */
 .mg-side-card {
-  background: var(--mg-bg-0);
+  background: rgba(var(--mg-bg-1-rgb), 0.62);
   border: 1px solid var(--mg-card-border);
   border-radius: var(--radius-md);
   box-shadow: var(--mg-card-shadow);
-  padding: 14px 12px;
+  padding: 12px 10px;
 }

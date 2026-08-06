@@ -19,7 +19,7 @@
  */
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { LuColumns2, LuSparkles } from 'react-icons/lu'
+import { LuSparkles } from 'react-icons/lu'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { Button } from '@/components/ui/Button'
@@ -100,9 +100,27 @@ export function CatalogCard({
         navigate(detailHref, { state: { source: 'catalog_list', fromSearch: location.search } })
       }}
     >
-      {/* 顶行：图标 + 角标（右对齐） */}
+      {/* 顶行（2026-08 视觉改版稿）：图标｜名称+厂商/API ID｜徽章，单行三段。
+          原来是「图标+徽章」一行、身份块另起一行，改为设计稿的一行式。 */}
       <div className="mg-mcard-top">
         <ModelIcon model={model} size={38} rounded="rounded-full" className="mg-mcard-avatar" />
+        <div className="mg-mcard-id">
+          <h3 className="mg-mcard-name" title={name}>{name}</h3>
+          <div className="mg-mcard-meta" onClick={(e) => e.stopPropagation()}>
+            {/* 原型卡片只有「厂商 + API ID + 复制」，没有认证图标 —— 它在所有模型上都
+                相同、无区分度，四列窄卡下却会挤掉厂商名与 API ID 的显示空间。
+                复制按钮在 API ID 前面（原型顺序，qa#286），不是后面。 */}
+            {provider && <span className="mg-mcard-vendor">{provider}</span>}
+            <CopyButton
+              value={model.model_id}
+              aria-label={t('modelsCatalog.card.copyApiId')}
+              toast={false}
+              className="h-5 w-5 shrink-0"
+              onCopied={() => onModelIdCopied?.(model)}
+            />
+            <code className="mg-mcard-api font-mono">{model.model_id}</code>
+          </div>
+        </div>
         <div className="mg-mcard-badges">
           {model.is_new && (
             <em className="mg-badge is-new">
@@ -116,25 +134,6 @@ export function CatalogCard({
           ) : discountLabel ? (
             <em className="mg-badge is-discount">{discountLabel}</em>
           ) : null}
-        </div>
-      </div>
-
-      {/* 身份 */}
-      <div className="mg-mcard-id">
-        <h3 className="mg-mcard-name" title={name}>{name}</h3>
-        <div className="mg-mcard-meta" onClick={(e) => e.stopPropagation()}>
-          {/* 原型卡片只有「厂商 + API ID + 复制」，没有认证图标 —— 它在所有模型上都
-              相同、无区分度，四列窄卡下却会挤掉厂商名与 API ID 的显示空间。
-              复制按钮在 API ID 前面（原型顺序，qa#286），不是后面。 */}
-          {provider && <span className="mg-mcard-vendor">{provider}</span>}
-          <CopyButton
-            value={model.model_id}
-            aria-label={t('modelsCatalog.card.copyApiId')}
-            toast={false}
-            className="h-5 w-5 shrink-0"
-            onCopied={() => onModelIdCopied?.(model)}
-          />
-          <code className="mg-mcard-api font-mono">{model.model_id}</code>
         </div>
       </div>
 
@@ -223,8 +222,8 @@ export function CatalogCard({
             aria-label={t('modelsCatalog.card.compare')}
             className="mg-mcard-icon-btn"
           >
-            {/* 原型 App.tsx marketplace-card-compare-icon 用的是 Columns2，不是 git 对比箭头 */}
-            <LuColumns2 size={14} />
+            {/* 2026-08 视觉改版稿：对比入口从 Columns2 图标改「VS」文字圆钮 */}
+            <span className="text-[11px] font-bold tracking-wide">VS</span>
           </Button>
         )}
       </div>

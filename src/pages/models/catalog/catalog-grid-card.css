@@ -9,18 +9,24 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 16px 18px 14px;
+  gap: 8px;
+  padding: 13px 16px 12px;
   cursor: pointer;
   overflow: hidden;
+  /* 2026-08 视觉改版稿：底色从纯白(mg-tile 的 bg-0)改半透明淡灰，
+     透出氛围背景图；hover 回白抬亮。 */
+  background: rgba(var(--mg-bg-1-rgb), 0.62);
 }
-/* 顶行：图标在左，角标右对齐（qa#286：PRD §4.2 非目标明确排除收藏功能，已删除） */
+.mg-mcard:hover { background: var(--mg-bg-0); }
+/* 顶行（2026-08 视觉改版稿）：图标｜名称+ID（撑满中间）｜徽章，单行三段居中对齐。
+   （qa#286：PRD §4.2 非目标明确排除收藏功能，已删除） */
 .mg-mcard-top {
-  display: flex; align-items: flex-start; justify-content: space-between;
+  display: flex; align-items: center;
   gap: 10px;
 }
 .mg-mcard-avatar { border: 1px solid var(--mg-border); background: var(--mg-bg-1); flex-shrink: 0; }
-.mg-mcard-badges { display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end; }
+.mg-mcard-top .mg-mcard-id { flex: 1; }
+.mg-mcard-badges { display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end; flex-shrink: 0; align-self: flex-start; }
 
 .mg-badge {
   display: inline-flex; align-items: center; gap: 3px;
@@ -82,7 +88,7 @@ button.mg-mcard-chip:not(:disabled):hover {
 
 /* 价格规格：贴底 */
 .mg-mcard-specs {
-  margin-top: auto; padding-top: 10px;
+  margin-top: auto; padding-top: 8px;
   border-top: 1px solid var(--mg-border);
   /* 2026-08 视觉改版稿：单行 4 列（输入/输出/上下文/缓存读取）。字段集不回退
      #348 之前的「最大输出」——那次移除是数据可靠性决策，与版式无关。 */

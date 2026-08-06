@@ -14,7 +14,9 @@
   color: #fff; opacity: 0.38;
   transform: translateX(calc(-50% + var(--slide-offset) * 76%)) scale(0.94);
   transition: transform 0.45s ease, opacity 0.45s ease;
-  background: #09090b;
+  /* 中性兜底：无图时给品牌渐变而不是纯黑——纯黑在真实数据里(#440 线上问题：
+     生产 3 个精选位当前只有旧 background_key、没配 bottom_image_url)看起来像没加载出来。 */
+  background: linear-gradient(135deg, var(--brand-deep) 0%, #16161a 100%);
 }
 .mg-featured-slide::before {
   content: ''; position: absolute; inset: 0; pointer-events: none;

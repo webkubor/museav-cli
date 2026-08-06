@@ -136,8 +136,10 @@
      不透明度和模糊都要给足。顶边不用分隔线（走查反馈横线生硬），
      用 mask 把玻璃上缘羽化掉，衔接处是渐隐的雾而不是一条线。 */
   background: var(--plaza-actions-bg);
-  -webkit-backdrop-filter: blur(24px);
-  backdrop-filter: blur(24px);
+  /* 这里是规范档位的加重版（走查反馈：常规 blur 会露出底下的规格行文字），
+     用倍数挂住 token，规范调 blur 时这里跟着走，不再是独立的 24px */
+  -webkit-backdrop-filter: blur(calc(var(--mg-glass-blur) * 1.35));
+  backdrop-filter: blur(calc(var(--mg-glass-blur) * 1.35));
   -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 14px);
   mask-image: linear-gradient(180deg, transparent 0, #000 14px);
   opacity: 0; pointer-events: none;

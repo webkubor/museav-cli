@@ -5,11 +5,12 @@
   border-radius: 20px;
   position: relative;
   isolation: isolate;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 252, 255, 0.86)) !important;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: none !important;
+  /* 表面走规范玻璃档位：原来是本文件独有的白 0.92→0.86 渐变 + blur(16px)，
+     深色主题下不跟随，且与卡片/顶栏各是一档。 */
+  background: var(--mg-glass-surface-strong) !important;
+  backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.15);
+  -webkit-backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.15);
+  border: 1px solid var(--mg-glass-line) !important;
   box-shadow:
     0 34px 90px -54px rgba(15, 23, 42, 0.42),
     0 1px 0 rgba(255, 255, 255, 0.76) inset !important;

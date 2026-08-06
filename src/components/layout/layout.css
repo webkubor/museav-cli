@@ -122,11 +122,12 @@ body[theme-mode='dark'] .dashboard-global-bottom-bg {
 .glass-card-glow {
   position: relative;
   isolation: isolate;
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  /* 透明度跟随主题 surface token，避免浅/深色下出现白底白字。 */
-  background-color: rgba(var(--mg-bg-0-rgb), 0.82) !important;
-  border: 1px solid color-mix(in srgb, var(--mg-border) 82%, transparent) !important;
+  /* 玻璃档位与描边全部走规范 token（--mg-glass-*），别再自持 blur 值和白底：
+     此前 16px/0.82 是本文件独有的一档，和 .mg-tile、顶栏各不相同。 */
+  backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.15);
+  -webkit-backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.15);
+  background-color: var(--mg-glass-surface-strong) !important;
+  border: 1px solid var(--mg-glass-line) !important;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.62),
     var(--shadow-sm) !important;

@@ -70,8 +70,9 @@
       "defaultTitle": "Details"
     },
     "workspaceGuard": {
-      "emptyTitle": "No workspace available",
-      "emptyDesc": "This account has not joined any workspace yet. Contact an organization admin or create a new workspace in settings."
+      "title": "Workspace not found",
+      "desc": "This workspace may have been deleted, or it does not belong to the current organization.",
+      "action": "Go to workspaces"
     },
     "pagination": {
       "prev": "Prev",

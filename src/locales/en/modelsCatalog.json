@@ -185,7 +185,7 @@
     "detail.title": "Model Detail",
     "detail": {
       "backToCatalog": "Back to models",
-      "notFound": "Model not found or failed to load",
+      "notFound": "This model does not exist or has been removed",
       "viewApiGuide": "View API integration guide",
       "relatedModels": "Related models",
       "limitedFree": "Free",
@@ -195,7 +195,8 @@
       "mediaGeneric": "media",
       "mediaText": "text",
       "newBadge": "New",
-      "freeBadge": "Free"
+      "freeBadge": "Free",
+      "loadFailed": "Failed to load model information. Please try again later."
     },
     "error.loadDetail": "Failed to load model detail. Please try again."
   }

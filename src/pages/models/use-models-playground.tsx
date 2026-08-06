@@ -6,7 +6,6 @@ import {
   createExperienceSession,
   streamExperienceMessage,
   sendExperienceMediaMessage,
-  getExperienceMessage,
   getExperienceSessionMessages,
   getExperienceSessionStats,
   listExperienceModelConfigs,
@@ -28,11 +27,8 @@ import { appToast } from '@/lib/app-toast'
 import type { CatalogModelItem } from '@/types'
 import {
   estimateTokens,
-  formatPlaygroundLatency,
   isPaidModel,
   hashId,
-  latencyBucket,
-  tokenBucket,
   sizeBucket,
   experienceTaskLabel,
   resolveModelCategory,
@@ -60,6 +56,7 @@ import {
 import { resolveExperienceMessageMedia } from './experience-message-attachments'
 import { useExperienceHistorySidebar } from './use-experience-history-sidebar'
 import { useStreamingController, isAbortError } from '@/hooks/use-streaming-controller'
+import { trackModelRun, buildDialogueMetrics, buildMediaMetrics, pollMediaTask } from './experience-run'
 import { patchLastAssistant } from '@/lib/message-patch'
 import {
   INITIAL_MESSAGES,
@@ -618,68 +615,44 @@ export function useModelsPlayground() {
       })
 
       const modelLabel = prettyModelName(selectedModel.display_name, selectedModel.model_id, modelVendorLabel(selectedModel, ''))
-      if (stats) {
-        const s: ExperienceStatsEvent = stats
-        const spend = Number(s.actual_spend ?? s.estimated_spend ?? 0)
-        patchAssistant((last) => ({
-          error: s.status === 'failed' ? (last.content ? undefined : t('modelsExperience.modelRunFailed')) : undefined,
-          metrics: {
-            model: modelLabel,
-            inputTokens: s.input_tokens,
-            outputTokens: s.output_tokens,
-            firstTokenLatency: formatPlaygroundLatency(s.first_token_ms),
-            totalLatency: formatPlaygroundLatency(s.total_ms),
-            spend,
-            free: s.free,
-          },
-        }))
-        trackEvent('playground_model_run_result', {
-          model_id: selectedModel.model_id,
-          status: s.status === 'failed' ? 'failed' : 'succeeded',
-          latency_bucket: latencyBucket(s.total_ms),
-          token_bucket: tokenBucket(s.input_tokens + s.output_tokens),
-          billing_status: s.free ? 'free' : 'billed',
-        }, { result: s.status === 'failed' ? 'fail' : 'success' })
-      } else {
-        // 统计帧异常缺失时的兜底：本地估算，避免消息区完全没有统计信息
-        const totalMs = Date.now() - startedAt
-        const inputTokens = estimateTokens(prompt)
-        const outputTokens = estimateTokens(reply)
-        const inputPrice = Number(selectedModel.pricing?.input_per_1m ?? 0)
-        const outputPrice = Number(selectedModel.pricing?.output_per_1m ?? 0)
-        const free = !inputPrice && !outputPrice
-        const spend = free ? 0 : (inputTokens * inputPrice + outputTokens * outputPrice) / 1_000_000
-        patchAssistant({
-          metrics: {
-            model: modelLabel,
-            inputTokens,
-            outputTokens,
-            firstTokenLatency: formatPlaygroundLatency((firstDeltaAt ?? Date.now()) - startedAt),
-            totalLatency: formatPlaygroundLatency(totalMs),
-            spend,
-            free,
-          },
-        })
-        trackEvent('playground_model_run_result', {
-          model_id: selectedModel.model_id,
-          status: 'succeeded',
-          latency_bucket: latencyBucket(totalMs),
-          token_bucket: tokenBucket(inputTokens + outputTokens),
-          billing_status: free ? 'free' : 'billed',
-        }, { result: 'success' })
-      }
+      // 断言而非直接用 stats：它在 onStats 回调里赋值，TS 的控制流分析看不到，会窄化成 null
+      const s = stats as ExperienceStatsEvent | null
+      // 统计帧异常缺失时的兜底：本地按目录价估算，避免消息区完全没有统计信息
+      const localTotalMs = Date.now() - startedAt
+      const localInputTokens = estimateTokens(prompt)
+      const localOutputTokens = estimateTokens(reply)
+      const inputPrice = Number(selectedModel.pricing?.input_per_1m ?? 0)
+      const outputPrice = Number(selectedModel.pricing?.output_per_1m ?? 0)
+      const localFree = !inputPrice && !outputPrice
+      const metrics = buildDialogueMetrics({
+        modelLabel,
+        stats: s,
+        fallback: {
+          inputTokens: localInputTokens,
+          outputTokens: localOutputTokens,
+          firstTokenMs: (firstDeltaAt ?? Date.now()) - startedAt,
+          totalMs: localTotalMs,
+          spend: localFree ? 0 : (localInputTokens * inputPrice + localOutputTokens * outputPrice) / 1_000_000,
+          free: localFree,
+        },
+      })
+      patchAssistant((last) => ({
+        error: s?.status === 'failed' ? (last.content ? undefined : t('modelsExperience.modelRunFailed')) : undefined,
+        metrics,
+      }))
+      trackModelRun({
+        modelId: selectedModel.model_id,
+        failed: s?.status === 'failed',
+        totalMs: metrics.totalMs ?? localTotalMs,
+        tokens: metrics.inputTokens + metrics.outputTokens,
+        free: metrics.free,
+      })
     } catch (err) {
       if (isAbortError(err)) return
       const errorCode = (err as { data?: { code?: string } } | undefined)?.data?.code
       // 已流出的半截内容清掉，只留报错气泡（原有行为：先清 content 再写 error）
       patchAssistant({ content: '', error: `${t('modelsExperience.requestFailed')}${extractApiErrorMessage(err)}` })
-      trackEvent('playground_model_run_result', {
-        model_id: selectedModel.model_id,
-        status: 'failed',
-        latency_bucket: latencyBucket(Date.now() - startedAt),
-        token_bucket: tokenBucket(0),
-        billing_status: 'unbilled',
-      }, { result: 'fail', error_code: errorCode })
+      trackModelRun({ modelId: selectedModel.model_id, failed: true, totalMs: Date.now() - startedAt, errorCode })
     } finally {
       setIsStreaming(false)
       // 放 finally 而不是 try 末尾：会话是 ensureConversation 懒创建的，创建成功但模型调用
@@ -748,33 +721,18 @@ export function useModelsPlayground() {
       patchAssistant({
         content: message.content,
         media: media.length > 0 ? media : undefined,
-        metrics: {
-          model: modelLabel,
-          inputTokens: 0,
-          outputTokens: 0,
-          firstTokenLatency: '',
-          totalLatency: formatPlaygroundLatency(totalMs),
-          spend,
-          free: spend === 0,
-        },
+        metrics: buildMediaMetrics({ modelLabel, spend, totalMs }),
       })
-      trackEvent('playground_model_run_result', {
-        model_id: selectedModel.model_id,
-        status: message.status === 'failed' ? 'failed' : 'succeeded',
-        latency_bucket: latencyBucket(totalMs),
-        token_bucket: tokenBucket(0),
-        billing_status: spend === 0 ? 'free' : 'billed',
-      }, { result: message.status === 'failed' ? 'fail' : 'success' })
+      trackModelRun({
+        modelId: selectedModel.model_id,
+        failed: message.status === 'failed',
+        totalMs,
+        free: spend === 0,
+      })
     } catch (err) {
       patchAssistant({ error: `${t('modelsExperience.requestFailed')}${extractApiErrorMessage(err)}` })
       const errorCode = (err as { data?: { field_errors?: Array<{ code?: string }> } } | undefined)?.data?.field_errors?.[0]?.code
-      trackEvent('playground_model_run_result', {
-        model_id: selectedModel.model_id,
-        status: 'failed',
-        latency_bucket: latencyBucket(Date.now() - startedAt),
-        token_bucket: tokenBucket(0),
-        billing_status: 'unbilled',
-      }, { result: 'fail', error_code: errorCode })
+      trackModelRun({ modelId: selectedModel.model_id, failed: true, totalMs: Date.now() - startedAt, errorCode })
     } finally {
       setIsStreaming(false)
       // 同对话路径（shared#346）：懒创建的会话在模型调用失败时也已落库，成功失败都要同步侧栏
@@ -803,50 +761,35 @@ export function useModelsPlayground() {
     task: ExperienceTaskType,
     chatParamsAtSend: Record<string, unknown>,
   ) {
-    for (;;) {
-      await new Promise((resolve) => window.setTimeout(resolve, 5000))
-      try {
-        const { message, attachment_urls } = await getExperienceMessage(conversationId, messageId)
-        if (message.status === 'running') continue
-        if (message.status === 'failed') {
-          patchAssistant({
-            content: '',
-            error: message.error ? cleanErrorMessage(message.error) : t('modelsExperience.videoGenerateFailed'),
-          })
-        } else {
-          const media = message.attachments.map((a, i) => ({
-            kind: a.kind,
-            url: attachment_urls[a.resource_id] ?? '',
-            title: artifactTitle,
-            detail: buildMediaArtifactDetail(task, chatParamsAtSend, i),
-          }))
-          patchAssistant({
-            content: '',
-            media: media.length > 0 ? media : undefined,
-            metrics: {
-              model: modelLabel,
-              inputTokens: 0,
-              outputTokens: 0,
-              firstTokenLatency: '',
-              totalLatency: formatPlaygroundLatency(message.total_ms ?? 0),
-              spend: Number(message.actual_spend ?? 0),
-              free: false,
-            },
-          })
-        }
-        trackEvent('playground_model_run_result', {
-          model_id: modelId,
-          status: message.status === 'failed' ? 'failed' : 'succeeded',
-          latency_bucket: latencyBucket(message.total_ms ?? 0),
-          token_bucket: tokenBucket(0),
-          billing_status: Number(message.actual_spend ?? 0) === 0 ? 'free' : 'billed',
-        }, { result: message.status === 'failed' ? 'fail' : 'success' })
-        void refreshHistorySessions()
-        return
-      } catch {
-        // 单次轮询失败不放弃，继续等下一轮（§8.3：异步任务刷新失败保留最后已知状态，允许稍后重试）
-      }
+    const { message, attachment_urls } = await pollMediaTask(conversationId, messageId)
+    const spend = Number(message.actual_spend ?? 0)
+    if (message.status === 'failed') {
+      patchAssistant({
+        content: '',
+        error: message.error ? cleanErrorMessage(message.error) : t('modelsExperience.videoGenerateFailed'),
+      })
+    } else {
+      const media = message.attachments.map((a, i) => ({
+        kind: a.kind,
+        url: attachment_urls[a.resource_id] ?? '',
+        title: artifactTitle,
+        detail: buildMediaArtifactDetail(task, chatParamsAtSend, i),
+      }))
+      patchAssistant({
+        content: '',
+        media: media.length > 0 ? media : undefined,
+        // 免费判定统一按「本次花费为 0」，与同页同步媒体路径、对比页视频路径一致
+        // （原先这里硬编码 free: false，免费视频任务会被标成计费）
+        metrics: buildMediaMetrics({ modelLabel, spend, totalMs: message.total_ms ?? 0 }),
+      })
     }
+    trackModelRun({
+      modelId,
+      failed: message.status === 'failed',
+      totalMs: message.total_ms ?? 0,
+      free: spend === 0,
+    })
+    void refreshHistorySessions()
   }
 
   /** 模型条「API 调用」入口 */

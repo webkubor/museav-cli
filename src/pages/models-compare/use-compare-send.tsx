@@ -7,7 +7,6 @@
 import {
   streamExperienceMessage,
   sendExperienceMediaMessage,
-  getExperienceMessage,
   type ExperienceStatsEvent,
 } from '@/services/experience-sessions'
 import { modelVendorLabel } from '@/features/models/model-format'
@@ -16,10 +15,7 @@ import { trackEvent } from '@/lib/track'
 import {
   isPaidModel,
   estimateTokens,
-  formatPlaygroundLatency,
   hashId,
-  latencyBucket,
-  tokenBucket,
   cleanErrorMessage,
   extractApiErrorMessage,
   buildMediaArtifactTitle,
@@ -32,6 +28,7 @@ import {
   type ExperienceTaskType,
 } from '../models/model-experience-data'
 import { isAbortError } from '@/hooks/use-streaming-controller'
+import { trackModelRun, buildDialogueMetrics, buildMediaMetrics, pollMediaTask } from '../models/experience-run'
 import type { DispatchAttachment } from './models-compare-utils'
 import type { CompareState } from './use-models-compare-state'
 
@@ -100,44 +97,34 @@ export function useCompareSend(state: CompareState) {
         onStats: (event) => { stats = event },
       })
       const modelLabel = prettyModelName(column.model.display_name, column.model.model_id, modelVendorLabel(column.model, ''))
-      const hasStats = stats !== null
-      const s = stats as ExperienceStatsEvent | null
-      const totalMs = hasStats ? s!.total_ms : Date.now() - startedAt
-      const inputTokens = hasStats ? s!.input_tokens : estimateTokens(prompt)
-      const outputTokens = hasStats ? s!.output_tokens : estimateTokens(reply)
-      const spend = hasStats ? Number(s!.actual_spend ?? s!.estimated_spend ?? 0) : 0
-      const free = hasStats ? s!.free : (!Number(column.model.pricing?.input_per_1m ?? 0) && !Number(column.model.pricing?.output_per_1m ?? 0))
-      const firstTokenMs = hasStats ? s!.first_token_ms : totalMs
-      patchAssistant(idx, {
-        metrics: {
-          model: modelLabel,
-          inputTokens,
-          outputTokens,
-          firstTokenLatency: formatPlaygroundLatency(firstTokenMs),
-          totalLatency: formatPlaygroundLatency(totalMs),
-          spend,
-          free,
-          totalMs,
+      // 统计帧缺失时的本地兜底：token 本地估算，花费记 0（对比页不按目录价倒算），
+      // 首 token 耗时退化为总耗时（对比页没单独跟踪首个 delta 的时刻）
+      const localTotalMs = Date.now() - startedAt
+      const metrics = buildDialogueMetrics({
+        modelLabel,
+        stats,
+        fallback: {
+          inputTokens: estimateTokens(prompt),
+          outputTokens: estimateTokens(reply),
+          firstTokenMs: localTotalMs,
+          totalMs: localTotalMs,
+          spend: 0,
+          free: !Number(column.model.pricing?.input_per_1m ?? 0) && !Number(column.model.pricing?.output_per_1m ?? 0),
         },
       })
-      trackEvent('playground_model_run_result', {
-        model_id: column.model.model_id,
-        status: 'succeeded',
-        latency_bucket: latencyBucket(totalMs),
-        token_bucket: tokenBucket(inputTokens + outputTokens),
-        billing_status: free ? 'free' : 'billed',
-      }, { result: 'success' })
+      patchAssistant(idx, { metrics })
+      trackModelRun({
+        modelId: column.model.model_id,
+        failed: false,
+        totalMs: metrics.totalMs ?? localTotalMs,
+        tokens: metrics.inputTokens + metrics.outputTokens,
+        free: metrics.free,
+      })
     } catch (err) {
       if (isAbortError(err)) return
       const errorCode = (err as { data?: { code?: string } } | undefined)?.data?.code
       patchAssistant(idx, { error: `${t('modelsExperience.requestFailed')}${extractApiErrorMessage(err)}` })
-      trackEvent('playground_model_run_result', {
-        model_id: column.model.model_id,
-        status: 'failed',
-        latency_bucket: latencyBucket(Date.now() - startedAt),
-        token_bucket: tokenBucket(0),
-        billing_status: 'unbilled',
-      }, { result: 'fail', error_code: errorCode })
+      trackModelRun({ modelId: column.model.model_id, failed: true, totalMs: Date.now() - startedAt, errorCode })
     } finally {
       updateColumn(idx, { streaming: false })
       settleDispatch(dispatchId)
@@ -192,29 +179,19 @@ export function useCompareSend(state: CompareState) {
         content: message.content,
         media: media.length > 0 ? media : undefined,
         error: message.status === 'failed' ? (message.content ? undefined : t('modelsExperience.modelRunFailed')) : undefined,
-        metrics: {
-          model: modelLabel, inputTokens: 0, outputTokens: 0, firstTokenLatency: '',
-          totalLatency: formatPlaygroundLatency(totalMs), spend, free: spend === 0, totalMs,
-        },
+        metrics: buildMediaMetrics({ modelLabel, spend, totalMs }),
       })
-      trackEvent('playground_model_run_result', {
-        model_id: column.model.model_id,
-        status: message.status === 'failed' ? 'failed' : 'succeeded',
-        latency_bucket: latencyBucket(totalMs),
-        token_bucket: tokenBucket(0),
-        billing_status: spend === 0 ? 'free' : 'billed',
-      }, { result: message.status === 'failed' ? 'fail' : 'success' })
+      trackModelRun({
+        modelId: column.model.model_id,
+        failed: message.status === 'failed',
+        totalMs,
+        free: spend === 0,
+      })
     } catch (err) {
       const message = `${t('modelsExperience.requestFailed')}${extractApiErrorMessage(err)}`
       patchAssistant(idx, { error: message })
       const errorCode = (err as { data?: { field_errors?: Array<{ code?: string }> } } | undefined)?.data?.field_errors?.[0]?.code
-      trackEvent('playground_model_run_result', {
-        model_id: column.model.model_id,
-        status: 'failed',
-        latency_bucket: latencyBucket(Date.now() - startedAt),
-        token_bucket: tokenBucket(0),
-        billing_status: 'unbilled',
-      }, { result: 'fail', error_code: errorCode })
+      trackModelRun({ modelId: column.model.model_id, failed: true, totalMs: Date.now() - startedAt, errorCode })
     } finally {
       updateColumn(idx, { streaming: false })
       // 视频异步分支的 dispatch 结算延后到 pollVideoColumn 轮询终态，这里不提前计入
@@ -234,47 +211,33 @@ export function useCompareSend(state: CompareState) {
     task: ExperienceTaskType,
     chatParamsAtSend: Record<string, unknown>,
   ) {
-    for (;;) {
-      await new Promise((resolve) => window.setTimeout(resolve, 5000))
-      try {
-        const { message, attachment_urls } = await getExperienceMessage(conversationId, messageId)
-        if (message.status === 'running') continue
-        if (message.status === 'failed') {
-          patchAssistant(idx, {
-            content: '',
-            error: message.error ? cleanErrorMessage(message.error) : t('modelsExperience.videoGenerateFailed'),
-          })
-        } else {
-          const media = message.attachments.map((a, mediaIdx) => ({
-            kind: a.kind,
-            url: attachment_urls[a.resource_id] ?? '',
-            title: artifactTitle,
-            detail: buildMediaArtifactDetail(task, chatParamsAtSend, mediaIdx),
-          }))
-          patchAssistant(idx, {
-            content: '',
-            media: media.length > 0 ? media : undefined,
-            metrics: {
-              model: modelLabel, inputTokens: 0, outputTokens: 0, firstTokenLatency: '',
-              totalLatency: formatPlaygroundLatency(message.total_ms ?? 0),
-              spend: Number(message.actual_spend ?? 0), free: Number(message.actual_spend ?? 0) === 0,
-              totalMs: message.total_ms,
-            },
-          })
-        }
-        trackEvent('playground_model_run_result', {
-          model_id: columns?.[idx]?.model.model_id ?? '',
-          status: message.status === 'failed' ? 'failed' : 'succeeded',
-          latency_bucket: latencyBucket(message.total_ms ?? 0),
-          token_bucket: tokenBucket(0),
-          billing_status: Number(message.actual_spend ?? 0) === 0 ? 'free' : 'billed',
-        }, { result: message.status === 'failed' ? 'fail' : 'success' })
-        settleDispatch(dispatchId)
-        return
-      } catch {
-        // 单次轮询失败不放弃，继续等下一轮（同单模型页 §8.3：保留最后已知状态，允许稍后重试）
-      }
+    const { message, attachment_urls } = await pollMediaTask(conversationId, messageId)
+    const spend = Number(message.actual_spend ?? 0)
+    if (message.status === 'failed') {
+      patchAssistant(idx, {
+        content: '',
+        error: message.error ? cleanErrorMessage(message.error) : t('modelsExperience.videoGenerateFailed'),
+      })
+    } else {
+      const media = message.attachments.map((a, mediaIdx) => ({
+        kind: a.kind,
+        url: attachment_urls[a.resource_id] ?? '',
+        title: artifactTitle,
+        detail: buildMediaArtifactDetail(task, chatParamsAtSend, mediaIdx),
+      }))
+      patchAssistant(idx, {
+        content: '',
+        media: media.length > 0 ? media : undefined,
+        metrics: buildMediaMetrics({ modelLabel, spend, totalMs: message.total_ms ?? 0 }),
+      })
     }
+    trackModelRun({
+      modelId: columns?.[idx]?.model.model_id ?? '',
+      failed: message.status === 'failed',
+      totalMs: message.total_ms ?? 0,
+      free: spend === 0,
+    })
+    settleDispatch(dispatchId)
   }
 
   /** dispatch 组内所有列都完成后，计算最快/成本最低标记（§7.10） */

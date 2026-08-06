@@ -97,6 +97,14 @@ export function isExpiringSoon(item: ApiKeyItem, withinDays = 7): boolean {
   return exp > now && exp - now <= withinDays * 24 * 60 * 60 * 1000
 }
 
+/** 是否已过期：后端 status='expired' 权威（#407）；未落地时以 expires_at 瞬时点回退（带 Z 的 UTC ISO） */
+export function isExpiredKey(item: ApiKeyItem): boolean {
+  if (item.status === 'expired') return true
+  if (!item.expires_at) return false
+  const exp = new Date(item.expires_at).getTime()
+  return !Number.isNaN(exp) && exp < Date.now()
+}
+
 /** 是否处于「可调用」态（对齐 PRD isApiKeyCallable：启用中或待轮转——新 Token 已生效） */
 export function isCallable(item: ApiKeyItem): boolean {
   return item.status === 'active' || item.status === 'rotation_required'

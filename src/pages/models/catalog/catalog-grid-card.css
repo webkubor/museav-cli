@@ -14,11 +14,11 @@
   cursor: pointer;
   overflow: hidden;
 }
-/* 底色定稿口径（与筛选卡/搜索框一致，不要再改）：浅色档 #EFF3FE 实底，
-   深色档同色 10% 透明度。compound 选择器压过 components.css 的 .mg-tile 底色。 */
-.mg-tile.mg-mcard { background: #eff3fe; }
-[theme-mode='dark'] .mg-tile.mg-mcard,
-body[theme-mode='dark'] .mg-tile.mg-mcard { background: rgba(239, 243, 254, 0.1); }
+/* 卡片底色/移入描边走配色定稿变量（catalog-palette.css）：底是极淡品牌渐变，
+   移入不变底色、只换描边（叠 .mg-tile-hover 的抬升/阴影）。compound 选择器
+   压过 components.css 的 .mg-tile 通用底色与 hover 描边。 */
+.mg-tile.mg-mcard { background: var(--plaza-card-bg); }
+.mg-tile.mg-tile-hover.mg-mcard:hover { border-color: var(--plaza-card-hover-border); }
 /* 顶行：图标在左，角标右对齐（qa#286：PRD §4.2 非目标明确排除收藏功能，已删除） */
 .mg-mcard-top {
   display: flex; align-items: flex-start; justify-content: space-between;
@@ -125,17 +125,14 @@ body[theme-mode='dark'] .mg-tile.mg-mcard { background: rgba(239, 243, 254, 0.1)
   position: absolute; left: 0; right: 0; bottom: 0;
   display: flex; align-items: center; gap: 8px;
   padding: 10px 18px 14px;
-  /* 跟卡片底色一致（#EFF3FE 定稿），浮出时不出现异色断层 */
-  background: #eff3fe;
+  /* 定稿是半透明白（浅 .50 / 深 .10）：必须加毛玻璃模糊，否则盖不住底下的
+     规格行文字，会两层字叠在一起。 */
+  background: var(--plaza-actions-bg);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   border-top: 1px solid var(--mg-border);
   opacity: 0; pointer-events: none;
   transition: opacity 0.18s ease;
-}
-/* 深色卡底是 10% 半透明，浮层必须不透明才能盖住底下的规格行：
-   用「页面底色 + 同比例同色」实混近似卡面合成色。 */
-[theme-mode='dark'] .mg-mcard-actions,
-body[theme-mode='dark'] .mg-mcard-actions {
-  background: color-mix(in srgb, #eff3fe 10%, var(--mg-bg-1));
 }
 .mg-mcard:hover .mg-mcard-actions,
 .mg-mcard:focus-within .mg-mcard-actions { opacity: 1; pointer-events: auto; }

@@ -6,6 +6,7 @@
  * 2026-08-04 拆分：原 1221 行按分区拆为 8 个文件，本文件只做按序 @import——
  * 级联顺序即原文件内顺序，改样式去对应分区文件，别再往这里堆规则。
  */
+@import './catalog-palette.css';
 @import './catalog-hero.css';
 @import './catalog-card-row.css';
 @import './catalog-effects.css';

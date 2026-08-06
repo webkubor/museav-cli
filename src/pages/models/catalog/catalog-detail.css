@@ -117,16 +117,11 @@
   .mg-plaza-layout { grid-template-columns: 240px minmax(0, 1fr); }
 }
 /* 侧栏是带边框的卡片（原型 .marketplace-filters），不再是裸列。
-   浅色档底色 #EFF3FE 为验收定稿口径（与搜索框一致），不要再改。 */
+   底色走配色定稿变量（catalog-palette.css），四态一处管。 */
 .mg-side-card {
-  background: #eff3fe;
+  background: var(--plaza-panel-bg);
   border: 1px solid var(--mg-card-border);
   border-radius: var(--radius-md);
   box-shadow: var(--mg-card-shadow);
   padding: 12px 10px;
-}
-/* 深色档同色 10% 透明度（验收定稿口径） */
-[theme-mode='dark'] .mg-side-card,
-body[theme-mode='dark'] .mg-side-card {
-  background: rgba(239, 243, 254, 0.1);
 }

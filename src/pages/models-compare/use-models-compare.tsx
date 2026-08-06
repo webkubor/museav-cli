@@ -60,9 +60,8 @@ export function useModelsCompare() {
     clearColumnAttachment,
     columnAttachments,
     setColumnAttachments,
-    abortRefs,
+    stream,
     updateColumn,
-    abortColumnStream,
   } = state
   const send = useCompareSend(state)
 
@@ -206,7 +205,6 @@ export function useModelsCompare() {
           draft: '',
           chatParams: {},
         }))
-        abortRefs.current = [...abortRefs.current, ...newColumns.map(() => null)]
         return [...prev, ...newColumns]
       })
       toAdd.forEach((model, i) => {
@@ -229,7 +227,7 @@ export function useModelsCompare() {
     try {
       await switchExperienceConversationModel(sessionId, target.conversationId, model.model_id)
       if (modelChanged) {
-        abortColumnStream(idx)
+        stream.abort(idx)
         updateColumn(idx, { model, chatParams: {}, history: [], streaming: false })
       }
       trackEvent('playground_model_select', { from_model_id: target.model.model_id, to_model_id: model.model_id }, { result: 'success' })

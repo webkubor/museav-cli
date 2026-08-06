@@ -6,7 +6,6 @@ import {
   createExperienceSession,
   streamExperienceMessage,
   sendExperienceMediaMessage,
-  getExperienceMessage,
   getExperienceSessionMessages,
   getExperienceSessionStats,
   listExperienceModelConfigs,
@@ -28,11 +27,8 @@ import { appToast } from '@/lib/app-toast'
 import type { CatalogModelItem } from '@/types'
 import {
   estimateTokens,
-  formatPlaygroundLatency,
   isPaidModel,
   hashId,
-  latencyBucket,
-  tokenBucket,
   sizeBucket,
   experienceTaskLabel,
   resolveModelCategory,
@@ -59,6 +55,9 @@ import {
 } from './model-experience-data'
 import { resolveExperienceMessageMedia } from './experience-message-attachments'
 import { useExperienceHistorySidebar } from './use-experience-history-sidebar'
+import { useStreamingController, isAbortError } from '@/hooks/use-streaming-controller'
+import { trackModelRun, buildDialogueMetrics, buildMediaMetrics, pollMediaTask } from './experience-run'
+import { patchLastAssistant } from '@/lib/message-patch'
 import {
   INITIAL_MESSAGES,
   RESET_SESSION_STATS,
@@ -96,6 +95,11 @@ export function useModelsPlayground() {
   const messages = single.messages
   const setMessages = (updater: ExperienceMessage[] | ((prev: ExperienceMessage[]) => ExperienceMessage[])) =>
     setSingle((s) => ({ messages: typeof updater === 'function' ? updater(s.messages) : updater }))
+  /** 改「当前这条正在生成的回复」——流式/异步回填统一入口。回复永远是列表最后一条，
+   *  定位不到（列表空/最后一条是用户消息）就不动。 */
+  const patchAssistant = (
+    patch: Partial<ExperienceMessage> | ((last: ExperienceMessage) => Partial<ExperienceMessage>),
+  ) => setMessages((prev) => patchLastAssistant(prev, patch))
   const sessionId = single.sessionId
   const setSessionId = (id: string | null) => setSingle({ sessionId: id })
   const conversationId = single.conversationId
@@ -110,7 +114,8 @@ export function useModelsPlayground() {
 
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
-  const abortRef = useRef<AbortController | null>(null)
+  // 流式中断编排（新请求自动掐旧请求、卸载自动收尾）都在 hook 里，这里只管 isStreaming 这个 UI 状态
+  const stream = useStreamingController()
 
   // 每轮最多一个附件（§7.5），上传成功后才拿到 resource_id，发送后清空
   const [attachment, setAttachment] = useState<PlaygroundPendingAttachment | null>(null)
@@ -122,8 +127,8 @@ export function useModelsPlayground() {
   // 挂载那一刻的 entry state 会被下面的 navigate(replace, state:{}) 清空，先冻住供 playground_view 用
   const entryStateRef = useRef((location.state as { selectedModelId?: string } | null)?.selectedModelId)
 
+  // 在途请求的卸载中断由 useStreamingController 内部处理，这里只清预览用的 blob URL
   useEffect(() => () => {
-    abortRef.current?.abort()
     transientPreviewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url))
   }, [])
 
@@ -587,23 +592,10 @@ export function useModelsPlayground() {
     if (currentAttachment) replaceMessageAttachmentPreview(dispatchId, currentAttachment)
     setInput('')
     setIsStreaming(true)
-    abortRef.current?.abort()
-    const controller = new AbortController()
-    abortRef.current = controller
+    const signal = stream.begin()
     const startedAt = Date.now()
     let firstDeltaAt: number | null = null
     let stats: ExperienceStatsEvent | null = null
-
-    const applyAssistant = (updater: (content: string) => string) => {
-      setMessages((prev) => {
-        const next = [...prev]
-        const last = next[next.length - 1]
-        if (last?.role === 'assistant') {
-          next[next.length - 1] = { ...last, content: updater(last.content) }
-        }
-        return next
-      })
-    }
 
     try {
       const convId = await ensureConversation()
@@ -612,10 +604,10 @@ export function useModelsPlayground() {
         dispatchId,
         content: prompt,
         attachments: resourceIds,
-        signal: controller.signal,
+        signal,
         onDelta: (delta) => {
           firstDeltaAt ??= Date.now()
-          applyAssistant((content) => content + delta)
+          patchAssistant((last) => ({ content: last.content + delta }))
         },
         onStats: (event) => {
           stats = event
@@ -623,91 +615,44 @@ export function useModelsPlayground() {
       })
 
       const modelLabel = prettyModelName(selectedModel.display_name, selectedModel.model_id, modelVendorLabel(selectedModel, ''))
-      if (stats) {
-        const s: ExperienceStatsEvent = stats
-        const spend = Number(s.actual_spend ?? s.estimated_spend ?? 0)
-        setMessages((prev) => {
-          const next = [...prev]
-          const last = next[next.length - 1]
-          if (last?.role === 'assistant') {
-            next[next.length - 1] = {
-              ...last,
-              error: s.status === 'failed' ? (last.content ? undefined : t('modelsExperience.modelRunFailed')) : undefined,
-              metrics: {
-                model: modelLabel,
-                inputTokens: s.input_tokens,
-                outputTokens: s.output_tokens,
-                firstTokenLatency: formatPlaygroundLatency(s.first_token_ms),
-                totalLatency: formatPlaygroundLatency(s.total_ms),
-                spend,
-                free: s.free,
-              },
-            }
-          }
-          return next
-        })
-        trackEvent('playground_model_run_result', {
-          model_id: selectedModel.model_id,
-          status: s.status === 'failed' ? 'failed' : 'succeeded',
-          latency_bucket: latencyBucket(s.total_ms),
-          token_bucket: tokenBucket(s.input_tokens + s.output_tokens),
-          billing_status: s.free ? 'free' : 'billed',
-        }, { result: s.status === 'failed' ? 'fail' : 'success' })
-      } else {
-        // 统计帧异常缺失时的兜底：本地估算，避免消息区完全没有统计信息
-        const totalMs = Date.now() - startedAt
-        const inputTokens = estimateTokens(prompt)
-        const outputTokens = estimateTokens(reply)
-        const inputPrice = Number(selectedModel.pricing?.input_per_1m ?? 0)
-        const outputPrice = Number(selectedModel.pricing?.output_per_1m ?? 0)
-        const free = !inputPrice && !outputPrice
-        const spend = free ? 0 : (inputTokens * inputPrice + outputTokens * outputPrice) / 1_000_000
-        setMessages((prev) => {
-          const next = [...prev]
-          const last = next[next.length - 1]
-          if (last?.role === 'assistant') {
-            next[next.length - 1] = {
-              ...last,
-              metrics: {
-                model: modelLabel,
-                inputTokens,
-                outputTokens,
-                firstTokenLatency: formatPlaygroundLatency((firstDeltaAt ?? Date.now()) - startedAt),
-                totalLatency: formatPlaygroundLatency(totalMs),
-                spend,
-                free,
-              },
-            }
-          }
-          return next
-        })
-        trackEvent('playground_model_run_result', {
-          model_id: selectedModel.model_id,
-          status: 'succeeded',
-          latency_bucket: latencyBucket(totalMs),
-          token_bucket: tokenBucket(inputTokens + outputTokens),
-          billing_status: free ? 'free' : 'billed',
-        }, { result: 'success' })
-      }
-    } catch (err) {
-      if ((err as Error).name === 'AbortError') return
-      applyAssistant(() => '')
-      const errorCode = (err as { data?: { code?: string } } | undefined)?.data?.code
-      setMessages((prev) => {
-        const next = [...prev]
-        const last = next[next.length - 1]
-        if (last?.role === 'assistant') {
-          next[next.length - 1] = { ...last, error: `${t('modelsExperience.requestFailed')}${extractApiErrorMessage(err)}` }
-        }
-        return next
+      // 断言而非直接用 stats：它在 onStats 回调里赋值，TS 的控制流分析看不到，会窄化成 null
+      const s = stats as ExperienceStatsEvent | null
+      // 统计帧异常缺失时的兜底：本地按目录价估算，避免消息区完全没有统计信息
+      const localTotalMs = Date.now() - startedAt
+      const localInputTokens = estimateTokens(prompt)
+      const localOutputTokens = estimateTokens(reply)
+      const inputPrice = Number(selectedModel.pricing?.input_per_1m ?? 0)
+      const outputPrice = Number(selectedModel.pricing?.output_per_1m ?? 0)
+      const localFree = !inputPrice && !outputPrice
+      const metrics = buildDialogueMetrics({
+        modelLabel,
+        stats: s,
+        fallback: {
+          inputTokens: localInputTokens,
+          outputTokens: localOutputTokens,
+          firstTokenMs: (firstDeltaAt ?? Date.now()) - startedAt,
+          totalMs: localTotalMs,
+          spend: localFree ? 0 : (localInputTokens * inputPrice + localOutputTokens * outputPrice) / 1_000_000,
+          free: localFree,
+        },
       })
-      trackEvent('playground_model_run_result', {
-        model_id: selectedModel.model_id,
-        status: 'failed',
-        latency_bucket: latencyBucket(Date.now() - startedAt),
-        token_bucket: tokenBucket(0),
-        billing_status: 'unbilled',
-      }, { result: 'fail', error_code: errorCode })
+      patchAssistant((last) => ({
+        error: s?.status === 'failed' ? (last.content ? undefined : t('modelsExperience.modelRunFailed')) : undefined,
+        metrics,
+      }))
+      trackModelRun({
+        modelId: selectedModel.model_id,
+        failed: s?.status === 'failed',
+        totalMs: metrics.totalMs ?? localTotalMs,
+        tokens: metrics.inputTokens + metrics.outputTokens,
+        free: metrics.free,
+      })
+    } catch (err) {
+      if (isAbortError(err)) return
+      const errorCode = (err as { data?: { code?: string } } | undefined)?.data?.code
+      // 已流出的半截内容清掉，只留报错气泡（原有行为：先清 content 再写 error）
+      patchAssistant({ content: '', error: `${t('modelsExperience.requestFailed')}${extractApiErrorMessage(err)}` })
+      trackModelRun({ modelId: selectedModel.model_id, failed: true, totalMs: Date.now() - startedAt, errorCode })
     } finally {
       setIsStreaming(false)
       // 放 finally 而不是 try 末尾：会话是 ensureConversation 懒创建的，创建成功但模型调用
@@ -748,15 +693,6 @@ export function useModelsPlayground() {
     setIsStreaming(true)
     const startedAt = Date.now()
 
-    function applyResult(patch: Partial<ExperienceMessage>) {
-      setMessages((prev) => {
-        const next = [...prev]
-        const last = next[next.length - 1]
-        if (last?.role === 'assistant') next[next.length - 1] = { ...last, ...patch }
-        return next
-      })
-    }
-
     try {
       const convId = await ensureConversation()
       const { message, attachment_urls } = await sendExperienceMediaMessage({
@@ -769,7 +705,7 @@ export function useModelsPlayground() {
       if (message.status === 'running' && message.async_task_id) {
         // 视频异步任务：建议间隔 5 秒轮询，succeeded/failed 才是终态；run_result 留给轮询终态上报，这里不重复
         // 跳转链接携带 task_id，命中 /logs 页 AsyncTasksPanel 的 gateway_request_id 精确匹配自动展开详情（同 qa#14 逻辑）
-        applyResult({ content: `${t('modelsExperience.videoGenerating')}[${t('modelsExperience.videoGeneratingLink')}](/logs?task_id=${encodeURIComponent(message.async_task_id)})…` })
+        patchAssistant({ content: `${t('modelsExperience.videoGenerating')}[${t('modelsExperience.videoGeneratingLink')}](/logs?task_id=${encodeURIComponent(message.async_task_id)})…` })
         void pollVideoMessage(convId, message.id, modelLabel, selectedModel.model_id, artifactTitle, taskAtSend, chatParamsAtSend)
         return
       }
@@ -777,41 +713,27 @@ export function useModelsPlayground() {
       const media = message.attachments.map((a, i) => ({
         kind: a.kind,
         url: attachment_urls[a.resource_id] ?? '',
+        downloadRef: { resourceId: a.resource_id },
         title: artifactTitle,
         detail: buildMediaArtifactDetail(taskAtSend, chatParamsAtSend, i),
       }))
       const spend = Number(message.actual_spend ?? 0)
       const totalMs = message.total_ms ?? Date.now() - startedAt
-      applyResult({
+      patchAssistant({
         content: message.content,
         media: media.length > 0 ? media : undefined,
-        metrics: {
-          model: modelLabel,
-          inputTokens: 0,
-          outputTokens: 0,
-          firstTokenLatency: '',
-          totalLatency: formatPlaygroundLatency(totalMs),
-          spend,
-          free: spend === 0,
-        },
+        metrics: buildMediaMetrics({ modelLabel, spend, totalMs }),
       })
-      trackEvent('playground_model_run_result', {
-        model_id: selectedModel.model_id,
-        status: message.status === 'failed' ? 'failed' : 'succeeded',
-        latency_bucket: latencyBucket(totalMs),
-        token_bucket: tokenBucket(0),
-        billing_status: spend === 0 ? 'free' : 'billed',
-      }, { result: message.status === 'failed' ? 'fail' : 'success' })
+      trackModelRun({
+        modelId: selectedModel.model_id,
+        failed: message.status === 'failed',
+        totalMs,
+        free: spend === 0,
+      })
     } catch (err) {
-      applyResult({ error: `${t('modelsExperience.requestFailed')}${extractApiErrorMessage(err)}` })
+      patchAssistant({ error: `${t('modelsExperience.requestFailed')}${extractApiErrorMessage(err)}` })
       const errorCode = (err as { data?: { field_errors?: Array<{ code?: string }> } } | undefined)?.data?.field_errors?.[0]?.code
-      trackEvent('playground_model_run_result', {
-        model_id: selectedModel.model_id,
-        status: 'failed',
-        latency_bucket: latencyBucket(Date.now() - startedAt),
-        token_bucket: tokenBucket(0),
-        billing_status: 'unbilled',
-      }, { result: 'fail', error_code: errorCode })
+      trackModelRun({ modelId: selectedModel.model_id, failed: true, totalMs: Date.now() - startedAt, errorCode })
     } finally {
       setIsStreaming(false)
       // 同对话路径（shared#346）：懒创建的会话在模型调用失败时也已落库，成功失败都要同步侧栏
@@ -840,55 +762,40 @@ export function useModelsPlayground() {
     task: ExperienceTaskType,
     chatParamsAtSend: Record<string, unknown>,
   ) {
-    for (;;) {
-      await new Promise((resolve) => window.setTimeout(resolve, 5000))
-      try {
-        const { message, attachment_urls } = await getExperienceMessage(conversationId, messageId)
-        if (message.status === 'running') continue
-        setMessages((prev) => {
-          const next = [...prev]
-          const last = next[next.length - 1]
-          if (last?.role !== 'assistant') return prev
-          if (message.status === 'failed') {
-            return [...next.slice(0, -1), { ...last, error: message.error ? cleanErrorMessage(message.error) : t('modelsExperience.videoGenerateFailed'), content: '' }]
-          }
-          const media = message.attachments.map((a, i) => ({
-            kind: a.kind,
-            url: attachment_urls[a.resource_id] ?? '',
-            title: artifactTitle,
-            detail: buildMediaArtifactDetail(task, chatParamsAtSend, i),
-          }))
-          return [
-            ...next.slice(0, -1),
-            {
-              ...last,
-              content: '',
-              media: media.length > 0 ? media : undefined,
-              metrics: {
-                model: modelLabel,
-                inputTokens: 0,
-                outputTokens: 0,
-                firstTokenLatency: '',
-                totalLatency: formatPlaygroundLatency(message.total_ms ?? 0),
-                spend: Number(message.actual_spend ?? 0),
-                free: false,
-              },
-            },
-          ]
-        })
-        trackEvent('playground_model_run_result', {
-          model_id: modelId,
-          status: message.status === 'failed' ? 'failed' : 'succeeded',
-          latency_bucket: latencyBucket(message.total_ms ?? 0),
-          token_bucket: tokenBucket(0),
-          billing_status: Number(message.actual_spend ?? 0) === 0 ? 'free' : 'billed',
-        }, { result: message.status === 'failed' ? 'fail' : 'success' })
-        void refreshHistorySessions()
-        return
-      } catch {
-        // 单次轮询失败不放弃，继续等下一轮（§8.3：异步任务刷新失败保留最后已知状态，允许稍后重试）
-      }
+    const { message, attachment_urls } = await pollMediaTask(conversationId, messageId)
+    const spend = Number(message.actual_spend ?? 0)
+    if (message.status === 'failed') {
+      patchAssistant({
+        content: '',
+        error: message.error ? cleanErrorMessage(message.error) : t('modelsExperience.videoGenerateFailed'),
+      })
+    } else {
+      // 视频产物落在网关前缀下，resource_id 换不到签名地址，下载只能凭 task_id 走
+      // 网关的内容投递端点（qa#580）。
+      const media = message.attachments.map((a, i) => ({
+        kind: a.kind,
+        url: attachment_urls[a.resource_id] ?? '',
+        downloadRef: message.async_task_id
+          ? { asyncTaskId: message.async_task_id }
+          : { resourceId: a.resource_id },
+        title: artifactTitle,
+        detail: buildMediaArtifactDetail(task, chatParamsAtSend, i),
+      }))
+      patchAssistant({
+        content: '',
+        media: media.length > 0 ? media : undefined,
+        // 免费判定统一按「本次花费为 0」，与同页同步媒体路径、对比页视频路径一致
+        // （原先这里硬编码 free: false，免费视频任务会被标成计费）
+        metrics: buildMediaMetrics({ modelLabel, spend, totalMs: message.total_ms ?? 0 }),
+      })
     }
+    trackModelRun({
+      modelId,
+      failed: message.status === 'failed',
+      totalMs: message.total_ms ?? 0,
+      free: spend === 0,
+    })
+    void refreshHistorySessions()
   }
 
   /** 模型条「API 调用」入口 */
@@ -966,7 +873,7 @@ export function useModelsPlayground() {
     sendPrompt,
     handleFileSelect,
     clearAttachment,
-    stopStreaming: () => abortRef.current?.abort(),
+    stopStreaming: () => stream.abort(),
     retryMediaMessage,
   }
 }

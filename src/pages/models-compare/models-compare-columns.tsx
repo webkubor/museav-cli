@@ -62,7 +62,7 @@ export function CompareColumns({ ctx }: { ctx: ModelsCompareContext }) {
 function CompareColumnCard({ ctx, column, idx }: { ctx: ModelsCompareContext; column: ColumnState; idx: number }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { abortRefs, columnFileInputRef, pendingAttachmentColumnRef } = ctx
+  const { stream, columnFileInputRef, pendingAttachmentColumnRef } = ctx
 
   return (
     <section
@@ -224,7 +224,7 @@ function CompareColumnCard({ ctx, column, idx }: { ctx: ModelsCompareContext; co
               onSend={() => ctx.handleIndependentSend(idx)}
               isStreaming={column.streaming}
               disabled={ctx.isBalanceZero && isPaidModel(column.model)}
-              onStop={() => abortRefs.current[idx]?.abort()}
+              onStop={() => stream.abort(idx)}
               placeholder={ctx.compareTask === 'image_to_image'
                 ? t('modelsExperience.taskPlaceholder.image_to_image')
                 : t('modelsExperience.compare.columnPlaceholder', { name: prettyModelName(column.model.display_name, column.model.model_id, modelVendorLabel(column.model, '')), placeholder: categoryPlaceholder(ctx.compareCategory) })}

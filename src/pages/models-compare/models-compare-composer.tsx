@@ -24,7 +24,7 @@ export function CompareSharedComposer({ ctx }: { ctx: ModelsCompareContext }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const columns = ctx.columns ?? []
-  const { fileInputRef, abortRefs } = ctx
+  const { fileInputRef, stream } = ctx
 
   return (
     <>
@@ -108,7 +108,7 @@ export function CompareSharedComposer({ ctx }: { ctx: ModelsCompareContext }) {
             onSend={ctx.handleSyncSend}
             isStreaming={columns.some((c) => c.streaming)}
             disabled={ctx.isBalanceZero && columns.some((c) => isPaidModel(c.model))}
-            onStop={() => abortRefs.current.forEach((c) => c?.abort())}
+            onStop={() => stream.abortAll()}
             placeholder={ctx.compareTask === 'image_to_image'
               ? t('modelsExperience.taskPlaceholder.image_to_image')
               : t('modelsExperience.compare.sharedPlaceholder', { placeholder: categoryPlaceholder(ctx.compareCategory), count: columns.length })}

@@ -7,6 +7,8 @@ import type { AgentEvent } from '@/interfaces/agent'
 import { stopConversation } from '@/services/agent'
 import { appToast } from '@/lib/app-toast'
 import { readSSE, extractHTTPError } from '@/lib/stream-chat'
+import { useStreamingController, isAbortError } from '@/hooks/use-streaming-controller'
+import { patchMessageById } from '@/lib/message-patch'
 
 export interface Message {
   id: string
@@ -38,7 +40,8 @@ export function useCsChat(options?: CsChatOptions) {
   )
   const [isLoading, setIsLoading] = useState(false)
   const [status, setStatus] = useState<ConnectionStatus>('online')
-  const abortRef = useRef<AbortController | null>(null)
+  // 中断编排（新一轮自动掐上一轮、卸载自动收尾）统一走 hook
+  const stream = useStreamingController()
   const activeAgentMsgIdRef = useRef<string | null>(null)
   const lastUserMessageRef = useRef<string>('')
 
@@ -52,9 +55,7 @@ export function useCsChat(options?: CsChatOptions) {
     if (!content.trim() || isLoading) return
 
     lastUserMessageRef.current = content.trim()
-    abortRef.current?.abort()
-    const controller = new AbortController()
-    abortRef.current = controller
+    const signal = stream.begin()
 
     const userMsg: Message = {
       id: crypto.randomUUID(),
@@ -99,7 +100,7 @@ export function useCsChat(options?: CsChatOptions) {
           lang: document.documentElement.lang?.startsWith('zh') ? 'zh' : 'en',
         }),
         credentials: 'include',
-        signal: controller.signal,
+        signal,
       })
 
       if (!response.ok) throw await extractHTTPError(response)
@@ -121,15 +122,11 @@ export function useCsChat(options?: CsChatOptions) {
 
           if (event.type === 'delta' && event.delta) {
             accumulated += event.delta
-            setMessages((prev) =>
-              prev.map((m) => (m.id === agentMsgId ? { ...m, content: accumulated } : m))
-            )
+            setMessages((prev) => patchMessageById(prev, agentMsgId, { content: accumulated }))
           }
           if (event.type === 'done') {
             const final = event.answer ?? accumulated
-            setMessages((prev) =>
-              prev.map((m) => (m.id === agentMsgId ? { ...m, content: final } : m))
-            )
+            setMessages((prev) => patchMessageById(prev, agentMsgId, { content: final }))
             const cid = event.conversation_id ?? ''
             if (cid) {
               setConversationId(cid)
@@ -158,35 +155,29 @@ export function useCsChat(options?: CsChatOptions) {
           setConversationId(cid)
           localStorage.setItem(storageKeys.csConversationId(), cid)
         }
-        setMessages((prev) =>
-          prev.map((m) => (m.id === agentMsgId ? { ...m, content: answer } : m))
-        )
+        setMessages((prev) => patchMessageById(prev, agentMsgId, { content: answer }))
       }
 
       setMessages((prev) => {
         const agentMsg = prev.find((m) => m.id === agentMsgId)
         if (agentMsg && !agentMsg.content.trim()) {
-          return prev.map((m) =>
-            m.id === agentMsgId ? { ...m, content: t('common.customerService.emptyReply') } : m
-          )
+          return patchMessageById(prev, agentMsgId, { content: t('common.customerService.emptyReply') })
         }
         saveMessages(prev)
         return prev
       })
     } catch (err) {
-      if ((err as Error).name === 'AbortError') return
+      if (isAbortError(err)) return
       const msg = err instanceof Error ? err.message : t('common.customerService.sendFailed')
       setStatus('offline')
-      setMessages((prev) =>
-        prev.map((m) => (m.id === agentMsgId ? { ...m, content: msg, isError: true } : m))
-      )
+      setMessages((prev) => patchMessageById(prev, agentMsgId, { content: msg, isError: true }))
     } finally {
       setIsLoading(false)
       activeAgentMsgIdRef.current = null
     }
     // options 注入到请求头：必须进依赖，否则切换组织后 sendMessage 仍持旧闭包，
     // 会用旧 tenantId 覆盖 injectHeaders 写入的当前租户（React Compiler 要求依赖整个 options）
-  }, [isLoading, conversationId, saveMessages, options, t])
+  }, [isLoading, conversationId, saveMessages, options, t, stream])
 
   const stopMessage = useCallback(async () => {
     if (!isLoading) return
@@ -194,7 +185,7 @@ export function useCsChat(options?: CsChatOptions) {
     const currentConversationId = conversationId
     const activeAgentMsgId = activeAgentMsgIdRef.current
 
-    abortRef.current?.abort()
+    stream.abort()
     setIsLoading(false)
 
     if (currentConversationId) {
@@ -206,15 +197,13 @@ export function useCsChat(options?: CsChatOptions) {
     if (!activeAgentMsgId) return
 
     setMessages((prev) => {
-      const next = prev.map((m) =>
-        m.id === activeAgentMsgId
-          ? { ...m, content: m.content.trim() ? `${m.content}\n\n${t('common.customerService.stopped')}` : t('common.customerService.stopped') }
-          : m
-      )
+      const next = patchMessageById(prev, activeAgentMsgId, (m) => ({
+        content: m.content.trim() ? `${m.content}\n\n${t('common.customerService.stopped')}` : t('common.customerService.stopped'),
+      }))
       saveMessages(next)
       return next
     })
-  }, [conversationId, isLoading, saveMessages, t])
+  }, [conversationId, isLoading, saveMessages, t, stream])
 
   const reconnect = useCallback(() => {
     setStatus('online')

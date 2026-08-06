@@ -223,6 +223,40 @@ export async function getExperienceAttachmentUrl(resourceId: string): Promise<{ 
   return get('experience/attachments/url', { resource_id: resourceId })
 }
 
+/** 下载产物时用的引用：图像/音频给 resource_id，异步视频给 async_task_id（后端两条腿见 qa#580）。 */
+export type ExperienceArtifactRef = { resourceId: string } | { asyncTaskId: string }
+
+/**
+ * 取产物字节用于「下载到本地」（qa#580）。
+ *
+ * 不能直接 fetch `attachments/url` 换回来的地址：那是 cdn.modelgo.com 的直链，
+ * 该域名不返回任何 CORS 头，浏览器读不到响应体（`<a download>` 跨域时也会被忽略），
+ * 下载就退化成整页跳转。改走 BFF 的 `attachments/content` 中转端点——它在我们自己的
+ * API 域名下、CORS 与会话鉴权都已就绪。
+ *
+ * 用裸 fetch 而不是 request.ts 的 `get`：响应是二进制流，不是 `{code,data}` 信封。
+ * 自动注入头（X-Tenant-Id 等）与 request.ts 同源，都经 injectHeaders。
+ */
+export async function fetchExperienceArtifactBlob(ref: ExperienceArtifactRef): Promise<Blob> {
+  const query = 'resourceId' in ref
+    ? `resource_id=${encodeURIComponent(ref.resourceId)}`
+    : `async_task_id=${encodeURIComponent(ref.asyncTaskId)}`
+  const request = new Request(`${apiBaseUrl()}/api/v1/experience/attachments/content?${query}`, {
+    method: 'GET',
+    credentials: 'include',
+  })
+  injectHeaders(request)
+  const response = await fetch(request)
+  if (!response.ok) throw new Error(`artifact content ${response.status}`)
+  // 业务失败仍是 HTTP 200 + JSON 信封（本仓统一响应约定），只有 Content-Type 能区分
+  // 「这是产物字节」和「这是一条 40401」。少了这道判断，错误信封会被当成文件存下来。
+  const contentType = response.headers.get('Content-Type') ?? ''
+  if (contentType.includes('application/json')) {
+    throw new Error(`artifact content returned an envelope: ${await response.text()}`)
+  }
+  return response.blob()
+}
+
 /**
  * 同步媒体任务发送（text_to_image / image_to_image / text_to_audio / audio_to_text），
  * 走普通 JSON（非 SSE），接口文档第五节 5.2。同步等待模型完成，生图/TTS 通常 5-30 秒，

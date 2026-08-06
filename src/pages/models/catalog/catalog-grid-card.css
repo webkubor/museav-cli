@@ -17,7 +17,13 @@
 /* 卡片底色/移入描边走配色定稿变量（catalog-palette.css）：底是极淡品牌渐变，
    移入不变底色、只换描边（叠 .mg-tile-hover 的抬升/阴影）。compound 选择器
    压过 components.css 的 .mg-tile 通用底色与 hover 描边。 */
-.mg-tile.mg-mcard { background: var(--plaza-card-bg); }
+.mg-tile.mg-mcard {
+  background: var(--plaza-card-bg);
+  border-color: var(--plaza-card-border);
+  /* 白色毛玻璃质感：半透明底必须配模糊，否则只是发灰的半透明片 */
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
 .mg-tile.mg-tile-hover.mg-mcard:hover { border-color: var(--plaza-card-hover-border); }
 /* 顶行：图标在左，角标右对齐（qa#286：PRD §4.2 非目标明确排除收藏功能，已删除） */
 .mg-mcard-top {
@@ -124,20 +130,26 @@
 .mg-mcard-actions {
   position: absolute; left: 0; right: 0; bottom: 0;
   display: flex; align-items: center; gap: 8px;
-  padding: 10px 18px 14px;
-  /* 定稿是半透明白（浅 .50 / 深 .10）：必须加毛玻璃模糊，否则盖不住底下的
-     规格行文字，会两层字叠在一起。 */
+  /* 顶部内边距 ≥ mask 羽化高度（14px），按钮不能被羽化区咬到上缘 */
+  padding: 18px 18px 14px;
+  /* 半透明底 + 重模糊的毛玻璃：走查反馈太透会露出底下的规格行文字，
+     不透明度和模糊都要给足。顶边不用分隔线（走查反馈横线生硬），
+     用 mask 把玻璃上缘羽化掉，衔接处是渐隐的雾而不是一条线。 */
   background: var(--plaza-actions-bg);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  border-top: 1px solid var(--mg-border);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 14px);
+  mask-image: linear-gradient(180deg, transparent 0, #000 14px);
   opacity: 0; pointer-events: none;
-  transition: opacity 0.18s ease;
+  /* 浮出走「上滑 + 渐显」：纯 opacity 硬切生硬（走查反馈）。曲线跟 .mg-tile
+     的抬升同族（ease-out 弹性），出场稍慢、收场稍快。 */
+  transform: translateY(10px);
+  transition: opacity 0.22s ease, transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .mg-mcard:hover .mg-mcard-actions,
-.mg-mcard:focus-within .mg-mcard-actions { opacity: 1; pointer-events: auto; }
+.mg-mcard:focus-within .mg-mcard-actions { opacity: 1; pointer-events: auto; transform: translateY(0); }
 @media (hover: none) {
-  .mg-mcard-actions { position: static; opacity: 1; pointer-events: auto; padding: 10px 0 0; background: transparent; }
+  .mg-mcard-actions { position: static; opacity: 1; pointer-events: auto; padding: 10px 0 0; background: transparent; transform: none; -webkit-mask-image: none; mask-image: none; }
 }
 .mg-mcard-icon-btn { flex-shrink: 0; width: 36px; padding-left: 0; padding-right: 0; }
 

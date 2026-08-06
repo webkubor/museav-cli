@@ -120,7 +120,9 @@
    底色走配色定稿变量（catalog-palette.css），四态一处管。 */
 .mg-side-card {
   background: var(--plaza-panel-bg);
-  border: 1px solid var(--mg-card-border);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--plaza-card-border);
   border-radius: var(--radius-md);
   box-shadow: var(--mg-card-shadow);
   padding: 12px 10px;

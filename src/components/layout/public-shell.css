@@ -1,11 +1,13 @@
-/* 公开外壳（/models 模型广场家族）整页底色。
- * 2026-08-06 设计填表定稿：纯色四态（背景图已撤；白色渐变试过显得全白，弃用）。
+/* 公开外壳（/models 模型广场家族）整页底色 + 导航毛玻璃。
+ * 2026-08-06 二次口径：浅色档背景带淡蓝渐变（撑毛玻璃卡片的层次），
+ * 色值待设计重出，先出质感；深色档维持填表的纯色。
  * 其余广场配色见 pages/models/catalog/catalog-palette.css。 */
 .mg-public-shell {
-  background: #f2f5fb;
+  /* 2026-08-06 设计口径：大背景 #DEE9FB → #E4EDFC */
+  background: linear-gradient(180deg, #dee9fb 0%, #e4edfc 100%);
 }
 [data-market='global'] .mg-public-shell {
-  background: #f1f8f4;
+  background: linear-gradient(180deg, #e7f6ee 0%, #f0f7f3 42%, #edf5f0 100%);
 }
 [theme-mode='dark'] .mg-public-shell,
 body[theme-mode='dark'] .mg-public-shell {
@@ -14,4 +16,24 @@ body[theme-mode='dark'] .mg-public-shell {
 [data-market='global'][theme-mode='dark'] .mg-public-shell,
 [data-market='global'] body[theme-mode='dark'] .mg-public-shell {
   background: #121a16;
+}
+
+/* 顶部导航在广场外壳内统一为白色毛玻璃（DashboardHeader 是共享组件，
+   其滚动分档底色只在控制台内生效，这里定向覆盖、不动组件本体）。 */
+.mg-public-shell header {
+  /* 2026-08-06 设计口径：导航白 30% 毛玻璃 + 底部 2px #F1F7FF */
+  background: rgba(255, 255, 255, 0.3);
+  border-bottom: 2px solid #f1f7ff;
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+[theme-mode='dark'] .mg-public-shell header,
+body[theme-mode='dark'] .mg-public-shell header {
+  background: rgba(16, 24, 39, 0.55);
+  border-bottom: 1px solid var(--mg-border);
+}
+[data-market='global'][theme-mode='dark'] .mg-public-shell header,
+[data-market='global'] body[theme-mode='dark'] .mg-public-shell header {
+  background: rgba(18, 26, 22, 0.55);
+  border-bottom: 1px solid var(--mg-border);
 }

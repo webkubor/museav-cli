@@ -170,6 +170,7 @@ export function useCompareSend(state: CompareState) {
       const media = message.attachments.map((a, i) => ({
         kind: a.kind,
         url: attachment_urls[a.resource_id] ?? '',
+        downloadRef: { resourceId: a.resource_id },
         title: artifactTitle,
         detail: buildMediaArtifactDetail(compareTask, chatParamsAtSend, i),
       }))
@@ -219,9 +220,14 @@ export function useCompareSend(state: CompareState) {
         error: message.error ? cleanErrorMessage(message.error) : t('modelsExperience.videoGenerateFailed'),
       })
     } else {
+      // 视频产物落在网关前缀下，resource_id 换不到签名地址，下载只能凭 task_id 走
+      // 网关的内容投递端点（qa#580）。
       const media = message.attachments.map((a, mediaIdx) => ({
         kind: a.kind,
         url: attachment_urls[a.resource_id] ?? '',
+        downloadRef: message.async_task_id
+          ? { asyncTaskId: message.async_task_id }
+          : { resourceId: a.resource_id },
         title: artifactTitle,
         detail: buildMediaArtifactDetail(task, chatParamsAtSend, mediaIdx),
       }))

@@ -3,6 +3,7 @@ import type { IconType } from 'react-icons'
 import i18n from '@/i18n'
 import { ModalityBadge } from '@/features/models/components/ModalityBadge'
 import { trimPriceZeros } from '@/lib/utils'
+import type { ExperienceArtifactRef } from '@/services/experience-sessions'
 import type { CatalogModelItem } from '@/types'
 
 export type ChatRole = 'user' | 'assistant'
@@ -27,6 +28,10 @@ export interface ExperienceMessageMetrics {
 export interface ExperienceMediaResult {
   kind: string
   url: string
+  /** 下载引用（qa#580）。url 指向不带 CORS 头的 CDN，只能拿来展示/播放，取不到字节；
+   *  「下载产物」按它走 BFF 中转端点。用户发送时的本地 previewUrl 没有这个引用，
+   *  那种消息也不渲染下载按钮。 */
+  downloadRef?: ExperienceArtifactRef
   /** 产物标题/规格明细（PRD 原型 PlaygroundArtifactCard 的 artifact.title/detail，逐字对齐）——
    *  图片/视频结果卡才展示，音频卡已用 message.content 当标题（#308），不重复加一行。 */
   title?: string

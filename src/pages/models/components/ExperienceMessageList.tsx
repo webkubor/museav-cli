@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 import { ModelIcon, type ModelIconLike } from '@/features/models/components/ModelIcon'
 import { parseThinkContent } from '../experience-think-content'
 import { useCurrency } from '@/hooks/use-platform-config'
+import { fetchExperienceArtifactBlob, type ExperienceArtifactRef } from '@/services/experience-sessions'
 import { formatPlaygroundSpend, type ExperienceMessage } from '../model-experience-data'
 
 /** 消息内容里的站内链接（如视频异步任务跳转调用日志）走 SPA 导航，外链原样新标签打开 */
@@ -51,13 +52,20 @@ function MessageCopyButton({ content }: { content: string }) {
   )
 }
 
-/** 媒体产物下载（#310）。
+/** 媒体产物下载（#310 → qa#580）。
  *
- *  原来是 `<a href={url} download>`，但**跨域时浏览器会忽略 download 属性**：产物存在
- *  OSS/CDN 上，与控制台不同源，点击就变成整页导航过去（表现即「整个网页跳到一个新链接」）。
- *  改成先 fetch 成 blob、再用 object URL 触发下载，同源与跨域都能真正下载。
- *  取不到（网络失败/CORS 不允许）时退回原来的新标签打开，至少不把当前页顶掉。 */
-function MediaDownloadLink({ url, label }: { url: string; label: string }) {
+ *  `<a href={url} download>` 不行：**跨域时浏览器忽略 download 属性**，点击变成整页导航。
+ *  直接 `fetch(url)` 也不行：url 指向 cdn.modelgo.com，该域名不返回任何 CORS 头，
+ *  取不到响应体，只能退回 window.open —— 症状和没修一样（qa#580 实测）。
+ *
+ *  所以字节走 BFF 的中转端点（自家 API 域名，CORS 与会话鉴权都已就绪），拿到 blob 再用
+ *  object URL 触发下载。展示/播放仍用原 url（边缘缓存），这里只负责「下载」这一下。
+ *  中转失败时退回新标签打开，至少不把当前页顶掉。 */
+function MediaDownloadLink({ url, downloadRef, label }: {
+  url: string
+  downloadRef?: ExperienceArtifactRef
+  label: string
+}) {
   const [busy, setBusy] = useState(false)
   const filename = (() => {
     try { return decodeURIComponent(new URL(url, window.location.href).pathname.split('/').pop() || 'download') }
@@ -72,8 +80,11 @@ function MediaDownloadLink({ url, label }: { url: string; label: string }) {
         e.preventDefault()
         if (busy) return
         setBusy(true)
-        void fetch(url)
-          .then((r) => (r.ok ? r.blob() : Promise.reject(new Error(String(r.status)))))
+        const bytes = downloadRef
+          ? fetchExperienceArtifactBlob(downloadRef)
+          // 没有下载引用的只有用户自己刚上传的本地预览（blob: URL，同源可直取）。
+          : fetch(url).then((r) => (r.ok ? r.blob() : Promise.reject(new Error(String(r.status)))))
+        void bytes
           .then((blob) => {
             const objectUrl = URL.createObjectURL(blob)
             const a = document.createElement('a')
@@ -310,7 +321,11 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
                   <span>{t('modelsExperience.totalLatency')} {message.metrics.totalLatency}</span>
                   <span>{formatPlaygroundSpend(message.metrics, symbol)}</span>
                   {message.media[0] && (
-                    <MediaDownloadLink url={message.media[0].url} label={t('modelsExperience.downloadResult')} />
+                    <MediaDownloadLink
+                      url={message.media[0].url}
+                      downloadRef={message.media[0].downloadRef}
+                      label={t('modelsExperience.downloadResult')}
+                    />
                   )}
                 </div>
               ) : message.metrics ? (

@@ -19,10 +19,10 @@ export interface ResolvedExperienceMessageMedia {
 export async function resolveExperienceMessageMedia(
   attachments: ExperienceMessageAttachment[],
 ): Promise<ResolvedExperienceMessageMedia> {
-  const results = await Promise.all(attachments.map(async (attachment) => {
+  const results = await Promise.all(attachments.map(async (attachment): Promise<ExperienceMediaResult | null> => {
     try {
       const { url } = await getExperienceAttachmentUrl(attachment.resource_id)
-      return url ? { kind: attachment.kind, url } : null
+      return url ? { kind: attachment.kind, url, downloadRef: { resourceId: attachment.resource_id } } : null
     } catch {
       return null
     }

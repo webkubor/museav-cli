@@ -81,13 +81,49 @@
 .mg-related-meta { font-size: 12px; color: var(--mg-text-3); }
 .mg-related-price { font-size: 12px; color: var(--brand-base); }
 
-/* ── 顶部信任 chips（原型口径，取代原三张数据卡）───────────────── */
-.mg-trust {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 18px;
-  margin-top: 10px; font-size: 12.5px; color: var(--mg-text-3);
+/* ── 协议 / 能力标签 chips ──────────────────────────────────────
+   2026-08 视觉改版稿后广场卡片不再用（合并进 .mg-mcard-chip），但详情页
+   ModelDetailPanel 仍渲染 .mg-proto / .mg-mcard-tag，样式从 catalog-grid-card.css
+   迁到这里跟着详情分区走，不能删。 */
+.mg-proto {
+  padding: 1px 7px; border-radius: var(--radius-sm);
+  border: 1px solid var(--mg-border); background: transparent;
+  font-size: 11px; line-height: 1.6; color: var(--mg-text-3);
 }
-.mg-trust > span { display: inline-flex; align-items: center; gap: 5px; }
+.mg-proto.is-openai {
+  color: var(--brand-base);
+  border-color: color-mix(in oklab, var(--brand-base) 40%, var(--mg-border));
+}
+.mg-proto.is-anthropic {
+  color: var(--mg-text-2);
+  border-color: color-mix(in oklab, var(--mg-text-2) 30%, var(--mg-border));
+}
+.mg-mcard-tag {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 1px 7px; border-radius: var(--radius-sm);
+  background: var(--mg-fill-0); border: none;
+  font-size: 11px; line-height: 1.6; color: var(--mg-text-3);
+}
+
+/* ── 顶部信任 chips（2026-08 视觉改版稿：白底描边 pill）───────────── */
+.mg-trust {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  margin-top: 12px; font-size: 12.5px; color: var(--mg-text-2);
+}
+.mg-trust > span {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 30px; padding: 0 13px;
+  border: 1px solid var(--mg-border); border-radius: var(--radius-full);
+  background: rgba(var(--mg-bg-0-rgb), 0.72);
+  font-weight: 600;
+}
 .mg-trust svg { color: var(--brand-base); flex-shrink: 0; }
+/* SLA 是稿上唯一的暖色点缀：文字/图标/描边全走 warning token */
+.mg-trust > span.is-sla {
+  color: var(--mg-warning);
+  border-color: color-mix(in oklab, var(--mg-warning) 38%, var(--mg-border));
+}
+.mg-trust > span.is-sla svg { color: var(--mg-warning); }
 
 /* ── 模型广场页面骨架（对齐原型）──────────────────────────────
    原型是 head → 轮播 → controls 三块全宽，最后才是「216px 侧栏 + 网格」两列。

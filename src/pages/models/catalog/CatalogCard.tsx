@@ -19,41 +19,16 @@
  */
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import {
-  LuImage, LuMic, LuVideo, LuArrowRight,
-  LuBrain, LuMapPin, LuGlobe, LuZap, LuWrench, LuTag,
-  LuColumns2, LuSparkles,
-} from 'react-icons/lu'
-import type { IconType } from 'react-icons'
+import { LuColumns2, LuSparkles } from 'react-icons/lu'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { Button } from '@/components/ui/Button'
 import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 import {
-  MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, autoSummary, modelVendorLabel,
+  MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, pickCapabilities, autoSummary, modelVendorLabel,
 } from '@/features/models/model-format'
 import { hasPlaygroundExperience } from '../model-experience-data'
 import type { CatalogModelItem } from '@/types'
-
-const MODALITY_ICON: Record<string, IconType> = { image: LuImage, audio: LuMic, video: LuVideo }
-
-/** 输入→输出模态流的单个标记。原型文本模态用字母「T」，不是图标（qa#286）；
- *  其余模态（图像/音频/视频）仍用图标区分。 */
-function ModalityMark({ m, title }: { m: string; title: string }) {
-  if (m === 'text') return <span className="mg-mcard-flow-text" title={title}>T</span>
-  const Icon = MODALITY_ICON[m]
-  return Icon ? <Icon size={12} title={title} /> : null
-}
-
-function tagIcon(tag: string): IconType {
-  const t = tag.toLowerCase()
-  if (t.includes('reason') || tag.includes('推理')) return LuBrain
-  if (t.includes('region') || tag.includes('区域') || tag.includes('境内')) return LuMapPin
-  if (t.includes('cache') || tag.includes('缓存')) return LuZap
-  if (t.includes('search') || tag.includes('搜索') || tag.includes('联网')) return LuGlobe
-  if (t.includes('function') || t.includes('tool') || tag.includes('函数') || tag.includes('工具')) return LuWrench
-  return LuTag
-}
 
 interface Props {
   model: CatalogModelItem
@@ -61,8 +36,6 @@ interface Props {
   onTry: (modelId: string, e: React.MouseEvent) => void
   onCompare?: (e: React.MouseEvent) => void
   canCompare: boolean
-  /** 点击协议标签反查筛选；不传则标签不可点。 */
-  onPickProtocol?: (protocol: string) => void
   /** 点击能力标签反查筛选。 */
   onPickCapability?: (tag: string) => void
   /** 卡片在当前列表中的位置（埋点 marketplace_card_opened 的 list_position） */
@@ -76,7 +49,7 @@ interface Props {
 }
 
 export function CatalogCard({
-  model, isZh, onTry, onCompare, canCompare, onPickProtocol, onPickCapability,
+  model, isZh, onTry, onCompare, canCompare, onPickCapability,
   listPosition, onCardOpened, onModelIdCopied, onApiRequest,
 }: Props) {
   const { t } = useTranslation()
@@ -105,8 +78,11 @@ export function CatalogCard({
   // 输入 → 输出模态流。后端拆分下发；老数据只有合并 modalities 时退回并集。
   const inputMods = (model.input_modalities ?? model.modalities ?? []).filter((m) => MODALITY_CODES.includes(m))
   const outputMods = (model.output_modalities ?? model.modalities ?? []).filter((m) => MODALITY_CODES.includes(m))
+  // 2026-08 视觉改版稿：卡上不再区分输入/输出方向（方向信息详情页仍有），
+  // 取并集渲染为文本 chips；保序：先输入后输出。
+  const modalityChips = [...new Set([...inputMods, ...outputMods])]
 
-  const capabilities = pickCapabilities(model.tags, [model.provider, model.vendor], 3)
+  const capabilities = pickCapabilities(model.tags, [model.provider, model.vendor], 2)
 
   const discountLabel = isZh ? promo?.discount_label : (promo?.discount_label_en || promo?.discount_label)
   // qa#286：tagline 为空的模型此前简介行直接不渲染，卡片比同排矮一截；跟详情页
@@ -165,10 +141,13 @@ export function CatalogCard({
       {/* 简介：最多两行 */}
       {summary && <p className="mg-mcard-desc">{summary}</p>}
 
-      {/* 输入 → 输出模态流 */}
-      {(inputMods.length > 0 || outputMods.length > 0) && (
+      {/* 2026-08 视觉改版稿：模态流/协议/能力标签三行合并为一行文本 chips。
+          模态是事实描述用 span；能力标签保留点击反查筛选用 button。
+          输入/输出方向与 API 协议在卡上不再展示（详情页仍完整），
+          屏幕阅读器保留原方向语义 aria-label。 */}
+      {(modalityChips.length > 0 || capabilities.length > 0) && (
         <div
-          className="mg-mcard-flow"
+          className="mg-mcard-chips"
           aria-label={
             t('modelsCatalog.sidebar.inputOutputFlow', {
               input: inputMods.map((m) => t(`modelsCatalog.modality.${m}`)).join(t('modelsExperience.listSeparator')),
@@ -176,75 +155,41 @@ export function CatalogCard({
             })
           }
         >
-          <span className="mg-mcard-flow-group">
-            {inputMods.map((m) => <ModalityMark key={`i-${m}`} m={m} title={t(`modelsCatalog.modality.${m}`)} />)}
-          </span>
-          <LuArrowRight size={13} className="mg-mcard-flow-arrow" aria-hidden />
-          <span className="mg-mcard-flow-group">
-            {outputMods.map((m) => <ModalityMark key={`o-${m}`} m={m} title={t(`modelsCatalog.modality.${m}`)} />)}
-          </span>
-        </div>
-      )}
-
-      {/* API 协议：可点击反查筛选 */}
-      {(model.protocols ?? []).length > 0 && (
-        <div className="mg-mcard-protocols" aria-label={t('modelsCatalog.sidebar.apiProtocolAria')}>
-          {(model.protocols ?? []).map((p) => (
+          {modalityChips.map((m) => (
+            <span key={m} className="mg-mcard-chip">{t(`modelsCatalog.modality.${m}`)}</span>
+          ))}
+          {capabilities.map((c) => (
             <button
-              key={p}
+              key={c}
               type="button"
-              className={`mg-proto is-${p}`}
-              title={t('modelsCatalog.sidebar.filterTitle', { label: protocolLabel(p, isZh) })}
-              onClick={(e) => { e.stopPropagation(); onPickProtocol?.(p) }}
-              disabled={!onPickProtocol}
+              className="mg-mcard-chip"
+              onClick={(e) => { e.stopPropagation(); onPickCapability?.(c) }}
+              disabled={!onPickCapability}
             >
-              {protocolLabel(p, isZh)}
+              {c}
             </button>
           ))}
         </div>
       )}
 
-      {/* 能力标签：可点击反查筛选 */}
-      {capabilities.length > 0 && (
-        <div className="mg-mcard-tags">
-          {capabilities.map((c) => {
-            const Icon = tagIcon(c)
-            return (
-              <button
-                key={c}
-                type="button"
-                className="mg-mcard-tag"
-                onClick={(e) => { e.stopPropagation(); onPickCapability?.(c) }}
-                disabled={!onPickCapability}
-              >
-                <Icon size={10} />
-                {c}
-              </button>
-            )
-          })}
-        </div>
-      )}
-
-      {/* 贴底：价格规格。第一行输入/输出价，第二行上下文/缓存读取。划线原价内联在现价
-          右侧，不另起一行。最大输出已按 shared/modelgo_prd#348 移除（后端无可靠数据），
-          空出的第四格按需求方 2026-08-04 口径改放缓存读取价。 */}
+      {/* 贴底：价格规格，2026-08 视觉改版稿改单行 4 列。价格回归正文色（原 accent
+          品牌色，四列同排两个彩色数字太抢），上下文长度按稿走 success 色。字段集
+          维持 输入/输出/上下文/缓存读取——「最大输出」不回退，#348 的移除是数据
+          可靠性决策，与版式无关。划线原价内联在现价右侧，不另起一行。 */}
       <div className="mg-mcard-specs">
         <Metric
           label={t('modelsCatalog.card.input')}
           value={input.value}
           unit={input.unit}
           strike={promo?.original_price ? `${symbol}${trimPriceZeros(promo.original_price)}` : undefined}
-          accent
         />
-        <Metric label={t('modelsCatalog.card.output')} value={output.value} unit={output.unit} accent />
-        <Metric label={t('modelsCatalog.card.context')} value={ctxValue} />
+        <Metric label={t('modelsCatalog.card.output')} value={output.value} unit={output.unit} />
+        <Metric label={t('modelsCatalog.card.context')} value={ctxValue} ctx />
         <Metric label={t('modelsCatalog.card.cacheRead')} value={cacheRead.value} unit={cacheRead.unit} />
       </div>
 
-      {/* 操作：hover / 键盘聚焦时浮出，覆盖最底一行，不改变卡片高度。
-          主/次操作 flex-1 满行等分（原型 .marketplace-try/.marketplace-compare
-          均 flex:1），对比图标按钮固定 36px——之前两个主按钮不设 flex-1，
-          挤在左侧留一大截空白，位置对不上原型。 */}
+      {/* 操作：2026-08 视觉改版稿改常驻显示（原 hover 浮出）。主/次操作 flex-1
+          满行等分，对比图标按钮固定 36px。 */}
       <div className="mg-mcard-actions">
         <Button
           variant="brand"
@@ -288,12 +233,12 @@ export function CatalogCard({
 }
 
 function Metric({
-  label, value, unit, accent, strike,
-}: { label: string; value: string; unit?: string; accent?: boolean; strike?: string }) {
+  label, value, unit, ctx, strike,
+}: { label: string; value: string; unit?: string; ctx?: boolean; strike?: string }) {
   return (
     <div className="mg-metric">
       <span className="mg-metric-label">{label}</span>
-      <span className={`mg-metric-value ${accent ? 'is-accent' : ''}`}>
+      <span className={`mg-metric-value ${ctx ? 'is-ctx' : ''}`}>
         {value}
         {unit && <small className="mg-metric-unit">{unit}</small>}
         {/* 划线原价内联在现价右侧（原型口径）；仅有促销时渲染，是装饰而非真实价格 */}

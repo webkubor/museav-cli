@@ -322,11 +322,12 @@ export default function ModelsCatalogPage() {
             <p className="text-mg-text-3 mt-1.5 text-[14px]">
               {t('modelsCatalog.page.subtitle')}
             </p>
-            {/* 信任 chips（原型口径）：协议兼容 / 供应商直连 / SLA。取代原先三张数据卡。 */}
+            {/* 信任 chips：协议兼容 / 供应商直连 / SLA。2026-08 视觉改版稿改白底
+                描边 pill，SLA 用 warning 强调色（稿上唯一的暖色点缀）。 */}
             <div className="mg-trust">
               <span><LuZap size={12} />{t('modelsCatalog.trust.protocols')}</span>
               <span><LuBuilding2 size={12} />{t('modelsCatalog.trust.providers')}</span>
-              <span><LuShieldCheck size={12} />{t('modelsCatalog.trust.sla')}</span>
+              <span className="is-sla"><LuShieldCheck size={12} />{t('modelsCatalog.trust.sla')}</span>
             </div>
           </div>
 
@@ -426,9 +427,6 @@ export default function ModelsCatalogPage() {
                   onTry={handleGoPlayground}
                   canCompare={model.compare_enabled === true}
                   onCompare={(e) => { e.stopPropagation(); openCompare(model.id) }}
-                  onPickProtocol={(p) =>
-                    setSelected((prev) => [...prev.filter((k) => !k.startsWith('protocol:')), `protocol:${p}`])
-                  }
                   onPickCapability={(tag) =>
                     setSelected((prev) =>
                       prev.includes(`tag:${tag}`) ? prev : [...prev, `tag:${tag}`],

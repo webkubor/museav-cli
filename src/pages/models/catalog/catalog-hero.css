@@ -10,6 +10,37 @@
   flex-direction: column;
   gap: 18px;
   padding: 2px 0 32px;
+  /* 2026-08 视觉改版稿：页顶品牌淡染氛围（顶部两团极淡的品牌色光晕）。
+     强度走 color-mix 品牌原子：浅色档约 5%，深色档下面单独压暗。
+     只做 background 不加伪元素层——页面内已有大量 z-index 叠层（吸顶/弹层），
+     不给它们添堵。 */
+  background:
+    radial-gradient(
+      620px 300px at 12% -40px,
+      color-mix(in oklab, var(--brand-base) 6%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      560px 280px at 88% -60px,
+      color-mix(in oklab, var(--brand-base) 4%, transparent),
+      transparent 70%
+    );
+  background-repeat: no-repeat;
+}
+/* 深色档光晕减半：深底上同强度的品牌染色会发灰发脏 */
+body[theme-mode='dark'] .models-catalog-page {
+  background:
+    radial-gradient(
+      620px 300px at 12% -40px,
+      color-mix(in oklab, var(--brand-base) 3.5%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      560px 280px at 88% -60px,
+      color-mix(in oklab, var(--brand-base) 2.5%, transparent),
+      transparent 70%
+    );
+  background-repeat: no-repeat;
 }
 
 /* ── 顶部数据卡 + 热门模型 ─────────────────────────────────── */

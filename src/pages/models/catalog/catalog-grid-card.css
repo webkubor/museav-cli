@@ -64,71 +64,46 @@
   overflow: hidden;
 }
 
-/* 输入 → 输出模态图标流 */
-.mg-mcard-flow { display: flex; align-items: center; gap: 6px; color: var(--mg-text-3); }
-.mg-mcard-flow-group { display: inline-flex; align-items: center; gap: 4px; }
-.mg-mcard-flow-arrow { color: var(--mg-text-4); flex-shrink: 0; }
-/* qa#286：文本模态用字母「T」而非图标，跟 12px 图标同高、字重加粗以保持可辨识度 */
-.mg-mcard-flow-text { font-size: 11px; font-weight: 700; line-height: 12px; }
-
-/* API 协议标签：分层描边（DESIGN.md 不给彩色实底，用描边区分） */
-.mg-mcard-protocols { display: flex; flex-wrap: wrap; gap: 5px; }
-.mg-proto {
-  padding: 1px 7px; border-radius: var(--radius-sm);
+/* 2026-08 视觉改版稿：模态图标流（T → 图）/协议行/标签行三行合并为一行文本 chips
+   （模态并集 + 能力标签），降低卡内行数与图标噪音。统一描边 pill 视觉。 */
+.mg-mcard-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.mg-mcard-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 1px 8px; border-radius: var(--radius-sm);
   border: 1px solid var(--mg-border); background: transparent;
-  font-size: 11px; line-height: 1.6; color: var(--mg-text-3);
+  font-size: 11px; line-height: 1.7; color: var(--mg-text-3);
   transition: border-color 0.15s ease, color 0.15s ease;
 }
-.mg-proto:not(:disabled) { cursor: pointer; }
-.mg-proto:not(:disabled):hover { color: var(--mg-text-1); }
-.mg-proto.is-openai {
+button.mg-mcard-chip:not(:disabled) { cursor: pointer; }
+button.mg-mcard-chip:not(:disabled):hover {
   color: var(--brand-base);
   border-color: color-mix(in oklab, var(--brand-base) 40%, var(--mg-border));
 }
-.mg-proto.is-anthropic {
-  color: var(--mg-text-2);
-  border-color: color-mix(in oklab, var(--mg-text-2) 30%, var(--mg-border));
-}
-
-.mg-mcard-tags { display: flex; flex-wrap: wrap; gap: 5px; }
-.mg-mcard-tag {
-  display: inline-flex; align-items: center; gap: 3px;
-  padding: 1px 7px; border-radius: var(--radius-sm);
-  background: var(--mg-fill-0); border: none;
-  font-size: 11px; line-height: 1.6; color: var(--mg-text-3);
-}
-.mg-mcard-tag:not(:disabled) { cursor: pointer; }
-.mg-mcard-tag:not(:disabled):hover { color: var(--mg-text-1); }
 
 /* 价格规格：贴底 */
 .mg-mcard-specs {
   margin-top: auto; padding-top: 10px;
   border-top: 1px solid var(--mg-border);
-  /* 2 列网格：第一行 输入/输出，第二行 上下文/缓存读取（最大输出已按 #348 移除） */
-  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px;
+  /* 2026-08 视觉改版稿：单行 4 列（输入/输出/上下文/缓存读取）。字段集不回退
+     #348 之前的「最大输出」——那次移除是数据可靠性决策，与版式无关。 */
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 10px;
 }
+/* 4 列同排放不下 16px 值，收到 13.5px；上下文长度按改版稿走 success 色。 */
+.mg-mcard-specs .mg-metric { min-width: 0; }
+.mg-mcard-specs .mg-metric-value { font-size: 13.5px; }
 .mg-metric-value.is-accent { color: var(--brand-base); }
+.mg-metric-value.is-ctx { color: var(--mg-success); }
 /* 划线原价：内联在现价右侧，装饰性，不是真实扣费价 */
 .mg-metric-strike {
   margin-left: 5px; font-size: 11px; color: var(--mg-text-4);
   text-decoration: line-through; font-weight: 400;
 }
 
-/* 操作条：静止不占位、不可见；hover 或键盘聚焦时覆盖最底的规格行浮出，
-   因此卡片高度不变（原型口径）。触屏设备常驻可见 —— 没有 hover 就无从触发。 */
+/* 操作条：2026-08 视觉改版稿改为常驻显示（原 hover 浮出制）。按钮统一胶囊。 */
 .mg-mcard-actions {
-  position: absolute; left: 0; right: 0; bottom: 0;
   display: flex; align-items: center; gap: 8px;
-  padding: 10px 18px 14px;
-  background: var(--mg-bg-0);
-  border-top: 1px solid var(--mg-border);
-  opacity: 0; pointer-events: none;
-  transition: opacity 0.18s ease;
+  padding-top: 2px;
 }
-.mg-mcard:hover .mg-mcard-actions,
-.mg-mcard:focus-within .mg-mcard-actions { opacity: 1; pointer-events: auto; }
-@media (hover: none) {
-  .mg-mcard-actions { position: static; opacity: 1; pointer-events: auto; padding: 10px 0 0; background: transparent; }
-}
+.mg-mcard-actions button { border-radius: var(--radius-full); }
 .mg-mcard-icon-btn { flex-shrink: 0; width: 36px; padding-left: 0; padding-right: 0; }
 

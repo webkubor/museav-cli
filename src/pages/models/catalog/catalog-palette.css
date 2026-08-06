@@ -1,0 +1,57 @@
+/* 模型广场配色定稿（2026-08-06 设计填表口径，双市场 × 双主题四态一览）。
+ * 唯一颜色来源：改配色只改这里的变量，别去分区文件里写死值。
+ * 市场由 <html data-market> 区分（缺省=国内），深色档由 [theme-mode='dark']
+ * （html 或 body）区分。整页背景不走变量，直接定义在 layout/public-shell.css。 */
+
+:root {
+  /* 国内 · 浅色（缺省） */
+  --plaza-panel-bg: rgba(255, 255, 255, 0.7);            /* 模型筛选卡 */
+  --plaza-row-hover-bg: #eff3fe;                         /* 筛选行/排序按钮 鼠标移入 */
+  --plaza-row-active-bg: rgba(34, 61, 229, 0.12);        /* 筛选行 选中底 */
+  --plaza-row-active-fg: #223de5;                        /* 筛选行 选中文字 */
+  --plaza-input-bg: rgba(255, 255, 255, 0.72);           /* 搜索框/排序按钮 常态 */
+  --plaza-focus-border: #223de5;                         /* 搜索框聚焦描边 */
+  --plaza-focus-ring: rgba(34, 61, 229, 0.18);           /* 搜索框聚焦光圈 */
+  --plaza-card-bg: linear-gradient(135deg, #f7fbff, #e8f5ff); /* 模型卡片底 */
+  --plaza-card-hover-border: rgba(34, 61, 229, 0.28);    /* 模型卡片移入描边 */
+  --plaza-actions-bg: rgba(255, 255, 255, 0.5);          /* 卡片底部浮出操作条 */
+}
+
+/* 国际 · 浅色 */
+[data-market='global'] {
+  --plaza-row-hover-bg: #eef8f3;
+  --plaza-row-active-bg: rgba(15, 159, 89, 0.12);
+  --plaza-row-active-fg: #0f9f59;
+  --plaza-focus-border: #0f9f59;
+  --plaza-focus-ring: rgba(15, 159, 89, 0.18);
+  --plaza-card-bg: linear-gradient(135deg, #f7fffb, #e8fff4);
+  --plaza-card-hover-border: rgba(15, 159, 89, 0.28);
+}
+
+/* 国内 · 深色 */
+[theme-mode='dark'],
+body[theme-mode='dark'] {
+  --plaza-panel-bg: rgba(20, 28, 44, 0.72);
+  --plaza-row-hover-bg: rgba(34, 61, 229, 0.16);
+  --plaza-row-active-bg: rgba(34, 61, 229, 0.24);
+  --plaza-row-active-fg: #b8c4ff;
+  --plaza-input-bg: rgba(255, 255, 255, 0.06);
+  --plaza-focus-border: #5f78ff;
+  --plaza-focus-ring: rgba(34, 61, 229, 0.32);
+  --plaza-card-bg: linear-gradient(135deg, #17213a, #101827);
+  --plaza-card-hover-border: rgba(95, 120, 255, 0.4);
+  --plaza-actions-bg: rgba(255, 255, 255, 0.1);
+}
+
+/* 国际 · 深色 */
+[data-market='global'][theme-mode='dark'],
+[data-market='global'] body[theme-mode='dark'] {
+  --plaza-panel-bg: rgba(18, 28, 23, 0.72);
+  --plaza-row-hover-bg: rgba(15, 159, 89, 0.16);
+  --plaza-row-active-bg: rgba(15, 159, 89, 0.24);
+  --plaza-row-active-fg: #8ef4bf;
+  --plaza-focus-border: #36d88a;
+  --plaza-focus-ring: rgba(15, 159, 89, 0.32);
+  --plaza-card-bg: linear-gradient(135deg, #15251e, #101814);
+  --plaza-card-hover-border: rgba(54, 216, 138, 0.4);
+}

@@ -6,6 +6,7 @@ import { storageKeys } from '@/lib/storage'
 import type { AgentEvent } from '@/interfaces/agent'
 import { stopConversation } from '@/services/agent'
 import { appToast } from '@/lib/app-toast'
+import { readSSE, extractHTTPError } from '@/lib/stream-chat'
 
 export interface Message {
   id: string
@@ -16,17 +17,6 @@ export interface Message {
 }
 
 export type ConnectionStatus = 'connecting' | 'online' | 'offline'
-
-function parseSSELine(line: string): AgentEvent | null {
-  if (!line.startsWith('data:')) return null
-  const raw = line.slice(5).trim()
-  if (!raw || raw === '[DONE]') return null
-  try {
-    return JSON.parse(raw) as AgentEvent
-  } catch {
-    return null
-  }
-}
 
 export interface CsChatOptions {
   source?: string
@@ -98,6 +88,8 @@ export function useCsChat(options?: CsChatOptions) {
       if (options?.source) extraHeaders['X-Source'] = options.source
       if (options?.tenantId) extraHeaders['X-Tenant-Id'] = options.tenantId
 
+      // 同一 URL 可能返回 SSE 或降级 JSON：先 fetch 拿响应判断 Content-Type，
+      // 再决定走 readSSE 分帧还是 JSON。所以这里不用 streamSSE 一体化函数。
       const response = await fetch(url, {
         method: 'POST',
         headers: { ...Object.fromEntries(req.headers.entries()), ...extraHeaders },
@@ -110,60 +102,53 @@ export function useCsChat(options?: CsChatOptions) {
         signal: controller.signal,
       })
 
-      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      if (!response.ok) throw await extractHTTPError(response)
 
       const contentType = response.headers.get('Content-Type') ?? ''
 
+      // 自研协议：每帧 data 是 {type, delta?, conversation_id?, answer?, error?}，
+      // type 区分 start/delta/done/error。conversation_id 和最终 answer 要从帧里提取，
+      // 超出适配器（只 yield delta）能力，所以直接用底层 readSSE 自己分流。
       if (contentType.includes('text/event-stream')) {
-        const reader = response.body?.getReader()
-        if (!reader) throw new Error('No response body')
-
-        const decoder = new TextDecoder()
-        let buffer = ''
         let accumulated = ''
+        for await (const sse of readSSE(response)) {
+          let event: AgentEvent
+          try {
+            event = JSON.parse(sse.data) as AgentEvent
+          } catch {
+            continue
+          }
 
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-
-          buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split('\n')
-          buffer = lines.pop() ?? ''
-
-          for (const line of lines) {
-            const event = parseSSELine(line)
-            if (!event) continue
-
-            if (event.type === 'delta' && event.delta) {
-              accumulated += event.delta
-              setMessages((prev) =>
-                prev.map((m) => (m.id === agentMsgId ? { ...m, content: accumulated } : m))
-              )
+          if (event.type === 'delta' && event.delta) {
+            accumulated += event.delta
+            setMessages((prev) =>
+              prev.map((m) => (m.id === agentMsgId ? { ...m, content: accumulated } : m))
+            )
+          }
+          if (event.type === 'done') {
+            const final = event.answer ?? accumulated
+            setMessages((prev) =>
+              prev.map((m) => (m.id === agentMsgId ? { ...m, content: final } : m))
+            )
+            const cid = event.conversation_id ?? ''
+            if (cid) {
+              setConversationId(cid)
+              localStorage.setItem(storageKeys.csConversationId(), cid)
             }
-            if (event.type === 'done') {
-              const final = event.answer ?? accumulated
-              setMessages((prev) =>
-                prev.map((m) => (m.id === agentMsgId ? { ...m, content: final } : m))
-              )
-              const cid = event.conversation_id ?? ''
-              if (cid) {
-                setConversationId(cid)
-                localStorage.setItem(storageKeys.csConversationId(), cid)
-              }
+          }
+          if (event.type === 'start') {
+            const cid = event.conversation_id ?? ''
+            if (cid) {
+              setConversationId(cid)
+              localStorage.setItem(storageKeys.csConversationId(), cid)
             }
-            if (event.type === 'start') {
-              const cid = event.conversation_id ?? ''
-              if (cid) {
-                setConversationId(cid)
-                localStorage.setItem(storageKeys.csConversationId(), cid)
-              }
-            }
-            if (event.type === 'error') {
-              throw new Error(event.error ?? t('common.customerService.serviceError'))
-            }
+          }
+          if (event.type === 'error') {
+            throw new Error(event.error ?? t('common.customerService.serviceError'))
           }
         }
       } else {
+        // 非 SSE 降级：普通业务信封 {code, msg, data:{answer, conversation_id}}
         const json = await response.json()
         const bizCode: number = json?.code ?? 0
         if (bizCode !== 0) throw new Error(json?.msg ?? `请求失败（${bizCode}）`)

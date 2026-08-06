@@ -14,14 +14,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useModels } from '@/features/models/hooks/useModels'
-import { modelVendorLabel } from '@/features/models/model-format'
-import { prettyModelName } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 import {
   createExperienceSession,
-  listExperienceSessions,
-  renameExperienceSession,
-  deleteExperienceSession,
   getExperienceSession,
   getExperienceSessionMessages,
   type ExperienceMessageView,
@@ -32,7 +27,6 @@ import { useAuthStore } from '@/store/auth'
 import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
 import { calculateSpendableBalance } from '@/pages/billing/formatBalance'
 import { trackEvent } from '@/lib/track'
-import { appToast } from '@/lib/app-toast'
 import {
   experienceTaskLabel,
   resolveModelCategory,
@@ -47,7 +41,7 @@ import {
   type ExperienceTaskType,
 } from '../models/model-experience-data'
 import { resolveExperienceMessageMedia } from '../models/experience-message-attachments'
-import type { HistorySessionItem } from '../models/components/HistorySessionSidebar'
+import { useExperienceHistorySidebar } from '../models/use-experience-history-sidebar'
 import { MAX_COMPARE, type ColumnState } from './models-compare-utils'
 import { useCompareAttachments } from './use-compare-attachments'
 
@@ -95,10 +89,8 @@ export function useModelsCompareState() {
   const [lastFocusedIndex, setLastFocusedIndex] = useState(0)
   const [bootError, setBootError] = useState<string | null>(null)
 
-  // §7.8 历史会话侧栏（qa#546）：与单模型页一样是纯页面内 UI 状态，不需要跨路由持久化，
-  // 收起态是初始态（对比页空间更紧张，默认收起，用户需要时自己展开）。
-  const [historyCollapsed, setHistoryCollapsed] = useState(true)
-  const [historySessions, setHistorySessions] = useState<HistorySessionItem[]>([])
+  // §7.8 历史会话侧栏（qa#546）：historyCollapsed/historySessions 走共享 hook，
+  // 见下方 useExperienceHistorySidebar。historyActionError 是对比页独有。
   const [historyActionError, setHistoryActionError] = useState<string | null>(null)
 
   const [removeConfirmIndex, setRemoveConfirmIndex] = useState<number | null>(null)
@@ -171,50 +163,20 @@ export function useModelsCompareState() {
     if (columns && activeColumnIndex >= columns.length) setActiveColumnIndex(0)
   }, [columns, activeColumnIndex])
 
-  useEffect(() => {
-    if (!historyCollapsed) void refreshHistorySessions()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [historyCollapsed])
-
-  /** 拉取真实历史会话列表供侧栏展示，映射逻辑与单模型页一致（qa#546）。
-   *  GET /experience/sessions 列表响应改用轻量 models 字段，不带 conversations（qa#535 已修复）。 */
-  async function refreshHistorySessions() {
-    try {
-      const { items } = await listExperienceSessions({ limit: 20, offset: 0 })
-      const sessions = items.map((session) => ({
-          id: session.id,
-          name: session.name,
-          updatedAt: session.updated_at,
-          category: (session.category as HistorySessionItem['category']) ?? 'dialogue',
-          task: experienceTaskLabel(session.task as Parameters<typeof experienceTaskLabel>[0]) ?? session.task,
-          models: session.models
-            ? session.models.map((modelId) => {
-                const catalogModel = allModels.find((m) => m.model_id === modelId)
-                return {
-                  id: modelId,
-                  name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id, modelVendorLabel(catalogModel, '')) : modelId,
-                  offline: !catalogModel,
-                }
-              })
-            : (session.conversations ?? [])
-                .slice()
-                .sort((a, b) => a.position - b.position)
-                .map((conv) => {
-                  const catalogModel = allModels.find((m) => m.model_id === conv.model_id)
-                  return {
-                    id: conv.model_id,
-                    name: catalogModel ? prettyModelName(catalogModel.display_name, catalogModel.model_id, modelVendorLabel(catalogModel, '')) : conv.model_id,
-                  offline: !catalogModel,
-                }
-              }),
-        }))
-      setHistorySessions(sessions)
-      return sessions
-    } catch {
-      // 历史列表拉取失败不阻塞主流程，侧栏保持空态
-      return []
-    }
-  }
+  // 历史侧栏：刷新/重命名/删除/展开副作用共享逻辑（与 models 单模型页共用同一 hook）
+  const {
+    historyCollapsed,
+    setHistoryCollapsed,
+    historySessions,
+    refreshHistorySessions,
+    renameHistorySession,
+    deleteHistorySession,
+  } = useExperienceHistorySidebar({
+    sessionId,
+    allModels,
+    taskLabel: (task) => experienceTaskLabel(task as Parameters<typeof experienceTaskLabel>[0]),
+    onDeletedCurrent: startNewSession,
+  })
 
   /** 刷新或直达对比页时优先恢复列表第一条（接口按更新时间倒序），无记录才展示入口错误态。 */
   async function restoreFirstHistorySession() {
@@ -226,18 +188,6 @@ export function useModelsCompareState() {
     }
     setBootError(t('modelsExperience.compare.modelsNotFound'))
     setHistoryCollapsed(false)
-  }
-
-  /** 双击重命名（HistorySessionSidebar）：乐观更新 + 失败回滚，name 传空串会清空标题交回自动命名 */
-  async function renameHistorySession(id: string, name: string) {
-    const prev = historySessions
-    setHistorySessions((cur) => cur.map((s) => (s.id === id ? { ...s, name } : s)))
-    try {
-      await renameExperienceSession(id, name)
-    } catch {
-      setHistorySessions(prev)
-      appToast.error(t('modelsExperience.historySidebar.renameError'))
-    }
   }
 
   /**
@@ -297,19 +247,6 @@ export function useModelsCompareState() {
       trackEvent('playground_history_action', { action: 'restore' }, { result: 'fail' })
       setHistoryActionError(`${t('modelsExperience.historyLoadFailed')}${(err as Error).message || t('modelsExperience.retryLater')}`)
       return false
-    }
-  }
-
-  /** 删除会话记录（shared/modelgo_prd#362）：与单模型页同口径——删成功再改列表，不做乐观更新。
-   *  删掉的是当前对比会话时走 startNewSession（对比页的归宿是退回单模型页重新选模型）。 */
-  async function deleteHistorySession(id: string) {
-    try {
-      await deleteExperienceSession(id)
-      setHistorySessions((cur) => cur.filter((s) => s.id !== id))
-      appToast.success(t('modelsExperience.historySidebar.deleteSuccess'))
-      if (sessionId === id) startNewSession()
-    } catch {
-      appToast.error(t('modelsExperience.historySidebar.deleteError'))
     }
   }
 

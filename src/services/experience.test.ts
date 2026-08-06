@@ -10,7 +10,7 @@ vi.mock('@/lib/request-headers', () => ({
   injectHeaders: vi.fn(),
 }))
 
-import { parseExperienceSSELine, streamExperienceChat } from '@/services/experience'
+import { streamExperienceChat } from '@/services/experience'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -31,8 +31,10 @@ function sseResponse(chunks: string[], init?: ResponseInit): Response {
   })
 }
 
+// SSE 规范：帧之间用空行分隔，真实后端也是如此（用真实 test 后端流式接口验证过原始字节，
+// 是 `data: {...}\n\n` 双换行分帧，不是单换行）。fixture 必须按真实协议格式构造。
 function deltaLine(content: string): string {
-  return `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n`
+  return `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`
 }
 
 beforeEach(() => {
@@ -43,41 +45,8 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-// ── parseExperienceSSELine (pure) ─────────────────────────────────────────────
-
-describe('parseExperienceSSELine', () => {
-  it('returns null for any line that is not a data: line', () => {
-    expect(parseExperienceSSELine('')).toBeNull()
-    expect(parseExperienceSSELine(':')).toBeNull() // SSE comment / heartbeat
-    expect(parseExperienceSSELine('event: message')).toBeNull()
-    expect(parseExperienceSSELine('id: 42')).toBeNull()
-    expect(parseExperienceSSELine('retry: 1000')).toBeNull()
-    expect(parseExperienceSSELine('  data: {}')).toBeNull() // leading ws → not a data: line
-  })
-
-  it('parses a well-formed data: JSON payload into a chunk object', () => {
-    const out = parseExperienceSSELine('data: {"choices":[{"delta":{"content":"He"}}]}')
-    expect(out).not.toBeNull()
-    expect(out).not.toBe('done')
-    expect((out as { choices: { delta: { content: string } }[] }).choices[0].delta.content).toBe('He')
-  })
-
-  it('returns the "done" sentinel for the [DONE] terminator', () => {
-    expect(parseExperienceSSELine('data: [DONE]')).toBe('done')
-    expect(parseExperienceSSELine('data:[DONE]')).toBe('done') // no space after colon
-  })
-
-  it('returns null for an empty payload (bare data: with no body)', () => {
-    expect(parseExperienceSSELine('data:')).toBeNull()
-    expect(parseExperienceSSELine('data: ')).toBeNull()
-    expect(parseExperienceSSELine('data:   ')).toBeNull()
-  })
-
-  it('returns null for malformed JSON instead of throwing', () => {
-    expect(parseExperienceSSELine('data: {not json')).toBeNull()
-    expect(parseExperienceSSELine('data: {"choices":')).toBeNull()
-  })
-})
+// parseExperienceSSELine 已随抽取到 lib/stream-chat.ts 移除（逐行 SSE 解析下沉到
+// streamSSE/createOpenAIStream），行为覆盖见 lib/stream-chat.test.ts。
 
 // ── streamExperienceChat ──────────────────────────────────────────────────────
 
@@ -91,7 +60,7 @@ describe('streamExperienceChat — happy SSE path', () => {
     const chunks = [
       line1.slice(0, splitAt), // partial line — no newline yet
       line1.slice(splitAt) + deltaLine('llo') + deltaLine(' world'),
-      'data: [DONE]\n',
+      'data: [DONE]\n\n',
     ]
     const fetchMock = vi.fn().mockResolvedValue(sseResponse(chunks))
     vi.stubGlobal('fetch', fetchMock)
@@ -121,12 +90,12 @@ describe('streamExperienceChat — happy SSE path', () => {
 
   it('ignores heartbeat/comment lines and empty payloads interleaved in the stream', async () => {
     const chunks = [
-      ': keep-alive\n',
-      'data:\n', // empty payload → skipped
+      ': keep-alive\n\n',
+      'data:\n\n', // empty payload → skipped
       deltaLine('A'),
-      'event: ping\n',
+      'event: ping\n\n', // 无 data 行的孤立 event，没有可派发内容
       deltaLine('B'),
-      'data: [DONE]\n',
+      'data: [DONE]\n\n',
     ]
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(sseResponse(chunks)))
 
@@ -141,7 +110,7 @@ describe('streamExperienceChat — happy SSE path', () => {
   })
 
   it('terminates immediately at [DONE] and does not consume later deltas', async () => {
-    const chunks = [deltaLine('only'), 'data: [DONE]\n', deltaLine('ignored')]
+    const chunks = [deltaLine('only'), 'data: [DONE]\n\n', deltaLine('ignored')]
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(sseResponse(chunks)))
 
     const deltas: string[] = []
@@ -159,8 +128,8 @@ describe('streamExperienceChat — error paths', () => {
   it('throws the OpenAI error.message when a chunk carries an error', async () => {
     const chunks = [
       deltaLine('partial'),
-      `data: ${JSON.stringify({ error: { message: '内容安全拦截' } })}\n`,
-      'data: [DONE]\n',
+      `data: ${JSON.stringify({ error: { message: '内容安全拦截' } })}\n\n`,
+      'data: [DONE]\n\n',
     ]
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(sseResponse(chunks)))
 

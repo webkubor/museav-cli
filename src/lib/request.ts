@@ -13,7 +13,7 @@ const API_V1_PREFIX = 'api/v1'
 // RSA+AES envelope instead of a plaintext JSON body, and receive an encrypted
 // {iv,data} response. Normalized (no leading slash) to match normalizePath.
 const SECURE_PATHS = new Set(['auth/login', 'auth/register', 'auth/password/reset'])
-export const SERVER_ERROR_MESSAGE_KEY = 'errors.server'
+export const SERVER_ERROR_MESSAGE_KEY = 'common.errors.server'
 
 export function getServerErrorMessage() {
   return i18n.t(SERVER_ERROR_MESSAGE_KEY, { ns: 'common' })
@@ -316,7 +316,7 @@ async function loadPublicKey(): Promise<string> {
   if (resp.code !== 0 || !resp.data?.public_key) {
     throw new ModelGoApiError({
       code: resp.code ?? -1,
-      msg: i18n.t('errors.publicKeyUnavailable', { ns: 'common' }),
+      msg: i18n.t('common.errors.publicKeyUnavailable', { ns: 'common' }),
       request_id: resp.request_id,
       trace_id: resp.trace_id,
       data: null,

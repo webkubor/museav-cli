@@ -44,12 +44,12 @@ export async function resolveLoginDestination(fallback: string): Promise<LoginDe
       const categoryChanged =
         !!intent.model_category && resolveModelCategory(model) !== intent.model_category
       if (!isOnline(model) || categoryChanged) {
-        appToast.info(i18n.t('loginIntent.modelChanged', { ns: 'common' }))
+        appToast.info(i18n.t('common.loginIntent.modelChanged', { ns: 'common' }))
         return { path: fallback }
       }
       return { path: '/models/playground', state: { selectedModelId: intent.model_id } }
     } catch {
-      appToast.info(i18n.t('loginIntent.modelChanged', { ns: 'common' }))
+      appToast.info(i18n.t('common.loginIntent.modelChanged', { ns: 'common' }))
       return { path: fallback }
     }
   }
@@ -63,12 +63,12 @@ export async function resolveLoginDestination(fallback: string): Promise<LoginDe
         return !!model && isOnline(model) && (!anchorCategory || resolveModelCategory(model) === anchorCategory)
       })
       if (validIds.length === 0) {
-        appToast.info(i18n.t('loginIntent.compareModelsChanged', { ns: 'common' }))
+        appToast.info(i18n.t('common.loginIntent.compareModelsChanged', { ns: 'common' }))
         return { path: fallback }
       }
       return { path: '/models/compare', state: { selectedIds: validIds } }
     } catch {
-      appToast.info(i18n.t('loginIntent.compareModelsChanged', { ns: 'common' }))
+      appToast.info(i18n.t('common.loginIntent.compareModelsChanged', { ns: 'common' }))
       return { path: fallback }
     }
   }

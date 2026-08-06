@@ -75,7 +75,7 @@ export async function extractHTTPError(response: Response): Promise<Error> {
  */
 export async function* readSSE(response: Response): AsyncGenerator<SSEEvent, void, unknown> {
   const reader = response.body?.getReader()
-  if (!reader) throw new Error(i18n.t('errors.streamUnsupported', { ns: 'common' }))
+  if (!reader) throw new Error(i18n.t('common.errors.streamUnsupported', { ns: 'common' }))
 
   const decoder = new TextDecoder()
   let buffer = ''

@@ -84,13 +84,13 @@ function disableReasonOf(model: CatalogModelItem, isBalanceZero: boolean, requir
   return null
 }
 
-function priceLabel(model: CatalogModelItem): string {
+function priceLabel(model: CatalogModelItem, kind: 'input' | 'output' = 'input'): string {
   const currency = currencySymbol(model.pricing?.currency, isZhLang())
   const unit = model.price_unit ? `/${model.price_unit}` : '/1M tokens'
   if (!isPaidModel(model)) return i18n.t('modelsExperience.picker.free')
-  const input = model.pricing?.input_per_1m
-  if (!input) return '—'
-  return `${currency}${trimPriceZeros(input)}${unit}`
+  const amount = kind === 'output' ? model.pricing?.output_per_1m : model.pricing?.input_per_1m
+  if (!amount) return '—'
+  return `${currency}${trimPriceZeros(amount)}${unit}`
 }
 
 function cachePriceLabel(model: CatalogModelItem): string {
@@ -628,21 +628,27 @@ export function ModelPickerDialog({
                   )
                 })()}
 
-                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-mg-border">
+                {/* 上下文窗口 / 价格各占一行竖排（qa#490）：挤在同一行时价格要同时容纳
+                    输入+输出两个数字，横向空间不够会互相挤断行，不如各自独占一行。 */}
+                <div className="flex flex-col gap-3 pt-3 border-t border-mg-border">
                   <div className="min-w-0">
                     <div className="text-xs text-mg-text-3 font-semibold">{t('modelsExperience.picker.contextWindow')}</div>
-                    {/* 详情栏窄屏收窄到 200px 后这两格每格不到 90px，价格文案（如"¥10/1M tokens"）
-                        中间有空格，浏览器默认换行会把单位拆到第二行，难看——加 nowrap+ellipsis，
-                        宁可省略号收尾也不断行（2026-07-30 实测截图发现）。 */}
                     <div className="text-sm font-semibold text-mg-text-1 mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
                       {formatContextLength(detailModel.context_length)}
                     </div>
                   </div>
                   <div className="min-w-0">
                     <div className="text-xs text-mg-text-3 font-semibold">{t('modelsExperience.picker.price')}</div>
-                    <div className="text-sm font-semibold text-mg-text-1 mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">{priceLabel(detailModel)}</div>
+                    <div className="mt-0.5 flex items-center gap-4">
+                      <span className="text-sm font-semibold text-mg-text-1 whitespace-nowrap overflow-hidden text-ellipsis">
+                        {t('modelsExperience.picker.inputPrice')} {priceLabel(detailModel, 'input')}
+                      </span>
+                      <span className="text-sm font-semibold text-mg-text-1 whitespace-nowrap overflow-hidden text-ellipsis">
+                        {t('modelsExperience.picker.outputPrice')} {priceLabel(detailModel, 'output')}
+                      </span>
+                    </div>
                   </div>
-                  <div className="col-span-2">
+                  <div>
                     <div className="text-xs text-mg-text-3 font-semibold">{t('modelsExperience.picker.compatibleProtocols')}</div>
                     <div className="flex flex-wrap gap-1.5 mt-1">
                       {(detailModel.protocols && detailModel.protocols.length > 0 ? detailModel.protocols : ['openai']).map((p) => (

@@ -12,19 +12,23 @@ function dateOptions<T extends Intl.DateTimeFormatOptions>(options: T): T & { ti
   }
 }
 
-/** 相对时间："刚刚 / X 分钟前 / X 小时前 / X 天前"，超 30 天回退到绝对日期。空值返回 '—'。 */
+/** 相对时间："刚刚 / X 分钟前 / X 小时前 / X 天前 / X 周前 / X 个月前"，超 12 个月回退到绝对日期。空值返回 '—'。 */
 export function formatRelativeTime(iso: string | null | undefined): string {
   if (!iso) return '—'
   const then = new Date(iso).getTime()
   if (!Number.isFinite(then)) return '—'
   const diffSec = Math.floor((Date.now() - then) / 1000)
-  if (diffSec < 60) return i18n.t('relativeTime.justNow', { ns: 'common' })
+  if (diffSec < 60) return i18n.t('common.relativeTime.justNow', { ns: 'common' })
   const min = Math.floor(diffSec / 60)
-  if (min < 60) return i18n.t('relativeTime.minutesAgo', { ns: 'common', count: min })
+  if (min < 60) return i18n.t('common.relativeTime.minutesAgo', { ns: 'common', count: min })
   const hr = Math.floor(min / 60)
-  if (hr < 24) return i18n.t('relativeTime.hoursAgo', { ns: 'common', count: hr })
+  if (hr < 24) return i18n.t('common.relativeTime.hoursAgo', { ns: 'common', count: hr })
   const day = Math.floor(hr / 24)
-  if (day <= 30) return i18n.t('relativeTime.daysAgo', { ns: 'common', count: day })
+  if (day < 7) return i18n.t('common.relativeTime.daysAgo', { ns: 'common', count: day })
+  const week = Math.floor(day / 7)
+  if (week < 5) return i18n.t('common.relativeTime.weeksAgo', { ns: 'common', count: week })
+  const month = Math.floor(day / 30)
+  if (month < 12) return i18n.t('common.relativeTime.monthsAgo', { ns: 'common', count: month })
   return formatDate(iso)
 }
 

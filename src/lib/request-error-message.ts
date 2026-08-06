@@ -7,7 +7,7 @@ import i18n from 'i18next'
 import { ModelGoApiError, isServerErrorCode, getServerErrorMessage } from '@/lib/request'
 
 /** 功能未就绪/接口未注册（业务码 40401 或 HTTP 404）的统一文案——不留死按钮，明确告知服务不可用 */
-export const SERVICE_UNAVAILABLE_MESSAGE = 'errors.serviceUnavailable'
+export const SERVICE_UNAVAILABLE_MESSAGE = 'common.errors.serviceUnavailable'
 
 function tCommon(key: string) {
   return i18n.t(key, { ns: 'common' })
@@ -29,7 +29,7 @@ export function errorCodeOf(error: unknown): string {
   return error instanceof ModelGoApiError ? String(error.code) : 'unknown'
 }
 
-export function getRequestErrorMessage(error: unknown, fallback = tCommon('requestFailed')) {
+export function getRequestErrorMessage(error: unknown, fallback = tCommon('common.requestFailed')) {
   if (error instanceof ModelGoApiError) {
     if (isServerErrorCode(error.code)) return getServerErrorMessage()
     // 40401 = 资源/路由不存在（含后端功能未就绪）：裸文案「resource not found」不可读，归一为「服务暂不可用」
@@ -51,8 +51,8 @@ export function getRequestErrorMessage(error: unknown, fallback = tCommon('reque
   if (error instanceof Error) {
     if (isHttpServerError(error)) return getServerErrorMessage()
     if (isHttpNotFound(error)) return tCommon(SERVICE_UNAVAILABLE_MESSAGE)
-    if (error.name === 'TimeoutError') return tCommon('errors.timeout')
-    if (isNetworkError(error)) return tCommon('errors.network')
+    if (error.name === 'TimeoutError') return tCommon('common.errors.timeout')
+    if (isNetworkError(error)) return tCommon('common.errors.network')
   }
 
   return fallback

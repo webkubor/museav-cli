@@ -81,29 +81,8 @@
 .mg-related-meta { font-size: 12px; color: var(--mg-text-3); }
 .mg-related-price { font-size: 12px; color: var(--brand-base); }
 
-/* ── 协议 / 能力标签 chips ──────────────────────────────────────
-   2026-08 视觉改版稿后广场卡片不再用（合并进 .mg-mcard-chip），但详情页
-   ModelDetailPanel 仍渲染 .mg-proto / .mg-mcard-tag，样式从 catalog-grid-card.css
-   迁到这里跟着详情分区走，不能删。 */
-.mg-proto {
-  padding: 1px 7px; border-radius: var(--radius-sm);
-  border: 1px solid var(--mg-border); background: transparent;
-  font-size: 11px; line-height: 1.6; color: var(--mg-text-3);
-}
-.mg-proto.is-openai {
-  color: var(--brand-base);
-  border-color: color-mix(in oklab, var(--brand-base) 40%, var(--mg-border));
-}
-.mg-proto.is-anthropic {
-  color: var(--mg-text-2);
-  border-color: color-mix(in oklab, var(--mg-text-2) 30%, var(--mg-border));
-}
-.mg-mcard-tag {
-  display: inline-flex; align-items: center; gap: 3px;
-  padding: 1px 7px; border-radius: var(--radius-sm);
-  background: var(--mg-fill-0); border: none;
-  font-size: 11px; line-height: 1.6; color: var(--mg-text-3);
-}
+/* .mg-proto / .mg-mcard-tag 样式回归 catalog-grid-card.css（卡片版面撤回旧版，
+   协议/标签行重新在卡片上渲染），详情页 ModelDetailPanel 共用同一套。 */
 
 /* ── 顶部信任 chips（2026-08 视觉改版稿：白底描边 pill）───────────── */
 .mg-trust {
@@ -138,9 +117,10 @@
   .mg-plaza-layout { grid-template-columns: 240px minmax(0, 1fr); }
 }
 /* 侧栏是带边框的卡片（原型 .marketplace-filters），不再是裸列。
-   2026-08 视觉改版稿：底色从纯白改半透明淡灰（bg-1），透出整页氛围背景图。 */
+   整页底色已改纯色淡蓝（#F2F5FB，见 layout/public-shell.css），半透明灰底
+   会跟页面底色融成一片，回纯白实底靠对比撑出卡片感。 */
 .mg-side-card {
-  background: rgba(var(--mg-bg-1-rgb), 0.62);
+  background: var(--mg-bg-0);
   border: 1px solid var(--mg-card-border);
   border-radius: var(--radius-md);
   box-shadow: var(--mg-card-shadow);

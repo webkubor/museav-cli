@@ -1,24 +1,17 @@
-/* 公开外壳（/models 模型广场家族）整页氛围背景。
+/* 公开外壳（/models 模型广场家族）整页底色。
  *
- * 挂法：shell 根有 Tailwind `isolate`（独立堆叠上下文），::before 走 position:fixed
- * + z-index:-1 —— 在本上下文内画在根背景色之上、所有内容之下，且铺满视口
- * （内容列 max-w 1600 居中，背景图的玻璃方块要贴屏幕四角，不能挂在内容容器上）。
- * 用 fixed 元素而非 background-attachment: fixed：后者在 iOS Safari 直接不生效，
- * 且随页面高度 cover 放大会把装饰方块拉糊。
- *
- * 出图范围：仅国内市场 × 浅色档。图是蓝调浅色设计资产 —— 深色档压不住、
- * 海外翠绿市场撞色，两种情况都直接不出图，回落 shell 的 bg-mg-bg-1 底色。
+ * 2026-08 视觉终稿：背景图撤掉（国内/海外一致），浅色档回纯色 ——
+ * #F2F5FB 打底（设计口径），页面顶部再叠一层白色向下渐隐，保留原背景图
+ * 「上亮下匀、蓝白相间」的层次，避免整屏一块死平的蓝灰。
+ * 深色档不做任何背景处理，直接走 token 底色。
  */
-.mg-public-shell::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background: url('../../assets/catalog-ambient.webp') top center / cover no-repeat;
-  pointer-events: none;
+.mg-public-shell {
+  background:
+    linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0) 460px),
+    #f2f5fb;
 }
 
-[theme-mode='dark'] .mg-public-shell::before,
-[data-market='global'] .mg-public-shell::before {
-  display: none;
+[theme-mode='dark'] .mg-public-shell,
+body[theme-mode='dark'] .mg-public-shell {
+  background: var(--mg-bg-1);
 }

@@ -429,6 +429,9 @@ export default function ModelsCatalogPage() {
                   onTry={handleGoPlayground}
                   canCompare={model.compare_enabled === true}
                   onCompare={(e) => { e.stopPropagation(); openCompare(model.id) }}
+                  onPickProtocol={(p) =>
+                    setSelected((prev) => [...prev.filter((k) => !k.startsWith('protocol:')), `protocol:${p}`])
+                  }
                   onPickCapability={(tag) =>
                     setSelected((prev) =>
                       prev.includes(`tag:${tag}`) ? prev : [...prev, `tag:${tag}`],

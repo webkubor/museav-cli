@@ -111,7 +111,9 @@
   border-radius: var(--radius-full); font-size: 13px; font-weight: 500; color: var(--mg-text-2);
   text-align: left; cursor: pointer; transition: background 0.15s ease, color 0.15s ease;
 }
-.mg-side-row:hover { background: var(--mg-fill-0); color: var(--mg-text-1); }
+/* hover 不用 --mg-fill-0：它浅色档是 oklab 低比例混透明，叠白底会发黄发脏；
+   改 srgb 跟 bg-0 实混的极淡蓝。 */
+.mg-side-row:hover { background: color-mix(in srgb, var(--brand-base) 4%, var(--mg-bg-0)); color: var(--mg-text-1); }
 .mg-side-row.is-active { background: color-mix(in oklab, var(--brand-base) 12%, transparent); color: var(--brand-base); font-weight: 700; }
 .mg-side-more { display: inline-flex; align-items: center; gap: 3px; padding: 6px 4px; font-size: 12px; font-weight: 600; color: var(--mg-text-3); cursor: pointer; }
 .mg-side-more:hover { color: var(--brand-base); }

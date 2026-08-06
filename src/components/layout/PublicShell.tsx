@@ -21,7 +21,7 @@ export function PublicShell() {
   }, [])
 
   return (
-    <div className="mg-public-shell isolate flex min-h-screen flex-col bg-mg-bg-1 text-mg-text-1">
+    <div className="mg-public-shell flex min-h-screen flex-col bg-mg-bg-1 text-mg-text-1">
       <div className="sticky top-0 z-40">
         <DashboardHeader />
       </div>

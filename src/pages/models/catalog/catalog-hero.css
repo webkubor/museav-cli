@@ -95,9 +95,8 @@
   backdrop-filter: blur(var(--mg-glass-blur));
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
-/* 与右侧「推荐排序」按钮同档（14px / 500 / text-2）：两者并排，提示文字太弱会显得
-   搜索框是禁用态。原为 text-4（#cbd5e1），白底上对比度约 1.9:1，也达不到可读下限。 */
-.mg-search-input::placeholder { color: var(--mg-text-2); font-weight: 500; }
+/* 字号字重与右侧「推荐排序」按钮同档（14px / 500）；颜色按需求方要求保持 text-4 不动。 */
+.mg-search-input::placeholder { color: var(--mg-text-4); font-weight: 500; }
 .mg-search-input:focus {
   border-color: var(--plaza-focus-border);
   box-shadow: 0 0 0 4px var(--plaza-focus-ring);

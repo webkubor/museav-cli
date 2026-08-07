@@ -63,4 +63,7 @@ body[theme-mode='dark'] {
   --plaza-focus-ring: rgba(15, 159, 89, 0.32);
   --plaza-card-bg: linear-gradient(135deg, #15251e, #101814);
   --plaza-card-hover-border: rgba(54, 216, 138, 0.4);
+  /* 必须显式给：不写就掉回「国内·深色」的 rgba(20,28,44,.75)（海军蓝），
+     海外深色下移入卡片时底部操作条会是蓝的。色相对齐本块的 --plaza-panel-bg。 */
+  --plaza-actions-bg: rgba(18, 28, 23, 0.75);
 }

@@ -35,6 +35,10 @@
   overflow: hidden;
   pointer-events: none;
 }
+/* 海外站不出星场（走查口径 2026-08-07）：星点是国内站的品牌氛围件 */
+[data-market='global'] .mg-public-shell .mg-decor-stars {
+  display: none;
+}
 
 .mg-decor-star {
   --mg-star-opacity: 0.34;

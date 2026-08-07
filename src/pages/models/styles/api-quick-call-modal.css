@@ -52,18 +52,46 @@
   background: var(--mg-bg-0);
 }
 
+/* 代码块走查定稿：OpenRouter 文档式的淡灰底 + 左侧行号，不掺品牌色；
+   深色主题对应中性暗灰。行号由 ::before 计数器画，不进选区。 */
 .api-quick-call-code-pre {
   margin: 0;
-  padding: 14px;
+  padding: 14px 16px;
   border-radius: var(--radius-md);
-  background: var(--mg-fill-1);
-  border: 1px solid var(--mg-border);
+  background: #f8f9fa;
+  border: 1px solid #e8eaee;
   overflow-x: auto;
   font-size: 12.5px;
   line-height: 1.6;
-  color: var(--mg-text-1);
+  color: #202124;
   white-space: pre;
 }
+[theme-mode='dark'] .api-quick-call-code-pre,
+body[theme-mode='dark'] .api-quick-call-code-pre {
+  background: #202124;
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #e8eaed;
+}
+
+.api-code-lines {
+  counter-reset: api-code-line;
+  display: block;
+}
+.api-code-line {
+  display: block;
+  counter-increment: api-code-line;
+}
+.api-code-line::before {
+  content: counter(api-code-line);
+  display: inline-block;
+  width: 2ch;
+  margin-right: 16px;
+  text-align: right;
+  color: #9aa0a6;
+  user-select: none;
+}
+[theme-mode='dark'] .api-code-line::before,
+body[theme-mode='dark'] .api-code-line::before { color: #6e7378; }
 
 .api-quick-call-footer {
   display: flex;

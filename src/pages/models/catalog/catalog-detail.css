@@ -20,7 +20,8 @@
 .mg-detail-api {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   padding: 1px 6px; border-radius: var(--radius-sm);
-  background: var(--mg-fill-0); font-size: 11.5px; color: var(--mg-text-4);
+  /* text-4 在玻璃底上看不清（走查反馈），升到 text-2 */
+  background: var(--mg-fill-1); font-size: 11.5px; color: var(--mg-text-2);
 }
 .mg-detail-desc {
   margin: 2px 0 0; max-width: 76ch;
@@ -97,11 +98,9 @@
   font-weight: 600;
 }
 .mg-trust svg { color: var(--brand-base); flex-shrink: 0; }
-/* SLA 是稿上唯一的暖色点缀：文字/图标/描边全走 warning token */
-.mg-trust > span.is-sla {
-  color: var(--mg-warning);
-  border-color: color-mix(in oklab, var(--mg-warning) 38%, var(--mg-border));
-}
+/* SLA 是稿上唯一的暖色点缀：只有文字/图标走 warning，描边跟前两个 chip
+   一致（走查反馈：黄框太跳） */
+.mg-trust > span.is-sla { color: var(--mg-warning); }
 .mg-trust > span.is-sla svg { color: var(--mg-warning); }
 
 /* ── 模型广场页面骨架（对齐原型）──────────────────────────────

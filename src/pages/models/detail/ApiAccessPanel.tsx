@@ -14,6 +14,7 @@ import { LuKey, LuExternalLink } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
+import { ApiCodeBlock } from '../components/ApiCodeBlock'
 import {
   PROTOCOL_LABEL,
   PROTOCOL_LABEL_EN,
@@ -107,9 +108,7 @@ const ApiAccessPanel = forwardRef<HTMLDivElement, ApiAccessPanelProps>(function 
                   className="api-quick-call-code-copy"
                   onCopied={() => onCodeCopied?.(lang)}
                 />
-                <pre className="api-quick-call-code-pre">
-                  <code>{buildCodeSample(activeProtocol, lang, modelId)}</code>
-                </pre>
+                <ApiCodeBlock code={buildCodeSample(activeProtocol, lang, modelId)} />
               </div>
             </TabsContent>
           ))}

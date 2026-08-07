@@ -140,7 +140,7 @@ export function LogsTable({
             <TableHead>{t('logs.table.status')}</TableHead>
             <TableHead className="min-w-[190px]">{t('logs.table.model')}</TableHead>
             <TableHead className="min-w-[180px]">{t('logs.table.owner')}</TableHead>
-            <TableHead>Token</TableHead>
+            <TableHead>{t('logs.table.token')}</TableHead>
             <TableHead>{t('logs.table.cost')}</TableHead>
             <TableHead>{t('logs.table.latency')}</TableHead>
             <TableHead>{t('logs.table.actions')}</TableHead>

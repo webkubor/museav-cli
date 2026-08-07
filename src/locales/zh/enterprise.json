@@ -166,7 +166,12 @@
         "tenantUpdated": "更新企业信息",
         "tenantDissolved": "解散企业",
         "workspaceOwnershipTransferred": "转移工作空间负责人",
-        "membershipRoleChanged": "变更成员角色"
+        "membershipRoleChanged": "变更成员角色",
+        "apiKeyIssued": "创建 API Key",
+        "apiKeyUpdated": "更新 API Key",
+        "apiKeyRevoked": "吊销 API Key",
+        "apiKeyRevealed": "查看 API Key",
+        "other": "其他操作"
       },
       "domain": {
         "tenant": "企业",

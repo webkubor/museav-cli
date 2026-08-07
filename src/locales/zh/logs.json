@@ -92,6 +92,7 @@
       "requestTime": "创建时间",
       "model": "模型",
       "owner": "归属",
+      "token": "Token",
       "statusCode": "状态码",
       "duration": "延迟",
       "latency": "延迟",

@@ -47,7 +47,7 @@
       "emptyFiltered": "No members match the filters",
       "empty": "No members yet",
       "count": "{{count}} members",
-      "pendingCount": "{{count}} pending invite(s)",
+      "pendingCount": "{{count}} pending invitations",
       "statusPending": "Pending",
       "invitedBy": "Invited by {{name}}",
       "expiresAt": "Expires {{date}}",
@@ -166,7 +166,12 @@
         "tenantUpdated": "Updated organization profile",
         "tenantDissolved": "Dissolved organization",
         "workspaceOwnershipTransferred": "Transferred workspace owner",
-        "membershipRoleChanged": "Changed member role"
+        "membershipRoleChanged": "Changed member role",
+        "apiKeyIssued": "Created API Key",
+        "apiKeyUpdated": "Updated API Key",
+        "apiKeyRevoked": "Revoked API Key",
+        "apiKeyRevealed": "Revealed API Key",
+        "other": "Other action"
       },
       "domain": {
         "tenant": "organization",
@@ -231,7 +236,7 @@
       "sendError": "Failed to send invitation",
       "copySuccess": "Invite link copied",
       "queueTitle": "Invitation queue",
-      "pendingCount": "{{count}} pending invite(s)",
+      "pendingCount": "{{count}} pending invitations",
       "roleAdmin": "Admin",
       "roleMember": "Member",
       "queueEmptyTitle": "No pending invitations",

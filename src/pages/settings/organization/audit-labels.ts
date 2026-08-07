@@ -11,6 +11,11 @@ const FULL_LABEL: Record<string, string> = {
   'tenant.dissolved': 'enterprise.audit.action.tenantDissolved',
   'workspace.ownership_transferred': 'enterprise.audit.action.workspaceOwnershipTransferred',
   'membership.role_changed': 'enterprise.audit.action.membershipRoleChanged',
+  // api_key 域整组走专属措辞（qa#411：revealed/issued 此前漏词表，裸 key 直出生产）
+  'api_key.issued': 'enterprise.audit.action.apiKeyIssued',
+  'api_key.updated': 'enterprise.audit.action.apiKeyUpdated',
+  'api_key.revoked': 'enterprise.audit.action.apiKeyRevoked',
+  'api_key.revealed': 'enterprise.audit.action.apiKeyRevealed',
 }
 
 const DOMAIN_LABEL: Record<string, string> = {
@@ -70,5 +75,7 @@ export function auditActionLabel(action: string, t: Translate): string {
     const v = VERB_LABEL[verb]
     if (d && v) return t('enterprise.audit.action.composed', { verb: t(v), domain: t(d) })
   }
-  return action // 未知 key 兜底原样，不误翻
+  // 未知 key（新增但词表未同步的 <域>.<动作>）：不能把原始枚举 key 直接吐给用户，
+  // 退到跟后端 auditActionLabel() 目录未命中时同语义的通用兜底文案（qa#411）
+  return t('enterprise.audit.action.other')
 }

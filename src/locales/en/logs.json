@@ -92,6 +92,7 @@
       "requestTime": "Created",
       "model": "Model",
       "owner": "Caller",
+      "token": "Tokens",
       "statusCode": "Status",
       "duration": "Latency",
       "latency": "Latency",

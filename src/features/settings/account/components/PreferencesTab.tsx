@@ -9,6 +9,7 @@ import { getPreferences, updatePreferences } from '@/services/preferences'
 import { appToast } from '@/lib/app-toast'
 import { useLangStore } from '@/store/use-brand-store'
 import { useAuthStore } from '@/store/auth'
+import { useMarket } from '@/hooks/useMarket'
 import { applyTheme, getSavedTheme, getUserTheme, saveTheme, type Theme } from '@/lib/theme'
 import { LuSun, LuMoon, LuMonitor } from 'react-icons/lu'
 import {
@@ -98,6 +99,9 @@ export function PreferencesTab() {
   const queryClient = useQueryClient()
   const setGlobalLang = useLangStore((state) => state.setLang)
   const account = useAuthStore((state) => state.account)
+  // 国外(global)控制台不给主题选择，写死深色，界面里不展示这个配置项（lib/theme.ts 同步锁定渲染结果）
+  const market = useMarket()
+  const themeSelectable = market !== 'global'
   // 不用 state 存语言：i18nInstance.language 就是生效值，useTranslation 会在 languageChanged 时重渲染。
   // 多存一份 state 就是多一个会漂移的副本，#370 的根因正是「选择器读副本、界面读真源」。
   const language = toPreferenceLanguage(i18nInstance.language)
@@ -220,30 +224,32 @@ export function PreferencesTab() {
           />
         </div>
 
-        {/* 界面主题（Theme） */}
-        <div className="py-5 border-b border-mg-border/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="max-w-xs">
-            <div className="text-[14px] font-bold text-mg-text-1">
-              {t('account.preferences.themeTitle')}
+        {/* 界面主题（Theme）——国外控制台写死深色，不提供选择 */}
+        {themeSelectable && (
+          <div className="py-5 border-b border-mg-border/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="max-w-xs">
+              <div className="text-[14px] font-bold text-mg-text-1">
+                {t('account.preferences.themeTitle')}
+              </div>
+              <div className="mt-1 text-xs leading-relaxed text-mg-text-3">
+                {t('account.preferences.themeDesc')}
+              </div>
             </div>
-            <div className="mt-1 text-xs leading-relaxed text-mg-text-3">
-              {t('account.preferences.themeDesc')}
-            </div>
-          </div>
 
-          {/* 主题 Segmented（与语言统一用共享 SegmentedToggle，带图标） */}
-          <SegmentedToggle
-            className="shrink-0 self-start md:self-center"
-            ariaLabel={t('account.preferences.themeTitle')}
-            value={theme}
-            onChange={(value) => handleThemeChange(value)}
-            options={THEME_OPTIONS.map((option) => ({
-              value: option.value,
-              label: t(option.titleKey),
-              icon: THEME_ICONS[option.value],
-            }))}
-          />
-        </div>
+            {/* 主题 Segmented（与语言统一用共享 SegmentedToggle，带图标） */}
+            <SegmentedToggle
+              className="shrink-0 self-start md:self-center"
+              ariaLabel={t('account.preferences.themeTitle')}
+              value={theme}
+              onChange={(value) => handleThemeChange(value)}
+              options={THEME_OPTIONS.map((option) => ({
+                value: option.value,
+                label: t(option.titleKey),
+                icon: THEME_ICONS[option.value],
+              }))}
+            />
+          </div>
+        )}
 
         {/* 显示时区（Time Zone） */}
         <div className="py-5 border-b border-mg-border/40 flex flex-col md:flex-row md:items-start justify-between gap-4">

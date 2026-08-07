@@ -150,6 +150,17 @@
 }
 .mg-mcard:hover .mg-mcard-actions,
 .mg-mcard:focus-within .mg-mcard-actions { opacity: 1; pointer-events: auto; transform: translateY(0); }
+/* 浮出条只盖得住第二排规格（上下文/缓存读取），羽化上缘会把那排字切一半露出来
+   （走查反馈）。解法不是调条的高度去对齐像素，而是悬停时让第二排自己淡出 ——
+   条浮上来时底下没有字，羽化区里只剩干净的雾。 */
+.mg-mcard-specs > *:nth-child(n + 3) { transition: opacity 0.18s ease; }
+.mg-mcard:hover .mg-mcard-specs > *:nth-child(n + 3),
+.mg-mcard:focus-within .mg-mcard-specs > *:nth-child(n + 3) { opacity: 0; }
+@media (hover: none) {
+  /* 触屏无 hover、操作条常驻在规格下方，第二排不做淡出 */
+  .mg-mcard:hover .mg-mcard-specs > *:nth-child(n + 3),
+  .mg-mcard:focus-within .mg-mcard-specs > *:nth-child(n + 3) { opacity: 1; }
+}
 @media (hover: none) {
   .mg-mcard-actions { position: static; opacity: 1; pointer-events: auto; padding: 10px 0 0; background: transparent; transform: none; -webkit-mask-image: none; mask-image: none; }
 }

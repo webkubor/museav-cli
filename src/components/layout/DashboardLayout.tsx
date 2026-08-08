@@ -242,7 +242,7 @@ export function DashboardLayout() {
   const isFlatRoute = FLAT_ROUTES.includes(getSelectedKey())
 
   return (
-    <div className="dashboard-shell mg-glass-canvas h-screen md:min-w-[1280px] flex flex-col font-sans relative overflow-hidden">
+    <div className="dashboard-shell bg-site-bg h-screen md:min-w-[1280px] flex flex-col font-sans relative overflow-hidden">
       <ParticleLinesBackground />
       <div className="dashboard-global-bottom-bg" aria-hidden="true" />
       <DashboardHeader onMenuClick={() => setMobileOpen(true)} />

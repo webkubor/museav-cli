@@ -1,6 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ModelGoApiError } from '@/lib/request'
-import { formatDiagnosticsForCopy, getServerErrorDiagnostics } from '@/lib/error-diagnostics'
+import { getServerErrorDiagnostics, reportHttpServerError, reportServerError } from '@/lib/error-diagnostics'
+
+const { trackMock } = vi.hoisted(() => ({ trackMock: vi.fn() }))
+vi.mock('@model-go/track', () => ({ track: trackMock, pageView: vi.fn() }))
 
 describe('server error diagnostics', () => {
   it('extracts diagnostics from 5xx business errors', () => {
@@ -71,23 +74,53 @@ describe('server error diagnostics', () => {
     expect(getServerErrorDiagnostics(error)).toBeNull()
   })
 
-  it('formats a copyable block with ids, version and build', () => {
-    const block = formatDiagnosticsForCopy({
-      requestId: 'req-123',
-      traceId: 'trace-abc',
-      code: 50001,
-      path: 'POST /api/v1/api-keys',
-      page: '/workspace/x/api-keys',
-      version: '1.2.3',
-      build: 'abc1234',
-      time: '2026-06-24 10:00:00',
-    })
+})
 
-    expect(block).toContain('请求 ID：req-123')
-    expect(block).toContain('Trace ID：trace-abc')
-    expect(block).toContain('错误码：50001')
-    expect(block).toContain('接口：POST /api/v1/api-keys')
-    expect(block).toContain('版本：v1.2.3 (abc1234)')
-    expect(block).toContain('时间：2026-06-24 10:00:00')
+// 500 报错不再弹诊断弹窗给用户看，改成静默上报埋点（trackEvent → @model-go/track 的 track()）。
+describe('silent server error reporting (no popup)', () => {
+  beforeEach(() => {
+    trackMock.mockClear()
+  })
+
+  it('reportServerError 把 5xxxx 业务码错误的诊断信息上报为 server_error:5xx 事件，不做任何 UI 弹出', () => {
+    const error = new ModelGoApiError({
+      code: 50001,
+      msg: 'panic: upstream nil pointer',
+      request_id: 'req-123',
+      trace_id: 'trace-abc',
+      data: null,
+    })
+    error.path = 'POST /api/v1/api-keys'
+
+    reportServerError(error)
+
+    expect(trackMock).toHaveBeenCalledTimes(1)
+    const [event, data, top] = trackMock.mock.calls[0]
+    expect(event).toBe('server_error:5xx')
+    expect(data).toMatchObject({ request_id: 'req-123', trace_id: 'trace-abc', code: 50001, path: 'POST /api/v1/api-keys' })
+    expect(top).toMatchObject({ result: 'fail', error_code: '50001' })
+  })
+
+  it('普通业务错误不触发上报', () => {
+    const error = new ModelGoApiError({ code: 40901, msg: '邮箱已注册', request_id: 'req-2', data: null })
+    reportServerError(error)
+    expect(trackMock).not.toHaveBeenCalled()
+  })
+
+  it('reportHttpServerError 把网关级 HTTP 5xx 上报为同一个事件', () => {
+    const response = new Response(null, { status: 503, headers: { 'x-request-id': 'http-req-9' } })
+    reportHttpServerError(response)
+
+    expect(trackMock).toHaveBeenCalledTimes(1)
+    const [event, data, top] = trackMock.mock.calls[0]
+    expect(event).toBe('server_error:5xx')
+    expect(data).toMatchObject({ request_id: 'http-req-9', status: 503 })
+    expect(top).toMatchObject({ result: 'fail', error_code: '503' })
+  })
+
+  it('非 5xx 的 HTTP 响应不触发上报', () => {
+    const response = new Response(null, { status: 404 })
+    reportHttpServerError(response)
+    expect(trackMock).not.toHaveBeenCalled()
   })
 })

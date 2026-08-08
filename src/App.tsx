@@ -107,7 +107,6 @@ import { marketLockedByDomain, marketOverrideFromSearch } from '@/lib/market-dom
 import { applyBrandTheme, applyTheme, getSavedBrandTheme, getSavedTheme, readThemeFromUrl, saveTheme } from '@/lib/theme'
 import { getPlatformConfig } from '@/services/platform'
 import { useLangStore } from '@/store/use-brand-store'
-import { ServerErrorDialog } from '@/components/server-error/ServerErrorDialog'
 import { AppUpdatePrompt } from '@/components/app-update/AppUpdatePrompt'
 
 import { Toaster } from 'sonner'
@@ -216,7 +215,6 @@ export default function App() {
   return (
     <Providers>
       <Toaster richColors position="top-right" closeButton />
-      <ServerErrorDialog />
       <AppUpdatePrompt />
       <BrowserRouter>
         {NavLogger && <Suspense fallback={null}><NavLogger /></Suspense>}

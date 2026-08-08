@@ -95,7 +95,8 @@
   backdrop-filter: blur(var(--mg-glass-blur));
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
-.mg-search-input::placeholder { color: var(--mg-text-4); }
+/* 字号字重与右侧「推荐排序」按钮同档（14px / 500）；颜色按需求方要求保持 text-4 不动。 */
+.mg-search-input::placeholder { color: var(--mg-text-4); font-weight: 500; }
 .mg-search-input:focus {
   border-color: var(--plaza-focus-border);
   box-shadow: 0 0 0 4px var(--plaza-focus-ring);

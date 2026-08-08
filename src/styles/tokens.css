@@ -49,8 +49,10 @@
   --radius-lg:   var(--mg-radius-lg);    /* 18px */
   --radius-full: var(--mg-radius-pill);  /* 999px（原本地 9999px，对齐 SSoT） */
 
-  /* 字体（控制台特调：拉丁 Inter 优先，UI 更紧凑清晰；与官网 PingFang 优先不同，不收敛 SSOT） */
-  --font-sans: 'Inter', 'PingFang SC', 'MiSans', 'HarmonyOS Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
+  /* 字体：2026-08-06 收敛进 SSOT —— 原来这里自持一套「Inter 优先」并注释「不收敛」，
+     结果同一个「推荐排序」在规范预览页与控制台里西文/数字不一样。需求方定以控制台
+     这一档为准，已写进 design-tokens 0.7.0 的 --mg-font-sans，此处改为引用，值不变。 */
+  --font-sans: var(--mg-font-sans);
   --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
   --mg-font-size-caption: 0.75rem;
   --mg-line-height-caption: 1rem;

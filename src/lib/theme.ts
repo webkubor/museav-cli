@@ -7,6 +7,11 @@ export type Theme = 'dark' | 'light' | 'system'
 export function getMarketDefaultTheme(): 'dark' | 'light' {
   return getMarket() === 'global' ? 'dark' : 'light'
 }
+
+/** 国外(global)控制台不提供主题选择，写死深色——不看用户偏好/URL 参数，直接锁定。 */
+export function isThemeLockedToDark(): boolean {
+  return getMarket() === 'global'
+}
 export type BrandThemeMode = 'default' | 'custom'
 
 export interface BrandThemeConfig {
@@ -43,13 +48,16 @@ export function getUserTheme(userId: string): Theme {
 /** 持久化 theme：有 userId 则写用户 key，同时更新匿名 key 作为下次冷启动兜底 */
 export function saveTheme(theme: Theme, userId?: string | null) {
   if (typeof window !== 'undefined') {
-    if (userId) localStorage.setItem(storageKeys.themeByUser(userId), theme)
-    localStorage.setItem(storageKeys.theme(), theme)
+    // 锁深色的市场不持久化非 dark 值，避免 localStorage 存的偏好跟渲染结果（resolveTheme 强制 dark）不一致
+    const toSave = isThemeLockedToDark() ? 'dark' : theme
+    if (userId) localStorage.setItem(storageKeys.themeByUser(userId), toSave)
+    localStorage.setItem(storageKeys.theme(), toSave)
     localStorage.setItem(storageKeys.themeModified(), 'true')
   }
 }
 
 export function resolveTheme(theme: Theme): 'dark' | 'light' {
+  if (isThemeLockedToDark()) return 'dark'
   if (theme !== 'system') return theme
   return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
 }

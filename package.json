@@ -50,7 +50,7 @@
     "i18next": "^26.2.0",
     "jsencrypt": "^3.5.4",
     "ky": "^2.0.2",
-    "modelgo-design-tokens": "git+ssh://git@gitlab.ops.modelgo.com/frontend/modelgo-design-tokens.git#feat/glass-system",
+    "modelgo-design-tokens": "^0.6.3",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",

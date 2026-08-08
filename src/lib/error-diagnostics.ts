@@ -1,15 +1,14 @@
 /**
  * 服务端错误诊断信息。
  *
- * 线上 5xx 对用户隐藏原始报错（panic 堆栈等），但 request_id / trace_id 是我们
- * 排查问题的唯一抓手。这里把可定位标识 + 前端版本归集成一份「可复制」的信息块，
- * 用户报障时一键复制给客服即可精准定位。
+ * 线上 5xx 不再弹诊断弹窗给用户看——request_id / trace_id 这些排查用标识改成
+ * 静默走埋点 SDK 上报，用户侧完全无感知，排障还是能从上报事件里拿到同一份信息。
  *
  * 来源：src/lib/request.ts 抛出的 ModelGoApiError 与 ky HTTPError。
  */
 import { ModelGoApiError, isServerErrorCode } from '@/lib/request'
 import { useAuthStore } from '@/store/auth'
-import { useServerErrorStore } from '@/store/use-server-error-store'
+import { trackEvent } from '@/lib/track'
 
 export interface ServerErrorDiagnostics {
   requestId?: string
@@ -57,7 +56,7 @@ function currentPage(): string | undefined {
 /**
  * 从完整 URL 抽出接口路径（如 /api/v1/account/avatar）。
  * 网关级 5xx（503 等）走不到后端信封、无 request_id，但 Response.url 一定有——
- * 用它兜底出「接口路径」，否则弹窗里连出错的是哪个接口都看不到。
+ * 用它兜底出「接口路径」，否则上报事件里连出错的是哪个接口都看不到。
  */
 function pathFromUrl(url?: string): string | undefined {
   if (!url) return undefined
@@ -111,14 +110,35 @@ export function getServerErrorDiagnostics(error: unknown): ServerErrorDiagnostic
   return null
 }
 
+/** 诊断信息里的标量字段投给埋点 SDK（data 只接受 string/number/boolean，undefined 字段整个丢掉） */
+function diagnosticsToTrackData(d: ServerErrorDiagnostics): Record<string, string | number | boolean> {
+  const data: Record<string, string | number | boolean> = {
+    version: d.version,
+    time: d.time,
+  }
+  if (d.requestId) data.request_id = d.requestId
+  if (d.traceId) data.trace_id = d.traceId
+  if (typeof d.code === 'number') data.code = d.code
+  if (typeof d.status === 'number') data.status = d.status
+  if (d.path) data.path = d.path
+  if (d.page) data.page = d.page
+  if (d.tenantId) data.tenant_id = d.tenantId
+  if (d.build) data.build = d.build
+  return data
+}
+
 /**
- * 全局上报：任何服务端级错误（5xxxx 业务码 / HTTP 5xx）自动弹出诊断弹窗。
+ * 全局上报：任何服务端级错误（5xxxx 业务码 / HTTP 5xx）静默上报埋点，用户侧无感知。
  * 由 request.ts 的拦截器统一调用，使诊断不依赖各处 onError 是否调用 requestError。
- * 非服务端错误返回 null → 不弹窗。多次调用幂等（重复 show 同一份诊断无副作用）。
+ * 非服务端错误返回 null → 不上报。
  */
 export function reportServerError(error: unknown): void {
   const diagnostics = getServerErrorDiagnostics(error)
-  if (diagnostics) useServerErrorStore.getState().show(diagnostics)
+  if (!diagnostics) return
+  trackEvent('server_error:5xx', diagnosticsToTrackData(diagnostics), {
+    result: 'fail',
+    error_code: String(diagnostics.code ?? diagnostics.status ?? ''),
+  })
 }
 
 /**
@@ -127,29 +147,15 @@ export function reportServerError(error: unknown): void {
  */
 export function reportHttpServerError(response: Response): void {
   if (response.status < 500 || response.status >= 600) return
-  useServerErrorStore.getState().show({
+  const diagnostics: ServerErrorDiagnostics = {
     status: response.status,
     requestId: response.headers.get('x-request-id') ?? undefined,
     traceId: response.headers.get('x-trace-id') ?? response.headers.get('traceparent') ?? undefined,
     path: pathFromUrl(response.url),
     ...envBase(),
+  }
+  trackEvent('server_error:5xx', diagnosticsToTrackData(diagnostics), {
+    result: 'fail',
+    error_code: String(response.status),
   })
-}
-
-/** 复制到剪贴板的完整信息块。 */
-export function formatDiagnosticsForCopy(d: ServerErrorDiagnostics): string {
-  return [
-    'ModelGo 控制台错误信息',
-    d.requestId && `请求 ID：${d.requestId}`,
-    d.traceId && `Trace ID：${d.traceId}`,
-    typeof d.code === 'number' && `错误码：${d.code}`,
-    typeof d.status === 'number' && `HTTP 状态：${d.status}`,
-    d.path && `接口：${d.path}`,
-    d.page && `页面：${d.page}`,
-    d.tenantId && `租户 ID：${d.tenantId}`,
-    `版本：v${d.version}${d.build ? ` (${d.build})` : ''}`,
-    `时间：${d.time}`,
-  ]
-    .filter(Boolean)
-    .join('\n')
 }

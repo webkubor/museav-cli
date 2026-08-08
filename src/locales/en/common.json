@@ -172,21 +172,6 @@
       "viewChangelog": "View Changelog",
       "reloadWarning": "The page will reload during the update. Check any unsaved input before continuing."
     },
-    "serverError": {
-      "title": "Service temporarily unavailable",
-      "desc": "If the issue continues, share the following information with us for diagnosis.",
-      "copyAll": "Copy Details",
-      "copiedAll": "All Details Copied",
-      "sendEmail": "Email Support",
-      "copyLabel": "Copy {{label}}",
-      "requestId": "Request ID",
-      "traceId": "Trace ID",
-      "path": "API Path",
-      "tenantId": "Tenant ID",
-      "version": "Version",
-      "emailSubject": "ModelGo console service error{{suffix}}",
-      "emailBody": "I encountered a service error while using the ModelGo console. Please help investigate.\n\n{{diagnostics}}"
-    },
     "customerService": {
       "thinking": "Thinking...",
       "todayAt": "Today {{time}}",

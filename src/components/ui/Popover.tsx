@@ -102,8 +102,10 @@ export const Popover: React.FC<PopoverProps> = ({
           className={cn(
             // pointer-events-auto: Radix Dialog(modal) 打开时会把 body 设为 pointer-events:none，
             // 而本组件 portal 到 body，必须显式恢复，否则弹层内（如日期选择）全部无法点击
-            // 不透明实底：半透明玻璃底会与弹窗内背景文字互相穿透（需求方#449），下拉面板必须完整遮挡背景
-            "pointer-events-auto mg-panel rounded-md bg-mg-bg-0 border border-mg-border shadow-xl select-none",
+            // 不透明实底：bg-mg-bg-0 对应 --mg-surface 已并入玻璃系统（暗色下 color-mix 到 7% 透明），
+            // 换成类名并不能换掉透明度；bg-mg-bg-2 对应 --mg-surface-2，语义即「悬浮卡片 / Dropdown」，
+            // 两套主题都是实色 hex，下拉面板必须完整遮挡背景（需求方#504，同源#449）
+            "pointer-events-auto mg-panel rounded-md bg-mg-bg-2 border border-mg-border shadow-xl select-none",
             "animate-in zoom-in-95 fade-in-0 duration-150",
             className
           )}

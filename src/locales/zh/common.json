@@ -172,21 +172,6 @@
       "viewChangelog": "查看更新日志",
       "reloadWarning": "更新会重新加载页面，请留意未保存的填写内容。"
     },
-    "serverError": {
-      "title": "服务暂时异常，请稍后再试",
-      "desc": "如果问题持续出现，请将以下信息提供给我们排查。",
-      "copyAll": "一键复制",
-      "copiedAll": "已复制全部",
-      "sendEmail": "发 Email",
-      "copyLabel": "复制{{label}}",
-      "requestId": "请求 ID",
-      "traceId": "Trace ID",
-      "path": "接口路径",
-      "tenantId": "租户 ID",
-      "version": "版本",
-      "emailSubject": "ModelGo 控制台服务异常{{suffix}}",
-      "emailBody": "我在使用 ModelGo 控制台时遇到了服务异常，请帮忙排查。\n\n{{diagnostics}}"
-    },
     "customerService": {
       "thinking": "思考中…",
       "todayAt": "今天 {{time}}",

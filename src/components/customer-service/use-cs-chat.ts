@@ -6,9 +6,8 @@ import { storageKeys } from '@/lib/storage'
 import type { AgentEvent } from '@/interfaces/agent'
 import { stopConversation } from '@/services/agent'
 import { appToast } from '@/lib/app-toast'
-import { readSSE, extractHTTPError } from '@/lib/stream-chat'
-import { useStreamingController, isAbortError } from '@/hooks/use-streaming-controller'
-import { patchMessageById } from '@/lib/message-patch'
+import { readSSE, extractHTTPError, isAbortError, patchMessageById } from 'ai-sse-kit'
+import { useStreamingController } from 'ai-sse-kit/react'
 
 export interface Message {
   id: string

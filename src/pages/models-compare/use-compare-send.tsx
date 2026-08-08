@@ -27,7 +27,7 @@ import {
   type ExperienceMessage,
   type ExperienceTaskType,
 } from '../models/model-experience-data'
-import { isAbortError } from '@/hooks/use-streaming-controller'
+import { isAbortError } from 'ai-sse-kit'
 import { trackModelRun, buildDialogueMetrics, buildMediaMetrics, pollMediaTask } from '../models/experience-run'
 import type { DispatchAttachment } from './models-compare-utils'
 import type { CompareState } from './use-models-compare-state'

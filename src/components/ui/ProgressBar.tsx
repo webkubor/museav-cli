@@ -62,10 +62,10 @@ export const ProgressBar = React.forwardRef<HTMLDivElement, ProgressBarProps>(
     // 填充渐变色和发光配置
     const variantStyles = {
       brand: {
-        bar: "bg-gradient-to-r from-[#9b72cb] to-[#d96570]",
-        glow: "shadow-[0_0_12px_rgba(217,101,112,0.6)]",
-        text: "text-[#d96570]",
-        badge: "bg-[#9b72cb]/10 text-[#d96570] border-[#9b72cb]/20"
+        bar: "bg-gradient-to-r from-[var(--brand-base)] to-[var(--brand-mid)]",
+        glow: "shadow-[0_0_12px_var(--brand-glow)]",
+        text: "text-[var(--brand-base)]",
+        badge: "bg-[var(--brand-base)]/10 text-[var(--brand-base)] border-[var(--brand-base)]/20"
       },
       rainbow: {
         bar: "bg-gradient-to-r from-[#4285f4] via-[#9b72cb] via-[#d96570] to-[#f4af42]",

@@ -18,23 +18,15 @@ export function stripVendorPrefix(id: string) {
 /**
  * 「立即接入」浮层里 Model 下拉的候选（需求方 shared#322）。
  *
- * 【为什么是近似过滤，而不是照抄 PRD】
- * PRD 原型给每个模型手工标了「这个模型能拿去喂哪个编程客户端」（claude-code / codex），
- * 下拉是「协议对得上」+「这个客户端能用」两个条件一起筛出来的。
- * 我们的 catalog 没有第二个条件——它只告诉你模型支持哪些协议（openai / anthropic），
- * 不告诉你它适不适合当编程客户端的模型。所以这里只能筛两件能筛的事：
- *   1. 协议：由调用方按 tab 传 protocol 给接口筛（Claude Code / CC Switch=anthropic，Codex=openai）
- *   2. 出文本：编程客户端要的是对话模型，出图 / 出视频 / embedding 选了必然报错，本地剔掉
- *
- * 【这样近似会漏什么】
- * 协议对、也出文本、但实际不该给用户当编程模型用的，仍然会留在下拉里
- * （典型是测试环境的 FakeLLM 夹具 qa-text-*）。要根治得由后端补字段，已落单 qa#583：
- * 补 `coding_tools` 或更通用的「是否对外可见」，到位后把下面的 filter 换掉即可，UI 不用动。
+ * 服务端口径：调用方按 tab 传 `coding_tool=claude-code|codex` 给 `/catalog/models`，接口
+ * 只返回 `coding_tools` 命中该客户端的模型——QA 的 FakeLLM 夹具（qa-text-*）`coding_tools`
+ * 恒为空，不会命中任何客户端，因此天然被排除（qa#583）。这里的 `coding_tools` 检查是
+ * 防御性的二次校验，不依赖服务端已经按 tool 筛过。
  */
-export function buildConnectModelOptions(items: CatalogModelItem[]): string[] {
+export function buildConnectModelOptions(items: CatalogModelItem[], tool: 'claude-code' | 'codex'): string[] {
   const ids = items
     .filter((m) => m.status === 'available')
-    .filter((m) => !m.output_modalities?.length || m.output_modalities.includes('text'))
+    .filter((m) => m.coding_tools?.includes(tool))
     .map((m) => stripVendorPrefix(m.model_id))
     .filter((id) => id.length > 0)
   return Array.from(new Set(ids)).sort((a, b) => a.localeCompare(b))

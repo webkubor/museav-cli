@@ -40,6 +40,8 @@ export interface CatalogModelItem {
   output_modalities?: string[]
   /** 模型级公开协议 */
   protocols?: ('openai' | 'anthropic' | 'other')[]
+  /** 适配的编程客户端；恒下发（可能为空数组），不会是 null（qa#583） */
+  coding_tools?: ('claude-code' | 'codex')[]
   /** @deprecated 后端将删除（2026-07-31 口径变更）：可体验任务一律由 input/output_modalities
    *  推导（modelExperienceTasks），前端已不读这两个字段，仅保留类型定义待后端下线后移除 */
   experience_types?: string[]

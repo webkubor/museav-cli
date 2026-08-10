@@ -47,9 +47,11 @@
   gap: 12px;
   margin-top: 4px;
   padding: 14px;
-  border: 1px solid var(--mg-border);
+  border: 1px solid var(--mg-glass-line);
   border-radius: 14px;
-  background: rgba(var(--mg-bg-1-rgb), 0.58);
+  background: var(--mg-glass-surface-strong);
+  -webkit-backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.15);
+  backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.15);
 }
 
 .models-catalog-advanced-row {
@@ -108,10 +110,6 @@
 .models-catalog-filter-reset svg {
   width: 14px;
   height: 14px;
-}
-
-body[theme-mode='dark'] .models-catalog-advanced-filters {
-  background: rgba(var(--mg-bg-1-rgb), 0.34);
 }
 
 @media (max-width: 640px) {

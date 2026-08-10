@@ -171,6 +171,38 @@ studio-cli gen --template <模板id> --fields '{"artist":"王嘉尔","city":"南
 
 `templates` 命令的输出里，模板名后面跟着的"字段:xxx"就是需要传给 `--fields` 的 key。
 
+### 新建图片模板 `templates create`
+
+> 2026-08-10 新增。之前只能网页后台建模板，纯命令行/脚本化场景（比如没人会去点网页，或者
+> 想批量导入一批固定套路）建不了新模板，只能靠每次手写 `--prompt`——但这满足不了"同一种图、
+> 反复出、风格锁死"的固定业务场景。这个命令补上了这条路。
+
+**归属不用自己传，账号身份自动决定**：租户 apiKey 建的模板自动归该租户（其他租户看不到）；
+平台管理员账号建的是 `tenant_id` 为空的平台共享模板（所有租户可见）；个人账号（未登录成租户、
+也不是管理员）会被服务端拒绝——这条权限规则在服务端强制执行，CLI 这层不做也不能绕过。
+
+```bash
+# 占位符用 {key} 形式，不传 --fields 会自动从 --prompt 里提取
+studio-cli templates create \
+  --name "演唱会巡演海报" \
+  --prompt "{artist} 在 {city} 的演唱会巡演海报，聚光灯氛围" \
+  --category 演唱会 \
+  --ratio 9:16
+
+# 想要更友好的中文字段标签，自己传 --fields 覆盖自动提取的结果
+studio-cli templates create \
+  --name "产品白底图" \
+  --prompt "{product} 电商白底图，纯白背景，正面视角" \
+  --fields '[{"key":"product","label":"产品名称"}]'
+```
+
+stdout 输出新建模板的 id，可以直接接 `gen --template`：
+
+```bash
+ID=$(studio-cli templates create --name "..." --prompt "...")
+studio-cli gen --template "$ID" --fields '{"artist":"..."}'
+```
+
 ### 图片逆向 `reverse`
 
 上传一张图，中台用 **SCULPT 六要素**（主体/构图/世界观/光影/输出/质感）逆推出图 prompt，可以直接拿去再出一张同风格的：
@@ -214,6 +246,39 @@ studio-cli jobs --status failed    # 只看失败的（本地过滤，不是服�
 
 ---
 
+### 查所属租户自己的产品 / 素材 `products` / `assets`
+
+> 2026-08-10 新增，**仅租户 apiKey 身份可用**，个人 login 用不了。
+
+这两个命令跟前面所有命令不一样：数据**不在** studio 中台，而在租户自己的后台（好易美是
+`hym-admin`，mzmeso 是 `manager`）——产品/素材是各租户自己业务侧的数据，物理上存在他们
+自己的数据库里，中台从不代理这部分数据。CLI 会直接调租户自己的域名，用你配置的同一把
+`sk-studio-<租户名>-xxx` 当凭证（这把 key 反正租户后台自己也存着一份用来倒过来调中台，
+两边共用，不用再单独申请一把）：
+
+```bash
+studio-cli products    # 查所属租户自己的产品目录
+studio-cli assets      # 查所属租户自己的素材/资产库
+```
+
+已知已接入的租户（hym / mzmeso）不用额外配置，CLI 内置了它们后台的域名；其他租户/本地联调用：
+
+```bash
+studio-cli config --tenantBaseUrl https://your-tenant-backend.example.com
+```
+
+**不是每个租户都两个命令都能用**：比如好易美是演唱会海报/票务业务，没有"产品"这个概念，
+它的后台没开通 `tenant-products`，调 `products` 会报错——这是预期行为，不是 bug。
+`assets` 的返回结构也没有强行统一：好易美是 `{ celebrity_materials, stickers }`，
+mzmeso 是一个扁平数组，CLI 会按返回形状分别展示。
+
+典型用法——配合 `gen --template` 做"选参考图 + 模板 组合出图"：
+
+```bash
+IMG=$(studio-cli products | node -e "process.stdin.once('data',d=>console.log(JSON.parse(d)[0].cover_image_url))")
+studio-cli gen --template <模板id> --ref "$IMG"
+```
+
 ## 编程调用
 
 CLI 背后是一个干净的 `StudioClient` class，也可以当库用：
@@ -254,12 +319,15 @@ console.log(r.sculpt.light)  // 光影分析
 | `whoami` | 查当前账户 + 租户归属（仅个人 login） | JSON |
 | `gen` | 出图 | 图片 URL |
 | `templates` | 查可用图片模板（配合 `gen --template`） | JSON |
+| `templates create` | 新建图片模板，归属按账号身份自动关联租户 | 新模板 id |
+| `products` | 查所属租户自己的产品目录（数据在租户自己后台，非中台；仅租户 apiKey） | JSON |
+| `assets` | 查所属租户自己的素材/资产库（数据在租户自己后台，非中台；仅租户 apiKey） | JSON |
 | `reverse <file\|url>` | 图片逆向 | 英文 prompt |
 | `upload <file>` | 上传垫图 | 图片 URL |
 | `models` | 可用模型 | 模型名列表 |
 | `balance` | 上游余额 | JSON |
 | `jobs` | 查自己（租户则是自己业务下）的工作流 | JSON 数组 |
-| `config` | 配置中台（B 端 apikey） | — |
+| `config` | 配置中台（B 端 apikey，含 `--tenantBaseUrl`） | — |
 
 **stdout 只输出最终结果**，进度信息走 stderr——方便脚本和管道集成。
 

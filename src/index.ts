@@ -8,6 +8,7 @@ import { readFileSync } from 'node:fs'
 import { Command } from 'commander'
 import updateNotifier from 'update-notifier'
 import { StudioClient } from './client.js'
+import { TenantClient } from './tenant-client.js'
 import { loadConfig, saveConfig, clearToken } from './config.js'
 import { login } from './commands/login.js'
 import { gen } from './commands/gen.js'
@@ -15,10 +16,12 @@ import { reverse } from './commands/reverse.js'
 import { upload } from './commands/upload.js'
 import { models } from './commands/models.js'
 import { skills } from './commands/skills.js'
-import { templates } from './commands/templates.js'
+import { templates, createTemplate } from './commands/templates.js'
 import { balance } from './commands/balance.js'
 import { jobs } from './commands/jobs.js'
 import { whoami } from './commands/whoami.js'
+import { products } from './commands/products.js'
+import { assets } from './commands/assets.js'
 
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8')) as { name: string; version: string }
 // 每 12 小时最多查一次 npm registry，过期才提示，不拖慢日常调用
@@ -30,6 +33,11 @@ program
   .name('studio-cli')
   .description('studio 中台出图 CLI —— login 登录后即可命令行出图、逆向、图生图')
   .version(pkg.version)
+  // templates 有子命令 create，且父子都用了 --category（一个是列表过滤，一个是新建模板的分类）。
+  // commander 默认不区分参数出现在父命令还是子命令段，会把 --category 的值吞给父命令、
+  // 子命令读到 undefined（已用 templates create 实测复现）。开这个选项后，参数按位置归属
+  // 所在的命令段解析，同名 flag 在父子命令里就不会互相打架。
+  .enablePositionalOptions()
 
 // 工厂：加载配置 + 构造 client，把 commander 透传的参数转给命令
 function withClient<T extends (...args: any[]) => Promise<any>>(fn: T) {
@@ -44,6 +52,29 @@ function withClient<T extends (...args: any[]) => Promise<any>>(fn: T) {
       // 里的 opts 变成 undefined，读 opts.prompt 直接崩。这里显式取出 options，
       // 拼在 positional 之后转发，对没声明 options 的命令（reverse/upload/models
       // 等）只是多传一个不会被用到的参数，无影响。
+      const opts = args[args.length - 2]
+      const positional = args.slice(0, -2)
+      await fn(client, ...positional, opts)
+    } catch (e) {
+      process.stderr.write(`❌ ${(e as Error).message}\n`)
+      process.exit(1)
+    }
+  }
+}
+
+// products / assets 查的是租户自己后台的数据，不是 Studio 中台的，走独立的 TenantClient
+// （见 tenant-client.ts 顶部注释），只支持租户 apiKey 身份，不支持个人 login token。
+function withTenantClient<T extends (...args: any[]) => Promise<any>>(fn: T) {
+  return async (...args: any[]) => {
+    try {
+      const cfg = loadConfig()
+      if (!cfg.apiKey) {
+        throw new Error(
+          'products / assets 只支持租户 apiKey 身份：studio-cli config --apiKey sk-studio-<租户名>-xxx\n' +
+          '（个人 login 拿到的是个人 token，查不了组织级的产品/素材数据）',
+        )
+      }
+      const client = new TenantClient({ apiKey: cfg.apiKey, tenantBaseUrl: cfg.tenantBaseUrl })
       const opts = args[args.length - 2]
       const positional = args.slice(0, -2)
       await fn(client, ...positional, opts)
@@ -91,11 +122,37 @@ program
   .option('--genre <name>', '按分类过滤，如 电商 / 人像写真')
   .action(withClient((client: StudioClient, opts: any) => skills(client, opts)))
 
-program
+const templatesCmd = program
   .command('templates')
   .description('查可用图片模板：自己租户建的 + 平台共享的（跟技能是两套不同的机制，见 gen --template）')
   .option('--category <name>', '按分类过滤，如 电商白底图 / 演唱会')
   .action(withClient((client: StudioClient, opts: any) => templates(client, opts)))
+
+templatesCmd
+  .command('create')
+  .description(
+    '新建图片模板——归属由账号身份自动决定：租户 apiKey 建的自动归该租户（其他租户看不到），' +
+      '平台管理员账号建的是平台共享模板（所有租户可见），个人账号不能建',
+  )
+  .requiredOption('--name <zh_name>', '模板中文名')
+  .requiredOption('--prompt <template>', '提示词模板，占位符用 {key} 形式，如 "{artist} 在 {city} 的演唱会海报"')
+  .option('--category <name>', '分类，默认「其他」')
+  .option('--ratio <ratio>', '宽高比，默认 3:4')
+  .option('--description <text>', '模板说明')
+  .option('--model <name>', '生成模型，默认 gpt-image-2')
+  .option('--quality <level>', '质量: low / medium / high')
+  .option('--fields <json>', '占位符字段说明，JSON 数组，如 \'[{"key":"artist","label":"艺人名"}]\'；不传则自动从 --prompt 里的 {key} 提取')
+  .action(withClient((client: StudioClient, opts: any) => createTemplate(client, opts)))
+
+program
+  .command('products')
+  .description('查所属租户自己的产品目录（数据在租户自己的后台，不在 Studio 中台；只支持已开通该接口的租户，仅租户 apiKey 身份可用）')
+  .action(withTenantClient((client: TenantClient) => products(client)))
+
+program
+  .command('assets')
+  .description('查所属租户自己的素材/资产库（数据在租户自己的后台，不在 Studio 中台；只支持已开通该接口的租户，仅租户 apiKey 身份可用）')
+  .action(withTenantClient((client: TenantClient) => assets(client)))
 
 program
   .command('balance')
@@ -119,11 +176,17 @@ program
   .description('配置中台地址和 apiKey（存到 ~/.studio-cli.json）')
   .option('--baseUrl <url>', '中台地址，默认 https://studio.webkubor.online')
   .option('--apiKey <key>', 'apiKey（sk-studio-xxx）')
+  .option('--tenantBaseUrl <url>', '租户自己后台的域名，供 products/assets 命令用；已知租户（hym/mzmeso）不配也能跑')
   .action((opts) => {
-    if (!opts.baseUrl && !opts.apiKey) {
+    if (!opts.baseUrl && !opts.apiKey && !opts.tenantBaseUrl) {
       try {
         const cfg = loadConfig()
-        process.stderr.write(`当前配置 (~/.studio-cli.json):\n  baseUrl: ${cfg.baseUrl}\n  apiKey: ${cfg.apiKey ? cfg.apiKey.slice(0, 16) + '...' : '(未设置)'}\n`)
+        process.stderr.write(
+          `当前配置 (~/.studio-cli.json):\n` +
+          `  baseUrl: ${cfg.baseUrl}\n` +
+          `  apiKey: ${cfg.apiKey ? cfg.apiKey.slice(0, 16) + '...' : '(未设置)'}\n` +
+          `  tenantBaseUrl: ${cfg.tenantBaseUrl || '(未设置，products/assets 对已知租户用内置默认值)'}\n`,
+        )
       } catch (e) {
         process.stderr.write(`${(e as Error).message}\n`)
       }
@@ -131,7 +194,12 @@ program
       return
     }
     const cfg = saveConfig(opts)
-    process.stderr.write(`✅ 已保存到 ~/.studio-cli.json\n  baseUrl: ${cfg.baseUrl}\n  apiKey: ${cfg.apiKey ? cfg.apiKey.slice(0, 16) + '...' : '(未设置)'}\n`)
+    process.stderr.write(
+      `✅ 已保存到 ~/.studio-cli.json\n` +
+      `  baseUrl: ${cfg.baseUrl}\n` +
+      `  apiKey: ${cfg.apiKey ? cfg.apiKey.slice(0, 16) + '...' : '(未设置)'}\n` +
+      `  tenantBaseUrl: ${cfg.tenantBaseUrl || '(未设置)'}\n`,
+    )
   })
 
 program

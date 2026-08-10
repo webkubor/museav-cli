@@ -1,6 +1,6 @@
 {
   "name": "@kubor/studio-cli",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "studio 中台出图 CLI —— 命令行调中台 API 出图、逆向、图生图",
   "type": "module",
   "bin": {

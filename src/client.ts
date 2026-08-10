@@ -68,6 +68,25 @@ export interface TemplateOption {
   }>
 }
 
+/**
+ * 新建模板入参（POST /api/templates）。不传 tenant_id —— 归属完全由服务端根据
+ * 调用者身份决定：租户 apiKey 自动打自己的 tenant_id，平台管理员 JWT 建的是
+ * tenant_id=null 的平台共享模板，个人账号（无租户、非管理员）会被服务端拒绝（401）。
+ */
+export interface CreateTemplateInput {
+  zh_name: string
+  category?: string
+  description?: string
+  ratio?: string
+  generation_configs: Array<{
+    model: string
+    prompt_template: string
+    quality?: string
+    params_json?: { fields?: Array<{ key: string; label: string }> }
+    is_default?: boolean
+  }>
+}
+
 /** 技能清单项（GET /api/skills） */
 export interface SkillOption {
   slug: string
@@ -177,6 +196,16 @@ export class StudioClient {
   async templates(): Promise<TemplateOption[]> {
     const r = await this.request('templates')
     return Array.isArray(r) ? r : []
+  }
+
+  /** 新建图片模板。归属（是否关联租户）由服务端根据鉴权身份决定，见 CreateTemplateInput 注释 */
+  async createTemplate(input: CreateTemplateInput): Promise<TemplateOption> {
+    const r = await this.request('templates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    })
+    return r.row
   }
 
   /** 提交出图任务，立即返回 jobId */

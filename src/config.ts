@@ -24,6 +24,14 @@ export interface StudioConfig {
   token?: string
   /** 租户 apikey（sk-studio-xxx），B 端场景 */
   apiKey?: string
+  /**
+   * 租户自己后台的域名（如 https://hym-admin.webkubor.online）。
+   * 只给 `products` / `assets` 两个命令用——那两个命令查的是租户自己的产品/素材数据，
+   * 数据物理上不在 Studio 中台，而在租户自己的数据库，所以要单独一个 base url。
+   * 已知租户（hym / mzmeso）不配也能跑（TenantClient 内置了默认值），
+   * 其他租户或本地联调时才需要显式配置。
+   */
+  tenantBaseUrl?: string
 }
 
 /**
@@ -50,6 +58,7 @@ export function saveConfig(patch: Partial<StudioConfig>): StudioConfig {
     baseUrl: patch.baseUrl || current.baseUrl || DEFAULT_BASE_URL,
     token: 'token' in patch ? patch.token : current.token,
     apiKey: 'apiKey' in patch ? patch.apiKey : current.apiKey,
+    tenantBaseUrl: 'tenantBaseUrl' in patch ? patch.tenantBaseUrl : current.tenantBaseUrl,
   }
   writeFileSync(CONFIG_PATH, JSON.stringify(next, null, 2) + '\n', { mode: 0o600 })
   // mode 只在文件新建时生效；已存在的旧配置文件（可能是更早版本用默认权限创建的）显式收紧一次
@@ -70,14 +79,17 @@ export function clearToken(): StudioConfig {
 export function loadConfig(): StudioConfig {
   const file = readFileConfig()
   const baseUrl = process.env.STUDIO_BASE_URL || file.baseUrl || DEFAULT_BASE_URL
+  // tenantBaseUrl 只来自配置文件（没有对应的环境变量），跟 token/apiKey 的取舍无关，
+  // 统一透出去，用不用由调用方（目前只有 products/assets 两个命令）决定
+  const tenantBaseUrl = file.tenantBaseUrl
 
   // 环境变量 apiKey 优先（CI/agent 场景）
   const envApiKey = process.env.STUDIO_API_KEY
-  if (envApiKey) return { baseUrl, apiKey: envApiKey }
+  if (envApiKey) return { baseUrl, apiKey: envApiKey, tenantBaseUrl }
 
   // 文件里的 token（个人用户 login）优先于 apiKey
-  if (file.token) return { baseUrl, token: file.token }
-  if (file.apiKey) return { baseUrl, apiKey: file.apiKey }
+  if (file.token) return { baseUrl, token: file.token, tenantBaseUrl }
+  if (file.apiKey) return { baseUrl, apiKey: file.apiKey, tenantBaseUrl }
 
   throw new Error(
     `未登录。请运行：studio-cli login\n` +

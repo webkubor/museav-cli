@@ -25,6 +25,13 @@ studio-cli gen --prompt 'a poster, neon lights, cyberpunk' --ratio 9:16
 studio-cli templates
 studio-cli gen --template <id> --fields '{"artist":"name","city":"place"}'
 
+# Create a new image template (tenant-apiKey or platform-admin identity only; a personal
+# login gets rejected server-side). Ownership is NOT a flag you pass — the server derives it
+# from who's calling: a tenant apiKey auto-attaches its own tenant_id (private to that tenant),
+# a platform-admin identity creates a tenant_id=null template shared across all tenants.
+# Placeholder keys are auto-extracted from {key} in --prompt if --fields is omitted.
+studio-cli templates create --name '演唱会海报' --prompt '{artist} 在 {city} 的演唱会海报' --ratio 9:16
+
 # Reverse-engineer a prompt from an existing image (stdout: English prompt only)
 studio-cli reverse ./photo.png
 
@@ -33,6 +40,16 @@ studio-cli gen --prompt "$(studio-cli reverse ./photo.png)"
 
 # List your own (or, if using a tenant apiKey, your tenant's) recent jobs as JSON
 studio-cli jobs --limit 10 --status failed
+
+# Tenant-apiKey-only: list the tenant's OWN product catalog / asset library.
+# This data does NOT live on the studio platform — it lives on the tenant's own
+# backend (a different domain), which this CLI calls directly using the same apiKey.
+# Not every tenant has both (or either) endpoint; a 404/401-ish error here means
+# that tenant hasn't opened it up, not a bug. Use this to pick a reference image,
+# then feed its URL into `gen --template <id> --ref <url>` for "pick a product photo
+# + a template" combo generation.
+studio-cli products
+studio-cli assets
 
 # Check who you're logged in as and whether the account is affiliated with a tenant
 # (personal login only — apiKey callers get an error, they're already acting as the tenant)

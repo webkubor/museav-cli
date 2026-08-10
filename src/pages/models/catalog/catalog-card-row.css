@@ -99,7 +99,9 @@
 .mg-side-group { padding: 4px 0; border-bottom: 1px solid var(--mg-border); }
 .mg-side-group:last-child { border-bottom: none; }
 .mg-side-head {
-  display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 2px;
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 2px;
+  /* 行高对齐 tokens 紧凑控件档（设计 2026-08-10 拍板 32/40/48；fallback 供包升级到 0.6.5 前使用） */
+  min-height: var(--mg-control-height-sm, 32px);
   font-size: 13px; font-weight: 700; color: var(--mg-text-1); cursor: pointer;
 }
 .mg-side-head > svg:first-child { color: var(--brand-base); }
@@ -108,6 +110,7 @@
 /* 2026-08 视觉改版稿：行改胶囊（radius-full），高度收矮一档 */
 .mg-side-row {
   display: flex; align-items: center; gap: 8px; width: 100%; padding: 5px 12px;
+  min-height: var(--mg-control-height-sm, 32px);
   border-radius: var(--radius-full); font-size: 13px; font-weight: 500; color: var(--mg-text-2);
   text-align: left; cursor: pointer; transition: background 0.15s ease, color 0.15s ease;
 }

@@ -74,7 +74,7 @@
   width: 34px;
   height: 34px;
   border: 1px solid color-mix(in srgb, var(--brand-base) 18%, var(--mg-border));
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--brand-selected-bg);
   padding: 8px;
   color: var(--brand-base);

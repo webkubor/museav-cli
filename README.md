@@ -134,7 +134,7 @@ apikey（`sk-studio-<name>-<hex>`）从中台「租户管理」获取，适合�
 # 基本出图
 studio-cli gen --prompt '一只在月球上的猫'
 
-# 宽高比（默认 3:4）
+# 宽高比（不指定则纯 prompt 模式兜底 3:4；--skill/--template 模式默认用技能/模板自己的比例）
 studio-cli gen --prompt '海报' --ratio 9:16    # 可选: 3:4 / 9:16 / 1:1 / 4:3 / 16:9
 
 # 指定模型（不指定则中台自动选最优）
@@ -150,6 +150,26 @@ studio-cli gen --prompt '保持面容，换成西装' --ref face.png
 URL=$(studio-cli gen --prompt '海报')
 curl -o poster.png "$URL"
 ```
+
+### 用图片模板出图 `gen --template`
+
+图片模板是提前配置好的提示词模板（可能带占位符），跟 `--skill` 是同一种"黑盒展开"哲学——
+提示词正文在服务端展开、不下发——区别是模板走**确定性字符串替换**，不经 chat 模型，没有 chat 成本；
+`--skill` 是让模型根据一句业务描述自由发挥。
+
+```bash
+# 先查有哪些模板（自己租户建的 + 平台共享的）
+studio-cli templates
+studio-cli templates --category 电商白底图    # 按分类过滤
+
+# 没有占位符的模板，直接用
+studio-cli gen --template <模板id>
+
+# 带占位符的模板，用 --fields 传 JSON 补齐
+studio-cli gen --template <模板id> --fields '{"artist":"王嘉尔","city":"南京"}'
+```
+
+`templates` 命令的输出里，模板名后面跟着的"字段:xxx"就是需要传给 `--fields` 的 key。
 
 ### 图片逆向 `reverse`
 
@@ -233,6 +253,7 @@ console.log(r.sculpt.light)  // 光影分析
 | `logout` | 退出登录 | — |
 | `whoami` | 查当前账户 + 租户归属（仅个人 login） | JSON |
 | `gen` | 出图 | 图片 URL |
+| `templates` | 查可用图片模板（配合 `gen --template`） | JSON |
 | `reverse <file\|url>` | 图片逆向 | 英文 prompt |
 | `upload <file>` | 上传垫图 | 图片 URL |
 | `models` | 可用模型 | 模型名列表 |

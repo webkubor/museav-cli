@@ -27,20 +27,45 @@ const CLIENT_ID = (() => {
 })()
 
 export interface GenerateOptions {
-  /** 自己写完整提示词。与 skill_slug 二选一 */
+  /** 自己写完整提示词。与 skill_slug / template_id 三选一 */
   prompt?: string
   /**
    * 用中台技能出图（技能黑盒）：提示词正文在服务端展开，不下发。
    * 查找顺序：自己的私有技能 → 所属租户的专属模板 → 公共技能库。
-   * 与 prompt 二选一；两个都不给会被服务端拒绝。
+   * 与 prompt / template_id 三选一。
    */
   skill_slug?: string
   /** 配合 skill_slug 的一句业务描述，如「米白色针织衫」。不给则按技能规范自由发挥 */
   input?: string
+  /**
+   * 用图片模板出图（模板黑盒）：提示词模板在服务端展开，确定性字符串替换，不经模型、
+   * 不产生 chat 成本。模板清单用 studio-cli templates 查。与 prompt / skill_slug 三选一。
+   */
+  template_id?: string
+  /** 配合 template_id 的占位符取值，如 {artist:'王嘉尔', city:'南京'}；模板没有占位符则不用传 */
+  template_fields?: Record<string, string>
   ratio?: string
   model?: string
   reference_image?: string
   quality?: 'low' | 'medium' | 'high'
+}
+
+/** 图片模板清单项（GET /api/templates） */
+export interface TemplateOption {
+  id: string
+  category: string
+  zh_name: string
+  description?: string
+  ratio: string
+  /** 归属：自己租户建的 vs 平台共享的（tenant_id 为空） */
+  tenant_id: string | null
+  generation_configs: Array<{
+    model: string
+    prompt_template: string
+    ref_slots?: string[]
+    params_json?: { fields?: Array<{ key: string; label: string; placeholder?: string }> }
+    is_default?: boolean
+  }>
 }
 
 /** 技能清单项（GET /api/skills） */
@@ -148,14 +173,24 @@ export class StudioClient {
     return Array.isArray(r) ? r : []
   }
 
+  /** 可用图片模板清单：自己租户建的 + 平台共享的，服务端已按调用者权限过滤 */
+  async templates(): Promise<TemplateOption[]> {
+    const r = await this.request('templates')
+    return Array.isArray(r) ? r : []
+  }
+
   /** 提交出图任务，立即返回 jobId */
   async generate(opts: GenerateOptions): Promise<{ jobId: string; trace_id?: string }> {
-    // prompt 与 skill_slug 互斥：都传时服务端以 prompt 为准（不展开技能），
-    // 这里不替服务端做决定，只保证不凭空造字段
+    // prompt / skill_slug / template_id 三选一：都传时服务端按 prompt > template_id > skill_slug
+    // 的优先级取（见服务端 generate.js），这里不替服务端做决定，只保证不凭空造字段
     const body: Record<string, unknown> = {}
     if (opts.prompt) body.prompt = opts.prompt
     if (opts.skill_slug) body.skill_slug = opts.skill_slug
+    if (opts.template_id) body.template_id = opts.template_id
+    // input 是服务端黑盒展开的入参：skill_slug 配一句话描述，template_id 配占位符取值对象，
+    // 两者都写进同一个 input 字段（服务端按类型分支处理），CLI 侧分开成两个选项只是好懂
     if (opts.input) body.input = opts.input
+    else if (opts.template_fields) body.input = opts.template_fields
     if (opts.ratio) body.ratio = opts.ratio
     if (opts.model) body.model = opts.model
     if (opts.reference_image) body.reference_image = opts.reference_image

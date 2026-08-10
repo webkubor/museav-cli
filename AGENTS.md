@@ -19,6 +19,12 @@ Don't try both — whichever credential is present is what gets used (env var `S
 # Generate an image, wait for it, get the URL on stdout
 studio-cli gen --prompt 'a poster, neon lights, cyberpunk' --ratio 9:16
 
+# Generate from a pre-configured image template instead of a raw prompt (deterministic
+# placeholder substitution server-side, no chat cost). List available templates first —
+# the output shows which placeholder keys (if any) each template needs.
+studio-cli templates
+studio-cli gen --template <id> --fields '{"artist":"name","city":"place"}'
+
 # Reverse-engineer a prompt from an existing image (stdout: English prompt only)
 studio-cli reverse ./photo.png
 

@@ -15,6 +15,7 @@ import { reverse } from './commands/reverse.js'
 import { upload } from './commands/upload.js'
 import { models } from './commands/models.js'
 import { skills } from './commands/skills.js'
+import { templates } from './commands/templates.js'
 import { balance } from './commands/balance.js'
 import { jobs } from './commands/jobs.js'
 import { whoami } from './commands/whoami.js'
@@ -56,10 +57,14 @@ function withClient<T extends (...args: any[]) => Promise<any>>(fn: T) {
 program
   .command('gen')
   .description('出图（提交 + 自动轮询，成功输出图片 URL）')
-  .option('-p, --prompt <text>', '完整出图提示词（与 --skill 二选一）')
-  .option('-s, --skill <slug>', '用中台技能出图，提示词在服务端展开（与 --prompt 二选一）；清单见 studio-cli skills')
+  .option('-p, --prompt <text>', '完整出图提示词（与 --skill / --template 三选一）')
+  .option('-s, --skill <slug>', '用中台技能出图，提示词在服务端展开（与 --prompt / --template 三选一）；清单见 studio-cli skills')
   .option('-i, --input <text>', '配合 --skill 的一句业务描述，如「米白色针织衫」；不给则按技能规范自由发挥')
-  .option('-r, --ratio <ratio>', '宽高比: 3:4 / 9:16 / 1:1 / 4:3 / 16:9', '3:4')
+  .option('-t, --template <id>', '用图片模板出图，提示词在服务端展开（与 --prompt / --skill 三选一）；清单见 studio-cli templates')
+  .option('--fields <json>', '配合 --template 的占位符取值，JSON 对象，如 \'{"artist":"王嘉尔"}\'；模板没有占位符则不用传')
+  // 不设默认值：--skill / --template 场景下要让技能/模板自己的比例生效，
+  // CLI 强填默认值会把它们覆盖掉（服务端在纯 --prompt 场景已有 3:4 兜底，这里不用重复兜底）
+  .option('-r, --ratio <ratio>', '宽高比: 3:4 / 9:16 / 1:1 / 4:3 / 16:9（不指定则用技能/模板自己的比例，纯 prompt 模式兜底 3:4）')
   .option('-m, --model <name>', '指定模型，如 gpt-image-2')
   .option('-q, --quality <level>', '质量: low / medium / high（仅 gpt-image）')
   .option('--ref <file>', '垫图文件路径（图生图，自动上传）')
@@ -85,6 +90,12 @@ program
   .description('查可用技能：自己的私有技能 + 所属租户专属模板 + 公共技能库')
   .option('--genre <name>', '按分类过滤，如 电商 / 人像写真')
   .action(withClient((client: StudioClient, opts: any) => skills(client, opts)))
+
+program
+  .command('templates')
+  .description('查可用图片模板：自己租户建的 + 平台共享的（跟技能是两套不同的机制，见 gen --template）')
+  .option('--category <name>', '按分类过滤，如 电商白底图 / 演唱会')
+  .action(withClient((client: StudioClient, opts: any) => templates(client, opts)))
 
 program
   .command('balance')

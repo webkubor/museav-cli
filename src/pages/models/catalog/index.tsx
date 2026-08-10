@@ -302,7 +302,7 @@ export default function ModelsCatalogPage() {
         type="button"
         onClick={() => { const n = !filtersOpen; if (n) window.scrollTo(0, 0); setFiltersOpen(n) }}
         aria-expanded={filtersOpen}
-        className={`bg-mg-bg-0 fixed bottom-6 right-5 z-40 inline-flex h-11 items-center gap-2 rounded-full border px-6 text-[14px] font-medium shadow-lg backdrop-blur lg:hidden ${
+        className={`bg-mg-bg-2 fixed bottom-6 right-5 z-40 inline-flex h-11 items-center gap-2 rounded-full border px-6 text-[14px] font-medium shadow-lg backdrop-blur lg:hidden ${
           filtersOpen ? 'border-brand-base text-brand-base' : 'border-mg-border text-mg-text-2'
         }`}
       >

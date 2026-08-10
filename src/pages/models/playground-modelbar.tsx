@@ -91,10 +91,11 @@ export function PlaygroundModelBar({
           <LuSettings2 size={14} />
         </button>
         {/* qa#543：对比入口不再限对话类——PRD §6.2/§7.3 要求图像/音频/视频也能进入对比 */}
+        {/* 视觉改版（Figma「模型体验」稿）：对比入口为反白胶囊按钮，浮在渐变卡上 */}
         <Button
           variant="outline"
           size="sm"
-          className="rounded-md"
+          className="rounded-full bg-mg-bg-0"
           onClick={onCompare}
         >
           <LuColumns2 size={13} /> {t('modelsExperience.modelCompare')}

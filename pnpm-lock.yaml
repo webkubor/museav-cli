@@ -44,6 +44,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.100.14
         version: 5.100.14(react@19.2.6)
+      ai-sse-kit:
+        specifier: ^0.1.0
+        version: 0.1.0(react@19.2.6)
       canvas-confetti:
         specifier: ^1.9.4
         version: 1.9.4
@@ -2937,6 +2940,18 @@ packages:
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  ai-sse-kit@0.1.0:
+    resolution: {integrity: sha512-14im9xDU8vn0NuhZRGNqnLLdgqIsiaPP0DpzmM7FQhc9bfPTObWeyqgmAnhgEItIAz9uxIZXWaX1Hr+4MJBpGw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      react: '>=18'
+      vue: '>=3'
+    peerDependenciesMeta:
+      react:
+        optional: true
+      vue:
+        optional: true
 
   ajv@6.15.0:
     resolution: {integrity: sha512-fgFx7Hfoq60ytK2c7DhnF8jIvzYgOMxfugjLOSMHjLIPgenqa7S7oaagATUq99mV6IYvN2tRmC0wnTYX6iPbMw==}
@@ -9206,6 +9221,10 @@ snapshots:
       resize-observer-polyfill: 1.5.1
       screenfull: 5.2.0
       tslib: 2.8.1
+
+  ai-sse-kit@0.1.0(react@19.2.6):
+    optionalDependencies:
+      react: 19.2.6
 
   ajv@6.15.0:
     dependencies:

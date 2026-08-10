@@ -267,7 +267,7 @@ export function TagInput({
         <div
           ref={dropdownRef}
           style={{ position: 'fixed', left: menuPos.left, top: menuPos.top, width: menuPos.width, zIndex: 10000, pointerEvents: 'auto' }}
-          className="max-h-[240px] overflow-y-auto rounded-lg border border-mg-border bg-card-bg shadow-lg py-1"
+          className="max-h-[240px] overflow-y-auto rounded-lg border border-mg-border bg-mg-bg-2 shadow-lg py-1"
         >
           {filtered.map((item, idx) => (
             <button

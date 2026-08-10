@@ -284,3 +284,73 @@
     width: auto;
   }
 }
+
+/* ── 模型体验视觉改版（Figma「模型体验」稿 2026-08）─────────────────────
+   展开侧栏：实底白卡+更大圆角；会话条目自带浅灰底卡片化（原透明+hover 才显形）；
+   模型 chip 反白描边。 */
+.history-sidebar-panel {
+  padding: 12px;
+  gap: 12px;
+  border-radius: var(--radius-sm);
+  border-color: var(--mg-glass-line);
+  /* 与导航/对话工作台同一档玻璃面（--mg-bg-0）——深色/海外象限下三者才是一个颜色；
+     浅色稿子里面板是纯白、卡是白 70%，差异肉眼可忽略，一致性优先（boss 2026-08-10 点名） */
+  background: var(--mg-bg-0);
+}
+
+.history-sidebar-item {
+  background: var(--mg-fill-0);
+}
+
+.history-sidebar-item:hover {
+  background: var(--mg-fill-1);
+}
+
+.history-sidebar-model-chip {
+  background: var(--mg-surface-3);
+  border: 1px solid var(--mg-border);
+}
+
+/* 展开/收起过渡：收起态 rail 与展开态 panel 是两棵互换的 DOM，原有的
+   transition: width 挂不上（元素每次都是新挂载）。改用挂载动画——两边都从
+   对方的宽度过渡进来，让主区域的回流也跟着滑动而不是跳变。 */
+.history-sidebar-panel {
+  animation: history-sidebar-panel-in 0.22s ease;
+}
+
+.history-sidebar-rail .history-sidebar-rail-group {
+  animation: history-sidebar-rail-in 0.18s ease;
+}
+
+@keyframes history-sidebar-panel-in {
+  from { width: 44px; opacity: 0.35; }
+  to { width: 248px; opacity: 1; }
+}
+
+@keyframes history-sidebar-rail-in {
+  from { opacity: 0; transform: translateX(-6px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .history-sidebar-panel,
+  .history-sidebar-rail .history-sidebar-rail-group {
+    animation: none;
+  }
+}
+
+/* 窄屏展开态是 fixed 全屏卡（width: auto），宽度关键帧会跟它打架，禁用 */
+@media (max-width: 768px) {
+  .history-sidebar-panel {
+    animation: none;
+  }
+}
+
+/* 模型 chip 超长省略：chip 是 inline-flex，text-overflow 对裸文本节点无效，
+   名称需包一层内联块（JSX 已配合包 span），完整名走 title 悬浮提示 */
+.history-sidebar-model-chip-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

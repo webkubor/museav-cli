@@ -35,7 +35,7 @@ function InfoTip({ text, label }: { text: string; label: string }) {
       </button>
       <span
         role="tooltip"
-        className="pointer-events-none absolute left-0 top-6 z-20 w-[220px] rounded-md border border-mg-border bg-mg-bg-0 p-3 text-left font-normal normal-case tracking-normal opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+        className="pointer-events-none absolute left-0 top-6 z-20 w-[220px] rounded-md border border-mg-border bg-mg-bg-3 p-3 text-left font-normal normal-case tracking-normal opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
       >
         <span className="block text-[11px] font-medium leading-snug text-mg-text-3">{text}</span>
       </span>

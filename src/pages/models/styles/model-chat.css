@@ -475,3 +475,26 @@
 .models-experience-audio-result .models-experience-media-audio {
   width: 100%;
 }
+
+/* ── 模型体验视觉改版（Figma「模型体验」稿 2026-08）─────────────────────
+   气泡（单模型页/对比页共用）：助手=白卡+极淡品牌描边+柔和投影、正文加深到 text-1；
+   用户=淡品牌底+品牌描边（稿内 #EDF5FF 系，用 brand token color-mix 表达）。 */
+.models-experience-message-bubble {
+  border-color: color-mix(in srgb, var(--brand-base) 8%, transparent);
+  background: var(--mg-surface-3);
+  color: var(--mg-text-1);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+/* 用户气泡（稿内取色）：brand 10% 底 + brand 实色描边 + 10px 圆角（走 8px 刻度） */
+.models-experience-message.is-user .models-experience-message-bubble {
+  border-color: var(--brand-base);
+  background: color-mix(in srgb, var(--brand-base) 10%, var(--mg-surface-3));
+  box-shadow: none;
+}
+
+/* 单模型页顶栏：模型选择器浮在渐变卡上，不再需要底部分割线（对比页列头保留） */
+.models-experience-chat.is-single .models-experience-modelbar {
+  border-bottom: none;
+  padding: 14px 16px 6px;
+}

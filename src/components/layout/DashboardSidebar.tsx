@@ -219,7 +219,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         onClick={() => setCollapsed(!collapsed)}
         title={collapsed ? t('common.expand') : t('common.collapse')}
         className={cn(
-          "absolute right-[-9px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-mg-bg-0 border border-mg-border hover:border-brand-mid text-mg-text-3 hover:text-brand-base flex items-center justify-center cursor-pointer transition-all duration-300 z-50 shadow-sm active:scale-90",
+          "absolute right-[-9px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-mg-bg-2 border border-mg-border hover:border-brand-mid text-mg-text-3 hover:text-brand-base flex items-center justify-center cursor-pointer transition-all duration-300 z-50 shadow-sm active:scale-90",
           hovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-[-4px] pointer-events-none"
         )}
       >

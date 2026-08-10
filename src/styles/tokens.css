@@ -103,9 +103,10 @@
   --mg-panel-padding-xl: var(--mg-space-6);
   --mg-panel-padding: var(--mg-panel-padding-md);
 
-  /* 账号浮层：只定义语义，不跨主题写死色值 */
-  --account-menu-bg: var(--mg-bg-0);
-  --account-menu-bg-2: var(--mg-bg-2);
+  /* 账号浮层：只定义语义，不跨主题写死色值。
+     浮层必须实底 —— --mg-bg-0 已并入玻璃（半透明），改用悬浮层 --mg-bg-2 / 顶层 --mg-bg-3（#529） */
+  --account-menu-bg: var(--mg-bg-2);
+  --account-menu-bg-2: var(--mg-bg-3);
   --account-menu-panel: var(--mg-fill-0);
   --account-menu-panel-strong: var(--mg-fill-1);
   --account-menu-border: var(--mg-border);

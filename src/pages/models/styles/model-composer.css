@@ -275,3 +275,34 @@
   font-size: 12px;
   text-align: center;
 }
+
+/* ── 模型体验视觉改版（Figma「模型体验」稿 2026-08）─────────────────────
+   输入卡从「彩虹流光边框」换成安静的白卡+静态描边；聚焦态品牌描边+柔光。
+   .composer-rainbow-flow 的底座样式全带 !important，这里同元素双类平权覆盖。 */
+.models-experience-composer-wrap.composer-rainbow-flow {
+  animation: none !important;
+  background-image: none !important;
+  background-color: var(--mg-surface-3) !important;
+  border: 1px solid var(--mg-border) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06) !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.models-experience-composer-wrap.composer-rainbow-flow:focus-within {
+  border-color: color-mix(in srgb, var(--brand-base) 55%, transparent) !important;
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--brand-base) 12%, transparent) !important;
+}
+
+/* 操作行贴合设计稿：费用提示与发送按钮直接坐在卡内，不要内部分割线 */
+.models-experience-composer-wrap > div.border-t {
+  border-top-color: transparent;
+  padding-top: 0;
+}
+
+/* 发送/停止按钮胶囊化（稿内「发送 ➤」为全圆角胶囊）。
+   ⚠️ 只圈按钮——Textarea 组件自身也带 .rounded-lg，裸选 .rounded-lg 会把整个
+   输入区拉成 9999px 圆角，左上圆弧直接切掉首字（2026-08-10 视觉验收踩过）。 */
+.models-experience-composer-wrap button.rounded-lg {
+  border-radius: var(--radius-full) !important;
+}

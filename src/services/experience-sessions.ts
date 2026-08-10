@@ -7,7 +7,7 @@
  */
 import { apiBaseUrl, get, post, patch, put, del, upload } from '@/lib/request'
 import { injectHeaders } from '@/lib/request-headers'
-import { streamSSE } from '@/lib/stream-chat'
+import { streamSSE } from 'ai-sse-kit'
 
 export type ExperienceCategory = 'dialogue' | 'image' | 'audio' | 'video'
 

@@ -3,12 +3,12 @@
  * POST /api/v1/experience/chat/completions — session+CSRF 鉴权的网关反代，
  * 返回原始 OpenAI chat.completion.chunk SSE 流。额度走 grant→cash 多桶链路。
  *
- * 流式分帧/解析复用 lib/stream-chat 的 createOpenAIStream；本文件只保留
+ * 流式分帧/解析复用 npm 包 ai-sse-kit 的 createOpenAIStream；本文件只保留
  * 鉴权头注入（injectHeaders）和累计文本的业务逻辑。
  */
 import { apiBaseUrl } from '@/lib/request'
 import { injectHeaders } from '@/lib/request-headers'
-import { createOpenAIStream } from '@/lib/stream-chat'
+import { createOpenAIStream } from 'ai-sse-kit'
 
 export interface ExperienceChatMessage {
   role: 'user' | 'assistant'

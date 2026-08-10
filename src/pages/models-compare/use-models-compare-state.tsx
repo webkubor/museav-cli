@@ -42,8 +42,8 @@ import {
 } from '../models/model-experience-data'
 import { resolveExperienceMessageMedia } from '../models/experience-message-attachments'
 import { useExperienceHistorySidebar } from '../models/use-experience-history-sidebar'
-import { useStreamingController } from '@/hooks/use-streaming-controller'
-import { patchLastAssistant } from '@/lib/message-patch'
+import { useStreamingController } from 'ai-sse-kit/react'
+import { patchLastAssistant } from 'ai-sse-kit'
 import { MAX_COMPARE, type ColumnState } from './models-compare-utils'
 import { useCompareAttachments } from './use-compare-attachments'
 

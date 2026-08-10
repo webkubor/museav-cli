@@ -55,9 +55,9 @@ import {
 } from './model-experience-data'
 import { resolveExperienceMessageMedia } from './experience-message-attachments'
 import { useExperienceHistorySidebar } from './use-experience-history-sidebar'
-import { useStreamingController, isAbortError } from '@/hooks/use-streaming-controller'
+import { isAbortError, patchLastAssistant } from 'ai-sse-kit'
+import { useStreamingController } from 'ai-sse-kit/react'
 import { trackModelRun, buildDialogueMetrics, buildMediaMetrics, pollMediaTask } from './experience-run'
-import { patchLastAssistant } from '@/lib/message-patch'
 import {
   INITIAL_MESSAGES,
   RESET_SESSION_STATS,

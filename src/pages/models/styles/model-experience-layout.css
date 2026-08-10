@@ -178,31 +178,38 @@
   font-size: 12px;
 }
 
-/* 空态示例 Prompt 行（PRD §7.2 + 原型 App.tsx:19319-19327 playground-sample-row，仅首次进入时展示） */
-.models-experience-sample-row {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 12px;
-  max-width: 640px;
+/* 空态示例 Prompt（PRD §7.2，视觉改版按 Figma「模型体验」稿）：从空态区内的胶囊行
+   挪到输入框下方的三张横排卡片，仅首次进入（无消息）时展示 */
+.models-experience-sample-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 18px 16px;
 }
 
-.models-experience-sample-row button {
-  padding: 6px 12px;
-  border-radius: var(--radius-full);
+.models-experience-sample-cards button {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--mg-border);
-  background: var(--mg-bg-0);
+  background: var(--mg-surface-3);
   color: var(--mg-text-2);
   font-size: 12px;
   font-weight: 520;
+  line-height: 1.7;
+  text-align: left;
   cursor: pointer;
   transition: border-color 0.15s ease, color 0.15s ease;
 }
 
-.models-experience-sample-row button:hover {
-  border-color: var(--brand-base);
+.models-experience-sample-cards button:hover {
+  border-color: color-mix(in srgb, var(--brand-base) 45%, transparent);
   color: var(--mg-text-1);
+}
+
+@media (max-width: 860px) {
+  .models-experience-sample-cards {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 980px) {
@@ -221,4 +228,94 @@
     align-items: flex-start;
     flex-direction: column;
   }
+}
+
+/* ── 模型体验视觉改版（Figma「模型体验」稿 2026-08，取色实录）──────────
+   层次关系照稿子：整页画布 = 淡蓝渐变（稿内 #EDF5FF→#F4FAFF）；导航与对话
+   工作台都是「白 70% 玻璃面」浮在画布上（稿内 nav/对话卡均为 #FFFFFF 70%）。
+   玻璃面直接用 token（--mg-bg-0 = --mg-glass-surface 即白 70%），画布挂在
+   dashboard 外壳上（:has 按页面生效，深色/海外象限自动走官方四象限画布 token）。 */
+.dashboard-shell:has(.models-experience-page) {
+  background: var(--mg-glass-canvas);
+  background-attachment: fixed;
+}
+
+/* 浅色·国内档按 Figma 稿的更浅停靠点覆写（设计取色 #EDF5FF→#F4FAFF，比官方
+   画布 token 的 #BED4EF→#E7F4FF 更轻）；停靠点定义为局部变量（token 化入口，
+   若后续 design-tokens 增补对应画布档位，改指 var 即可）。 */
+html:not([data-market='global']) body:not([theme-mode='dark']) .dashboard-shell:has(.models-experience-page) {
+  --experience-canvas-from: #edf5ff;
+  --experience-canvas-to: #f4faff;
+  background: linear-gradient(180deg, var(--experience-canvas-from) 0%, var(--experience-canvas-to) 100%);
+  background-attachment: fixed;
+}
+
+/* 对话工作台卡 = 玻璃白面 + 玻璃描边（稿内 #FFFFFF 70% + 边 #E2E7FA + 圆角 10px） */
+.models-experience-chat.is-single {
+  border-radius: var(--radius-sm);
+  border-color: var(--mg-glass-line);
+  background: var(--mg-bg-0);
+}
+
+/* 模型选择器：无边框浅色胶囊容器（价格 chip 反白浮在容器上），hover 提到实底 */
+.models-experience-chat.is-single .models-experience-model-trigger {
+  border: none;
+  background: color-mix(in srgb, var(--mg-bg-0-solid) 55%, transparent);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+}
+
+.models-experience-chat.is-single .models-experience-model-trigger:hover {
+  background: var(--mg-bg-0-solid);
+}
+
+.models-experience-chat.is-single .models-experience-price-chip {
+  background: var(--mg-surface-3);
+  border: 1px solid var(--mg-border);
+}
+
+.models-experience-chat.is-single .models-experience-price-chip.is-offline {
+  background: color-mix(in srgb, var(--mg-warning) 10%, transparent);
+  border-color: transparent;
+  color: var(--mg-warning);
+}
+
+/* 空态：玻璃球引导图 + 更大的标题层级（Figma 空态帧） */
+.models-experience-empty {
+  gap: 8px;
+}
+
+.models-experience-empty strong {
+  font-size: 19px;
+  letter-spacing: -0.01em;
+}
+
+.models-experience-empty span {
+  font-size: 13px;
+  color: var(--mg-text-2);
+}
+
+.models-experience-empty-orb {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 10px;
+  border-radius: var(--radius-full);
+  background:
+    radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 40%),
+    radial-gradient(circle at 70% 80%, color-mix(in srgb, var(--mg-brand-blue) 55%, white), transparent 55%),
+    radial-gradient(circle at 50% 45%, var(--mg-brand-blue), var(--brand-base) 90%);
+  box-shadow:
+    0 14px 28px color-mix(in srgb, var(--brand-base) 28%, transparent),
+    inset 0 -6px 12px rgba(255, 255, 255, 0.28);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .models-experience-empty-orb {
+    animation: models-experience-orb-float 4.5s ease-in-out infinite;
+  }
+}
+
+@keyframes models-experience-orb-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }

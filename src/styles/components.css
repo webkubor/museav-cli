@@ -529,3 +529,16 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
   background-color: var(--mg-bg-0);
   transition: box-shadow 0.3s ease;
 }
+
+/* 顶栏玻璃描边本地覆盖：modelgo-design-tokens 的 .mg-glass-bar[-strong] 深色档
+   --mg-glass-header-edge 两个市场都写死同一个 rgba(255,255,255,0.4)，浅色档反而
+   按市场分别调过色——深色档明显是没认真调过的占位值，纯白 40% 在深色底上是一条
+   刺眼的白线（王恩博反馈）。改动权限在 design-tokens 仓（改 token 值要有设计依据），
+   这里先用本仓已有、各主题都调好的 hairline 边框 token 兜底，不新造颜色。
+   DashboardHeader 是 PublicShell（/models 模型广场）和 DashboardLayout（登录态控制台）
+   共用组件，放在这个全局样式文件（index.css → components.css，两处外壳都加载）而不是
+   只在 DashboardLayout 里 import 的 layout.css，否则模型广场页面覆盖不到（2026-08-08 踩过）。 */
+header.mg-glass-bar,
+header.mg-glass-bar-strong {
+  border-bottom-color: var(--mg-border);
+}

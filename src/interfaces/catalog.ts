@@ -35,6 +35,8 @@ export interface CatalogModelListParams extends QueryParams {
   // ─── 模型广场服务端筛选 ───
   /** 公开协议；双协议模型在任一值下都命中 */
   protocol?: 'openai' | 'anthropic' | 'other'
+  /** 按适配的编程客户端筛选；coding_tools 为空的模型（QA 夹具/内部模型）永不命中（qa#583） */
+  coding_tool?: 'claude-code' | 'codex'
   /** 能力标签，可重复；多个为 AND 语义 */
   capability_tag?: string[]
   /** free = 存在生效的显式限免促销，不是「价格为 0」 */

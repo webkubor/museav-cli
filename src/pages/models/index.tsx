@@ -132,29 +132,12 @@ export default function ModelsPage() {
                 onRetry={retryMediaMessage}
                 assistantModel={selectedModel}
                 emptyState={
+                  /* 视觉改版（Figma「模型体验」稿）：分类小图标换成品牌玻璃球引导图；
+                     示例 Prompt 从空态区挪到输入框下方的卡片行（见 Composer 之后） */
                   <div className="models-experience-empty">
-                    {(() => {
-                      const EmptyIcon = categoryEmptyCopy(effectiveTask).icon
-                      return <EmptyIcon size={20} />
-                    })()}
+                    <span className="models-experience-empty-orb" aria-hidden="true" />
                     <strong>{categoryEmptyCopy(effectiveTask).title}</strong>
                     <span>{categoryEmptyCopy(effectiveTask).hint}</span>
-                    {isDialogue && (
-                      <div className="models-experience-sample-row">
-                        {playgroundSamplePrompts().map((sample) => (
-                          <button
-                            key={sample.label}
-                            type="button"
-                            onClick={() => {
-                              setInput(sample.prompt)
-                              window.setTimeout(() => inputRef.current?.focus(), 80)
-                            }}
-                          >
-                            {sample.prompt}
-                          </button>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 }
               />
@@ -184,6 +167,25 @@ export default function ModelsPage() {
                 onFileChange={(file) => void handleFileSelect(file)}
                 onRemoveAttachment={() => clearAttachment()}
               />
+
+              {/* 空态示例 Prompt 卡片（PRD §7.2 文案不变；位置按 Figma 稿从空态区挪到输入框下方，
+                  仅对话类且尚无消息时展示，点击回填输入框） */}
+              {isDialogue && !isSelectedModelOffline && messages.length === 0 && (
+                <div className="models-experience-sample-cards">
+                  {playgroundSamplePrompts().map((sample) => (
+                    <button
+                      key={sample.label}
+                      type="button"
+                      onClick={() => {
+                        setInput(sample.prompt)
+                        window.setTimeout(() => inputRef.current?.focus(), 80)
+                      }}
+                    >
+                      {sample.prompt}
+                    </button>
+                  ))}
+                </div>
+              )}
             </section>
           </div>
         </div>

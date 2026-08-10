@@ -66,26 +66,27 @@ function ConnectModalContent({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
   const mgcCommand = buildMgcCommand({ apiKey: keyForCmd, region, selected: mgcSelected, all: mgcAll })
 
   // 接入参数要钉真实存在的模型，否则 Claude Code 用官方默认 slug → 网关 403（需求方 #257）。
-  // 按 tab 所需协议分别拉目录：CC Switch / Claude Code 走 anthropic，Codex / SDK / cURL 走 openai。
+  // 按 tab 所需编程客户端分别拉目录：CC Switch / Claude Code = claude-code，Codex / SDK / cURL = codex。
+  // coding_tool 为空的模型（QA 的 FakeLLM 夹具等）永不命中，服务端口径见 qa#583。
   // 仅在弹窗打开时拉取，避免全局 Header 每页都打一次目录请求。
   const anthropicModelsQuery = useQuery({
-    queryKey: ['catalog-models', 'connect-modal', 'anthropic'],
-    queryFn: () => listModels({ protocol: 'anthropic', page_size: 100 }),
+    queryKey: ['catalog-models', 'connect-modal', 'claude-code'],
+    queryFn: () => listModels({ coding_tool: 'claude-code', page_size: 100 }),
     enabled: open,
     staleTime: 5 * 60_000,
   })
   const openaiModelsQuery = useQuery({
-    queryKey: ['catalog-models', 'connect-modal', 'openai'],
-    queryFn: () => listModels({ protocol: 'openai', page_size: 100 }),
+    queryKey: ['catalog-models', 'connect-modal', 'codex'],
+    queryFn: () => listModels({ coding_tool: 'codex', page_size: 100 }),
     enabled: open,
     staleTime: 5 * 60_000,
   })
   const anthropicModelOptions = useMemo(
-    () => buildConnectModelOptions(pageItems(anthropicModelsQuery.data)),
+    () => buildConnectModelOptions(pageItems(anthropicModelsQuery.data), 'claude-code'),
     [anthropicModelsQuery.data]
   )
   const openaiModelOptions = useMemo(
-    () => buildConnectModelOptions(pageItems(openaiModelsQuery.data)),
+    () => buildConnectModelOptions(pageItems(openaiModelsQuery.data), 'codex'),
     [openaiModelsQuery.data]
   )
   // 下拉未选时的默认项：沿用 #257 的挑选规则（旗舰 Claude / 最新 GPT），不是列表第一个

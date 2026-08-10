@@ -23,14 +23,7 @@ import { trackEvent } from '@/lib/track'
 import { useTrackContext } from '@/hooks/use-track-context'
 import { toast } from 'sonner'
 import { ConnectModal } from '@/pages/api-keys/ConnectModal'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/Dialog'
+import { Modal } from '@/components/ui/Modal'
 import {
   buildSyncedNav,
   getTenantAvatarFallback,
@@ -405,24 +398,14 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
       </div>
 
       {/* ─── Dialog 1. 创建新组织 ───────────────── */}
-      <Dialog open={orgModalVisible} onOpenChange={setOrgModalVisible}>
-        <DialogContent className="max-w-[400px] modal-glow-flow">
-          <DialogHeader>
-            <DialogTitle>{t('header.createOrg')}</DialogTitle>
-            <DialogDescription className="sr-only">{t('header.createOrg')}</DialogDescription>
-          </DialogHeader>
-          <div className="py-4 flex flex-col gap-2">
-            <div className="text-xs font-bold text-mg-text-2">
-              {t('header.orgNameLabel')}
-            </div>
-            <Input
-              value={newOrgName}
-              onChange={e => setNewOrgName(e.target.value)}
-              placeholder={t('header.orgNamePlaceholder')}
-              autoFocus
-            />
-          </div>
-          <DialogFooter>
+      <Modal
+        open={orgModalVisible}
+        onClose={() => setOrgModalVisible(false)}
+        size="sm"
+        className="modal-glow-flow"
+        title={t('header.createOrg')}
+        footer={
+          <>
             {/* 顶栏是全局的，文案只能用核心 namespace（common/header 静态导入）。
                 原先借用 apiKeys.createModal.*，而 apiKeys 是路由级懒加载 → 在总览等页面
                 点「创建企业」按钮会显示 raw key（同 #375 根因）。 */}
@@ -432,9 +415,21 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
             <Button variant="brand" loading={createOrgMutation.isPending} onClick={handleCreateOrgSubmit}>
               {t('header.createOrgSubmit')}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      >
+        <div className="py-4 flex flex-col gap-2">
+          <div className="text-xs font-bold text-mg-text-2">
+            {t('header.orgNameLabel')}
+          </div>
+          <Input
+            value={newOrgName}
+            onChange={e => setNewOrgName(e.target.value)}
+            placeholder={t('header.orgNamePlaceholder')}
+            autoFocus
+          />
+        </div>
+      </Modal>
 
       <ConnectModal
         open={connectModalVisible}

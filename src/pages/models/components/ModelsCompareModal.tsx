@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LuSearch, LuX, LuGitCompareArrows, LuFileText, LuImage, LuMic, LuVideo, LuArrowRight } from 'react-icons/lu'
 import type { IconType } from 'react-icons'
+import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -234,16 +236,16 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
   ]
 
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-black/35 backdrop-blur-[12px] animate-in fade-in duration-200 select-none"
+    <Modal
+      open={isOpen}
+      onClose={onClose}
+      closeButton={false}
+      size="lg"
+      className="sm:max-w-[1024px] h-[80vh] max-h-[660px] !p-0"
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="glass-card-glow w-full max-w-5xl h-[80vh] max-h-[660px] rounded-lg flex flex-col overflow-hidden relative shadow-2xl animate-in zoom-in-95 duration-200"
-      >
+      <div className="flex h-full flex-col">
         {/* 顶栏 */}
-        <div className="px-6 py-4 border-b border-mg-border flex items-center justify-between shrink-0 bg-mg-fill-0/20">
+        <div className="px-6 py-4 border-b border-mg-border flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-brand-selected-bg text-brand-base flex items-center justify-center">
               <LuGitCompareArrows size={18} />
@@ -445,15 +447,14 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
               )}
 
               <div className="flex items-center gap-3">
-                <button
-                  onClick={onClose}
-                  className="px-5 py-2 rounded-md text-xs font-semibold bg-mg-fill-0 hover:bg-mg-fill-1 text-mg-text-2 hover:text-mg-text-1 border border-mg-border/30 transition-all cursor-pointer active:scale-95 outline-none"
-                >
+                <Button variant="outline" size="sm" onClick={onClose}>
                   {t('modelsCompare.button.cancel')}
-                </button>
+                </Button>
                 {/* 原型口径 disabled={!sourceAccessible || selectedIds.length === 0}：
                     至少勾 1 个对手才能开始对比；基准模型自身余额不足时也不放行。 */}
-                <button
+                <Button
+                  variant="brand"
+                  size="sm"
                   disabled={confirmDisabled}
                   onClick={() => {
                     // 两种口径并存：模型广场要完整模型组（含基准），模型体验只要本次新增的。
@@ -461,15 +462,14 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
                     onConfirmAdd?.(selectedModels.filter((m) => !lockedIdList.includes(m.id)))
                     onClose()
                   }}
-                  className="px-6 py-2 rounded-md text-xs font-bold bg-brand-base text-white hover:bg-brand-deep shadow-md hover:shadow-brand-glow/15 transition-all cursor-pointer active:scale-95 border-none outline-none disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-brand-base disabled:shadow-none"
                 >
                   {t('modelsCompare.button.confirm')}
-                </button>
+                </Button>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   )
 }

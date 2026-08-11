@@ -298,12 +298,15 @@
   background: var(--mg-bg-0);
 }
 
+/* 会话卡底色与顶栏模型选择器（.models-experience-model-trigger）同值——
+   fill-0 偏蓝偏重，跟稿子对不上；两边统一成更浅的半透明白（boss 2026-08-11 点名），
+   hover 提到实底，也跟选择器 hover 行为一致 */
 .history-sidebar-item {
-  background: var(--mg-fill-0);
+  background: color-mix(in srgb, var(--mg-bg-0-solid) 55%, transparent);
 }
 
 .history-sidebar-item:hover {
-  background: var(--mg-fill-1);
+  background: var(--mg-bg-0-solid);
 }
 
 .history-sidebar-model-chip {
@@ -347,10 +350,52 @@
 }
 
 /* 模型 chip 超长省略：chip 是 inline-flex，text-overflow 对裸文本节点无效，
-   名称需包一层内联块（JSX 已配合包 span），完整名走 title 悬浮提示 */
+   名称需包一层内联块（JSX 已配合包 span）出省略号 */
 .history-sidebar-model-chip-name {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 全称悬浮气泡：原生 title 有秒级延迟且得停在文字上才出，boss 要「移入即显」——
+   照 InfoTip 的纯 CSS hover 气泡模式（opacity 过渡，无 JS）。
+   chip 基础规则的 overflow:hidden 会把气泡裁掉，截断职责已在 -name 内层，放开。 */
+.history-sidebar-model-chip {
+  position: relative;
+  overflow: visible;
+}
+
+.history-sidebar-model-chip-tip {
+  pointer-events: none;
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 5px);
+  z-index: 30;
+  padding: 4px 8px;
+  border: 1px solid var(--mg-border);
+  border-radius: var(--radius-sm);
+  background: var(--mg-bg-3);
+  color: var(--mg-text-2);
+  font-size: 11px;
+  font-weight: 520;
+  line-height: 1.5;
+  /* 一行展示全称（2026-08-11 视觉验收）：不换行、不限宽。气泡受滚动容器
+     裁剪约束，超出侧栏右缘的极端长名会被裁，常见模型名在 248px 内放得下 */
+  white-space: nowrap;
+  text-align: left;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+/* 侧栏只有 248px 宽：第 2/3 个 chip 靠右，气泡左对齐会伸出面板被滚动容器裁掉，
+   改成右对齐往卡片内侧展开（纯 CSS 拿不到剩余空间，用序号近似） */
+.history-sidebar-model-chip:not(:first-child) .history-sidebar-model-chip-tip {
+  left: auto;
+  right: 0;
+}
+
+.history-sidebar-model-chip:hover .history-sidebar-model-chip-tip {
+  opacity: 1;
 }

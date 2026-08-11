@@ -42,6 +42,12 @@ export interface ExperienceMessage {
   role: ChatRole
   content: string
   error?: string
+  /** 上游供应商原始报错 + 我方 request_id/trace_id 的详情（qa#549），只放"查看详情"，不做标题 */
+  errorDetail?: string
+  errorRequestId?: string
+  errorTraceId?: string
+  /** 该错误是否值得展示"重试"入口；未设置时按可重试处理（保留历史行为） */
+  errorRetryable?: boolean
   metrics?: ExperienceMessageMetrics
   modelName?: string
   modelLogo?: React.ReactNode
@@ -139,6 +145,21 @@ function friendlyUpstreamError(text: string): string {
   return i18n.t('modelsExperience.errorUpstreamGeneric')
 }
 
+/** 从可能是 JSON.stringify 过的信封字符串里挖出一句人话，解不出就原样返回；
+ *  被 cleanErrorMessage 与 resolveApiErrorDisplay 共用（后者要保留未归一的原文做详情）。 */
+function unwrapEnvelopeText(raw: string): string {
+  try {
+    const parsed = JSON.parse(raw) as {
+      error?: { message?: string }
+      msg?: string
+      data?: { details?: Array<{ message?: string }> }
+    }
+    return parsed.data?.details?.[0]?.message ?? parsed.msg ?? parsed.error?.message ?? raw
+  } catch {
+    return raw
+  }
+}
+
 /**
  * 历史消息里 status="failed" 行的 error 字段，实测后端存的是上游原始错误信封整个
  * JSON.stringify 之后的字符串（例如护栏拦截会把 {"error":{"code":403,"message":"..."}}
@@ -147,18 +168,7 @@ function friendlyUpstreamError(text: string): string {
  */
 export function cleanErrorMessage(raw: string | undefined): string {
   if (!raw) return i18n.t('modelsExperience.sendFailed')
-  let extracted: string
-  try {
-    const parsed = JSON.parse(raw) as {
-      error?: { message?: string }
-      msg?: string
-      data?: { details?: Array<{ message?: string }> }
-    }
-    extracted = parsed.data?.details?.[0]?.message ?? parsed.msg ?? parsed.error?.message ?? raw
-  } catch {
-    extracted = raw
-  }
-  return friendlyUpstreamError(extracted)
+  return friendlyUpstreamError(unwrapEnvelopeText(raw))
 }
 
 /**
@@ -174,6 +184,95 @@ export function extractApiErrorMessage(err: unknown): string {
   if (raw) return cleanErrorMessage(raw)
   const message = (err as Error).message
   return message ? friendlyUpstreamError(message) : i18n.t('modelsExperience.retryLater')
+}
+
+/** 网关/上游错误分类落地契约（qa#549）：这四档外层 msg 由后端按 Accept-Language 本地化，
+ *  直接展示即可，不用再挖 field_errors 里的上游原始英文；40031（5xx/传输失败）是唯一
+ *  「重试可能成功」的档，其余三档是确定性失败——展示重试入口只会让用户/接入方对一个
+ *  必败请求反复重试（本单根因）。码不在这四档里（未知/旧格式）时走历史兜底链路，
+ *  按可重试处理，不改变既有行为。 */
+const KNOWN_ENVELOPE_CODES = new Set([40031, 40032, 40033, 40301])
+const RETRYABLE_ENVELOPE_CODES = new Set([40031])
+
+interface EnvelopeLike {
+  code?: number
+  rawMessage?: string
+  requestId?: string
+  traceId?: string
+  data?: { field_errors?: Array<{ message?: string }>; details?: Array<{ message?: string }> }
+}
+
+/** message.error 是持久化字符串（历史上可能是整段 JSON.stringify 过的信封），能解出
+ *  数字 code 就按新契约走；解不出（当前 Swagger 里 experience.Message.error 就是纯字符串，
+ *  没有独立 code 字段）就返回 undefined，交给下面的兜底链路——不假设后端一定给了 code。 */
+function parseStoredErrorEnvelope(raw: string): EnvelopeLike | undefined {
+  try {
+    const parsed = JSON.parse(raw) as {
+      code?: number
+      msg?: string
+      request_id?: string
+      trace_id?: string
+      data?: EnvelopeLike['data']
+    }
+    if (typeof parsed.code !== 'number') return undefined
+    return { code: parsed.code, rawMessage: parsed.msg, requestId: parsed.request_id, traceId: parsed.trace_id, data: parsed.data }
+  } catch {
+    return undefined
+  }
+}
+
+function toEnvelopeLike(err: unknown): EnvelopeLike | undefined {
+  return typeof err === 'string' ? parseStoredErrorEnvelope(err) : (err as EnvelopeLike | undefined)
+}
+
+export interface ApiErrorDisplay {
+  /** 用户可见主文案：命中已知档用外层 msg（已本地化），否则走 extractApiErrorMessage/cleanErrorMessage 兜底链路 */
+  message: string
+  /** 上游供应商原始报错（含供应商名与其内部 request_id），只放"查看详情"，不做标题 */
+  upstreamDetail?: string
+  /** 是否值得展示"重试"入口；未知错误默认按可重试处理（保留历史行为，多数是瞬时故障） */
+  retryable: boolean
+  /** 我方 request_id/trace_id（非供应商的），排障用 */
+  requestId?: string
+  traceId?: string
+}
+
+/** 媒体/体验错误的统一展示口径（qa#549）：区分"值得重试"与"确定性失败"，
+ *  上游供应商原文降级为详情，不做用户可见标题。err 可以是抛出的 ModelGoApiError
+ *  实例，也可以是持久化的 message.error 字符串（历史消息/轮询终态）。 */
+export function resolveApiErrorDisplay(err: unknown): ApiErrorDisplay {
+  const envelope = toEnvelopeLike(err)
+  const upstreamRaw = envelope?.data?.field_errors?.[0]?.message ?? envelope?.data?.details?.[0]?.message
+  const upstreamDetail = upstreamRaw ? unwrapEnvelopeText(upstreamRaw) : undefined
+  if (envelope?.code !== undefined && KNOWN_ENVELOPE_CODES.has(envelope.code)) {
+    return {
+      message: envelope.rawMessage || i18n.t('modelsExperience.retryLater'),
+      upstreamDetail,
+      retryable: RETRYABLE_ENVELOPE_CODES.has(envelope.code),
+      requestId: envelope.requestId,
+      traceId: envelope.traceId,
+    }
+  }
+  return {
+    message: typeof err === 'string' ? cleanErrorMessage(err) : err ? extractApiErrorMessage(err) : i18n.t('modelsExperience.sendFailed'),
+    upstreamDetail,
+    retryable: true,
+    requestId: envelope?.requestId,
+    traceId: envelope?.traceId,
+  }
+}
+
+/** ApiErrorDisplay → ExperienceMessage 错误字段，四个调用点（单模型页/对比页各自的
+ *  同步发送失败 + 历史恢复）共用，避免每处手写四行赋值。message.error 主文案通常还要
+ *  拼一个"请求失败："前缀，调用方在 spread 之后按需覆盖 error 字段即可。 */
+export function errorDisplayFields(display: ApiErrorDisplay): Pick<ExperienceMessage, 'error' | 'errorDetail' | 'errorRetryable' | 'errorRequestId' | 'errorTraceId'> {
+  return {
+    error: display.message,
+    errorDetail: display.upstreamDetail,
+    errorRetryable: display.retryable,
+    errorRequestId: display.requestId,
+    errorTraceId: display.traceId,
+  }
 }
 
 /** 十类体验任务枚举 → 展示文案，取自后端接口文档 §二 task 值域（字面值以文档为准；

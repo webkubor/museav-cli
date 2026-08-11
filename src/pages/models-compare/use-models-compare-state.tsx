@@ -34,7 +34,8 @@ import {
   modelCategoryTasks,
   taskNeedsFile,
   ATTACHMENT_LIMITS,
-  cleanErrorMessage,
+  resolveApiErrorDisplay,
+  errorDisplayFields,
   offlineModelPlaceholder,
   type ExperienceMessage,
   type ExperienceCategoryKey,
@@ -218,7 +219,7 @@ export function useModelsCompareState() {
             role: msg.role,
             content: msg.content,
             dispatchId: msg.dispatch_id,
-            error: msg.status === 'failed' ? cleanErrorMessage(msg.error) : undefined,
+            ...(msg.status === 'failed' ? errorDisplayFields(resolveApiErrorDisplay(msg.error)) : {}),
             media: media.length > 0 ? media : undefined,
             attachmentResourceIds: msg.role === 'user' && msg.attachments.length > 0
               ? msg.attachments.map((attachment) => attachment.resource_id)

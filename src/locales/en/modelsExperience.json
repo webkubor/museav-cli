@@ -54,6 +54,8 @@
     "copyReply": "Copy reply",
     "notBilled": "Billing: not charged",
     "retryAfterAdjust": "Adjust and retry",
+    "errorDetailShow": "View details",
+    "errorDetailHide": "Hide details",
     "mediaGenerating": "Generating result",
     "mediaGeneratingHint": "Hang tight — this updates automatically when it's done.",
     "asyncTaskSubmitted": "Async task submitted",

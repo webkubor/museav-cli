@@ -226,14 +226,15 @@ export function HistorySessionSidebar({
                     <div className="history-sidebar-item-models">
                       {session.models.slice(0, 3).map((model) => (
                         /* chip 是 inline-flex，裸文本节点吃不到 text-overflow——名称包一层
-                           span 才能出省略号；完整名走 title 悬浮提示（本仓惯例） */
+                           span 才能出省略号；全称用纯 CSS hover 气泡即时展示（对齐 InfoTip
+                           模式，原生 title 有秒级延迟，视觉验收要求移入即显） */
                         <span
                           key={model.id}
-                          title={model.name}
                           className={cn('history-sidebar-model-chip', model.offline && 'history-sidebar-model-chip-offline')}
                         >
                           {model.offline && <LuCircleOff size={11} />}
                           <span className="history-sidebar-model-chip-name">{model.name}</span>
+                          <span role="tooltip" className="history-sidebar-model-chip-tip">{model.name}</span>
                         </span>
                       ))}
                     </div>

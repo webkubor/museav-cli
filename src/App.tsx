@@ -2,6 +2,7 @@ import { useEffect, useState, lazy, Suspense, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { Providers } from '@/components/providers'
+import { useActiveTheme } from '@/hooks/use-active-theme'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { PublicShell } from '@/components/layout/PublicShell'
 import { AuthProvider, RequireAuth } from '@/components/auth/AuthProvider'
@@ -193,6 +194,8 @@ function RouteFallback() {
 
 export default function App() {
   const [platformReady, setPlatformReady] = useState(false)
+  // sonner 不吃 CSS 变量，主题得走 prop；用响应式 hook 让运行时切主题的 toast 也跟上
+  const activeTheme = useActiveTheme()
 
   useEffect(() => {
     // 从文档站跳转过来时 URL 带 ?theme=dark|light：优先采用并持久化，实现跨站主题同步。
@@ -214,7 +217,7 @@ export default function App() {
 
   return (
     <Providers>
-      <Toaster richColors position="top-right" closeButton />
+      <Toaster richColors position="top-right" closeButton theme={activeTheme} />
       <AppUpdatePrompt />
       <BrowserRouter>
         {NavLogger && <Suspense fallback={null}><NavLogger /></Suspense>}

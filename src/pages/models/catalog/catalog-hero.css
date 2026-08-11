@@ -103,7 +103,7 @@
 }
 .mg-sort-btn {
   display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 18px;
-  border: 1px solid var(--plaza-card-border); border-radius: 12px; background: var(--plaza-input-bg);
+  border: 1px solid var(--plaza-card-border); border-radius: var(--radius-md); background: var(--plaza-input-bg);
   color: var(--mg-text-2); font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap;
   -webkit-backdrop-filter: blur(var(--mg-glass-blur));
   backdrop-filter: blur(var(--mg-glass-blur));

@@ -48,8 +48,16 @@
 
 
 body[theme-mode='dark'] .glass-auth-card {
+  /* 卡底从品牌深空派生（--brand-pale 深色档即「品牌夜色」：国内靛 #16224d / 海外绿 #1b2921），
+     不写死色相 —— 原 rgba(18,27,46,…) 是 slate 蓝调，海外绿站深色下整卡发蓝 */
+  --auth-card-top: color-mix(in oklab, var(--brand-pale) 42%, #14151a);
+  --auth-card-bottom: color-mix(in oklab, var(--brand-pale) 30%, #101116);
   background:
-    linear-gradient(180deg, rgba(18, 27, 46, 0.88), rgba(11, 18, 32, 0.84)) !important;
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--auth-card-top) 88%, transparent),
+      color-mix(in srgb, var(--auth-card-bottom) 84%, transparent)
+    ) !important;
   box-shadow:
     0 42px 110px -58px rgba(0, 0, 0, 0.9),
     0 1px 0 rgba(255, 255, 255, 0.06) inset !important;
@@ -72,13 +80,14 @@ body[theme-mode='dark'] .glass-auth-card::before {
 
 
 body[theme-mode='dark'] .glass-auth-card .modern-auth-label {
-  color: rgba(226, 232, 240, 0.86) !important;
+  /* 原 rgba(226,232,240,…)/rgba(203,213,225,…) 是 slate 蓝调灰，深色文字统一走共享文字阶 */
+  color: color-mix(in srgb, var(--mg-text-1) 86%, transparent) !important;
 }
 
 body[theme-mode='dark'] .glass-auth-card .auth-subtitle,
 body[theme-mode='dark'] .glass-auth-card .auth-footer,
 body[theme-mode='dark'] .glass-auth-card .auth-policy-text {
-  color: rgba(203, 213, 225, 0.72);
+  color: color-mix(in srgb, var(--mg-text-2) 72%, transparent);
 }
 
 /* ── 💎 鉴权中心输入框与表单高级优化 ── */
@@ -159,28 +168,32 @@ body[theme-mode='dark'] .modern-auth-btn:hover {
 }
 
 /* ── 💎 鉴权中心全新高颜值样式抽离类 ── */
+/* 画布网点/光斑/网格全部从品牌色阶派生，不写死色相 ——
+   随 data-market 双端路由（国内靛蓝 / 海外翠绿）；原值写死 青+蓝，
+   海外（锁深色）登录页整页发蓝，与绿象限画布割裂 */
 .auth-layout-container {
   @apply min-h-screen flex items-center justify-center p-6 relative overflow-hidden transition-colors duration-300;
-  background-color: #f7fbff;
+  background-color: color-mix(in oklab, var(--brand-pale) 22%, #ffffff);
   background-image:
-    radial-gradient(circle at 86% 38%, rgba(20, 219, 183, 0.16) 0 1px, transparent 2px),
-    radial-gradient(circle at 24% 68%, rgba(37, 99, 235, 0.12) 0 1px, transparent 2px),
-    radial-gradient(circle at 78% 42%, rgba(20, 219, 183, 0.14), transparent 18%),
-    radial-gradient(circle at 16% 74%, rgba(37, 99, 235, 0.1), transparent 22%),
-    linear-gradient(rgba(22, 40, 72, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(22, 40, 72, 0.035) 1px, transparent 1px);
+    radial-gradient(circle at 86% 38%, color-mix(in srgb, var(--brand-mid) 16%, transparent) 0 1px, transparent 2px),
+    radial-gradient(circle at 24% 68%, color-mix(in srgb, var(--brand-base) 12%, transparent) 0 1px, transparent 2px),
+    radial-gradient(circle at 78% 42%, color-mix(in srgb, var(--brand-mid) 14%, transparent), transparent 18%),
+    radial-gradient(circle at 16% 74%, color-mix(in srgb, var(--brand-base) 10%, transparent), transparent 22%),
+    linear-gradient(color-mix(in srgb, var(--brand-deep) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--brand-deep) 4%, transparent) 1px, transparent 1px);
   background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 48px 48px, 48px 48px;
 }
 
 body[theme-mode='dark'] .auth-layout-container {
-  background-color: #06101f;
+  /* 深色底 = 品牌夜色（--brand-pale 深色档）压进近黑，两端市场自动得到 靛夜/绿夜 */
+  background-color: color-mix(in oklab, var(--brand-pale) 58%, #0a0d12);
   background-image:
-    radial-gradient(circle at 86% 38%, rgba(45, 255, 214, 0.78) 0 1px, transparent 2px),
-    radial-gradient(circle at 32% 66%, rgba(49, 109, 255, 0.58) 0 1px, transparent 2px),
-    radial-gradient(circle at 78% 42%, rgba(20, 219, 183, 0.18), transparent 18%),
-    radial-gradient(circle at 27% 70%, rgba(37, 99, 235, 0.2), transparent 20%),
-    linear-gradient(rgba(226, 232, 240, 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(226, 232, 240, 0.055) 1px, transparent 1px);
+    radial-gradient(circle at 86% 38%, color-mix(in srgb, var(--brand-light) 78%, transparent) 0 1px, transparent 2px),
+    radial-gradient(circle at 32% 66%, color-mix(in srgb, var(--brand-mid) 58%, transparent) 0 1px, transparent 2px),
+    radial-gradient(circle at 78% 42%, color-mix(in srgb, var(--brand-base) 18%, transparent), transparent 18%),
+    radial-gradient(circle at 27% 70%, color-mix(in srgb, var(--brand-deep) 20%, transparent), transparent 20%),
+    linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px);
 }
 
 .auth-blur-orb-primary {
@@ -244,8 +257,9 @@ body[theme-mode='dark'] .auth-layout-container {
 
 .auth-form-container .modern-input-field,
 .auth-form-container .modern-input-wrapper {
-  height: 44px;
-  border-radius: 10px;
+  /* 高度/圆角对齐 tokens 控件档（设计 2026-08-10 拍板 32/40/48 + 圆角 8/14/18，原 44px/10px 杂档就近归档） */
+  height: var(--mg-control-height);
+  border-radius: var(--mg-control-radius);
   padding-inline: 14px;
   font-size: 14px;
   background-color: rgba(var(--mg-bg-0-rgb), 0.62) !important;
@@ -255,13 +269,14 @@ body[theme-mode='dark'] .auth-layout-container {
 
 body[theme-mode='dark'] .auth-form-container .modern-input-field,
 body[theme-mode='dark'] .auth-form-container .modern-input-wrapper {
-  background-color: rgba(15, 23, 42, 0.46) !important;
-  border-color: rgba(226, 232, 240, 0.18) !important;
+  /* 原 rgba(15,23,42,…)/rgba(226,232,240,…) 是 slate 蓝调，改共享中性底/文字阶派生 */
+  background-color: rgba(var(--mg-bg-1-rgb), 0.46) !important;
+  border-color: color-mix(in srgb, var(--mg-text-1) 18%, transparent) !important;
 }
 
 body[theme-mode='dark'] .auth-form-container .modern-input-field::placeholder,
 body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
-  color: rgba(203, 213, 225, 0.58) !important;
+  color: color-mix(in srgb, var(--mg-text-3) 80%, transparent) !important;
 }
 
 .auth-form-container .modern-input-field:not(.is-error):not(.is-success):focus,
@@ -273,8 +288,8 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
 
 .auth-form-container .modern-btn-brand {
   width: 100%;
-  height: 44px;
-  border-radius: 10px;
+  height: var(--mg-control-height-lg);
+  border-radius: var(--mg-control-radius);
   font-size: 14px;
 }
 
@@ -393,7 +408,8 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
 }
 
 .social-btn {
-  @apply flex-1 flex items-center justify-center gap-2 h-11 border rounded-md text-sm font-semibold;
+  @apply flex-1 flex items-center justify-center gap-2 border rounded-md text-sm font-semibold;
+  height: var(--mg-control-height);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   border-color: var(--mg-border) !important;
   background-color: rgba(var(--mg-bg-0-rgb), 0.56) !important;
@@ -450,7 +466,7 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
   content: '';
   position: absolute;
   inset: -1px;
-  border-radius: 10px;
+  border-radius: var(--mg-control-radius);
   padding: 1px;
   background: transparent;
   -webkit-mask: 
@@ -485,7 +501,8 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
 
 .auth-form-container .modern-input-wrapper:not(.is-error):not(.is-success):focus-within:has(input:not(:placeholder-shown))::before {
   opacity: 1 !important;
-  background: linear-gradient(90deg, var(--brand-base), #a855f7, #6366f1, #3b82f6, var(--brand-base)) !important;
+  /* 流光只在品牌色阶内流动（原 #a855f7/#6366f1/#3b82f6 紫靛蓝写死，海外绿站聚焦时闪紫蓝） */
+  background: linear-gradient(90deg, var(--brand-base), var(--brand-mid), var(--brand-light), var(--brand-mid), var(--brand-base)) !important;
   background-size: 200% 100% !important;
   animation: input-border-flow 3s linear infinite !important;
 }
@@ -539,7 +556,7 @@ body[theme-mode='dark'] .auth-form-container .modern-input-wrapper.is-error {
 /* 安全验证条（图形认证）：输入区与提交按钮之间的一行，视觉与输入框同宽同栅格 */
 .auth-captcha-gate {
   @apply flex w-full items-center gap-2 rounded-md border px-3 text-sm cursor-pointer select-none;
-  height: 42px;
+  height: var(--mg-control-height);
   color: var(--mg-text-2);
   border-color: var(--mg-border);
   background: var(--mg-fill-1);

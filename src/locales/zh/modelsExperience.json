@@ -54,6 +54,8 @@
     "copyReply": "复制回复内容",
     "notBilled": "计费：未计费",
     "retryAfterAdjust": "调整后重试",
+    "errorDetailShow": "查看详情",
+    "errorDetailHide": "收起详情",
     "mediaGenerating": "正在生成结果",
     "mediaGeneratingHint": "请稍候，结果完成后会自动更新。",
     "asyncTaskSubmitted": "异步任务已提交",

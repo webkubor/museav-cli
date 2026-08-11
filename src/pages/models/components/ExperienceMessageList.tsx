@@ -4,6 +4,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { MarkdownContent } from '@/components/ui/MarkdownContent'
+import { CopyButton } from '@/components/ui/CopyButton'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { LuAudioLines, LuCheck, LuChevronRight, LuCopy, LuRefreshCcw } from 'react-icons/lu'
@@ -133,6 +134,45 @@ function ThinkSection({ think, active }: { think: string; active: boolean }) {
   )
 }
 
+/** 媒体失败详情（qa#549）：上游供应商原始报错 + 我方 request_id/trace_id，默认收起。
+ *  上游原文含供应商名与其内部 request_id，不适合直接当标题展示给终端用户，但排障/
+ *  报障时有价值，所以降级成可展开的详情区，跟标题（message.error）分开。 */
+function MediaErrorDetail({ detail, requestId, traceId }: { detail?: string; requestId?: string; traceId?: string }) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  if (!detail && !requestId && !traceId) return null
+  return (
+    <div className="models-experience-error-detail">
+      <button
+        type="button"
+        className="models-experience-error-detail-toggle"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <LuChevronRight size={12} aria-hidden="true" className={cn('models-experience-error-detail-chevron', open && 'is-open')} />
+        {t(open ? 'modelsExperience.errorDetailHide' : 'modelsExperience.errorDetailShow')}
+      </button>
+      {open && (
+        <div className="models-experience-error-detail-body">
+          {detail && <p className="models-experience-error-detail-upstream">{detail}</p>}
+          {requestId && (
+            <div className="models-experience-error-detail-id">
+              <span>request_id: {requestId}</span>
+              <CopyButton value={requestId} size="sm" />
+            </div>
+          )}
+          {traceId && (
+            <div className="models-experience-error-detail-id">
+              <span>trace_id: {traceId}</span>
+              <CopyButton value={traceId} size="sm" />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export interface ExperienceMessageListProps {
   messages: ExperienceMessage[]
   isStreaming: boolean
@@ -228,12 +268,14 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
                     <span className="models-experience-message-error">{message.error}</span>
                     <div className="models-experience-media-error-meta">
                       <em>{t('modelsExperience.notBilled')}</em>
-                      {onRetry && messages[index - 1]?.role === 'user' && (
+                      {/* 确定性失败（如内容被上游安全策略拒绝）不给重试入口，重试必败、纯浪费配额（qa#549） */}
+                      {onRetry && message.errorRetryable !== false && messages[index - 1]?.role === 'user' && (
                         <button type="button" onClick={() => onRetry(messages[index - 1])}>
                           {t('modelsExperience.retryAfterAdjust')}
                         </button>
                       )}
                     </div>
+                    <MediaErrorDetail detail={message.errorDetail} requestId={message.errorRequestId} traceId={message.errorTraceId} />
                   </div>
                 ) : (
                   <span className="models-experience-message-error" role="alert">{message.error}</span>

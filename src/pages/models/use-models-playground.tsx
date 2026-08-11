@@ -32,8 +32,9 @@ import {
   sizeBucket,
   experienceTaskLabel,
   resolveModelCategory,
-  cleanErrorMessage,
   extractApiErrorMessage,
+  resolveApiErrorDisplay,
+  errorDisplayFields,
   buildMediaArtifactTitle,
   buildMediaArtifactDetail,
   ATTACHMENT_LIMITS,
@@ -334,7 +335,7 @@ export function useModelsPlayground() {
           role: msg.role,
           content: msg.content,
           dispatchId: msg.dispatch_id,
-          error: msg.status === 'failed' ? cleanErrorMessage(msg.error) : undefined,
+          ...(msg.status === 'failed' ? errorDisplayFields(resolveApiErrorDisplay(msg.error)) : {}),
           media: media.length > 0 ? media : undefined,
           attachmentResourceIds: msg.role === 'user' && msg.attachments.length > 0
             ? msg.attachments.map((attachment) => attachment.resource_id)
@@ -651,7 +652,8 @@ export function useModelsPlayground() {
       if (isAbortError(err)) return
       const errorCode = (err as { data?: { code?: string } } | undefined)?.data?.code
       // 已流出的半截内容清掉，只留报错气泡（原有行为：先清 content 再写 error）
-      patchAssistant({ content: '', error: `${t('modelsExperience.requestFailed')}${extractApiErrorMessage(err)}` })
+      const display = resolveApiErrorDisplay(err)
+      patchAssistant({ content: '', ...errorDisplayFields(display), error: `${t('modelsExperience.requestFailed')}${display.message}` })
       trackModelRun({ modelId: selectedModel.model_id, failed: true, totalMs: Date.now() - startedAt, errorCode })
     } finally {
       setIsStreaming(false)
@@ -731,7 +733,8 @@ export function useModelsPlayground() {
         free: spend === 0,
       })
     } catch (err) {
-      patchAssistant({ error: `${t('modelsExperience.requestFailed')}${extractApiErrorMessage(err)}` })
+      const display = resolveApiErrorDisplay(err)
+      patchAssistant({ ...errorDisplayFields(display), error: `${t('modelsExperience.requestFailed')}${display.message}` })
       const errorCode = (err as { data?: { field_errors?: Array<{ code?: string }> } } | undefined)?.data?.field_errors?.[0]?.code
       trackModelRun({ modelId: selectedModel.model_id, failed: true, totalMs: Date.now() - startedAt, errorCode })
     } finally {
@@ -767,7 +770,7 @@ export function useModelsPlayground() {
     if (message.status === 'failed') {
       patchAssistant({
         content: '',
-        error: message.error ? cleanErrorMessage(message.error) : t('modelsExperience.videoGenerateFailed'),
+        ...(message.error ? errorDisplayFields(resolveApiErrorDisplay(message.error)) : { error: t('modelsExperience.videoGenerateFailed') }),
       })
     } else {
       // 视频产物落在网关前缀下，resource_id 换不到签名地址，下载只能凭 task_id 走

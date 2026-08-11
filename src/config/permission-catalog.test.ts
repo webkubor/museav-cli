@@ -6,7 +6,7 @@ import {
   permissionCatalogMeta,
   validatePermissionCatalog,
 } from './permission-catalog'
-import { LEGACY_PERMISSION_IDS, PERMISSION_DEFINITIONS } from './permissions'
+import { LEGACY_PERMISSION_IDS, PERMISSION_DEFINITIONS, type Permission } from './permissions'
 import { CONSOLE_ROUTES } from './console-routes'
 
 describe('permission catalog', () => {
@@ -26,11 +26,16 @@ describe('permission catalog', () => {
     expect(PERMISSION_SYNC_PAYLOAD.menus).toBe(PERMISSION_CATALOG_MENUS)
   })
 
-  it('keeps every synced menu view permission aligned with its route guard', () => {
-    const routePermissions = new Map(CONSOLE_ROUTES.map((route) => [route.key, route.permission]))
-    expect(new Set(routePermissions.keys())).toEqual(new Set(PERMISSION_CATALOG_MENUS.map((menu) => menu.key)))
-    for (const menu of PERMISSION_CATALOG_MENUS) {
-      expect(routePermissions.get(menu.key)).toBe(menu.view_permission)
+  it('keeps every route guard aligned with a synced menu view permission', () => {
+    // 单向：每条独立路由必须在权限目录里有对应菜单（角色矩阵可管理）。反向不必成立——
+    // 有些菜单（如 observability「日志与转发」）已并入其他页面的 Tab，不再是独立路由，
+    // 但角色矩阵仍需要单独授权/展示该权限组（见 permission-catalog.ts key: 'observability'）。
+    const menuPermissions = new Map<string, Permission>(
+      PERMISSION_CATALOG_MENUS.map((menu) => [menu.key, menu.view_permission]),
+    )
+    for (const route of CONSOLE_ROUTES) {
+      if (!route.permission) continue
+      expect(menuPermissions.get(route.key)).toBe(route.permission)
     }
   })
 

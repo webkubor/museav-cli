@@ -16,8 +16,8 @@ import {
   isPaidModel,
   estimateTokens,
   hashId,
-  cleanErrorMessage,
-  extractApiErrorMessage,
+  resolveApiErrorDisplay,
+  errorDisplayFields,
   buildMediaArtifactTitle,
   buildMediaArtifactDetail,
   resolveModelCategory,
@@ -123,7 +123,8 @@ export function useCompareSend(state: CompareState) {
     } catch (err) {
       if (isAbortError(err)) return
       const errorCode = (err as { data?: { code?: string } } | undefined)?.data?.code
-      patchAssistant(idx, { error: `${t('modelsExperience.requestFailed')}${extractApiErrorMessage(err)}` })
+      const display = resolveApiErrorDisplay(err)
+      patchAssistant(idx, { ...errorDisplayFields(display), error: `${t('modelsExperience.requestFailed')}${display.message}` })
       trackModelRun({ modelId: column.model.model_id, failed: true, totalMs: Date.now() - startedAt, errorCode })
     } finally {
       updateColumn(idx, { streaming: false })
@@ -179,7 +180,9 @@ export function useCompareSend(state: CompareState) {
       patchAssistant(idx, {
         content: message.content,
         media: media.length > 0 ? media : undefined,
-        error: message.status === 'failed' ? (message.content ? undefined : t('modelsExperience.modelRunFailed')) : undefined,
+        ...(message.status === 'failed' && !message.content
+          ? (message.error ? errorDisplayFields(resolveApiErrorDisplay(message.error)) : { error: t('modelsExperience.modelRunFailed') })
+          : {}),
         metrics: buildMediaMetrics({ modelLabel, spend, totalMs }),
       })
       trackModelRun({
@@ -189,8 +192,8 @@ export function useCompareSend(state: CompareState) {
         free: spend === 0,
       })
     } catch (err) {
-      const message = `${t('modelsExperience.requestFailed')}${extractApiErrorMessage(err)}`
-      patchAssistant(idx, { error: message })
+      const display = resolveApiErrorDisplay(err)
+      patchAssistant(idx, { ...errorDisplayFields(display), error: `${t('modelsExperience.requestFailed')}${display.message}` })
       const errorCode = (err as { data?: { field_errors?: Array<{ code?: string }> } } | undefined)?.data?.field_errors?.[0]?.code
       trackModelRun({ modelId: column.model.model_id, failed: true, totalMs: Date.now() - startedAt, errorCode })
     } finally {
@@ -217,7 +220,7 @@ export function useCompareSend(state: CompareState) {
     if (message.status === 'failed') {
       patchAssistant(idx, {
         content: '',
-        error: message.error ? cleanErrorMessage(message.error) : t('modelsExperience.videoGenerateFailed'),
+        ...(message.error ? errorDisplayFields(resolveApiErrorDisplay(message.error)) : { error: t('modelsExperience.videoGenerateFailed') }),
       })
     } else {
       // 视频产物落在网关前缀下，resource_id 换不到签名地址，下载只能凭 task_id 走

@@ -4,6 +4,7 @@
  * API：GET /workspaces、POST /workspaces
  */
 import { useEffect, useState, type KeyboardEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth'
 import { useTranslation } from 'react-i18next'
 import {
@@ -41,8 +42,14 @@ export default function WorkspacesPage() {
 
   const [searchValue, setSearchValue] = useState('')
   const [modalVisible, setModalVisible] = useState(false)
+  // 深链支持：从日志页「去开启日志与转发」等入口带 ?workspaceId=&tab= 跳过来时，
+  // 直接选中该空间并展开对应 Tab（仅影响首次挂载的初始值，之后用户点击卡片/Tab 不受影响）。
+  const [searchParams] = useSearchParams()
+  const deepLinkTab = searchParams.get('tab')
+  const initialTab = (['overview', 'members', 'logs', 'settings'] as const)
+    .find((value) => value === deepLinkTab)
   // 单页结构：选中卡片在下方展开详情（不跳路由，对齐原型 .space-detail-shell）
-  const [selectedId, setSelectedId] = useState<string>('')
+  const [selectedId, setSelectedId] = useState<string>(() => searchParams.get('workspaceId') ?? '')
 
   // ─── 1. TanStack Query 真实获取工作空间接口数据 ─────────────────
   const { data, isLoading } = useQuery({
@@ -250,6 +257,7 @@ export default function WorkspacesPage() {
       {validSelectedId && !isLoading && filteredData.length > 0 && (
         <WorkspaceDashboard
           workspaceId={validSelectedId}
+          initialTab={initialTab}
           onDeleted={() => {
             setSelectedId('')
             queryClient.invalidateQueries({ queryKey: ['workspaces', activeTenantId] })

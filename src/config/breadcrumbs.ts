@@ -26,7 +26,6 @@ export const breadcrumbConfig: BreadcrumbConfig = {
   // 工作空间（工作区级）
   'api-keys':       [{ label: 'nav.sidebarWorkspace' }, { label: 'nav.apiKeys' }],
   guardrails:       [{ label: 'nav.sidebarWorkspace' }, { label: 'nav.guardrails' }],
-  observability:    [{ label: 'nav.sidebarWorkspace' }, { label: 'nav.observability' }],
   // 活动中心
   referral:         [{ label: 'nav.groupActivity' }, { label: 'nav.referral' }],
   tasks:            [{ label: 'nav.groupActivity' }, { label: 'nav.tasks' }],
@@ -39,4 +38,4 @@ export const breadcrumbConfig: BreadcrumbConfig = {
   'dev-config':     [{ label: '开发者菜单' }],
 }
 
-export const FLAT_ROUTES = ['logs', 'usage', 'observability', 'billing', 'referral', 'tasks', 'dev-config', 'organization', 'workspaces', 'models/playground', 'models/compare']
+export const FLAT_ROUTES = ['logs', 'usage', 'billing', 'referral', 'tasks', 'dev-config', 'organization', 'workspaces', 'models/playground', 'models/compare']

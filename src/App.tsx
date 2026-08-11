@@ -35,7 +35,6 @@ const ReferralPage = lazy(() => import('@/pages/referral'))
 const AccountSettingsPage = lazy(() => import('@/pages/settings/account'))
 const OrganizationPage = lazy(() => import('@/pages/settings/organization'))
 const GuardrailsPage = lazy(() => import('@/pages/guardrails'))
-const ObservabilityPage = lazy(() => import('@/pages/observability'))
 const ModelsPage = lazy(() => import('@/pages/models'))
 const ModelsCatalogPage = lazy(() => import('@/pages/models/catalog'))
 const ModelDetailPage = lazy(() => import('@/pages/models/detail'))
@@ -66,7 +65,6 @@ const CONSOLE_NAMESPACES: Record<string, readonly LocaleNamespace[]> = {
   referral: ['billing'],
   'api-keys': ['apiKeys', 'guardrails', 'models', 'modelsCatalog'],
   guardrails: ['guardrails'],
-  observability: ['observability', 'apiKeys'],
 }
 
 function withLocaleNamespaces(element: ReactNode, namespaces: readonly LocaleNamespace[]) {
@@ -88,7 +86,6 @@ const CONSOLE_ELEMENTS: Record<string, ReactNode> = {
   referral: withLocaleNamespaces(<ReferralPage />, CONSOLE_NAMESPACES.referral),
   'api-keys': withLocaleNamespaces(<ApiKeysPage />, CONSOLE_NAMESPACES['api-keys']),
   guardrails: withLocaleNamespaces(<GuardrailsPage />, CONSOLE_NAMESPACES.guardrails),
-  observability: withLocaleNamespaces(<ObservabilityPage />, CONSOLE_NAMESPACES.observability),
 }
 
 /** 按清单渲染一条菜单页路由：有 view 权限则套 RequirePermission 守卫，否则仅需登录；

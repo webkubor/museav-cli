@@ -259,8 +259,9 @@ export async function fetchExperienceArtifactBlob(ref: ExperienceArtifactRef): P
 
 /**
  * 同步媒体任务发送（text_to_image / image_to_image / text_to_audio / audio_to_text），
- * 走普通 JSON（非 SSE），接口文档第五节 5.2。同步等待模型完成，生图/TTS 通常 5-30 秒，
- * 调用方应设置较长的请求超时（ky 客户端默认 30s，媒体任务用独立 fetch 不复用它）。
+ * 走普通 JSON（非 SSE），接口文档第五节 5.2。同步等待模型完成，生图/TTS 常见 5-30 秒但
+ * 无硬上限——不能复用 ky 客户端默认 30s 超时，否则模型稍慢一点就被前端自己打断
+ * （2026-08-11 实测复现：图生图 30s 整被取消，模型其实还在正常生成）。
  */
 export interface SendMediaMessageResult {
   message: ExperienceMessageView
@@ -273,11 +274,15 @@ export async function sendExperienceMediaMessage(opts: {
   content: string
   attachments?: string[]
 }): Promise<SendMediaMessageResult> {
-  return post(`experience/conversations/${opts.conversationId}/messages`, {
-    dispatch_id: opts.dispatchId,
-    content: opts.content,
-    attachments: opts.attachments ?? [],
-  })
+  return post(
+    `experience/conversations/${opts.conversationId}/messages`,
+    {
+      dispatch_id: opts.dispatchId,
+      content: opts.content,
+      attachments: opts.attachments ?? [],
+    },
+    { timeout: false },
+  )
 }
 
 /**

@@ -43,11 +43,15 @@
   display: grid; grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); gap: 16px 18px;
   padding: 18px 24px;
 }
-.mg-detail-specs .mg-metric-value { font-size: 15px; }
+/* 现价 + 单位 + 计价标签 + 划线原价同一行（划线原价跟在折扣后价格后面）。
+   走可折行的 flex：每个子项自身仍 nowrap（继承 .mg-metric-value），窄格时
+   原价整块折到下一行，不会像纯 nowrap 那样挤出格外。 */
+.mg-detail-specs .mg-metric-value {
+  display: flex; flex-wrap: wrap; align-items: baseline; row-gap: 2px;
+  font-size: 15px;
+}
 /* 次行价（媒体模型的文本分项价 / 缓存写入 1h） */
 .mg-metric-sub { font-size: 11.5px; color: var(--mg-text-4); }
-/* 划线原价独占一行（同行会被 nowrap 的现价挤出格外） */
-.mg-detail-specs .mg-metric-strike { margin-left: 0; }
 /* TTL / 计价口径小标签：5min·1h·文本·图片 */
 .mg-metric-ttl {
   margin-left: 4px; padding: 0 4px; border-radius: var(--radius-sm);

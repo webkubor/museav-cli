@@ -38,8 +38,9 @@ interface ModelDetailPanelProps {
 
 /**
  * 一格规格。value 为空串时显示破折号 —— 未配置与「免费」是两件事，不能显示 0。
- * 划线原价与次行价都走独立一行：现价一行 nowrap，挤在同一行会溢出到相邻格
- * （原型 App.tsx:5128 的划线也是另起一行）。
+ * 划线原价内联在现价右侧（与广场卡片 CatalogCard 同口径）；此前它独占一行是为了
+ * 躲开 nowrap 溢出，现在 .mg-detail-specs .mg-metric-value 改成可折行的 flex
+ * 行，窄格时原价整块折到下一行，不会再挤出格外。次行价仍是独立一行。
  */
 function Metric({
   label, value, unit, strike, subValue, subTag, valueTag, accent,
@@ -60,8 +61,9 @@ function Metric({
         {value || '—'}
         {unit && <i className="mg-metric-unit">{unit}</i>}
         {valueTag && <i className="mg-metric-ttl">{valueTag}</i>}
+        {/* 划线原价：跟在折扣后价格后面，装饰性，不是真实扣费价 */}
+        {strike && <s className="mg-metric-strike">{strike}</s>}
       </span>
-      {strike && <s className="mg-metric-strike">{strike}</s>}
       {subValue && (
         <span className="mg-metric-sub">
           {subValue}

@@ -306,3 +306,19 @@
 .models-experience-composer-wrap button.rounded-lg {
   border-radius: var(--radius-full) !important;
 }
+
+/* 停止按钮配色按设计定稿 #D9534F（2026-08-11 视觉验收指定值，比全局
+   destructive 的 rose-500 更沉稳）。基座 hover 的 background-color 带
+   !important，这里同权覆盖；投影跟色不跟 rose。局部变量做 token 化入口。 */
+.models-experience-composer-wrap .modern-btn-destructive {
+  --experience-stop-bg: #d9534f;
+  background-color: var(--experience-stop-bg) !important;
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--experience-stop-bg) 10%, transparent) !important;
+}
+
+.models-experience-composer-wrap .modern-btn-destructive:hover {
+  background-color: color-mix(in srgb, var(--experience-stop-bg) 88%, black) !important;
+  box-shadow:
+    0 4px 12px color-mix(in srgb, var(--experience-stop-bg) 25%, transparent),
+    0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}

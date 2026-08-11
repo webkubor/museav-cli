@@ -210,7 +210,10 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
       className={cn(
-        "relative flex flex-col h-full min-h-0 bg-mg-bg-0 border-r border-mg-border/60 transition-all duration-300 ease-out select-none",
+        // 浅色档用实底白（surface-3）：底色若是白 70% 玻璃，各页画布渐变会透上来，
+        // 导航颜色随页面漂移（2026-08-11 视觉验收点名"一直变色"）。深色档保持玻璃，
+        // 与历史面板/对话卡等玻璃面同色。
+        "relative flex flex-col h-full min-h-0 bg-[var(--mg-surface-3)] dark:bg-mg-bg-0 border-r border-mg-border/60 transition-all duration-300 ease-out select-none",
         collapsed ? "w-16" : "w-56"
       )}
     >

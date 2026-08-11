@@ -542,3 +542,13 @@ header.mg-glass-bar,
 header.mg-glass-bar-strong {
   border-bottom-color: var(--mg-border);
 }
+
+/* 顶栏浅色档钉实底白：玻璃底（--mg-glass-header 白 30% / strong 档）会透出
+   各页画布，模型体验页的浅蓝画布尤其明显，路由切换时顶栏颜色跟着漂移
+   （2026-08-11 视觉验收：只要白色一种）。与左侧导航（DashboardSidebar 的
+   bg-[var(--mg-surface-3)] dark:bg-mg-bg-0）同一档实底；深色档保持玻璃。
+   放全局文件的原因同上一条：PublicShell / DashboardLayout 两处外壳都要覆盖。 */
+body:not([theme-mode='dark']) header.mg-glass-bar,
+body:not([theme-mode='dark']) header.mg-glass-bar-strong {
+  background: var(--mg-surface-3);
+}

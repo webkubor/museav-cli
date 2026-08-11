@@ -16,7 +16,7 @@ import { join } from 'node:path'
 const CONFIG_PATH = join(homedir(), '.studio-cli.json')
 /** 1.0.0 更名前的配置文件（命令叫 studio-image 时）——只读兼容，免得老用户被迫重新登录 */
 const LEGACY_CONFIG_PATH = join(homedir(), '.studio-image.json')
-/** studio.webkubor.online 已停用；前后端分离后 API 统一走 manager.museav.top（museav-manager 项目）。 */
+/** 旧域名 webkubor.online 已弃用，API 统一走 manager.museav.top。 */
 export const DEFAULT_BASE_URL = 'https://manager.museav.top'
 
 export interface StudioConfig {

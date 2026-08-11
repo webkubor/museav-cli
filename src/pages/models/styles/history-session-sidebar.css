@@ -372,7 +372,6 @@
   left: 0;
   bottom: calc(100% + 5px);
   z-index: 30;
-  max-width: 200px;
   padding: 4px 8px;
   border: 1px solid var(--mg-border);
   border-radius: var(--radius-sm);
@@ -381,8 +380,9 @@
   font-size: 11px;
   font-weight: 520;
   line-height: 1.5;
-  white-space: normal;
-  word-break: break-word;
+  /* 一行展示全称（2026-08-11 视觉验收）：不换行、不限宽。气泡受滚动容器
+     裁剪约束，超出侧栏右缘的极端长名会被裁，常见模型名在 248px 内放得下 */
+  white-space: nowrap;
   text-align: left;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
   opacity: 0;

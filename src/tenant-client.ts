@@ -23,7 +23,7 @@
  *  长期是否应该让 Studio 的 api_tenants 表补一个 portal_base_url 字段，
  *  由服务端下发而不是 CLI 硬编码，需要人确认后再决定。 */
 const KNOWN_TENANT_BACKENDS: Record<string, string> = {
-  hym: 'https://hym-admin.webkubor.online',
+  hym: 'https://manager.hympro.cn',
   mzmeso: 'https://mzmeso.webkubor.online',
 }
 

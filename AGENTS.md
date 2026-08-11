@@ -4,7 +4,7 @@ This CLI is designed to be used directly by coding agents (Claude Code, Codex, e
 
 ## What this is
 
-A command-line client for the "studio" image-generation platform (`https://studio.webkubor.online`). It generates images from a prompt, reverse-engineers a prompt from an existing image, and lists your own generation history. All output is designed for machine consumption: **stdout carries only the final result** (a URL, a prompt string, or JSON); progress and human-readable info goes to stderr.
+A command-line client for the "studio" image-generation platform (`https://manager.museav.top`). It generates images from a prompt, reverse-engineers a prompt from an existing image, and lists your own generation history. All output is designed for machine consumption: **stdout carries only the final result** (a URL, a prompt string, or JSON); progress and human-readable info goes to stderr.
 
 ## Auth: pick one identity, not both
 
@@ -69,7 +69,7 @@ Full flag reference: `studio-cli <command> --help`. Full command table and auth 
 ```ts
 import { StudioClient } from '@kubor/studio-cli'
 
-const studio = new StudioClient({ baseUrl: 'https://studio.webkubor.online', apiKey: process.env.STUDIO_API_KEY! })
+const studio = new StudioClient({ baseUrl: 'https://manager.museav.top', apiKey: process.env.STUDIO_API_KEY! })
 const job = await studio.generateAndWait({ prompt: 'a cat on the moon', ratio: '3:4' })
 console.log(job.cdn_url)
 ```

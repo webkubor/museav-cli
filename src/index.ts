@@ -174,7 +174,7 @@ program
 program
   .command('config')
   .description('配置中台地址和 apiKey（存到 ~/.studio-cli.json）')
-  .option('--baseUrl <url>', '中台地址，默认 https://studio.webkubor.online')
+  .option('--baseUrl <url>', '中台地址，默认 https://manager.museav.top')
   .option('--apiKey <key>', 'apiKey（sk-studio-xxx）')
   .option('--tenantBaseUrl <url>', '租户自己后台的域名，供 products/assets 命令用；已知租户（hym/mzmeso）不配也能跑')
   .action((opts) => {
@@ -205,7 +205,7 @@ program
 program
   .command('login')
   .description('登录（设备授权：终端显示验证码，浏览器打开授权后 CLI 自动完成登录）')
-  .option('--baseUrl <url>', '中台地址，默认 https://studio.webkubor.online')
+  .option('--baseUrl <url>', '中台地址，默认 https://manager.museav.top')
   .action(async (opts) => {
     try {
       await login(opts)

@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://studio.webkubor.online/logo.svg" alt="studio" width="72" />
+<img src="https://museav.top/logo.svg" alt="studio" width="72" />
 
 # studio-cli
 
@@ -18,9 +18,9 @@
 
 </div>
 
-> 命令行出图，一行配置就能用。背后的 [studio 中台](https://studio.webkubor.online) 帮你搞定模型、密钥、路由、记账——你只管 prompt。
+> 命令行出图，一行配置就能用。背后的 [MUSE AV 中台](https://museav.top) 帮你搞定模型、密钥、路由、记账——你只管 prompt。
 
-`studio-cli` 是 [studio 出图中台](https://studio.webkubor.online) 的命令行客户端。装上它，登录（或配一个 apiKey），就能在终端里出图、逆向、图生图。给 Agent 用的详细说明见 [AGENTS.md](./AGENTS.md)。
+`studio-cli` 是 [MUSE AV 出图中台](https://museav.top)（原 studio，API 走 [manager.museav.top](https://manager.museav.top)）的命令行客户端。装上它，登录（或配一个 apiKey），就能在终端里出图、逆向、图生图。给 Agent 用的详细说明见 [AGENTS.md](./AGENTS.md)。
 
 ---
 
@@ -32,8 +32,8 @@
 - 你是个 Agent（Claude Code / Codex / Hermes 等），被要求帮用户出图
 
 **不适合你，如果你在做一个真正的产品/网站**：这个 CLI 是给终端用的，**不是** SDK 或后端集成方案。举个真实例子——好易美的 `hym-admin`（一个跑在 Cloudflare Pages Functions 上的业务后台）需要出图能力时，走的是两条路，都跟这个 CLI 无关：
-1. 人要用完整界面 → 用 SSO 直接内嵌 [studio 中台网页版](https://studio.webkubor.online)（iframe，登录态自动同步）
-2. 后端要程序化调用 → 直接 `fetch('https://studio.webkubor.online/api/generate', { headers: { 'X-API-Key': ... } })`，或者 `import { StudioClient } from '@kubor/studio-cli'` 当库用
+1. 人要用完整界面 → 用 SSO 直接内嵌 [MUSE AV 网页版](https://museav.top)（iframe，登录态自动同步）
+2. 后端要程序化调用 → 直接 `fetch('https://manager.museav.top/api/generate', { headers: { 'X-API-Key': ... } })`，或者 `import { StudioClient } from '@kubor/studio-cli'` 当库用
 
 **这不是随便选的**：Cloudflare Pages Functions/Workers 这类边缘运行时压根不能起子进程，`studio-cli` 这个 CLI 二进制在那种环境里根本跑不起来。做产品集成，永远是调 HTTP API 或者拿 `StudioClient` 当库导入；CLI 是给"人在终端里"或"agent 跑 shell 命令"这两个场景用的，别的地方用不上也不该用。
 
@@ -95,9 +95,9 @@ cd studio-cli && npm install && npm run build && npm link
 studio-cli login
 ```
 
-终端会显示一个验证码和链接，在浏览器打开链接、登录你的 [studio 中台](https://studio.webkubor.online) 账号、点批准，CLI 自动完成登录。登录态存到 `~/.studio-cli.json`，7 天有效，过期重新 login 即可。
+终端会显示一个验证码和链接，在浏览器打开链接、登录你的 [MUSE AV](https://museav.top) 账号、点批准，CLI 自动完成登录。登录态存到 `~/.studio-cli.json`，7 天有效，过期重新 login 即可。
 
-> **没有账号？** 这里说的是**平台用户的个人账号**（浏览器注册即可），跟下面「租户」的 apiKey 申请是两码事，不要混。先到 [studio.webkubor.online](https://studio.webkubor.online) 注册个人账号，再回来 login。
+> **没有账号？** 这里说的是**平台用户的个人账号**（浏览器注册即可），跟下面「租户」的 apiKey 申请是两码事，不要混。先到 [museav.top](https://museav.top) 注册个人账号，再回来 login。
 
 ### 3. 出图
 
@@ -288,13 +288,13 @@ import { StudioClient } from '@kubor/studio-cli'
 
 // 方式一：用 login 拿到的 token（个人用户）
 const studio = new StudioClient({
-  baseUrl: 'https://studio.webkubor.online',
+  baseUrl: 'https://manager.museav.top',
   token: process.env.STUDIO_TOKEN!,  // 或从 ~/.studio-cli.json 读
 })
 
 // 方式二：用 apikey（租户/B 端）
 const studio2 = new StudioClient({
-  baseUrl: 'https://studio.webkubor.online',
+  baseUrl: 'https://manager.museav.top',
   apiKey: process.env.STUDIO_API_KEY!,
 })
 
@@ -335,7 +335,7 @@ console.log(r.sculpt.light)  // 光影分析
 
 ## 关于 studio 中台
 
-[studio.webkubor.online](https://studio.webkubor.online) 是一个**出图能力中台**：聚合多家上游图像模型（gpt-image、豆包 Seedream 等），统一成一套 API 对外开放。
+[museav.top](https://museav.top)（API 走 [manager.museav.top](https://manager.museav.top)）是一个**出图能力中台**：聚合多家上游图像模型（gpt-image、豆包 Seedream 等），统一成一套 API 对外开放。
 
 **它解决的问题**：
 

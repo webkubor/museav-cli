@@ -16,7 +16,8 @@ import { join } from 'node:path'
 const CONFIG_PATH = join(homedir(), '.studio-cli.json')
 /** 1.0.0 更名前的配置文件（命令叫 studio-image 时）——只读兼容，免得老用户被迫重新登录 */
 const LEGACY_CONFIG_PATH = join(homedir(), '.studio-image.json')
-export const DEFAULT_BASE_URL = 'https://studio.webkubor.online'
+/** studio.webkubor.online 已停用；前后端分离后 API 统一走 manager.museav.top（museav-manager 项目）。 */
+export const DEFAULT_BASE_URL = 'https://manager.museav.top'
 
 export interface StudioConfig {
   baseUrl: string
@@ -25,7 +26,7 @@ export interface StudioConfig {
   /** 租户 apikey（sk-studio-xxx），B 端场景 */
   apiKey?: string
   /**
-   * 租户自己后台的域名（如 https://hym-admin.webkubor.online）。
+   * 租户自己后台的域名（如 https://manager.hympro.cn）。
    * 只给 `products` / `assets` 两个命令用——那两个命令查的是租户自己的产品/素材数据，
    * 数据物理上不在 Studio 中台，而在租户自己的数据库，所以要单独一个 base url。
    * 已知租户（hym / mzmeso）不配也能跑（TenantClient 内置了默认值），

@@ -4,7 +4,7 @@ This CLI holds two kinds of credentials in `~/.studio-image.json`: a personal lo
 
 ## Reporting a vulnerability
 
-If you find a security issue in this CLI or in the `studio.webkubor.online` platform it talks to, please open a GitHub issue on this repo, or contact the maintainer directly rather than filing a public issue if the report involves a live credential leak or an exploitable server-side bug.
+If you find a security issue in this CLI or in the `manager.museav.top` platform it talks to, please open a GitHub issue on this repo, or contact the maintainer directly rather than filing a public issue if the report involves a live credential leak or an exploitable server-side bug.
 
 ## Scope
 

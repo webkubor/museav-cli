@@ -295,12 +295,18 @@ export async function get<T>(path: string, params?: QueryParams): Promise<T> {
   }
 }
 
-export async function post<T>(path: string, body: unknown): Promise<T> {
+export async function post<T>(
+  path: string,
+  body: unknown,
+  opts?: { timeout?: number | false }
+): Promise<T> {
   if (SECURE_PATHS.has(normalizePath(path))) {
     return postSecure<T>(path, body)
   }
   return requestWithJsonBody('POST', path, body, (url) =>
-    client.post(url, { json: body })
+    // timeout 只在显式传入时才覆盖——不传就不带这个 key，保留 client 默认 30s，
+    // 避免 { timeout: undefined } 被 ky 当成"显式设置"把默认值顶掉。
+    client.post(url, { json: body, ...(opts?.timeout !== undefined ? { timeout: opts.timeout } : {}) })
   )
 }
 

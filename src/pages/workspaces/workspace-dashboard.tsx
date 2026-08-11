@@ -154,14 +154,16 @@ export function WorkspaceOverview({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoL
 interface WorkspaceDashboardProps {
   workspaceId: string
   onDeleted: () => void
+  /** 深链初始 Tab（如从日志页「去开启日志与转发」跳转过来），仅影响首次挂载的默认选中项。 */
+  initialTab?: 'overview' | 'members' | 'logs' | 'settings'
 }
 
 /**
  * 空间管理主工作台组件（包含详情头部、状态以及 4 tabs）
  */
-export function WorkspaceDashboard({ workspaceId, onDeleted }: WorkspaceDashboardProps) {
+export function WorkspaceDashboard({ workspaceId, onDeleted, initialTab }: WorkspaceDashboardProps) {
   const { t } = useTranslation()
-  const [tab, setTab] = useState<'overview' | 'members' | 'logs' | 'settings'>('overview')
+  const [tab, setTab] = useState<'overview' | 'members' | 'logs' | 'settings'>(initialTab ?? 'overview')
   // Option B：进入某空间管理详情即把它设为活跃空间，并按它重解析权限——
   // 使 4 个 tab 显隐 + tab 内成员/设置/日志按钮 gating 都按「所看空间」的角色（如空间负责人）解析（需求方#255）。
   useEffect(() => {

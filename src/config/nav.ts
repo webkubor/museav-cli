@@ -50,7 +50,6 @@ export interface NavConfig {
 
 export const navConfig: NavConfig = {
   // 工作区级 key 从路由单一真源派生（config/console-routes），与路由/守卫同源，杜绝漂移。
-  // observability 路由保留（第二阶段并入空间详情），但不出现在侧边栏 items。
   workspaceScopedKeys,
 
   groups: (ctx, t, icons) => [

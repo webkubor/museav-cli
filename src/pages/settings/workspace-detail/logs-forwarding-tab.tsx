@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { getLoggingConfig } from '@/services/observability'
-import { ObservabilityContent } from '@/pages/observability'
+import { ObservabilityContent } from '@/pages/observability/ObservabilityContent'
 
 // 日志与转发（PRD：可观测性并入空间详情，复用可观测性页的采集/转发能力，按当前空间 workspaceId 参数化）
 export function LogsForwardingTab({ workspaceId }: { workspaceId: string }) {

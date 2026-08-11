@@ -35,7 +35,7 @@ type Props = {
 
 /**
  * 本弹窗的文案全在 `apiKeys` 语言包里，而它是**路由级懒加载**的（App.tsx CONSOLE_NAMESPACES
- * 只给 api-keys / observability / models 系路由加载）。但弹窗有三个渲染点，两个不在这些路由里：
+ * 只给 api-keys / models 系路由加载）。但弹窗有三个渲染点，两个不在这些路由里：
  * 全局顶栏 DashboardHeader、总览页 QuickStartSection —— 在那些页面点开，文案会整片退化成
  * `apiKeys.connectModal.title` 这样的 raw key（需求方 shared/modelgo_prd#375，国际站生产复现）。
  *

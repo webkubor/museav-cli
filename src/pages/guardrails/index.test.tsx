@@ -3,7 +3,7 @@
  */
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
@@ -67,15 +67,24 @@ vi.mock('@/hooks/use-permissions', () => ({
 vi.mock('@/hooks/use-platform-config', () => ({
   useCurrency: () => ({ currency: 'USD', symbol: '$' }),
 }))
-
-// The page tree consumes useTranslation's t; keys are stable, the budget tab
-// labels we interact with (预算 / 保存预算) are hardcoded Chinese strings.
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'zh' } }),
-  // The page transitively loads src/i18n.ts (via request-error-message → request →
-  // auth-controller → i18n), which calls .use(initReactI18next). Provide a no-op
-  // 3rdParty plugin so that module evaluates instead of throwing on a missing export.
-  initReactI18next: { type: '3rdParty', init: () => {} },
+// canManageRow（#261 逐行编辑归属）= managesWorkspace || 自己创建的；managesWorkspace 来自
+// useTenantRole() 的 canManage/ownedWorkspaceIds，是走 listTenants 网络查询的（跟上面
+// showMember 直接读 useAuthStore.tenants 是两条不同路径）。mock 的 listTenants 恒返回空，
+// 真实 hook 下 canManage 永远 false，保存按钮的 canEditBudget = hasPermission && canManageDetail
+// 会被 canManageDetail 卡死——跟 use-permissions 一样的理由，直接放行。
+vi.mock('@/hooks/use-tenant-role', () => ({
+  useTenantRole: () => ({
+    role: 'tenant_owner',
+    isLoading: false,
+    isEnterprise: true,
+    tenant: undefined,
+    canManage: true,
+    isOwner: true,
+    isAdmin: false,
+    isMember: false,
+    isSpaceOwner: false,
+    ownedWorkspaceIds: [],
+  }),
 }))
 
 // appToast wraps sonner (DOM portals/timers) — mock it and assert calls.
@@ -85,7 +94,15 @@ vi.mock('@/lib/app-toast', () => ({
 
 import { appToast } from '@/lib/app-toast'
 import { useAuthStore } from '@/store/auth'
+import i18n, { loadLocaleNamespaces } from '@/i18n'
 import GuardrailsPage from '@/pages/guardrails/index'
+
+// 页面文案走 i18n（'预算限额金额' 等断言都是真实中文），测试统一走真实 i18next 而不是
+// 回显 key 的假 mock——之前 mock 把 t() 简化成 (key) => key，且完全丢弃插值 options，
+// aria-label={t('guardrails.budget.amountAria', { label })} 这类调用永远拿不到真文案。
+// 生产环境靠 App.tsx 的 <LocaleNamespaces> 异步加载 'guardrails' 语言包，这里直接同步预加载。
+i18n.changeLanguage('zh')
+await loadLocaleNamespaces(['guardrails'])
 
 const WORKSPACE_ID = 'ws-1'
 const GUARDRAIL_ID = 'g-1'
@@ -162,7 +179,7 @@ function renderPage(workspaceId = WORKSPACE_ID) {
 async function openBudgetTab() {
   renderPage()
   fireEvent.click(await screen.findByRole('button', { name: GUARDRAIL_NAME }))
-  const input = (await screen.findByRole('textbox', { name: '预算限额金额' })) as HTMLInputElement
+  const input = (await screen.findByRole('textbox', { name: '工作空间总预算金额' })) as HTMLInputElement
   await waitFor(() => expect(input.value).toBe('100'))
   return input
 }
@@ -219,7 +236,7 @@ describe('GuardrailsPage — invalid budget amount', () => {
     fireEvent.change(input, { target: { value: bad } })
     expect(input.value).toBe(bad)
 
-    fireEvent.click(screen.getByRole('button', { name: '保存预算' }))
+    fireEvent.click(screen.getByRole('button', { name: '保存护栏' }))
 
     await waitFor(() => expect(appToast.error).toHaveBeenCalledTimes(1))
     expect(vi.mocked(appToast.error).mock.calls[0][0]).toContain('预算金额无效')
@@ -250,16 +267,18 @@ describe('GuardrailsPage — valid budget save', () => {
     const input = await openBudgetTab()
 
     fireEvent.change(input, { target: { value: '123.45' } })
-    fireEvent.click(screen.getByRole('button', { name: '保存预算' }))
+    fireEvent.click(screen.getByRole('button', { name: '保存护栏' }))
 
     await waitFor(() => expect(updateBudgetPolicy).toHaveBeenCalledTimes(1))
     const [guardrailId, policyId, body] = updateBudgetPolicy.mock.calls[0]
     expect(guardrailId).toBe(GUARDRAIL_ID)
     expect(policyId).toBe(OLD_POLICY_ID)
     expect(body.spend_limit_amount).toBe('123.45')
-    // 只发变更字段：周期没动就不发（计费 counter 窗口不重锚），也不得泄漏
-    // create-only 字段（enabled / aggregation_scope / replace_budget_policy_id）
-    expect(Object.keys(body)).toEqual(['spend_limit_amount'])
+    // 这条走的是 buildGlobalBudgetOps（scope==='global'，见「全局护栏三档预算」测试组的
+    // 「改一档金额」用例），该函数固定带 aggregation_scope + period_length 做策略身份/
+    // 周期补齐，不是 member/key 单档那套「只发变更字段」精简 diff；不泄漏的仍是
+    // create-only 字段（enabled / replace_budget_policy_id）
+    expect(Object.keys(body)).toEqual(['aggregation_scope', 'period_length', 'spend_limit_amount'])
 
     // in-place maintenance: no create, no delete, no replace
     expect(addBudgetPolicy).not.toHaveBeenCalled()
@@ -285,11 +304,15 @@ describe('GuardrailsPage — valid budget save', () => {
 
     renderPage()
     fireEvent.click(await screen.findByRole('button', { name: GUARDRAIL_NAME }))
-    const input = (await screen.findByRole('textbox', { name: '预算限额金额' })) as HTMLInputElement
+    // 无既有策略 → draft 初始 limited=false，金额输入框要先切到「限额」才出现
+    // （draftFromPolicy(null) 落到 EMPTY_BUDGET_DRAFT，非直接可编辑态）。
+    const modeGroup = await screen.findByRole('radiogroup', { name: '工作空间总预算额度类型' })
+    fireEvent.click(within(modeGroup).getByRole('radio', { name: '限额' }))
+    const input = (await screen.findByRole('textbox', { name: '工作空间总预算金额' })) as HTMLInputElement
     expect(input.value).toBe('')
 
     fireEvent.change(input, { target: { value: '88' } })
-    fireEvent.click(screen.getByRole('button', { name: '保存预算' }))
+    fireEvent.click(screen.getByRole('button', { name: '保存护栏' }))
 
     await waitFor(() => expect(addBudgetPolicy).toHaveBeenCalledTimes(1))
     const [guardrailId, body] = addBudgetPolicy.mock.calls[0]
@@ -317,9 +340,10 @@ describe('GuardrailsPage — 多条生效预算策略（脏数据）防线 qa#16
 
     const alert = await screen.findByRole('alert')
     expect(alert.textContent).toContain('预算配置数据错误')
-    // 编辑器与保存/清除控件一概不渲染——在脏数据上替换只会加深不一致
-    expect(screen.queryByRole('textbox', { name: '预算限额金额' })).toBeNull()
-    expect(screen.queryByRole('button', { name: '保存预算' })).toBeNull()
+    // 编辑器仍展示当前值（取最新一条）但整体 disabled，不是完全不渲染——在脏数据上
+    // 保留可见但只读的展示，比整段消失更利于排障；真正被禁止的是提交动作（无保存按钮）。
+    expect((screen.getByRole('textbox', { name: '工作空间总预算金额' }) as HTMLInputElement).disabled).toBe(true)
+    expect(screen.queryByRole('button', { name: '保存护栏' })).toBeNull()
     expect(addBudgetPolicy).not.toHaveBeenCalled()
     expect(updateBudgetPolicy).not.toHaveBeenCalled()
     expect(deleteBudgetPolicy).not.toHaveBeenCalled()
@@ -335,7 +359,7 @@ describe('GuardrailsPage — 多条生效预算策略（脏数据）防线 qa#16
     renderPage()
     fireEvent.click(await screen.findByRole('button', { name: GUARDRAIL_NAME }))
 
-    const input = (await screen.findByRole('textbox', { name: '预算限额金额' })) as HTMLInputElement
+    const input = (await screen.findByRole('textbox', { name: '工作空间总预算金额' })) as HTMLInputElement
     await waitFor(() => expect(input.value).toBe('500'))
     expect(screen.queryByRole('alert')).toBeNull()
   })
@@ -372,7 +396,9 @@ async function openGlobalBudgetTab() {
   renderPage()
   // is_default 护栏的名称按钮带「默认」徽标，可及名含徽标文案 → 用正则匹配
   fireEvent.click(await screen.findByRole('button', { name: new RegExp(GUARDRAIL_NAME) }))
-  await screen.findByRole('switch', { name: '工作空间总预算是否限额' })
+  // 三档预算控件对齐 PRD 后是「不限额｜限额」两按钮分段（role=radiogroup/radio），非 Switch；
+  // 总预算档已有生效策略，回填后 limited=true，金额输入框直接可作为「就绪」锚点。
+  await screen.findByRole('textbox', { name: '工作空间总预算金额' })
 }
 
 describe('GuardrailsPage — 全局护栏三档预算', () => {
@@ -407,7 +433,7 @@ describe('GuardrailsPage — 全局护栏三档预算', () => {
     await waitFor(() => expect(total.value).toBe('1000'))
 
     fireEvent.change(total, { target: { value: '2000' } })
-    fireEvent.click(screen.getByRole('button', { name: '保存预算' }))
+    fireEvent.click(screen.getByRole('button', { name: '保存护栏' }))
 
     await waitFor(() => expect(updateBudgetPolicy).toHaveBeenCalledTimes(1))
     const [gid, policyId, body] = updateBudgetPolicy.mock.calls[0]
@@ -435,10 +461,12 @@ describe('GuardrailsPage — 全局护栏三档预算', () => {
     // per_api_key 档初始不限额（无策略）→ 无金额输入
     expect(screen.queryByRole('textbox', { name: '默认 Key 预算金额' })).toBeNull()
 
-    fireEvent.click(screen.getByRole('switch', { name: '默认 Key 预算是否限额' }))
+    fireEvent.click(
+      within(screen.getByRole('radiogroup', { name: '默认 Key 预算额度类型' })).getByRole('radio', { name: '限额' }),
+    )
     const key = (await screen.findByRole('textbox', { name: '默认 Key 预算金额' })) as HTMLInputElement
     fireEvent.change(key, { target: { value: '50' } })
-    fireEvent.click(screen.getByRole('button', { name: '保存预算' }))
+    fireEvent.click(screen.getByRole('button', { name: '保存护栏' }))
 
     await waitFor(() => expect(addBudgetPolicy).toHaveBeenCalledTimes(1))
     const [gid, body] = addBudgetPolicy.mock.calls[0]
@@ -464,8 +492,10 @@ describe('GuardrailsPage — 全局护栏三档预算', () => {
       expect((screen.getByRole('textbox', { name: '默认个人预算金额' }) as HTMLInputElement).value).toBe('200'),
     )
 
-    fireEvent.click(screen.getByRole('switch', { name: '默认个人预算是否限额' }))
-    fireEvent.click(screen.getByRole('button', { name: '保存预算' }))
+    fireEvent.click(
+      within(screen.getByRole('radiogroup', { name: '默认个人预算额度类型' })).getByRole('radio', { name: '不限额' }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: '保存护栏' }))
 
     await waitFor(() => expect(deleteBudgetPolicy).toHaveBeenCalledTimes(1))
     const [gid, policyId] = deleteBudgetPolicy.mock.calls[0]
@@ -490,13 +520,13 @@ describe('GuardrailsPage — 全局护栏三档预算', () => {
 
     await openGlobalBudgetTab()
     // 个人租户：默认个人预算档不渲染
-    expect(screen.queryByRole('switch', { name: '默认个人预算是否限额' })).toBeNull()
+    expect(screen.queryByRole('radiogroup', { name: '默认个人预算额度类型' })).toBeNull()
     expect(screen.queryByRole('textbox', { name: '默认个人预算金额' })).toBeNull()
 
     const total = (await screen.findByRole('textbox', { name: '工作空间总预算金额' })) as HTMLInputElement
     await waitFor(() => expect(total.value).toBe('1000'))
     fireEvent.change(total, { target: { value: '3000' } })
-    fireEvent.click(screen.getByRole('button', { name: '保存预算' }))
+    fireEvent.click(screen.getByRole('button', { name: '保存护栏' }))
 
     await waitFor(() => expect(updateBudgetPolicy).toHaveBeenCalledTimes(1))
     expect(updateBudgetPolicy.mock.calls[0][1]).toBe('bp-total')

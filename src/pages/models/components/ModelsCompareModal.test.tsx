@@ -17,13 +17,27 @@ const messages: Record<string, string> = {
   'modelsCompare.currentModel': '当前模型',
   'modelsCompare.selectedModels': '已选模型',
   'modelsCompare.candidates': '可选候选',
+  'modelsCompare.button.confirm': '确认对比',
+  'modelsCompare.selectedCount': '最多可选 {{max}} 个模型进行对比，当前已选择 {{count}} / {{max}} 个',
   'modelsExperience.picker.balanceInsufficient': '余额不足',
 }
 
 // 只替换 useTranslation；initReactI18next 等仍走原模块（src/i18n.ts 会用到）。
 vi.mock('react-i18next', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react-i18next')>()),
-  useTranslation: () => ({ t: (key: string, fallback?: string) => messages[key] ?? fallback ?? key }),
+  useTranslation: () => ({
+    // 第二个参数真实 t() 常是插值 options（如 { max, count }），不是 fallback 字符串——
+    // 组件里 modelsCompare.selectedCount / empty.selectDesc 就这么调用，之前当字符串直接
+    // 返回，把 options 对象原样当 children 渲染，React 直接崩（"Objects are not valid as
+    // a React child"）。有插值 options 时对 messages 里的模板做最基础的 {{var}} 替换；
+    // 没模板、fallback 也不是字符串时回落成 key 本身。
+    t: (key: string, opts?: string | Record<string, unknown>) => {
+      const template = messages[key]
+      if (template === undefined) return typeof opts === 'string' ? opts : key
+      if (typeof opts !== 'object' || opts === null) return template
+      return template.replace(/\{\{(\w+)\}\}/g, (_, name: string) => String(opts[name] ?? ''))
+    },
+  }),
 }))
 
 // ModelIcon → @lobehub/icons，其 es/ 目录式导入在 vitest 的 node 解析下会炸，

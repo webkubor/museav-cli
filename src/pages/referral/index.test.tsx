@@ -60,6 +60,9 @@ vi.mock('react-i18next', () => ({
       opts && 'count' in opts ? `${key}:${String(opts.count)}` : key,
     i18n: { language: 'zh' },
   }),
+  // 依赖图里会经 auth-controller → src/i18n.ts 调用 .use(initReactI18next)，
+  // 完全替换模块后缺这个导出会让整个测试文件加载失败（同 guardrails/WechatCashierPage 的坑）。
+  initReactI18next: { type: '3rdParty', init: () => {} },
 }))
 
 // appToast wraps sonner (DOM portals/timers) — silence it, we assert behavior
@@ -174,7 +177,7 @@ describe('ReferralPage — active-tenant scoping (#157)', () => {
 describe('ReferralPage — render', () => {
   it('renders KPI + invite info from the overview response', async () => {
     renderPage()
-    expect(await screen.findByText('推荐计划')).toBeInTheDocument()
+    expect(await screen.findByText('billing.referral.title')).toBeInTheDocument()
     // reward balance KPI shows the formatted ¥ amount
     expect(await screen.findByText('¥1,420')).toBeInTheDocument()
     // invite link is tenant-scoped via inviteCode and uses the current frontend origin.
@@ -184,12 +187,12 @@ describe('ReferralPage — render', () => {
 
   it('shows the empty state in the invitees table when there are no invitees', async () => {
     renderPage()
-    await screen.findByText('推荐计划')
+    await screen.findByText('billing.referral.title')
     // default tab is invitees; service returned [] → empty row
-    const empties = await screen.findAllByText('暂无记录')
+    const empties = await screen.findAllByText('billing.referral.empty')
     expect(empties.length).toBeGreaterThan(0)
     // exactly one cell carries it within the active table body
-    expect(within(empties[0].closest('table') as HTMLElement).getByText('暂无记录')).toBeInTheDocument()
+    expect(within(empties[0].closest('table') as HTMLElement).getByText('billing.referral.empty')).toBeInTheDocument()
   })
 })
 
@@ -222,8 +225,8 @@ describe('ReferralPage — invitees cursor pagination', () => {
   // Invitees is the default tab; scope to its table via the unique 当前档位 header.
   async function openInviteesTab() {
     renderPage()
-    await screen.findByText('推荐计划')
-    const tierHeader = await screen.findByText('当前档位')
+    await screen.findByText('billing.referral.title')
+    const tierHeader = await screen.findByText('billing.referral.colCurrentTier')
     return tierHeader.closest('table') as HTMLElement
   }
 
@@ -319,10 +322,10 @@ describe('ReferralPage — commission log cursor pagination (#199)', () => {
   // the commissions table element (scoped by the unique 档位/Tier header).
   async function openCommissionsTab() {
     renderPage()
-    await screen.findByText('推荐计划')
+    await screen.findByText('billing.referral.title')
     // Radix Tabs.Trigger activates on mouseDown/focus, not click.
-    fireEvent.mouseDown(screen.getByRole('tab', { name: '返佣流水' }))
-    const tierHeader = await screen.findByText('档位')
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'billing.referral.tabCommissions' }))
+    const tierHeader = await screen.findByText('billing.referral.colTier')
     return tierHeader.closest('table') as HTMLElement
   }
 

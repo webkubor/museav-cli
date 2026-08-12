@@ -449,13 +449,14 @@ function ConnectModalContent({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
                       )}
                       <CopyButton
                         value={item.copyText}
-                        // 参数区展示掩码，复制时才把选中 Key 换成明文——否则复制出去的配置不可用
-                        getValue={async () =>
-                          item.copyText.replaceAll(
-                            selectedKey?.masked ?? createdKeyText,
-                            await resolveKeyPlaintext()
-                          )
-                        }
+                        // 参数区展示掩码，复制时才把选中 Key 换成明文——否则复制出去的配置不可用。
+                        // 还没建过 Key 时两者都是空串，String.replaceAll('', x) 会在每个字符间插入
+                        // 替换值（产生逐字符乱码）；此时 copyText 已经带占位符，原样返回即可。
+                        getValue={async () => {
+                          const maskedOrCreated = selectedKey?.masked ?? createdKeyText
+                          if (!maskedOrCreated) return item.copyText
+                          return item.copyText.replaceAll(maskedOrCreated, await resolveKeyPlaintext())
+                        }}
                         variant="labeled"
                         label={item.copyLabel}
                         onCopied={() => trackEvent('copy_connect_params', { ...trackCtx, method: item.id })}

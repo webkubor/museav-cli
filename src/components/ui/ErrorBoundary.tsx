@@ -2,6 +2,7 @@ import { Component, type ReactNode } from 'react'
 import { LuTriangleAlert, LuRotateCw } from 'react-icons/lu'
 import { Button } from './Button'
 import i18n from '@/i18n'
+import { reportClientRenderError } from '@/lib/client-error-report'
 
 interface Props {
   children: ReactNode
@@ -27,8 +28,13 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: unknown) {
-    // 记录便于排查，不阻断（生产可在此接错误上报）
+    // 记录便于排查，不阻断；同时静默埋点上报，生产可查
     console.error('[ErrorBoundary]', error, info)
+    const componentStack =
+      typeof info === 'object' && info !== null && 'componentStack' in info
+        ? String((info as { componentStack?: unknown }).componentStack ?? '')
+        : undefined
+    reportClientRenderError(error, componentStack)
   }
 
   componentDidUpdate(prev: Props) {

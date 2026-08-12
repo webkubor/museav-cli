@@ -43,7 +43,6 @@ export function ApiKeySummaryCards({ items, summary, monthSpend, loading }: Prop
         title={t('apiKeys.summary.active')}
         value={String(s.active)}
         rawNumber={s.active}
-        ratio={{ current: s.active, total: s.total }}
         icon={<LuCircleCheck size={18} />}
         color="var(--mg-success)"
         glowColor="color-mix(in srgb, var(--mg-success) 14%, transparent)"
@@ -66,7 +65,6 @@ export function ApiKeySummaryCards({ items, summary, monthSpend, loading }: Prop
         title={t('apiKeys.summary.limitReached')}
         value={String(s.limit_reached)}
         rawNumber={s.limit_reached}
-        ratio={{ current: s.limit_reached, total: s.total }}
         icon={<LuGauge size={18} />}
         color="var(--mg-warning)"
         glowColor="color-mix(in srgb, var(--mg-warning) 14%, transparent)"

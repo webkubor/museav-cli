@@ -67,7 +67,8 @@ function pathFromUrl(url?: string): string | undefined {
   }
 }
 
-function envBase(): Pick<ServerErrorDiagnostics, 'page' | 'tenantId' | 'version' | 'build' | 'time'> {
+/** 导出给 client-error-report.ts 复用：客户端渲染/未捕获异常上报要带同一份环境字段。 */
+export function envBase(): Pick<ServerErrorDiagnostics, 'page' | 'tenantId' | 'version' | 'build' | 'time'> {
   return {
     page: currentPage(),
     tenantId: useAuthStore.getState().activeTenantId ?? undefined,

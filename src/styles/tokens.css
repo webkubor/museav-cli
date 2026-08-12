@@ -41,6 +41,7 @@
   --mg-success-bg:       color-mix(in oklab, var(--mg-success) 10%, transparent);
   --mg-success-bg-hover: color-mix(in oklab, var(--mg-success) 16%, transparent);
   --mg-success-border:   color-mix(in oklab, var(--mg-success) 28%, transparent);
+  --mg-warning:          #FFA000; /* 警示橙本体：部署环境不依赖 node_modules 缓存 */
   --mg-warning-text:     var(--mg-warning);
   --mg-warning-bg:       color-mix(in oklab, var(--mg-warning) 11%, transparent);
   --mg-warning-bg-hover: color-mix(in oklab, var(--mg-warning) 17%, transparent);

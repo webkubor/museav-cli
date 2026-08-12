@@ -308,30 +308,30 @@ html:not([data-market='global']) body:not([theme-mode='dark']) .dashboard-shell:
   margin-bottom: 10px;
   border-radius: var(--radius-full);
   background:
-    radial-gradient(circle at 68% 26%, rgba(255, 255, 255, 0.96) 0 5%, rgba(255, 255, 255, 0.56) 10%, rgba(255, 255, 255, 0.12) 21%, transparent 30%),
-    radial-gradient(ellipse at 38% 72%, rgba(240, 255, 255, 0.9) 0 16%, rgba(178, 239, 255, 0.74) 29%, rgba(87, 194, 255, 0.28) 46%, transparent 61%),
-    radial-gradient(ellipse at 31% 34%, rgba(0, 215, 255, 0.58) 0 18%, rgba(16, 158, 255, 0.5) 36%, transparent 61%),
-    radial-gradient(circle at 58% 51%, #7ee7ff 0%, #26afff 34%, #0472ff 62%, #0050ff 82%, #0046e8 100%);
+    radial-gradient(circle at 68% 25%, rgba(255, 255, 255, 0.96) 0 5%, rgba(255, 255, 255, 0.68) 10%, rgba(255, 255, 255, 0.18) 20%, transparent 31%),
+    radial-gradient(ellipse at 37% 72%, rgba(245, 255, 255, 0.88) 0 16%, rgba(180, 241, 255, 0.62) 30%, rgba(80, 190, 255, 0.18) 48%, transparent 64%),
+    radial-gradient(ellipse at 32% 35%, rgba(3, 205, 255, 0.5) 0 18%, rgba(0, 138, 255, 0.48) 38%, transparent 62%),
+    radial-gradient(circle at 56% 50%, #78e8ff 0%, #24adff 34%, #0574ff 62%, #004cff 82%, #003ed6 100%);
   box-shadow:
-    inset 4px 3px 7px rgba(122, 240, 255, 0.35),
-    inset -7px -7px 10px rgba(0, 52, 216, 0.68),
-    inset 0 0 0 1px rgba(0, 83, 255, 0.52),
-    inset 0 -2px 3px rgba(0, 66, 226, 0.72),
-    0 9px 18px rgba(0, 102, 255, 0.18);
+    inset 5px 4px 8px rgba(144, 246, 255, 0.38),
+    inset -8px -8px 12px rgba(0, 42, 198, 0.72),
+    inset 0 0 0 1px rgba(0, 82, 255, 0.56),
+    inset 0 -2px 4px rgba(0, 55, 222, 0.76),
+    0 10px 20px rgba(0, 102, 255, 0.18);
   overflow: hidden;
 }
 
 .models-experience-empty-orb::before {
   content: "";
   position: absolute;
-  inset: 4px 6px 7px 4px;
+  inset: 4px 6px 7px 5px;
   z-index: 1;
   border-radius: var(--radius-full);
   background:
-    linear-gradient(130deg, rgba(255, 255, 255, 0.22), transparent 30%),
-    radial-gradient(ellipse at 25% 73%, rgba(255, 255, 255, 0.52), rgba(236, 255, 255, 0.3) 25%, transparent 48%),
-    radial-gradient(ellipse at 51% 59%, rgba(255, 255, 255, 0.2), transparent 43%);
-  filter: blur(1.2px);
+    linear-gradient(128deg, rgba(255, 255, 255, 0.2), transparent 30%),
+    radial-gradient(ellipse at 28% 73%, rgba(255, 255, 255, 0.58), rgba(236, 255, 255, 0.34) 26%, transparent 49%),
+    radial-gradient(ellipse at 52% 59%, rgba(255, 255, 255, 0.18), transparent 44%);
+  filter: blur(1.1px);
   mix-blend-mode: screen;
   opacity: 0.95;
 }
@@ -339,11 +339,11 @@ html:not([data-market='global']) body:not([theme-mode='dark']) .dashboard-shell:
 .models-experience-empty-orb::after {
   content: "";
   position: absolute;
-  top: 9px;
-  right: 10px;
+  top: 8px;
+  right: 9px;
   z-index: 2;
-  width: 14px;
-  height: 15px;
+  width: 15px;
+  height: 16px;
   border-radius: var(--radius-full);
   background: radial-gradient(ellipse at 52% 38%, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.7) 32%, rgba(255, 255, 255, 0.12) 64%, transparent 76%);
   filter: blur(1.5px);
@@ -358,12 +358,12 @@ html:not([data-market='global']) body:not([theme-mode='dark']) .dashboard-shell:
 
 .models-experience-empty-orb-refract-a {
   top: 4px;
-  left: 7px;
+  left: 6px;
   z-index: 1;
-  width: 26px;
-  height: 46px;
-  background: linear-gradient(92deg, rgba(0, 71, 255, 0.34), rgba(29, 187, 255, 0.46) 43%, transparent 72%);
-  filter: blur(3.3px);
+  width: 27px;
+  height: 47px;
+  background: linear-gradient(92deg, rgba(0, 66, 255, 0.36), rgba(22, 181, 255, 0.5) 43%, transparent 72%);
+  filter: blur(3.1px);
   mix-blend-mode: screen;
   opacity: 0.8;
   transform: rotate(7deg);
@@ -373,10 +373,10 @@ html:not([data-market='global']) body:not([theme-mode='dark']) .dashboard-shell:
   left: 10px;
   bottom: 5px;
   z-index: 2;
-  width: 35px;
-  height: 20px;
-  background: radial-gradient(ellipse at 44% 48%, rgba(239, 255, 255, 0.8), rgba(171, 241, 255, 0.48) 37%, transparent 72%);
-  filter: blur(1.8px);
+  width: 36px;
+  height: 21px;
+  background: radial-gradient(ellipse at 44% 48%, rgba(244, 255, 255, 0.84), rgba(172, 241, 255, 0.5) 38%, transparent 72%);
+  filter: blur(1.7px);
   mix-blend-mode: screen;
   opacity: 0.92;
   transform: rotate(21deg);
@@ -391,24 +391,24 @@ html:not([data-market='global']) body:not([theme-mode='dark']) .dashboard-shell:
 
 :root[data-market="global"] .models-experience-empty-orb {
   background:
-    radial-gradient(circle at 66% 27%, rgba(255, 255, 255, 0.9) 0 6%, rgba(255, 255, 255, 0.38) 16%, transparent 34%),
-    radial-gradient(ellipse at 45% 68%, rgba(205, 255, 202, 0.76) 0 26%, rgba(122, 245, 128, 0.54) 48%, transparent 67%),
-    radial-gradient(ellipse at 28% 36%, rgba(89, 236, 197, 0.5) 0 22%, rgba(44, 216, 126, 0.38) 44%, transparent 64%),
-    radial-gradient(circle at 58% 48%, #93fb93 0%, #4ee65a 34%, #13c836 62%, #08a424 82%, #007c19 100%);
+    radial-gradient(circle at 68% 25%, rgba(255, 255, 255, 0.92) 0 5%, rgba(255, 255, 255, 0.5) 12%, rgba(255, 255, 255, 0.12) 22%, transparent 32%),
+    radial-gradient(ellipse at 37% 72%, rgba(232, 255, 232, 0.82) 0 18%, rgba(151, 247, 139, 0.48) 34%, transparent 63%),
+    radial-gradient(ellipse at 31% 35%, rgba(102, 255, 218, 0.42) 0 20%, rgba(33, 210, 105, 0.4) 42%, transparent 64%),
+    radial-gradient(circle at 56% 50%, #8af47d 0%, #46e64f 34%, #12c931 62%, #079b20 82%, #007215 100%);
   box-shadow:
-    inset 4px 3px 7px rgba(179, 255, 185, 0.34),
-    inset -7px -7px 10px rgba(0, 102, 22, 0.58),
+    inset 5px 4px 8px rgba(197, 255, 198, 0.34),
+    inset -8px -8px 12px rgba(0, 96, 20, 0.62),
     inset 0 0 0 1px rgba(18, 205, 53, 0.52),
-    inset 0 -2px 3px rgba(0, 134, 27, 0.56),
-    0 9px 18px rgba(20, 199, 64, 0.16);
+    inset 0 -2px 4px rgba(0, 126, 26, 0.6),
+    0 10px 20px rgba(20, 199, 64, 0.16);
 }
 
 :root[data-market="global"] .models-experience-empty-orb-refract-a {
-  background: linear-gradient(92deg, rgba(0, 151, 38, 0.24), rgba(78, 235, 181, 0.38) 43%, transparent 72%);
+  background: linear-gradient(92deg, rgba(0, 133, 33, 0.28), rgba(78, 235, 181, 0.4) 43%, transparent 72%);
 }
 
 :root[data-market="global"] .models-experience-empty-orb-refract-b {
-  background: radial-gradient(ellipse at 44% 48%, rgba(235, 255, 232, 0.68), rgba(152, 255, 158, 0.42) 37%, transparent 72%);
+  background: radial-gradient(ellipse at 44% 48%, rgba(240, 255, 236, 0.72), rgba(157, 255, 151, 0.44) 38%, transparent 72%);
 }
 
 :root[data-market="global"] .models-experience-empty-orb-rim {

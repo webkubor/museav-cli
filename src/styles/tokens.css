@@ -135,6 +135,17 @@
   --mg-motion-skeleton-duration: 1.4s;
   --mg-motion-attention-duration: 0.6s;
   --mg-motion-reduced-duration: 0.01ms;
+
+  /* 兼容 modelgo-design-tokens 0.6.4 缺失的浮层层级。
+     客服弹窗 / Popover 需要压过页面内容与顶栏，但仍低于遮罩、抽屉、弹窗。 */
+  --mg-z-base: 0;
+  --mg-z-raised: 10;
+  --mg-z-popover: 1250;
+  --mg-z-tooltip: 1270;
+  --mg-z-sheet: 1350;
+  --mg-z-blocking: 1500;
+  --mg-z-devtool: 2000;
+
   --mg-control-h-xs: 1.75rem;
   --mg-control-h-sm: 2rem;
   --mg-control-h-md: 2.5rem;

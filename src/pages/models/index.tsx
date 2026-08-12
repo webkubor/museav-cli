@@ -135,7 +135,11 @@ export default function ModelsPage() {
                   /* 视觉改版（Figma「模型体验」稿）：分类小图标换成品牌玻璃球引导图；
                      示例 Prompt 从空态区挪到输入框下方的卡片行（见 Composer 之后） */
                   <div className="models-experience-empty">
-                    <span className="models-experience-empty-orb" aria-hidden="true" />
+                    <span className="models-experience-empty-orb" aria-hidden="true">
+                      <span className="models-experience-empty-orb-refract-a" />
+                      <span className="models-experience-empty-orb-refract-b" />
+                      <span className="models-experience-empty-orb-rim" />
+                    </span>
                     <strong>{categoryEmptyCopy(effectiveTask).title}</strong>
                     <span>{categoryEmptyCopy(effectiveTask).hint}</span>
                   </div>

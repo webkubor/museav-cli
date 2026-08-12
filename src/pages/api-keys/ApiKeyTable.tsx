@@ -17,7 +17,7 @@ import {
   TableCell,
 } from '@/components/ui/Table'
 import { LuCopy, LuFilterX, LuKeyRound, LuLoaderCircle, LuPlus, LuShieldCheck } from 'react-icons/lu'
-import { formatDateTime } from '@/lib/format-date'
+import { formatDateTimeYMD } from '@/lib/format-date'
 import { formatMoney } from '@/lib/utils'
 import type { ApiKeyItem, ApiKeyType } from '@/types'
 import {
@@ -286,21 +286,21 @@ export function ApiKeyTable({
                   >{hasLimit ? t('apiKeys.table.limitValue', { value: formatLimit(record, t) }) : formatLimit(record, t)}</div>
                 </TableCell>
                 <TableCell className="text-xs text-mg-text-2">
-                  {lastCalled ? formatDateTime(lastCalled) : <span className="text-mg-text-3">{t('apiKeys.table.notCalled')}</span>}
+                  {lastCalled ? formatDateTimeYMD(lastCalled) : <span className="text-mg-text-3">{t('apiKeys.table.notCalled')}</span>}
                 </TableCell>
                 <TableCell className="text-xs">
                   {!record.expires_at ? (
                     <span className="text-mg-text-3">{t('apiKeys.table.neverExpires')}</span>
                   ) : expired ? (
                     <span className="inline-flex items-center gap-1.5 text-mg-danger font-semibold">
-                      {formatDateTime(record.expires_at)}
+                      {formatDateTimeYMD(record.expires_at)}
                       <span className="px-1.5 py-0.5 rounded-full text-xs font-bold bg-mg-danger/10 border border-mg-danger/20">
                         {t('apiKeys.table.expired')}
                       </span>
                     </span>
                   ) : (
                     <span className={isExpiringSoon(record) ? 'text-mg-warning font-semibold' : 'text-mg-text-2'}>
-                      {formatDateTime(record.expires_at)}
+                      {formatDateTimeYMD(record.expires_at)}
                     </span>
                   )}
                 </TableCell>

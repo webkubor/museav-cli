@@ -3,6 +3,26 @@
   isolation: isolate;
 }
 
+.dashboard-main {
+  padding: var(--mg-layout-console-page-pad-y) var(--mg-layout-console-page-pad-x) var(--mg-layout-console-page-pad-bottom);
+}
+
+@media (min-width: 768px) {
+  .dashboard-main {
+    padding: var(--mg-layout-console-page-pad-y-lg) var(--mg-layout-console-page-pad-x-lg) var(--mg-layout-console-page-pad-bottom-lg);
+  }
+}
+
+.dashboard-content-card {
+  padding: var(--mg-layout-content-pad);
+}
+
+@media (min-width: 768px) {
+  .dashboard-content-card {
+    padding: var(--mg-layout-content-pad-lg);
+  }
+}
+
 .particle-lines-background {
   opacity: var(--ambient-particle-opacity, 0.72);
 }

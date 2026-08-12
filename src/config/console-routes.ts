@@ -37,7 +37,7 @@ import { PERMS, type Permission } from './permissions'
  *   - granted === null（会话加载中 / 切组织重拉的过渡窗）→ 只显示加载态，不渲染受保护页面。
  *
  * 【权限粒度分层】
- *   - 菜单/页面级 `*_VIEW`（dashboard/analytics/logs/billing/api_keys/guardrails/observability）：
+ *   - 菜单/页面级 `*_VIEW`（dashboard/analytics/logs/billing/api_keys/guardrails）：
  *     用于「能不能进这个页」——本清单 + 路由守卫。
  *   - 按钮/操作级（`*_CREATE/EDIT/DELETE/…`）：用于「进了页后能不能做某动作」——
  *     由页面内 `usePermissions().hasPermission()` 就地控制，**不在路由层**。
@@ -97,7 +97,6 @@ export const CONSOLE_ROUTES: ConsoleRouteMeta[] = [
   { key: 'referral', path: 'referral', scope: 'tenant', permission: PERMS.REFERRAL_VIEW },
   { key: 'api-keys', path: 'api-keys', scope: 'workspace', permission: PERMS.API_KEYS_VIEW },
   { key: 'guardrails', path: 'guardrails', scope: 'workspace', permission: PERMS.GUARDRAILS_VIEW },
-  { key: 'observability', path: 'observability', scope: 'workspace', permission: PERMS.OBSERVABILITY_VIEW },
 ]
 
 /** 工作区级页面 key 集合（DashboardLayout 据此把跳转前缀成 /workspace/:id/…） */

@@ -23,21 +23,21 @@ const badgeVariants = cva(
         secondary:
           "border-transparent bg-mg-fill-1 text-mg-text-2 hover:bg-mg-fill-2",
         destructive:
-          "border-transparent bg-rose-500 text-white hover:bg-rose-600 shadow-sm",
+          "border-transparent bg-[var(--mg-btn-danger-bg)] text-[var(--mg-btn-danger-text)] hover:bg-[var(--mg-btn-danger-bg-hover)] shadow-sm",
         outline: 
           "text-mg-text-2 border-mg-border hover:bg-mg-fill-0",
         success:
-          "border-transparent bg-mg-success/10 text-mg-success border-mg-success/20",
+          "bg-[var(--mg-success-bg)] text-[var(--mg-success-text)] border-[var(--mg-success-border)]",
         warning:
-          "border-transparent bg-mg-warning/10 text-mg-warning border-mg-warning/20",
+          "bg-[var(--mg-warning-bg)] text-[var(--mg-warning-text)] border-[var(--mg-warning-border)]",
         danger:
-          "border-transparent bg-mg-danger/10 text-mg-danger border-mg-danger/20",
+          "bg-[var(--mg-danger-bg)] text-[var(--mg-danger-text)] border-[var(--mg-danger-border)]",
         brand:
           "border-transparent bg-brand-base/10 text-brand-base border-brand-base/20",
         purple:
-          "border-transparent bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20",
+          "bg-[var(--mg-accent-purple-bg)] text-[var(--mg-accent-purple-fg)] border-[var(--mg-accent-purple-border)]",
         info:
-          "border-transparent bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+          "bg-[var(--mg-info-bg)] text-[var(--mg-info-text)] border-[var(--mg-info-border)]",
         glass:
           "bg-white/10 backdrop-blur-md border-white/20 text-mg-text-2",
       },

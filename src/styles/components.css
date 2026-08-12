@@ -109,122 +109,108 @@
   @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-glow disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0;
   font-size: var(--mg-font-size-body);
   line-height: var(--mg-line-height-body);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: var(--mg-radius-control);
+  transition: var(--mg-btn-transition);
 }
 
 /* 物理触觉阻尼按压 */
 .modern-btn:not(:disabled):active {
-  transform: scale(0.97) !important;
-  transition-duration: 0.1s !important;
+  transform: scale(var(--mg-btn-press-scale)) !important;
+  transition: var(--mg-motion-press) !important;
 }
 
 .modern-btn-default {
-  @apply text-white shadow-sm;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  background-color: #0f172a !important; /* 浅色大厂极雅实色黑 */
-  border: 1px solid #0f172a !important;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05) !important;
+  background-color: var(--mg-btn-neutral-bg) !important;
+  border: 1px solid var(--mg-btn-neutral-border) !important;
+  color: var(--mg-btn-neutral-text) !important;
+  box-shadow: var(--mg-btn-neutral-shadow) !important;
+  transition: var(--mg-btn-transition);
 }
 
 .modern-btn-default:hover {
-  transform: translateY(-0.5px);
-  background-color: #1e293b !important;
-  border-color: #1e293b !important;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12), 0 1px 2px rgba(0, 0, 0, 0.05) !important;
-}
-
-body[theme-mode='dark'] .modern-btn-default {
-  background-color: rgba(255, 255, 255, 0.10) !important;
-  border: 1px solid rgba(255, 255, 255, 0.13) !important;
-  color: #f0f0f2 !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
-}
-
-body[theme-mode='dark'] .modern-btn-default:hover {
-  transform: translateY(-0.5px);
-  background-color: rgba(255, 255, 255, 0.16) !important;
-  border-color: rgba(255, 255, 255, 0.20) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+  transform: translateY(var(--mg-btn-hover-y));
+  background-color: var(--mg-btn-neutral-bg-hover) !important;
+  border-color: var(--mg-btn-neutral-border-hover) !important;
+  box-shadow: var(--mg-btn-neutral-shadow-hover) !important;
 }
 
 .modern-btn-destructive {
-  /* 危险色定稿 #D9534F（2026-08-11 视觉验收，全站 13 处 destructive 按钮统一）。
-     此前写死 rose-500 没走语义 token；而 token 包的 --mg-error 浅色档还是
-     「待设计确认」的占位 #ef4444——两头都不是定稿值。先在基座钉定稿色
-     （局部变量做 token 化入口），token 仓 --mg-error 定稿后改指 var(--mg-danger)。 */
-  --btn-destructive-bg: #d9534f;
-  @apply text-white shadow-sm;
-  background-color: var(--btn-destructive-bg);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  background: var(--mg-btn-danger-bg) !important;
+  color: var(--mg-btn-danger-text) !important;
+  transition: var(--mg-btn-transition);
   border: none !important;
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--btn-destructive-bg) 10%, transparent) !important;
+  box-shadow: var(--mg-btn-danger-shadow) !important;
 }
 
 .modern-btn-destructive:hover {
-  transform: translateY(-0.5px);
-  background-color: color-mix(in srgb, var(--btn-destructive-bg) 88%, black) !important;
-  box-shadow:
-    0 4px 12px color-mix(in srgb, var(--btn-destructive-bg) 25%, transparent),
-    0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  transform: translateY(var(--mg-btn-hover-y));
+  background-color: var(--mg-btn-danger-bg-hover) !important;
+  box-shadow: var(--mg-btn-danger-shadow-hover) !important;
+}
+
+.modern-btn-destructive:active {
+  transform: translateY(0) scale(var(--mg-state-pressed-scale, 0.98));
+  background-color: var(--mg-btn-danger-bg-active) !important;
 }
 
 .modern-btn-outline {
   @apply border bg-transparent;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  border-color: var(--mg-border) !important;
-  color: var(--mg-text-1) !important;
+  transition: var(--mg-btn-transition);
+  background-color: var(--mg-btn-outline-bg) !important;
+  border-color: var(--mg-btn-outline-border) !important;
+  color: var(--mg-btn-outline-text) !important;
 }
 
 .modern-btn-outline:hover {
-  transform: translateY(-0.5px);
-  background-color: var(--mg-fill-0) !important;
-  border-color: rgba(15, 23, 42, 0.12) !important;
+  transform: translateY(var(--mg-btn-hover-y));
+  background-color: var(--mg-btn-outline-bg-hover) !important;
+  border-color: var(--mg-btn-outline-border-hover) !important;
 }
 
 .modern-btn-secondary {
   @apply transition-all;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  background-color: var(--mg-fill-0) !important;
-  color: var(--mg-text-2) !important;
+  transition: var(--mg-btn-transition);
+  background-color: var(--mg-btn-secondary-bg) !important;
+  color: var(--mg-btn-secondary-text) !important;
 }
 
 .modern-btn-secondary:hover {
-  transform: translateY(-0.5px);
-  background-color: var(--mg-fill-1) !important;
-  color: var(--mg-text-1) !important;
+  transform: translateY(var(--mg-btn-hover-y));
+  background-color: var(--mg-btn-secondary-bg-hover) !important;
+  color: var(--mg-btn-secondary-text-hover) !important;
 }
 
 .modern-btn-ghost {
   @apply transition-all;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  color: var(--mg-text-2) !important;
+  transition: var(--mg-btn-transition);
+  color: var(--mg-btn-ghost-text) !important;
 }
 
 .modern-btn-ghost:hover {
-  transform: translateY(-0.5px);
-  background-color: var(--mg-fill-0) !important;
-  color: var(--mg-text-1) !important;
+  transform: translateY(var(--mg-btn-hover-y));
+  background-color: var(--mg-btn-ghost-bg-hover) !important;
+  color: var(--mg-btn-ghost-text-hover) !important;
 }
 
 .modern-btn-link {
   @apply underline-offset-4 hover:underline;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  color: var(--brand-base) !important;
+  transition: var(--mg-btn-transition);
+  color: var(--mg-btn-link-text) !important;
 }
 
 .modern-btn-link:hover {
-  color: var(--brand-deep) !important;
+  color: var(--mg-btn-link-text-hover) !important;
 }
 
 /* Brand 主色调按钮 — 实色 + 扫光（保留扫光作为高级细节） */
 .modern-btn-brand {
-  color: #ffffff;
+  color: var(--mg-btn-primary-text);
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   border: none !important;
-  background: var(--brand-base) !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  background: var(--mg-btn-primary-bg) !important;
+  box-shadow: var(--mg-btn-primary-shadow) !important;
+  transition: var(--mg-btn-transition);
   position: relative;
   overflow: hidden;
 }
@@ -259,12 +245,14 @@ body[theme-mode='dark'] .modern-btn-default:hover {
 
 .modern-btn-brand:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px var(--brand-glow), 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  background: var(--mg-btn-primary-bg-hover) !important;
+  box-shadow: var(--mg-btn-primary-shadow-hover) !important;
   filter: brightness(1.04) saturate(1.08);
 }
 
 .modern-btn-brand:not(:disabled):active {
-  transform: translateY(0) scale(0.97) !important;
+  transform: translateY(0) scale(var(--mg-btn-press-scale)) !important;
+  background: var(--mg-btn-primary-bg-active) !important;
   filter: brightness(0.97);
 }
 
@@ -279,7 +267,7 @@ body[theme-mode='dark'] .modern-btn-default:hover {
   border: 1px solid var(--mg-glass-line);
   -webkit-backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.15);
   backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.15);
-  border-radius: var(--radius-md); /* 统一卡片圆角 14px；外层容器用 lg(18)，控件用 sm(8)，形成层级 */
+  border-radius: var(--mg-tile-radius);
   box-shadow: var(--mg-card-shadow);
   transition: box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -296,11 +284,12 @@ body[theme-mode='dark'] .modern-btn-default:hover {
 .modern-input-field,
 .modern-input-wrapper {
   @apply flex w-full rounded-lg border outline-none disabled:cursor-not-allowed disabled:opacity-50;
-  min-height: var(--mg-control-h-md);
-  padding: var(--mg-control-py-sm) var(--mg-control-px-sm);
+  min-height: var(--mg-control-height);
+  padding: var(--mg-control-pad-y-sm) var(--mg-control-pad-x-sm);
   font-size: var(--mg-font-size-body);
   line-height: var(--mg-line-height-body);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: var(--mg-radius-control);
+  transition: var(--mg-btn-transition);
   border-color: var(--mg-border) !important;
   background-color: var(--mg-bg-0) !important;
   color: var(--mg-text-1) !important;
@@ -315,18 +304,13 @@ body[theme-mode='dark'] .modern-btn-default:hover {
 
 .modern-input-field:hover,
 .modern-input-wrapper:hover {
-  border-color: rgba(15, 23, 42, 0.15) !important;
-}
-
-body[theme-mode='dark'] .modern-input-field:hover,
-body[theme-mode='dark'] .modern-input-wrapper:hover {
-  border-color: rgba(255, 255, 255, 0.2) !important;
+  border-color: var(--mg-control-border-hover) !important;
 }
 
 .modern-input-field:focus,
 .modern-input-wrapper:focus-within {
   border-color: var(--brand-base) !important;
-  box-shadow: 0 0 0 1px var(--brand-base), 0 0 0 3.5px var(--brand-glow), var(--shadow-sm) !important;
+  box-shadow: var(--mg-focus-ring), var(--shadow-sm) !important;
   background-color: var(--mg-bg-0) !important;
 }
 
@@ -467,7 +451,7 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
     380px circle at var(--mouse-x, 0px) var(--mouse-y, 0px),
     color-mix(in srgb, var(--brand-base) 18%, transparent) 0%,
     color-mix(in srgb, var(--brand-mid) 8%, transparent) 35%,
-    color-mix(in srgb, #d946ef 5%, transparent) 60%,
+    color-mix(in srgb, var(--brand-light) 5%, transparent) 60%,
     transparent 85%
   );
   opacity: 0;
@@ -476,13 +460,13 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
   z-index: 1;
 }
 
-/* 国际市场：炫彩绿色渐变流光追踪（翠绿 → 亮蓝） */
+/* 国际市场：同色相绿色渐变流光追踪 */
 [data-market='global'] .mouse-glow-card::before {
   background: radial-gradient(
     380px circle at var(--mouse-x, 0px) var(--mouse-y, 0px),
     color-mix(in srgb, var(--brand-base) 18%, transparent) 0%,
     color-mix(in srgb, var(--brand-mid) 8%, transparent) 35%,
-    color-mix(in srgb, #3b82f6 5%, transparent) 60%,
+    color-mix(in srgb, var(--brand-light) 5%, transparent) 60%,
     transparent 85%
   );
 }
@@ -514,7 +498,7 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
 }
 
 .mouse-glow-card:hover .kpi-value-text {
-  background: linear-gradient(135deg, var(--brand-base) 0%, var(--brand-mid) 60%, color-mix(in srgb, var(--brand-light) 80%, #d946ef) 100%) !important;
+  background: linear-gradient(135deg, var(--brand-base) 0%, var(--brand-mid) 60%, var(--brand-light) 100%) !important;
   -webkit-background-clip: text !important;
   background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
@@ -522,7 +506,7 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
 }
 
 [data-market='global'] .mouse-glow-card:hover .kpi-value-text {
-  background: linear-gradient(135deg, var(--brand-base) 0%, var(--brand-mid) 60%, #3b82f6 100%) !important;
+  background: linear-gradient(135deg, var(--brand-base) 0%, var(--brand-mid) 60%, var(--brand-light) 100%) !important;
   -webkit-background-clip: text !important;
   background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
@@ -538,17 +522,13 @@ body[theme-mode='dark'] .modern-input-wrapper:hover {
   transition: box-shadow 0.3s ease;
 }
 
-/* 顶栏玻璃描边本地覆盖：modelgo-design-tokens 的 .mg-glass-bar[-strong] 深色档
-   --mg-glass-header-edge 两个市场都写死同一个 rgba(255,255,255,0.4)，浅色档反而
-   按市场分别调过色——深色档明显是没认真调过的占位值，纯白 40% 在深色底上是一条
-   刺眼的白线（王恩博反馈）。改动权限在 design-tokens 仓（改 token 值要有设计依据），
-   这里先用本仓已有、各主题都调好的 hairline 边框 token 兜底，不新造颜色。
+/* 顶栏不再使用底部细线，层次由 DashboardHeader 调用处的投影表达。
    DashboardHeader 是 PublicShell（/models 模型广场）和 DashboardLayout（登录态控制台）
    共用组件，放在这个全局样式文件（index.css → components.css，两处外壳都加载）而不是
    只在 DashboardLayout 里 import 的 layout.css，否则模型广场页面覆盖不到（2026-08-08 踩过）。 */
 header.mg-glass-bar,
 header.mg-glass-bar-strong {
-  border-bottom-color: var(--mg-border);
+  border-bottom: 0;
 }
 
 /* 顶栏浅色档钉实底白：玻璃底（--mg-glass-header 白 30% / strong 档）会透出
@@ -560,3 +540,44 @@ body:not([theme-mode='dark']) header.mg-glass-bar,
 body:not([theme-mode='dark']) header.mg-glass-bar-strong {
   background: var(--mg-surface-3);
 }
+
+/* Toast 通知：通过 <Toaster toastOptions.classNames> 绑定，所有 appToast/sonner 调用同源。 */
+.mg-toast {
+  width: min(var(--mg-toast-width), calc(100vw - 32px)) !important;
+  gap: var(--mg-toast-gap) !important;
+  padding: var(--mg-toast-pad-y) var(--mg-toast-pad-x) !important;
+  border-radius: var(--mg-toast-radius) !important;
+  border: 1px solid var(--mg-toast-border) !important;
+  background: var(--mg-toast-bg) !important;
+  color: var(--mg-toast-title) !important;
+  box-shadow: var(--mg-toast-shadow) !important;
+}
+
+.mg-toast-title {
+  color: var(--mg-toast-title) !important;
+  font-size: var(--mg-text-sm) !important;
+  line-height: var(--mg-text-sm-line) !important;
+  font-weight: var(--mg-weight-bold) !important;
+}
+
+.mg-toast-description {
+  color: var(--mg-toast-description) !important;
+  font-size: var(--mg-text-xs) !important;
+  line-height: var(--mg-text-xs-line) !important;
+}
+
+.mg-toast-close {
+  color: var(--mg-toast-close-color) !important;
+  border-color: var(--mg-border) !important;
+  background: var(--mg-bg-3) !important;
+}
+
+.mg-toast-icon {
+  width: var(--mg-icon-sm);
+  height: var(--mg-icon-sm);
+}
+
+.mg-toast-success .mg-toast-icon { color: var(--mg-toast-success-icon) !important; }
+.mg-toast-warning .mg-toast-icon { color: var(--mg-toast-warning-icon) !important; }
+.mg-toast-error .mg-toast-icon { color: var(--mg-toast-error-icon) !important; }
+.mg-toast-info .mg-toast-icon { color: var(--mg-toast-info-icon) !important; }

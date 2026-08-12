@@ -179,10 +179,10 @@ body[theme-mode='dark'] .sidebar-flow-line::after {
   width: 100%;
   background: linear-gradient(
     90deg,
-    #2563eb 0%,
-    #3b82f6 30%,
-    #1DC39B 70%,
-    #10b981 100%
+    var(--brand-deep) 0%,
+    var(--brand-base) 30%,
+    var(--brand-mid) 70%,
+    var(--brand-light) 100%
   );
   background-size: 200% 100%;
   animation: shimmer-slide 2.5s ease-in-out infinite;

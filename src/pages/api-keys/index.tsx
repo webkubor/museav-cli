@@ -49,7 +49,7 @@ import { CreateKeyModal } from './CreateKeyModal'
 import { ApiKeyTable } from './ApiKeyTable'
 import { ApiKeySummaryCards } from './ApiKeySummaryCards'
 import { ApiKeyDetailDrawer } from './ApiKeyDetailDrawer'
-import { deriveKeyType, responsibleOf, isExpiringSoon, KEY_ACTION_PERMS, type ApiKeyAction } from './derive'
+import { deriveKeyType, deriveUserMonthSpend, responsibleOf, isExpiringSoon, KEY_ACTION_PERMS, type ApiKeyAction } from './derive'
 import type { ApiKeyCreated, ApiKeyItem, ApiKeyType } from '@/types'
 
 const ALL = 'all'
@@ -181,6 +181,12 @@ export default function ApiKeysPage() {
   // 埋点 row_scope（PRD §11.1）：能看到他人 Key = workspace_all，否则 self
   const rowScope = showsOthers ? 'workspace_all' : 'self'
   const commonEventProps = { prd_version: 'api_keys_v0_1', row_scope: rowScope }
+
+  // 需求方#570：「本月消费」卡按当前用户口径（负责人=当前账号），空间负责人不再看到全空间加总
+  const userMonthSpend = useMemo(
+    () => deriveUserMonthSpend(allKeys, currentAccountId),
+    [allKeys, currentAccountId],
+  )
 
   // 负责人筛选项（全量列表去重——分页后单页去重会漏掉其他页的负责人，#60）
   const ownerOptions = useMemo(() => {
@@ -424,7 +430,7 @@ export default function ApiKeysPage() {
         }
       />
 
-      <ApiKeySummaryCards items={allKeys} summary={summary} loading={allKeysLoading} />
+      <ApiKeySummaryCards items={allKeys} summary={summary} monthSpend={userMonthSpend} loading={allKeysLoading} />
 
       <ApiKeyProtocolBanner
         openAIBaseUrl={openAIBaseUrl}

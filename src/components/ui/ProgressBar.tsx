@@ -62,34 +62,34 @@ export const ProgressBar = React.forwardRef<HTMLDivElement, ProgressBarProps>(
     // 填充渐变色和发光配置
     const variantStyles = {
       brand: {
-        bar: "bg-gradient-to-r from-[var(--brand-base)] to-[var(--brand-mid)]",
-        glow: "shadow-[0_0_12px_var(--brand-glow)]",
-        text: "text-[var(--brand-base)]",
-        badge: "bg-[var(--brand-base)]/10 text-[var(--brand-base)] border-[var(--brand-base)]/20"
+        bar: "bg-[image:var(--mg-progress-brand-bar)]",
+        glow: "shadow-[var(--mg-progress-brand-glow)]",
+        text: "text-[var(--mg-progress-brand-text)]",
+        badge: "bg-[var(--mg-progress-brand-badge-bg)] text-[var(--mg-progress-brand-text)] border-[var(--mg-progress-brand-badge-border)]"
       },
       rainbow: {
-        bar: "bg-gradient-to-r from-[#4285f4] via-[#9b72cb] via-[#d96570] to-[#f4af42]",
-        glow: "shadow-[0_0_15px_rgba(155,114,203,0.6)]",
-        text: "text-[var(--brand-base)]",
-        badge: "bg-[var(--brand-base)]/10 text-[var(--brand-base)] border-[var(--brand-base)]/20"
+        bar: "bg-[image:var(--mg-progress-rainbow-bar)]",
+        glow: "shadow-[var(--mg-progress-rainbow-glow)]",
+        text: "text-[var(--mg-progress-rainbow-text)]",
+        badge: "bg-[var(--mg-progress-rainbow-badge-bg)] text-[var(--mg-progress-rainbow-text)] border-[var(--mg-progress-rainbow-badge-border)]"
       },
       emerald: {
-        bar: "bg-gradient-to-r from-emerald-500 to-teal-400",
-        glow: "shadow-[0_0_12px_rgba(16,185,129,0.6)]",
-        text: "text-mg-success",
-        badge: "bg-mg-success/10 text-mg-success border-mg-success/20"
+        bar: "bg-[image:var(--mg-progress-success-bar)]",
+        glow: "shadow-[var(--mg-progress-success-glow)]",
+        text: "text-[var(--mg-progress-success-text)]",
+        badge: "bg-[var(--mg-progress-success-badge-bg)] text-[var(--mg-progress-success-text)] border-[var(--mg-progress-success-badge-border)]"
       },
       amber: {
-        bar: "bg-gradient-to-r from-amber-500 to-orange-400",
-        glow: "shadow-[0_0_12px_rgba(245,158,11,0.6)]",
-        text: "text-mg-warning",
-        badge: "bg-mg-warning/10 text-mg-warning border-mg-warning/20"
+        bar: "bg-[image:var(--mg-progress-warning-bar)]",
+        glow: "shadow-[var(--mg-progress-warning-glow)]",
+        text: "text-[var(--mg-progress-warning-text)]",
+        badge: "bg-[var(--mg-progress-warning-badge-bg)] text-[var(--mg-progress-warning-text)] border-[var(--mg-progress-warning-badge-border)]"
       },
       blue: {
-        bar: "bg-gradient-to-r from-blue-500 to-indigo-400",
-        glow: "shadow-[0_0_12px_rgba(59,130,246,0.6)]",
-        text: "text-blue-500",
-        badge: "bg-blue-500/10 text-blue-500 border-blue-500/20"
+        bar: "bg-[image:var(--mg-progress-info-bar)]",
+        glow: "shadow-[var(--mg-progress-info-glow)]",
+        text: "text-[var(--mg-progress-info-text)]",
+        badge: "bg-[var(--mg-progress-info-badge-bg)] text-[var(--mg-progress-info-text)] border-[var(--mg-progress-info-badge-border)]"
       },
     }
 
@@ -153,7 +153,7 @@ export const ProgressBar = React.forwardRef<HTMLDivElement, ProgressBarProps>(
           {/* 进度条轨道 */}
           <div
             className={cn(
-              "w-full rounded-full bg-[var(--mg-fill-0)] border border-[var(--mg-border)]/40 overflow-hidden relative shadow-inner",
+              "w-full rounded-full bg-[var(--mg-progress-track-bg)] border border-[var(--mg-progress-track-border)] overflow-hidden relative shadow-inner",
               sizeClasses[size]
             )}
           >
@@ -181,7 +181,7 @@ export const ProgressBar = React.forwardRef<HTMLDivElement, ProgressBarProps>(
               {showGlow && percentage > 0 && percentage < 1 && (
                 <div
                   className={cn(
-                    "absolute right-0 top-0 bottom-0 w-1.5 rounded-full bg-white opacity-95",
+                    "absolute right-0 top-0 bottom-0 w-1.5 rounded-full bg-[var(--mg-progress-thumb-bg)] opacity-95",
                     currentStyle.glow
                   )}
                 />

@@ -12,7 +12,7 @@ export function MemberAvatar({
   if (account.avatar_url) {
     return <img src={account.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover shrink-0" />
   }
-  const bg = accent === 'emerald' ? 'bg-emerald-600' : 'bg-brand-base'
+  const bg = accent === 'emerald' ? 'bg-[var(--mg-avatar-success-bg)]' : 'bg-brand-base'
   return (
     <div className={`w-7 h-7 rounded-full ${bg} text-white text-xs font-bold flex items-center justify-center shrink-0 uppercase`}>
       {account.display_name?.[0] ?? '?'}

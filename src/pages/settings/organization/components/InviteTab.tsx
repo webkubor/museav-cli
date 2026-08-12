@@ -5,8 +5,8 @@ import { CopyButton } from '@/components/ui/CopyButton'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
-import { addTenantMembers, getTenantInviteLink, listTenantMembers, resetTenantInviteLink } from '@/services/tenants'
-import { formatDate } from '@/lib/format-date'
+import { addTenantMembers, getTenantInviteLink, listTenantMembers, resendTenantInvite, resetTenantInviteLink } from '@/services/tenants'
+import { formatDate, isPast } from '@/lib/format-date'
 import { ModelGoApiError } from '@/lib/request'
 import { listWorkspaces } from '@/services/workspaces'
 import { Button } from '@/components/ui/Button'
@@ -126,6 +126,21 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
         return
       }
       appToast.requestError(err, t('enterprise.invite.sendError'))
+    },
+  })
+
+  // 重发邀请（需求方#561）：过期的邀请在队列里只能干看着，重新输邮箱又撞 40901「已有待接受邀请」。
+  // 后端过期未接受的邀请 status 仍是 pending，直接复用成员页同款 resend 接口即可续期重发。
+  const resendInvite = useMutation({
+    mutationFn: (invitationId: string) => resendTenantInvite(tenantId, invitationId),
+    onSuccess: () => {
+      trackAction(PERMS.ORG_INVITE_MANAGE, undefined, { result: 'success' })
+      appToast.success(t('enterprise.members.resendSuccess'))
+      qc.invalidateQueries({ queryKey: ['tenant-members', tenantId] })
+    },
+    onError: (err: Error) => {
+      trackAction(PERMS.ORG_INVITE_MANAGE, undefined, { result: 'fail', error_code: errorCodeOf(err) })
+      appToast.requestError(err, t('enterprise.members.resendError'))
     },
   })
 
@@ -262,7 +277,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
           </div>
         </div>
 
-        {/* 邀请队列(对齐 PRD enterprise-invite-card:只读列表 email + 角色·邀请人 + 过期;重发在成员 tab)。
+        {/* 邀请队列：email + 角色·邀请人 + 过期 + 重新发送(需求方#561：过期邀请无法重发、重输邮箱撞 40901)。
             数据用 members 接口返回的 pending_invitations(与成员页同源)。 */}
         <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg overflow-hidden shadow-sm">
           <div className="p-4 border-b border-mg-border/50 bg-mg-fill-0/20">
@@ -285,11 +300,28 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
                       {inv.invited_by_display && ` · ${t('enterprise.members.invitedBy', { name: inv.invited_by_display })}`}
                     </div>
                   </div>
-                  {inv.expires_at && (
-                    <span className="shrink-0 text-xs text-mg-text-3">
-                      {t('enterprise.members.expiresAt', { date: formatDate(inv.expires_at) })}
-                    </span>
-                  )}
+                  <div className="flex shrink-0 items-center gap-3">
+                    {inv.expires_at && (
+                      <span
+                        className={`text-xs ${isPast(inv.expires_at) ? 'font-semibold text-mg-danger' : 'text-mg-text-3'}`}
+                      >
+                        {t('enterprise.members.expiresAt', { date: formatDate(inv.expires_at) })}
+                      </span>
+                    )}
+                    {canInvite && (
+                      <button
+                        type="button"
+                        data-track="invitations:resend_invite"
+                        disabled={resendInvite.isPending && resendInvite.variables === inv.id}
+                        onClick={() => resendInvite.mutate(inv.id)}
+                        className="text-mg-text-3 hover:text-brand-base hover:bg-brand-glow/10 px-2 py-1 rounded-md transition-all border-none bg-transparent cursor-pointer font-semibold text-xs disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {resendInvite.isPending && resendInvite.variables === inv.id
+                          ? t('enterprise.members.resending')
+                          : t('enterprise.members.resendInvite')}
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

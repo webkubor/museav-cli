@@ -275,9 +275,8 @@ export function SliderCaptcha({ onChange, disabled = false, lockedHint }: Slider
         style={
           status === 'success'
             ? {
-                // 通过态品牌强调：蓝→靛→紫渐变 + 柔光投影（刻意硬编码的高级渐变，后续可提成 token）
-                background: 'linear-gradient(90deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%)',
-                boxShadow: '0 2px 14px rgba(99, 102, 241, 0.45)',
+                background: 'var(--mg-brand-gradient)',
+                boxShadow: 'var(--mg-btn-primary-shadow-hover)',
               }
             : undefined
         }

@@ -691,13 +691,12 @@ export default function LogsPage() {
             || workspacesData?.items.find((item) => item.workspace_id === selectedLog?.workspace_id)?.name
         }
         onOpenLogSettings={(workspaceId) => {
-          // 跳该日志所属空间的日志设置时，同步切换活跃空间——否则侧栏/上下文仍停在原空间，
+          // 跳该日志所属空间的日志与转发设置时，同步切换活跃空间——否则侧栏/上下文仍停在原空间，
           // 页面显 A 空间设置、侧栏却显 B 空间，用户以为「跳错了」（需求方#109）。
+          // 可观测性已并入空间管理详情页的「日志与转发」Tab（不再是独立路由），带 workspaceId+tab
+          // 深链过去，由 WorkspacesPage 读 query 参数选中对应空间并展开该 Tab。
           if (workspaceId && workspaceId !== activeWorkspaceId) setActiveWorkspaceId(workspaceId)
-          // 「日志与转发」已并入空间管理详情页签，独立 /workspace/:id/observability 路由已弃用
-          // （侧栏不再暴露入口，仅路由保留兜底）；这里改跳新位置，带 ws+tab 深链直接展开对应
-          // 空间详情并落在「日志」页签，不再指向旧路由。
-          navigate(`/workspaces?ws=${workspaceId}&tab=logs`)
+          navigate(`/workspaces?workspaceId=${workspaceId}&tab=logs`)
         }}
       />
         </>

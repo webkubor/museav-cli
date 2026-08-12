@@ -296,7 +296,7 @@ export function PreferencesTab() {
             {/* 时间预览小面板（内嵌块，用 bg-1 非 fill 凑卡片） */}
             <div className="rounded-md border border-mg-border bg-mg-bg-1 px-3.5 py-2.5 flex items-center justify-between text-xs select-none">
               <div className="flex items-center gap-1.5 min-w-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] shrink-0 animate-pulse" />
+                <span className="w-[var(--mg-status-dot-size-sm)] h-[var(--mg-status-dot-size-sm)] rounded-full bg-[var(--mg-status-online-bg)] shadow-[var(--mg-status-online-shadow)] shrink-0 animate-pulse" />
                 <span className="text-mg-text-3 uppercase text-xs font-bold tracking-wider truncate" title={resolvedTimeZone}>
                   {resolvedTimeZone.split('/').pop()?.replace(/_/g, ' ') || 'Local'}
                 </span>

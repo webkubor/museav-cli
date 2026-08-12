@@ -121,16 +121,16 @@
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  border: 1px solid color-mix(in srgb, var(--mg-info, #3b82f6) 24%, var(--mg-border));
+  border: 1px solid color-mix(in srgb, var(--mg-info) 24%, var(--mg-border));
   border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--mg-info, #3b82f6) 6%, var(--mg-bg-0-solid));
+  background: color-mix(in srgb, var(--mg-info) 6%, var(--mg-bg-0-solid));
   color: var(--mg-text-2);
   font-size: 12px;
 }
 
 .models-compare-dialog-note > svg {
   flex-shrink: 0;
-  color: var(--mg-info, #3b82f6);
+  color: var(--mg-info);
 }
 
 /* 共享附件"N个模型支持"提示（qa#545 §7.4/7.5），与附件预览行同一行展示 */
@@ -152,13 +152,13 @@
 }
 
 .models-experience-winner-chip.is-fast {
-  background: color-mix(in srgb, var(--mg-info, #3b82f6) 14%, transparent);
-  color: var(--mg-info, #3b82f6);
+  background: color-mix(in srgb, var(--mg-info) 14%, transparent);
+  color: var(--mg-info);
 }
 
 .models-experience-winner-chip.is-cheap {
-  background: color-mix(in srgb, var(--mg-success, #16a34a) 14%, transparent);
-  color: var(--mg-success, #16a34a);
+  background: color-mix(in srgb, var(--mg-success) 14%, transparent);
+  color: var(--mg-success);
 }
 
 /* 窄屏 Tab 切换条（§8.5）：宽屏隐藏，默认不占布局空间 */
@@ -196,12 +196,12 @@
 }
 
 .models-compare-mobile-tab-dot.is-running {
-  background: var(--mg-info, #3b82f6);
+  background: var(--mg-info);
   animation: models-compare-tab-pulse 1.2s ease-in-out infinite;
 }
 
 .models-compare-mobile-tab-dot.is-succeeded {
-  background: var(--mg-success, #16a34a);
+  background: var(--mg-success);
 }
 
 .models-compare-mobile-tab-dot.is-failed {

@@ -700,9 +700,13 @@ export function useGuardrailsPage() {
 
   // ── 派生数据 ────────────────────────────────────────────────────────────
   const budget = currentBudgetPolicy(detail)
-  // 全局护栏（is_default）按 aggregation_scope 三档编辑，冲突判定按「每档单条」；
-  // member/key 护栏保持「全局单条」不变量。
-  const isGlobal = !!detail?.is_default
+  // 全局护栏按 aggregation_scope 三档编辑，冲突判定按「每档单条」；member/key 护栏保持
+  // 「全局单条」不变量。用 scope（编辑态已 setScope(deriveScope(detail))）而不是
+  // detail?.is_default——GuardrailDetailSheet 的渲染分支也是按 scope === 'global' 走，
+  // 两边必须同一个判据：deriveScope 对「没有任何成员/Key 绑定的常规护栏」兜底成 'global'，
+  // 这类护栏 is_default 是 false，用 is_default 判会导致渲染显示三档编辑器、保存却错误
+  // 走 member/key 单档提交（读写的 state 完全对不上，保存静默失效）。
+  const isGlobal = scope === 'global'
   const budgetConflict = isGlobal
     ? globalBudgetConflict(detail)
     : activeBudgetPolicies(detail).length > 1

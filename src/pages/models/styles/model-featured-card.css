@@ -131,16 +131,18 @@ body[theme-mode='dark'] .models-experience-featured-shade {
 
 .models-experience-featured-content h2 {
   margin: 0;
-  color: #ffffff !important; /* 强制纯白 */
-  font-size: 19px;
+  color: var(--mg-media-text) !important;
+  font-size: var(--mg-text-h3);
+  line-height: var(--mg-text-h3-line);
   font-weight: 820;
   letter-spacing: 0;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .models-experience-featured-content > div:first-child {
-  color: #a1a1aa !important; /* 强制淡灰色 */
-  font-size: 12px;
+  color: var(--mg-media-text-muted) !important;
+  font-size: var(--mg-text-xs);
+  line-height: var(--mg-text-xs-line);
   font-weight: 760;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
@@ -153,10 +155,10 @@ body[theme-mode='dark'] .models-experience-featured-shade {
 
 .models-experience-featured-metrics span {
   padding: 5px 8px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08) !important; /* 强制半透明背景 */
-  border: 1px solid rgba(255, 255, 255, 0.15) !important; /* 强制微弱白色边框 */
-  color: #f4f4f5 !important; /* 强制极亮字体 */
+  border-radius: var(--mg-radius-pill);
+  background: var(--mg-featured-chip-bg) !important;
+  border: 1px solid var(--mg-featured-chip-border) !important;
+  color: var(--mg-featured-chip-fg) !important;
   font-size: 11px;
   font-weight: 700;
   backdrop-filter: blur(4px);
@@ -168,38 +170,38 @@ body[theme-mode='dark'] .models-experience-featured-shade {
   font-weight: 700 !important;
 }
 
-.models-experience-featured .badge-interactive[class*='text-mg-primary'] {
-  background: rgba(139, 106, 255, 0.18) !important;
-  border-color: rgba(139, 106, 255, 0.35) !important;
-  color: #c6bef4 !important; /* 浅紫，来自 --cn-light */
+.models-experience-featured .badge-interactive[data-modality='text'] {
+  background: var(--mg-modality-text-featured-bg) !important;
+  border-color: var(--mg-modality-text-featured-border) !important;
+  color: var(--mg-modality-text-featured-fg) !important;
 }
 
-.models-experience-featured .badge-interactive[class*='text-violet-600'] {
-  background: rgba(139, 92, 246, 0.18) !important;
-  border-color: rgba(139, 92, 246, 0.35) !important;
-  color: #ddd6fe !important;
+.models-experience-featured .badge-interactive[data-modality='image'] {
+  background: var(--mg-modality-image-featured-bg) !important;
+  border-color: var(--mg-modality-image-featured-border) !important;
+  color: var(--mg-modality-image-featured-fg) !important;
 }
 
-.models-experience-featured .badge-interactive[class*='text-orange-600'] {
-  background: rgba(249, 115, 22, 0.18) !important;
-  border-color: rgba(249, 115, 22, 0.35) !important;
-  color: #ffedd5 !important;
+.models-experience-featured .badge-interactive[data-modality='video'] {
+  background: var(--mg-modality-video-featured-bg) !important;
+  border-color: var(--mg-modality-video-featured-border) !important;
+  color: var(--mg-modality-video-featured-fg) !important;
 }
 
-.models-experience-featured .badge-interactive[class*='text-emerald-600'] {
-  background: rgba(16, 185, 129, 0.18) !important;
-  border-color: rgba(16, 185, 129, 0.35) !important;
-  color: #d1fae5 !important;
+.models-experience-featured .badge-interactive[data-modality='audio'] {
+  background: var(--mg-modality-audio-featured-bg) !important;
+  border-color: var(--mg-modality-audio-featured-border) !important;
+  color: var(--mg-modality-audio-featured-fg) !important;
 }
 
-.models-experience-featured .badge-interactive[class*='text-yellow-600'] {
-  background: rgba(234, 179, 8, 0.18) !important;
-  border-color: rgba(234, 179, 8, 0.35) !important;
-  color: #fef9c3 !important;
+.models-experience-featured .badge-interactive[data-modality='embedding'] {
+  background: var(--mg-modality-embedding-featured-bg) !important;
+  border-color: var(--mg-modality-embedding-featured-border) !important;
+  color: var(--mg-modality-embedding-featured-fg) !important;
 }
 
-.models-experience-featured .badge-interactive[class*='text-mg-text-2'] {
-  background: rgba(255, 255, 255, 0.08) !important;
-  border-color: rgba(255, 255, 255, 0.15) !important;
-  color: #e4e4e7 !important;
+.models-experience-featured .badge-interactive[data-modality='reranker'] {
+  background: var(--mg-modality-reranker-featured-bg) !important;
+  border-color: var(--mg-modality-reranker-featured-border) !important;
+  color: var(--mg-modality-reranker-featured-fg) !important;
 }

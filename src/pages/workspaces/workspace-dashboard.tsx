@@ -154,7 +154,7 @@ export function WorkspaceOverview({ ws, onGoLogs }: { ws: WorkspaceDetail; onGoL
 interface WorkspaceDashboardProps {
   workspaceId: string
   onDeleted: () => void
-  /** 从外部深链带入的初始页签（如日志页「去开启日志与转发」跳转过来，直接落在 logs 页签） */
+  /** 深链初始 Tab（如从日志页「去开启日志与转发」跳转过来），仅影响首次挂载的默认选中项。 */
   initialTab?: 'overview' | 'members' | 'logs' | 'settings'
 }
 

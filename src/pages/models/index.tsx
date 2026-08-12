@@ -87,8 +87,8 @@ export default function ModelsPage() {
   } = useModelsPlayground()
 
   return (
-    <div className="models-experience-page">
-      <PageHeader title={t('modelsExperience.page.title')} description={t('modelsExperience.page.description')} className="mb-4" />
+    <div className="models-experience-page models-playground-page">
+      <PageHeader title={t('modelsExperience.page.title')} description={t('modelsExperience.page.description')} className="models-experience-page-header" />
       <div className="models-experience-shell">
         {/* 历史会话固定侧栏（PRD §7.8）：收起态窄图标轨，展开 248px；接真实 GET /experience/sessions，
             展开时拉取列表，点击会话用 GET messages 恢复消息到当前视图 */}
@@ -135,7 +135,11 @@ export default function ModelsPage() {
                   /* 视觉改版（Figma「模型体验」稿）：分类小图标换成品牌玻璃球引导图；
                      示例 Prompt 从空态区挪到输入框下方的卡片行（见 Composer 之后） */
                   <div className="models-experience-empty">
-                    <span className="models-experience-empty-orb" aria-hidden="true" />
+                    <span className="models-experience-empty-orb" aria-hidden="true">
+                      <span className="models-experience-empty-orb-refract-a" />
+                      <span className="models-experience-empty-orb-refract-b" />
+                      <span className="models-experience-empty-orb-rim" />
+                    </span>
                     <strong>{categoryEmptyCopy(effectiveTask).title}</strong>
                     <span>{categoryEmptyCopy(effectiveTask).hint}</span>
                   </div>

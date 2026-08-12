@@ -10,7 +10,7 @@ export type PageHeaderProps = {
 
 export function PageHeader({ title, description, actions, className }: PageHeaderProps) {
   return (
-    <div className={cn('flex items-start justify-between gap-4 mb-6', className)}>
+    <div className={cn('flex items-start justify-between gap-4 mb-[var(--mg-layout-panel-gap)]', className)}>
       <div>
         <h1 className="mg-text-page-title font-bold tracking-tight text-mg-text-1">
           {title}

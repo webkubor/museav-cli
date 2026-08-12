@@ -42,14 +42,14 @@ export default function WorkspacesPage() {
 
   const [searchValue, setSearchValue] = useState('')
   const [modalVisible, setModalVisible] = useState(false)
-  // 深链支持：其他页面（如调用日志「去开启日志与转发」）跳转过来时带 ?ws=<id>&tab=logs，
-  // 直接展开对应空间详情并落在指定页签，不再指向已弃用的 /workspace/:id/observability。
+  // 深链支持：从日志页「去开启日志与转发」等入口带 ?workspaceId=&tab= 跳过来时，
+  // 直接选中该空间并展开对应 Tab（仅影响首次挂载的初始值，之后用户点击卡片/Tab 不受影响）。
   const [searchParams] = useSearchParams()
-  const linkedWorkspaceId = searchParams.get('ws') ?? ''
-  const linkedTab = searchParams.get('tab')
-  const initialTab = linkedTab === 'members' || linkedTab === 'logs' || linkedTab === 'settings' ? linkedTab : undefined
+  const deepLinkTab = searchParams.get('tab')
+  const initialTab = (['overview', 'members', 'logs', 'settings'] as const)
+    .find((value) => value === deepLinkTab)
   // 单页结构：选中卡片在下方展开详情（不跳路由，对齐原型 .space-detail-shell）
-  const [selectedId, setSelectedId] = useState<string>(linkedWorkspaceId)
+  const [selectedId, setSelectedId] = useState<string>(() => searchParams.get('workspaceId') ?? '')
 
   // ─── 1. TanStack Query 真实获取工作空间接口数据 ─────────────────
   const { data, isLoading } = useQuery({
@@ -257,7 +257,7 @@ export default function WorkspacesPage() {
       {validSelectedId && !isLoading && filteredData.length > 0 && (
         <WorkspaceDashboard
           workspaceId={validSelectedId}
-          initialTab={validSelectedId === linkedWorkspaceId ? initialTab : undefined}
+          initialTab={initialTab}
           onDeleted={() => {
             setSelectedId('')
             queryClient.invalidateQueries({ queryKey: ['workspaces', activeTenantId] })

@@ -225,8 +225,8 @@ function CropModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center mg-panel">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
+    <div className="fixed inset-0 z-[var(--mg-z-modal)] flex items-center justify-center mg-panel">
+      <div className="absolute inset-0 bg-[var(--mg-overlay-bg)] backdrop-blur-[var(--mg-overlay-blur)]" onClick={onCancel} />
       <div className="relative bg-card-bg border border-mg-border rounded-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 w-[380px]">
         {/* 标题 */}
         <div className="px-[var(--mg-panel-padding-lg)] py-[var(--mg-space-3)] border-b border-mg-border mg-text-body font-bold text-mg-text-1">

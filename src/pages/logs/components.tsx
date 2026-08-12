@@ -205,9 +205,9 @@ export function LogsTable({
                   // 两行：T+总数一行、输入/输出一行（需求方定；比原三行紧凑、比一行清晰）
                   <div className="min-w-0 whitespace-nowrap font-mono tabular-nums">
                     <div className="flex items-center gap-1">
-                      {/* 绿色「T」= Token 总量标记（与用量页 token=emerald 口径一致）；hover 加深 + tooltip 释义 */}
+                      {/* 「T」= Token 总量标记，颜色走 success 语义 token。 */}
                       <span
-                        className="inline-flex cursor-default items-center justify-center rounded bg-green-500/10 px-1 py-0.5 text-[10px] font-bold leading-none text-green-600 transition-colors hover:bg-green-500/20"
+                        className="inline-flex cursor-default items-center justify-center rounded-sm bg-[var(--mg-success-bg)] px-1 py-0.5 text-[10px] font-bold leading-none text-[var(--mg-success-text)] transition-colors hover:bg-[var(--mg-success-bg-hover)]"
                         title={t('logs.table.totalTokenTooltip')}
                         aria-label={t('logs.table.totalTokenAria')}
                       >T</span>

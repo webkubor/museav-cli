@@ -114,6 +114,10 @@
   padding: 18px;
 }
 
+.models-playground-page .models-experience-messages {
+  min-height: 0;
+}
+
 .models-experience-message {
   display: flex;
   align-items: flex-start;

@@ -1,7 +1,7 @@
 /**
  * API Key 列表表格（PRD v1.0.3）：名称 / 类型 / 负责人 / 安全护栏 / 状态 / 本期消费·限额 / 最近调用 / 到期时间 / 操作
- * 行点击开详情抽屉；治理动作（停用/启用）行内直达，轮转/删除在抽屉；
- * 已过期 Key 行内额外直达「删除」（需求方#485）。
+ * 行点击开详情抽屉；治理动作（停用/启用/删除）行内直达，轮转在抽屉；
+ * 「删除」对所有状态的 Key 开放（含已过期/已撤销，需求方#485→#554），后端为软删除。
  */
 import { useTranslation } from 'react-i18next'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -17,7 +17,7 @@ import {
   TableCell,
 } from '@/components/ui/Table'
 import { LuCopy, LuFilterX, LuKeyRound, LuLoaderCircle, LuPlus, LuShieldCheck } from 'react-icons/lu'
-import { formatDateTime } from '@/lib/format-date'
+import { formatDateTimeYMD } from '@/lib/format-date'
 import { formatMoney } from '@/lib/utils'
 import type { ApiKeyItem, ApiKeyType } from '@/types'
 import {
@@ -37,7 +37,7 @@ import {
 const KEY_TYPE_CLASS: Record<string, string> = {
   personal: 'bg-mg-fill-0 border-mg-border text-mg-text-2',
   member: 'bg-brand-base/10 border-brand-base/25 text-brand-base',
-  service: 'bg-blue-500/10 border-blue-500/25 text-blue-600 dark:text-blue-400',
+  service: 'bg-[var(--mg-info-bg)] border-[var(--mg-info-border)] text-[var(--mg-info-text)]',
 }
 
 type Props = {
@@ -48,7 +48,7 @@ type Props = {
   canReveal: boolean
   onOpenDetail: (item: ApiKeyItem) => void
   onToggleStatus: (item: ApiKeyItem) => void
-  /** 已过期 Key 行内「删除」（需求方#485）：走父组件删除确认弹窗 */
+  /** 行内「删除」（需求方#485→#554 扩到全部状态）：走父组件删除确认弹窗 */
   onRevoke: (target: { id: string; name: string }) => void
   /** 复制完整明文（#298）：父组件调 reveal → 剪贴板 */
   onCopyKey: (item: ApiKeyItem) => void
@@ -181,8 +181,8 @@ export function ApiKeyTable({
             const lastCalled = lastCalledOf(record)
             const isDisabled = record.status === 'disabled'
             const expired = isExpiredKey(record)
-            // 已过期 Key 行内直达删除（需求方#485）：权限口径与抽屉 canDelete 一致
-            const canDelete = expired && record.status !== 'revoked' && cap(record.capabilities?.can_delete, canAction(keyType, 'revoke'))
+            // 行内直达删除对所有状态开放（需求方#554：已过期/已撤销也要能删，后端软删）；权限口径与抽屉 canDelete 一致
+            const canDelete = cap(record.capabilities?.can_delete, canAction(keyType, 'revoke'))
             const canToggle = isDisabled
               ? cap(record.capabilities?.can_enable, canAction(keyType, 'disable'))
               : cap(record.capabilities?.can_disable, canAction(keyType, 'disable'))
@@ -250,7 +250,7 @@ export function ApiKeyTable({
                         <span
                           key={name}
                           title={name}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-green-500/10 border border-green-500/25 text-green-600 cursor-help"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-[var(--mg-success-bg)] border border-[var(--mg-success-border)] text-[var(--mg-success-text)] cursor-help"
                         >
                           <LuShieldCheck className="w-3 h-3 shrink-0" />
                           {name}
@@ -286,21 +286,21 @@ export function ApiKeyTable({
                   >{hasLimit ? t('apiKeys.table.limitValue', { value: formatLimit(record, t) }) : formatLimit(record, t)}</div>
                 </TableCell>
                 <TableCell className="text-xs text-mg-text-2">
-                  {lastCalled ? formatDateTime(lastCalled) : <span className="text-mg-text-3">{t('apiKeys.table.notCalled')}</span>}
+                  {lastCalled ? formatDateTimeYMD(lastCalled) : <span className="text-mg-text-3">{t('apiKeys.table.notCalled')}</span>}
                 </TableCell>
                 <TableCell className="text-xs">
                   {!record.expires_at ? (
                     <span className="text-mg-text-3">{t('apiKeys.table.neverExpires')}</span>
                   ) : expired ? (
                     <span className="inline-flex items-center gap-1.5 text-mg-danger font-semibold">
-                      {formatDateTime(record.expires_at)}
+                      {formatDateTimeYMD(record.expires_at)}
                       <span className="px-1.5 py-0.5 rounded-full text-xs font-bold bg-mg-danger/10 border border-mg-danger/20">
                         {t('apiKeys.table.expired')}
                       </span>
                     </span>
                   ) : (
                     <span className={isExpiringSoon(record) ? 'text-mg-warning font-semibold' : 'text-mg-text-2'}>
-                      {formatDateTime(record.expires_at)}
+                      {formatDateTimeYMD(record.expires_at)}
                     </span>
                   )}
                 </TableCell>

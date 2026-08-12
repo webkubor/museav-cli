@@ -2,7 +2,7 @@
 .glass-auth-card {
   width: 100%;
   padding: 44px 44px 30px;
-  border-radius: 20px;
+  border-radius: var(--mg-radius-panel);
   position: relative;
   isolation: isolate;
   /* 表面走规范玻璃档位：原来是本文件独有的白 0.92→0.86 渐变 + blur(16px)，
@@ -22,7 +22,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 20px;
+  border-radius: var(--mg-radius-panel);
   padding: 1px;
   background: conic-gradient(
     from var(--border-angle),
@@ -102,7 +102,7 @@ body[theme-mode='dark'] .glass-auth-card .auth-policy-text {
 .modern-auth-input {
   width: 100%;
   height: 40px;
-  border-radius: 8px;
+  border-radius: var(--mg-radius-sm);
   border: 1px solid var(--mg-border) !important;
   padding: 0 14px;
   font-size: 14px;
@@ -129,20 +129,20 @@ body[theme-mode='dark'] .glass-auth-card .auth-policy-text {
 .modern-auth-btn {
   width: 100%;
   height: 40px;
-  border-radius: 8px !important;
+  border-radius: var(--mg-radius-sm) !important;
   font-weight: 600 !important;
-  background-color: #0f172a !important; /* 大厂极雅石墨黑 */
-  border: 1px solid #0f172a !important;
-  color: #ffffff !important;
-  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.05) !important;
+  background-color: var(--mg-btn-neutral-bg) !important;
+  border: 1px solid var(--mg-btn-neutral-border) !important;
+  color: var(--mg-btn-neutral-text) !important;
+  box-shadow: var(--mg-btn-neutral-shadow) !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .modern-auth-btn:hover {
   transform: translateY(-0.5px);
-  background-color: #1e293b !important;
-  border-color: #1e293b !important;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12) !important;
+  background-color: var(--mg-btn-neutral-bg-hover) !important;
+  border-color: var(--mg-btn-neutral-border-hover) !important;
+  box-shadow: var(--mg-btn-neutral-shadow-hover) !important;
 }
 
 .modern-auth-btn:active {
@@ -150,16 +150,16 @@ body[theme-mode='dark'] .glass-auth-card .auth-policy-text {
 }
 
 body[theme-mode='dark'] .modern-auth-btn {
-  background-color: #ffffff !important; /* 深色模式下大厂极雅耀白 */
-  border-color: #ffffff !important;
-  color: #0f172a !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  background-color: var(--mg-btn-neutral-bg) !important;
+  border-color: var(--mg-btn-neutral-border) !important;
+  color: var(--mg-btn-neutral-text) !important;
+  box-shadow: var(--mg-btn-neutral-shadow) !important;
 }
 
 body[theme-mode='dark'] .modern-auth-btn:hover {
-  background-color: #f1f5f9 !important;
-  border-color: #f1f5f9 !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  background-color: var(--mg-btn-neutral-bg-hover) !important;
+  border-color: var(--mg-btn-neutral-border-hover) !important;
+  box-shadow: var(--mg-btn-neutral-shadow-hover) !important;
 }
 
 /* 统一品牌渐变底色类，供 Tailwind 样式抽离架构使用 */
@@ -294,7 +294,8 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
 }
 
 .auth-error-message {
-  @apply text-rose-500 text-xs mt-1.5 font-medium block tracking-tight;
+  @apply text-xs mt-1.5 font-medium block tracking-tight;
+  color: var(--mg-danger-text);
 }
 
 .auth-email-preview {
@@ -501,7 +502,7 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
 
 .auth-form-container .modern-input-wrapper:not(.is-error):not(.is-success):focus-within:has(input:not(:placeholder-shown))::before {
   opacity: 1 !important;
-  /* 流光只在品牌色阶内流动（原 #a855f7/#6366f1/#3b82f6 紫靛蓝写死，海外绿站聚焦时闪紫蓝） */
+  /* 流光只在品牌色阶内流动，避免海外绿站聚焦时闪成紫蓝。 */
   background: linear-gradient(90deg, var(--brand-base), var(--brand-mid), var(--brand-light), var(--brand-mid), var(--brand-base)) !important;
   background-size: 200% 100% !important;
   animation: input-border-flow 3s linear infinite !important;
@@ -511,26 +512,26 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
 /* 3. 输入失败 (Error) 状态 */
 .auth-form-container .modern-input-field.is-error,
 .auth-form-container .modern-input-wrapper.is-error {
-  border-color: rgba(244, 63, 94, 0.65) !important;
-  background-color: rgba(244, 63, 94, 0.02) !important;
+  border-color: var(--mg-error-border) !important;
+  background-color: var(--mg-error-bg) !important;
 }
 
 .auth-form-container .modern-input-wrapper.is-error::before {
   opacity: 1 !important;
-  background: #f43f5e !important;
+  background: var(--mg-error-text) !important;
   animation: none !important;
 }
 
 .auth-form-container .modern-input-field.is-error:focus,
 .auth-form-container .modern-input-wrapper.is-error:focus-within {
-  border-color: #f43f5e !important;
-  box-shadow: 0 0 0 1px #f43f5e, 0 0 0 4px rgba(244, 63, 94, 0.16) !important;
+  border-color: var(--mg-error-text) !important;
+  box-shadow: 0 0 0 1px var(--mg-error-text), 0 0 0 4px var(--mg-error-bg-hover) !important;
   background-color: rgba(var(--mg-bg-0-rgb), 0.72) !important;
 }
 
 body[theme-mode='dark'] .auth-form-container .modern-input-field.is-error,
 body[theme-mode='dark'] .auth-form-container .modern-input-wrapper.is-error {
-  background-color: rgba(244, 63, 94, 0.04) !important;
+  background-color: var(--mg-error-bg) !important;
 }
 
 /* 4. 输入成功 (Success) 状态 */
@@ -570,8 +571,8 @@ body[theme-mode='dark'] .auth-form-container .modern-input-wrapper.is-error {
 
 .auth-captcha-gate.is-verified {
   cursor: default;
-  color: var(--mg-success, #16a34a);
-  border-color: var(--mg-success, #16a34a);
+  color: var(--mg-success-text);
+  border-color: var(--mg-success-border);
   background: transparent;
 }
 

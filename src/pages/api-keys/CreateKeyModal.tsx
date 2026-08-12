@@ -599,7 +599,7 @@ export function CreateKeyModal({
                   <div className="grid grid-cols-3 gap-2">
                     {effectiveLayerRows.map((row) => (
                       <div
-                        className={`grid min-w-0 gap-1 rounded-lg border bg-mg-bg-0 px-2.5 py-2 ${row.state === "active" ? "border-blue-200" : "border-mg-border"}`}
+                        className={`grid min-w-0 gap-1 rounded-lg border bg-mg-bg-0 px-2.5 py-2 ${row.state === "active" ? "border-[var(--mg-state-selected-border)]" : "border-mg-border"}`}
                         key={row.label}
                       >
                         <span className="text-[11px] font-bold text-mg-text-2">

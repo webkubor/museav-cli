@@ -116,8 +116,7 @@ const SidebarMenuGroup: React.FC<{
     <div className="flex flex-col gap-0.5 relative">
       {item.items && isOpen && (
         <div
-          className="absolute left-[29px] w-[2px] sidebar-flow-line pointer-events-none rounded-full"
-          style={{ top: '36px', bottom: '-20px', zIndex: 10 }}
+          className="absolute left-[29px] top-9 bottom-[-20px] z-20 w-[2px] sidebar-flow-line pointer-events-none rounded-full"
         />
       )}
 
@@ -222,7 +221,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         onClick={() => setCollapsed(!collapsed)}
         title={collapsed ? t('common.expand') : t('common.collapse')}
         className={cn(
-          "absolute right-[-9px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-mg-bg-2 border border-mg-border hover:border-brand-mid text-mg-text-3 hover:text-brand-base flex items-center justify-center cursor-pointer transition-all duration-300 z-50 shadow-sm active:scale-90",
+          "absolute right-[-9px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-mg-bg-2 border border-mg-border hover:border-brand-mid text-mg-text-3 hover:text-brand-base flex items-center justify-center cursor-pointer transition-all duration-300 z-20 shadow-sm active:scale-90",
           hovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-[-4px] pointer-events-none"
         )}
       >

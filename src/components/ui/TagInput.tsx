@@ -215,7 +215,7 @@ export function TagInput({
                   type="button"
                   disabled={disabled}
                   onClick={(e) => { e.stopPropagation(); removeTag(tag) }}
-                  className="hover:text-rose-500 transition-colors cursor-pointer"
+                  className="hover:text-[var(--mg-danger-text)] transition-colors cursor-pointer"
                 >
                   <LuX size={10} />
                 </button>
@@ -262,12 +262,12 @@ export function TagInput({
 
       {/* Portaled to document.body so position:fixed is relative to the viewport,
           not to any transformed ancestor (e.g. the Dialog's translate-x/y-[-50%]).
-          z-index 10000 sits above the modal (z-50 = 50). */}
+          Uses the blocking layer because suggestions can open inside a modal. */}
       {showDropdown && menuPos && createPortal(
         <div
           ref={dropdownRef}
-          style={{ position: 'fixed', left: menuPos.left, top: menuPos.top, width: menuPos.width, zIndex: 10000, pointerEvents: 'auto' }}
-          className="max-h-[240px] overflow-y-auto rounded-lg border border-mg-border bg-mg-bg-2 shadow-lg py-1"
+          style={{ position: 'fixed', left: menuPos.left, top: menuPos.top, width: menuPos.width }}
+          className="z-50 pointer-events-auto max-h-[240px] overflow-y-auto rounded-lg border border-mg-border bg-mg-bg-2 shadow-lg py-1"
         >
           {filtered.map((item, idx) => (
             <button

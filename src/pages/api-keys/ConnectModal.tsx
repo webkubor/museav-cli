@@ -35,7 +35,7 @@ type Props = {
 
 /**
  * 本弹窗的文案全在 `apiKeys` 语言包里，而它是**路由级懒加载**的（App.tsx CONSOLE_NAMESPACES
- * 只给 api-keys / observability / models 系路由加载）。但弹窗有三个渲染点，两个不在这些路由里：
+ * 只给 api-keys / models 系路由加载）。但弹窗有三个渲染点，两个不在这些路由里：
  * 全局顶栏 DashboardHeader、总览页 QuickStartSection —— 在那些页面点开，文案会整片退化成
  * `apiKeys.connectModal.title` 这样的 raw key（需求方 shared/modelgo_prd#375，国际站生产复现）。
  *
@@ -172,8 +172,9 @@ function ConnectModalContent({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
    * 下拉复用 ui/Select，只把触发器的边框底色去掉，让它读起来仍是一张参数卡（对齐 PRD 原型）。
    */
   // text-left 是必要的：Select 触发器全局是居中文本，长值（Key 名 · 掩码）会整段缩进、跟旁边只读参数不齐
+  // min-w-0 flex-1（替代 w-full）：flex 行里触发器默认 min-width:auto 不收缩，长 Key 名会把旁边的复制按钮挤出卡片（需求方#555）
   const SELECT_TRIGGER =
-    'h-auto w-full border-0 bg-transparent px-0 text-left font-mono text-xs font-semibold text-mg-text-1 hover:border-0 focus:border-0 focus:ring-0 [&>span]:block [&>span]:truncate'
+    'h-auto min-w-0 flex-1 border-0 bg-transparent px-0 text-left font-mono text-xs font-semibold text-mg-text-1 hover:border-0 focus:border-0 focus:ring-0 [&>span]:block [&>span]:truncate'
 
   const renderParam = (methodId: string, param: ConnectParam) => {
     const shell = 'rounded-lg border border-mg-border/60 bg-mg-fill-0 px-3 py-2'
@@ -202,6 +203,7 @@ function ConnectModalContent({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
               getValue={resolveKeyPlaintext}
               aria-label={t('apiKeys.connectModal.copyApiKeyAria')}
               disabled={!selectedKey}
+              className="shrink-0"
               onCopied={() => trackEvent('copy_connect_params', { ...trackCtx, method: `${methodId}:key` })}
             />
           </div>
@@ -231,6 +233,7 @@ function ConnectModalContent({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
             <CopyButton
               value={param.value}
               aria-label={t('apiKeys.connectModal.copyModelAria')}
+              className="shrink-0"
               onCopied={() => trackEvent('copy_connect_params', { ...trackCtx, method: `${methodId}:model` })}
             />
           </div>

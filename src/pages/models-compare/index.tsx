@@ -33,7 +33,7 @@ export default function ModelsComparePage() {
   if (ctx.bootError) {
     return (
       <div className="models-experience-page">
-        <PageHeader title={t('modelsExperience.compare.pageTitle')} description={ctx.bootError} className="mb-4" />
+        <PageHeader title={t('modelsExperience.compare.pageTitle')} description={ctx.bootError} className="models-experience-page-header" />
         <div className="models-experience-shell">
           {/* 没有 selectedIds（刷新/直接开 URL）不代表用户没有正在进行的会话——历史侧栏照样带出来，
               能从里面点回刚才的对比会话，不是只有"返回重新选模型"一条路（见 boot 的 useEffect）。 */}
@@ -63,14 +63,14 @@ export default function ModelsComparePage() {
   if (!ctx.columns) {
     return (
       <div className="models-experience-page">
-        <PageHeader title={t('modelsExperience.compare.pageTitle')} description={t('modelsExperience.compare.preparing')} className="mb-4" />
+        <PageHeader title={t('modelsExperience.compare.pageTitle')} description={t('modelsExperience.compare.preparing')} className="models-experience-page-header" />
       </div>
     )
   }
 
   return (
     <div className="models-experience-page">
-      <PageHeader title={t('modelsExperience.page.title')} description={t('modelsExperience.compare.description')} className="mb-4" />
+      <PageHeader title={t('modelsExperience.page.title')} description={t('modelsExperience.compare.description')} className="models-experience-page-header" />
 
       <div className="models-experience-shell">
         {/* §7.8 历史会话侧栏（qa#546）：与单模型页同款受控组件，展开时拉取列表；选中会话

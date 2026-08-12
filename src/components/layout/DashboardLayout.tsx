@@ -174,7 +174,7 @@ export function DashboardLayout() {
     histogramSm: ic(<LuTrendingUp   size={14} />),
     list:        ic(<LuList         size={14} />),
     creditCard:  ic(<LuCreditCard   size={16} />),
-    wrench:      ic(<LuWrench       size={16} className="text-amber-600" />),
+    wrench:      ic(<LuWrench       size={16} className="text-[var(--mg-warning-text)]" />),
     terminal:    ic(<LuTerminal     size={16} />),
     key:         ic(<LuKey          size={16} />),
     building:    ic(<LuBuilding2    size={16} />),
@@ -238,8 +238,10 @@ export function DashboardLayout() {
     navigate(targetRoute)
   }
 
-  const isDashboardRoute = getSelectedKey() === 'dashboard'
-  const isFlatRoute = FLAT_ROUTES.includes(getSelectedKey())
+  const selectedKey = getSelectedKey()
+  const isDashboardRoute = selectedKey === 'dashboard'
+  const isFlatRoute = FLAT_ROUTES.includes(selectedKey)
+  const isModelsExperienceRoute = selectedKey === 'models/playground' || selectedKey === 'models/compare'
 
   return (
     <div className="dashboard-shell bg-site-bg h-screen md:min-w-[1280px] flex flex-col font-sans relative overflow-hidden">
@@ -254,7 +256,7 @@ export function DashboardLayout() {
           <DashboardSidebar
             collapsed={collapsed}
             setCollapsed={setCollapsed}
-            selectedKey={getSelectedKey()}
+            selectedKey={selectedKey}
             onSelect={handleNavSelect}
             groups={navGroups}
           />
@@ -266,7 +268,7 @@ export function DashboardLayout() {
             aria-hidden="true"
             onClick={() => setMobileOpen(false)}
             className={cn(
-              "fixed inset-0 z-50 bg-black/40 backdrop-blur-sm transition-opacity duration-300",
+              "fixed inset-0 z-[var(--mg-z-overlay)] bg-[var(--mg-overlay-bg)] backdrop-blur-[var(--mg-overlay-blur)] transition-opacity duration-300",
               mobileOpen ? "opacity-100" : "opacity-0 pointer-events-none"
             )}
           />
@@ -275,14 +277,14 @@ export function DashboardLayout() {
             aria-modal="true"
             aria-label={t('nav.dashboard')}
             className={cn(
-              "fixed left-0 top-0 bottom-0 z-50 w-60 max-w-[80vw] shadow-xl transition-transform duration-300 ease-out",
+              "fixed left-0 top-0 bottom-0 z-[var(--mg-z-sheet)] w-60 max-w-[80vw] shadow-xl transition-transform duration-300 ease-out",
               mobileOpen ? "translate-x-0" : "-translate-x-full pointer-events-none"
             )}
           >
             <DashboardSidebar
               collapsed={false}
               setCollapsed={() => {}}
-              selectedKey={getSelectedKey()}
+              selectedKey={selectedKey}
               onSelect={(data) => {
                 handleNavSelect(data)
                 setMobileOpen(false)
@@ -292,7 +294,12 @@ export function DashboardLayout() {
           </div>
         </div>
 
-        <main className="flex-1 flex flex-col pt-3 px-6 pb-6 md:pt-4 md:px-9 md:pb-9 overflow-y-auto h-full min-h-0 transition-all duration-300">
+        <main className={cn(
+          "dashboard-main flex-1 flex flex-col h-full min-h-0 transition-all duration-300",
+          isModelsExperienceRoute
+            ? "overflow-hidden"
+            : "overflow-y-auto"
+        )}>
           {/* 高阶极简自定义 Breadcrumbs */}
           <Breadcrumb items={getBreadcrumbs()} />
 
@@ -306,15 +313,15 @@ export function DashboardLayout() {
 
           {/* 渲染主视图区域 */}
           <div className={cn(
-            "shrink-0",
+            isModelsExperienceRoute ? "flex-1 min-h-0" : "shrink-0",
             isDashboardRoute || isFlatRoute ? (
-              "bg-transparent border-none shadow-none p-6 md:p-9"
+              cn("bg-transparent border-none shadow-none", isModelsExperienceRoute ? "flex flex-1 min-h-0" : "")
             ) : (
-              "bg-mg-bg-0 rounded-lg border border-mg-border/60 shadow-sm shadow-black/2 p-6 md:p-9 min-h-[320px] mb-8"
+              "dashboard-content-card bg-mg-bg-0 rounded-lg border border-mg-border/60 shadow-sm shadow-black/2 min-h-[320px] mb-8"
             )
           )}>
             <WorkspaceGuard
-              currentKey={getSelectedKey()}
+              currentKey={selectedKey}
               workspaceId={currentWorkspaceId}
               emptyTitle={t('common.workspaceGuard.emptyTitle')}
               emptyDesc={t('common.workspaceGuard.emptyDesc')}

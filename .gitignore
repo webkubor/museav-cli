@@ -42,3 +42,4 @@ dist-ssr
 .codex/
 .worktrees/
 .workbuddy/
+.pnpm-store/

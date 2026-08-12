@@ -234,7 +234,7 @@ export function ModelPickerDialog({
       top,
       bottom,
       left,
-      zIndex: 60,
+      zIndex: 'var(--mg-z-modal)',
       visibility: 'visible',
       ['--mg-picker-max-h' as string]: `${maxHeight}px`,
     })
@@ -692,7 +692,7 @@ export function ModelPickerDialog({
   // document mousedown 外点处理器兜住，这里不用重复绑。
   return createPortal(
     isCentered ? (
-      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 dark:bg-black/60 backdrop-blur-sm animate-in fade-in-0 duration-150">
+      <div className="fixed inset-0 z-[var(--mg-z-modal)] flex items-center justify-center bg-[var(--mg-overlay-bg)] backdrop-blur-[var(--mg-overlay-blur)] animate-in fade-in-0 duration-150">
         {panel}
       </div>
     ) : panel,

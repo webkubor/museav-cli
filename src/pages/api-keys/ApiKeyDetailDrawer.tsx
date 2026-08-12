@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/Button'
 import { InfoTip } from '@/components/ui/InfoTip'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { LuArrowRight, LuTriangleAlert, LuRefreshCw, LuCopy, LuLoaderCircle } from 'react-icons/lu'
-import { formatDateTime } from '@/lib/format-date'
+import { formatDateTimeYMD } from '@/lib/format-date'
 import { formatMoney } from '@/lib/utils'
 import { appToast } from '@/lib/app-toast'
 import { trackEvent } from '@/lib/track'
@@ -337,7 +337,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
           <div className="grid grid-cols-3 gap-2.5">
             <Cell label={t('apiKeys.table.type')} value={keyTypeLabel(t, keyType)} />
             <Cell label={t('apiKeys.table.owner')} value={responsible.display_name || responsible.email || '—'} />
-            <Cell label={t('apiKeys.table.expiresAt')} value={view.expires_at ? formatDateTime(view.expires_at) : t('apiKeys.table.neverExpires')} />
+            <Cell label={t('apiKeys.table.expiresAt')} value={view.expires_at ? formatDateTimeYMD(view.expires_at) : t('apiKeys.table.neverExpires')} />
           </div>
         </Section>
 
@@ -490,7 +490,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
         >
           {view.last_used_at ? (
             <div className="rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
-              <div className="text-sm font-bold text-mg-text-1">{formatDateTime(view.last_used_at)}</div>
+              <div className="text-sm font-bold text-mg-text-1">{formatDateTimeYMD(view.last_used_at)}</div>
               <div className="mt-0.5 text-xs text-mg-text-3">
                 {usage?.request_count != null ? t('apiKeys.detail.requestCountValue', { count: usage.request_count.toLocaleString() }) : '—'}
                 {' · '}
@@ -512,7 +512,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
                 <div key={a.id} className="border-l-2 border-brand-base/35 pl-4">
                   <div className="text-sm font-bold text-mg-text-1">{auditActionLabel(t, a.action)}</div>
                   <div className="mt-1 text-xs text-mg-text-2">
-                    {formatDateTime(a.created_at)} · {a.actor_display || a.actor_account_id || '—'}
+                    {formatDateTimeYMD(a.created_at)} · {a.actor_display || a.actor_account_id || '—'}
                   </div>
                   {a.target_label && <p className="mt-1 text-sm leading-relaxed text-mg-text-2">{a.target_label}</p>}
                 </div>

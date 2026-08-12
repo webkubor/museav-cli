@@ -43,6 +43,24 @@ export function formatDateTime(iso: string | null | undefined): string {
   }))
 }
 
+/** "2026/08/12 14:30" — 需求方#571：年份必显的数字格式（API Keys 列表）。
+ * 固定 YYYY/MM/DD HH:mm 字序，不随 locale 变（en 下数字序 M/D/YYYY 有歧义，同 formatDate 注释的坑）。 */
+export function formatDateTimeYMD(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  const parts = new Intl.DateTimeFormat('en-US', dateOptions({
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  })).formatToParts(d)
+  const get = (type: Intl.DateTimeFormatPart['type']) => parts.find((p) => p.type === type)?.value ?? ''
+  return `${get('year')}/${get('month')}/${get('day')} ${get('hour')}:${get('minute')}`
+}
+
 /** "Jan 1, 12:00:00 AM" — 需要秒级精度的场景（日志列表） */
 export function formatDateTimeWithSeconds(iso: string | null | undefined): string {
   if (!iso) return '—'

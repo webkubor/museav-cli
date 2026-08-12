@@ -180,7 +180,8 @@ export function CustomerService() {
           width: 52,
           height: 52,
           borderRadius: '50%',
-          background: 'var(--mg-bg-0)',
+          // 浮层必须实底：--mg-bg-0 已并入玻璃（半透明），悬浮层用 --mg-bg-2（需求方#529/#559）
+          background: 'var(--mg-bg-2)',
           boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
           display: 'flex',
           alignItems: 'center',
@@ -198,7 +199,7 @@ export function CustomerService() {
               <img src={logoSrc} alt="CS" style={{ width: 28, height: 28, objectFit: 'contain' }} />
               <span
                 className={cn(
-                  'absolute -right-0.5 -bottom-0.5 w-2.5 h-2.5 rounded-full border-2 border-mg-bg-0',
+                  'absolute -right-0.5 -bottom-0.5 w-2.5 h-2.5 rounded-full border-2 border-mg-bg-2',
                   status === 'online' ? 'bg-mg-success' : status === 'connecting' ? 'bg-mg-warning' : 'bg-mg-danger',
                 )}
               />
@@ -217,7 +218,8 @@ export function CustomerService() {
           height: 560,
           zIndex: 999,
           borderRadius: 20,
-          background: 'var(--mg-bg-0)',
+          // 聊天窗悬浮在页面内容上，玻璃 bg-0 会把下层内容透出来叠字（需求方#559），改实底 bg-2
+          background: 'var(--mg-bg-2)',
           border: '1px solid var(--mg-border)',
           boxShadow: '0 20px 60px -10px rgba(15,23,42,0.2)',
           display: 'flex',

@@ -230,7 +230,8 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
   const rotateEnabled = !isExpiredKey(view) && canAction(keyType, 'rotate') && view.capabilities?.can_rotate === true
   // 完成轮转（「已轮转」→ 立即销毁旧 token）与「开始轮转」同权限：否则只要能打开抽屉就能替他人 finalize，属审计缺口
   const canCompleteRotation = canAction(keyType, 'rotate')
-  const canDelete = cap(view.capabilities?.can_delete, canAction(keyType, 'revoke')) && view.status !== 'revoked'
+  // 删除对所有状态开放（需求方#554：已撤销的也要能从列表清掉，后端软删）
+  const canDelete = cap(view.capabilities?.can_delete, canAction(keyType, 'revoke'))
 
   return (
     <SideSheet open={open} onClose={onClose} title={item.name}>

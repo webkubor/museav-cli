@@ -7,9 +7,10 @@
 
 import type { ReactNode } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
+import { loadLocaleNamespaces } from '@/i18n'
 import { checkLoginEmail } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
 import LoginPage from './index'
@@ -73,6 +74,13 @@ function renderLogin() {
 }
 
 describe('LoginPage', () => {
+  // 生产环境靠 App.tsx 的 <LocaleNamespaces> 在路由挂载前异步加载 'account' 语言包；
+  // 这里直接渲染 <LoginPage> 没经过那层包裹，t() 找不到资源只会回落成原始 key
+  // （如 "account.auth.login.continue"），断言真实中文文案会一直找不到元素。
+  beforeAll(async () => {
+    await loadLocaleNamespaces(['account'])
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()

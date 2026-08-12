@@ -49,12 +49,17 @@ vi.mock('@/lib/app-toast', () => ({
   appToast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
 }))
 
-import i18n from '@/i18n'
+import i18n, { loadLocaleNamespaces } from '@/i18n'
 import { useAuthStore } from '@/store/auth'
 import OrganizationSettingsPage from '@/pages/settings/organization'
 
 // 页面文案走 i18n，测试统一用中文断言（jsdom 默认 navigator.language 会解析成 en）
 i18n.changeLanguage('zh')
+
+// 生产环境靠 App.tsx 的 <LocaleNamespaces> 在路由挂载前异步加载 'enterprise' 语言包；
+// 这里直接渲染页面组件没经过那层包裹，t() 找不到资源只会回落成原始 key
+// （如 "enterprise.tabs.info"），中文断言会一直找不到元素。
+await loadLocaleNamespaces(['enterprise'])
 
 const account: AccountBrief = {
   account_id: 'acc_1',

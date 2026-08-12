@@ -44,11 +44,11 @@ describe('modelExperienceTasks（任务推导）', () => {
     }))).toEqual(['text_to_image', 'image_to_image'])
   })
 
-  it('视频模型输入含 image 时推导出图生视频（qa-video-v1 类缺口的目标态）', () => {
+  it('视频模型输入含 image/video 时推导出图生视频与视频生视频（qa#584/shared#319 起 video_to_video 是第十类合法任务）', () => {
     expect(modelExperienceTasks(model({
       input_modalities: ['text', 'image', 'audio', 'video', 'file'],
       output_modalities: ['video'],
-    }))).toEqual(['text_to_video', 'image_to_video'])
+    }))).toEqual(['text_to_video', 'image_to_video', 'video_to_video'])
   })
 
   it('对话模型按输入模态推导 图生文/视频生文，音频输入不开对话子任务', () => {

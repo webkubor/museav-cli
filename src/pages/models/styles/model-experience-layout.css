@@ -11,10 +11,14 @@
   min-height: 0;
 }
 
+.models-experience-page .models-experience-page-header {
+  margin-bottom: var(--mg-layout-workbench-gap, var(--mg-space-4));
+}
+
 /* 历史侧栏 + 主工作台横向排列（PRD §7.8：侧栏固定在工作台左侧，收起/展开影响主区域宽度） */
 .models-experience-shell {
   display: flex;
-  gap: 16px;
+  gap: var(--mg-layout-workbench-gap, var(--mg-space-4));
   flex: 1;
   min-height: 0;
 }

@@ -127,6 +127,22 @@
   --mg-space-5: 1.25rem;            /* 20px，控制台特有，SSoT 无 */
   --mg-space-9: 2.25rem;
   --mg-space-10: 2.5rem;
+  /* 兼容 modelgo-design-tokens 0.6.4 缺失的控制台布局语义 token。
+     发新版 token 后这些值会继续同名对齐，页面只消费语义，不再散写 p-6/md:p-9。 */
+  --mg-layout-section-gap: var(--mg-space-8);
+  --mg-layout-panel-gap: var(--mg-space-6);
+  --mg-layout-toolbar-gap: var(--mg-space-4);
+  --mg-layout-inline-gap: var(--mg-space-2);
+  --mg-layout-breadcrumb-gap: var(--mg-space-6);
+  --mg-layout-console-page-pad-x: var(--mg-space-6);
+  --mg-layout-console-page-pad-y: var(--mg-space-6);
+  --mg-layout-console-page-pad-bottom: var(--mg-space-6);
+  --mg-layout-console-page-pad-x-lg: var(--mg-space-10);
+  --mg-layout-console-page-pad-y-lg: var(--mg-space-8);
+  --mg-layout-console-page-pad-bottom-lg: var(--mg-space-12);
+  --mg-layout-content-pad: var(--mg-space-6);
+  --mg-layout-content-pad-lg: var(--mg-space-9);
+  --mg-layout-workbench-gap: var(--mg-space-4);
   --mg-motion-press: var(--mg-duration-instant, 0.1s) var(--mg-ease-standard, cubic-bezier(0.4, 0, 0.2, 1));
   --mg-motion-enter-y: 8px;
   --mg-motion-enter-scale: 0.98;

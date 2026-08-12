@@ -241,7 +241,7 @@ export function DashboardLayout() {
   const selectedKey = getSelectedKey()
   const isDashboardRoute = selectedKey === 'dashboard'
   const isFlatRoute = FLAT_ROUTES.includes(selectedKey)
-  const isModelsExperienceRoute = selectedKey === 'models/playground'
+  const isModelsExperienceRoute = selectedKey === 'models/playground' || selectedKey === 'models/compare'
 
   return (
     <div className="dashboard-shell bg-site-bg h-screen md:min-w-[1280px] flex flex-col font-sans relative overflow-hidden">
@@ -295,8 +295,10 @@ export function DashboardLayout() {
         </div>
 
         <main className={cn(
-          "flex-1 flex flex-col pt-3 px-6 md:pt-4 md:px-9 h-full min-h-0 transition-all duration-300",
-          isModelsExperienceRoute ? "overflow-hidden pb-3 md:pb-4" : "overflow-y-auto pb-6 md:pb-9"
+          "dashboard-main flex-1 flex flex-col h-full min-h-0 transition-all duration-300",
+          isModelsExperienceRoute
+            ? "overflow-hidden"
+            : "overflow-y-auto"
         )}>
           {/* 高阶极简自定义 Breadcrumbs */}
           <Breadcrumb items={getBreadcrumbs()} />
@@ -313,9 +315,9 @@ export function DashboardLayout() {
           <div className={cn(
             isModelsExperienceRoute ? "flex-1 min-h-0" : "shrink-0",
             isDashboardRoute || isFlatRoute ? (
-              cn("bg-transparent border-none shadow-none p-6", !isModelsExperienceRoute && "md:p-9")
+              cn("bg-transparent border-none shadow-none", isModelsExperienceRoute ? "flex flex-1 min-h-0" : "")
             ) : (
-              "bg-mg-bg-0 rounded-lg border border-mg-border/60 shadow-sm shadow-black/2 p-6 md:p-9 min-h-[320px] mb-8"
+              "dashboard-content-card bg-mg-bg-0 rounded-lg border border-mg-border/60 shadow-sm shadow-black/2 min-h-[320px] mb-8"
             )
           )}>
             <WorkspaceGuard

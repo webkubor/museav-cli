@@ -88,7 +88,7 @@ export default function ModelsPage() {
 
   return (
     <div className="models-experience-page models-playground-page">
-      <PageHeader title={t('modelsExperience.page.title')} description={t('modelsExperience.page.description')} className="mb-4" />
+      <PageHeader title={t('modelsExperience.page.title')} description={t('modelsExperience.page.description')} className="models-experience-page-header" />
       <div className="models-experience-shell">
         {/* 历史会话固定侧栏（PRD §7.8）：收起态窄图标轨，展开 248px；接真实 GET /experience/sessions，
             展开时拉取列表，点击会话用 GET messages 恢复消息到当前视图 */}

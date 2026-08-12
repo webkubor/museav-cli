@@ -14,6 +14,7 @@ import { installAgentErrorReporter } from 'vite-plugin-agent-eyes/client'
 import { initDeviceFingerprint } from './lib/device-fingerprint'
 import { installDevAuth } from './lib/dev-auth'
 import { init as initTrack, TrackApp, TrackRegion } from '@model-go/track'
+import { installGlobalClientErrorReporting } from './lib/client-error-report'
 import { getMarket } from './lib/market'
 import { apiBaseUrl } from './lib/request'
 import { useAuthStore } from './store/auth'
@@ -42,6 +43,9 @@ initTrack({
     return tenantId ? { 'X-Tenant-Id': tenantId } : undefined
   },
 })
+
+// 全局兜底：未被 ErrorBoundary 兜住的异常（如事件回调里的报错）与未处理 rejection 也上报
+installGlobalClientErrorReporting()
 
 const DEV_SW_RESET_KEY = 'modelgo:dev-sw-reset'
 

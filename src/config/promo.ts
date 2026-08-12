@@ -26,8 +26,9 @@ export interface PromoConfig {
  * 当前运营位。按 PRD §7.3 与原型 SSOT 默认为「邀请返利计划」，配置驱动
  *（不再写死轮播 + 拉模型目录）。需下线时把 enabled 置 false；换活动时改 titleKey/route 即可。
  */
+// prd#581：邀请返利计划暂时下线，需重新上线时把 enabled 置回 true
 export const sidebarPromo: PromoConfig = {
-  enabled: true,
+  enabled: false,
   titleKey: 'promo.referral.title',
   descriptionKey: 'promo.referral.description',
   route: '/referral',

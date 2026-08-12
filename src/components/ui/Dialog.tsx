@@ -23,7 +23,7 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-black/40 dark:bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 transition-all duration-300",
+      "fixed inset-0 z-[var(--mg-z-overlay)] bg-[var(--mg-overlay-bg)] backdrop-blur-[var(--mg-overlay-blur)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 transition-all duration-300",
       className
     )}
     {...props}
@@ -41,14 +41,14 @@ const DialogContent = React.forwardRef<
       ref={ref}
       className={cn(
         // max-h-[90dvh] + overflow-y-auto：内容超高时弹窗封顶到视口内并内部滚动，避免超出浏览器范围（#458）
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg max-h-[90dvh] overflow-y-auto translate-x-[-50%] translate-y-[-50%] gap-4 border border-mg-border bg-mg-bg-3 mg-panel-roomy shadow-xl shadow-black/10 rounded-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-1/2 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-1/2 focus:outline-none",
+        "fixed left-[50%] top-[50%] z-[var(--mg-z-modal)] grid w-full max-w-lg max-h-[90dvh] overflow-y-auto translate-x-[-50%] translate-y-[-50%] gap-[var(--mg-dialog-gap)] border border-mg-border bg-mg-bg-3 mg-panel-roomy shadow-xl shadow-black/10 rounded-[var(--mg-dialog-radius)] duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-1/2 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-1/2 focus:outline-none",
         className
       )}
       {...props}
     >
       {children}
       {closeButton && (
-        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-md opacity-50 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-brand-glow disabled:pointer-events-none data-[state=open]:bg-mg-fill-0 text-mg-text-3 p-[var(--mg-space-1)]">
+        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-[var(--mg-radius-xs)] opacity-50 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus-visible:shadow-[var(--mg-focus-ring)] disabled:pointer-events-none data-[state=open]:bg-mg-fill-0 text-mg-text-3 p-[var(--mg-space-1)]">
           <IoClose className="h-5 w-5" />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>

@@ -320,13 +320,13 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
 
   return (
     <header className={cn(
-      "h-[60px] border-b px-6 flex items-center justify-between z-40 relative select-none transition-all duration-300 ease-out",
+      "h-[60px] px-6 flex items-center justify-between z-[var(--mg-z-header)] relative select-none transition-all duration-300 ease-out shadow-[0_2px_10px_rgba(16,24,40,0.06)]",
       scrollZone === 'top' &&
-        "mg-glass-bar shadow-md shadow-black/5",
+        "mg-glass-bar",
       scrollZone === 'scrolling' &&
-        "mg-glass-bar-strong shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]",
+        "mg-glass-bar-strong",
       scrollZone === 'bottom' &&
-        "mg-glass-bar shadow-none"   /* 滚到底也保留玻璃：原为全透明，白底时看不出来，
+        "mg-glass-bar"   /* 滚到底也保留玻璃：原为全透明，白底时看不出来，
            改成画布后一透明内容就直接穿过导航（2026-08-06） */
     )}>
       {/* 左侧：Logo & 工作区选择器 */}

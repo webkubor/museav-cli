@@ -217,7 +217,7 @@ export const ParticleLinesBackground: React.FC = () => {
         width: '100%',
         height: '100%',
         pointerEvents: 'none',
-        zIndex: 0,
+        zIndex: 'var(--mg-z-base)',
       }}
     />
   )

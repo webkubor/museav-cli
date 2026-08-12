@@ -31,7 +31,7 @@ export function InfoTip({
       <span
         role="tooltip"
         className={cn(
-          'pointer-events-none absolute left-1/2 z-30 w-max max-w-[260px] -translate-x-1/2 rounded-md border border-mg-border bg-mg-bg-3 px-2.5 py-1.5 text-left mg-text-caption font-medium leading-snug text-mg-text-2 opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100',
+          'pointer-events-none absolute left-1/2 z-[var(--mg-z-tooltip)] w-max max-w-[260px] -translate-x-1/2 rounded-[var(--mg-tooltip-radius)] border border-mg-border bg-mg-bg-3 px-[var(--mg-tooltip-pad-x)] py-[var(--mg-tooltip-pad-y)] text-left mg-text-caption font-medium leading-snug text-mg-text-2 opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100',
           side === 'top' ? 'bottom-6' : 'top-6',
         )}
       >

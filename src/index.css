@@ -59,6 +59,19 @@
   --color-mg-success: var(--mg-success);
   --color-mg-danger: var(--mg-danger);
   --color-mg-warning: var(--mg-warning);
+  --color-mg-info: var(--mg-info);
+  --color-mg-success-bg: var(--mg-success-bg);
+  --color-mg-success-border: var(--mg-success-border);
+  --color-mg-success-text: var(--mg-success-text);
+  --color-mg-warning-bg: var(--mg-warning-bg);
+  --color-mg-warning-border: var(--mg-warning-border);
+  --color-mg-warning-text: var(--mg-warning-text);
+  --color-mg-error-bg: var(--mg-error-bg);
+  --color-mg-error-border: var(--mg-error-border);
+  --color-mg-error-text: var(--mg-error-text);
+  --color-mg-info-bg: var(--mg-info-bg);
+  --color-mg-info-border: var(--mg-info-border);
+  --color-mg-info-text: var(--mg-info-text);
   --color-mg-code-bg: var(--mg-code-bg);
   --color-mg-code-text: var(--mg-code-text);
 }

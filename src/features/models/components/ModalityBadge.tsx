@@ -5,12 +5,12 @@ interface ModalityBadgeProps {
 }
 
 const MODALITY_CLASSES: Record<string, string> = {
-  text:      'bg-mg-primary-light text-mg-primary border-mg-primary-light',
-  image:     'bg-violet-500/10 text-violet-600 border-violet-500/20',
-  audio:     'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
-  video:     'bg-orange-500/10 text-orange-600 border-orange-500/20',
-  embedding: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
-  reranker:  'bg-mg-fill-0 text-mg-text-2 border-mg-fill-1',
+  text:      'bg-[var(--mg-modality-text-bg)] text-[var(--mg-modality-text-fg)] border-[var(--mg-modality-text-border)]',
+  image:     'bg-[var(--mg-modality-image-bg)] text-[var(--mg-modality-image-fg)] border-[var(--mg-modality-image-border)]',
+  audio:     'bg-[var(--mg-modality-audio-bg)] text-[var(--mg-modality-audio-fg)] border-[var(--mg-modality-audio-border)]',
+  video:     'bg-[var(--mg-modality-video-bg)] text-[var(--mg-modality-video-fg)] border-[var(--mg-modality-video-border)]',
+  embedding: 'bg-[var(--mg-modality-embedding-bg)] text-[var(--mg-modality-embedding-fg)] border-[var(--mg-modality-embedding-border)]',
+  reranker:  'bg-[var(--mg-modality-reranker-bg)] text-[var(--mg-modality-reranker-fg)] border-[var(--mg-modality-reranker-border)]',
 }
 
 export function ModalityBadge({ modality }: ModalityBadgeProps) {
@@ -19,6 +19,7 @@ export function ModalityBadge({ modality }: ModalityBadgeProps) {
   const label = t(`models.modality.${modality}`, { defaultValue: modality })
   return (
     <span
+      data-modality={modality in MODALITY_CLASSES ? modality : 'reranker'}
       className={`badge-interactive inline-flex items-center text-xs font-semibold px-[7px] py-[1px] rounded-sm border ${cls}`}
     >
       {label}

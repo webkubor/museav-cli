@@ -18,8 +18,8 @@
   color: var(--mg-text-4); background: transparent; cursor: pointer;
   transition: color 0.15s ease, background 0.15s ease;
 }
-.mg-card-fav:hover { color: #f43f5e; background: var(--mg-fill-0); }
-.mg-card-fav.is-on { color: #f43f5e; }
+.mg-card-fav:hover { color: var(--mg-favorite); background: var(--mg-favorite-bg-hover); }
+.mg-card-fav.is-on { color: var(--mg-favorite); }
 
 .mg-card-id { display: flex; align-items: center; gap: 14px; flex: 1 1 auto; min-width: 0; padding-right: 28px; }
 .mg-card-avatar { border: 1px solid var(--mg-border); background: var(--mg-bg-1); }
@@ -166,4 +166,3 @@
     z-index: 10;
   }
 }
-

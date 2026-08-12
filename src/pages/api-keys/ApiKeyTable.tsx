@@ -37,7 +37,7 @@ import {
 const KEY_TYPE_CLASS: Record<string, string> = {
   personal: 'bg-mg-fill-0 border-mg-border text-mg-text-2',
   member: 'bg-brand-base/10 border-brand-base/25 text-brand-base',
-  service: 'bg-blue-500/10 border-blue-500/25 text-blue-600 dark:text-blue-400',
+  service: 'bg-[var(--mg-info-bg)] border-[var(--mg-info-border)] text-[var(--mg-info-text)]',
 }
 
 type Props = {
@@ -250,7 +250,7 @@ export function ApiKeyTable({
                         <span
                           key={name}
                           title={name}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-green-500/10 border border-green-500/25 text-green-600 cursor-help"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-[var(--mg-success-bg)] border border-[var(--mg-success-border)] text-[var(--mg-success-text)] cursor-help"
                         >
                           <LuShieldCheck className="w-3 h-3 shrink-0" />
                           {name}

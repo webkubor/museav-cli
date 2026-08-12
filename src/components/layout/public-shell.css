@@ -117,7 +117,7 @@ body[theme-mode='dark'] .mg-public-shell::after {
 
 /* 星场要压在颗粒之上；内容再压星场。
    ⚠️ 顶栏包裹层不能并进 z-index:2 —— 这条选择器（0,2,0）会压过它自带的
-   Tailwind z-40（0,1,0），而广场侧栏/搜索吸顶卡是 z-index:10，
+   顶栏使用 header 层，而广场侧栏/搜索吸顶卡使用 raised 层，
    10 > 2 时列表一往下滚就盖住导航栏（走查已踩）。顶栏显式回 40。 */
 .mg-public-shell .mg-decor-stars { z-index: 1; }
 .mg-public-shell > main { z-index: 2; }

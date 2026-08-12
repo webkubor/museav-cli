@@ -373,12 +373,12 @@ interface TextCopy {
 function TierBadge({ name, rate, fallback }: { name?: string; rate?: number; fallback: string }) {
   if (!name) return <span className="text-mg-text-4">{fallback}</span>
   const colorMap: Record<string, string> = {
-    '成长伙伴': 'bg-green-500/10 text-green-600 border-green-500/20',
-    'Growth Partner': 'bg-green-500/10 text-green-600 border-green-500/20',
-    '核心伙伴': 'bg-blue-500/10 text-blue-600 border-blue-500/20',
-    'Core Partner': 'bg-blue-500/10 text-blue-600 border-blue-500/20',
-    '战略伙伴': 'bg-purple-500/10 text-purple-600 border-purple-500/20',
-    'Strategic Partner': 'bg-purple-500/10 text-purple-600 border-purple-500/20',
+    '成长伙伴': 'bg-[var(--mg-success-bg)] text-[var(--mg-success-text)] border-[var(--mg-success-border)]',
+    'Growth Partner': 'bg-[var(--mg-success-bg)] text-[var(--mg-success-text)] border-[var(--mg-success-border)]',
+    '核心伙伴': 'bg-[var(--mg-info-bg)] text-[var(--mg-info-text)] border-[var(--mg-info-border)]',
+    'Core Partner': 'bg-[var(--mg-info-bg)] text-[var(--mg-info-text)] border-[var(--mg-info-border)]',
+    '战略伙伴': 'bg-[var(--mg-brand-selected-bg)] text-[var(--mg-brand-base)] border-[var(--mg-state-selected-border)]',
+    'Strategic Partner': 'bg-[var(--mg-brand-selected-bg)] text-[var(--mg-brand-base)] border-[var(--mg-state-selected-border)]',
   }
   const cls = colorMap[name] ?? 'bg-mg-fill-0 text-mg-text-2 border-mg-border'
   const label = typeof rate === 'number' && rate > 0 ? `${name} · ${rate}%` : name

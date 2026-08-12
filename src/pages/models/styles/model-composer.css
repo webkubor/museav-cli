@@ -125,9 +125,9 @@
   gap: 10px;
   margin: 0 18px 8px;
   padding: 10px 12px;
-  border: 1px solid color-mix(in srgb, var(--mg-warning) 32%, var(--mg-border));
+  border: 1px solid var(--mg-warning-border);
   border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--mg-warning) 8%, var(--mg-bg-0-solid));
+  background: var(--mg-warning-bg);
   color: var(--mg-text-2);
   font-size: 12px;
 }
@@ -152,7 +152,7 @@
 .playground-balance-notice > button {
   flex-shrink: 0;
   padding: 5px 12px;
-  border: 1px solid color-mix(in srgb, var(--mg-warning) 42%, var(--mg-border));
+  border: 1px solid var(--mg-warning-border);
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--mg-text-1);

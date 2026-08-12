@@ -73,7 +73,7 @@ function RequiredPhoneBindingDialogContent({
   return (
     // modal={false}:发短信验证码走阿里云/alicaptcha 人机验证,SDK 把验证码弹窗 portal 到 document.body
     // (在本 Dialog DOM 之外)。Radix 默认 modal 会给 body 设 pointer-events:none + 焦点陷阱,导致该验证码
-    // 浮层可见却点不动(需求方#215)。关掉 modal 解除 body 锁让验证码可交互;遮罩(z-50)仍渲染
+    // 浮层可见却点不动(需求方#215)。关掉 modal 解除 body 锁让验证码可交互;遮罩仍渲染
     // 挡住背后页面、验证码(第三方 z 更高)在遮罩之上可点,强制门禁效果不变。
     <Modal
       open={open}

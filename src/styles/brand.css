@@ -25,8 +25,8 @@
 /* Go：紫色阶渐变 shimmer（对齐 Go） */
 .brand-wordmark-domestic-accent {
   margin-left: 0.04em;
-  /* 国内品牌蓝（#385AFF，与官网 --modelgo-brand-blue 同值）。
-     原来是 #4f46e5 → #6366f1 → #8b5cf6 → #d946ef 的紫洋红渐变，跟国内品牌色不一致。
+  /* 国内品牌蓝（与官网品牌蓝同值）。
+     原来的紫洋红渐变跟国内品牌色不一致。
      保持同样的七档结构与 shimmer 动画，只把色相换到蓝。 */
   background: linear-gradient(90deg, #1e3fd6 0%, #385aff 20%, #5b7cff 40%, #7fa0ff 50%, #5b7cff 60%, #385aff 80%, #1e3fd6 100%);
   background-size: 300% auto;

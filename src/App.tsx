@@ -214,7 +214,24 @@ export default function App() {
 
   return (
     <Providers>
-      <Toaster richColors position="top-right" closeButton theme={activeTheme} />
+      <Toaster
+        position="top-right"
+        closeButton
+        theme={activeTheme}
+        toastOptions={{
+          classNames: {
+            toast: 'mg-toast',
+            title: 'mg-toast-title',
+            description: 'mg-toast-description',
+            closeButton: 'mg-toast-close',
+            icon: 'mg-toast-icon',
+            success: 'mg-toast-success',
+            warning: 'mg-toast-warning',
+            error: 'mg-toast-error',
+            info: 'mg-toast-info',
+          },
+        }}
+      />
       <AppUpdatePrompt />
       <BrowserRouter>
         {NavLogger && <Suspense fallback={null}><NavLogger /></Suspense>}
@@ -224,7 +241,7 @@ export default function App() {
             position: 'fixed', inset: 0,
             background: 'var(--site-bg, #f8fafc)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 9999,
+            zIndex: 'var(--mg-z-blocking)',
           }}>
             <div style={{
               width: 28, height: 28,

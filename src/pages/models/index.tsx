@@ -87,7 +87,7 @@ export default function ModelsPage() {
   } = useModelsPlayground()
 
   return (
-    <div className="models-experience-page">
+    <div className="models-experience-page models-playground-page">
       <PageHeader title={t('modelsExperience.page.title')} description={t('modelsExperience.page.description')} className="mb-4" />
       <div className="models-experience-shell">
         {/* 历史会话固定侧栏（PRD §7.8）：收起态窄图标轨，展开 248px；接真实 GET /experience/sessions，

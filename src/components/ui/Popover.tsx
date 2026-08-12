@@ -51,7 +51,7 @@ export const Popover: React.FC<PopoverProps> = ({
       left = Math.max(8, vw - panelW - 8)
     }
 
-    setStyle({ position: 'fixed', top, bottom, left, zIndex: 9999, visibility: 'visible' })
+    setStyle({ position: 'fixed', top, bottom, left, zIndex: 'var(--mg-z-popover)', visibility: 'visible' })
   }, [position])
 
   useLayoutEffect(() => {

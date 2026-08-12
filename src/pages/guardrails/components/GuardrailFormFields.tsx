@@ -265,7 +265,7 @@ export function GuardrailFormFields({
               </button>
               <span
                 role="tooltip"
-                className="pointer-events-none absolute left-0 top-6 z-20 w-[280px] rounded-md border border-mg-border bg-mg-bg-3 p-3 opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+                className="pointer-events-none absolute left-0 top-6 z-[var(--mg-z-tooltip)] w-[280px] rounded-[var(--mg-tooltip-radius)] border border-mg-border bg-mg-bg-3 p-[var(--mg-popover-pad)] opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
               >
                 <span className="mb-1.5 block text-[11px] font-bold text-mg-text-1">{t('guardrails.promptInjection.hitBehavior')}</span>
                 {PROMPT_INJECTION_HINTS.map((h) => (

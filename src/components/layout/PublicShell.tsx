@@ -26,7 +26,7 @@ export function PublicShell() {
       {/* 装饰星场：与官网首屏同一份 36 颗星，和固定的渐变画布一起做"大画布"观感。
           纯装饰（aria-hidden + pointer-events:none），落在内容之下。 */}
       <DecorStarField />
-      <div className="sticky top-0 z-40">
+      <div className="sticky top-0 z-[var(--mg-z-header)]">
         <DashboardHeader />
       </div>
       <main className="mx-auto w-full max-w-[1600px] px-4 py-6 md:px-8">

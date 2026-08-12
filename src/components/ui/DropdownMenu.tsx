@@ -18,7 +18,7 @@ export const DropdownMenuContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        "z-50 min-w-[8rem] overflow-hidden rounded-md border border-mg-border/70 bg-[rgba(var(--mg-bg-0-rgb),0.88)] backdrop-blur-md p-[var(--mg-menu-padding)] text-mg-text-2 shadow-xl shadow-black/5 animate-in fade-in-50 zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+        "z-[var(--mg-z-dropdown)] min-w-[8rem] overflow-hidden rounded-[var(--mg-popover-radius)] border border-mg-border/70 bg-[rgba(var(--mg-bg-0-rgb),0.88)] backdrop-blur-md p-[var(--mg-menu-padding)] text-mg-text-2 shadow-xl shadow-black/5 animate-in fade-in-50 zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
         className
       )}
       {...props}
@@ -36,7 +36,7 @@ export const DropdownMenuItem = React.forwardRef<
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-[var(--mg-menu-item-px)] py-[var(--mg-menu-item-py)] mg-text-body font-semibold leading-none outline-none transition-all duration-150 text-mg-text-2 hover:bg-mg-fill-0/60 hover:text-mg-text-1 focus:bg-mg-fill-0/60 focus:text-mg-text-1 active:scale-[0.98] data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+      "relative flex cursor-pointer select-none items-center gap-2 rounded-[var(--mg-radius-sm)] px-[var(--mg-menu-item-px)] py-[var(--mg-menu-item-py)] mg-text-body font-semibold leading-none outline-none transition-all duration-150 text-mg-text-2 hover:bg-mg-fill-0/60 hover:text-mg-text-1 focus:bg-mg-fill-0/60 focus:text-mg-text-1 active:scale-[0.98] data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
       inset && "pl-8",
       className
     )}

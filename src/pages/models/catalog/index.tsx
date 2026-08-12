@@ -302,7 +302,7 @@ export default function ModelsCatalogPage() {
         type="button"
         onClick={() => { const n = !filtersOpen; if (n) window.scrollTo(0, 0); setFiltersOpen(n) }}
         aria-expanded={filtersOpen}
-        className={`bg-mg-bg-2 fixed bottom-6 right-5 z-40 inline-flex h-11 items-center gap-2 rounded-full border px-6 text-[14px] font-medium shadow-lg backdrop-blur lg:hidden ${
+        className={`bg-mg-bg-2 fixed bottom-6 right-5 z-[var(--mg-z-sticky)] inline-flex h-11 items-center gap-2 rounded-full border px-6 text-[14px] font-medium shadow-lg backdrop-blur lg:hidden ${
           filtersOpen ? 'border-brand-base text-brand-base' : 'border-mg-border text-mg-text-2'
         }`}
       >
@@ -377,7 +377,7 @@ export default function ModelsCatalogPage() {
                 <LuChevronDown size={13} className={sortOpen ? 'rotate-180' : ''} />
               </button>
               {sortOpen && (
-                <div className="bg-mg-bg-2 border-mg-border absolute right-0 top-full z-20 mt-1.5 min-w-[140px] overflow-hidden rounded-md border py-1 shadow-lg">
+                <div className="bg-mg-bg-2 border-mg-border absolute right-0 top-full z-[var(--mg-z-dropdown)] mt-1.5 min-w-[140px] overflow-hidden rounded-[var(--mg-popover-radius)] border py-1 shadow-lg">
                   {(['default', 'newest', 'cheapest'] as SortKey[]).map((key) => (
                     <button
                       key={key}

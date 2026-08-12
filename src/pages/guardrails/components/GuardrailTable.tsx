@@ -157,7 +157,11 @@ function StatusCell({
   // 状态列只保留开关本身表达启用/停用（需求方反馈：文字「启用/停用」冗余且占宽致列头换行）；
   // 语义交给 Switch 的开/关态 + title/aria，锁定态则提示原因。
   return (
-    <div className="flex items-center" title={lockedOff ? lockOffReason : active ? t('guardrails.table.active') : t('guardrails.table.inactive')}>
+    <div
+      className="flex items-center"
+      title={lockedOff ? lockOffReason : active ? t('guardrails.table.active') : t('guardrails.table.inactive')}
+      onClick={(e) => e.stopPropagation()}
+    >
       <Switch
         checked={active}
         disabled={!canEdit || lockedOff || pending}
@@ -183,7 +187,7 @@ function RowActions({
 }) {
   const { t } = useTranslation()
   return (
-    <div className="flex justify-end gap-2">
+    <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
       <Button size="sm" variant="ghost" onClick={() => onOpenDetail(row.id)} className="h-7 px-1 text-xs font-semibold text-brand-base">
         {canEdit ? t('guardrails.table.edit') : t('guardrails.table.view')}
       </Button>
@@ -349,7 +353,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
         </TableHeader>
         <TableBody>
           {globalRows.map((row) => (
-            <TableRow key={row.id}>
+            <TableRow key={row.id} className="cursor-pointer" onClick={() => onOpenDetail(row.id)}>
               <TableCell><NameCell row={row} onOpenDetail={onOpenDetail} /></TableCell>
               <TableCell><ScopeBudgetCell row={row} currencySymbol={currencySymbol} agg="guardrail_total" /></TableCell>
               {showMember && <TableCell><ScopeBudgetCell row={row} currencySymbol={currencySymbol} agg="per_member" /></TableCell>}
@@ -392,7 +396,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
           </TableHeader>
           <TableBody>
             {memberRows.map((row) => (
-              <TableRow key={row.id}>
+              <TableRow key={row.id} className="cursor-pointer" onClick={() => onOpenDetail(row.id)}>
                 <TableCell><NameCell row={row} onOpenDetail={onOpenDetail} /></TableCell>
                 <TableCell><KindCell row={row} /></TableCell>
                 <TableCell><CountBadge count={memberCount(row)} unit={t('guardrails.table.memberUnit')} emptyTitle={t('guardrails.table.noMembersBound')} boundTitle={t('guardrails.table.boundMembers', { count: memberCount(row) })} /></TableCell>
@@ -440,7 +444,7 @@ export function GuardrailSections(props: GuardrailSectionsProps) {
               ? t(PROMPT_INJECTION_LABEL_KEY[rawPromptInjectionMode(row)!])
               : t(PROMPT_INJECTION_INHERIT_LABEL_KEY)
             return (
-              <TableRow key={row.id}>
+              <TableRow key={row.id} className="cursor-pointer" onClick={() => onOpenDetail(row.id)}>
                 <TableCell><NameCell row={row} onOpenDetail={onOpenDetail} /></TableCell>
                 <TableCell><KindCell row={row} /></TableCell>
                 <TableCell><CountBadge count={apiKeyCount(row)} unit={t('guardrails.table.keyUnit')} emptyTitle={t('guardrails.table.noKeysBound')} boundTitle={t('guardrails.table.boundKeysCount', { count: apiKeyCount(row) })} /></TableCell>

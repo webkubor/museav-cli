@@ -34,6 +34,7 @@ import {
 } from './dashboard-header-utils'
 import { DashboardHeaderNav } from './dashboard-header-nav'
 import { AccountMenu } from './dashboard-header-menu'
+import { LanguageSwitcher } from './LanguageSwitcher'
 
 /**
  * 重构后的 DashboardHeader
@@ -370,7 +371,10 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
         {/* 1. 三端同步导航（官网为基准的同一组栏目，#251）；窄屏折叠进头像下拉 */}
         <DashboardHeaderNav items={syncedNav} onNavClick={handleTopNavClick} />
 
-        {/* 2. 用户头像一站式 Dropdown（匿名 → 登录/注册入口） */}
+        {/* 2. 语言切换：地球图标直达，原深藏于 设置→账号→偏好设置 的入口太深（需求方反馈） */}
+        <LanguageSwitcher />
+
+        {/* 3. 用户头像一站式 Dropdown（匿名 → 登录/注册入口） */}
         {!isAuthenticated ? (
           <Button variant="brand" size="sm" onClick={() => navigate('/login')}>
             {t('common.login')}

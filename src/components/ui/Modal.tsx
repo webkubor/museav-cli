@@ -60,6 +60,7 @@ export function Modal({
           flex 覆盖基类 grid；!overflow-hidden 压掉基类的整体 overflow-y-auto（那会把 footer 一起滚出视口） */}
       <DialogContent
         closeButton={closeButton}
+        modal={modal}
         onEscapeKeyDown={onEscapeKeyDown}
         onPointerDownOutside={onPointerDownOutside}
         onInteractOutside={onInteractOutside}

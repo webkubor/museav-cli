@@ -75,7 +75,8 @@ export async function createTemplate(client: StudioClient, opts: CreateTemplateO
         model: opts.model || 'gpt-image-2',
         prompt_template: opts.prompt,
         quality: opts.quality,
-        params_json: fields.length ? { fields } : undefined,
+        // 契约要求 fields 在 config 顶层（服务端 validateConfig 读 cfg.fields）
+        fields: fields.length ? fields : undefined,
         is_default: true,
       },
     ],

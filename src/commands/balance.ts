@@ -1,15 +1,12 @@
-/** studio-cli balance —— 查上游余额 */
+/** studio-cli balance —— 查租户余额（¥，实时计算：充值总额 − 历史消耗） */
 import type { StudioClient } from '../client.js'
 
 export async function balance(client: StudioClient): Promise<void> {
   const r = await client.balance()
-  process.stderr.write(`总余额: $${r.balance_usd?.toFixed(2) ?? '?'}  可用上游: ${r.providers_ok}\n`)
-  if (r.providers?.length) {
-    process.stderr.write(`\n各供应商:\n`)
-    for (const p of r.providers) {
-      const mark = p.ok ? '✅' : '❌'
-      process.stderr.write(`  ${mark} ${(p.label || p.name).padEnd(16)} $${p.balance_usd?.toFixed(2) ?? '?'}\n`)
-    }
-  }
+  // 单位 ¥ 人民币（后台 2026-08-09 起只返回租户自己的余额，不再下发上游供应商聚合数据）
+  process.stderr.write(`余额: ¥${r.balance_usd?.toFixed(2) ?? '?'}`)
+  if (r.markup_pct) process.stderr.write(`  加价率: ${(r.markup_pct * 100).toFixed(0)}%`)
+  if (r.checked_at) process.stderr.write(`  校验时间: ${r.checked_at.slice(0, 19).replace('T', ' ')}`)
+  process.stderr.write('\n')
   console.log(JSON.stringify(r))
 }

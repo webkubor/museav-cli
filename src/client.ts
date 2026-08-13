@@ -82,7 +82,8 @@ export interface CreateTemplateInput {
     model: string
     prompt_template: string
     quality?: string
-    params_json?: { fields?: Array<{ key: string; label: string }> }
+    /** 表单字段声明——按中台契约放 config 顶层（不是 params_json 里），服务端校验/渲染都读这里 */
+    fields?: Array<{ key: string; label: string }>
     is_default?: boolean
   }>
 }
@@ -130,9 +131,11 @@ export interface ModelOption {
 }
 
 export interface Balance {
+  /** 数值单位是 ¥（人民币）。字段名带 usd 是历史遗留命名，不代表美元——中台侧不存在汇率换算 */
   balance_usd: number
-  providers_ok: number
-  providers?: Array<{ name: string; label: string; ok: boolean; balance_usd: number }>
+  /** 租户加价率（0.2 = 加价 20%） */
+  markup_pct: number
+  checked_at: string
 }
 
 export interface MeInfo {

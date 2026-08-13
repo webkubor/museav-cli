@@ -2,7 +2,6 @@
  * 创建 API Key 抽屉：名称、类型、负责人、过期时间、护栏与最终生效规则预览
  */
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import confetti from "canvas-confetti";
 import { SideSheet } from "@/components/ui/SideSheet";
 import {
@@ -48,6 +47,7 @@ import {
 import { groupThousands, trimAmountScale } from "@/pages/guardrails/budget";
 import type { ApiKeyCreated, ApiKeyType } from "@/types";
 import { LuInfo, LuChevronDown, LuChevronRight } from "react-icons/lu";
+import { useNavigate } from "react-router-dom";
 
 /** PRD「Key 类型」→ 后端 scope 映射（私有→personal / 成员→member / 服务→workspace） */
 const TYPE_CARDS: { type: ApiKeyType; scope: ScopeType }[] = [
@@ -554,14 +554,13 @@ export function CreateKeyModal({
                   <button
                     type="button"
                     data-track="api_keys:manage_guardrails"
-                    className="inline-flex items-center gap-0.5 text-xs font-semibold text-brand-base hover:text-brand-deep shrink-0"
+                    className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-brand-base hover:text-brand-deep"
                     onClick={() => {
                       onClose();
                       navigate(`/workspace/${workspaceId}/guardrails`);
                     }}
                   >
-                    {t("apiKeys.guardrail.manageLink")}
-                    <LuChevronRight size={12} />
+                    {t("apiKeys.createModal.manageGuardrails")} <LuChevronRight size={14} />
                   </button>
                 </div>
                 <div className="space-y-2.5">

@@ -87,7 +87,7 @@ git clone https://github.com/webkubor/studio-cli.git
 cd studio-cli && npm install && npm run build && npm link
 ```
 
-要求 Node.js >= 18。
+要求 Node.js >= 20.19。
 
 ### 2. 登录
 
@@ -317,7 +317,8 @@ console.log(r.sculpt.light)  // 光影分析
 | `login` | 登录（设备授权） | — |
 | `logout` | 退出登录 | — |
 | `whoami` | 查当前账户 + 租户归属（仅个人 login） | JSON |
-| `gen` | 出图 | 图片 URL |
+| `gen` | 出图（`--prompt` / `--skill` / `--template` 三选一） | 图片 URL |
+| `skills` | 查可用技能：私有 + 租户专属 + 公共库（配合 `gen --skill`） | slug 列表（每行一个） |
 | `templates` | 查可用图片模板（配合 `gen --template`） | JSON |
 | `templates create` | 新建图片模板，归属按账号身份自动关联租户 | 新模板 id |
 | `products` | 查所属租户自己的产品目录（数据在租户自己后台，非中台；仅租户 apiKey） | JSON |

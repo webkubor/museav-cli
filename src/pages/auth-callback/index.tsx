@@ -24,13 +24,10 @@ export default function AuthCallbackPage() {
     setLoading(true)
     getSession()
       .then((result) => {
+        // 透传完整 account：之前手工挑字段把 phone 丢了，导致已绑手机号的账户
+        // 微信登录后 PhoneBindingGuard 误判未绑定又弹绑定浮层（需求方#593）
         setAuth(
-          {
-            account_id: result.account.account_id,
-            display_name: result.account.display_name,
-            email: result.account.email,
-            avatar_url: result.account.avatar_url,
-          },
+          result.account,
           result.active_tenant_id,
           result.tenants,
           result.active_workspace_id,

@@ -16,8 +16,13 @@
  * 2026-07-29 用 --full 模式一次性扫过全仓，抓到了 4 处存量遗留（--mg-bg-1-rgb、
  * --mg-border-2 各两处），说明这类拼写错误不是新代码才会出，值得偶尔跑一次全量扫。
  *
+ * 2026-08-13 扩到 .ts/.tsx（原先 diff 模式只 filter '.css'）：Tailwind arbitrary value
+ * 里的 var() 引用 —— z-[var(--mg-z-overlay)] / rounded-[var(--mg-dialog-radius)] —— 与
+ * CSS 里的 var() 失效方式完全相同，却曾整类漏检，导致 191d2dd 那批把硬编码类机械换成
+ * var(...) 但变量未建的改动一路进了 test。同时挂进 vite.config 的 git.precommit 硬拦。
+ *
  * 用法：
- *   node scripts/check-css-tokens.mjs [baseRef]   # 默认：只查改动行
+ *   node scripts/check-css-tokens.mjs [baseRef]   # 默认：只查改动行（含 .css/.ts/.tsx）
  *   node scripts/check-css-tokens.mjs --full       # 扫全仓存量（较慢，手动跑）
  */
 import { execSync } from 'node:child_process'
@@ -98,10 +103,16 @@ if (full) {
   }
 } else {
   // 默认：只查相对 base 新增的行（与 stylelint-diff.mjs 同一套逻辑）
+  // ⚠️ 必须同时覆盖 .ts/.tsx：token 引用不只写在 CSS 里，Tailwind 的 arbitrary value
+  // （z-[var(--mg-z-overlay)]、rounded-[var(--mg-dialog-radius)]、gap-[var(--mg-dialog-gap)]）
+  // 同样是 var() 引用，失效方式完全一样。2026-08-12 的线上事故就出在这个缺口上：
+  // 191d2dd 在 24 个 .tsx 里把硬编码 Tailwind 类批量换成 var(...)，其中 7 个变量根本没建，
+  // 而当时本函数只 filter('.css') → 门禁全程放行，缺陷直达 test（0e6cb10 事后补的变量）。
   const files = sh(`git diff --name-only --diff-filter=ACMR ${diffBase} --`)
-    .split('\n').filter((f) => f.endsWith('.css'))
+    .split('\n')
+    .filter((f) => /\.(css|tsx?)$/.test(f))
   if (!files.length) {
-    console.log('check-css-tokens: 无改动 CSS，跳过')
+    console.log('check-css-tokens: 无改动 CSS/TS(X)，跳过')
     process.exit(0)
   }
 

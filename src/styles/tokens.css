@@ -179,6 +179,19 @@
   --mg-z-popover: 1450;
   --mg-z-tooltip: 1470;
 
+  /* ── 191d2dd 引用了但从没定义的浮层尺寸 token ──────────────────────────
+     同一个 commit 把这些位置的硬编码类换成了 var(...)，但变量没建。
+     CSS 里 var() 取到空值 = **整条声明失效**，所以这些组件的圆角/内边距
+     直接消失（tooltip 连 padding 都没了，文字贴边）。
+     值严格还原成被替换掉的原始刻度，不趁机改视觉： */
+  --mg-dialog-radius: var(--mg-radius-lg);  /* Dialog/Sheet 原 rounded-lg */
+  --mg-dialog-gap: var(--mg-space-4);       /* Dialog/Sheet 原 gap-4 */
+  --mg-popover-radius: var(--mg-radius-md); /* Select/DropdownMenu 原 rounded-md */
+  --mg-popover-pad: var(--mg-space-3);      /* 护栏说明气泡原 p-3 */
+  --mg-tooltip-radius: var(--mg-radius-md); /* InfoTip 原 rounded-md */
+  --mg-tooltip-pad-x: 0.625rem;             /* InfoTip 原 px-2.5 */
+  --mg-tooltip-pad-y: 0.375rem;             /* InfoTip 原 py-1.5 */
+
   --mg-control-h-xs: 1.75rem;
   --mg-control-h-sm: 2rem;
   --mg-control-h-md: 2.5rem;

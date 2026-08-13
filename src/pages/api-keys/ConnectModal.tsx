@@ -68,16 +68,20 @@ function ConnectModalContent({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
   // 接入参数要钉真实存在的模型，否则 Claude Code 用官方默认 slug → 网关 403（需求方 #257）。
   // 按 tab 所需编程客户端分别拉目录：CC Switch / Claude Code = claude-code，Codex / SDK / cURL = codex。
   // coding_tool 为空的模型（QA 的 FakeLLM 夹具等）永不命中，服务端口径见 qa#583。
+  // include_hidden：广场里设为「隐藏」的模型也要能在这里接入——隐藏 = 不出现在公开浏览
+  // 列表，不等于不能用已知 model_id 接入（需求方 shared/modelgo_prd#567，后端 qa#601）。
+  // 服务端只在同时带 coding_tool 时认这个参数，所以 QA 夹具那批（coding_tools 为空）
+  // 依然进不来，qa#583 的隔离不受影响。
   // 仅在弹窗打开时拉取，避免全局 Header 每页都打一次目录请求。
   const anthropicModelsQuery = useQuery({
     queryKey: ['catalog-models', 'connect-modal', 'claude-code'],
-    queryFn: () => listModels({ coding_tool: 'claude-code', page_size: 100 }),
+    queryFn: () => listModels({ coding_tool: 'claude-code', include_hidden: true, page_size: 100 }),
     enabled: open,
     staleTime: 5 * 60_000,
   })
   const openaiModelsQuery = useQuery({
     queryKey: ['catalog-models', 'connect-modal', 'codex'],
-    queryFn: () => listModels({ coding_tool: 'codex', page_size: 100 }),
+    queryFn: () => listModels({ coding_tool: 'codex', include_hidden: true, page_size: 100 }),
     enabled: open,
     staleTime: 5 * 60_000,
   })

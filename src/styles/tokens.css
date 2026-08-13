@@ -633,16 +633,20 @@ body[theme-mode='dark'] {
   --chart-cat-6: var(--mg-chart-cat-6);
 }
 
+/* 涨跌配色只跟「市场」有关，跟深浅主题无关。
+   原先这两条被限定在 [theme-mode='dark'] 下——而 applyTheme() 在浅色时是
+   removeAttribute('theme-mode')，所以浅色模式下这两个变量压根不存在，
+   KpiCard 的 `color: var(--mg-trend-up)` 与 color-mix() 背景整条失效
+   （国内站默认就是浅色）。去掉主题限定，改为按市场定义、深浅通用。 */
+
 /* 国内市场特有趋势 (红涨绿跌) */
-[data-market='china'] [theme-mode='dark'],
-[data-market='china'] body[theme-mode='dark'] {
+[data-market='china'] {
   --mg-trend-up:   var(--mg-danger);
   --mg-trend-down: var(--mg-success);
 }
 
 /* 国际市场特有趋势 (绿涨红跌) */
-[data-market='global'] [theme-mode='dark'],
-[data-market='global'] body[theme-mode='dark'] {
+[data-market='global'] {
   --mg-trend-up:   var(--mg-success);
   --mg-trend-down: var(--mg-danger);
 }

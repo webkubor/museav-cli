@@ -127,6 +127,7 @@
       "noneSpaced": "No key guardrail",
       "unbound": "No key guardrail bound",
       "noKeyGuardrails": "No key guardrails",
+      "manageLink": "Manage guardrails",
       "defaultBadge": "(Default)",
       "globalDefaultMemberBudget": "Default Member Budget",
       "memberBudgetNotApplicable": "Member budget does not apply",

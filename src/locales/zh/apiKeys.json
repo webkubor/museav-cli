@@ -127,6 +127,7 @@
       "noneSpaced": "不使用 Key 护栏",
       "unbound": "未绑定 Key 护栏",
       "noKeyGuardrails": "暂无 Key 护栏",
+      "manageLink": "管理安全护栏",
       "defaultBadge": "（默认）",
       "globalDefaultMemberBudget": "全局默认个人预算",
       "memberBudgetNotApplicable": "个人预算不适用",

@@ -205,11 +205,10 @@ export default function WorkspacesPage() {
                       : "bg-mg-bg-0 border-mg-border/40 hover:bg-mg-fill-0/20 hover:border-mg-border/60"
                   )}
                 >
-                  {/* 头部：名称 + slug / 默认标识（对齐 PRD space-card-head） */}
+                  {/* 头部：名称 + 默认标识（对齐 PRD space-card-head）；slug 展示按需求方反馈删除 (prd#596) */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <h3 className="font-extrabold text-mg-text-1 text-[15px] truncate">{ws.name}</h3>
-                      <div className="font-mono text-xs text-mg-text-3 truncate mt-1">@{ws.slug}</div>
                     </div>
                     {ws.is_default && (
                       <span className="shrink-0 text-xs font-bold px-2 py-1 rounded-full bg-mg-warning/8 text-mg-warning">

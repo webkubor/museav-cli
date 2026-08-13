@@ -192,6 +192,7 @@
       "advancedTitle": "Advanced settings",
       "advancedDesc": "Configure security policies bound to this key",
       "securityPolicy": "Security policy",
+      "manageGuardrails": "Manage guardrails",
       "envLabel": "Environment",
       "live": "LIVE (Actual Billing)",
       "test": "TEST (Sandbox)",

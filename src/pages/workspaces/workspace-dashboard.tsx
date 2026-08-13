@@ -221,9 +221,9 @@ export function WorkspaceDashboard({ workspaceId, onDeleted, initialTab }: Works
 
   return (
     <div className="bg-mg-bg-0 border border-mg-border/40 rounded-lg p-6 flex flex-col gap-6 animate-in fade-in duration-300">
-      {/* 头部（PRD 原型 space-detail-head：仅 slug + 名称，其余信息归各页签；需求方#67） */}
+      {/* 头部（PRD 原型 space-detail-head：名称，其余信息归各页签；需求方#67）；
+          slug 展示按需求方反馈删除，覆盖 #67 原方案 (prd#596) */}
       <div className="space-y-1">
-        <span className="font-mono text-xs text-mg-text-3">@{ws.slug}</span>
         <h3 className="text-lg font-bold text-mg-text-1 tracking-tight m-0">{ws.name}</h3>
       </div>
 

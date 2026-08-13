@@ -16,6 +16,7 @@ import { installDevAuth } from './lib/dev-auth'
 import { init as initTrack, TrackApp, TrackRegion } from '@model-go/track'
 import { installGlobalClientErrorReporting } from './lib/client-error-report'
 import { getMarket } from './lib/market'
+import { installChunkReloadGuard } from './lib/chunk-reload'
 import { apiBaseUrl } from './lib/request'
 import { useAuthStore } from './store/auth'
 import { useAppUpdateStore } from './store/use-app-update-store'
@@ -109,18 +110,10 @@ if (import.meta.env.PROD) {
   useAppUpdateStore.getState().setUpdateSW(updateSW)
 }
 
-// 兜底（不限 PROD）：部署后旧 hash chunk 被清除，停留旧页面的用户导航时动态 import 会失败
-// （服务器 SPA 回退把缺失的 /assets/*.js 返成 index.html/text/html → MIME 报错 → 白屏，需求方#233）。
-// 捕获 Vite 的 preloadError，强制整页刷新拉取最新 index.html + chunk；10s 时间窗防刷新循环。
-window.addEventListener('vite:preloadError', (event) => {
-  const key = 'mg:preload-reload-ts'
-  const last = Number(sessionStorage.getItem(key) || '0')
-  if (Date.now() - last > 10_000) {
-    sessionStorage.setItem(key, String(Date.now()))
-    event.preventDefault()
-    window.location.reload()
-  }
-})
+// 兜底（不限 PROD）：部署窗口期/停留旧页面时动态 import 失败（服务器 SPA 回退把缺失的
+// /assets/*.js 返成 index.html/text/html → MIME 报错 → 白屏，需求方#233、#591）。
+// 带退避多次重试 + cache-bust，细节见 lib/chunk-reload.ts。
+installChunkReloadGuard()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

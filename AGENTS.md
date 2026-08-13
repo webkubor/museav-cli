@@ -19,6 +19,10 @@ Don't try both — whichever credential is present is what gets used (env var `S
 # Generate an image, wait for it, get the URL on stdout
 studio-cli gen --prompt 'a poster, neon lights, cyberpunk' --ratio 9:16
 
+# Generate a video (文生视频/图生视频), wait, get the mp4 URL on stdout
+studio-cli gen --video --prompt 'a cat stretching on a windowsill, cinematic' --model seedance-2-fast --ratio 9:16
+studio-cli gen --video --image logo.png --prompt 'logo glows slowly, background fades' --ratio 1:1
+
 # Generate from a pre-configured image template instead of a raw prompt (deterministic
 # placeholder substitution server-side, no chat cost). List available templates first —
 # the output shows which placeholder keys (if any) each template needs.

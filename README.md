@@ -146,6 +146,12 @@ studio-cli gen --prompt '...' --quality high
 # 图生图（自动上传垫图，保持人物面容）
 studio-cli gen --prompt '保持面容，换成西装' --ref face.png
 
+# 文生视频（模型如 seedance-2-fast / artsdance-2-0-pro-260801，自动轮询直到完成）
+studio-cli gen --video --prompt '一只橘猫在窗台上伸懒腰，阳光洒进来，电影感' --model seedance-2-fast --ratio 9:16
+
+# 图生视频（--image 传首帧图，自动上传）
+studio-cli gen --video --image logo.png --prompt 'logo 缓缓发光，背景渐暗' --ratio 1:1
+
 # 管道用法：拿到 URL 存变量
 URL=$(studio-cli gen --prompt '海报')
 curl -o poster.png "$URL"
@@ -317,7 +323,7 @@ console.log(r.sculpt.light)  // 光影分析
 | `login` | 登录（设备授权） | — |
 | `logout` | 退出登录 | — |
 | `whoami` | 查当前账户 + 租户归属（仅个人 login） | JSON |
-| `gen` | 出图（`--prompt` / `--skill` / `--template` 三选一） | 图片 URL |
+| `gen` | 出图 / 出视频（`--prompt` / `--skill` / `--template` 三选一；`--video` 切视频，`--image` 图生视频） | 图片/视频 URL |
 | `skills` | 查可用技能：私有 + 租户专属 + 公共库（配合 `gen --skill`） | slug 列表（每行一个） |
 | `templates` | 查可用图片模板（配合 `gen --template`） | JSON |
 | `templates create` | 新建图片模板，归属按账号身份自动关联租户 | 新模板 id |

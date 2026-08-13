@@ -4,7 +4,7 @@
  *
  * 用法见 README。注册中台：studio-cli config --baseUrl ... --apiKey ...
  */
-import { readFileSync } from 'node:fs'
+import { readFileSync, writeFileSync, chmodSync } from 'node:fs'
 import { Command } from 'commander'
 import updateNotifier from 'update-notifier'
 import { StudioClient } from './client.js'
@@ -17,6 +17,7 @@ import { upload } from './commands/upload.js'
 import { models } from './commands/models.js'
 import { skills } from './commands/skills.js'
 import { templates, createTemplate } from './commands/templates.js'
+import { videoTemplates } from './commands/video-templates.js'
 import { balance } from './commands/balance.js'
 import { jobs } from './commands/jobs.js'
 import { whoami } from './commands/whoami.js'
@@ -26,6 +27,33 @@ import { assets } from './commands/assets.js'
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8')) as { name: string; version: string }
 // 每 12 小时最多查一次 npm registry，过期才提示，不拖慢日常调用
 updateNotifier({ pkg, updateCheckInterval: 1000 * 60 * 60 * 12 }).notify({ defer: false })
+
+/**
+ * 首次运行欢迎语：只在第一次执行时提示一次（用环境变量 XHS_ONCE 防止在同一会话里重复输出），
+ * 之后靠 ~/.studio-cli.json 里的 welcome_seen 标记跳过。不打断正常输出（写 stderr）。
+ */
+function maybeWelcome(): void {
+  try {
+    if (process.env.STUDIO_NO_WELCOME === '1') return
+    const file = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8')) as { version: string }
+    const CONFIG_PATH = process.env.HOME + '/.studio-cli.json'
+    let cfg: Record<string, unknown> = {}
+    try { cfg = JSON.parse(readFileSync(CONFIG_PATH, 'utf-8')) } catch { /* 首次运行还没有配置 */ }
+    if (cfg.welcome_seen) return
+    process.stderr.write(
+      `\n🎨 感谢使用 studio-cli v${file.version}（MUSE AV 出图中台）\n` +
+      `   有需求 / 反馈 / 合作？小红书关注「山鬼映画」找我：东方电影美学 · 把不存在的武侠电影做成江湖\n` +
+      `   → https://www.xiaohongshu.com/user/profile/5c3c1581000000000501835d\n\n`,
+    )
+    // 标记已看过（写入失败也无所谓，最多下次再提示一次）
+    try {
+      cfg.welcome_seen = true
+      writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2) + '\n', { mode: 0o600 })
+      chmodSync(CONFIG_PATH, 0o600)
+    } catch { /* ignore */ }
+  } catch { /* 欢迎语失败绝不阻塞任何命令 */ }
+}
+maybeWelcome()
 
 const program = new Command()
 
@@ -87,7 +115,7 @@ function withTenantClient<T extends (...args: any[]) => Promise<any>>(fn: T) {
 
 program
   .command('gen')
-  .description('出图（提交 + 自动轮询，成功输出图片 URL）')
+  .description('出图 / 出视频（提交 + 自动轮询，成功输出 URL）')
   .option('-p, --prompt <text>', '完整出图提示词（与 --skill / --template 三选一）')
   .option('-s, --skill <slug>', '用中台技能出图，提示词在服务端展开（与 --prompt / --template 三选一）；清单见 studio-cli skills')
   .option('-i, --input <text>', '配合 --skill 的一句业务描述，如「米白色针织衫」；不给则按技能规范自由发挥')
@@ -96,9 +124,12 @@ program
   // 不设默认值：--skill / --template 场景下要让技能/模板自己的比例生效，
   // CLI 强填默认值会把它们覆盖掉（服务端在纯 --prompt 场景已有 3:4 兜底，这里不用重复兜底）
   .option('-r, --ratio <ratio>', '宽高比: 3:4 / 9:16 / 1:1 / 4:3 / 16:9（不指定则用技能/模板自己的比例，纯 prompt 模式兜底 3:4）')
-  .option('-m, --model <name>', '指定模型，如 gpt-image-2')
+  .option('-m, --model <name>', '指定模型，如 gpt-image-2 / seedance-2-fast / artsdance-2-0-pro-260801')
   .option('-q, --quality <level>', '质量: low / medium / high（仅 gpt-image）')
-  .option('--ref <file>', '垫图文件路径（图生图，自动上传）')
+  .option('--ref <file>', '垫图文件路径（图片图生图，自动上传）')
+  .option('--video', '生成视频（走 /api/videos 链路，模型如 seedance-2-fast / artsdance-2-0-pro）')
+  .option('--duration <sec>', '视频时长（秒，仅 --video；由模型与上游支持范围决定）', (v) => Number(v))
+  .option('--image <file>', '图生视频首帧图（仅 --video，自动上传）')
   .action(withClient((client: StudioClient, opts: any) => gen(client, opts)))
 
 program
@@ -127,6 +158,12 @@ const templatesCmd = program
   .description('查可用图片模板：自己租户建的 + 平台共享的（跟技能是两套不同的机制，见 gen --template）')
   .option('--category <name>', '按分类过滤，如 电商白底图 / 演唱会')
   .action(withClient((client: StudioClient, opts: any) => templates(client, opts)))
+
+program
+  .command('video-templates')
+  .description('查可用视频模板：配合 gen --video --template 使用（视频模板与图片模板是两套表）')
+  .option('--category <name>', '按分类过滤，如 电商 / 换装视频')
+  .action(withClient((client: StudioClient, opts: any) => videoTemplates(client, opts)))
 
 templatesCmd
   .command('create')

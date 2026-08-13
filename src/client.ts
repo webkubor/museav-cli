@@ -201,6 +201,12 @@ export class StudioClient {
     return Array.isArray(r) ? r : []
   }
 
+  /** 视频模板清单（POST /api/videos 用 template_id）。结构同图片模板的 generation_configs 形态 */
+  async videoTemplates(): Promise<TemplateOption[]> {
+    const r = await this.request('video-templates')
+    return Array.isArray(r) ? r : []
+  }
+
   /** 新建图片模板。归属（是否关联租户）由服务端根据鉴权身份决定，见 CreateTemplateInput 注释 */
   async createTemplate(input: CreateTemplateInput): Promise<TemplateOption> {
     const r = await this.request('templates', {
@@ -259,27 +265,73 @@ export class StudioClient {
   }
 
   /**
-   * 提交出图 + 自动轮询直到完成/失败。
-   * onProgress 可选，每次轮询回调一次（用于 CLI 显示进度）。
-   */
-  async generateAndWait(
-    opts: GenerateOptions,
-    onProgress?: (status: string) => void,
-    intervalMs = 3000,
-    maxAttempts = 100,
-  ): Promise<Job> {
-    const { jobId } = await this.generate(opts)
-    for (let i = 0; i < maxAttempts; i++) {
-      await sleep(intervalMs)
-      const job = await this.getJob(jobId)
-      onProgress?.(job.status)
-      if (job.status === 'done') return job
-      if (job.status === 'failed') {
-        throw new Error(`出图失败: ${job.error || '未知原因'}（jobId: ${jobId}）`)
-      }
-    }
-    throw new Error(`出图超时（${(maxAttempts * intervalMs) / 1000}s 未返回，jobId: ${jobId}）`)
-  }
+   /** 提交出图 + 自动轮询直到完成/失败。
+    * onProgress 可选，每次轮询回调一次（用于 CLI 显示进度）。
+    */
+   async generateAndWait(
+     opts: GenerateOptions,
+     onProgress?: (status: string) => void,
+     intervalMs = 3000,
+     maxAttempts = 100,
+   ): Promise<Job> {
+     const { jobId } = await this.generate(opts)
+     for (let i = 0; i < maxAttempts; i++) {
+       await sleep(intervalMs)
+       const job = await this.getJob(jobId)
+       onProgress?.(job.status)
+       if (job.status === 'done') return job
+       if (job.status === 'failed') {
+         throw new Error(`出图失败: ${job.error || '未知原因'}（jobId: ${jobId}）`)
+       }
+     }
+     throw new Error(`出图超时（${(maxAttempts * intervalMs) / 1000}s 未返回，jobId: ${jobId}）`)
+   }
+
+   /** 提交视频任务（POST /api/videos）——video 走独立链路，不走图片 queue */
+   async generateVideo(opts: {
+     prompt?: string
+     model?: string
+     ratio?: string
+     duration?: number
+     /** 图生视频：首帧/参考图 URL（中台内部自动上传垫图后拿到 URL 再传这里） */
+     image_url?: string
+     template_id?: string
+     input?: string | Record<string, string>
+     callback_url?: string
+   }): Promise<{ jobId: string; upstreamTaskId?: string }> {
+     const body: Record<string, unknown> = {}
+     if (opts.prompt) body.prompt = opts.prompt
+     if (opts.model) body.model = opts.model
+     if (opts.ratio) body.ratio = opts.ratio
+     if (opts.duration != null) body.duration = opts.duration
+     if (opts.image_url) body.image_url = opts.image_url
+     if (opts.template_id) body.template_id = opts.template_id
+     if (opts.input) body.input = opts.input
+     if (opts.callback_url) body.callback_url = opts.callback_url
+     const r = await this.request('videos', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify(body),
+     })
+     return { jobId: r.job_id || r.id, upstreamTaskId: r.id }
+   }
+
+   /** 轮询视频任务直到完成/失败。返回 { cdn_url, status } */
+   async waitVideo(
+     jobId: string,
+     onProgress?: (status: string) => void,
+     intervalMs = 5000,
+     maxAttempts = 120, // 视频通常 1-5 分钟，最多等 10 分钟
+   ): Promise<{ cdn_url: string | null; status: string; error?: string }> {
+     for (let i = 0; i < maxAttempts; i++) {
+       await sleep(intervalMs)
+       const r = await this.request(`videos?id=${encodeURIComponent(jobId)}`)
+       onProgress?.(r.status || 'processing')
+       if (r.status === 'completed') return { cdn_url: r.cdn_url || null, status: 'completed' }
+       if (r.status === 'failed') return { cdn_url: null, status: 'failed', error: r.error || '未知原因' }
+     }
+     throw new Error(`视频生成超时（${(maxAttempts * intervalMs) / 1000}s 未完成，jobId: ${jobId}）`)
+   }
 
   /** 图片逆向：传文件路径或图片 URL */
   async reverse(input: { file?: string; imageUrl?: string }): Promise<ReverseResult> {

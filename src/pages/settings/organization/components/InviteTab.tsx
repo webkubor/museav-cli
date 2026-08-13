@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { addTenantMembers, getTenantInviteLink, listTenantMembers, resendTenantInvite, resetTenantInviteLink } from '@/services/tenants'
-import { formatDate } from '@/lib/format-date'
+import { formatDate, isPast } from '@/lib/format-date'
 import { ModelGoApiError } from '@/lib/request'
 import { listWorkspaces } from '@/services/workspaces'
 import { Button } from '@/components/ui/Button'
@@ -303,8 +303,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
                   <div className="flex shrink-0 items-center gap-3">
                     {inv.expires_at && (
                       <span
-                        // eslint-disable-next-line react-hooks/purity -- 仅样式判断用当前时间，叶子节点无记忆化边界，不影响渲染稳定性
-                        className={`text-xs ${new Date(inv.expires_at).getTime() < Date.now() ? 'font-semibold text-mg-danger' : 'text-mg-text-3'}`}
+                        className={`text-xs ${isPast(inv.expires_at) ? 'font-semibold text-mg-danger' : 'text-mg-text-3'}`}
                       >
                         {t('enterprise.members.expiresAt', { date: formatDate(inv.expires_at) })}
                       </span>

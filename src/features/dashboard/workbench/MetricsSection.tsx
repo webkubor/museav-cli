@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { LuActivity, LuReceiptText, LuDatabase, LuWalletCards } from 'react-icons/lu'
 import { useAuthStore } from '@/store/auth'
+import { useTenantRole } from '@/hooks/use-tenant-role'
 import { useBalance } from '@/hooks/use-balance'
 import { useTrackContext } from '@/hooks/use-track-context'
 import { trackEvent } from '@/lib/track'
@@ -18,6 +19,8 @@ import { abbreviateNumber, rangeForGranularity, type Granularity, type Workbench
  * 模块 4：核心指标 4 卡（总请求 / 总费用 / 总 Tokens / 账户余额）。
  * 请求/费用/Tokens 走 getUsageSummary(group_by:'none')；余额走 useBalance。
  * 我的视图传 account_id 裁剪到当前账号（后端 #328/#314 支持）；账户余额始终按租户不随视图变。
+ * 需求方 #573：企业租户的普通成员（tenant_member）不展示「账户余额」卡——余额是租户级敏感信息，
+ * 只有 owner/admin（及个人租户本人）可见；角色未回填时 fail-closed 先不显示。
  */
 export function MetricsSection({
   view,
@@ -30,6 +33,9 @@ export function MetricsSection({
 }) {
   const { t } = useTranslation()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
+  const { tenant, isEnterprise, canManage } = useTenantRole()
+  // 企业租户只有 owner/admin 可见余额；tenant 未回填（角色未知）时按不可见处理
+  const showBalance = Boolean(tenant) && (!isEnterprise || canManage)
   const { symbol } = useCurrency()
   const trackCtx = useTrackContext()
   const onMetricCardClick = (metric: string) =>
@@ -44,7 +50,7 @@ export function MetricsSection({
     staleTime: 60_000,
   })
 
-  const { data: balance, isLoading: balanceLoading } = useBalance(activeTenantId)
+  const { data: balance, isLoading: balanceLoading } = useBalance(showBalance ? activeTenantId : undefined)
   const openRecharge = useRechargeStore((s) => s.open)
 
   // 低余额判定：后端已返回 low_balance_threshold，可用余额 <= 阈值即偏低（阈值 > 0 才有意义）。
@@ -109,7 +115,7 @@ export function MetricsSection({
       sub: tokensSub,
       onClick: () => onMetricCardClick('tokens'),
     },
-    {
+    ...(showBalance ? [{
       title: t('dashboard.workbench.metrics.balance'),
       value: balance ? formatMoney(balance.available.amount, symbol) : undefined,
       loading: balanceLoading,
@@ -122,11 +128,11 @@ export function MetricsSection({
       sub: lowBalance ? t('dashboard.workbench.metrics.balanceLow') : balanceSub,
       action: lowBalance ? { label: t('dashboard.workbench.metrics.recharge'), onClick: openRecharge } : undefined,
       onClick: () => onMetricCardClick('balance'),
-    },
+    }] : []),
   ]
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${cards.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
       {cards.map((card) => (
         <TiltCard key={card.title}>
           <KpiCard {...card} />

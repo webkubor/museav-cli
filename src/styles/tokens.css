@@ -154,14 +154,43 @@
   --mg-motion-reduced-duration: 0.01ms;
 
   /* 兼容 modelgo-design-tokens 0.6.4 缺失的浮层层级。
-     客服弹窗 / Popover 需要压过页面内容与顶栏，但仍低于遮罩、抽屉、弹窗。 */
+     客服弹窗 / Popover 需要压过页面内容与顶栏。
+     ⚠️ 由弹窗内唤起的浮层（下拉/菜单/气泡/提示）必须**高于** modal，见下方覆盖。 */
   --mg-z-base: 0;
   --mg-z-raised: 10;
-  --mg-z-popover: 1250;
-  --mg-z-tooltip: 1270;
   --mg-z-sheet: 1350;
   --mg-z-blocking: 1500;
   --mg-z-devtool: 2000;
+
+  /* ── 弹窗内浮层：必须压过 overlay(1300) 与 modal(1400) ──────────────────
+     共享包 0.6.4 的层级是「按标准约定」排的：dropdown(1000) < overlay(1300)
+     < modal(1400)。这套顺序默认下拉只开在页面上，漏了「下拉从弹窗里唤起」
+     这个最常见的场景——Select / DropdownMenu / Popover 一旦开在 Dialog 里，
+     面板会被遮罩和弹窗整个压住：DOM 里 aria-expanded=true、option 全在，
+     但用户看不见也点不到，表现为「下拉点不开」。
+
+     回归来源：191d2dd「对齐控制台设计 token」把这组浮层从统一的 z-50 拆成
+     各自的 token。改之前它们同值，靠 Radix Portal 挂在 body 末尾的 DOM 顺序
+     天然盖在弹窗之上，所以一直没暴露。
+
+     不改共享包（会牵动官网两端且要发版），在控制台本地把这三个抬到 modal
+     之上；仍低于 blocking(1500) / toast(1600) / devtool(2000)。 */
+  --mg-z-dropdown: 1450;
+  --mg-z-popover: 1450;
+  --mg-z-tooltip: 1470;
+
+  /* ── 191d2dd 引用了但从没定义的浮层尺寸 token ──────────────────────────
+     同一个 commit 把这些位置的硬编码类换成了 var(...)，但变量没建。
+     CSS 里 var() 取到空值 = **整条声明失效**，所以这些组件的圆角/内边距
+     直接消失（tooltip 连 padding 都没了，文字贴边）。
+     值严格还原成被替换掉的原始刻度，不趁机改视觉： */
+  --mg-dialog-radius: var(--mg-radius-lg);  /* Dialog/Sheet 原 rounded-lg */
+  --mg-dialog-gap: var(--mg-space-4);       /* Dialog/Sheet 原 gap-4 */
+  --mg-popover-radius: var(--mg-radius-md); /* Select/DropdownMenu 原 rounded-md */
+  --mg-popover-pad: var(--mg-space-3);      /* 护栏说明气泡原 p-3 */
+  --mg-tooltip-radius: var(--mg-radius-md); /* InfoTip 原 rounded-md */
+  --mg-tooltip-pad-x: 0.625rem;             /* InfoTip 原 px-2.5 */
+  --mg-tooltip-pad-y: 0.375rem;             /* InfoTip 原 py-1.5 */
 
   --mg-control-h-xs: 1.75rem;
   --mg-control-h-sm: 2rem;
@@ -604,16 +633,20 @@ body[theme-mode='dark'] {
   --chart-cat-6: var(--mg-chart-cat-6);
 }
 
+/* 涨跌配色只跟「市场」有关，跟深浅主题无关。
+   原先这两条被限定在 [theme-mode='dark'] 下——而 applyTheme() 在浅色时是
+   removeAttribute('theme-mode')，所以浅色模式下这两个变量压根不存在，
+   KpiCard 的 `color: var(--mg-trend-up)` 与 color-mix() 背景整条失效
+   （国内站默认就是浅色）。去掉主题限定，改为按市场定义、深浅通用。 */
+
 /* 国内市场特有趋势 (红涨绿跌) */
-[data-market='china'] [theme-mode='dark'],
-[data-market='china'] body[theme-mode='dark'] {
+[data-market='china'] {
   --mg-trend-up:   var(--mg-danger);
   --mg-trend-down: var(--mg-success);
 }
 
 /* 国际市场特有趋势 (绿涨红跌) */
-[data-market='global'] [theme-mode='dark'],
-[data-market='global'] body[theme-mode='dark'] {
+[data-market='global'] {
   --mg-trend-up:   var(--mg-success);
   --mg-trend-down: var(--mg-danger);
 }

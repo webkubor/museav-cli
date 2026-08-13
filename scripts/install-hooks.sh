@@ -34,6 +34,32 @@ if [ "$STATUS" -eq 0 ]; then
   STATUS=$?
 fi
 
+# ── pre-commit 也在这里装（2026-08-13）──────────────────────────
+# 原先它只由 agent-eyes 在**启动 vite 时**写入，于是「clone + pnpm install 就直接
+# 提交」的人（含 CI 上手敲提交、以及只跑测试不起 dev 的人）身上完全没有提交门禁。
+# 8-12 的 token 事故正是门禁存在但未执行——所以安装路径必须覆盖不启动 vite 的场景。
+#
+# 幂等 & 不与 agent-eyes 抢：已经指向 pre-commit-all.sh 的（无论是 agent-eyes 写的
+# 还是本脚本写的）一律不动；只升级「老版本/无门禁」的壳。agent-eyes 之后启动仍会按
+# force:true 覆盖成它自己的 managed 块，那份也调同一个 pre-commit-all.sh，等价。
+if [ "$STATUS" -eq 0 ] && ! grep -q 'pre-commit-all.sh' "$HOOKS_DIR/pre-commit" 2>/dev/null; then
+  cat > "$HOOKS_DIR/pre-commit" 2>/dev/null <<'HOOK'
+#!/usr/bin/env sh
+# 提交前门禁钩子（scripts/install-hooks.sh 自动安装，勿手改逻辑 → 改 scripts/pre-commit-all.sh）
+# agent-eyes 的 secret / 超长文件 guard 由 vite 插件生成到 .git/hooks/，
+# 未启动过 vite 时该文件不存在——存在就跑，不存在不阻断（项目门禁仍在下一行执行）。
+GUARD="$(git rev-parse --git-path hooks)/agent-eyes-guard.mjs"
+[ -f "$GUARD" ] && { node "$GUARD" || exit 1; }
+bash "$(git rev-parse --show-toplevel)/scripts/pre-commit-all.sh"
+HOOK
+  if [ $? -eq 0 ]; then
+    chmod +x "$HOOKS_DIR/pre-commit" 2>/dev/null
+    echo "✓ git hooks installed → $HOOKS_DIR/pre-commit"
+  else
+    echo "⚠ pre-commit 钩子安装失败，已跳过（非致命）：$HOOKS_DIR" >&2
+  fi
+fi
+
 if [ "$STATUS" -eq 0 ]; then
   echo "✓ git hooks installed → $HOOKS_DIR/commit-msg"
 else

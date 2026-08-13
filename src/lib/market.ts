@@ -1,6 +1,6 @@
 import { MARKET_OVERRIDE_SESSION_KEY, storageKeys } from '@/lib/storage'
 import {
-  marketFromLocation,
+  marketFromHostname,
   marketLockedByDomain,
   marketOverrideFromSearch,
   type Market,
@@ -34,9 +34,15 @@ export function getMarketQueryOverride(): Market | null {
   }
 }
 
+/**
+ * 当前市场：生产域名锁定 > (query/session) 显式覆盖 > 域名探测。
+ * 非生产域名必须走 getMarketQueryOverride()（含 sessionStorage 兜底）——
+ * 路由跳转丢 ?market= 后，主题/语言等判定才不会和 data-market 分叉（qa#603）。
+ */
 export function getMarket(): Market {
   if (typeof window === 'undefined') return 'china'
-  return marketFromLocation(window.location.hostname, window.location.search)
+  const { hostname } = window.location
+  return marketLockedByDomain(hostname) ?? getMarketQueryOverride() ?? marketFromHostname(hostname)
 }
 
 export function isDomestic(): boolean {

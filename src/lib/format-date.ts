@@ -12,6 +12,13 @@ function dateOptions<T extends Intl.DateTimeFormatOptions>(options: T): T & { ti
   }
 }
 
+/** 是否已过期（含空值兜底为 false）；外置成纯函数供组件调用，避免在渲染体内直接调 Date.now() 触发 react-hooks/purity。 */
+export function isPast(iso: string | null | undefined): boolean {
+  if (!iso) return false
+  const t = new Date(iso).getTime()
+  return !Number.isNaN(t) && t < Date.now()
+}
+
 /** 相对时间："刚刚 / X 分钟前 / X 小时前 / X 天前 / X 周前 / X 个月前"，超 12 个月回退到绝对日期。空值返回 '—'。 */
 export function formatRelativeTime(iso: string | null | undefined): string {
   if (!iso) return '—'

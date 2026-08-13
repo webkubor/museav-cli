@@ -100,8 +100,8 @@ function consoleRoute(meta: ConsoleRouteMeta) {
   return <Route key={meta.key} path={meta.path} element={element} />
 }
 import { storageKeys } from '@/lib/storage'
-import { getMarket, type Market } from '@/lib/market'
-import { marketLockedByDomain, marketOverrideFromSearch } from '@/lib/market-domain'
+import { getMarket, getMarketQueryOverride, type Market } from '@/lib/market'
+import { marketLockedByDomain } from '@/lib/market-domain'
 import { applyBrandTheme, applyTheme, getSavedBrandTheme, getSavedTheme, readThemeFromUrl, saveTheme } from '@/lib/theme'
 import { getPlatformConfig } from '@/services/platform'
 import { useLangStore } from '@/store/use-brand-store'
@@ -138,8 +138,10 @@ function PlatformLoader({ onReady }: { onReady: () => void }) {
     // .ai=global、.com=china,platform-config 的 site 不得覆盖（后端配置错不能翻品牌,qa#480）。
     // 共享 test 域名可由国际站显式传入 ?market=global；该参数只在非生产锁定域名生效，
     // 并优先于缓存/API，避免国际站跳转被国内 platform-config 覆盖。
+    // 覆盖链必须与 getMarket() 同源（query + sessionStorage 兜底），
+    // 否则路由跳转丢 query 后 data-market 与主题口径分叉（qa#603）。
     const locked = marketLockedByDomain(window.location.hostname)
-    const marketOverride = locked ? null : marketOverrideFromSearch(window.location.search)
+    const marketOverride = locked ? null : getMarketQueryOverride()
     const forcedMarket = locked ?? marketOverride
     if (forcedMarket) {
       applyMarket(forcedMarket)

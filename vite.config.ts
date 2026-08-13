@@ -75,11 +75,12 @@ export default defineConfig(({ mode }) => {
       // dot 开头目录（.claude/.worktrees/.codex 等）已由插件默认忽略且自定义 exclude 自动并入。
       sizeWatch: { warn: 500, exclude: /node_modules|[\\/]dist[\\/]|\.git[\\/]|public\/vendor\/|generated-api-types|\.test\.tsx?$/ },
       git: {
-        // 提交前门禁：类型+规范快检（全量构建挪 pre-push/CI）+ UI 门禁（DESIGN.md
-        // 约定，见 scripts/ui-guard.sh）。任一非零退出即阻断。
-        // ⚠️ 不直接写 cs 命令——cs 是个人工具链，团队成员没有会导致谁都无法提交；
-        // pre-commit-check.sh 内部做「有 cs 用 cs、无则降级 tsc+eslint」的等效检查。
-        precommit: ['sh scripts/pre-commit-check.sh', 'bash scripts/ui-guard.sh'],
+        // 提交前门禁：清单真源在 scripts/pre-commit-all.sh（类型+规范快检 / UI 门禁 /
+        // token 存在性门禁），这里只调那一个入口。
+        // ⚠️ 别把清单展开抄回这里（2026-08-13）：agent-eyes 只在**启动过 vite** 时才把
+        // 这份清单写进 .git/hooks/pre-commit，只跑 `pnpm install` 的人拿不到；
+        // install-hooks.sh 需要装同一套门禁，清单抄两处必然漂移，故收口到单一脚本。
+        precommit: ['bash scripts/pre-commit-all.sh'],
         force: true,
       },
     }),

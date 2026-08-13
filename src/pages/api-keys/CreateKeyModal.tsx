@@ -46,7 +46,8 @@ import {
 } from "@/pages/guardrails/derive";
 import { groupThousands, trimAmountScale } from "@/pages/guardrails/budget";
 import type { ApiKeyCreated, ApiKeyType } from "@/types";
-import { LuInfo, LuChevronDown } from "react-icons/lu";
+import { LuInfo, LuChevronDown, LuChevronRight } from "react-icons/lu";
+import { useNavigate } from "react-router-dom";
 
 /** PRD「Key 类型」→ 后端 scope 映射（私有→personal / 成员→member / 服务→workspace） */
 const TYPE_CARDS: { type: ApiKeyType; scope: ScopeType }[] = [
@@ -76,6 +77,7 @@ export function CreateKeyModal({
   onCreated,
 }: Props) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { symbol } = useCurrency();
   // 个人租户可选 个人/项目 作用域，但没有「成员」（企业专属）
@@ -547,7 +549,20 @@ export function CreateKeyModal({
 
             {advancedOpen && (
               <div id="api-key-advanced-panel" className="space-y-5">
-                <h4 className="text-base font-bold text-mg-text-1">{t("apiKeys.createModal.securityPolicy")}</h4>
+                <div className="flex items-center justify-between gap-3">
+                  <h4 className="text-base font-bold text-mg-text-1">{t("apiKeys.createModal.securityPolicy")}</h4>
+                  <button
+                    type="button"
+                    data-track="api_keys:manage_guardrails"
+                    className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-brand-base hover:text-brand-deep"
+                    onClick={() => {
+                      onClose();
+                      navigate(`/workspace/${workspaceId}/guardrails`);
+                    }}
+                  >
+                    {t("apiKeys.createModal.manageGuardrails")} <LuChevronRight size={14} />
+                  </button>
+                </div>
                 <div className="space-y-2.5">
                   <label className="block text-sm font-bold text-mg-text-1">
                     {t("apiKeys.guardrail.key")}

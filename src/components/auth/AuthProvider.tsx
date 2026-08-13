@@ -12,51 +12,11 @@ import { getSessionForActiveWorkspace, applySessionToStore } from '@/lib/auth/re
 import { toLoginWithRedirect } from '@/lib/redirect'
 import { getPreferences } from '@/services/preferences'
 import { saveTimeZone } from '@/lib/timezone'
-import { PERMS } from '@/config/permissions'
 import ForbiddenPage from '@/pages/forbidden'
 import type { SessionResult } from '@/types'
 
 // 模块级闸：防止 StrictMode 双挂载 / 并发触发重复拉 session
 let isFetchingSession = false
-const PREVIEW_AUTH_KEY = 'mg:dev_preview_auth'
-
-function shouldUsePreviewAuth(): boolean {
-  if (!import.meta.env.DEV) return false
-  const params = new URLSearchParams(window.location.search)
-  if (params.get('previewAuth') === '0') {
-    sessionStorage.removeItem(PREVIEW_AUTH_KEY)
-    return false
-  }
-  if (params.get('previewAuth') === '1') {
-    sessionStorage.setItem(PREVIEW_AUTH_KEY, '1')
-    return true
-  }
-  return sessionStorage.getItem(PREVIEW_AUTH_KEY) === '1'
-}
-
-function applyPreviewAuth(): void {
-  useAuthStore.getState().setAuth(
-    {
-      account_id: 'preview-account',
-      display_name: '18758183837',
-      email: 'preview@modelgo.local',
-      phone: '18758183837',
-      avatar_url: null,
-    },
-    'preview-tenant',
-    [{
-      tenant_id: 'preview-tenant',
-      name: '18758183837',
-      slug: 'preview',
-      type: 'enterprise',
-      is_default: true,
-      logo_url: null,
-    }],
-    'preview-workspace',
-    Object.values(PERMS),
-    [],
-  )
-}
 
 /**
  * 显示时区回灌（qa#249）：`mg:timezone` 只在「设置→偏好设置」页写入 localStorage，
@@ -78,10 +38,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (isAuthenticated || isFetchingSession) return
-    if (shouldUsePreviewAuth()) {
-      applyPreviewAuth()
-      return
-    }
     isFetchingSession = true
     // 首拉即按持久化的活跃空间解析权限（非默认空间不带 id 会少 tab/按钮，需求方#255）。
     getSessionForActiveWorkspace()

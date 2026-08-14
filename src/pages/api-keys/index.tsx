@@ -501,7 +501,6 @@ export default function ApiKeysPage() {
         onClearFilters={clearFilters}
         onOpenDetail={(item) => { trackEvent('api_keys:detail', { ...commonEventProps, key_type: deriveKeyType(item) }, { source: 'table_row', is_space_owner: isActiveWorkspaceOwner }); setDetailKey(item) }}
         onToggleStatus={handleToggleStatus}
-        onRevoke={setRevokeTarget}
         onCopyKey={handleCopyKey}
         copyingKeyId={copyingKeyId}
         enablePendingId={enablePendingId}

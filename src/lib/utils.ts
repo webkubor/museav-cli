@@ -7,7 +7,7 @@ import i18n from 'i18next'
  *   - CursorPage<T>：{ items: T[], has_more, next_cursor }
  *   - 直接数组：T[]
  */
-export function pageItems<T>(data: CursorPage<T> | T[] | null | undefined): T[] {
+export function pageItems<T>(data: CursorPage<T> | { items?: T[] | null } | T[] | null | undefined): T[] {
   if (!data) return []
   if (Array.isArray(data)) return data
   return Array.isArray(data.items) ? data.items : []

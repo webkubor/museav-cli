@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input'
 import { PageHeader } from '@/components/ui/PageHeader'
 import Select from '@/components/ui/Select'
 import { isApiErrorCode } from '@/lib/request-error-message'
+import { pageItems } from '@/lib/utils'
 import { getLogPayload, listCallLogs } from '@/services/logs'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
@@ -221,7 +222,7 @@ export default function LogsPage() {
 
   // 派生生效的工作空间筛选值：用户手动切换过（包括点「清除筛选」）就以其为准；
   // 否则若 URL 带 ?workspace= 且已在加载到的列表里存在，采用它；列表未加载完/id 不存在则回落 'all'。
-  const workspaceFilter = !workspaceFilterTouched && workspaceParam && workspacesData?.items.some((w) => w.workspace_id === workspaceParam)
+  const workspaceFilter = !workspaceFilterTouched && workspaceParam && pageItems(workspacesData).some((w) => w.workspace_id === workspaceParam)
     ? workspaceParam
     : workspaceFilterRaw
   function setWorkspaceFilter(value: string) {
@@ -348,7 +349,8 @@ export default function LogsPage() {
     : responseRaw
   const payloadLoading = requestPayloadQuery.isLoading || responsePayloadQuery.isLoading
 
-  const items = data?.items ?? []
+  // 列表接口可能回 CursorPage 或直接数组，统一走 pageItems 取数，裸 `.items` 会崩（需求方#635）
+  const items = pageItems(data)
   const hasMore = Boolean(data?.has_more && data.next_cursor)
   const statusOptions = useMemo(
     () => STATUS_OPTION_VALUES.map((value) => ({ value, label: t(`logs.filter.status.${value}`) })),
@@ -372,9 +374,10 @@ export default function LogsPage() {
   const autoOpenedRef = useRef<string | null>(null)
   useEffect(() => {
     if (!isRequestIdSearch || !data) return
-    if (data.items.length === 1 && autoOpenedRef.current !== debouncedSearch) {
+    const list = pageItems(data)
+    if (list.length === 1 && autoOpenedRef.current !== debouncedSearch) {
       autoOpenedRef.current = debouncedSearch
-      setSelectedLog(data.items[0])
+      setSelectedLog(list[0])
       setPayloadView('parsed')
       trackEvent('logs_detail_view', { record_type: 'sync', source: 'request_id_autoopen' })
     }
@@ -386,7 +389,7 @@ export default function LogsPage() {
   const urlAutoOpenedRef = useRef(false)
   useEffect(() => {
     if (urlAutoOpenedRef.current || !urlRequestId || !data) return
-    const match = data.items.find((item) => item.request_id === urlRequestId)
+    const match = pageItems(data).find((item) => item.request_id === urlRequestId)
     if (match) {
       urlAutoOpenedRef.current = true
       autoOpenedRef.current = urlRequestId
@@ -410,16 +413,16 @@ export default function LogsPage() {
     if (!isDefaultTimeRange(timeRange)) chips.push(timeRangeLabel(timeRange, t))
     if (statusFilter !== 'all') chips.push(statusOptions.find((item) => item.value === statusFilter)?.label ?? statusFilter)
     if (workspaceFilter !== 'all') {
-      const workspace = workspacesData?.items.find((item) => item.workspace_id === workspaceFilter)
+      const workspace = pageItems(workspacesData).find((item) => item.workspace_id === workspaceFilter)
       chips.push(t('logs.filter.chip.workspace', { value: workspace?.name ?? workspaceFilter }))
     }
     if (modelFilter !== 'all') chips.push(t('logs.filter.chip.model', { value: modelFilter }))
     if (apiKeyFilter !== 'all') {
-      const key = apiKeysData?.items.find((item) => item.api_key_id === apiKeyFilter)
+      const key = pageItems(apiKeysData).find((item) => item.api_key_id === apiKeyFilter)
       chips.push(t('logs.filter.chip.apiKey', { value: key?.name ?? apiKeyFilter }))
     }
     if (memberFilter !== 'all') {
-      const member = membersData?.items.find((item) => item.account.account_id === memberFilter)
+      const member = pageItems(membersData).find((item) => item.account.account_id === memberFilter)
       chips.push(t('logs.filter.chip.member', { value: member?.account.display_name ?? memberFilter }))
     }
     if (guardrailFilter !== 'all') chips.push(guardrailOptions.find((item) => item.value === guardrailFilter)?.label ?? guardrailFilter)
@@ -427,10 +430,10 @@ export default function LogsPage() {
     return chips
   }, [
     apiKeyFilter,
-    apiKeysData?.items,
+    apiKeysData,
     guardrailFilter,
     memberFilter,
-    membersData?.items,
+    membersData,
     modelFilter,
     searchValue,
     statusFilter,
@@ -439,7 +442,7 @@ export default function LogsPage() {
     t,
     timeRange,
     workspaceFilter,
-    workspacesData?.items,
+    workspacesData,
   ])
 
   function goNextPage() {
@@ -562,7 +565,7 @@ export default function LogsPage() {
           <FilterField label={t('logs.filter.workspace')}>
             <Select value={workspaceFilter} onChange={(value) => { setWorkspaceFilter(value); setApiKeyFilter('all'); resetPagination(); trackFilter('workspace') }}>
               <Select.Option value="all">{t('logs.filter.allWorkspaces')}</Select.Option>
-              {(workspacesData?.items ?? []).map((workspace) => (
+              {pageItems(workspacesData).map((workspace) => (
                 <Select.Option key={workspace.workspace_id} value={workspace.workspace_id}>
                   {workspace.name}
                 </Select.Option>
@@ -572,7 +575,7 @@ export default function LogsPage() {
           <FilterField label={t('logs.filter.modelName')}>
             <Select value={modelFilter} onChange={(value) => { setModelFilter(value); resetPagination(); trackFilter('model') }}>
               <Select.Option value="all">{t('logs.filter.allModels')}</Select.Option>
-              {(modelsData?.items ?? []).map((model) => (
+              {pageItems(modelsData).map((model) => (
                 <Select.Option key={model.model_id} value={model.model_id}>
                   {model.display_name || model.model_id}
                 </Select.Option>
@@ -582,7 +585,7 @@ export default function LogsPage() {
           <FilterField label="API Key">
             <Select value={apiKeyFilter} disabled={!apiKeyWorkspaceId} onChange={(value) => { setApiKeyFilter(value); resetPagination(); trackFilter('api_key') }}>
               <Select.Option value="all">{apiKeyWorkspaceId ? t('logs.filter.allApiKeys') : t('logs.filter.selectWorkspaceFirst')}</Select.Option>
-              {(apiKeysData?.items ?? []).map((key) => (
+              {pageItems(apiKeysData).map((key) => (
                 <Select.Option key={key.api_key_id} value={key.api_key_id}>
                   {key.name} ({key.masked})
                 </Select.Option>
@@ -613,7 +616,7 @@ export default function LogsPage() {
               <FilterField label={t('logs.filter.member')}>
                 <Select value={memberFilter} onChange={(value) => { setMemberFilter(value); resetPagination(); trackFilter('member') }}>
                   <Select.Option value="all">{t('logs.filter.allMembers')}</Select.Option>
-                  {(membersData?.items ?? []).map((member) => (
+                  {pageItems(membersData).map((member) => (
                     <Select.Option key={member.account.account_id} value={member.account.account_id}>
                       {member.account.display_name || member.account.email}
                     </Select.Option>
@@ -688,7 +691,7 @@ export default function LogsPage() {
           // 归属空间名：后端行内 workspace.name（#459）缺失时，用筛选条已拉取的空间列表按 id
           // 映射，映射不到详情侧显「—」——不裸露原始 id（需求方#447）。
           selectedLog?.workspace?.name
-            || workspacesData?.items.find((item) => item.workspace_id === selectedLog?.workspace_id)?.name
+            || pageItems(workspacesData).find((item) => item.workspace_id === selectedLog?.workspace_id)?.name
         }
         onOpenLogSettings={(workspaceId) => {
           // 跳该日志所属空间的日志与转发设置时，同步切换活跃空间——否则侧栏/上下文仍停在原空间，

@@ -37,7 +37,7 @@ export function RequireWorkspace({ children }: { children: ReactNode }) {
   // 与侧栏空间切换器 / 空间管理页同一个 queryKey：命中缓存，不额外多打一次接口
   const { data, isLoading, isError } = useQuery({
     queryKey: ['workspaces', activeTenantId],
-    queryFn: () => listWorkspaces().then((res) => res.items ?? []),
+    queryFn: () => listWorkspaces(),
     enabled: Boolean(activeTenantId),
     staleTime: 60_000,
   })

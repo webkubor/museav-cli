@@ -5,8 +5,7 @@
  * GET /tenants/:tenantId/recharges/:orderNo、POST /tenants/:tenantId/recharges/:orderNo/cancel、
  * POST /tenants/:tenantId/promo-codes/redeem
  */
-import { get, post, patch } from '@/lib/request'
-import { pageItems } from '@/lib/utils'
+import { get, getPage, post, patch } from '@/lib/request'
 import type {
   RechargeListParams,
 } from '@/interfaces/billing'
@@ -90,16 +89,9 @@ export interface GiftRecord {
   credited_at: string
 }
 
-export interface GiftRecordsPage {
-  items: GiftRecord[]
-  page_size: number
-  has_more: boolean
-  next_cursor: string
-}
-
 /** GET /tenants/:tenantId/gift-records — 赠送明细（促销/注册等赠金入账） */
 export function listGiftRecords(tenantId: string, params?: { cursor?: string; page_size?: number }) {
-  return get<GiftRecordsPage>(`tenants/${tenantId}/gift-records`, params)
+  return getPage<CursorPage<GiftRecord>>(`tenants/${tenantId}/gift-records`, params)
 }
 
 // ─── 充值订单 ─────────────────────────────────────
@@ -116,7 +108,7 @@ export function getRecharge(tenantId: string, orderNo: string) {
 
 /** 列出充值订单 */
 export function listRecharges(tenantId: string, params?: RechargeListParams) {
-  return get<CursorPage<RechargeOrder>>(`tenants/${tenantId}/recharges`, params)
+  return getPage<CursorPage<RechargeOrder>>(`tenants/${tenantId}/recharges`, params)
 }
 
 /** 取消未支付订单 */
@@ -288,10 +280,10 @@ async function composeIncomeRecordsFallback(
   }
 
   const merged: IncomeRecord[] = [
-    ...pageItems<RechargeOrder>(recharges)
+    ...(recharges?.items ?? [])
       .map(rechargeToIncome)
       .filter((r): r is IncomeRecord => r !== null),
-    ...pageItems<GiftRecord>(gifts).map(giftToIncome),
+    ...(gifts?.items ?? []).map(giftToIncome),
   ]
 
   // 时间倒序（ISO 字符串可直接比较；缺失时间沉底）
@@ -332,7 +324,7 @@ export function listIncomeRecords(
 ): Promise<CursorPage<IncomeRecord>> {
   if (INCOME_RECORDS_ENDPOINT_READY) {
     // TODO(#431): 后端上线后启用；契约 = cursor page of IncomeRecord
-    return get<CursorPage<IncomeRecord>>(`tenants/${tenantId}/income-records`, params)
+    return getPage<CursorPage<IncomeRecord>>(`tenants/${tenantId}/income-records`, params)
   }
   return composeIncomeRecordsFallback(tenantId, params)
 }

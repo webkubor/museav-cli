@@ -58,7 +58,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
   // 空间列表作为「授权工作空间」下拉数据源
   const workspacesQuery = useQuery({
     queryKey: ['workspaces', tenantId],
-    queryFn: () => listWorkspaces().then((res) => res.items ?? []),
+    queryFn: () => listWorkspaces(),
     enabled: Boolean(tenantId),
     staleTime: 60_000,
     refetchOnWindowFocus: false,

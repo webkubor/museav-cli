@@ -131,7 +131,7 @@ export function DashboardLayout() {
   const isPersonal = activeTenant?.type === 'personal'
   const { data: workspaceItems = [] } = useQuery({
     queryKey: ['workspaces', activeTenantId],
-    queryFn: () => listWorkspaces().then((res) => res.items ?? []),
+    queryFn: () => listWorkspaces(),
     enabled: Boolean(activeTenantId),
     staleTime: 60_000,
   })

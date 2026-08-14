@@ -14,7 +14,7 @@ export function WorkspaceTitleTag({ workspaceId }: { workspaceId: string }) {
   const activeTenantId = useAuthStore((state) => state.activeTenantId)
   const { data: workspaces = [] } = useQuery<WorkspaceItem[]>({
     queryKey: ['workspaces', activeTenantId],
-    queryFn: () => listWorkspaces().then((res) => res.items || []),
+    queryFn: () => listWorkspaces(),
     enabled: !!activeTenantId,
     staleTime: 60_000,
   })

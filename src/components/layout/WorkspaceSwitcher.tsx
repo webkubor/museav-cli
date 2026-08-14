@@ -35,7 +35,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
 
   const { data: workspaces = [] } = useQuery<WorkspaceItem[]>({
     queryKey: ['workspaces', activeTenantId],
-    queryFn: () => listWorkspaces().then(res => res.items || []),
+    queryFn: () => listWorkspaces(),
     enabled: !!activeTenantId,
     staleTime: 60_000,
   })

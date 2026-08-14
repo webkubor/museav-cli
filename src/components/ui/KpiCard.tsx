@@ -170,7 +170,13 @@ export const KpiCard: React.FC<KpiCardProps> = ({
       
       <div className="z-10 mt-1">
         {loading ? (
-          <div className="animate-pulse bg-mg-fill-2 rounded-full h-[var(--mg-skeleton-h-md)] w-2/3" />
+          // 骨架必须按它替代的那行文本的**行高**占位（display-sm = 2.25rem），而不是骨架自身的
+          // 2rem——差的这 4px 会在数据到达时让卡片长高、下方内容整体下移，同样是一种「闪烁」
+          // （prd#631：实测 KPI 卡 112→116px、页面下方 top 472→476）。
+          // 骨架条本身仍用 skeleton-h-md，靠 flex 居中，视觉不变、占位精确。
+          <div className="flex items-center h-[var(--mg-line-height-display-sm)]" aria-hidden>
+            <div className="animate-pulse bg-mg-fill-2 rounded-full h-[var(--mg-skeleton-h-md)] w-2/3" />
+          </div>
         ) : (
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">

@@ -155,7 +155,7 @@ export function CreateKeyModal({
 
   const workspaceQuery = useQuery({
     queryKey: ["workspaces", activeTenantId],
-    queryFn: () => listWorkspaces().then((res) => res.items ?? []),
+    queryFn: () => listWorkspaces(),
     enabled: !!activeTenantId && open,
     staleTime: 60_000,
   });

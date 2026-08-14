@@ -6,7 +6,7 @@
  * 金额一律字符串；transfer 必须携带稳定 idempotency_key（每次确认动作
  * 生成一个 uuid 并在重试时复用），否则超时重试可能产生双重转账。
  */
-import { get, post } from '@/lib/request'
+import { get, getPage, post } from '@/lib/request'
 import type { CursorPage } from '@/types'
 import type {
   ReferralStats,
@@ -51,7 +51,7 @@ export function listReferralInvitees(
   tenantId: string,
   params?: { cursor?: string; page_size?: number }
 ): Promise<CursorPage<ReferralInvitee>> {
-  return get<CursorPage<ReferralInvitee>>(`tenants/${tenantId}/referral/invitees`, params)
+  return getPage<CursorPage<ReferralInvitee>>(`tenants/${tenantId}/referral/invitees`, params)
 }
 
 /** GET /tenants/:tenantId/referral/reward-records — 奖励记录（即返佣流水），游标翻页 */
@@ -59,7 +59,7 @@ export function listRewardRecords(
   tenantId: string,
   params?: { cursor?: string; page_size?: number }
 ): Promise<CursorPage<ReferralCommissionRecord>> {
-  return get<CursorPage<ReferralCommissionRecord>>(`tenants/${tenantId}/referral/reward-records`, params)
+  return getPage<CursorPage<ReferralCommissionRecord>>(`tenants/${tenantId}/referral/reward-records`, params)
 }
 
 /** POST /tenants/:tenantId/referral/transfer — 奖励余额转入主余额 */

@@ -82,7 +82,7 @@ function storeTenant(): TenantBrief {
 beforeEach(() => {
   listTenants.mockReset()
   listWorkspaces.mockReset()
-  listWorkspaces.mockResolvedValue({ items: [] })
+  listWorkspaces.mockResolvedValue([])
   useAuthStore.setState({
     account: { account_id: 'acc_1', display_name: 'Alice', email: 'alice@modelgo.com', avatar_url: null },
     activeTenantId: ACTIVE_TENANT_ID,
@@ -118,7 +118,7 @@ describe('useTenantRole', () => {
 
   it('marks a tenant_member as space owner when they own a workspace (#391)', async () => {
     listTenants.mockResolvedValue({ items: [tenant('tenant_member')] })
-    listWorkspaces.mockResolvedValue({ items: [workspace('ws_owner')] })
+    listWorkspaces.mockResolvedValue([workspace('ws_owner')])
 
     const { result } = renderHook(() => useTenantRole(), { wrapper: makeWrapper() })
 
@@ -129,7 +129,7 @@ describe('useTenantRole', () => {
 
   it('does not mark a plain tenant_member without owned workspaces as space owner', async () => {
     listTenants.mockResolvedValue({ items: [tenant('tenant_member')] })
-    listWorkspaces.mockResolvedValue({ items: [workspace('ws_member')] })
+    listWorkspaces.mockResolvedValue([workspace('ws_member')])
 
     const { result } = renderHook(() => useTenantRole(), { wrapper: makeWrapper() })
 
@@ -141,7 +141,7 @@ describe('useTenantRole', () => {
 
 describe('useWorkspaceRole', () => {
   it('fails closed while workspace role is unknown', async () => {
-    listWorkspaces.mockResolvedValue({ items: [] })
+    listWorkspaces.mockResolvedValue([])
 
     const { result } = renderHook(() => useWorkspaceRole(), { wrapper: makeWrapper() })
 
@@ -151,7 +151,7 @@ describe('useWorkspaceRole', () => {
   })
 
   it('allows workspace owner/admin to manage the workspace', async () => {
-    listWorkspaces.mockResolvedValue({ items: [workspace('ws_owner')] })
+    listWorkspaces.mockResolvedValue([workspace('ws_owner')])
 
     const { result } = renderHook(() => useWorkspaceRole(), { wrapper: makeWrapper() })
 

@@ -11,7 +11,7 @@ import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom'
 
 import type { WorkspaceItem } from '@/types'
 
-const listWorkspaces = vi.fn<() => Promise<{ items: WorkspaceItem[] }>>()
+const listWorkspaces = vi.fn<() => Promise<WorkspaceItem[]>>()
 vi.mock('@/services/workspaces', () => ({
   listWorkspaces: () => listWorkspaces(),
 }))
@@ -76,20 +76,20 @@ describe('/api-keys 中转到默认工作空间', () => {
   })
 
   it('会话里没有当前空间：取 is_default 的那个', async () => {
-    listWorkspaces.mockResolvedValue({ items: [ws('ws-a', false), ws('ws-default', true)] })
+    listWorkspaces.mockResolvedValue([ws('ws-a', false), ws('ws-default', true)])
     renderAt()
     await waitFor(() => expect(screen.getByText('KEYS PAGE ws=ws-default')).toBeInTheDocument())
     expect(listWorkspaces).toHaveBeenCalledTimes(1)
   })
 
   it('没有 is_default 标记时退化取列表第一个', async () => {
-    listWorkspaces.mockResolvedValue({ items: [ws('ws-first', false), ws('ws-second', false)] })
+    listWorkspaces.mockResolvedValue([ws('ws-first', false), ws('ws-second', false)])
     renderAt()
     await waitFor(() => expect(screen.getByText('KEYS PAGE ws=ws-first')).toBeInTheDocument())
   })
 
   it('一个空间都没有：去空间管理页，不停在中转页', async () => {
-    listWorkspaces.mockResolvedValue({ items: [] })
+    listWorkspaces.mockResolvedValue([])
     renderAt()
     await waitFor(() => expect(screen.getByText('WORKSPACES PAGE')).toBeInTheDocument())
   })

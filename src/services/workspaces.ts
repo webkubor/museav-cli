@@ -3,8 +3,8 @@
  * 路由：/workspaces、/workspaces/:id
  * API：GET|POST /workspaces、GET|PATCH|DELETE /workspaces/:id、GET|POST|PATCH|DELETE /workspaces/:id/members
  */
-import { del, get, patch, post, put } from '@/lib/request'
-import type { WorkspaceListResponse, WorkspaceMemberListParams } from '@/interfaces/workspaces'
+import { del, get, getPage, patch, post, put } from '@/lib/request'
+import type { WorkspaceMemberListParams } from '@/interfaces/workspaces'
 import type {
   AddWorkspaceMemberRequest,
   CreateWorkspaceRequest,
@@ -13,12 +13,16 @@ import type {
   UpdateWorkspaceMemberRoleRequest,
   UpdateWorkspaceRequest,
   WorkspaceDetail,
+  WorkspaceItem,
   WorkspaceMember,
 } from '@/types'
 
-/** 获取当前 tenant 下的 workspace 列表（需 X-Tenant-Id header） */
-export function listWorkspaces() {
-  return get<WorkspaceListResponse>('workspaces')
+/**
+ * 获取当前 tenant 下的 workspace 列表（需 X-Tenant-Id header）。
+ * 该接口无游标，直接返回数组——形态归一在 getPage 内完成，调用方拿到的就是列表本身。
+ */
+export async function listWorkspaces(): Promise<WorkspaceItem[]> {
+  return (await getPage<CursorPage<WorkspaceItem>>('workspaces')).items
 }
 
 /** 创建新 workspace（创建时可选批量发送邀请） */
@@ -48,7 +52,7 @@ export function deleteWorkspace(workspaceId: string, body: DeleteWorkspaceReques
 
 /** 获取 workspace 成员列表 */
 export function listWorkspaceMembers(workspaceId: string, params?: WorkspaceMemberListParams) {
-  return get<CursorPage<WorkspaceMember>>(`workspaces/${workspaceId}/members`, params)
+  return getPage<CursorPage<WorkspaceMember>>(`workspaces/${workspaceId}/members`, params)
 }
 
 /** 添加已有 Tenant 成员到 workspace */

@@ -146,7 +146,7 @@ export function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; o
   const wsId = listTask.workspace_id
   const { data: workspaces } = useQuery({
     queryKey: ['workspaces'],
-    queryFn: () => listWorkspaces().then((r) => r.items ?? []),
+    queryFn: () => listWorkspaces(),
     staleTime: 60_000,
   })
   const { data: memberPage } = useQuery({
@@ -165,6 +165,7 @@ export function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; o
   // 详情接口能成功就用详情数据，否则用列表项兜底——视频预览本就不依赖详情接口
   const task = data?.task ?? listTask
   const workspaceName = workspaces?.find((w) => w.workspace_id === task.workspace_id)?.name || task.workspace_id || '—'
+  // `items` 由 getPage 在请求边界保证是数组；这里的 `?.` 只处理 react-query 加载中的 undefined
   const apiKeyName = keyPage?.items.find((k) => k.api_key_id === task.api_key_id)?.name || task.api_key_id || '—'
   const memberName = memberPage?.items.find((m) => m.account.account_id === task.account_id)?.account.display_name || task.account_id || '—'
   const kind = resolveKind(task)

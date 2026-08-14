@@ -44,7 +44,7 @@ export function WorkspaceBreakdownSection({ granularity, accountId, view = 'ente
   // （复用 DashboardLayout 的同 queryKey 共享缓存）。
   const { data: workspaceItems = [] } = useQuery({
     queryKey: ['workspaces', activeTenantId],
-    queryFn: () => listWorkspaces().then((res) => res.items ?? []),
+    queryFn: () => listWorkspaces(),
     enabled: !!activeTenantId,
     staleTime: 60_000,
   })

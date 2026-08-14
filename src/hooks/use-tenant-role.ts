@@ -52,7 +52,7 @@ export function useTenantRole() {
 
   const { data: workspacesData } = useQuery({
     queryKey: ['workspaces', activeTenantId],
-    queryFn: () => listWorkspaces().then((res) => res.items ?? []),
+    queryFn: () => listWorkspaces(),
     enabled: Boolean(activeTenantId),
     staleTime: 60_000,
   })

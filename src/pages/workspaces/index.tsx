@@ -54,7 +54,7 @@ export default function WorkspacesPage() {
   // ─── 1. TanStack Query 真实获取工作空间接口数据 ─────────────────
   const { data, isLoading } = useQuery({
     queryKey: ['workspaces', activeTenantId],
-    queryFn: () => listWorkspaces().then(res => res.items || []),
+    queryFn: () => listWorkspaces(),
     enabled: !!activeTenantId,
     staleTime: 60_000,
   })

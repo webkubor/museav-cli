@@ -50,13 +50,19 @@ export interface GenerateOptions {
   quality?: 'low' | 'medium' | 'high'
 }
 
-/** 图片模板清单项（GET /api/templates） */
+/** 图片/文字模板清单项（GET /api/templates，template_type=image|article） */
 export interface TemplateOption {
   id: string
   category: string
   zh_name: string
   description?: string
   ratio: string
+  /** image=图片模板 / article=文字模板（视频模板在 videoTemplates()） */
+  template_type?: string
+  sample_images?: string[] | null
+  /** 视频模板专用：参考视频/封面（video-templates 接口返回，租户后台和 CLI 都靠它看参考） */
+  sample_video_url?: string | null
+  sample_cover_image?: string | null
   /** 归属：自己租户建的 vs 平台共享的（tenant_id 为空） */
   tenant_id: string | null
   generation_configs: Array<{
@@ -195,9 +201,11 @@ export class StudioClient {
     return Array.isArray(r) ? r : []
   }
 
-  /** 可用图片模板清单：自己租户建的 + 平台共享的，服务端已按调用者权限过滤 */
-  async templates(): Promise<TemplateOption[]> {
-    const r = await this.request('templates')
+  /** 可用图片/文字模板清单：自己租户建的 + 平台共享的，服务端已按调用者权限过滤。
+   *  type=image|article 二选一（不传则图片+文字都返回，跟中台默认一致）。 */
+  async templates(type?: 'image' | 'article'): Promise<TemplateOption[]> {
+    const qs = type ? `?type=${type}` : ''
+    const r = await this.request(`templates${qs}`)
     return Array.isArray(r) ? r : []
   }
 

@@ -1,8 +1,9 @@
-/** studio-cli templates —— 查可用图片模板（自己租户建的 + 平台共享的） */
+/** studio-cli templates —— 查可用图片/文字模板（自己租户建的 + 平台共享的）
+ *  --type image|article 可过滤（中台 templates 表同时装两种，不传则都列并标注类型） */
 import type { StudioClient } from '../client.js'
 
-export async function templates(client: StudioClient, opts: { category?: string } = {}): Promise<void> {
-  let list = await client.templates()
+export async function templates(client: StudioClient, opts: { category?: string; type?: string } = {}): Promise<void> {
+  let list = await client.templates((opts.type === 'image' || opts.type === 'article') ? opts.type : undefined)
   if (opts.category) {
     const kw = opts.category.toLowerCase()
     list = list.filter((t) => (t.category || '').toLowerCase().includes(kw))
@@ -13,6 +14,7 @@ export async function templates(client: StudioClient, opts: { category?: string 
   }
 
   const tag = (t: (typeof list)[number]) => (t.tenant_id ? '' : '[平台]')
+  const typeTag = (t: (typeof list)[number]) => (t.template_type === 'article' ? '[文字]' : t.template_type === 'image' ? '[图片]' : '')
 
   process.stderr.write(`可用模板（${list.length} 个）:\n`)
   for (const t of list) {
@@ -20,10 +22,11 @@ export async function templates(client: StudioClient, opts: { category?: string 
     const fields = cfg?.params_json?.fields || []
     const fieldHint = fields.length ? `字段:${fields.map((f) => f.key).join(',')}` : ''
     process.stderr.write(
-      `  ${t.id.padEnd(38)} ${(t.zh_name || '').padEnd(16)} ${(t.category || '').padEnd(10)} ${(t.ratio || '').padEnd(6)} ${fieldHint.padEnd(20)} ${tag(t)}\n`,
+      `  ${t.id.padEnd(38)} ${(t.zh_name || '').padEnd(16)} ${(t.category || '').padEnd(10)} ${(t.ratio || '').padEnd(6)} ${typeTag(t).padEnd(8)} ${fieldHint.padEnd(20)} ${tag(t)}\n`,
     )
   }
   process.stderr.write(`\n出图: studio-cli gen --template <模板id> [--fields '{"key":"值"}']\n`)
+  process.stderr.write(`按类型过滤: studio-cli templates --type image|article\n`)
   // stdout 只出 id，便于脚本与 agent 解析
   console.log(list.map((t) => t.id).join('\n'))
 }

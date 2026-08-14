@@ -21,11 +21,15 @@ export async function videoTemplates(client: StudioClient, opts: { category?: st
     const ratioHint = t.ratio || ''
     const fieldCount = cfg?.params_json?.fields?.length || 0
     const fieldHint = fieldCount ? `字段:${cfg!.params_json!.fields!.map((f) => f.key).join(',')}` : ''
+    const sampleHint = t.sample_video_url ? '有参考视频' : ''
     process.stderr.write(
-      `  ${t.id.padEnd(38)} ${(t.zh_name || '').padEnd(20)} ${(t.category || '').padEnd(10)} ${ratioHint.padEnd(6)} ${modelHint.padEnd(30)} ${fieldHint.padEnd(24)} ${tag(t)}\n`,
+      `  ${t.id.padEnd(38)} ${(t.zh_name || '').padEnd(20)} ${(t.category || '').padEnd(10)} ${ratioHint.padEnd(6)} ${modelHint.padEnd(30)} ${fieldHint.padEnd(24)} ${sampleHint.padEnd(10)} ${tag(t)}\n`,
     )
+    if (t.sample_video_url) {
+      process.stderr.write(`      参考视频: ${t.sample_video_url}\n`)
+    }
   }
   process.stderr.write(`\n出视频: studio-cli gen --video --template <模板id> [--fields '{"key":"值"}']\n`)
-  // stdout 只出 id，便于脚本与 agent 解析
-  console.log(list.map((t) => t.id).join('\n'))
+  // stdout 只出 id 和参考视频 URL（tab 分隔），便于脚本与 agent 解析
+  console.log(list.map((t) => t.sample_video_url ? `${t.id}\t${t.sample_video_url}` : t.id).join('\n'))
 }

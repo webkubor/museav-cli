@@ -1,19 +1,38 @@
 import { useState, useEffect, useRef } from 'react'
 
-export function useCountUp(target: number, duration = 700): number {
-  // 首帧直接呈现目标值：路由切回时组件重挂载、react-query 缓存命中的场景下
-  // 不重放 0→target 的滚动（prd#631 每次切页 KPI 卡集体重滚被感知为"页面闪烁"）；
-  // 首次真实加载仍有动画——挂载时 loading 态 target=0，数据到达后 target 变化触发下方补间。
-  const [value, setValue] = useState(target)
-  const valueRef = useRef(target)
-  const mountedRef = useRef(false)
+/**
+ * 数值补间。**只有真实的数值变化才补间**——「还没拿到数据」不是一次数值变化。
+ *
+ * `target` 传 `undefined` 表示数据未就绪：此时不渲染动画、不推进数值；首次拿到真实值
+ * 直接落定（无补间），之后 target 再变才走 700ms 补间。
+ *
+ * 两次踩坑都源自把「加载/挂载」误当成「数值变化」：
+ * - prd#631 轮1：路由切回时组件重挂载，从 0 重放 0→target，整排 KPI 卡集体重滚 → 首帧
+ *   直接呈现目标值修掉。
+ * - prd#631 轮2：仍然闪。因为调用方在 loading 期间喂 0、数据到达再喂真值，等于制造了一次
+ *   并不存在的 0→382.14 变化，照样补间 700ms；期间每帧都是高精度小数（金额格式化上限
+ *   4 位），文本宽度随之抖动、卡片高度跟着跳。test 实测序列：
+ *   `CNY 0` → `CNY 382.1396` → `CNY 382.14`，下方内容位移 4px。
+ */
+export function useCountUp(target: number | undefined, duration = 700): number {
+  const [value, setValue] = useState(target ?? 0)
+  const valueRef = useRef(target ?? 0)
+  // 是否已经落定过一个真实值——未落定前的 target 变化属于「数据到达」，不是数值变化
+  const settledRef = useRef(target !== undefined)
   const rafRef = useRef<number | null>(null)
 
   useEffect(() => {
-    if (!mountedRef.current) {
-      mountedRef.current = true
+    // 数据未就绪：保持现值，不动画
+    if (target === undefined) return
+
+    // 首次拿到真实值（含挂载即有值、缓存命中、loading → 数据到达）：直接落定
+    if (!settledRef.current) {
+      settledRef.current = true
+      valueRef.current = target
+      setValue(target)
       return
     }
+
     if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
 
     const from = valueRef.current

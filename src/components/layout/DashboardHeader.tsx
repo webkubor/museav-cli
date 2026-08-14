@@ -209,7 +209,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
       try {
         const wsItems = await queryClient.fetchQuery({
           queryKey: ['workspaces', tenant.tenant_id],
-          queryFn: () => listWorkspaces().then(res => res.items || []),
+          queryFn: () => listWorkspaces(),
           staleTime: 0,
         })
         defaultWs = wsItems.find((w) => w.is_default) ?? wsItems[0]

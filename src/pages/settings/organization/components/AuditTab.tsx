@@ -181,7 +181,7 @@ export function AuditTab({ tenantId }: { tenantId: string }) {
   // 工作空间名称反查（作用范围列）——与 MembersTab 共享同一 queryKey，天然复用缓存。
   const workspacesQuery = useQuery({
     queryKey: ['workspaces', tenantId],
-    queryFn: () => listWorkspaces().then((res) => res.items ?? []),
+    queryFn: () => listWorkspaces(),
     enabled: Boolean(tenantId),
     staleTime: 60_000,
     refetchOnWindowFocus: false,

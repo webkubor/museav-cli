@@ -136,7 +136,7 @@ export function MembersTab({
   // 此处必须同形状返数组，否则缓存被写成整个对象 → DashboardLayout 的 workspaceItems.some 炸白屏(#367)。
   const workspacesQuery = useQuery({
     queryKey: ['workspaces', tenantId],
-    queryFn: () => listWorkspaces().then((res) => res.items ?? []),
+    queryFn: () => listWorkspaces(),
     staleTime: 60_000,
     refetchOnWindowFocus: false,
   })

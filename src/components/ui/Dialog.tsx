@@ -33,10 +33,19 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { closeButton?: boolean }
->(({ className, children, closeButton = true, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { closeButton?: boolean; modal?: boolean }
+>(({ className, children, closeButton = true, modal = true, ...props }, ref) => (
   <DialogPortal>
-    <DialogOverlay />
+    {/* Radix 的 Overlay 在 modal={false} 时不渲染，背后页面就能继续点（需求方#594）；
+        非 modal 场景用普通 div 补一层同样式遮罩挡住下方交互（第三方验证码浮层 z 更高不受影响） */}
+    {modal ? (
+      <DialogOverlay />
+    ) : (
+      <div
+        aria-hidden
+        className="fixed inset-0 z-[var(--mg-z-overlay)] bg-[var(--mg-overlay-bg)] backdrop-blur-[var(--mg-overlay-blur)]"
+      />
+    )}
     <DialogPrimitive.Content
       ref={ref}
       className={cn(

@@ -29,7 +29,7 @@ export default function ApiKeysRedirectPage() {
   const shouldResolve = !activeWorkspaceId
   const { data, isLoading, isError } = useQuery({
     queryKey: ['workspaces', activeTenantId],
-    queryFn: () => listWorkspaces().then((res) => res.items ?? []),
+    queryFn: () => listWorkspaces(),
     enabled: shouldResolve,
     staleTime: 60_000,
   })

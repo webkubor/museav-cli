@@ -123,6 +123,8 @@ export function LogDetailSheet({
     enabled: !!wsId,
     staleTime: 60_000,
   })
+  // `items` 由 getPage 在请求边界保证是数组（需求方#635 生产事故的根治点）；
+  // 这里的 `?.` 只处理 react-query 加载中的 undefined。
   const member = row ? memberPage?.items.find((m) => m.account.account_id === row.account.account_id)?.account : undefined
   // API Key 名称（需求方#132）：空间 Key 列表命中优先 → 行内 name → masked → 「—」。
   // 全为空时是后端 model-logs 未回 api_key.name（现被填为 id/空，见 services/logs.ts #50），归后端。

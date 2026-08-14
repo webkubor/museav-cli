@@ -72,7 +72,7 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
   // 更多筛选取数：工作空间 / 成员 / API Key（API Key 归属具体空间，跟随工作空间筛选）
   const { data: workspacesData } = useQuery({
     queryKey: ['workspaces'],
-    queryFn: () => listWorkspaces().then((r) => r.items ?? []),
+    queryFn: () => listWorkspaces(),
     staleTime: 5 * 60_000,
   })
   const { data: memberPage } = useQuery({

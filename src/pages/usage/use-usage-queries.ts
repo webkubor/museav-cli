@@ -36,7 +36,7 @@ export function useUsageQueries(ctx: UsageQueryContext) {
     enabled: !!activeTenantId,
     staleTime: 5 * 60 * 1000,
   })
-  const workspaceList = useMemo(() => workspacesQuery.data?.items ?? [], [workspacesQuery.data])
+  const workspaceList = useMemo(() => workspacesQuery.data ?? [], [workspacesQuery.data])
 
   const summaryQuery = useQuery({
     queryKey: ['usage-summary', activeTenantId, commonParams],

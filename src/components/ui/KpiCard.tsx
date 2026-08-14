@@ -93,7 +93,9 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   ratio,
 }) => {
   const displayTitle = title || label || ''
-  const animated = useCountUp(loading ? 0 : Number(rawNumber ?? 0))
+  // loading 期间传 undefined 而不是 0：那是「数据没到」，不是「数值变成了 0」。
+  // 喂 0 会让数据到达时补间一次假的 0→N，中间帧的金额位数乱跳、卡片宽高抖动（prd#631）
+  const animated = useCountUp(loading ? undefined : Number(rawNumber ?? 0))
   const displayValue = rawNumber !== undefined && !loading
     ? (formatter ? formatter(animated) : String(Math.round(animated)))
     : value

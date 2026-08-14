@@ -13,7 +13,7 @@ import { getUsageSummary } from '@/services/usage'
 import { KpiCard } from '@/components/ui/KpiCard'
 import { TiltCard } from '@/components/ui/TiltCard'
 import { formatMoney } from '@/lib/utils'
-import { abbreviateNumber, rangeForGranularity, type Granularity, type WorkbenchView } from './shared'
+import { abbreviateNumber, metricsRangeForGranularity, type Granularity, type WorkbenchView } from './shared'
 
 /**
  * 模块 4：核心指标 4 卡（总请求 / 总费用 / 总 Tokens / 账户余额）。
@@ -41,7 +41,8 @@ export function MetricsSection({
   const onMetricCardClick = (metric: string) =>
     trackEvent('overview_metric_card_click', { ...trackCtx, metric }, { view_mode: view })
 
-  const range = useMemo(() => rangeForGranularity(granularity), [granularity])
+  // 卡片窗口 = 今日/当月累计（与 hint 逐字对齐），不是趋势图的 30 天/12 个月画图窗口
+  const range = useMemo(() => metricsRangeForGranularity(granularity), [granularity])
 
   const { data: summary, isLoading: summaryLoading } = useQuery({
     queryKey: ['workbench', 'summary', 'none', activeTenantId, granularity, view, accountId],

@@ -39,8 +39,10 @@ export const VerificationCodeButton = forwardRef<VerificationCodeButtonHandle, P
     if (loading || countdown > 0) return
     setLoading(true)
     try {
-      const expiresIn = await onSend()
-      startCountdown(typeof expiresIn === 'number' ? expiresIn : 60)
+      // 倒计时固定 60s（需求方#592）：onSend 返回的 expires_in=300 是验证码有效期，
+      // 不是重发间隔，直接拿来当倒计时会让用户干等 5 分钟才能重发。
+      await onSend()
+      startCountdown(60)
     } catch (e) {
       // ModelGoApiError.message 已是后端细分中文文案（发送过频/含倒计时秒数、手机号无效等）；
       // 前端护栏抛出的普通 Error（限流/校验）也在此原样展示。

@@ -4,7 +4,7 @@
  * API：GET /tenants、GET|PATCH /tenants/:id、GET|POST|PATCH|DELETE /tenants/:id/members、
  * GET|POST /tenants/:id/invite-link、PUT /tenants/:id/logo
  */
-import client, { apiBaseUrl, del, get, ModelGoApiError, patch, post, upload } from '@/lib/request'
+import client, { apiBaseUrl, del, get, getPage, ModelGoApiError, patch, post, upload } from '@/lib/request'
 import type {
   TenantAuditLogExportParams,
   TenantAuditLogListParams,
@@ -49,7 +49,7 @@ export function uploadTenantLogo(tenantId: string, file: File) {
 // ─── Tenant 成员管理 ───────────────────────────────
 
 export function listTenantMembers(tenantId: string, params?: TenantMemberListParams) {
-  return get<TenantMembersResponse>(`tenants/${tenantId}/members`, params)
+  return getPage<TenantMembersResponse>(`tenants/${tenantId}/members`, params)
 }
 
 /** 批量添加 tenant 成员（发送邀请邮件） */

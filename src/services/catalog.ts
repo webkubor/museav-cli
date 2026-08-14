@@ -6,7 +6,7 @@
  * 单模型 Provider 明细（/catalog/models/:id/providers）不再对公开目录下发（PRD §9.2 禁止暴露
  * 内部实例/区域/在线率），对应前端 Providers Tab 已下线，见 qa#552。
  */
-import { get } from '@/lib/request'
+import { get, getPage } from '@/lib/request'
 import type {
   CatalogModelListParams,
   CatalogModelTagsResponse,
@@ -28,7 +28,7 @@ import type {
 
 /** 获取公共模型目录列表 */
 export function listModels(params?: CatalogModelListParams) {
-  return get<CursorPage<CatalogModelItem>>('catalog/models', params)
+  return getPage<CursorPage<CatalogModelItem>>('catalog/models', params)
 }
 
 /** 获取模型详情（含 description / tags / variants / benchmarks_summary） */
@@ -68,7 +68,7 @@ export function listModelFamilies(enabled = true) {
 
 /** 获取公共供应商目录列表 */
 export function listProviders(params?: CatalogProviderListParams) {
-  return get<CursorPage<CatalogProviderItem>>('catalog/providers', params)
+  return getPage<CursorPage<CatalogProviderItem>>('catalog/providers', params)
 }
 
 // ─── 定价方案 ─────────────────────────────────────

@@ -1,6 +1,6 @@
 import ky, { type ResponsePromise } from 'ky'
 import i18n from 'i18next'
-import type { ApiError, ApiResponse, QueryParams } from '@/types'
+import type { ApiError, ApiResponse, CursorPage, QueryParams } from '@/types'
 import { injectHeaders } from '@/lib/request-headers'
 import { useLangStore } from '@/store/use-brand-store'
 import { handleSessionExpired } from '@/lib/auth/auth-controller'
@@ -260,6 +260,35 @@ function unwrapEnvelope<T>(envelope: ApiResponse<T>, fallbackTraceId?: string): 
     throw error
   }
   return envelope.data
+}
+
+/**
+ * 游标分页 GET —— 分页接口的唯一出口。
+ *
+ * 后端对分页响应有三种形态：正常的 `{items, page_size, has_more, next_cursor}`、
+ * 空列表时的 `items: null`、以及个别接口直接回裸数组。形态差异**只在这里抹平一次**，
+ * 页面拿到的 `items` 恒为数组，因此调用方不需要（也不应该）再各自兜底。
+ *
+ * 反面教训 shared/modelgo_prd#635：形态判断散在每个消费点（`?.items.find(...)` /
+ * `pageItems(...)`），补一处漏一处——修完同步日志详情浮层，同页异步任务浮层照样崩。
+ */
+export async function getPage<P extends CursorPage<unknown>>(path: string, params?: QueryParams): Promise<P> {
+  return normalizePage<P>(await get<P | P['items']>(path, params))
+}
+
+/** getPage 的归一逻辑，独立导出以便单测锁住契约（见 request-page.test.ts）。 */
+export function normalizePage<P extends CursorPage<unknown>>(raw: P | P['items'] | null | undefined): P {
+  if (Array.isArray(raw)) {
+    return { items: raw, page_size: raw.length, has_more: false, next_cursor: null } as P
+  }
+  // 保留响应上的额外字段（如 members 接口的 pending_invitations），只归一分页四件套
+  return {
+    ...raw,
+    items: Array.isArray(raw?.items) ? raw.items : [],
+    page_size: raw?.page_size ?? 0,
+    has_more: raw?.has_more ?? false,
+    next_cursor: raw?.next_cursor ?? null,
+  } as P
 }
 
 export async function get<T>(path: string, params?: QueryParams): Promise<T> {

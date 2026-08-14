@@ -13,7 +13,6 @@ import { appToast } from '@/lib/app-toast'
 import { getRequestErrorMessage } from '@/lib/request-error-message'
 import { appendCrossSiteParams } from '@/lib/cross-site-link'
 import { trackEvent } from '@/lib/track'
-import { pageItems } from '@/lib/utils'
 import { useTrackContext } from '@/hooks/use-track-context'
 import { useAuthStore } from '@/store/auth'
 import { LocaleNamespaces } from '@/components/i18n/LocaleNamespaces'
@@ -86,11 +85,11 @@ function ConnectModalContent({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
     staleTime: 5 * 60_000,
   })
   const anthropicModelOptions = useMemo(
-    () => buildConnectModelOptions(pageItems(anthropicModelsQuery.data), 'claude-code'),
+    () => buildConnectModelOptions(anthropicModelsQuery.data?.items ?? [], 'claude-code'),
     [anthropicModelsQuery.data]
   )
   const openaiModelOptions = useMemo(
-    () => buildConnectModelOptions(pageItems(openaiModelsQuery.data), 'codex'),
+    () => buildConnectModelOptions(openaiModelsQuery.data?.items ?? [], 'codex'),
     [openaiModelsQuery.data]
   )
   // 下拉未选时的默认项：沿用 #257 的挑选规则（旗舰 Claude / 最新 GPT），不是列表第一个
@@ -118,7 +117,7 @@ function ConnectModalContent({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
   })
   // 停用/过期的 Key 选出来也调不通，不放进下拉
   const apiKeyOptions = useMemo(
-    () => pageItems(apiKeysQuery.data).filter((k) => k.status === 'active'),
+    () => (apiKeysQuery.data?.items ?? []).filter((k) => k.status === 'active'),
     [apiKeysQuery.data]
   )
   const [pickedKeyId, setPickedKeyId] = useState('')

@@ -19,7 +19,7 @@ export function useWorkspaceRole() {
 
   const { data: workspaces = [], isLoading } = useQuery({
     queryKey: ['workspaces', activeTenantId],
-    queryFn: () => listWorkspaces().then((r) => r.items ?? []),
+    queryFn: () => listWorkspaces(),
     enabled: !!activeTenantId,
     staleTime: 60_000,
   })

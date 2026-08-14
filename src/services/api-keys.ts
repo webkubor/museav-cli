@@ -3,7 +3,7 @@
  * 路由：/api-keys
  * API：GET|POST /api-keys、PATCH|DELETE /api-keys/:id
  */
-import { del, get, patch, post } from '@/lib/request'
+import { del, get, getPage, patch, post } from '@/lib/request'
 import type {
   ApiKeyAuditLogsResponse,
   ApiKeyCreated,
@@ -21,7 +21,7 @@ import type { ApiKeyListParams } from '@/interfaces/api-keys'
 
 /** 获取 workspace 下的 API Key 列表 */
 export function listApiKeys(workspaceId: string, params?: ApiKeyListParams) {
-  return get<CursorPage<ApiKeyItem>>(`workspaces/${workspaceId}/api-keys`, params)
+  return getPage<CursorPage<ApiKeyItem>>(`workspaces/${workspaceId}/api-keys`, params)
 }
 
 /**

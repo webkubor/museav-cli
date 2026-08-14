@@ -8,7 +8,24 @@ export type Granularity = 'day' | 'month'
 export type TrendMetric = 'requests' | 'spend' | 'tokens'
 
 /**
- * 按粒度算查询区间：
+ * 指标卡（总请求/总费用/总 Tokens）的统计区间，与卡片 hint 的「今日/本月」逐字对齐：
+ * - day  → 今天 00:00（用户本地时区）→ 现在
+ * - month→ 当月 1 日 00:00（用户本地时区）→ 现在
+ * 与下方趋势图的 rangeForGranularity（30 天/12 个月的画图窗口）刻意不同——
+ * 卡片是「当前周期累计」，趋势图是「多周期序列」，混用会让按天视图显示近 30 天总量。
+ */
+export function metricsRangeForGranularity(granularity: Granularity) {
+  const to = new Date()
+  const from = new Date()
+  from.setHours(0, 0, 0, 0)
+  if (granularity === 'month') {
+    from.setDate(1)
+  }
+  return { from: from.toISOString(), to: to.toISOString() }
+}
+
+/**
+ * 趋势图/排行的取数窗口（画多周期序列用）：
  * - day  → 最近 30 天
  * - month→ 最近 12 个月（含当月）
  */

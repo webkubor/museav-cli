@@ -84,12 +84,31 @@ export interface CreateTemplateInput {
   category?: string
   description?: string
   ratio?: string
+  /** image=图片模板 / article=文字模板（不传默认 image，跟中台一致） */
+  template_type?: 'image' | 'article'
   generation_configs: Array<{
     model: string
     prompt_template: string
     quality?: string
     /** 表单字段声明——按中台契约放 config 顶层（不是 params_json 里），服务端校验/渲染都读这里 */
     fields?: Array<{ key: string; label: string }>
+    is_default?: boolean
+  }>
+}
+
+/** 新建视频模板入参（POST /api/video-templates）。视频模板字段跟图片不同：
+ *  ratio/duration/model 放在 generation_configs 每项里。 */
+export interface CreateVideoTemplateInput {
+  zh_name: string
+  category?: string
+  description?: string
+  sample_video_url?: string | null
+  sample_cover_image?: string | null
+  generation_configs: Array<{
+    model?: string
+    duration?: number
+    aspect_ratio?: string
+    prompt_template?: string
     is_default?: boolean
   }>
 }
@@ -218,6 +237,16 @@ export class StudioClient {
   /** 新建图片模板。归属（是否关联租户）由服务端根据鉴权身份决定，见 CreateTemplateInput 注释 */
   async createTemplate(input: CreateTemplateInput): Promise<TemplateOption> {
     const r = await this.request('templates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    })
+    return r.row
+  }
+
+  /** 新建视频模板。归属同图片模板：租户 apiKey 自动归租户，平台管理员归平台共享 */
+  async createVideoTemplate(input: CreateVideoTemplateInput): Promise<TemplateOption> {
+    const r = await this.request('video-templates', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),

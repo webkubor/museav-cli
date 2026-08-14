@@ -40,6 +40,7 @@ interface CreateTemplateOpts {
   model?: string
   quality?: string
   fields?: string
+  type?: string
 }
 
 /**
@@ -68,11 +69,13 @@ export async function createTemplate(client: StudioClient, opts: CreateTemplateO
     fields = keys.map((key) => ({ key, label: key }))
   }
 
+  const type = opts.type === 'article' ? 'article' : 'image'
   const row = await client.createTemplate({
     zh_name: opts.name,
     category: opts.category,
     ratio: opts.ratio,
     description: opts.description,
+    template_type: type,
     generation_configs: [
       {
         model: opts.model || 'gpt-image-2',
@@ -85,7 +88,7 @@ export async function createTemplate(client: StudioClient, opts: CreateTemplateO
     ],
   })
 
-  process.stderr.write(`✅ 模板已建：${row.id}\n`)
+  process.stderr.write(`✅ ${type === 'article' ? '文字' : '图片'}模板已建：${row.id}\n`)
   process.stderr.write(`归属：${row.tenant_id ? '当前租户（其他租户看不到）' : '平台共享（所有租户可见）'}\n`)
   if (fields.length) process.stderr.write(`占位符字段: ${fields.map((f) => f.key).join(', ')}\n`)
   const fieldExample = fields.length ? ` --fields '{"${fields[0].key}":"..."}'` : ''

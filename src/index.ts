@@ -17,7 +17,7 @@ import { upload } from './commands/upload.js'
 import { models } from './commands/models.js'
 import { skills } from './commands/skills.js'
 import { templates, createTemplate } from './commands/templates.js'
-import { videoTemplates } from './commands/video-templates.js'
+import { videoTemplates, createVideoTemplate } from './commands/video-templates.js'
 import { balance } from './commands/balance.js'
 import { jobs } from './commands/jobs.js'
 import { whoami } from './commands/whoami.js'
@@ -160,16 +160,32 @@ const templatesCmd = program
   .option('--type <type>', '按类型过滤：image（图片） / article（文字），不传则两类都列并标注')
   .action(withClient((client: StudioClient, opts: any) => templates(client, opts)))
 
-program
+const videoTemplatesCmd = program
   .command('video-templates')
   .description('查可用视频模板：配合 gen --video --template 使用（视频模板与图片模板是两套表）')
   .option('--category <name>', '按分类过滤，如 电商 / 换装视频')
   .action(withClient((client: StudioClient, opts: any) => videoTemplates(client, opts)))
 
+videoTemplatesCmd
+  .command('create')
+  .description(
+    '新建视频模板——归属由账号身份自动决定：租户 apiKey 建的自动归该租户，平台管理员建的是平台共享模板，个人账号不能建',
+  )
+  .requiredOption('--name <zh_name>', '模板中文名')
+  .requiredOption('--prompt <template>', '提示词模板，占位符用 {key} 形式，如 "{product} 在 {scene} 中展示"')
+  .option('--category <name>', '分类，默认「其他」')
+  .option('--description <text>', '模板说明')
+  .option('--model <name>', '视频模型，默认 seedance-2（可选 seedance-2-fast / seedance-2-mini / artsdance-2-0-pro-260801）')
+  .option('--duration <sec>', '视频时长（秒，4-15，可选）')
+  .option('--ratio <ratio>', '画面比例: 9:16 / 16:9 / 1:1 / 3:4（可选）')
+  .option('--sample-video <url>', '参考视频 URL（可选，展示给用户的示例片）')
+  .option('--sample-cover <url>', '封面图 URL（可选）')
+  .action(withClient((client: StudioClient, opts: any) => createVideoTemplate(client, opts)))
+
 templatesCmd
   .command('create')
   .description(
-    '新建图片模板——归属由账号身份自动决定：租户 apiKey 建的自动归该租户（其他租户看不到），' +
+    '新建图片/文字模板——归属由账号身份自动决定：租户 apiKey 建的自动归该租户（其他租户看不到），' +
       '平台管理员账号建的是平台共享模板（所有租户可见），个人账号不能建',
   )
   .requiredOption('--name <zh_name>', '模板中文名')
@@ -180,6 +196,7 @@ templatesCmd
   .option('--model <name>', '生成模型，默认 gpt-image-2')
   .option('--quality <level>', '质量: low / medium / high')
   .option('--fields <json>', '占位符字段说明，JSON 数组，如 \'[{"key":"artist","label":"艺人名"}]\'；不传则自动从 --prompt 里的 {key} 提取')
+  .option('--type <type>', '模板类型：image（图片，默认） / article（文字）')
   .action(withClient((client: StudioClient, opts: any) => createTemplate(client, opts)))
 
 program

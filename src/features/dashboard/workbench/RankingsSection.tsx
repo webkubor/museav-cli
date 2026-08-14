@@ -10,7 +10,7 @@ import { trackEvent } from '@/lib/track'
 import { Card } from '@/components/ui/Card'
 import { Money } from '@/components/ui/Money'
 import { ModelIcon, type ModelIconLike } from '@/features/models/components/ModelIcon'
-import { abbreviateNumber, rangeForGranularity, type Granularity, type WorkbenchView } from './shared'
+import { abbreviateNumber, metricsRangeForGranularity, type Granularity, type WorkbenchView } from './shared'
 import type { UsageRankingItem } from '@/types'
 
 function RankingRow({ index, name, meta, metaTitle, spend, model }: { index: number; name: string; meta: string; metaTitle?: string; spend?: { amount?: string; currency?: string }; model?: ModelIconLike }) {
@@ -108,7 +108,9 @@ export function RankingsSection({ view, granularity, accountId }: { view: Workbe
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
   const navigate = useNavigate()
   const trackCtx = useTrackContext()
-  const range = useMemo(() => rangeForGranularity(granularity), [granularity])
+  // 三张排行卡的标题旁标的是「今日/本月」(periodLabel)，取数窗口必须与之一致；
+  // 用趋势图的 30 天/12 个月窗口会让「今日」榜单实际统计近 30 天（prd#634）
+  const range = useMemo(() => metricsRangeForGranularity(granularity), [granularity])
   const showMembers = view === 'enterprise'
   const periodLabel = t(`dashboard.workbench.periodLabel.${granularity}`)
 

@@ -10,7 +10,7 @@ import { useTrackContext } from '@/hooks/use-track-context'
 import { trackEvent } from '@/lib/track'
 import { Card } from '@/components/ui/Card'
 import { Money } from '@/components/ui/Money'
-import { abbreviateNumber, rangeForGranularity, type Granularity, type WorkbenchView } from './shared'
+import { abbreviateNumber, metricsRangeForGranularity, type Granularity, type WorkbenchView } from './shared'
 
 /**
  * 模块 6：工作空间明细。getUsageSummary(group_by:'workspace') 取 groups。
@@ -31,7 +31,8 @@ export function WorkspaceBreakdownSection({ granularity, accountId, view = 'ente
     navigate(`/usage?view=${view}&granularity=${granularity}`)
   }
 
-  const range = useMemo(() => rangeForGranularity(granularity), [granularity])
+  // 副标题同样带「今日/本月」(periodLabel)，取数窗口与之对齐（prd#634）
+  const range = useMemo(() => metricsRangeForGranularity(granularity), [granularity])
 
   const { data, isLoading } = useQuery({
     queryKey: ['workbench', 'summary', 'workspace', activeTenantId, granularity, accountId],

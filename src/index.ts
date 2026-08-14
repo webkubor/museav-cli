@@ -98,8 +98,8 @@ function withTenantClient<T extends (...args: any[]) => Promise<any>>(fn: T) {
       const cfg = loadConfig()
       if (!cfg.apiKey) {
         throw new Error(
-          'products / assets 只支持租户 apiKey 身份：studio-cli config --apiKey sk-studio-<租户名>-xxx\n' +
-          '（个人 login 拿到的是个人 token，查不了组织级的产品/素材数据）',
+          'products / assets 只支持租户 API Key 身份：studio-cli config --apiKey sk-studio-xxx\n' +
+          '（业务中台服务 key，统一形态 sk-studio-<24位>；个人 login 拿到的是个人 token，查不了组织级的产品/素材数据）',
         )
       }
       const client = new TenantClient({ apiKey: cfg.apiKey, tenantBaseUrl: cfg.tenantBaseUrl })

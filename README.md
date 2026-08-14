@@ -122,7 +122,7 @@ studio-cli config --apiKey sk-studio-xxx
 export STUDIO_API_KEY=sk-studio-xxx
 ```
 
-apikey（`sk-studio-<name>-<hex>`）从中台「租户管理」获取，适合脚本/服务长期使用。
+apikey（业务中台服务 key，统一形态 `sk-studio-<24位>`) 从中台「租户管理」获取，适合脚本/服务长期使用。
 
 ---
 
@@ -259,7 +259,7 @@ studio-cli jobs --status failed    # 只看失败的（本地过滤，不是服�
 这两个命令跟前面所有命令不一样：数据**不在** studio 中台，而在租户自己的后台（好易美是
 `hym-admin`，mzmeso 是 `manager`）——产品/素材是各租户自己业务侧的数据，物理上存在他们
 自己的数据库里，中台从不代理这部分数据。CLI 会直接调租户自己的域名，用你配置的同一把
-`sk-studio-<租户名>-xxx` 当凭证（这把 key 反正租户后台自己也存着一份用来倒过来调中台，
+`sk-studio-xxx`（业务中台服务 key）当凭证（这把 key 反正租户后台自己也存着一份用来倒过来调中台，
 两边共用，不用再单独申请一把）：
 
 ```bash
@@ -267,7 +267,8 @@ studio-cli products    # 查所属租户自己的产品目录
 studio-cli assets      # 查所属租户自己的素材/资产库
 ```
 
-已知已接入的租户（hym / mzmeso）不用额外配置，CLI 内置了它们后台的域名；其他租户/本地联调用：
+已知已接入的租户（hym / mzmeso）用**旧格式 key**（`sk-studio-<租户名>-<24位>`）不用额外配置，CLI 内置了它们后台的域名；
+统一形态新 key（`sk-studio-<24位>`）不带租户名，需要显式配置后台域名（其他租户/本地联调同理）：
 
 ```bash
 studio-cli config --tenantBaseUrl https://your-tenant-backend.example.com

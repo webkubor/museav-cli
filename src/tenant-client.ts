@@ -9,12 +9,16 @@
  * studio-cli 直接调租户自己的域名，不经过 Studio。
  *
  * 鉴权复用同一把 apiKey：租户后台反过来调用 Studio（出图/查模板）时，本来就要在自己
- * 环境变量里存这把 sk-studio-<租户名>-xxx，所以它可以原样再拿来当"调用自己只读接口"
+ * 环境变量里存这把 sk-studio-xxx（业务中台服务 key），所以它可以原样再拿来当"调用自己只读接口"
  * 的凭证用，不用为这一件事再签发一套新 key。这把 key 已经能触发出图消费（更高价值的
  * 操作），只读产品/素材不构成新的越权面。
  *
  * 已知局限：只支持"租户 apiKey"身份，不支持个人登录（login token）—— 产品/素材
  * 是组织级数据，跟个人账号无关。
+ *
+ * 后台域名怎么定（2026-08-14 统一形态后）：key 不再携带租户名段（统一 sk-studio-<24hex>），
+ * 新格式 key 无法从 key 解析租户名 → 必须显式配置 --tenantBaseUrl；旧格式 key
+ * （sk-studio-<租户名>-<24hex>）仍能解析租户名，走内置 KNOWN_TENANT_BACKENDS 映射。
  */
 
 /** 已知租户名 → 该租户自己后台的域名。仅 hym / mzmeso 两个已接入的租户，其他租户
@@ -27,7 +31,7 @@ const KNOWN_TENANT_BACKENDS: Record<string, string> = {
   mzmeso: 'https://mzmeso.webkubor.online',
 }
 
-/** 从 sk-studio-<租户名>-<24位十六进制> 里解析出租户名 */
+/** 从旧格式 key（sk-studio-<租户名>-<24位十六进制>）里解析出租户名；新统一形态 sk-studio-<24hex> 解析不出（返回 null，需显式 tenantBaseUrl） */
 function parseTenantName(apiKey: string): string | null {
   const m = apiKey.match(/^sk-studio-(.+)-[0-9a-f]{24}$/i)
   return m ? m[1] : null
@@ -38,10 +42,10 @@ export class TenantClient {
   private apiKey: string
 
   constructor(opts: { apiKey: string; tenantBaseUrl?: string }) {
-    if (!opts.apiKey.startsWith('sk-studio-') || /^sk-studio-u-/.test(opts.apiKey)) {
+    if (!opts.apiKey.startsWith('sk-studio-')) {
       throw new Error(
-        'products / assets 只支持「租户 apiKey」身份（sk-studio-<租户名>-xxx）。\n' +
-        '个人登录（login）和账户 Key（sk-studio-u-xxx）查不了组织级的产品/素材数据。',
+        'products / assets 需要配置「租户 API Key」（业务中台服务 key，sk-studio-<24位>）。\n' +
+        '个人登录（login）是个人 token，查不了组织级的产品/素材数据。',
       )
     }
     this.apiKey = opts.apiKey
@@ -51,6 +55,7 @@ export class TenantClient {
     if (!resolved) {
       throw new Error(
         `无法确定「${tenant || '该'}」租户自己后台的域名。\n` +
+        `（统一形态 key sk-studio-<24位> 不再携带租户名，需显式配置后台域名）\n` +
         `请先用 studio-cli config --tenantBaseUrl <你的租户后台域名> 显式配置一次\n` +
         `（目前内置已知租户：${Object.keys(KNOWN_TENANT_BACKENDS).join(', ')}）。`,
       )

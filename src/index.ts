@@ -11,6 +11,7 @@ import { StudioClient } from './client.js'
 import { TenantClient } from './tenant-client.js'
 import { loadConfig, saveConfig, clearToken } from './config.js'
 import { login } from './commands/login.js'
+import { bindFeishu } from './commands/bind-feishu.js'
 import { gen } from './commands/gen.js'
 import { reverse } from './commands/reverse.js'
 import { upload } from './commands/upload.js'
@@ -264,6 +265,19 @@ program
   .action(async (opts) => {
     try {
       await login(opts)
+    } catch (e) {
+      process.stderr.write(`❌ ${(e as Error).message}\n`)
+      process.exit(1)
+    }
+  })
+
+program
+  .command('bind-feishu')
+  .description('绑定飞书（设备授权：终端显示验证码，浏览器授权后完成绑定；一个飞书可绑多个平台账户）')
+  .option('--baseUrl <url>', '中台地址，默认 https://manager.museav.top')
+  .action(async (opts) => {
+    try {
+      await bindFeishu(opts)
     } catch (e) {
       process.stderr.write(`❌ ${(e as Error).message}\n`)
       process.exit(1)

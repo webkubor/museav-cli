@@ -389,3 +389,27 @@ workflow 会跑 typecheck → build → 版本号与 tag 一致性校验 → 冒
 ## License
 
 MIT
+
+## 发布（维护者专用）
+
+正式发布**必须走 v tag**（触发 GitHub Actions `publish.yml`），不要本地 `npm publish`：
+
+```bash
+npm version patch            # bump 版本（自动 commit + tag vX.Y.Z）
+git push origin main         # 推代码
+git push origin vX.Y.Z       # 推 tag → 触发 Actions
+```
+
+GitHub Actions 自动完成：
+
+1. 校验 tag 与 package.json 版本一致 → `npm publish --provenance`
+2. 回调业务中台 `POST /api/cli-release`（`CLI_RELEASE_TOKEN` 鉴权）——中台记录更新日志，并用 App 发卡片通知到下游群（mzmeso / 好易美等，群配置在业务中台 `CLI_RELEASE_CHAT_IDS`，改群只动中台）
+3. 版本号由 `/api/cli-guide` 动态查 npm registry 自动同步（下游引导不用手动改）
+
+前置条件：仓库 Secrets 需配置 `NPM_TOKEN`（或 npmjs 配 Trusted Publishing）和 `CLI_RELEASE_TOKEN`（= 业务中台 `secret://studio/cli-release-token` 的值）。
+
+**坑（2026-08-15 实录）**：
+
+- GitHub Actions 的 `if:` 表达式**不能直接用 `secrets`**（报 `Unrecognized named-value`），secret 要放 step `env` 再在 `run` 里判断。
+- 改 workflow 后本地 `npx yaml-lint` 校验（GitHub 解析失败会显示 "workflow file issue"）。
+- 不要往租户群发"纯测试"卡片——发布链路验证用正式版本内容，发成功就是正式通知。

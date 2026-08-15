@@ -8,6 +8,7 @@
  */
 import { saveConfig, DEFAULT_BASE_URL } from '../config.js'
 import { StudioClient } from '../client.js'
+import { printWelcome } from './welcome.js'
 
 export async function login(opts: { baseUrl?: string }): Promise<void> {
   const baseUrl = (opts.baseUrl || DEFAULT_BASE_URL).replace(/\/+$/, '')
@@ -56,7 +57,7 @@ export async function login(opts: { baseUrl?: string }): Promise<void> {
     if (poll.status === 'approved' && poll.token) {
       saveConfig({ baseUrl, token: poll.token })
       process.stderr.write('\n✅ 登录成功！token 已保存到 ~/.studio-cli.json\n')
-      await printWelcome(baseUrl, poll.token)
+      await printWelcome(baseUrl, { token: poll.token })
       return
     }
     if (poll.status === 'expired') {
@@ -76,51 +77,4 @@ export async function login(opts: { baseUrl?: string }): Promise<void> {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms))
-}
-
-/** 登录后的欢迎页：识别身份 + 打招呼 + 使用引导 + 联系我 + 绑定说明。查询失败不影响登录本身。 */
-async function printWelcome(baseUrl: string, token: string): Promise<void> {
-  try {
-    const me = await new StudioClient({ baseUrl, token }).me()
-    const name = me.nickname || me.email
-    // 身份识别：superadmin > admin > 租户成员 > 平台用户
-    let identity = '平台用户'
-    let greeting = '欢迎使用 MUSE AV 创作中台'
-    if (me.role === 'superadmin') {
-      identity = '平台超级管理员'
-      greeting = '欢迎回来，山鬼映画！平台归你管，出了事找你本人 😄'
-    } else if (me.role === 'admin') {
-      identity = '平台管理员'
-      greeting = `欢迎回来，${name}！`
-    } else if (me.brand) {
-      identity = `${me.brand.name} 租户成员`
-      greeting = `欢迎，${name}！${me.brand.name} 的创作助手已就位`
-    } else {
-      greeting = `欢迎，${name}！`
-    }
-    const quota = me.generation_remaining != null ? `${me.generation_remaining} 次` : '不限'
-    process.stderr.write(`👋 ${greeting}\n`)
-    process.stderr.write(`   账户：${me.email}（${identity}）\n`)
-    process.stderr.write(`   已出图 ${me.gen_done || 0} 张 · 剩余额度 ${quota}\n`)
-  } catch {
-    process.stderr.write('👋 欢迎使用 MUSE AV 创作中台\n')
-  }
-
-  process.stderr.write('\n')
-  process.stderr.write('┌──────────────────────────────────────────────────────────┐\n')
-  process.stderr.write('│  📖 怎么用（常用命令）                                    │\n')
-  process.stderr.write('│    studio-cli gen --prompt "英文提示词"    自由出图        │\n')
-  process.stderr.write('│    studio-cli gen --skill <技能> --input "描述"  技能出图  │\n')
-  process.stderr.write('│    studio-cli gen --template <id> --fields \'{..}\'  模板   │\n')
-  process.stderr.write('│    studio-cli skills / templates / reverse    查技能/模板  │\n')
-  process.stderr.write('│    studio-cli jobs / whoami                  记录 / 身份   │\n')
-  process.stderr.write('│    studio-cli bind-feishu                     绑定飞书      │\n')
-  process.stderr.write('└──────────────────────────────────────────────────────────┘\n')
-  process.stderr.write('\n🔗 找我 / 支持我：\n')
-  process.stderr.write('   · GitHub 给项目点个 ⭐ → https://github.com/webkubor/studio-cli\n')
-  process.stderr.write('   · 小红书「山鬼映画」（东方电影美学）→ https://www.xiaohongshu.com/user/profile/5c3c1581000000000501835d\n')
-  process.stderr.write('\nℹ️ 绑定说明：\n')
-  process.stderr.write('   · 出图 / 技能 / 模板 / 逆向等全部创作功能【不需要】绑定飞书\n')
-  process.stderr.write('   · 绑定飞书（bind-feishu）只影响：让 agent 在飞书里认出你的身份\n')
-  process.stderr.write('\n现在就可以开始：studio-cli gen --prompt "一只猫"\n')
 }

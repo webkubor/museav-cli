@@ -12,6 +12,7 @@ import { TenantClient } from './tenant-client.js'
 import { loadConfig, saveConfig, clearToken } from './config.js'
 import { login } from './commands/login.js'
 import { bindFeishu } from './commands/bind-feishu.js'
+import { printWelcome } from './commands/welcome.js'
 import { gen } from './commands/gen.js'
 import { reverse } from './commands/reverse.js'
 import { upload } from './commands/upload.js'
@@ -233,7 +234,7 @@ program
   .option('--baseUrl <url>', '中台地址，默认 https://manager.museav.top')
   .option('--apiKey <key>', 'apiKey（sk-studio-xxx）')
   .option('--tenantBaseUrl <url>', '租户自己后台的域名，供 products/assets 命令用；已知租户（hym/mzmeso）不配也能跑')
-  .action((opts) => {
+  .action(async (opts) => {
     if (!opts.baseUrl && !opts.apiKey && !opts.tenantBaseUrl) {
       try {
         const cfg = loadConfig()
@@ -242,6 +243,7 @@ program
           `  baseUrl: ${cfg.baseUrl}\n` +
           `  apiKey: ${cfg.apiKey ? cfg.apiKey.slice(0, 16) + '...' : '(未设置)'}\n` +
           `  tenantBaseUrl: ${cfg.tenantBaseUrl || '(未设置，products/assets 对已知租户用内置默认值)'}\n`,
+
         )
       } catch (e) {
         process.stderr.write(`${(e as Error).message}\n`)
@@ -256,6 +258,14 @@ program
       `  apiKey: ${cfg.apiKey ? cfg.apiKey.slice(0, 16) + '...' : '(未设置)'}\n` +
       `  tenantBaseUrl: ${cfg.tenantBaseUrl || '(未设置)'}\n`,
     )
+    // 配置了 apiKey 就识别身份打招呼（租户欢迎；个人 token 场景欢迎在 login 后打）
+    if (opts.apiKey) {
+      try {
+        await printWelcome(cfg.baseUrl, { apiKey: opts.apiKey })
+      } catch (e) {
+        process.stderr.write(`⚠ 无法识别该 apiKey 对应的账户：${(e as Error).message}\n`)
+      }
+    }
   })
 
 program

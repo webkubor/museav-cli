@@ -55,3 +55,27 @@ jobs:
         run: npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # 发布后自动通知租户群（飞书卡片）+ 版本号由 /api/cli-guide 动态查 npm registry 同步，
+      # 不用手动改业务中台配置。FEISHU_RELEASE_WEBHOOKS 用空格分隔多个 webhook（多个群）。
+      - name: 通知租户群（飞书卡片）
+        if: ${{ secrets.FEISHU_RELEASE_WEBHOOKS != '' }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          BODY=$(awk '/^## /{if(n++) exit} {print}' CHANGELOG.md | head -15)
+          jq -n --arg v "$VERSION" --arg body "$BODY" '{
+            msg_type: "interactive",
+            card: {
+              header: { template: "blue", title: { tag: "plain_text", content: ("🚀 studio-cli v" + $v + " 已发布") } },
+              elements: [
+                { tag: "div", text: { tag: "lark_md", content: ("**本次更新**\n" + ($body | if . == "" then "（详见 GitHub Releases）" else . end)) } },
+                { tag: "div", text: { tag: "lark_md", content: "升级：npm install -g @kubor/studio-cli" } },
+                { tag: "action", actions: [{ tag: "button", text: { tag: "plain_text", content: "查看仓库" }, type: "primary", url: "https://github.com/webkubor/studio-cli" }] }
+              ]
+            }
+          }' > /tmp/cli-release-card.json
+          for W in $FEISHU_RELEASE_WEBHOOKS; do
+            curl -s -X POST "$W" -H "Content-Type: application/json" --data-binary @/tmp/cli-release-card.json || echo "通知失败(忽略): $W"
+          done
+        env:
+          FEISHU_RELEASE_WEBHOOKS: ${{ secrets.FEISHU_RELEASE_WEBHOOKS }}

@@ -176,6 +176,9 @@ export interface MeInfo {
   generation_used: number | null
   generation_remaining: number | null
   creation_credits: number
+  /** 租户 Key（apiKey）调用 /api/me 时返回：identity='tenant' + tenant 信息（2026-08-15） */
+  identity?: 'tenant'
+  tenant?: { id: string; name: string; nickname: string; logo: string | null }
 }
 
 export class StudioClient {

@@ -61,8 +61,15 @@ jobs:
       # 群配置在业务中台（CLI_RELEASE_CHAT_IDS），GitHub 只存一个回调 token。
       # 版本号由 /api/cli-guide 动态查 npm registry 同步，同样不用手动改。
       - name: 回调业务中台（记录发布 + 群通知）
-        if: ${{ secrets.CLI_RELEASE_TOKEN != '' }}
+        env:
+          CLI_RELEASE_TOKEN: ${{ secrets.CLI_RELEASE_TOKEN }}
         run: |
+          # GitHub Actions 的 if: 表达式不能直接用 secrets（Unrecognized named-value），
+          # 只能把 secret 放进 env，再在 run 里判断是否配置。
+          if [ -z "$CLI_RELEASE_TOKEN" ]; then
+            echo "未配置 CLI_RELEASE_TOKEN，跳过发布通知（不影响 npm 发布）"
+            exit 0
+          fi
           VERSION=$(node -p "require('./package.json').version")
           BODY=$(awk '/^## /{if(n++) exit} {print}' CHANGELOG.md | head -15)
           curl -s -X POST "https://manager.museav.top/api/cli-release" \
@@ -70,5 +77,3 @@ jobs:
             -H "Content-Type: application/json" \
             -d "$(jq -n --arg v "$VERSION" --arg c "$BODY" '{version: $v, changes: $c}')" \
             || echo "回调业务中台失败(忽略，不影响发布)"
-        env:
-          CLI_RELEASE_TOKEN: ${{ secrets.CLI_RELEASE_TOKEN }}

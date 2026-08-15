@@ -179,6 +179,8 @@ export interface MeInfo {
   /** 租户 Key（apiKey）调用 /api/me 时返回：identity='tenant' + tenant 信息（2026-08-15） */
   identity?: 'tenant'
   tenant?: { id: string; name: string; nickname: string; logo: string | null }
+  /** 飞书绑定 open_id（已绑定飞书时存在，welcome 提示 agent 能认出你） */
+  feishu_open_id?: string | null
 }
 
 export class StudioClient {

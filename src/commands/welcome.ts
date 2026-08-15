@@ -40,11 +40,13 @@ export async function printWelcome(baseUrl: string, cred: WelcomeCred): Promise<
   }
 
   if (me?.identity === 'tenant') {
-    // ── 租户身份（apiKey 模式）──
+    // ── 系统接入方（apiKey 模式）──
+    // 「租户」是内部技术称谓，对客户不暴露：客户视角是「我们的系统接入了
+    // MUSE AV AI 创作平台」，我们是服务提供方，不是把对方当租客。
     const t = me.tenant
-    const tname = t?.nickname || t?.name || '本租户'
-    process.stderr.write(`👋 欢迎，${tname} 租户！MUSE AV 创作中台已就位\n`)
-    process.stderr.write(`   身份：租户 ${tname}（组织级 API Key）\n`)
+    const tname = t?.nickname || t?.name || '贵方系统'
+    process.stderr.write(`👋 欢迎，${tname}！MUSE AV AI 创作平台已为你的系统接入创作能力\n`)
+    process.stderr.write(`   接入方：${tname}（系统级 API Key，为你的业务后台提供图片/视频创作）\n`)
   } else if (me) {
     // ── 个人身份 ──
     const name = me.nickname || me.email
@@ -57,8 +59,12 @@ export async function printWelcome(baseUrl: string, cred: WelcomeCred): Promise<
       identity = '平台管理员'
       greeting = `欢迎回来，${name}！`
     } else if (me.brand) {
-      identity = `${me.brand.name} 租户成员`
-      greeting = `欢迎，${name}！${me.brand.name} 的创作助手已就位`
+      // 接入方业务系统的成员（如好易美员工账户）：
+      // 身份表达 = 我是「XX」的人，MUSE AV 为「XX」提供创作能力。
+      // 不用「租户/租户成员」这类内部词，客户不该有被出租的感觉。
+      const biz = me.brand.name
+      identity = `${biz}成员`
+      greeting = `欢迎，${name}！MUSE AV 为「${biz}」提供 AI 创作能力，你的创作工作台已就绪`
     } else {
       greeting = `欢迎，${name}！`
     }
@@ -66,6 +72,8 @@ export async function printWelcome(baseUrl: string, cred: WelcomeCred): Promise<
     process.stderr.write(`👋 ${greeting}\n`)
     process.stderr.write(`   账户：${me.email}（${identity}）\n`)
     if (me.gen_done != null) process.stderr.write(`   已出图 ${me.gen_done} 张 · 剩余额度 ${quota}\n`)
+    // 已绑定飞书：让客户知道缪斯 agent 在飞书里能认出他（未绑定不提示，绑定说明区有引导）
+    if (me.feishu_open_id) process.stderr.write('   飞书：已绑定 ✓（缪斯 agent 在飞书群里能认出你）\n')
   } else {
     process.stderr.write('👋 欢迎使用 MUSE AV 创作中台\n')
   }

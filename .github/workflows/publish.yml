@@ -56,26 +56,19 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      # 发布后自动通知租户群（飞书卡片）+ 版本号由 /api/cli-guide 动态查 npm registry 同步，
-      # 不用手动改业务中台配置。FEISHU_RELEASE_WEBHOOKS 用空格分隔多个 webhook（多个群）。
-      - name: 通知租户群（飞书卡片）
-        if: ${{ secrets.FEISHU_RELEASE_WEBHOOKS != '' }}
+      # 发布后回调业务中台（2026-08-15）：POST /api/cli-release，
+      # 由中台统一记录更新日志 + 用 App 发卡片通知到目标群（mzmeso/好易美等）。
+      # 群配置在业务中台（CLI_RELEASE_CHAT_IDS），GitHub 只存一个回调 token。
+      # 版本号由 /api/cli-guide 动态查 npm registry 同步，同样不用手动改。
+      - name: 回调业务中台（记录发布 + 群通知）
+        if: ${{ secrets.CLI_RELEASE_TOKEN != '' }}
         run: |
           VERSION=$(node -p "require('./package.json').version")
           BODY=$(awk '/^## /{if(n++) exit} {print}' CHANGELOG.md | head -15)
-          jq -n --arg v "$VERSION" --arg body "$BODY" '{
-            msg_type: "interactive",
-            card: {
-              header: { template: "blue", title: { tag: "plain_text", content: ("🚀 studio-cli v" + $v + " 已发布") } },
-              elements: [
-                { tag: "div", text: { tag: "lark_md", content: ("**本次更新**\n" + ($body | if . == "" then "（详见 GitHub Releases）" else . end)) } },
-                { tag: "div", text: { tag: "lark_md", content: "升级：npm install -g @kubor/studio-cli" } },
-                { tag: "action", actions: [{ tag: "button", text: { tag: "plain_text", content: "查看仓库" }, type: "primary", url: "https://github.com/webkubor/studio-cli" }] }
-              ]
-            }
-          }' > /tmp/cli-release-card.json
-          for W in $FEISHU_RELEASE_WEBHOOKS; do
-            curl -s -X POST "$W" -H "Content-Type: application/json" --data-binary @/tmp/cli-release-card.json || echo "通知失败(忽略): $W"
-          done
+          curl -s -X POST "https://manager.museav.top/api/cli-release" \
+            -H "Authorization: Bearer $CLI_RELEASE_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg v "$VERSION" --arg c "$BODY" '{version: $v, changes: $c}')" \
+            || echo "回调业务中台失败(忽略，不影响发布)"
         env:
-          FEISHU_RELEASE_WEBHOOKS: ${{ secrets.FEISHU_RELEASE_WEBHOOKS }}
+          CLI_RELEASE_TOKEN: ${{ secrets.CLI_RELEASE_TOKEN }}

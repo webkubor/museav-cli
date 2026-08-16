@@ -1,6 +1,6 @@
 # Changelog
 
-## 未发布
+## 2.0.0 · 2026-08-16
 
 **改名：npm 包 `@museav/cli`，命令 `museav`。** 产品叫 MUSE AV，命令却叫另一个名字，同一个东西两个叫法——这次统一到产品名。拿下 `@museav` scope 之后，以后出 `@museav/sdk`、`@museav/mcp` 不用再重新想名字。
 

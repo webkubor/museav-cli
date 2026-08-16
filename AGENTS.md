@@ -82,7 +82,7 @@ Full flag reference: `museav <command> --help`. Full command table and auth deta
 ## Programmatic use (no shell-out)
 
 ```ts
-import { StudioClient } from '@museav/cli'
+import { StudioClient } from 'museav-cli'
 
 const studio = new StudioClient({ baseUrl: 'https://manager.museav.top', apiKey: process.env.STUDIO_API_KEY! })
 const job = await studio.generateAndWait({ prompt: 'a cat on the moon', ratio: '3:4' })

@@ -2,9 +2,11 @@
 
 ## 2.0.0 · 2026-08-16
 
-**改名：npm 包 `@museav/cli`，命令 `museav`。** 产品叫 MUSE AV，命令却叫另一个名字，同一个东西两个叫法——这次统一到产品名。拿下 `@museav` scope 之后，以后出 `@museav/sdk`、`@museav/mcp` 不用再重新想名字。
+**改名：npm 包 `museav-cli`，命令 `museav`。** 产品叫 MUSE AV，命令却叫另一个名字，同一个东西两个叫法——这次统一到产品名。
 
-- 迁移：`npm uninstall -g` 旧包后 `npm install -g @museav/cli`，脚本里的旧命令换成 `museav`，参数和行为完全不变。
+不用 `@museav/cli` 是因为 npm 的 scope 规则：`@<用户名>` 自动可用（旧包 `@kubor/studio-cli` 就是这么来的），而 `@museav` 属于组织 scope，得先在 npmjs.com 建一个同名组织。发布账号是个人的，为一个 CLI 去建公司组织不值当，无 scope 的 `museav-cli` 跟命令名也更一致。
+
+- 迁移：`npm uninstall -g` 旧包后 `npm install -g museav-cli`，脚本里的旧命令换成 `museav`，参数和行为完全不变。
 - 配置文件改到 `~/.museav.json`，**旧路径仍会自动读取**（apiKey 明文中台只在创建时给一次，很多人唯一的一份就在那个文件里，直接不读等于逼人重置密钥）。
 - 环境变量新增 `MUSEAV_API_KEY` / `MUSEAV_BASE_URL` / `MUSEAV_NO_WELCOME`；旧的 `STUDIO_*` 继续有效（中台对外文档和已经跑起来的 CI 写的都是旧名，不能说停就停），两个都设时新名优先。
 - 自报身份头新增 `X-Museav-Client`，旧的 `X-Studio-Client` **过渡期继续发**，值统一改成 `museav-cli/<version>`。中台靠这个头把渠道记成 `cli`，两个头一起发是为了让中台能在不中断渠道统计的前提下切过去；等所有客户端升上来、中台停读旧头之后，这里再把旧头删掉。同时显式带上 `User-Agent: museav-cli/<version>`（中台有 UA 兜底匹配，Node 默认的 `node` 什么信息都没有）。

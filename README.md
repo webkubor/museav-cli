@@ -2,9 +2,9 @@
 
 <img src="https://museav.top/logo.svg" alt="studio" width="72" />
 
-# museav（`@museav/cli`）
+# museav（`museav-cli`）
 
-[![npm version](https://img.shields.io/npm/v/%40museav%2Fcli)](https://www.npmjs.com/package/@museav/cli)
+[![npm version](https://img.shields.io/npm/v/%40museav%2Fcli)](https://www.npmjs.com/package/museav-cli)
 [![license](https://img.shields.io/npm/l/%40museav%2Fcli)](./LICENSE)
 [![node](https://img.shields.io/node/v/%40museav%2Fcli)](package.json)
 [![CI](https://github.com/webkubor/museav-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/webkubor/museav-cli/actions/workflows/ci.yml)
@@ -22,19 +22,19 @@
 
 `museav` 是 [MUSE AV 出图中台](https://museav.top)（原 studio，API 走 [manager.museav.top](https://manager.museav.top)）的命令行客户端。装上它，登录（或配一个 apiKey），就能在终端里出图、逆向、图生图。给 Agent 用的详细说明见 [AGENTS.md](./AGENTS.md)。
 
-> ### ⚠️ 改名了：包名 → `@museav/cli`，命令 → `museav`
+> ### ⚠️ 改名了：包名 → `museav-cli`，命令 → `museav`
 >
 > 产品叫 MUSE AV，命令却叫另一个名字，同一个东西两个叫法。现在统一到产品名：
 >
 > ```bash
 > npm uninstall -g @kubor/studio-cli   # 卸掉旧包（旧命令），否则两个命令并存
-> npm install -g @museav/cli           # 装新包，命令名是 museav
+> npm install -g museav-cli           # 装新包，命令名是 museav
 > ```
 >
 > - **命令名**：把脚本/CI 里的旧命令全部换成 `museav xxx`，参数和行为一模一样。
 > - **配置文件**：新路径 `~/.museav.json`。旧路径的配置**仍会被自动读取**，不用重新 login，也不用再找一次 apiKey；下次 `config` / `login` 写入时自动落到新路径。
 > - **环境变量**：`STUDIO_API_KEY` / `STUDIO_BASE_URL` 继续有效，同时新增等价的 `MUSEAV_API_KEY` / `MUSEAV_BASE_URL`（新名优先）。
-> - **当库用**：`import { StudioClient } from '@museav/cli'`（类名不变）。
+> - **当库用**：`import { StudioClient } from 'museav-cli'`（类名不变）。
 > - **自报身份头**：新增 `X-Museav-Client`，旧的 `X-Studio-Client` 过渡期继续发，两个值都是 `museav-cli/<version>`。
 > - 旧包停止更新，只会留一条 deprecate 提示指向这里。
 
@@ -49,7 +49,7 @@
 
 **不适合你，如果你在做一个真正的产品/网站**：这个 CLI 是给终端用的，**不是** SDK 或后端集成方案。举个真实例子——好易美的 `hym-admin`（一个跑在 Cloudflare Pages Functions 上的业务后台）需要出图能力时，走的是两条路，都跟这个 CLI 无关：
 1. 人要用完整界面 → 用 SSO 直接内嵌 [MUSE AV 网页版](https://museav.top)（iframe，登录态自动同步）
-2. 后端要程序化调用 → 直接 `fetch('https://manager.museav.top/api/generate', { headers: { 'X-API-Key': ... } })`，或者 `import { StudioClient } from '@museav/cli'` 当库用
+2. 后端要程序化调用 → 直接 `fetch('https://manager.museav.top/api/generate', { headers: { 'X-API-Key': ... } })`，或者 `import { StudioClient } from 'museav-cli'` 当库用
 
 **这不是随便选的**：Cloudflare Pages Functions/Workers 这类边缘运行时压根不能起子进程，`museav` 这个 CLI 二进制在那种环境里根本跑不起来。做产品集成，永远是调 HTTP API 或者拿 `StudioClient` 当库导入；CLI 是给"人在终端里"或"agent 跑 shell 命令"这两个场景用的，别的地方用不上也不该用。
 
@@ -93,7 +93,7 @@
 
 ```bash
 # 从 npm 安装（推荐）
-npm install -g @museav/cli
+npm install -g museav-cli
 
 # 或从 GitHub 全局安装
 npm install -g github:webkubor/museav-cli
@@ -365,7 +365,7 @@ museav gen --template <模板id> --ref "$IMG"
 CLI 背后是一个干净的 `StudioClient` class，也可以当库用：
 
 ```ts
-import { StudioClient } from '@museav/cli'
+import { StudioClient } from 'museav-cli'
 
 // 方式一：用 login 拿到的 token（个人用户）
 const studio = new StudioClient({

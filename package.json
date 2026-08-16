@@ -1,5 +1,5 @@
 {
-  "name": "@museav/cli",
+  "name": "museav-cli",
   "version": "2.0.0",
   "description": "MUSE AV 出图中台官方 CLI —— 命令行调中台 API 出图、出视频、读图逆向、图生模板",
   "type": "module",

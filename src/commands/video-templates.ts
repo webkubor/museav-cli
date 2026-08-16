@@ -1,4 +1,4 @@
-/** studio-cli video-templates —— 查可用视频模板（配合 gen --video --template） */
+/** museav video-templates —— 查可用视频模板（配合 gen --video --template） */
 import type { StudioClient, CreateVideoTemplateInput } from '../client.js'
 
 export async function videoTemplates(client: StudioClient, opts: { category?: string } = {}): Promise<void> {
@@ -29,7 +29,7 @@ export async function videoTemplates(client: StudioClient, opts: { category?: st
       process.stderr.write(`      参考视频: ${t.sample_video_url}\n`)
     }
   }
-  process.stderr.write(`\n出视频: studio-cli gen --video --template <模板id> [--fields '{"key":"值"}']\n`)
+  process.stderr.write(`\n出视频: museav gen --video --template <模板id> [--fields '{"key":"值"}']\n`)
   // stdout 只出 id 和参考视频 URL（tab 分隔），便于脚本与 agent 解析
   console.log(list.map((t) => t.sample_video_url ? `${t.id}\t${t.sample_video_url}` : t.id).join('\n'))
 }
@@ -46,7 +46,7 @@ interface CreateVideoTemplateOpts {
   sampleCover?: string
 }
 
-/** studio-cli video-templates create —— 新建视频模板。
+/** museav video-templates create —— 新建视频模板。
  *  视频模板字段跟图片不同：模型/时长/比例在 generation_configs 每项里（服务端契约）。
  *  归属跟图片模板一样由服务端根据鉴权身份自动决定。 */
 export async function createVideoTemplate(client: StudioClient, opts: CreateVideoTemplateOpts): Promise<void> {
@@ -83,7 +83,7 @@ export async function createVideoTemplate(client: StudioClient, opts: CreateVide
   process.stderr.write(`归属：${row.tenant_id ? '当前租户（其他租户看不到）' : '平台共享（所有租户可见）'}\n`)
   process.stderr.write(`模型: ${cfg.model} 时长: ${cfg.duration || '模板默认'} 比例: ${cfg.aspect_ratio || '模板默认'}\n`)
   if (fields.length) process.stderr.write(`占位符字段: ${fields.map((f) => f.key).join(', ')}\n`)
-  process.stderr.write(`\n出视频: studio-cli gen --video --template ${row.id}\n`)
+  process.stderr.write(`\n出视频: museav gen --video --template ${row.id}\n`)
   // stdout 只出新建的模板 id，便于脚本链式使用
   console.log(row.id)
 }

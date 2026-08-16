@@ -49,7 +49,7 @@ jobs:
       # 认证走哪条由仓库配置决定，二选一，不用改这个文件：
       #   ① Trusted Publishing（推荐，无 token）——在 npmjs.com 的包设置里
       #      绑定本仓库 + 本 workflow 文件名(publish.yml)，然后别设 NPM_TOKEN secret。
-      #   ② NPM_TOKEN 兜底——建 Granular token（Read and write，范围勾 @kubor scope
+      #   ② NPM_TOKEN 兜底——建 Granular token（Read and write，范围勾 @museav scope
       #      或 All packages，别只勾单个包），存进仓库 Secrets 的 NPM_TOKEN。
       - name: 发布
         run: npm publish --access public --provenance

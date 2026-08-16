@@ -1,4 +1,4 @@
-/** studio-cli whoami —— 查当前登录账户 + 租户归属 */
+/** museav whoami —— 查当前登录账户 + 租户归属 */
 import type { StudioClient } from '../client.js'
 import { loadConfig } from '../config.js'
 
@@ -7,8 +7,8 @@ export async function whoami(client: StudioClient): Promise<void> {
   const cfg = loadConfig()
   if (cfg.apiKey && !cfg.token) {
     throw new Error(
-      'whoami 只支持个人 login 身份：studio-cli login\n' +
-      '（apiKey 代表接入的业务系统，不是个人账户，可用 studio-cli jobs / balance 查看业务数据）',
+      'whoami 只支持个人 login 身份：museav login\n' +
+      '（apiKey 代表接入的业务系统，不是个人账户，可用 museav jobs / balance 查看业务数据）',
     )
   }
   const me = await client.me()

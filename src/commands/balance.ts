@@ -1,4 +1,4 @@
-/** studio-cli balance —— 查租户余额（¥，实时计算：充值总额 − 历史消耗） */
+/** museav balance —— 查租户余额（¥，实时计算：充值总额 − 历史消耗） */
 import type { StudioClient } from '../client.js'
 
 export async function balance(client: StudioClient): Promise<void> {

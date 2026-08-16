@@ -80,16 +80,17 @@ export async function printWelcome(baseUrl: string, cred: WelcomeCred): Promise<
 
   process.stderr.write('\n' + box([
     '📖 怎么用（常用命令）',
-    '  studio-cli gen --prompt "英文提示词"    自由出图',
-    '  studio-cli gen --skill <技能> --input "描述"   技能出图',
-    '  studio-cli gen --template <id> --fields \'{..}\'  模板出图',
-    '  studio-cli skills / templates / reverse    查技能/模板/逆向',
-    '  studio-cli jobs / whoami              记录 / 身份',
-    '  studio-cli bind-feishu                绑定飞书',
+    '  museav gen --prompt "英文提示词"    自由出图',
+    '  museav gen --skill <技能> --input "描述"   技能出图',
+    '  museav gen --template <id> --fields \'{..}\'  模板出图',
+    '  museav image-to-template <图>       一张图做成可复用模板',
+    '  museav skills / templates / reverse    查技能/模板/读图',
+    '  museav jobs / whoami              记录 / 身份',
+    '  museav bind-feishu                绑定飞书',
   ]) + '\n')
 
   process.stderr.write('\n🔗 找我 / 支持我：\n')
-  process.stderr.write('   · GitHub 给项目点个 ⭐ → https://github.com/webkubor/studio-cli\n')
+  process.stderr.write('   · GitHub 给项目点个 ⭐ → https://github.com/webkubor/museav-cli\n')
   process.stderr.write('   · 小红书「山鬼映画」（东方电影美学）→ https://www.xiaohongshu.com/user/profile/5c3c1581000000000501835d\n')
 
   process.stderr.write('\n🎁 我的其他作品（GitHub 上给它们点个 ⭐ 就是最大的支持）：\n')
@@ -103,5 +104,5 @@ export async function printWelcome(baseUrl: string, cred: WelcomeCred): Promise<
   process.stderr.write('   · 出图 / 技能 / 模板 / 逆向等全部创作功能【不需要】绑定飞书\n')
   process.stderr.write('   · 绑定飞书（bind-feishu）只影响：让 agent 在飞书里认出你的身份\n')
 
-  process.stderr.write('\n现在就可以开始：studio-cli gen --prompt "一只猫"\n')
+  process.stderr.write('\n现在就可以开始：museav gen --prompt "一只猫"\n')
 }

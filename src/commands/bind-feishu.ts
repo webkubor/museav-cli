@@ -1,5 +1,5 @@
 /**
- * studio-cli bind-feishu —— CLI 绑定飞书（设备码模式，2026-08-15）
+ * museav bind-feishu —— CLI 绑定飞书（设备码模式，2026-08-15）
  *
  * 流程：CLI 调 /feishu-bind/cli-start（需个人 login token）→ 终端显示验证码 + 授权链接
  *      → 用户在浏览器打开链接（已登录后台）授权飞书 → CLI 轮询 /feishu-bind/cli-poll
@@ -25,7 +25,7 @@ export async function bindFeishu(opts: { baseUrl?: string }): Promise<void> {
   const baseUrl = (opts.baseUrl || DEFAULT_BASE_URL).replace(/\/+$/, '')
   const cfg = loadConfig()
   if (!cfg.token) {
-    throw new Error('绑定飞书需要个人账户登录：先执行 studio-cli login（租户 apiKey 无法绑定个人飞书）')
+    throw new Error('绑定飞书需要个人账户登录：先执行 museav login（租户 apiKey 无法绑定个人飞书）')
   }
 
   process.stderr.write('正在发起飞书绑定...\n')
@@ -70,8 +70,8 @@ export async function bindFeishu(opts: { baseUrl?: string }): Promise<void> {
       return
     }
     if (poll.status === 'expired') {
-      throw new Error('绑定请求已过期，请重新执行 studio-cli bind-feishu')
+      throw new Error('绑定请求已过期，请重新执行 museav bind-feishu')
     }
   }
-  throw new Error('绑定超时，请重新执行 studio-cli bind-feishu')
+  throw new Error('绑定超时，请重新执行 museav bind-feishu')
 }

@@ -1,4 +1,4 @@
-/** studio-cli templates —— 查可用图片/文字模板（自己租户建的 + 平台共享的）
+/** museav templates —— 查可用图片/文字模板（自己租户建的 + 平台共享的）
  *  --type image|article 可过滤（中台 templates 表同时装两种，不传则都列并标注类型） */
 import type { StudioClient } from '../client.js'
 
@@ -25,8 +25,8 @@ export async function templates(client: StudioClient, opts: { category?: string;
       `  ${t.id.padEnd(38)} ${(t.zh_name || '').padEnd(16)} ${(t.category || '').padEnd(10)} ${(t.ratio || '').padEnd(6)} ${typeTag(t).padEnd(8)} ${fieldHint.padEnd(20)} ${tag(t)}\n`,
     )
   }
-  process.stderr.write(`\n出图: studio-cli gen --template <模板id> [--fields '{"key":"值"}']\n`)
-  process.stderr.write(`按类型过滤: studio-cli templates --type image|article\n`)
+  process.stderr.write(`\n出图: museav gen --template <模板id> [--fields '{"key":"值"}']\n`)
+  process.stderr.write(`按类型过滤: museav templates --type image|article\n`)
   // stdout 只出 id，便于脚本与 agent 解析
   console.log(list.map((t) => t.id).join('\n'))
 }
@@ -44,7 +44,7 @@ interface CreateTemplateOpts {
 }
 
 /**
- * studio-cli templates create —— 新建图片模板。
+ * museav templates create —— 新建图片模板。
  *
  * 归属不用自己传：服务端根据鉴权身份自动决定——租户 apiKey 建的自动归该租户
  * （其他租户看不到），平台管理员 JWT 建的是 tenant_id=null 的平台共享模板，
@@ -92,7 +92,7 @@ export async function createTemplate(client: StudioClient, opts: CreateTemplateO
   process.stderr.write(`归属：${row.tenant_id ? '当前租户（其他租户看不到）' : '平台共享（所有租户可见）'}\n`)
   if (fields.length) process.stderr.write(`占位符字段: ${fields.map((f) => f.key).join(', ')}\n`)
   const fieldExample = fields.length ? ` --fields '{"${fields[0].key}":"..."}'` : ''
-  process.stderr.write(`\n出图: studio-cli gen --template ${row.id}${fieldExample}\n`)
+  process.stderr.write(`\n出图: museav gen --template ${row.id}${fieldExample}\n`)
   // stdout 只出新建的模板 id，便于脚本链式使用
   console.log(row.id)
 }

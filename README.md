@@ -2,25 +2,41 @@
 
 <img src="https://museav.top/logo.svg" alt="studio" width="72" />
 
-# studio-cli
+# museav（`@museav/cli`）
 
-[![npm version](https://img.shields.io/npm/v/%40kubor%2Fstudio-cli)](https://www.npmjs.com/package/@kubor/studio-cli)
-[![license](https://img.shields.io/npm/l/%40kubor%2Fstudio-cli)](./LICENSE)
-[![node](https://img.shields.io/node/v/%40kubor%2Fstudio-cli)](package.json)
-[![CI](https://github.com/webkubor/studio-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/webkubor/studio-cli/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/%40museav%2Fcli)](https://www.npmjs.com/package/@museav/cli)
+[![license](https://img.shields.io/npm/l/%40museav%2Fcli)](./LICENSE)
+[![node](https://img.shields.io/node/v/%40museav%2Fcli)](package.json)
+[![CI](https://github.com/webkubor/museav-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/webkubor/museav-cli/actions/workflows/ci.yml)
 
 **Agent-ready** — designed to be shelled out to directly, not just used by humans
 
-[![Claude Code](https://img.shields.io/badge/Claude%20Code-compatible-6366f1)](https://github.com/webkubor/studio-cli/blob/main/AGENTS.md)
-[![Codex](https://img.shields.io/badge/Codex-compatible-10a37f)](https://github.com/webkubor/studio-cli/blob/main/AGENTS.md)
-[![Hermes](https://img.shields.io/badge/Hermes-compatible-f2a65a)](https://github.com/webkubor/studio-cli/blob/main/AGENTS.md)
-[![Antigravity](https://img.shields.io/badge/Antigravity-compatible-8b5cf6)](https://github.com/webkubor/studio-cli/blob/main/AGENTS.md)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-compatible-6366f1)](https://github.com/webkubor/museav-cli/blob/main/AGENTS.md)
+[![Codex](https://img.shields.io/badge/Codex-compatible-10a37f)](https://github.com/webkubor/museav-cli/blob/main/AGENTS.md)
+[![Hermes](https://img.shields.io/badge/Hermes-compatible-f2a65a)](https://github.com/webkubor/museav-cli/blob/main/AGENTS.md)
+[![Antigravity](https://img.shields.io/badge/Antigravity-compatible-8b5cf6)](https://github.com/webkubor/museav-cli/blob/main/AGENTS.md)
 
 </div>
 
 > 命令行出图，一行配置就能用。背后的 [MUSE AV 中台](https://museav.top) 帮你搞定模型、密钥、路由、记账——你只管 prompt。
 
-`studio-cli` 是 [MUSE AV 出图中台](https://museav.top)（原 studio，API 走 [manager.museav.top](https://manager.museav.top)）的命令行客户端。装上它，登录（或配一个 apiKey），就能在终端里出图、逆向、图生图。给 Agent 用的详细说明见 [AGENTS.md](./AGENTS.md)。
+`museav` 是 [MUSE AV 出图中台](https://museav.top)（原 studio，API 走 [manager.museav.top](https://manager.museav.top)）的命令行客户端。装上它，登录（或配一个 apiKey），就能在终端里出图、逆向、图生图。给 Agent 用的详细说明见 [AGENTS.md](./AGENTS.md)。
+
+> ### ⚠️ 改名了：包名 → `@museav/cli`，命令 → `museav`
+>
+> 产品叫 MUSE AV，命令却叫另一个名字，同一个东西两个叫法。现在统一到产品名：
+>
+> ```bash
+> npm uninstall -g @kubor/studio-cli   # 卸掉旧包（旧命令），否则两个命令并存
+> npm install -g @museav/cli           # 装新包，命令名是 museav
+> ```
+>
+> - **命令名**：把脚本/CI 里的旧命令全部换成 `museav xxx`，参数和行为一模一样。
+> - **配置文件**：新路径 `~/.museav.json`。旧路径的配置**仍会被自动读取**，不用重新 login，也不用再找一次 apiKey；下次 `config` / `login` 写入时自动落到新路径。
+> - **环境变量**：`STUDIO_API_KEY` / `STUDIO_BASE_URL` 继续有效，同时新增等价的 `MUSEAV_API_KEY` / `MUSEAV_BASE_URL`（新名优先）。
+> - **当库用**：`import { StudioClient } from '@museav/cli'`（类名不变）。
+> - **自报身份头**：新增 `X-Museav-Client`，旧的 `X-Studio-Client` 过渡期继续发，两个值都是 `museav-cli/<version>`。
+> - 旧包停止更新，只会留一条 deprecate 提示指向这里。
 
 ---
 
@@ -33,9 +49,9 @@
 
 **不适合你，如果你在做一个真正的产品/网站**：这个 CLI 是给终端用的，**不是** SDK 或后端集成方案。举个真实例子——好易美的 `hym-admin`（一个跑在 Cloudflare Pages Functions 上的业务后台）需要出图能力时，走的是两条路，都跟这个 CLI 无关：
 1. 人要用完整界面 → 用 SSO 直接内嵌 [MUSE AV 网页版](https://museav.top)（iframe，登录态自动同步）
-2. 后端要程序化调用 → 直接 `fetch('https://manager.museav.top/api/generate', { headers: { 'X-API-Key': ... } })`，或者 `import { StudioClient } from '@kubor/studio-cli'` 当库用
+2. 后端要程序化调用 → 直接 `fetch('https://manager.museav.top/api/generate', { headers: { 'X-API-Key': ... } })`，或者 `import { StudioClient } from '@museav/cli'` 当库用
 
-**这不是随便选的**：Cloudflare Pages Functions/Workers 这类边缘运行时压根不能起子进程，`studio-cli` 这个 CLI 二进制在那种环境里根本跑不起来。做产品集成，永远是调 HTTP API 或者拿 `StudioClient` 当库导入；CLI 是给"人在终端里"或"agent 跑 shell 命令"这两个场景用的，别的地方用不上也不该用。
+**这不是随便选的**：Cloudflare Pages Functions/Workers 这类边缘运行时压根不能起子进程，`museav` 这个 CLI 二进制在那种环境里根本跑不起来。做产品集成，永远是调 HTTP API 或者拿 `StudioClient` 当库导入；CLI 是给"人在终端里"或"agent 跑 shell 命令"这两个场景用的，别的地方用不上也不该用。
 
 ---
 
@@ -60,11 +76,11 @@
 
 你永远不用接触上游 key，也不用关心用的哪个模型（除非你想指定）。
 
-`studio-cli` 这个 CLI 就是这套能力的命令行封装，**服务两类不同的使用者，鉴权方式也不一样**：
+`museav` 这个 CLI 就是这套能力的命令行封装，**服务两类不同的使用者，鉴权方式也不一样**：
 
 | 你是谁 | 怎么鉴权 | 适合场景 |
 |---|---|---|
-| **平台用户**——用中台网页版的个人账号 | `studio-cli login`（网页登录，个人 JWT，7 天有效） | 自己出图、写个人脚本、agent 场景——你本人在用 |
+| **平台用户**——用中台网页版的个人账号 | `museav login`（网页登录，个人 JWT，7 天有效） | 自己出图、写个人脚本、agent 场景——你本人在用 |
 | **租户**——要把出图能力接进自己的产品/服务对外提供 | apiKey（`sk-studio-xxx`，中台「租户管理」申请） | 服务端长期程序化调用、CI——代表一个"服务"在调，不依赖某个人的登录态 |
 
 两条路径互不依赖，选跟你身份匹配的那条，不用两个都配。下面「快速开始」走的是平台用户（login）这条路；如果你是租户，直接跳到下面「B 端 / CI 场景」那一节。
@@ -77,14 +93,14 @@
 
 ```bash
 # 从 npm 安装（推荐）
-npm install -g @kubor/studio-cli
+npm install -g @museav/cli
 
 # 或从 GitHub 全局安装
-npm install -g github:webkubor/studio-cli
+npm install -g github:webkubor/museav-cli
 
 # 或克隆后本地构建
-git clone https://github.com/webkubor/studio-cli.git
-cd studio-cli && npm install && npm run build && npm link
+git clone https://github.com/webkubor/museav-cli.git
+cd museav-cli && npm install && npm run build && npm link
 ```
 
 要求 Node.js >= 20.19。
@@ -92,17 +108,17 @@ cd studio-cli && npm install && npm run build && npm link
 ### 2. 登录
 
 ```bash
-studio-cli login
+museav login
 ```
 
-终端会显示一个验证码和链接，在浏览器打开链接、登录你的 [MUSE AV](https://museav.top) 账号、点批准，CLI 自动完成登录。登录态存到 `~/.studio-cli.json`，7 天有效，过期重新 login 即可。
+终端会显示一个验证码和链接，在浏览器打开链接、登录你的 [MUSE AV](https://museav.top) 账号、点批准，CLI 自动完成登录。登录态存到 `~/.museav.json`，7 天有效，过期重新 login 即可。
 
 > **没有账号？** 这里说的是**平台用户的个人账号**（浏览器注册即可），跟下面「租户」的 apiKey 申请是两码事，不要混。先到 [museav.top](https://museav.top) 注册个人账号，再回来 login。
 
 ### 3. 出图
 
 ```bash
-studio-cli gen --prompt '演唱会海报，霓虹灯，赛博朋克'
+museav gen --prompt '演唱会海报，霓虹灯，赛博朋克'
 # ✅ stdout 输出: https://img.webkubor.online/xxx.png
 ```
 
@@ -116,7 +132,7 @@ studio-cli gen --prompt '演唱会海报，霓虹灯，赛博朋克'
 
 ```bash
 # 方式一：config 命令存到本地
-studio-cli config --apiKey sk-studio-xxx
+museav config --apiKey sk-studio-xxx
 
 # 方式二：环境变量（CI 友好，优先级最高）
 export STUDIO_API_KEY=sk-studio-xxx
@@ -132,28 +148,28 @@ apikey（业务中台服务 key，统一形态 `sk-studio-<24位>`) 从中台「
 
 ```bash
 # 基本出图
-studio-cli gen --prompt '一只在月球上的猫'
+museav gen --prompt '一只在月球上的猫'
 
 # 宽高比（不指定则纯 prompt 模式兜底 3:4；--skill/--template 模式默认用技能/模板自己的比例）
-studio-cli gen --prompt '海报' --ratio 9:16    # 可选: 3:4 / 9:16 / 1:1 / 4:3 / 16:9
+museav gen --prompt '海报' --ratio 9:16    # 可选: 3:4 / 9:16 / 1:1 / 4:3 / 16:9
 
 # 指定模型（不指定则中台自动选最优）
-studio-cli gen --prompt '...' --model gpt-image-2
+museav gen --prompt '...' --model gpt-image-2
 
 # 质量（仅 gpt-image 生效）
-studio-cli gen --prompt '...' --quality high
+museav gen --prompt '...' --quality high
 
 # 图生图（自动上传垫图，保持人物面容）
-studio-cli gen --prompt '保持面容，换成西装' --ref face.png
+museav gen --prompt '保持面容，换成西装' --ref face.png
 
 # 文生视频（模型如 seedance-2-fast / artsdance-2-0-pro-260801，自动轮询直到完成）
-studio-cli gen --video --prompt '一只橘猫在窗台上伸懒腰，阳光洒进来，电影感' --model seedance-2-fast --ratio 9:16
+museav gen --video --prompt '一只橘猫在窗台上伸懒腰，阳光洒进来，电影感' --model seedance-2-fast --ratio 9:16
 
 # 图生视频（--image 传首帧图，自动上传）
-studio-cli gen --video --image logo.png --prompt 'logo 缓缓发光，背景渐暗' --ratio 1:1
+museav gen --video --image logo.png --prompt 'logo 缓缓发光，背景渐暗' --ratio 1:1
 
 # 管道用法：拿到 URL 存变量
-URL=$(studio-cli gen --prompt '海报')
+URL=$(museav gen --prompt '海报')
 curl -o poster.png "$URL"
 ```
 
@@ -165,14 +181,14 @@ curl -o poster.png "$URL"
 
 ```bash
 # 先查有哪些模板（自己租户建的 + 平台共享的）
-studio-cli templates
-studio-cli templates --category 电商白底图    # 按分类过滤
+museav templates
+museav templates --category 电商白底图    # 按分类过滤
 
 # 没有占位符的模板，直接用
-studio-cli gen --template <模板id>
+museav gen --template <模板id>
 
 # 带占位符的模板，用 --fields 传 JSON 补齐
-studio-cli gen --template <模板id> --fields '{"artist":"王嘉尔","city":"南京"}'
+museav gen --template <模板id> --fields '{"artist":"王嘉尔","city":"南京"}'
 ```
 
 `templates` 命令的输出里，模板名后面跟着的"字段:xxx"就是需要传给 `--fields` 的 key。
@@ -189,14 +205,14 @@ studio-cli gen --template <模板id> --fields '{"artist":"王嘉尔","city":"南
 
 ```bash
 # 占位符用 {key} 形式，不传 --fields 会自动从 --prompt 里提取
-studio-cli templates create \
+museav templates create \
   --name "演唱会巡演海报" \
   --prompt "{artist} 在 {city} 的演唱会巡演海报，聚光灯氛围" \
   --category 演唱会 \
   --ratio 9:16
 
 # 想要更友好的中文字段标签，自己传 --fields 覆盖自动提取的结果
-studio-cli templates create \
+museav templates create \
   --name "产品白底图" \
   --prompt "{product} 电商白底图，纯白背景，正面视角" \
   --fields '[{"key":"product","label":"产品名称"}]'
@@ -205,8 +221,8 @@ studio-cli templates create \
 stdout 输出新建模板的 id，可以直接接 `gen --template`：
 
 ```bash
-ID=$(studio-cli templates create --name "..." --prompt "...")
-studio-cli gen --template "$ID" --fields '{"artist":"..."}'
+ID=$(museav templates create --name "..." --prompt "...")
+museav gen --template "$ID" --fields '{"artist":"..."}'
 ```
 
 ### 图片逆向 `reverse`
@@ -215,27 +231,85 @@ studio-cli gen --template "$ID" --fields '{"artist":"..."}'
 
 ```bash
 # 本地文件或图片 URL 都行
-studio-cli reverse photo.png
-studio-cli reverse https://example.com/photo.png
+museav reverse photo.png
+museav reverse https://example.com/photo.png
 
 # 逆向 + 出图，一条龙
-studio-cli gen --prompt "$(studio-cli reverse photo.png)"
+museav gen --prompt "$(museav reverse photo.png)"
 ```
 
 分析详情打到 stderr（人看），**stdout 只输出英文 prompt**（机器用，方便管道）。
 
-### 上传垫图 `upload`
+`reverse` **只读图**，不会顺手帮你建模板。要把图做成模板看下一节——中台 2026-08-16 把这两件事
+拆成了两个接口，`reverse` 现在收到任何模板类参数都会直接报错，不会静默忽略。
+
+### 图生模板 `image-to-template`
+
+看中一张图，想以后只改几个字就批量出同款？这个命令把它做成模具：读图（SCULPT）+ **文字层逆向**
+（图上每处文字的角色/字体/字重/颜色/位置/处理效果）+ 变量化，最后建成一个图片模板，
+**原图会被转存并焊进模板当参考图**——所以换了文字之后风格还能对得上。
 
 ```bash
-studio-cli upload face.png
+# 最常用：一张图直接建成模板（异步，终端会按阶段打进度）
+museav image-to-template poster.jpg
+#   🔄 接收图片 → 解析图片 → 抽取文字层 → 创建模板
+#   stdout: 新模板的 id
+
+# 只想先看看会做成什么样，不真的建（同步返回草稿，stdout 是完整 JSON）
+museav image-to-template poster.jpg --no-create
+
+# 指定模板名 / slug / 分类（slug 全局唯一，撞了直接报错，绝不覆盖已有模板）
+museav image-to-template poster.jpg --name "暗金演唱会主视觉" --slug gala-2026 --category 海报
+
+# 收窄变量白名单：只允许改这几个，模型不能自己发明别的
+museav image-to-template poster.jpg --variables title,subject,location
+
+# 变量 key 是中台通用语义，展示成你自己的业务叫法用 --labels
+museav image-to-template poster.jpg --labels '{"subject":"艺人","location":"城市"}'
+
+# 图片 URL 也行
+museav image-to-template https://example.com/poster.jpg
+```
+
+建完直接就能用：
+
+```bash
+ID=$(museav image-to-template poster.jpg)
+museav gen --template "$ID" --fields '{"title":"新的主标题"}'
+```
+
+几个容易踩的点：
+
+- **变量 key 是固定白名单**（`title` / `subtitle` / `subject` / `date` / `location` / `watermark` /
+  `body` / `cta` / `style`），是通用语义不是某一家的业务词。你的叫法用 `--labels` 映射到表单显示名，
+  key 本身不变——这样同一套模板换个业务也能读懂。
+- **建模板要租户 key 或平台管理员身份**。发给成员的个人账户 key 打不到这个能力（建模板是往组织的
+  模板库里添资产，跟出图不是一回事），这种情况下读图结果照常返回，只是模板建不成并说明原因。
+- **降级不是失败**：文字层逆向 / 变量化 / 建模板任一步出问题，读图结果（SCULPT、prompt）照常给你，
+  只是没有模具。命令会明确告诉你卡在哪一步。
+
+### 上传素材 `upload`
+
+图片、音频、视频都能传，中台按**文件字节内容**判类型（不看扩展名，也不信客户端声明的 MIME），
+返回公网直链：
+
+```bash
+museav upload face.png
 # stdout: https://img.webkubor.online/refs/...
 ```
+
+大小上限按类型分：图片 8MB / 音频 20MB / 视频 50MB；认不出类型的文件会被拒绝。
+拿到的 URL 可以直接喂给 `gen --ref`、`gen --video --image`，或当作 `reverse` /
+`image-to-template` 的图片 URL 入参。
+
+> `gen --ref` / `gen --video --image` 内部已经自动帮你上传了，不需要先手动跑一次 `upload`。
+> 单独用 `upload` 的场景是：同一张垫图要复用多次，或者你想把 URL 存下来给别的系统用。
 
 ### 查模型 / 余额
 
 ```bash
-studio-cli models      # 中台当前可用的模型
-studio-cli balance     # 各上游余额
+museav models      # 中台当前可用的模型
+museav balance     # 各上游余额
 ```
 
 ### 查自己名下的工作流 `jobs`
@@ -243,9 +317,9 @@ studio-cli balance     # 各上游余额
 租户额外多一项能力：能查到**自己业务下**的出图工作流，不止是刚提交的那一个任务：
 
 ```bash
-studio-cli jobs                    # 最近 20 条
-studio-cli jobs --limit 50         # 最近 50 条（服务端上限就是 50，--limit 只能在这以内截取，查不到更早的历史）
-studio-cli jobs --status failed    # 只看失败的（本地过滤，不是服务端查询）
+museav jobs                    # 最近 20 条
+museav jobs --limit 50         # 最近 50 条（服务端上限就是 50，--limit 只能在这以内截取，查不到更早的历史）
+museav jobs --status failed    # 只看失败的（本地过滤，不是服务端查询）
 ```
 
 范围自动跟着你用的凭证走，不用额外传租户/用户 id：个人 login 只看到自己出的图；租户 apiKey 看到的是这个租户名下的全部记录（不管是谁、哪个服务调用生成的）。stdout 输出完整 JSON 数组，方便接自己的后台统计。
@@ -263,15 +337,15 @@ studio-cli jobs --status failed    # 只看失败的（本地过滤，不是服�
 两边共用，不用再单独申请一把）：
 
 ```bash
-studio-cli products    # 查所属租户自己的产品目录
-studio-cli assets      # 查所属租户自己的素材/资产库
+museav products    # 查所属租户自己的产品目录
+museav assets      # 查所属租户自己的素材/资产库
 ```
 
 已知已接入的租户（hym / mzmeso）用**旧格式 key**（`sk-studio-<租户名>-<24位>`）不用额外配置，CLI 内置了它们后台的域名；
 统一形态新 key（`sk-studio-<24位>`）不带租户名，需要显式配置后台域名（其他租户/本地联调同理）：
 
 ```bash
-studio-cli config --tenantBaseUrl https://your-tenant-backend.example.com
+museav config --tenantBaseUrl https://your-tenant-backend.example.com
 ```
 
 **不是每个租户都两个命令都能用**：比如好易美是演唱会海报/票务业务，没有"产品"这个概念，
@@ -282,8 +356,8 @@ mzmeso 是一个扁平数组，CLI 会按返回形状分别展示。
 典型用法——配合 `gen --template` 做"选参考图 + 模板 组合出图"：
 
 ```bash
-IMG=$(studio-cli products | node -e "process.stdin.once('data',d=>console.log(JSON.parse(d)[0].cover_image_url))")
-studio-cli gen --template <模板id> --ref "$IMG"
+IMG=$(museav products | node -e "process.stdin.once('data',d=>console.log(JSON.parse(d)[0].cover_image_url))")
+museav gen --template <模板id> --ref "$IMG"
 ```
 
 ## 编程调用
@@ -291,12 +365,12 @@ studio-cli gen --template <模板id> --ref "$IMG"
 CLI 背后是一个干净的 `StudioClient` class，也可以当库用：
 
 ```ts
-import { StudioClient } from '@kubor/studio-cli'
+import { StudioClient } from '@museav/cli'
 
 // 方式一：用 login 拿到的 token（个人用户）
 const studio = new StudioClient({
   baseUrl: 'https://manager.museav.top',
-  token: process.env.STUDIO_TOKEN!,  // 或从 ~/.studio-cli.json 读
+  token: process.env.STUDIO_TOKEN!,  // 或从 ~/.museav.json 读
 })
 
 // 方式二：用 apikey（租户/B 端）
@@ -330,8 +404,9 @@ console.log(r.sculpt.light)  // 光影分析
 | `templates create` | 新建图片模板，归属按账号身份自动关联租户 | 新模板 id |
 | `products` | 查所属租户自己的产品目录（数据在租户自己后台，非中台；仅租户 apiKey） | JSON |
 | `assets` | 查所属租户自己的素材/资产库（数据在租户自己后台，非中台；仅租户 apiKey） | JSON |
-| `reverse <file\|url>` | 图片逆向 | 英文 prompt |
-| `upload <file>` | 上传垫图 | 图片 URL |
+| `reverse <file\|url>` | 读图，反推 prompt（**只读图**，不建模板） | 英文 prompt |
+| `image-to-template <file\|url>` | 图生模板：读图 + 文字层逆向 + 变量化 → 建成可复用图片模板 | 模板 id（`--no-create` 时是草稿 JSON） |
+| `upload <file>` | 上传素材（图片/音频/视频） | 公网直链 |
 | `models` | 可用模型 | 模型名列表 |
 | `balance` | 上游余额 | JSON |
 | `jobs` | 查自己（租户则是自己业务下）的工作流 | JSON 数组 |
@@ -357,10 +432,10 @@ console.log(r.sculpt.light)  // 光影分析
 
 **适合谁用**（对应本文最开始那张鉴权对照表）：
 
-- **平台用户**：自己写自动化脚本/agent 需要命令行出图、个人多个项目想统一收口到一个能力服务——`studio-cli login` 就够，不需要申请 apiKey
-- **租户**：做 AI 产品的开发者，要把出图能力接进自己对外提供的产品/服务，不想碰上游细节——申请 apiKey，走服务端集成。租户还多一项平台用户没有的能力：`studio-cli jobs` 能查到自己业务下全部的出图工作流（不止是当前这一个任务），方便对账/统计/排查
+- **平台用户**：自己写自动化脚本/agent 需要命令行出图、个人多个项目想统一收口到一个能力服务——`museav login` 就够，不需要申请 apiKey
+- **租户**：做 AI 产品的开发者，要把出图能力接进自己对外提供的产品/服务，不想碰上游细节——申请 apiKey，走服务端集成。租户还多一项平台用户没有的能力：`museav jobs` 能查到自己业务下全部的出图工作流（不止是当前这一个任务），方便对账/统计/排查
 
-**接入方式**：平台用户直接 `studio-cli login`；租户到中台「租户管理」注册拿 apiKey，装上这个 CLI（或直接调 API）用 `config --apiKey` / `STUDIO_API_KEY` 配置。具体配额和计费见中台后台。
+**接入方式**：平台用户直接 `museav login`；租户到中台「租户管理」注册拿 apiKey，装上这个 CLI（或直接调 API）用 `config --apiKey` / `STUDIO_API_KEY` 配置。具体配额和计费见中台后台。
 
 ---
 

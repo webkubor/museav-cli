@@ -1,4 +1,4 @@
-/** studio-cli gen —— 出图 / 出视频（核心命令） */
+/** museav gen —— 出图 / 出视频（核心命令） */
 import type { StudioClient } from '../client.js'
 
 export async function gen(client: StudioClient, opts: {
@@ -19,7 +19,7 @@ export async function gen(client: StudioClient, opts: {
   // prompt / skill / template 三选一。commander 不好表达互斥，在这里校验，报错要说清怎么改
   const picked = [opts.prompt, opts.skill, opts.template].filter(Boolean).length
   if (picked === 0) {
-    throw new Error('需要 --prompt "完整提示词" 或 --skill <技能名>（studio-cli skills 查）或 --template <模板id>（studio-cli templates 查）')
+    throw new Error('需要 --prompt "完整提示词" 或 --skill <技能名>（museav skills 查）或 --template <模板id>（museav templates 查）')
   }
   if (picked > 1) {
     throw new Error('--prompt / --skill / --template 只能给一个：分别对应自己写提示词、用中台技能展开、用图片模板展开')
@@ -55,7 +55,7 @@ export async function gen(client: StudioClient, opts: {
   // ── 视频模式：走 /api/videos 独立链路 ──
   if (opts.video) {
     if (opts.quality) throw new Error('--quality 仅图片出图支持')
-    if (opts.skill) throw new Error('--video 暂不支持配合 --skill（视频模板走 --template，清单用 studio-cli video-templates 查）')
+    if (opts.skill) throw new Error('--video 暂不支持配合 --skill（视频模板走 --template，清单用 museav video-templates 查）')
     process.stderr.write(
       `提交视频: ${opts.template ? `模板 ${opts.template}` : opts.prompt?.slice(0, 40) || ''}${opts.image ? ' · 图生视频' : ''}\n`,
     )

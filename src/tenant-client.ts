@@ -6,7 +6,7 @@
  * Studio 中台不代理这部分数据——跨库统一存取需要 Studio 保管每个租户数据库的连接
  * 信息，风险和复杂度远超"选产品参考图 + 模板 组合出图"这一个使用场景本身的收益，
  * 这次没有做。维持现状：数据在哪个租户后台，只读接口就长在那个后台上，
- * studio-cli 直接调租户自己的域名，不经过 Studio。
+ * museav 直接调租户自己的域名，不经过 Studio。
  *
  * 鉴权复用同一把 apiKey：租户后台反过来调用 Studio（出图/查模板）时，本来就要在自己
  * 环境变量里存这把 sk-studio-xxx（业务中台服务 key），所以它可以原样再拿来当"调用自己只读接口"
@@ -22,7 +22,7 @@
  */
 
 /** 已知租户名 → 该租户自己后台的域名。仅 hym / mzmeso 两个已接入的租户，其他租户
- *  需要用 `studio-cli config --tenantBaseUrl <后台域名>` 显式配置。
+ *  需要用 `museav config --tenantBaseUrl <后台域名>` 显式配置。
  *  这份映射维护在 CLI 本地是权宜之计——见任务报告里的"开放问题"：
  *  长期是否应该让 Studio 的 api_tenants 表补一个 portal_base_url 字段，
  *  由服务端下发而不是 CLI 硬编码，需要人确认后再决定。 */
@@ -56,7 +56,7 @@ export class TenantClient {
       throw new Error(
         `无法确定「${tenant || '该'}」租户自己后台的域名。\n` +
         `（统一形态 key sk-studio-<24位> 不再携带租户名，需显式配置后台域名）\n` +
-        `请先用 studio-cli config --tenantBaseUrl <你的租户后台域名> 显式配置一次\n` +
+        `请先用 museav config --tenantBaseUrl <你的租户后台域名> 显式配置一次\n` +
         `（目前内置已知租户：${Object.keys(KNOWN_TENANT_BACKENDS).join(', ')}）。`,
       )
     }
@@ -65,7 +65,15 @@ export class TenantClient {
 
   async get<T = unknown>(path: string): Promise<T> {
     const resp = await fetch(`${this.baseUrl}/api/${path}`, {
-      headers: { 'X-API-Key': this.apiKey, 'X-Studio-Client': 'studio-cli-tenant' },
+      headers: {
+        'X-API-Key': this.apiKey,
+        // 自报身份：新头是长期形态，旧头 X-Studio-Client 过渡期一起发（见 client.ts 里
+        // CLIENT_HEADERS 的说明）。这条打的是租户自己的后台，不是 MUSE AV 中台——
+        // 目前已知租户后台都没读这个头，两个头一起发只是口径统一，不产生耦合。
+        'X-Museav-Client': 'museav-cli-tenant',
+        'X-Studio-Client': 'museav-cli-tenant',
+        'User-Agent': 'museav-cli-tenant',
+      },
     })
     const text = await resp.text()
     let body: any

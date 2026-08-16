@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This CLI is designed to be used directly by coding agents (Claude Code, Codex, etc.), not just humans. Read this before shelling out to `studio-cli`.
+This CLI is designed to be used directly by coding agents (Claude Code, Codex, etc.), not just humans. Read this before shelling out to `museav`.
 
 ## What this is
 
@@ -8,8 +8,8 @@ A command-line client for the "studio" image-generation platform (`https://manag
 
 ## Auth: pick one identity, not both
 
-- **You're acting as an individual user** (a person's own account): `studio-cli login` — opens a device-authorization flow (prints a code + URL, polls until the user approves in a browser). Token cached in `~/.studio-cli.json`, valid 7 days.
-- **You're acting as a tenant/service** (no human in the loop, e.g. CI, a backend job): set `STUDIO_API_KEY=sk-studio-xxx` as an environment variable, or run `studio-cli config --apiKey sk-studio-xxx`.
+- **You're acting as an individual user** (a person's own account): `museav login` — opens a device-authorization flow (prints a code + URL, polls until the user approves in a browser). Token cached in `~/.museav.json`, valid 7 days.
+- **You're acting as a tenant/service** (no human in the loop, e.g. CI, a backend job): set `STUDIO_API_KEY=sk-studio-xxx` as an environment variable, or run `museav config --apiKey sk-studio-xxx`.
 
 Don't try both — whichever credential is present is what gets used (env var `STUDIO_API_KEY` always wins over the config file). If neither is configured, every command exits 1 with a message telling you which one to set up; that error is your signal to either run `login` interactively (if a human is present to approve it) or ask for an apiKey (if not).
 
@@ -17,33 +17,44 @@ Don't try both — whichever credential is present is what gets used (env var `S
 
 ```bash
 # Generate an image, wait for it, get the URL on stdout
-studio-cli gen --prompt 'a poster, neon lights, cyberpunk' --ratio 9:16
+museav gen --prompt 'a poster, neon lights, cyberpunk' --ratio 9:16
 
 # Generate a video (文生视频/图生视频), wait, get the mp4 URL on stdout
-studio-cli gen --video --prompt 'a cat stretching on a windowsill, cinematic' --model seedance-2-fast --ratio 9:16
-studio-cli gen --video --image logo.png --prompt 'logo glows slowly, background fades' --ratio 1:1
+museav gen --video --prompt 'a cat stretching on a windowsill, cinematic' --model seedance-2-fast --ratio 9:16
+museav gen --video --image logo.png --prompt 'logo glows slowly, background fades' --ratio 1:1
 
 # Generate from a pre-configured image template instead of a raw prompt (deterministic
 # placeholder substitution server-side, no chat cost). List available templates first —
 # the output shows which placeholder keys (if any) each template needs.
-studio-cli templates
-studio-cli gen --template <id> --fields '{"artist":"name","city":"place"}'
+museav templates
+museav gen --template <id> --fields '{"artist":"name","city":"place"}'
 
 # Create a new image template (tenant-apiKey or platform-admin identity only; a personal
 # login gets rejected server-side). Ownership is NOT a flag you pass — the server derives it
 # from who's calling: a tenant apiKey auto-attaches its own tenant_id (private to that tenant),
 # a platform-admin identity creates a tenant_id=null template shared across all tenants.
 # Placeholder keys are auto-extracted from {key} in --prompt if --fields is omitted.
-studio-cli templates create --name '演唱会海报' --prompt '{artist} 在 {city} 的演唱会海报' --ratio 9:16
+museav templates create --name '演唱会海报' --prompt '{artist} 在 {city} 的演唱会海报' --ratio 9:16
 
-# Reverse-engineer a prompt from an existing image (stdout: English prompt only)
-studio-cli reverse ./photo.png
+# Reverse-engineer a prompt from an existing image (stdout: English prompt only).
+# This READS the image and nothing else — it will NOT build a template. Passing any
+# template-ish flag to the underlying API is a hard 400 since 2026-08-16.
+museav reverse ./photo.png
 
 # Chain them: regenerate in the same style
-studio-cli gen --prompt "$(studio-cli reverse ./photo.png)"
+museav gen --prompt "$(museav reverse ./photo.png)"
+
+# Turn an image INTO a reusable template (read image + reverse its text layers +
+# variabilize + create the template, with the original welded on as its reference
+# image). Async by default; stage progress is printed to stderr, template id to stdout.
+museav image-to-template ./poster.jpg --name '暗金演唱会主视觉' --variables title,subject,location
+museav image-to-template ./poster.jpg --no-create      # dry run: draft JSON on stdout, nothing created
+
+# Upload a file (image/audio/video; type is detected from the bytes, not the extension)
+museav upload ./face.png
 
 # List your own (or, if using a tenant apiKey, your tenant's) recent jobs as JSON
-studio-cli jobs --limit 10 --status failed
+museav jobs --limit 10 --status failed
 
 # Tenant-apiKey-only: list the tenant's OWN product catalog / asset library.
 # This data does NOT live on the studio platform — it lives on the tenant's own
@@ -52,15 +63,15 @@ studio-cli jobs --limit 10 --status failed
 # that tenant hasn't opened it up, not a bug. Use this to pick a reference image,
 # then feed its URL into `gen --template <id> --ref <url>` for "pick a product photo
 # + a template" combo generation.
-studio-cli products
-studio-cli assets
+museav products
+museav assets
 
 # Check who you're logged in as and whether the account is affiliated with a tenant
 # (personal login only — apiKey callers get an error, they're already acting as the tenant)
-studio-cli whoami
+museav whoami
 ```
 
-Full flag reference: `studio-cli <command> --help`. Full command table and auth details: see [README.md](./README.md).
+Full flag reference: `museav <command> --help`. Full command table and auth details: see [README.md](./README.md).
 
 ## Failure modes worth knowing
 
@@ -71,7 +82,7 @@ Full flag reference: `studio-cli <command> --help`. Full command table and auth 
 ## Programmatic use (no shell-out)
 
 ```ts
-import { StudioClient } from '@kubor/studio-cli'
+import { StudioClient } from '@museav/cli'
 
 const studio = new StudioClient({ baseUrl: 'https://manager.museav.top', apiKey: process.env.STUDIO_API_KEY! })
 const job = await studio.generateAndWait({ prompt: 'a cat on the moon', ratio: '3:4' })

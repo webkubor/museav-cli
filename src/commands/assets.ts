@@ -1,5 +1,5 @@
 /**
- * studio-cli assets —— 查所属租户自己的素材/资产库。
+ * museav assets —— 查所属租户自己的素材/资产库。
  *
  * 数据不在 Studio 中台，在租户自己的后台（见 ../tenant-client.ts 顶部注释）。
  *

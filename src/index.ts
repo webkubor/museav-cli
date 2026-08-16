@@ -129,7 +129,13 @@ program
   .option('-r, --ratio <ratio>', '宽高比: 3:4 / 9:16 / 1:1 / 4:3 / 16:9（不指定则用技能/模板自己的比例，纯 prompt 模式兜底 3:4）')
   .option('-m, --model <name>', '指定模型，如 gpt-image-2 / seedance-2-fast / artsdance-2-0-pro-260801')
   .option('-q, --quality <level>', '质量: low / medium / high（仅 gpt-image）')
-  .option('--ref <file>', '垫图文件路径（图片图生图，自动上传）')
+  // 可重复：--ref 正面.jpg --ref 背景.jpg。顺序即语义——提示词里写「参考图片1的排版、
+  // 用图片2作为背景」时，图片N 对应第 N 个 --ref。commander 的 collect 保证顺序。
+  .option('--ref <file>', '垫图文件路径，可重复传多张（最多 5 张，顺序对应提示词里的「图片1、图片2…」）',
+    (v: string, acc: string[]) => [...acc, v], [] as string[])
+  // 透明背景是上游的 background 参数，不是提示词能表达的东西——提示词里写
+  // "transparent background" 只是在描述构图，模型照样铺一层白底。这个开关才是抠图开关。
+  .option('--transparent', '透明背景 PNG（抠掉背景，带 alpha 通道）。仅部分上游支持，不支持时中台明确报错、不会悄悄给白底图；服务端自动强制 PNG 输出（JPEG 没有 alpha 通道）')
   .option('--video', '生成视频（走 /api/videos 链路，模型如 seedance-2-fast / artsdance-2-0-pro）')
   .option('--duration <sec>', '视频时长（秒，仅 --video；由模型与上游支持范围决定）', (v) => Number(v))
   .option('--image <file>', '图生视频首帧图（仅 --video，自动上传）')

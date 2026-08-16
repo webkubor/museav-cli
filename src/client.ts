@@ -10,6 +10,7 @@
  */
 import { readFileSync } from 'node:fs'
 import { basename } from 'node:path'
+import { compressForVision } from './compress.js'
 
 /**
  * 客户端自报身份 —— 中台靠它把 gen_jobs.channel 记成 'cli'，报错告警也靠它定位调用方。
@@ -67,7 +68,18 @@ export interface GenerateOptions {
   ratio?: string
   model?: string
   reference_image?: string
+  /** 多张参考图，顺序即提示词里的「图片1、图片2…」；中台按序喂给模型 */
+  reference_images?: string[]
   quality?: 'low' | 'medium' | 'high'
+  /**
+   * 出图背景。transparent = 抠掉背景出带 alpha 通道的 PNG；opaque = 明确要不透明背景；
+   * 不传 = 沿用上游默认（白底）。
+   *
+   * 跟上游 gpt-image 的参数同名同值，中台不做翻译。两个约束由中台强制、CLI 不重复实现：
+   *   · 透明背景强制 PNG 输出（JPEG/有损 WebP 没有 alpha 通道）
+   *   · 只派给声明了该能力的上游；一家都没有时返回 400 说明原因，**不会静默出白底图**
+   */
+  background?: 'transparent' | 'opaque'
 }
 
 /** 图片/文字模板清单项（GET /api/templates，template_type=image|article） */
@@ -389,7 +401,10 @@ export class StudioClient {
     if (opts.ratio) body.ratio = opts.ratio
     if (opts.model) body.model = opts.model
     if (opts.reference_image) body.reference_image = opts.reference_image
+    // 单双字段一起发：中台优先取复数、为空才回落单数，两个都带着更稳
+    if (opts.reference_images?.length) body.reference_images = opts.reference_images
     if (opts.quality) body.quality = opts.quality
+    if (opts.background) body.background = opts.background
     const r = await this.request('generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -500,7 +515,7 @@ export class StudioClient {
    */
   async reverse(input: { file?: string; imageUrl?: string }): Promise<ReverseResult> {
     if (input.file) {
-      return this.request('reverse', { method: 'POST', body: fileForm(input.file) })
+      return this.request('reverse', { method: 'POST', body: await fileForm(input.file) })
     }
     return this.request('reverse', {
       method: 'POST',
@@ -516,8 +531,12 @@ export class StudioClient {
    * 分类型限大小——图片 8MB / 音频 20MB / 视频 50MB。认不出类型直接 400。
    * 同一归属每小时 120 个的防滥用刹车在服务端，超了返回 429。
    */
+  /**
+   * 上传素材。图片会先压到视觉模型够用的尺寸再传（见 compress.ts）——
+   * 参考图是给模型看的，不是留档，原图直传只会拖慢上传和解析。
+   */
   async uploadRef(filePath: string): Promise<{ url: string; media_type?: string; mime?: string }> {
-    const r = await this.request('upload-ref', { method: 'POST', body: fileForm(filePath) })
+    const r = await this.request('upload-ref', { method: 'POST', body: await fileForm(filePath) })
     return { url: r.url, media_type: r.media_type, mime: r.mime }
   }
 
@@ -536,7 +555,7 @@ export class StudioClient {
     if (file) {
       // multipart 分支：中台 formOptions() 对这几个键做 JSON.parse（variables 还支持逗号分隔），
       // 所以对象/数组要自己序列化成字符串，不能直接塞进 FormData。
-      const fd = fileForm(file)
+      const fd = await fileForm(file)
       if (variables?.length) fd.append('variables', JSON.stringify(variables))
       if (variableLabels) fd.append('variable_labels', JSON.stringify(variableLabels))
       if (createTemplate) fd.append('create_template', 'true')
@@ -621,9 +640,18 @@ function sleep(ms: number): Promise<void> {
  * 带上原文件名：中台判类型靠字节魔数不靠这个，但文件名会进日志/对象存储的排查线索，
  * 匿名的 "blob" 出问题时谁也认不出是哪张图。故意不设 MIME——声明的 MIME 中台本来就不信。
  */
-function fileForm(filePath: string): FormData {
+/**
+ * 所有 multipart 上传的唯一入口，内置参考图压缩（见 compress.ts）。
+ * 压缩放这里而不是各调用点：uploadRef / reverse / image-to-template 都走它，
+ * 加在调用点就会漏——2026-08-16 就漏过 image-to-template，4.1MB 原图直传把任务拖挂了。
+ */
+async function fileForm(filePath: string): Promise<FormData> {
+  const { buffer, filename, note } = await compressForVision(filePath)
+  if (note) process.stderr.write(`  ${note}\n`)
   const fd = new FormData()
-  fd.append('file', new Blob([readFileSync(filePath)]), basename(filePath))
+  // Buffer → Uint8Array：Blob 的类型签名不收 Buffer（它可能背靠 SharedArrayBuffer）
+  const blob = buffer ? new Blob([new Uint8Array(buffer)]) : new Blob([new Uint8Array(readFileSync(filePath))])
+  fd.append('file', blob, buffer ? filename : basename(filePath))
   return fd
 }
 

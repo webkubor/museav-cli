@@ -1,6 +1,9 @@
 /** museav gen —— 出图 / 出视频（核心命令） */
 import type { StudioClient } from '../client.js'
 
+/** 与中台/各租户后台口径一致：一次最多 5 张参考图 */
+const MAX_REFS = 5
+
 export async function gen(client: StudioClient, opts: {
   prompt?: string
   skill?: string
@@ -10,7 +13,8 @@ export async function gen(client: StudioClient, opts: {
   ratio?: string
   model?: string
   quality?: string
-  ref?: string
+  ref?: string[]      // 可重复：--ref a.jpg --ref b.jpg，顺序即「图片1、图片2…」
+  transparent?: boolean   // 透明背景 PNG；能不能做由中台按上游能力判定，做不了会明确报错
   // 视频
   video?: boolean
   duration?: number
@@ -33,6 +37,10 @@ export async function gen(client: StudioClient, opts: {
   if (opts.video && opts.skill) {
     throw new Error('--video 暂不支持配合 --skill（视频模板走 --template 或直接 --prompt）')
   }
+  // 视频没有 alpha 通道这回事（mp4 不带透明），本地就拦掉，别让用户等一趟往返才知道
+  if (opts.video && opts.transparent) {
+    throw new Error('--transparent 仅图片出图支持：视频输出是 mp4，没有 alpha 通道')
+  }
   let templateFields: Record<string, string> | undefined
   if (opts.fields) {
     try {
@@ -42,14 +50,26 @@ export async function gen(client: StudioClient, opts: {
     }
   }
 
-  // 可选：先上传垫图（图片出图 --ref / 视频图生视频 --image 都走这里）
+  // 可选：先上传垫图（图片出图 --ref 可给多张 / 视频图生视频 --image 单张）
+  //
+  // 顺序有语义：中台把数组按序喂给模型，提示词里写「参考图片1的排版、用图片2当背景」
+  // 时，图片N 对应的就是这里的第 N 个 --ref。所以上传要顺序执行、不能并发抢跑。
   let referenceImage: string | undefined
-  const refPath = opts.ref || opts.image
-  if (refPath) {
-    process.stderr.write(`上传垫图 ${refPath} ...\n`)
-    const up = await client.uploadRef(refPath)
-    referenceImage = up.url
-    process.stderr.write(`垫图就绪: ${referenceImage}\n`)
+  let referenceImages: string[] | undefined
+  const refPaths = [...(opts.ref || []), ...(opts.image ? [opts.image] : [])]
+  if (refPaths.length > MAX_REFS) {
+    throw new Error(`参考图最多 ${MAX_REFS} 张，收到 ${refPaths.length} 张`)
+  }
+  if (refPaths.length) {
+    const urls: string[] = []
+    for (const [i, refPath] of refPaths.entries()) {
+      process.stderr.write(`上传垫图 [图片${i + 1}] ${refPath} ...\n`)
+      const up = await client.uploadRef(refPath)
+      urls.push(up.url)
+      process.stderr.write(`  图片${i + 1} 就绪: ${up.url}\n`)
+    }
+    referenceImage = urls[0]                       // 兼容：中台单数字段仍收
+    referenceImages = urls.length > 1 ? urls : undefined
   }
 
   // ── 视频模式：走 /api/videos 独立链路 ──
@@ -99,6 +119,10 @@ export async function gen(client: StudioClient, opts: {
       model: opts.model,
       quality: opts.quality as 'low' | 'medium' | 'high' | undefined,
       reference_image: referenceImage,
+      reference_images: referenceImages,
+      // 开关 → 枚举：CLI 这层用布尔开关最顺手，中台契约是 background: transparent|opaque
+      // （跟上游 gpt-image 的参数同名同值）。不传就不发，行为跟以前完全一样。
+      background: opts.transparent ? 'transparent' : undefined,
     },
     (status) => {
       if (status === 'processing') process.stderr.write('生成中...\r')

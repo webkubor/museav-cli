@@ -162,6 +162,16 @@ museav gen --prompt '...' --quality high
 # 图生图（自动上传垫图，保持人物面容）
 museav gen --prompt '保持面容，换成西装' --ref face.png
 
+# 透明背景 PNG（抠掉背景，出带 alpha 通道的图；可与 --ref 叠加）
+museav gen --prompt '一只橘猫，产品级抠图' --transparent
+museav gen --prompt '把这只鞋抠成透明底' --ref shoe.jpg --transparent
+# 注意三件事：
+#   · 只在提示词里写 "transparent background" 没用——那是构图描述，不是抠图开关，
+#     真正生效的是 --transparent（它对应上游的 background 参数）
+#   · 仅部分上游支持。没有可用上游时中台直接报错，不会悄悄给你一张白底图
+#     （白底图看起来完全正常，静默降级只会让你以为提示词没写对，反复重试）
+#   · 会强制 PNG 输出：JPEG / 有损 WebP 没有 alpha 通道，装不下透明
+
 # 文生视频（模型如 seedance-2-fast / artsdance-2-0-pro-260801，自动轮询直到完成）
 museav gen --video --prompt '一只橘猫在窗台上伸懒腰，阳光洒进来，电影感' --model seedance-2-fast --ratio 9:16
 

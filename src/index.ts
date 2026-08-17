@@ -243,8 +243,9 @@ assetsCmd
 
 program
   .command('reverse <input>')
-  .description('读图：反推 SCULPT prompt，stdout 输出英文 prompt。主路本地 Ollama（qwen3-vl，快，无需登录）；本地不可用回落中台 API（会提示较慢）。只读图；要做成模板用 image-to-template')
-  .option('--api', '跳过本地 Ollama，强制走中台 API（慢，需登录）')
+  .description('读图：反推 SCULPT prompt，stdout 输出英文 prompt。默认走中台 API（需登录）；--local 显式切本地 Ollama（需自备 qwen3-vl）。只读图；要做成模板用 image-to-template')
+  .option('--api', '强制走中台 API（默认路径）')
+  .option('--local', '改用本地 Ollama 读图（需先 ollama pull qwen3-vl:8b；本地不可用时回落 API）')
   .action(withLazyClient((getClient: () => StudioClient, input: string, opts: any) => reverse(getClient, input, opts)))
 
 program

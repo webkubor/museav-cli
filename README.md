@@ -253,8 +253,6 @@ museav reverse https://example.com/photo.png
 museav gen --prompt "$(museav reverse photo.png)"
 ```
 
-本地路依赖：Ollama 运行中（`brew services start ollama`）+ 模型在位（`ollama pull qwen3-vl:8b`，换档位设 `MUSEAV_LOCAL_VLM`，自定地址设 `OLLAMA_HOST`）。缺哪个都会提示对应命令并回落 API。
-
 分析详情打到 stderr（人看），**stdout 只输出英文 prompt**（机器用，方便管道）。
 
 `reverse` **只读图**，不会顺手帮你建模板。要把图做成模板看下一节——中台 2026-08-16 把这两件事

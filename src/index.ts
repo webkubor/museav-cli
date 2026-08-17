@@ -16,6 +16,7 @@ import { printWelcome } from './commands/welcome.js'
 import { gen } from './commands/gen.js'
 import { reverse } from './commands/reverse.js'
 import { compressCmd, removeBgCmd } from './commands/img-tools.js'
+import { projects, createProject, listAssets, addAsset, removeAsset, resolveWorkspace } from './commands/projects.js'
 import { imageToTemplate } from './commands/image-to-template.js'
 import { upload } from './commands/upload.js'
 import { models } from './commands/models.js'
@@ -168,6 +169,7 @@ program
   .option('--video', '生成视频（走 /api/videos 链路；模型档次如 artsdance-2-0-pro-260801，不传 --model 走 auto 路由）')
   .option('--duration <sec>', '视频时长（秒，仅 --video；由模型与上游支持范围决定）', (v) => Number(v))
   .option('--image <file>', '图生视频首帧图（仅 --video，自动上传）')
+  .option('--project <id|名>', '归档进该工作区（museav projects 查；账户身份才生效）')
   .action(withClient((client: StudioClient, opts: any) => gen(client, opts)))
 
 program
@@ -187,6 +189,40 @@ program
   .option('--model <name>', 'isnet（默认，质量优先）/ u2net')
   .option('--overwrite', '允许覆盖已存在的输出文件')
   .action(asyncRun((input: string, opts: any) => removeBgCmd(input, opts)))
+
+// 工作区（项目）与项目素材库：平台 → 账户 → 工作区三层归属，素材挂工作区
+const projectsCmd = program
+  .command('projects')
+  .description('工作区（项目）管理：一个账户多个工作区，每个工作区有自己的素材库（人像库/产品库各管各的业务）')
+  .action(withClient((client: StudioClient) => projects(client)))
+
+projectsCmd
+  .command('create')
+  .description('新建工作区（每账户最多 5 个）')
+  .requiredOption('--name <name>', '工作区名称（最多 20 字）')
+  .action(withClient((client: StudioClient, opts: any) => createProject(client, opts)))
+
+const assetsCmd = projectsCmd
+  .command('assets')
+  .description('项目素材库：列出 / 上传 / 删除该工作区的素材（垫图母版，不压缩）')
+
+assetsCmd
+  .description('列工作区素材库')
+  .option('--project <id|名>', '工作区 id 或名称（必填，不传会明确报错）')
+  .action(withClient((client: StudioClient, opts: any) => listAssets(client, opts)))
+
+assetsCmd
+  .command('add <file>')
+  .description('上传素材进工作区素材库（图片/音频/视频，按字节判型；母版不压缩）')
+  .requiredOption('--project <id|名>', '工作区 id 或名称')
+  .option('--name <name>', '素材名，如「白T正面」')
+  .option('--tag <tag>', '标签，可重复（产品 / 人像 / 场景…）', (v: string, acc: string[]) => [...acc, v], [] as string[])
+  .action(withClient((client: StudioClient, file: string, opts: any) => addAsset(client, file, opts)))
+
+assetsCmd
+  .command('rm <id>')
+  .description('删除素材（硬删：R2 对象 + 记录）')
+  .action(withClient((client: StudioClient, id: string) => removeAsset(client, { id })))
 
 program
   .command('reverse <input>')
@@ -286,9 +322,10 @@ program
 
 program
   .command('jobs')
-  .description('查自己名下的出图工作流（个人 login 看自己的；租户 apiKey 看业务下全部）——服务端固定返回最近 50 条，limit/status 是本地过滤')
+  .description('查自己名下的出图工作流（个人 login 看自己的；租户 apiKey 看业务下全部）——服务端固定返回最近 50 条，limit/status/project 是本地过滤')
   .option('--limit <n>', '最多显示几条（在最近 50 条以内截取），默认 20', '20')
   .option('--status <status>', '按状态过滤: pending / processing / done / failed（本地过滤，不是服务端查询）')
+  .option('--project <id|名>', '只看归档进该工作区的任务（本地过滤）')
   .action(withClient((client: StudioClient, opts: any) => jobs(client, opts)))
 
 program

@@ -80,6 +80,32 @@ export interface GenerateOptions {
    *   · 只派给声明了该能力的上游；一家都没有时返回 400 说明原因，**不会静默出白底图**
    */
   background?: 'transparent' | 'opaque'
+  /** 项目归档：生成结果挂到该工作区（中台仅账户身份收，租户身份忽略） */
+  workspace_id?: string
+}
+
+/** 工作区（项目）：平台账户下的项目容器，素材库挂在它上面（GET/POST /api/workspaces） */
+export interface Workspace {
+  id: string
+  name: string
+  brand?: string | null
+  description?: string | null
+  /** 该项目累计提交 / 完成的生成数（列表接口附带的统计） */
+  gen_total?: number
+  gen_done?: number
+  created_at?: string
+}
+
+/** 工作区素材（GET/POST /api/workspace-assets）：项目素材库的一条记录 */
+export interface WorkspaceAsset {
+  id: string
+  workspace_id: string
+  media_type: 'image' | 'video' | 'audio'
+  cdn_url: string
+  name: string | null
+  tags: string[]
+  size_bytes?: number | null
+  created_at?: string
 }
 
 /** 图片/文字模板清单项（GET /api/templates，template_type=image|article） */
@@ -412,6 +438,8 @@ export class StudioClient {
     if (opts.reference_images?.length) body.reference_images = opts.reference_images
     if (opts.quality) body.quality = opts.quality
     if (opts.background) body.background = opts.background
+    // 项目归档：中台只对账户身份收 workspace_id（租户身份忽略），CLI 不做二次校验
+    if (opts.workspace_id) body.workspace_id = opts.workspace_id
     const r = await this.request('generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -424,6 +452,49 @@ export class StudioClient {
   async getJob(id: string): Promise<Job> {
     const r = await this.request(`jobs?id=${encodeURIComponent(id)}`)
     return r
+  }
+
+  // ── 工作区（项目）与项目素材库 ──
+  // 平台 → 账户 → 工作区三层归属；素材挂工作区，换业务换工作区，互不污染。
+
+  /** 列当前账户的工作区（含生成统计） */
+  async workspaces(): Promise<Workspace[]> {
+    return this.request('workspaces')
+  }
+
+  /** 新建工作区（最多 5 个，超了服务端会 400） */
+  async createWorkspace(name: string): Promise<Workspace> {
+    return this.request('workspaces', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) })
+  }
+
+  /** 列某工作区的素材库 */
+  async workspaceAssets(workspaceId: string): Promise<WorkspaceAsset[]> {
+    return this.request(`workspace-assets?workspace_id=${encodeURIComponent(workspaceId)}`)
+  }
+
+  /** 上传素材进工作区素材库。素材是母版，**不做视觉压缩**（fileForm 那套压缩是给模型看的） */
+  async addWorkspaceAsset(input: {
+    file: string
+    workspaceId: string
+    name?: string
+    tags?: string[]
+  }): Promise<WorkspaceAsset> {
+    const blob = new Blob([new Uint8Array(readFileSync(input.file))])
+    const fd = new FormData()
+    fd.append('file', blob, basename(input.file))
+    fd.append('workspace_id', input.workspaceId)
+    if (input.name) fd.append('name', input.name)
+    for (const t of input.tags || []) fd.append('tags', t)
+    return this.request('workspace-assets', { method: 'POST', body: fd })
+  }
+
+  /** 删除素材（硬删：R2 对象 + 记录） */
+  async deleteWorkspaceAsset(id: string): Promise<void> {
+    await this.request('workspace-assets', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
   }
 
   /**
@@ -474,19 +545,22 @@ export class StudioClient {
      duration?: number
      /** 图生视频：首帧/参考图 URL（中台内部自动上传垫图后拿到 URL 再传这里） */
      image_url?: string
-     template_id?: string
-     input?: string | Record<string, string>
-     callback_url?: string
-   }): Promise<{ jobId: string; upstreamTaskId?: string }> {
-     const body: Record<string, unknown> = {}
-     if (opts.prompt) body.prompt = opts.prompt
-     if (opts.model) body.model = opts.model
-     if (opts.ratio) body.ratio = opts.ratio
-     if (opts.duration != null) body.duration = opts.duration
-     if (opts.image_url) body.image_url = opts.image_url
-     if (opts.template_id) body.template_id = opts.template_id
-     if (opts.input) body.input = opts.input
-     if (opts.callback_url) body.callback_url = opts.callback_url
+    template_id?: string
+    input?: string | Record<string, string>
+    callback_url?: string
+    /** 项目归档（账户身份才生效） */
+    workspace_id?: string
+  }): Promise<{ jobId: string; upstreamTaskId?: string }> {
+    const body: Record<string, unknown> = {}
+    if (opts.prompt) body.prompt = opts.prompt
+    if (opts.model) body.model = opts.model
+    if (opts.ratio) body.ratio = opts.ratio
+    if (opts.duration != null) body.duration = opts.duration
+    if (opts.image_url) body.image_url = opts.image_url
+    if (opts.template_id) body.template_id = opts.template_id
+    if (opts.input) body.input = opts.input
+    if (opts.callback_url) body.callback_url = opts.callback_url
+    if (opts.workspace_id) body.workspace_id = opts.workspace_id
      const r = await this.request('videos', {
        method: 'POST',
        headers: { 'Content-Type': 'application/json' },

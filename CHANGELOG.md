@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.3.0 · 2026-08-17
+
+**项目（工作区）与项目素材库。** 层级：平台 → 账户 → 工作区，素材挂工作区——人像库的项目出模特图、产品库的项目出电商图，业务隔离互不污染。`--project` 收 id 或名称。
+
+- `projects` 列表 / `projects create --name` 新建（每账户最多 5 个）
+- `projects assets --project` 素材库 ls / add / rm：素材按**母版不压缩**上传，类型按字节判定（图片/音频/视频），stdout 出 `id<TAB>url` 可直接喂 `--ref`
+- `gen --project` 出图/出视频归档进项目；`jobs --project` 按项目查任务
+- `--ref` / `--image` 现在也收 http(s) 直链（素材库 URL 直接垫图，不再只认本地文件）
+- 需中台 `workspace-assets` 接口（2026-08-17 已上线）；账户 Key 白名单已放行
+
+**本地图像工具箱（免登录、零成本、macOS/Windows 通用）。** 依赖全走 npm 预编译，代码零平台假设。
+
+- `compress <file>`：sharp 压缩，`--max-edge / --quality / --format`，默认输出 `<名>-min.<格式>` 不覆写原文件，实测 597KB → 18KB
+- `remove-bg <file>`：本地抠图去背景（ISNet + onnxruntime，刻意没用 AGPL 的现成包），输出带 alpha 的 PNG，热跑秒级；模型首次自动下载 ~170MB 缓存 `~/.museav-models`
+- Ollama 未运行时的启动指引按操作系统区分（Windows 不再提示 brew）
+
 ## 2.2.0 · 2026-08-17
 
 **`reverse` 主路改本地：Ollama + qwen3-vl。** 中台 API 读图要上传、排队、等云端推理；本地 8b 量化模型在自己机器上跑，免登录、零成本、离线可用。本地不可用（服务没起 / 模型没拉 / 推理出错）自动回落中台 API，回落时明确提示较慢，缺什么会告诉你补什么命令。

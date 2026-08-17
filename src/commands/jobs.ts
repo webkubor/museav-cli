@@ -5,6 +5,7 @@
  * 不需要额外传租户/用户 id——你拿的是谁的凭证，就是谁的数据。
  */
 import type { StudioClient, Job } from '../client.js'
+import { resolveWorkspace } from './projects.js'
 
 const STATUS_MARK: Record<Job['status'], string> = {
   pending: '⏳',
@@ -13,9 +14,14 @@ const STATUS_MARK: Record<Job['status'], string> = {
   failed: '❌',
 }
 
-export async function jobs(client: StudioClient, opts: { limit?: string; status?: Job['status'] }): Promise<void> {
+export async function jobs(client: StudioClient, opts: { limit?: string; status?: Job['status']; project?: string }): Promise<void> {
   const limit = opts.limit ? Number(opts.limit) : 20
-  const list = await client.listJobs({ limit, status: opts.status })
+  let list = await client.listJobs({ limit, status: opts.status })
+  // --project 客户端过滤：服务端 jobs 不认 workspace 参数，在最近 50 条内筛
+  if (opts.project) {
+    const ws = await resolveWorkspace(client, opts.project)
+    list = list.filter((j) => (j as unknown as { workspace_id?: string | null }).workspace_id === ws.id)
+  }
 
   if (!list.length) {
     process.stderr.write('没有找到工作流记录\n')

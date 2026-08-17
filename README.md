@@ -341,6 +341,24 @@ museav gen --prompt "$(museav reverse $(museav remove-bg shoe.png))"   # 抠图 
 - 两个命令的输出默认带后缀（`-min` / `-nobg`），不会覆盖你的输入文件；要覆盖已存在的输出加 `--overwrite`。
 - 可选依赖缺失时不炸，报一行重装指引（`npm install -g museav-cli`）。
 
+### 项目（工作区）与项目素材库 `projects`
+
+层级：**平台 → 账户 → 工作区**。一个账户最多 5 个项目，每个项目挂自己的素材库——「人像库的项目出模特图、产品库的项目出电商图」，业务隔离互不污染：
+
+```bash
+museav projects                                        # 列项目（id / 名称 / 出图统计）
+museav projects create --name 'meso猫砂电商'            # 新建
+museav projects assets --project meso                  # 列该项目素材库（stdout: id<TAB>url）
+museav projects assets add ./model.jpg --project meso --name '白T正面' --tag 产品 --tag 电商
+museav projects assets rm <素材id>
+
+# 生成归档进项目；垫图直接用素材库里的 URL
+museav gen --project meso --prompt '...' --ref <素材URL>
+museav jobs --project meso                             # 只看该项目的任务
+```
+
+素材是**母版不压缩**（跟垫图上传的视觉压缩是两回事），类型按字节判定（图片/音频/视频）。`--project` 收 id 或名称，重名时提示用 id。**需要中台部署 `workspace-assets` 接口后可用**（含账户 Key 白名单放行）。
+
 ### 查模型 / 余额
 
 ```bash
@@ -445,6 +463,8 @@ console.log(r.sculpt.light)  // 光影分析
 | `upload <file>` | 上传素材（图片/音频/视频） | 公网直链 |
 | `compress <file>` | 本地压缩图片（免登录，`--max-edge`/`--quality`/`--format`） | 产物路径 |
 | `remove-bg <file>` | 本地抠图去背景（免登录，输出带 alpha 的 PNG） | 产物路径 |
+| `projects` | 工作区（项目）列表：一账户多项目，各带自己的素材库 | 项目 id 列表 |
+| `projects assets --project` | 项目素材库：ls / add / rm（垫图母版，人像库/产品库各管各的） | `id<TAB>url` 行 |
 | `models` | 可用模型 | 模型名列表 |
 | `balance` | 上游余额 | JSON |
 | `jobs` | 查自己（租户则是自己业务下）的工作流 | JSON 数组 |

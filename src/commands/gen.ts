@@ -1,5 +1,6 @@
 /** museav gen —— 出图 / 出视频（核心命令） */
 import type { StudioClient } from '../client.js'
+import { resolveWorkspace } from './projects.js'
 
 /** 与中台/各租户后台口径一致：一次最多 5 张参考图 */
 const MAX_REFS = 5
@@ -15,6 +16,7 @@ export async function gen(client: StudioClient, opts: {
   quality?: string
   ref?: string[]      // 可重复：--ref a.jpg --ref b.jpg，顺序即「图片1、图片2…」
   transparent?: boolean   // 透明背景 PNG；能不能做由中台按上游能力判定，做不了会明确报错
+  project?: string    // 工作区 id|名：生成结果归档进该项目（账户身份才生效）
   // 视频
   video?: boolean
   duration?: number
@@ -63,6 +65,13 @@ export async function gen(client: StudioClient, opts: {
   if (refPaths.length) {
     const urls: string[] = []
     for (const [i, refPath] of refPaths.entries()) {
+      // http(s) 直链（典型来源：museav projects assets 的素材库 URL）本身就是
+      // 中台 CDN 地址，直接当参考图用，不走上传
+      if (/^https?:\/\//.test(refPath)) {
+        urls.push(refPath)
+        process.stderr.write(`  图片${i + 1} 直链: ${refPath}\n`)
+        continue
+      }
       process.stderr.write(`上传垫图 [图片${i + 1}] ${refPath} ...\n`)
       const up = await client.uploadRef(refPath)
       urls.push(up.url)
@@ -71,6 +80,9 @@ export async function gen(client: StudioClient, opts: {
     referenceImage = urls[0]                       // 兼容：中台单数字段仍收
     referenceImages = urls.length > 1 ? urls : undefined
   }
+
+  // 项目归档：--project 解析成 workspace_id（名字/ id 都行），租户身份时中台会忽略
+  const workspaceId = opts.project ? (await resolveWorkspace(client, opts.project)).id : undefined
 
   // ── 视频模式：走 /api/videos 独立链路 ──
   if (opts.video) {
@@ -87,6 +99,7 @@ export async function gen(client: StudioClient, opts: {
       image_url: referenceImage,
       template_id: opts.template,
       input: templateFields,
+      workspace_id: workspaceId,
     })
     process.stderr.write(`视频任务已提交: ${jobId}\n生成中（视频通常 1-5 分钟）...\n`)
     const result = await client.waitVideo(jobId, (status) => {
@@ -123,6 +136,7 @@ export async function gen(client: StudioClient, opts: {
       // 开关 → 枚举：CLI 这层用布尔开关最顺手，中台契约是 background: transparent|opaque
       // （跟上游 gpt-image 的参数同名同值）。不传就不发，行为跟以前完全一样。
       background: opts.transparent ? 'transparent' : undefined,
+      workspace_id: workspaceId,
     },
     (status) => {
       if (status === 'processing') process.stderr.write('生成中...\r')

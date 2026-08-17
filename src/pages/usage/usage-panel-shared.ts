@@ -6,8 +6,15 @@
 import type { UsageRankingItem } from '@/types'
 import { formatMoney } from './usage-utils'
 
-/** 分布图 Top N，超出折叠成「其他」。 */
+/** 排行卡折叠态 Top N，超出折叠成「其他」（PRD 原型 usageRankingDomain.USAGE_RANKING_COLLAPSED_COUNT=5）。 */
 export const DIST_TOP_N = 5
+
+/**
+ * 饼图折叠态 Top N —— 比排行卡少一档，超出折叠成「其他」。
+ * 原型 usageRankingDomain.buildUsageDistributionRows 取 rows.slice(0, 4)，需求方#666 截图
+ * 也是「4 条 + 其他」（右侧排行才是 5 条 + 其他）。两处折叠数不同，别再共用一个常量。
+ */
+export const DONUT_TOP_N = 4
 
 /** 排行卡展开态（#666 查看更多）本地分页每页行数。 */
 export const DIST_PAGE_SIZE = 10

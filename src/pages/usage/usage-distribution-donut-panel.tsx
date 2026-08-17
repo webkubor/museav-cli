@@ -14,7 +14,7 @@ import type { UsageRankingItem } from '@/types'
 import { formatMoney, CHART_CAT_COLORS, CHART_OTHER_COLOR } from './usage-utils'
 import { ModelDonutChart, type DonutSlice } from './usage-charts'
 import { ErrorBlock, PanelSkeleton } from './usage-panel-states'
-import { DIST_TOP_N, displayRankingName, rankingSharePercent, spendAmount } from './usage-panel-shared'
+import { DONUT_TOP_N, displayRankingName, rankingSharePercent, spendAmount } from './usage-panel-shared'
 
 /**
  * 环形图专用「品牌靛蓝色阶」——按消费排名 深→浅 上色（Top1 最深）。
@@ -49,7 +49,8 @@ interface DistributionDonutPanelProps {
 
 /**
  * 从消费排行项构建环形图分片。
- * 折叠态：Top5 + 「其他」聚合（品牌色阶 + 灰）；
+ * 折叠态：Top4 + 「其他」聚合（品牌色阶 + 灰）——比排行卡少一档，对齐原型
+ * usageRankingDomain.buildUsageDistributionRows 的 rows.slice(0, 4)；
  * 展开态（#666）：全部单列，分类色循环——brand ramp 只有 5 档，循环会让相邻分片同色难辨。
  * 供「模型分布」饼图卡消费；返回空数组表示无数据。
  */
@@ -65,8 +66,8 @@ function buildDonutSlices(items: UsageRankingItem[], otherLabel: string, expande
       color: CHART_CAT_COLORS[index % CHART_CAT_COLORS.length],
     }))
   }
-  const top = withSpend.slice(0, DIST_TOP_N)
-  const rest = withSpend.slice(DIST_TOP_N)
+  const top = withSpend.slice(0, DONUT_TOP_N)
+  const rest = withSpend.slice(DONUT_TOP_N)
   const slices: DonutSlice[] = top.map((it, index) => ({
     key: it.key ?? `${displayRankingName(it)}-${index}`,
     label: displayRankingName(it),
@@ -137,9 +138,14 @@ export function DistributionDonutPanel({
           </div>
           <ul
             className={cn(
-              'min-w-0 flex-1 space-y-1 self-stretch overflow-y-auto pr-1',
-              // 展开态图例行数多，放宽滚动区高度（与右侧展开的排行卡高度大体匹配）
-              expanded ? 'sm:max-h-[340px]' : 'sm:max-h-[210px]',
+              // space-y-3 与右侧排行卡的行间距同源（那边也是 space-y-3）：两侧行距一致，
+              // 同一个模型在左图例与右排行里才横向对得齐。此前图例是 space-y-1，每行比右侧
+              // 少 8px，越往下越错开。
+              'min-w-0 flex-1 space-y-3 self-stretch overflow-y-auto pr-1',
+              // 展开态图例行数多，放宽滚动区高度对齐右侧：排行卡展开后是 10 行 + 分页条 ≈ 470px。
+              // 原先 340px 比右侧矮一截，图例只露 7 行、下方留大片空白（需求方#666 期望图里
+              // 左侧图例是与右侧齐高、尽量多列的）。
+              expanded ? 'sm:max-h-[470px]' : 'sm:max-h-[210px]',
             )}
             onMouseLeave={() => setActive(null)}
           >

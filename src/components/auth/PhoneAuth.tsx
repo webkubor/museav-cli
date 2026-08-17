@@ -105,7 +105,10 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
     try {
       const result = await sendSmsCode(phone, captchaParam)
       clearAuthGuard({ action: 'phone-code', subject: phone })
-      gateRef.current?.reset() // 四元组一次性，发码即消费
+      // 发码成功后【不重置验证条】：用户刚过完挑战，界面必须保持「已完成安全验证」。
+      // 此前这里 reset()，验证态在一秒内被自己清掉，用户看到的是「我明明验过了却又要验」。
+      // 四元组留着给随后的登录提交复用（登录侧也要 captcha，prd#615 安全整改）；
+      // 若后端因一次性语义拒 40025，onSubmit 的 catch 会把验证条退回可重验并给出提示。
       return result.expires_in
     } catch (error) {
       recordAuthGuardFailure({ action: 'phone-code', subject: phone })

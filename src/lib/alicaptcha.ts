@@ -122,7 +122,7 @@ export interface AlicaptchaSessionHooks {
 }
 
 /**
- * 建立一次图形认证会话（product=bind 弹出式挑战）。语言跟随控制台当前语种。
+ * 建立一次图形认证会话（product=bind 手动调起挑战）。语言跟随控制台当前语种。
  * 返回 null 表示不可用（未启用 / 非 alicaptcha / SDK 不可用），调用方按未启用降级。
  */
 export async function createAlicaptchaSession(
@@ -145,6 +145,10 @@ export async function createAlicaptchaSession(
       }
     }, LOAD_TIMEOUT_MS)
     try {
+      // product 必须保持 bind：本 SDK（GeeTest 4.0 技术栈）里 bind = 不自动渲染任何 UI、
+      // 完全由代码 showCaptcha() 手动调起，正是本文件的命令式用法所需。
+      // ⚠️ 别改成 popup —— popup 要 SDK 自己渲染触发按钮，改了 showCaptcha() 弹不出弹窗
+      //（2026-08-17 实测踩过：验证条点了没反应）。
       init({ captchaId: cfg.app_id!, product: 'bind', language: lang === 'zh' ? 'zho' : 'eng' }, (captchaObj) => {
         captchaObj.onSuccess(() => {
           const v = captchaObj.getValidate()

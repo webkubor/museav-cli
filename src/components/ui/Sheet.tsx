@@ -40,9 +40,11 @@ const sheetVariants = cva(
         top: "inset-x-0 top-0 border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
         bottom:
           "inset-x-0 bottom-0 border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
-        left: "inset-y-0 left-0 h-full w-3/4 border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-md",
+        // 宽度走 design-tokens 的抽屉规范（--mg-sheet-*），不再用 Tailwind 的 max-w-md：
+        // 规范宽 560px（原 448px），窄屏用 min(560px,100vw) 收，小屏仍保底 w-3/4。
+        left: "inset-y-0 left-0 h-full w-3/4 border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:w-[var(--mg-sheet-width)] sm:min-w-[var(--mg-sheet-min-width)] sm:max-w-[var(--mg-sheet-max-width)]",
         right:
-          "inset-y-0 right-0 h-full w-3/4 border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-md",
+          "inset-y-0 right-0 h-full w-3/4 border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:w-[var(--mg-sheet-width)] sm:min-w-[var(--mg-sheet-min-width)] sm:max-w-[var(--mg-sheet-max-width)]",
       },
     },
     defaultVariants: {
@@ -82,7 +84,8 @@ const SheetHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col space-y-2 text-center sm:text-left",
+      // 标题区行距走抽屉规范 --mg-sheet-header-gap（= --mg-space-2 8px，与原 space-y-2 同值）
+      "flex flex-col gap-[var(--mg-sheet-header-gap)] text-center sm:text-left",
       className
     )}
     {...props}

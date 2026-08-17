@@ -5,6 +5,10 @@ export interface ModelPricing {
   output_per_1m: string
   cache_read_per_1m: string
   currency: string
+  /** 计价模式：token（每 1M token）/ per_call（按次计，如图片「每张」）。缺省按 token。 */
+  mode?: 'token' | 'per_call' | string
+  /** 按次计价的单价（mode=per_call 时生效，如每张图片的价格）。 */
+  per_call_price?: string
 }
 
 export interface CatalogModelItem {

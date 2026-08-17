@@ -83,7 +83,7 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
   const discountLabel = isZh ? promo?.discount_label : (promo?.discount_label_en || promo?.discount_label)
 
   const symbol = currencySymbol(detail.pricing?.currency, isZh)
-  const unitSuffix = priceUnitSuffix(detail.price_unit)
+  const unitSuffix = priceUnitSuffix(detail.price_unit, detail.pricing?.mode)
   const freeLabel = t('modelsCatalog.card.free')
   // 兜底词按上下文给：限免 → 「免费」；非限免而金额为 0/缺省 → 空串（Metric 渲染
   // 「—」）。未配价不能说成免费。

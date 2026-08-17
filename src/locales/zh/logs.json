@@ -54,7 +54,7 @@
       "allWorkspaces": "全部工作空间",
       "allModels": "全部模型",
       "allApiKeys": "全部 API Key",
-      "selectWorkspaceFirst": "先选择工作空间",
+      "selectWorkspaceFirst": "先在「工作空间」筛选里选一个",
       "more": "更多筛选",
       "requestIdSearch": "Request ID 精确检索",
       "searchPlaceholder": "输入 Request ID、模型、错误摘要或成员",

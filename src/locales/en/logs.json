@@ -54,7 +54,7 @@
       "allWorkspaces": "All workspaces",
       "allModels": "All models",
       "allApiKeys": "All API Keys",
-      "selectWorkspaceFirst": "Select a workspace first",
+      "selectWorkspaceFirst": "Pick one in the Workspace filter first",
       "more": "More filters",
       "requestIdSearch": "Request ID exact search",
       "searchPlaceholder": "Enter Request ID, model, error summary, or member",

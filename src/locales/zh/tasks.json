@@ -93,7 +93,7 @@
     "apiKey": "API Key",
     "member": "成员",
     "searchPlaceholder": "搜索任务 ID / 模型",
-    "selectWorkspaceFirst": "先选择工作空间",
+    "selectWorkspaceFirst": "先在「工作空间」筛选里选一个",
     "workspace": "工作空间"
   },
   "kind": {

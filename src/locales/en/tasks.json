@@ -93,7 +93,7 @@
     "apiKey": "API Key",
     "member": "Member",
     "searchPlaceholder": "Search task ID / model",
-    "selectWorkspaceFirst": "Select a workspace first",
+    "selectWorkspaceFirst": "Pick one in the Workspace filter first",
     "workspace": "Workspace"
   },
   "kind": {

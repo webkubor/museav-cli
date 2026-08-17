@@ -17,6 +17,35 @@
 HOOKS_DIR="$(git rev-parse --git-path hooks 2>/dev/null)" || exit 0
 [ -n "$HOOKS_DIR" ] || exit 0
 
+# ── 不要覆盖仓库外的 hooks 目录（2026-08-17）──────────────────────
+# `git rev-parse --git-path hooks` 在用户设了 core.hooksPath 时返回的是
+# **core.hooksPath 本身**（如 ~/.config/git/hooks），不是本仓的 .git/hooks。
+# 之前没判断这点，`pnpm install` 直接把本仓专属门禁写进了用户的全局 hooks 目录，
+# 于是所有仓库都被迫执行 <repo>/scripts/pre-commit-all.sh —— 其余 8 个仓库没有
+# 这个脚本，`bash` 不存在的文件退出码 127，全部无法提交。
+#
+# 现在：目标目录在本仓之外时一律不写。这不会让本仓失去门禁——全局分发式 hook
+# 会按 $(git rev-parse --show-toplevel)/scripts/pre-commit-all.sh 找到并执行它，
+# 效果等价，且不牵连其他仓库。只有全局 hook 不是分发式时才提示需要人工处理。
+TOPLEVEL="$(git rev-parse --show-toplevel 2>/dev/null)"
+case "$HOOKS_DIR" in
+  /*) HOOKS_ABS="$HOOKS_DIR" ;;
+  *)  HOOKS_ABS="$TOPLEVEL/$HOOKS_DIR" ;;
+esac
+case "$HOOKS_ABS" in
+  "$TOPLEVEL"/*) ;;  # 在本仓内，正常安装
+  *)
+    if grep -q 'pre-commit-all.sh' "$HOOKS_ABS/pre-commit" 2>/dev/null; then
+      echo "· core.hooksPath 指向仓库外 ${HOOKS_ABS}，且已是分发式 hook —— 本仓门禁经它生效，跳过安装"
+    else
+      echo "⚠ core.hooksPath 指向仓库外 ${HOOKS_ABS}，跳过安装以免影响其他仓库。" >&2
+      echo "  若需本仓门禁，请让该目录下的 pre-commit 调用" >&2
+      echo "  \"\$(git rev-parse --show-toplevel)/scripts/pre-commit-all.sh\"（存在才跑）。" >&2
+    fi
+    exit 0
+    ;;
+esac
+
 # 注意：不要把这几步塞进 `( set -e; ... ) && ok || warn` 这种子 shell 里——bash 对「整个
 # 子 shell 的退出码正被 && / || 测试」这种场景会静默停用子 shell 内的 -e（POSIX 对
 # if/while 条件里的命令也有同样豁免），会导致 mkdir 失败后子 shell 仍往下跑、最终

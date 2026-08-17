@@ -1,18 +1,19 @@
 /** museav reverse —— 图片逆向（SCULPT 六要素反推 prompt）。
- *  主路是本地 Ollama（qwen3-vl），快、零成本、无需登录；中台 API 是回落路，走回落时会明确提示较慢。
- *  client 懒构造（getClient）：本地路成功就完全不碰中台凭证。
- *  本地系统的 AI 能力统一收口在这个 CLI，reverse 是第一个本地化的能力。 */
+ *  默认走中台 API（快、稳定、不需本地模型）；--local 可切本地 Ollama（需自备 qwen3-vl，
+ *  仅在用户显式要求时使用——本地大模型默认不拉起，不给用户的内存添负担）。
+ *  client 懒构造：本地路成功就完全不碰中台凭证。 */
 import type { StudioClient, ReverseResult } from '../client.js'
 import { checkLocalVlm, reverseLocally, LOCAL_VLM_MODEL } from '../local-vision.js'
 
 export async function reverse(
   getClient: () => StudioClient,
   input: string,
-  opts: { api?: boolean } = {},
+  opts: { api?: boolean; local?: boolean } = {},
 ): Promise<void> {
   const isUrl = /^https?:\/\//.test(input)
 
-  if (!opts.api && !isUrl) {
+  // 本地路只在用户显式 --local 且输入是本地文件时尝试；服务不可用给出指引后回落 API
+  if (opts.local && !isUrl) {
     const status = await checkLocalVlm()
     if (status.running && status.modelPresent) {
       try {
@@ -27,7 +28,7 @@ export async function reverse(
     } else {
       process.stderr.write(`⚠ 本地读图不可用（${status.reason}），回落中台 API —— 速度较慢，请耐心等待\n`)
     }
-  } else if (!opts.api && isUrl) {
+  } else if (opts.local && isUrl) {
     process.stderr.write(`ℹ URL 输入走中台 API（本地路只收文件路径）\n`)
   }
 

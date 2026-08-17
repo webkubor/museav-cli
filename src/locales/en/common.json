@@ -66,6 +66,10 @@
     "select": {
       "empty": "No options"
     },
+    "combobox": {
+      "searchPlaceholder": "Search",
+      "empty": "No matches"
+    },
     "sideSheet": {
       "defaultTitle": "Details"
     },

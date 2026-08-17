@@ -46,7 +46,12 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col space-y-1.5 mg-panel-roomy", className)}
+    // 内边距/标题行距走 design-tokens 卡片规范：--mg-card-pad 与原 mg-panel-roomy 同值(24px)，
+    // --mg-card-title-gap 8px（原 space-y-1.5 = 6px，按规范收口，差 2px）
+    className={cn(
+      "flex flex-col gap-[var(--mg-card-title-gap)] p-[var(--mg-card-pad)]",
+      className
+    )}
     {...props}
   />
 ))
@@ -83,7 +88,11 @@ const CardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("mg-panel-roomy pt-0", className)} {...props} />
+  // ⚠️ 这里原本写的是 `mg-panel-roomy pt-0`，但那个 pt-0 长期失效：.mg-panel-roomy 的
+  // padding 简写与 Tailwind 的 pt-0 同特异性且后加载，把 padding-top 又盖回 24px。
+  // 也就是说线上一直是四向 24px。本次只把值换成规范 token，不顺手"修复" pt-0 ——
+  // 恢复 shadcn 的紧凑布局会让全站卡片内容上移 24px，属于设计决策，另行确认。
+  <div ref={ref} className={cn("p-[var(--mg-card-pad)]", className)} {...props} />
 ))
 CardContent.displayName = "CardContent"
 
@@ -93,7 +102,8 @@ const CardFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex items-center mg-panel-roomy pt-0", className)}
+    // 同 CardContent：pt-0 原本也是失效的，维持四向 24px 现状
+    className={cn("flex items-center gap-[var(--mg-card-action-gap)] p-[var(--mg-card-pad)]", className)}
     {...props}
   />
 ))

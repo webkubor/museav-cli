@@ -237,16 +237,23 @@ museav gen --template "$ID" --fields '{"artist":"..."}'
 
 ### 图片逆向 `reverse`
 
-上传一张图，中台用 **SCULPT 六要素**（主体/构图/世界观/光影/输出/质感）逆推出图 prompt，可以直接拿去再出一张同风格的：
+逆推出图 prompt，可以直接拿去再出一张同风格的。**主路是本地 Ollama（qwen3-vl）**：快、零成本、无需登录；本地不可用时自动回落中台 API（SCULPT 六要素：主体/构图/世界观/光影/输出/质感），回落时会明确提示较慢：
 
 ```bash
-# 本地文件或图片 URL 都行
+# 本地文件走本地模型（推荐，无需登录）
 museav reverse photo.png
+
+# 图片 URL 没法喂本地模型，走中台 API（需登录）
 museav reverse https://example.com/photo.png
+
+# 强制走中台 API（跳过本地，慢，需登录）
+museav reverse photo.png --api
 
 # 逆向 + 出图，一条龙
 museav gen --prompt "$(museav reverse photo.png)"
 ```
+
+本地路依赖：Ollama 运行中（`brew services start ollama`）+ 模型在位（`ollama pull qwen3-vl:8b`，换档位设 `MUSEAV_LOCAL_VLM`，自定地址设 `OLLAMA_HOST`）。缺哪个都会提示对应命令并回落 API。
 
 分析详情打到 stderr（人看），**stdout 只输出英文 prompt**（机器用，方便管道）。
 

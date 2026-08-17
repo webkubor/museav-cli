@@ -39,6 +39,10 @@ museav gen --template <id> --fields '{"artist":"name","city":"place"}'
 museav templates create --name '演唱会海报' --prompt '{artist} 在 {city} 的演唱会海报' --ratio 9:16
 
 # Reverse-engineer a prompt from an existing image (stdout: English prompt only).
+# PRIMARY path is LOCAL: Ollama qwen3-vl — fast, free, NO login needed. Falls back to
+# the platform API (with a slowness warning) only if Ollama isn't running or the model
+# is missing. Image URLs always go to the API (local path takes file paths only);
+# --api forces the API path.
 # This READS the image and nothing else — it will NOT build a template. Passing any
 # template-ish flag to the underlying API is a hard 400 since 2026-08-16.
 museav reverse ./photo.png

@@ -93,6 +93,22 @@ function withClient<T extends (...args: any[]) => Promise<any>>(fn: T) {
   }
 }
 
+// reverse 的本地路（Ollama）不需要中台凭证，client 懒构造：只有真回落 API 才建，
+// 未登录的报错也只在那时候出现
+function withLazyClient(fn: (getClient: () => StudioClient, ...args: any[]) => Promise<any>) {
+  return async (...args: any[]) => {
+    try {
+      const opts = args[args.length - 2]
+      const positional = args.slice(0, -2)
+      const getClient = () => new StudioClient(loadConfig())
+      await fn(getClient, ...positional, opts)
+    } catch (e) {
+      process.stderr.write(`❌ ${(e as Error).message}\n`)
+      process.exit(1)
+    }
+  }
+}
+
 // products / assets 查的是租户自己后台的数据，不是 Studio 中台的，走独立的 TenantClient
 // （见 tenant-client.ts 顶部注释），只支持租户 apiKey 身份，不支持个人 login token。
 function withTenantClient<T extends (...args: any[]) => Promise<any>>(fn: T) {
@@ -143,8 +159,9 @@ program
 
 program
   .command('reverse <input>')
-  .description('读图：上传图或图片 URL，反推 SCULPT prompt，stdout 输出英文 prompt（只读图；要做成模板用 image-to-template）')
-  .action(withClient((client: StudioClient, input: string) => reverse(client, input)))
+  .description('读图：反推 SCULPT prompt，stdout 输出英文 prompt。主路本地 Ollama（qwen3-vl，快，无需登录）；本地不可用回落中台 API（会提示较慢）。只读图；要做成模板用 image-to-template')
+  .option('--api', '跳过本地 Ollama，强制走中台 API（慢，需登录）')
+  .action(withLazyClient((getClient: () => StudioClient, input: string, opts: any) => reverse(getClient, input, opts)))
 
 program
   .command('image-to-template <input>')

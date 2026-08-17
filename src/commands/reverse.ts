@@ -1,11 +1,43 @@
-/** museav reverse —— 图片逆向（SCULPT 六要素反推 prompt） */
-import type { StudioClient } from '../client.js'
+/** museav reverse —— 图片逆向（SCULPT 六要素反推 prompt）。
+ *  主路是本地 Ollama（qwen3-vl），快、零成本、无需登录；中台 API 是回落路，走回落时会明确提示较慢。
+ *  client 懒构造（getClient）：本地路成功就完全不碰中台凭证。
+ *  本地系统的 AI 能力统一收口在这个 CLI，reverse 是第一个本地化的能力。 */
+import type { StudioClient, ReverseResult } from '../client.js'
+import { checkLocalVlm, reverseLocally, LOCAL_VLM_MODEL } from '../local-vision.js'
 
-export async function reverse(client: StudioClient, input: string): Promise<void> {
-  // 输入是文件路径还是 URL
+export async function reverse(
+  getClient: () => StudioClient,
+  input: string,
+  opts: { api?: boolean } = {},
+): Promise<void> {
   const isUrl = /^https?:\/\//.test(input)
-  const result = await client.reverse(isUrl ? { imageUrl: input } : { file: input })
 
+  if (!opts.api && !isUrl) {
+    const status = await checkLocalVlm()
+    if (status.running && status.modelPresent) {
+      try {
+        const start = Date.now()
+        const result = await reverseLocally(input)
+        process.stderr.write(`✓ 本地 Ollama（${LOCAL_VLM_MODEL}）用时 ${((Date.now() - start) / 1000).toFixed(1)}s\n`)
+        renderReverse(result)
+        return
+      } catch (e) {
+        process.stderr.write(`⚠ 本地读图失败（${e instanceof Error ? e.message : e}），回落中台 API —— 速度较慢，请耐心等待\n`)
+      }
+    } else {
+      process.stderr.write(`⚠ 本地读图不可用（${status.reason}），回落中台 API —— 速度较慢，请耐心等待\n`)
+    }
+  } else if (!opts.api && isUrl) {
+    process.stderr.write(`ℹ URL 输入走中台 API（本地路只收文件路径）\n`)
+  }
+
+  const client = getClient()
+  const result = await client.reverse(isUrl ? { imageUrl: input } : { file: input })
+  renderReverse(result)
+}
+
+/** 两条路产出同构，渲染只写一份 */
+function renderReverse(result: ReverseResult): void {
   process.stderr.write(`✅ 逆向完成\n\n`)
   process.stderr.write(`风格: ${result.zh_name || '-'}  比例: ${result.aspect_ratio}\n`)
   process.stderr.write(`标签: ${result.style_tags.join(', ')}\n\n`)

@@ -22,10 +22,15 @@ export async function projects(client: StudioClient): Promise<void> {
     process.stderr.write('还没有工作区（museav projects create --name 新建）\n')
     return
   }
+  // 每个项目的素材数（模板不挂项目，这里统计的是项目素材库，不是模板）
+  const assetCounts = await Promise.all(
+    list.map(async (w) => ({ id: w.id, n: (await client.workspaceAssets(w.id).catch(() => [])).length })),
+  )
+  const assetOf = Object.fromEntries(assetCounts.map((x) => [x.id, x.n]))
   process.stderr.write(`工作区（${list.length} 个）:\n`)
   for (const w of list) {
     process.stderr.write(
-      `  ${w.id}  ${w.name.padEnd(16)} 出图 ${w.gen_done ?? 0}/${w.gen_total ?? 0}${w.brand ? `  brand:${w.brand}` : ''}\n`,
+      `  ${w.id}  ${w.name.padEnd(16)} 出图 ${w.gen_done ?? 0}/${w.gen_total ?? 0}  素材 ${assetOf[w.id] ?? 0}${w.brand ? `  brand:${w.brand}` : ''}\n`,
     )
   }
   process.stderr.write(`\n素材库: museav projects assets --project <id|名>\n出图归档: museav gen --project <id|名> ...\n`)

@@ -281,6 +281,9 @@ const templatesCmd = program
   .description('查可用图片/文字模板：自己租户建的 + 平台共享的（跟技能是两套不同的机制，见 gen --template）')
   .option('--category <name>', '按分类过滤，如 电商白底图 / 演唱会')
   .option('--type <type>', '按类型过滤：image（图片） / article（文字），不传则两类都列并标注')
+  .option('--mine', '只看我这个人建的模板（created_by 是我，排除系统种子和租户专属）')
+  .option('--tenant', '只看本租户建的模板')
+  .option('--platform', '只看平台共享的模板')
   .action(withClient((client: StudioClient, opts: any) => templates(client, opts)))
 
 const videoTemplatesCmd = program

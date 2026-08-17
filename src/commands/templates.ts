@@ -1,9 +1,25 @@
-/** museav templates —— 查可用图片/文字模板（自己租户建的 + 平台共享的）
- *  --type image|article 可过滤（中台 templates 表同时装两种，不传则都列并标注类型） */
+/** museav templates —— 查可用图片/文字模板。
+ *  --type image|article 按类型过滤
+ *  --mine 只看本租户建的；--platform 只看平台共享的；都不传则全部列出
+ *  --category 按分类过滤 */
 import type { StudioClient } from '../client.js'
 
-export async function templates(client: StudioClient, opts: { category?: string; type?: string } = {}): Promise<void> {
-  let list = await client.templates((opts.type === 'image' || opts.type === 'article') ? opts.type : undefined)
+export async function templates(client: StudioClient, opts: { category?: string; type?: string; mine?: boolean; tenant?: boolean; platform?: boolean } = {}): Promise<void> {
+  const type = opts.type === 'image' || opts.type === 'article' ? opts.type : undefined
+  // --tenant 走服务端 source=mine（本租户专属）；--platform 走 source=platform；
+  // --mine 是「我这个人建的」——服务端 source 表达不了，用 created_by 客户端过滤：
+  // created_by 非空且不是 'platform'（那是系统种子模板的占位标记）
+  let list: Awaited<ReturnType<StudioClient['templates']>>
+  if (opts.tenant) {
+    list = await client.templates(type, 'mine')
+  } else if (opts.platform) {
+    list = await client.templates(type, 'platform')
+  } else {
+    list = await client.templates(type)
+  }
+  if (opts.mine) {
+    list = list.filter((t) => !!t.created_by && t.created_by !== 'platform')
+  }
   if (opts.category) {
     const kw = opts.category.toLowerCase()
     list = list.filter((t) => (t.category || '').toLowerCase().includes(kw))
@@ -13,7 +29,10 @@ export async function templates(client: StudioClient, opts: { category?: string;
     return
   }
 
-  const tag = (t: (typeof list)[number]) => (t.tenant_id ? '' : '[平台]')
+  const tag = (t: (typeof list)[number]) => {
+    if (t.created_by && t.created_by !== 'platform') return `[个人:${t.created_by}]`
+    return t.tenant_id ? '[租户]' : '[平台]'
+  }
   const typeTag = (t: (typeof list)[number]) => (t.template_type === 'article' ? '[文字]' : t.template_type === 'image' ? '[图片]' : '')
 
   process.stderr.write(`可用模板（${list.length} 个）:\n`)
@@ -27,7 +46,7 @@ export async function templates(client: StudioClient, opts: { category?: string;
     )
   }
   process.stderr.write(`\n出图: museav gen --template <模板id> [--fields '{"key":"值"}']\n`)
-  process.stderr.write(`按类型过滤: museav templates --type image|article\n`)
+  process.stderr.write(`筛选: --mine(我建的) --tenant(本租户) --platform(平台共享) --type image|article --category <分类>\n`)
   // stdout 只出 id，便于脚本与 agent 解析
   console.log(list.map((t) => t.id).join('\n'))
 }

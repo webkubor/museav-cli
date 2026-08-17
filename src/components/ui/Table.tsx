@@ -62,7 +62,13 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      "border-b border-mg-border/50 transition-colors duration-150 hover:bg-mg-fill-0/70 data-[state=selected]:bg-mg-fill-1",
+      // hover 底色去掉 /70：--mg-fill-0 是 color-mix() 值，Tailwind 无法再给它叠 alpha，
+      // 带 /70 时计算结果直接变 transparent —— 行 hover 一直没有任何视觉反馈（实测
+      // bg-mg-fill-0/70 → rgba(0,0,0,0)）。去掉后为品牌色 3.5%，正好等于 design-tokens
+      // 的行规范 --mg-table-row-hover-bg（= --mg-state-hover-bg = 3.5%），同值收口。
+      // 选中态仍用 --mg-fill-1(6%)；规范 --mg-table-row-selected-bg 是 8%，要用它得先把
+      // 库 token 注册进 @theme（用任意值语法直引库 token 同样会算成 transparent），另行处理。
+      "border-b border-mg-border/50 transition-colors duration-150 hover:bg-mg-fill-0 data-[state=selected]:bg-mg-fill-1",
       className
     )}
     {...props}

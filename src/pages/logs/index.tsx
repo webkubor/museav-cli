@@ -9,6 +9,7 @@ import { ForbiddenState } from '@/components/ui/ForbiddenState'
 import { Input } from '@/components/ui/Input'
 import { PageHeader } from '@/components/ui/PageHeader'
 import Select from '@/components/ui/Select'
+import Combobox from '@/components/ui/Combobox'
 import { isApiErrorCode } from '@/lib/request-error-message'
 import { getLogPayload, listCallLogs } from '@/services/logs'
 import { usePermissions } from '@/hooks/use-permissions'
@@ -572,24 +573,33 @@ export default function LogsPage() {
             </Select>
           </FilterField>
           <FilterField label={t('logs.filter.modelName')}>
-            <Select value={modelFilter} onChange={(value) => { setModelFilter(value); resetPagination(); trackFilter('model') }}>
-              <Select.Option value="all">{t('logs.filter.allModels')}</Select.Option>
-              {modelsData?.items.map((model) => (
-                <Select.Option key={model.model_id} value={model.model_id}>
-                  {model.display_name || model.model_id}
-                </Select.Option>
-              ))}
-            </Select>
+            <Combobox
+              value={modelFilter}
+              onChange={(value) => { setModelFilter(value); resetPagination(); trackFilter('model') }}
+              options={[
+                { value: 'all', label: t('logs.filter.allModels') },
+                ...(modelsData?.items.map((model) => ({
+                  value: model.model_id,
+                  label: model.display_name || model.model_id,
+                  keywords: model.model_id,
+                })) ?? []),
+              ]}
+            />
           </FilterField>
           <FilterField label="API Key">
-            <Select value={apiKeyFilter} disabled={!apiKeyWorkspaceId} onChange={(value) => { setApiKeyFilter(value); resetPagination(); trackFilter('api_key') }}>
-              <Select.Option value="all">{apiKeyWorkspaceId ? t('logs.filter.allApiKeys') : t('logs.filter.selectWorkspaceFirst')}</Select.Option>
-              {apiKeysData?.items.map((key) => (
-                <Select.Option key={key.api_key_id} value={key.api_key_id}>
-                  {key.name} ({key.masked})
-                </Select.Option>
-              ))}
-            </Select>
+            <Combobox
+              value={apiKeyFilter}
+              disabled={!apiKeyWorkspaceId}
+              onChange={(value) => { setApiKeyFilter(value); resetPagination(); trackFilter('api_key') }}
+              options={[
+                { value: 'all', label: apiKeyWorkspaceId ? t('logs.filter.allApiKeys') : t('logs.filter.selectWorkspaceFirst') },
+                ...(apiKeysData?.items.map((key) => ({
+                  value: key.api_key_id,
+                  label: `${key.name} (${key.masked})`,
+                  keywords: key.masked,
+                })) ?? []),
+              ]}
+            />
           </FilterField>
           <Button
             variant="outline"
@@ -613,14 +623,18 @@ export default function LogsPage() {
             </FilterField>
             {(view === 'enterprise' || view === 'space') && (
               <FilterField label={t('logs.filter.member')}>
-                <Select value={memberFilter} onChange={(value) => { setMemberFilter(value); resetPagination(); trackFilter('member') }}>
-                  <Select.Option value="all">{t('logs.filter.allMembers')}</Select.Option>
-                  {membersData?.items.map((member) => (
-                    <Select.Option key={member.account.account_id} value={member.account.account_id}>
-                      {member.account.display_name || member.account.email}
-                    </Select.Option>
-                  ))}
-                </Select>
+                <Combobox
+                  value={memberFilter}
+                  onChange={(value) => { setMemberFilter(value); resetPagination(); trackFilter('member') }}
+                  options={[
+                    { value: 'all', label: t('logs.filter.allMembers') },
+                    ...(membersData?.items.map((member) => ({
+                      value: member.account.account_id,
+                      label: member.account.display_name || member.account.email,
+                      keywords: member.account.email,
+                    })) ?? []),
+                  ]}
+                />
               </FilterField>
             )}
             <FilterField label={t('logs.filter.guardrailLabel')}>

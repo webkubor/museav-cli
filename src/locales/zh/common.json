@@ -66,6 +66,10 @@
     "select": {
       "empty": "暂无选项"
     },
+    "combobox": {
+      "searchPlaceholder": "搜索",
+      "empty": "无匹配结果"
+    },
     "sideSheet": {
       "defaultTitle": "详情"
     },

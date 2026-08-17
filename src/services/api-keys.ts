@@ -84,9 +84,13 @@ export function getApiKeySummary(workspaceId: string) {
   return get<ApiKeySummary>(`workspaces/${workspaceId}/api-keys/summary`)
 }
 
-/** Key 详情（#383）；未交付时前端用列表项兜底 */
+/**
+ * Key 详情（#383）；未交付时前端用列表项兜底。
+ * 返回 `Partial`：后端按 prd#102 把 403/404 收敛成空的成功信封 `{"code":0,"data":{}}`（防 key id 归属枚举，
+ * 见 prd#649），解包后是 `{}` —— 真值但无字段。调用方必须先判「有内容」（如 api_key_id 非空）再解引用（prd#664）。
+ */
 export function getApiKeyDetail(workspaceId: string, keyId: string) {
-  return get<ApiKeyDetail>(`workspaces/${workspaceId}/api-keys/${keyId}`)
+  return get<Partial<ApiKeyDetail>>(`workspaces/${workspaceId}/api-keys/${keyId}`)
 }
 
 /** 操作审计（GET .../{keyId}/audit）；返回 { items, next_cursor } */
@@ -122,7 +126,6 @@ export interface EffectiveGuardrailLayer {
 /** API Key 三层生效护栏预览（qa#379，GET .../{keyId}/effective-guardrails） */
 export interface EffectiveGuardrails {
   key_id: string
-  enforcement_note: string
   effective: {
     filter_source: string
     budgets: EffectiveBudget[]
@@ -132,9 +135,12 @@ export interface EffectiveGuardrails {
   layers: EffectiveGuardrailLayer[]
 }
 
-/** 取 Key 的三层生效护栏（qa#379）：由 resolver 合并组织/空间默认/Key 绑定后的最终生效规则 */
+/**
+ * 取 Key 的三层生效护栏（qa#379）：由 resolver 合并组织/空间默认/Key 绑定后的最终生效规则。
+ * 返回 `Partial`：同 getApiKeyDetail，prd#102 空信封解包后是 `{}`，`layers`/`effective` 都可能缺失（prd#664）。
+ */
 export function getEffectiveGuardrails(workspaceId: string, keyId: string) {
-  return get<EffectiveGuardrails>(`workspaces/${workspaceId}/api-keys/${keyId}/effective-guardrails`)
+  return get<Partial<EffectiveGuardrails>>(`workspaces/${workspaceId}/api-keys/${keyId}/effective-guardrails`)
 }
 
 /** 创建前「生效护栏预览」入参（qa#420 第1项）：Key 未创建，按类型/负责人/所选 Key 护栏/创建人预览 */

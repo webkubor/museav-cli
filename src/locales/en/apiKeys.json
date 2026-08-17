@@ -380,6 +380,10 @@
       "title": "Failed to load details",
       "desc": "Could not fetch the latest details for this key. Please try again.",
       "retry": "Retry"
+    },
+    "detailInvisible": {
+      "title": "Details unavailable",
+      "desc": "This key has been deleted, or you do not have permission to view it. The fields below come from the cached list — please refresh."
     }
   }
 }

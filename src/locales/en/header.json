@@ -18,6 +18,7 @@
     "orgSettings": "Organization Settings",
     "switchedOrg": "Switched to organization: {{name}}",
     "switchTenantFailed": "Failed to switch organization. Please try again.",
+    "switchTenantStale": "This organization is no longer available to you. The list has been refreshed.",
     "switchedWorkspace": "Switched to workspace: {{name}}",
     "createWorkspaceSuccess": "Workspace \"{{name}}\" created successfully",
     "createWorkspaceError": "Failed to create workspace",

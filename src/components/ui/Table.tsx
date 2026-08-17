@@ -62,12 +62,13 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      // hover 底色去掉 /70：--mg-fill-0 是 color-mix() 值，Tailwind 无法再给它叠 alpha，
-      // 带 /70 时计算结果直接变 transparent —— 行 hover 一直没有任何视觉反馈（实测
-      // bg-mg-fill-0/70 → rgba(0,0,0,0)）。去掉后为品牌色 3.5%，正好等于 design-tokens
-      // 的行规范 --mg-table-row-hover-bg（= --mg-state-hover-bg = 3.5%），同值收口。
-      // 选中态仍用 --mg-fill-1(6%)；规范 --mg-table-row-selected-bg 是 8%，要用它得先把
-      // 库 token 注册进 @theme（用任意值语法直引库 token 同样会算成 transparent），另行处理。
+      // hover 底色去掉 /70：把浓度从 3.5%×70%=2.45% 提到 design-tokens 的行规范
+      // --mg-table-row-hover-bg（= --mg-state-hover-bg = --mg-fill-0 = 3.5%）。
+      // 纯粹是对齐规范浓度，hover 原本就正常工作（Tailwind 对 color-mix 值叠 alpha 是
+      // 合法的，会生成嵌套 color-mix，浏览器支持）—— 前一版 commit 说"hover 一直是
+      // 透明的"是错的，那是把「往页面注入裸类 bg-mg-fill-0/70 而 Tailwind 只生成了
+      // .hover\:bg-... 带伪类的规则」误读成了 token 失效，见本文件 git 历史。
+      // 选中态仍用 --mg-fill-1(6%)，规范值是 8%，差 2% 暂不动。
       "border-b border-mg-border/50 transition-colors duration-150 hover:bg-mg-fill-0 data-[state=selected]:bg-mg-fill-1",
       className
     )}

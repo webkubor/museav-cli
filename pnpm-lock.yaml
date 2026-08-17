@@ -75,8 +75,8 @@ importers:
         specifier: ^2.0.2
         version: 2.0.2
       modelgo-design-tokens:
-        specifier: ^0.8.0
-        version: 0.8.0
+        specifier: ^0.8.1
+        version: 0.8.1
       qrcode.react:
         specifier: ^4.2.0
         version: 4.2.0(react@19.2.6)
@@ -4738,8 +4738,8 @@ packages:
     resolution: {integrity: sha512-WRoDn//mXBiJ1H40rqa3vH0toePwSsGb45iInWlTySa+Uu4k3tYUSxa2v1KqAiLtvlrSzaExqS1gtk96A9zvEA==}
     engines: {node: '>=0.10.0'}
 
-  modelgo-design-tokens@0.8.0:
-    resolution: {integrity: sha512-QyARDDyJiGJcTRoTu5xpKXzqwEBvpvnWmyO4zCIf/RiOQ3XpdWdfDecnHdCn6yY41MFmsoDmGuUA9f+Zgned9w==}
+  modelgo-design-tokens@0.8.1:
+    resolution: {integrity: sha512-7tg3uh8G8//z154e8XaiA9gj75Xls4umb5ovFN+/ZPBR8gBUjFBAAUchpTzxqa9gYjgrUWfaPhHHxxY9ZtTI8A==}
 
   motion-dom@12.43.0:
     resolution: {integrity: sha512-azKON4d9S65PEoFUiQTMTgPheEmzf2QngdRc50AKfJp9Q9mmcBVw22c8eMq9k8kxOFHdL7+WZY7N/5F/lwiDag==}
@@ -11484,7 +11484,7 @@ snapshots:
       for-in: 1.0.2
       is-extendable: 1.0.1
 
-  modelgo-design-tokens@0.8.0: {}
+  modelgo-design-tokens@0.8.1: {}
 
   motion-dom@12.43.0:
     dependencies:

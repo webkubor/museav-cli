@@ -156,7 +156,8 @@
         "passwordMismatch": "两次输入的密码不一致",
         "passwordMismatchShort": "两次密码不一致",
         "rateLimited": "操作过于频繁，请稍后再试",
-        "securityVerificationRequired": "请先完成安全验证"
+        "securityVerificationRequired": "请先完成安全验证",
+        "captchaExpired": "安全验证已失效，请重新完成验证后再登录（短信验证码仍有效，无需重新获取）"
       },
       "aria": {
         "showPassword": "显示密码",

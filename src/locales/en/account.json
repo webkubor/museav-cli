@@ -156,7 +156,8 @@
         "passwordMismatch": "The two passwords do not match",
         "passwordMismatchShort": "Passwords do not match",
         "rateLimited": "Too many attempts. Please try again later.",
-        "securityVerificationRequired": "Complete security verification first"
+        "securityVerificationRequired": "Complete security verification first",
+        "captchaExpired": "Security verification expired. Please verify again to sign in — your SMS code is still valid, no need to resend."
       },
       "aria": {
         "showPassword": "Show password",

@@ -57,9 +57,14 @@ export function sendSmsCode(phone: string, captchaVerifyParam?: string | null) {
  * 注意：不要在前端先调 verify 再调本方法——verify 会一次性消费验证码导致登录失败；
  * 统一端点应在内部完成校验+建号/登录。后端就绪后仅需改这一处 path/body。
  * ponytail: 单一接桩点。
+ *
+ * captchaVerifyParam 必传（除未启用/降级）：后端 auth.SMSLoginRequest 契约里有该字段，
+ * 且实测缺失/空值一律拒 40025（human verification failed）——与「非必填 + fail-open」的
+ * 注解不一致，登录侧实际是 fail-closed。此前本方法漏传该字段，导致国内手机号登录
+ * 100% 被 40025 拦死（发码那次的四元组已在发码时消费，不能复用）。
  */
-export function phoneLoginRegister(phone: string, code: string) {
-  return post<LoginResult>('auth/sms-code/login', { phone, code })
+export function phoneLoginRegister(phone: string, code: string, captchaVerifyParam?: string | null) {
+  return post<LoginResult>('auth/sms-code/login', withCaptcha({ phone, code }, captchaVerifyParam))
 }
 
 /** 邮箱密码登录 */

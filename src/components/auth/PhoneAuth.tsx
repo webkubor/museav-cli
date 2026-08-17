@@ -26,7 +26,7 @@ import {
 } from '@/lib/auth/front-guard'
 import { getRedirectTarget } from '@/lib/redirect'
 import { navigateAfterLogin } from '@/lib/login-intent'
-import { getRequestErrorMessage, errorCodeOf } from '@/lib/request-error-message'
+import { getRequestErrorMessage, errorCodeOf, isApiErrorCode } from '@/lib/request-error-message'
 import { getCaptchaParam } from '@/lib/aliyun-captcha'
 import { CaptchaGate, type CaptchaGateHandle } from '@/components/auth/CaptchaGate'
 import { trackEvent } from '@/lib/track'
@@ -119,10 +119,18 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
       setServerError(decision.message ?? t('account.auth.validation.rateLimited'))
       return
     }
+    // 登录侧也要带四元组：后端 sms-code/login 实测缺失即拒 40025。发码那次的四元组
+    // 已在发码时消费（一次性），所以这里必须是一次新的验证——验证条生效但未通过时
+    // 调起挑战并中止本次提交，用户完成后再点登录（短信码仍在 5 分钟有效期内，不用重发）。
+    if (gateActive && !gateParam) {
+      gateRef.current?.open()
+      setServerError(t('account.auth.validation.securityVerificationRequired'))
+      return
+    }
     setLoading(true)
     setServerError('')
     try {
-      await phoneLoginRegister(data.phone, data.code)
+      await phoneLoginRegister(data.phone, data.code, gateParam ?? (await getCaptchaParam()))
       const session = await getSession()
       clearAuthGuard({ action: 'phone-login', subject: data.phone })
       setAuth(
@@ -139,7 +147,15 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
       // 展示后端返回的细分中文文案（验证码错误/已失效、账户冻结、发送过频等），
       // 5xxxx 内部错误由 getRequestErrorMessage 归一为通用「服务暂不可用」提示。
       trackEvent('login_fail', { method: 'phone' }, { result: 'fail', error_code: errorCodeOf(error) })
-      setServerError(getRequestErrorMessage(error, t('account.auth.login.failed')))
+      // 40025 人机验证未通过：四元组已被后端消费/失效，界面若仍停在「已完成安全验证」
+      // 态，用户反复点登录会永远拒——把验证条重置回可重验，并给可执行文案（手机号与
+      // 短信码保留，用户只需重验一次再提交）。
+      if (isApiErrorCode(error, 40025)) {
+        gateRef.current?.reset()
+        setServerError(t('account.auth.validation.captchaExpired'))
+      } else {
+        setServerError(getRequestErrorMessage(error, t('account.auth.login.failed')))
+      }
     } finally {
       setLoading(false)
     }

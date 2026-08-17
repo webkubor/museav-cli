@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.5.0 (2026-08-17)
+
+### 修复
+- **`whoami` 不再拒绝 apiKey 模式**：之前会直接抛错「只支持个人 login 身份」。实际上 `/api/me` 对两种 apiKey 都返回真实数据——
+  - 平台账户 apiKey（`STUDIO_API_KEY` 指向 `accounts.sk-*`）→ 账户身份：邮箱 + nickname + 累计出图次数 + credits
+  - 租户 apiKey（指向 `api_tenants.tenant_key`）→ 业务身份：tenant_id + name + nickname + logo
+  修复后三种身份都能 `museav whoami` 查清楚当前是谁、关联到哪个租户。
+
+### 文档
+- AGENTS.md `whoami` 说明：去掉「apiKey 不可用」的旧断言。
+
 ## 2.4.0 · 2026-08-17
 
 **本地图像工具箱补全（免登录、零成本、macOS/Windows 通用）。** 均为轻量级工具，无大模型常驻内存。

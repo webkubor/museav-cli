@@ -87,7 +87,9 @@ museav products
 museav assets
 
 # Check who you're logged in as and whether the account is affiliated with a tenant
-# (personal login only — apiKey callers get an error, they're already acting as the tenant)
+# Works for both personal login and apiKey (platform account or tenant). For apiKey:
+#   platform-account → 账户: nickname + 邮箱 + 累计出图 + credits
+#   tenant          → 租户: tenant_id + name + logo
 museav whoami
 ```
 

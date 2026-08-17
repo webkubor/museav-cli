@@ -50,7 +50,13 @@ const DialogContent = React.forwardRef<
       ref={ref}
       className={cn(
         // max-h-[90dvh] + overflow-y-auto：内容超高时弹窗封顶到视口内并内部滚动，避免超出浏览器范围（#458）
-        "fixed left-[50%] top-[50%] z-[var(--mg-z-modal)] grid w-full max-w-lg max-h-[90dvh] overflow-y-auto translate-x-[-50%] translate-y-[-50%] gap-[var(--mg-dialog-gap)] border border-mg-border bg-mg-bg-3 mg-panel-roomy shadow-xl shadow-black/10 rounded-[var(--mg-dialog-radius)] duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-1/2 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-1/2 focus:outline-none",
+        // padding 走 --mg-dialog-pad（= --mg-space-6 24px，与原 mg-panel-roomy 同值），min-width 走规范下限 360px。
+        // ⚠️ max-w-lg(512) 与 max-h-[90dvh] 暂不换成 --mg-dialog-max-width(720) / --mg-dialog-max-height：
+        //   · 库给的是区间上限而非目标值，而这里有 w-full，换成 720 会让**所有**弹窗一律撑到 720，
+        //     小确认框和大表单一样宽 —— 库里缺"默认宽度"这一档，需要设计给分档（如 sm/md/lg）才能接
+        //   · max-height 换成 min(720px, 100dvh-128px) 会让高弹窗从约 970px 压到 720px，
+        //     属于会影响 #458 已验收行为的可见变化，同样等设计确认
+        "fixed left-[50%] top-[50%] z-[var(--mg-z-modal)] grid w-full min-w-[var(--mg-dialog-min-width)] max-w-lg max-h-[90dvh] overflow-y-auto translate-x-[-50%] translate-y-[-50%] gap-[var(--mg-dialog-gap)] border border-mg-border bg-mg-bg-3 p-[var(--mg-dialog-pad)] shadow-xl shadow-black/10 rounded-[var(--mg-dialog-radius)] duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-1/2 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-1/2 focus:outline-none",
         className
       )}
       {...props}
@@ -73,7 +79,7 @@ const DialogHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col space-y-1.5 text-center sm:text-left",
+      "flex flex-col gap-[var(--mg-dialog-header-gap)] text-center sm:text-left",
       className
     )}
     {...props}
@@ -87,7 +93,7 @@ const DialogFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 gap-2 sm:gap-0",
+      "flex flex-col-reverse sm:flex-row sm:justify-end gap-[var(--mg-dialog-footer-gap)]",
       className
     )}
     {...props}

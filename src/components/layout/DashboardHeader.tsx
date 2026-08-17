@@ -13,6 +13,7 @@ import { switchTenant, getSession } from '@/services/auth'
 import { listTenants } from '@/services/tenants'
 import { createOrganization } from '@/services/organizations'
 import { applyTheme, getUserTheme, saveTheme } from '@/lib/theme'
+import { refreshSession } from '@/lib/auth/refresh-session'
 import { useTranslation } from 'react-i18next'
 import { listWorkspaces } from '@/services/workspaces'
 import { getGatewayEndpoints } from '@/config/gateway'
@@ -240,8 +241,18 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
         navigate('/dashboard', { replace: true })
         toast.success(t('header.switchedOrg', { name: tenant.name }))
       }
-    } catch {
-      toast.error(t('header.switchTenantFailed'))
+    } catch (err) {
+      // 需求方#676：切换失败常因本地列表已过期（被移出组织/组织已删 → 40301/40401），
+      // 而切换器展示的是 store tenants ∪ ['tenants'] 查询的并集——两边都刷新，失效项才会消失，
+      // 否则用户会拿着旧列表反复点同一个已失效的租户（与 #216 同根因）
+      const code = (err as { code?: number })?.code
+      toast.error(
+        code === 40301 || code === 40401
+          ? t('header.switchTenantStale')
+          : t('header.switchTenantFailed'),
+      )
+      void refreshSession()
+      queryClient.invalidateQueries({ queryKey: ['tenants'] })
     }
   }
 

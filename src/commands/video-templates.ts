@@ -19,8 +19,9 @@ export async function videoTemplates(client: StudioClient, opts: { category?: st
     const cfg = t.generation_configs?.find((c) => c.is_default) || t.generation_configs?.[0]
     const modelHint = cfg?.model ? `模型:${cfg.model}` : ''
     const ratioHint = t.ratio || ''
-    const fieldCount = cfg?.params_json?.fields?.length || 0
-    const fieldHint = fieldCount ? `字段:${cfg!.params_json!.fields!.map((f) => f.key).join(',')}` : ''
+    // fields 新契约在 config 顶层，老数据在 params_json 里——两种都兜，否则自己建的模板自己列不出来
+    const fields = cfg?.fields || cfg?.params_json?.fields || []
+    const fieldHint = fields.length ? `字段:${fields.map((f) => f.key).join(',')}` : ''
     const sampleHint = t.sample_video_url ? '有参考视频' : ''
     process.stderr.write(
       `  ${t.id.padEnd(38)} ${(t.zh_name || '').padEnd(20)} ${(t.category || '').padEnd(10)} ${ratioHint.padEnd(6)} ${modelHint.padEnd(30)} ${fieldHint.padEnd(24)} ${sampleHint.padEnd(10)} ${tag(t)}\n`,
@@ -36,6 +37,8 @@ export async function videoTemplates(client: StudioClient, opts: { category?: st
 
 interface CreateVideoTemplateOpts {
   name: string
+  /** 对外调用标识，全局唯一。不给就自动生成一个（vt- 前缀） */
+  slug?: string
   prompt: string
   category?: string
   description?: string
@@ -53,25 +56,32 @@ export async function createVideoTemplate(client: StudioClient, opts: CreateVide
   if (!opts.name?.trim()) throw new Error('--name 必填')
   if (!opts.prompt?.trim()) throw new Error('--prompt 必填，占位符用 {key} 形式，如 "{product} 在 {scene} 中展示"')
 
+  // slug 是视频模板的硬必填（服务端 required=['zh_name','slug']），漏了必 400。
+  // 中文名大多是中文没法直接转 slug，不给 --slug 就生成一个 vt- 短标识，撞了让服务端报出来再换。
+  const slug = (opts.slug || `vt-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`).trim()
+  if (!/^[\w-]+$/.test(slug)) throw new Error('--slug 只能包含字母、数字、下划线和连字符')
+
   // 占位符必须声明 fields（中台 validateConfig 硬校验：prompt 里有 {key} 但没 fields 会被拒）
   const keys = Array.from(new Set(Array.from(opts.prompt.matchAll(/\{(\w+)\}/g), (m) => m[1])))
   const fields = keys.map((key) => ({ key, label: key }))
 
   const cfg: Record<string, unknown> = {
-    model: opts.model || 'seedance-2',
+    // 默认 auto：交给中台路由按 ratio/duration 挑档次。锁死具体模型得自己保证参数配得上它
+    model: opts.model || 'auto',
     prompt_template: opts.prompt,
     is_default: true,
   }
   if (fields.length) cfg.fields = fields
   if (opts.duration) {
     const d = Number(opts.duration)
-    if (!Number.isFinite(d) || d < 4 || d > 15) throw new Error('--duration 必须是 4-15 之间的数字（秒）')
+    if (!Number.isFinite(d) || d < 4 || d > 30) throw new Error('--duration 必须是 4-30 之间的数字（秒；Seedance 2.0 系上限 15，2.5 到 30，具体由中台按模型校验）')
     cfg.duration = d
   }
   if (opts.ratio) cfg.aspect_ratio = opts.ratio
 
   const row = await client.createVideoTemplate({
     zh_name: opts.name,
+    slug,
     category: opts.category,
     description: opts.description,
     sample_video_url: opts.sampleVideo || null,
@@ -80,6 +90,7 @@ export async function createVideoTemplate(client: StudioClient, opts: CreateVide
   })
 
   process.stderr.write(`✅ 视频模板已建：${row.id}\n`)
+  process.stderr.write(`slug: ${slug}\n`)
   process.stderr.write(`归属：${row.tenant_id ? '当前租户（其他租户看不到）' : '平台共享（所有租户可见）'}\n`)
   process.stderr.write(`模型: ${cfg.model} 时长: ${cfg.duration || '模板默认'} 比例: ${cfg.aspect_ratio || '模板默认'}\n`)
   if (fields.length) process.stderr.write(`占位符字段: ${fields.map((f) => f.key).join(', ')}\n`)

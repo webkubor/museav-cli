@@ -127,7 +127,7 @@ program
   // 不设默认值：--skill / --template 场景下要让技能/模板自己的比例生效，
   // CLI 强填默认值会把它们覆盖掉（服务端在纯 --prompt 场景已有 3:4 兜底，这里不用重复兜底）
   .option('-r, --ratio <ratio>', '宽高比: 3:4 / 9:16 / 1:1 / 4:3 / 16:9（不指定则用技能/模板自己的比例，纯 prompt 模式兜底 3:4）')
-  .option('-m, --model <name>', '指定模型，如 gpt-image-2 / seedance-2-fast / artsdance-2-0-pro-260801')
+  .option('-m, --model <name>', '指定模型，如 gpt-image-2 / artsdance-2-0-pro-260801（视频不传则走 auto 路由）')
   .option('-q, --quality <level>', '质量: low / medium / high（仅 gpt-image）')
   // 可重复：--ref 正面.jpg --ref 背景.jpg。顺序即语义——提示词里写「参考图片1的排版、
   // 用图片2作为背景」时，图片N 对应第 N 个 --ref。commander 的 collect 保证顺序。
@@ -136,7 +136,7 @@ program
   // 透明背景是上游的 background 参数，不是提示词能表达的东西——提示词里写
   // "transparent background" 只是在描述构图，模型照样铺一层白底。这个开关才是抠图开关。
   .option('--transparent', '透明背景 PNG（抠掉背景，带 alpha 通道）。仅部分上游支持，不支持时中台明确报错、不会悄悄给白底图；服务端自动强制 PNG 输出（JPEG 没有 alpha 通道）')
-  .option('--video', '生成视频（走 /api/videos 链路，模型如 seedance-2-fast / artsdance-2-0-pro）')
+  .option('--video', '生成视频（走 /api/videos 链路；模型档次如 artsdance-2-0-pro-260801，不传 --model 走 auto 路由）')
   .option('--duration <sec>', '视频时长（秒，仅 --video；由模型与上游支持范围决定）', (v) => Number(v))
   .option('--image <file>', '图生视频首帧图（仅 --video，自动上传）')
   .action(withClient((client: StudioClient, opts: any) => gen(client, opts)))
@@ -194,10 +194,11 @@ videoTemplatesCmd
   )
   .requiredOption('--name <zh_name>', '模板中文名')
   .requiredOption('--prompt <template>', '提示词模板，占位符用 {key} 形式，如 "{product} 在 {scene} 中展示"')
+  .option('--slug <slug>', '对外调用标识（全局唯一，视频模板硬必填）；不传自动生成 vt- 前缀短标识')
   .option('--category <name>', '分类，默认「其他」')
   .option('--description <text>', '模板说明')
-  .option('--model <name>', '视频模型，默认 seedance-2（可选 seedance-2-fast / seedance-2-mini / artsdance-2-0-pro-260801）')
-  .option('--duration <sec>', '视频时长（秒，4-15，可选）')
+  .option('--model <name>', '视频模型档次，默认 auto（交给中台路由）；锁死可选 artsdance-2-0-pro-260801（Seedance 2.0）/ artsdance-2-0-fast-260801 / artsdance-2-0-mini-260801 / artsdance-2-5-pro-260801（Seedance 2.5）')
+  .option('--duration <sec>', '视频时长（秒，4-30：Seedance 2.0 系上限 15、2.5 到 30，可选）')
   .option('--ratio <ratio>', '画面比例: 9:16 / 16:9 / 1:1 / 3:4（可选）')
   .option('--sample-video <url>', '参考视频 URL（可选，展示给用户的示例片）')
   .option('--sample-cover <url>', '封面图 URL（可选）')

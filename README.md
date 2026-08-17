@@ -172,8 +172,8 @@ museav gen --prompt '把这只鞋抠成透明底' --ref shoe.jpg --transparent
 #     （白底图看起来完全正常，静默降级只会让你以为提示词没写对，反复重试）
 #   · 会强制 PNG 输出：JPEG / 有损 WebP 没有 alpha 通道，装不下透明
 
-# 文生视频（模型如 seedance-2-fast / artsdance-2-0-pro-260801，自动轮询直到完成）
-museav gen --video --prompt '一只橘猫在窗台上伸懒腰，阳光洒进来，电影感' --model seedance-2-fast --ratio 9:16
+# 文生视频（不传 --model 走 auto 路由；锁死档次用 artsdance-2-0-pro-260801 这类代号，自动轮询直到完成）
+museav gen --video --prompt '一只橘猫在窗台上伸懒腰，阳光洒进来，电影感' --ratio 9:16
 
 # 图生视频（--image 传首帧图，自动上传）
 museav gen --video --image logo.png --prompt 'logo 缓缓发光，背景渐暗' --ratio 1:1

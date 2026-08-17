@@ -19,7 +19,8 @@ export async function templates(client: StudioClient, opts: { category?: string;
   process.stderr.write(`可用模板（${list.length} 个）:\n`)
   for (const t of list) {
     const cfg = t.generation_configs?.find((c) => c.is_default) || t.generation_configs?.[0]
-    const fields = cfg?.params_json?.fields || []
+    // fields 新契约在 config 顶层（CLI 自己 create 就写顶层），老数据在 params_json 里——两种都兜
+    const fields = cfg?.fields || cfg?.params_json?.fields || []
     const fieldHint = fields.length ? `字段:${fields.map((f) => f.key).join(',')}` : ''
     process.stderr.write(
       `  ${t.id.padEnd(38)} ${(t.zh_name || '').padEnd(16)} ${(t.category || '').padEnd(10)} ${(t.ratio || '').padEnd(6)} ${typeTag(t).padEnd(8)} ${fieldHint.padEnd(20)} ${tag(t)}\n`,

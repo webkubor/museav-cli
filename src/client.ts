@@ -101,7 +101,12 @@ export interface TemplateOption {
     model: string
     prompt_template: string
     ref_slots?: string[]
+    /** 表单字段声明——现行契约放 config 顶层（服务端 validateConfig 读这里） */
+    fields?: Array<{ key: string; label: string }>
+    /** 旧存法：fields 曾在 params_json 里，老模板还这么存，读时两种都要兜 */
     params_json?: { fields?: Array<{ key: string; label: string; placeholder?: string }> }
+    duration?: number
+    aspect_ratio?: string
     is_default?: boolean
   }>
 }
@@ -132,6 +137,8 @@ export interface CreateTemplateInput {
  *  ratio/duration/model 放在 generation_configs 每项里。 */
 export interface CreateVideoTemplateInput {
   zh_name: string
+  /** 对外调用标识，视频模板硬必填（服务端 validateCore required=['zh_name','slug']），全局唯一 */
+  slug: string
   category?: string
   description?: string
   sample_video_url?: string | null

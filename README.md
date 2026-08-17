@@ -214,6 +214,10 @@ curl -o poster.png "$URL"
 # 先查有哪些模板（自己租户建的 + 平台共享的）
 museav templates
 museav templates --category 电商白底图    # 按分类过滤
+museav templates --mine       # 只看我这个人建的
+museav templates --tenant     # 只看本租户专属的
+museav templates --platform   # 只看平台共享的
+museav templates --type image # 按类型过滤（image / article）
 
 # 没有占位符的模板，直接用
 museav gen --template <模板id>

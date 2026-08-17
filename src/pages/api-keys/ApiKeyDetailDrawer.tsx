@@ -20,7 +20,7 @@ import { trackEvent } from '@/lib/track'
 import { errorCodeOf } from '@/lib/request-error-message'
 import { getApiKeyAudit, getApiKeyDetail, getEffectiveGuardrails, revealApiKey } from '@/services/api-keys'
 import { listGuardrails } from '@/services/guardrails'
-import type { ApiKeyItem, ApiKeyType } from '@/types'
+import type { ApiKeyDetail, ApiKeyItem, ApiKeyType } from '@/types'
 import { useCopy } from '@/hooks/use-copy'
 import {
   deriveKeyType,
@@ -210,11 +210,24 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
 
   if (!item) return <SideSheet open={open} onClose={onClose} ariaTitle={t('apiKeys.detail.title')} />
 
-  const view = detail ?? item
+  // prd#102 空信封：后端把「无权限 / 已删除 / 不存在」统一收敛成 {"code":0,"data":{}}（防 key id 归属枚举，prd#649）。
+  // `{}` 是真值但无字段——不能当详情用，否则 responsibleOf 取到 undefined、下面解引用直接抛 TypeError 崩抽屉（prd#664）。
+  const filledDetail = detail?.api_key_id ? (detail as ApiKeyDetail) : undefined
+  const detailInvisible = !!detail && !filledDetail
+  const view = filledDetail ?? item
   const keyType = deriveKeyType(view)
   const responsible = responsibleOf(view)
-  const usage = detail?.usage
-  const auditRows = audit?.items ?? detail?.recent_audit ?? []
+  const usage = filledDetail?.usage
+  const auditRows = audit?.items ?? filledDetail?.recent_audit ?? []
+  // 生效护栏同样可能是空信封：守卫判的是「layers 有内容」，不是「对象非真值」——`{}` 会通过后者（prd#664）。
+  // 归一化只做一次，下面的预览/预算/规则三段统一读它，避免每处各写一遍 `?.`。
+  const effectiveLayers = effective?.layers
+  const effectiveView = effectiveLayers && {
+    layers: effectiveLayers,
+    budgets: effective?.effective?.budgets ?? [],
+    ipWhitelist: effective?.effective?.ip_whitelist ?? [],
+    modelBlacklist: effective?.effective?.model_blacklist ?? [],
+  }
   const rotationAudit = auditRows.find((row) => row.action === 'api_key.rotated')
   const rotationTokenChange = rotationAudit?.changes?.find((change) => change.field.toLowerCase() === 'token')
   const auditRotation = view.status === 'rotation_required' && view.previous_masked
@@ -312,6 +325,18 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
           </div>
         )}
 
+        {/* 详情不可见（prd#664）：空信封 = 无权限或已删除，后端刻意不区分两者。重试不会有结果，
+            所以给的是「刷新列表」而非重试；下方字段仍以列表项兜底展示。 */}
+        {detailInvisible && (
+          <div className="flex items-start gap-2.5 rounded-md border border-mg-warning/30 bg-mg-warning/10 px-3 py-2.5">
+            <LuTriangleAlert className="mt-0.5 w-4 h-4 shrink-0 text-mg-warning" />
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-bold text-mg-warning">{t('apiKeys.detailInvisible.title')}</div>
+              <p className="mt-0.5 text-xs text-mg-text-3">{t('apiKeys.detailInvisible.desc')}</p>
+            </div>
+          </div>
+        )}
+
         {/* 详情加载失败：显式错误块 + 重试（#444）。仍以列表项兜底展示下方字段，不阻塞其它段。 */}
         {detailError && (
           <div className="flex items-start gap-2.5 rounded-md border border-mg-danger/25 bg-mg-danger/5 px-3 py-2.5">
@@ -354,7 +379,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
 
         {/* 安全护栏（原型 EffectiveApiKeyGuardrailPreviewPanel，需求方#84） */}
         <Section title={t('apiKeys.detail.securityGuardrails')}>
-          {effective ? (
+          {effectiveView ? (
             <div className="space-y-3">
               {/* 生效规则预览：PRD 原型三层 全局 / 个人 / Key（modelgo_prd App.tsx preview.layers） */}
               <div>
@@ -378,7 +403,7 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
                       )
                     }
                     // Key 层最多 1 常规 + 1 提额（PRD：一把 Key 最多 1 有效常规 Key 护栏 + 1 有效 Key 提额）——列出该层全部
-                    const layers = effective.layers.filter((l) => l.layer === slot.key)
+                    const layers = effectiveView.layers.filter((l) => l.layer === slot.key)
                     return (
                       <div
                         key={slot.key}
@@ -405,15 +430,15 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
               </div>
 
               {/* 预算闸门：按聚合口径逐档 + 来源护栏 */}
-              {effective.effective.budgets.length > 0 && (
+              {effectiveView.budgets.length > 0 && (
                 <div>
                   <div className="mb-1.5 flex items-center gap-1 text-xs font-bold text-mg-text-2">
                     {t('apiKeys.budget.gate')}
                     <InfoTip text={t('apiKeys.budget.stopTip')} />
                   </div>
                   <div className="space-y-2">
-                    {effective.effective.budgets.map((b, i) => {
-                      const source = effective.layers.find((l) => l.guardrail_id === b.source_guardrail_id)?.guardrail_name
+                    {effectiveView.budgets.map((b, i) => {
+                      const source = effectiveView.layers.find((l) => l.guardrail_id === b.source_guardrail_id)?.guardrail_name
                       return (
                         <div key={i} className="rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
                           <div className="text-xs text-mg-text-3">{GATE_LABEL_KEY[b.aggregation_scope] ? t(GATE_LABEL_KEY[b.aggregation_scope]) : b.aggregation_scope}</div>
@@ -433,8 +458,8 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
                   值空→「不限制」；来源=贡献该规则的护栏层名，空→「未配置规则」 */}
               <div className="grid grid-cols-3 gap-2.5">
                 {(() => {
-                  const items = effective.effective.model_blacklist
-                  const sources = effective.layers.filter((l) => l.model_blacklist.length > 0).map((l) => l.guardrail_name)
+                  const items = effectiveView.modelBlacklist
+                  const sources = effectiveView.layers.filter((l) => l.model_blacklist.length > 0).map((l) => l.guardrail_name)
                   return (
                     <div className="min-w-0 rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
                       <div className="text-xs text-mg-text-3">{t('apiKeys.rule.modelBlacklist')}</div>
@@ -444,8 +469,8 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
                   )
                 })()}
                 {(() => {
-                  const items = effective.effective.ip_whitelist
-                  const sources = effective.layers.filter((l) => l.ip_whitelist.length > 0).map((l) => l.guardrail_name)
+                  const items = effectiveView.ipWhitelist
+                  const sources = effectiveView.layers.filter((l) => l.ip_whitelist.length > 0).map((l) => l.guardrail_name)
                   return (
                     <div className="min-w-0 rounded-lg border border-mg-border/60 bg-mg-fill-0/30 px-3 py-2.5">
                       <div className="text-xs text-mg-text-3">{t('apiKeys.rule.ipWhitelist')}</div>

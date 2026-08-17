@@ -1,5 +1,6 @@
 /**
  * 消费分布饼图卡：环形图 + 中心总消费 + Top/「其他」图例（对齐 PRD 用量明细·分布）。
+ * #666：支持展开态——「其他」聚合拆开为全部分片，与右侧排行卡「查看更多」联动。
  * 路由：/usage
  * API 来源：GET /usage/rankings/*
  */
@@ -10,7 +11,7 @@ import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { cn } from '@/lib/utils'
 import type { UsageRankingItem } from '@/types'
-import { formatMoney, CHART_OTHER_COLOR } from './usage-utils'
+import { formatMoney, CHART_CAT_COLORS, CHART_OTHER_COLOR } from './usage-utils'
 import { ModelDonutChart, type DonutSlice } from './usage-charts'
 import { ErrorBlock, PanelSkeleton } from './usage-panel-states'
 import { DIST_TOP_N, displayRankingName, rankingSharePercent, spendAmount } from './usage-panel-shared'
@@ -42,15 +43,28 @@ interface DistributionDonutPanelProps {
   currencySymbol: string
   emptyTitle: string
   emptyDesc: string
+  /** 展开全部分片（#666 查看更多）：不聚合「其他」，全部明细单列。 */
+  expanded: boolean
 }
 
 /**
- * 从消费排行项构建环形图分片（Top5 + 「其他」聚合），配色沿用趋势分组的分类色槽。
+ * 从消费排行项构建环形图分片。
+ * 折叠态：Top5 + 「其他」聚合（品牌色阶 + 灰）；
+ * 展开态（#666）：全部单列，分类色循环——brand ramp 只有 5 档，循环会让相邻分片同色难辨。
  * 供「模型分布」饼图卡消费；返回空数组表示无数据。
  */
-function buildDonutSlices(items: UsageRankingItem[], otherLabel: string): DonutSlice[] {
+function buildDonutSlices(items: UsageRankingItem[], otherLabel: string, expanded: boolean): DonutSlice[] {
   const withSpend = items.filter((it) => spendAmount(it) > 0)
   if (withSpend.length === 0) return []
+  if (expanded) {
+    return withSpend.map((it, index) => ({
+      key: it.key ?? `${displayRankingName(it)}-${index}`,
+      label: displayRankingName(it),
+      value: spendAmount(it),
+      share: rankingSharePercent(it),
+      color: CHART_CAT_COLORS[index % CHART_CAT_COLORS.length],
+    }))
+  }
   const top = withSpend.slice(0, DIST_TOP_N)
   const rest = withSpend.slice(DIST_TOP_N)
   const slices: DonutSlice[] = top.map((it, index) => ({
@@ -75,7 +89,7 @@ function buildDonutSlices(items: UsageRankingItem[], otherLabel: string): DonutS
 
 /**
  * 消费分布饼图卡（对齐 PRD 用量明细·分布）：环形图 + 中心总消费 + Top/「其他」图例（名称·金额·占比）。
- * 模型/成员/API Keys 三维共用，标题与副标题按维度传入。
+ * 模型/成员/API Keys 三维共用，标题与副标题按维度传入；expanded 时展开「其他」全部分片（#666）。
  */
 export function DistributionDonutPanel({
   title,
@@ -88,10 +102,11 @@ export function DistributionDonutPanel({
   currencySymbol,
   emptyTitle,
   emptyDesc,
+  expanded,
 }: DistributionDonutPanelProps) {
   const { t } = useTranslation()
   const [active, setActive] = useState<number | null>(null)
-  const slices = buildDonutSlices(items, t('usage.distribution.other'))
+  const slices = buildDonutSlices(items, t('usage.distribution.other'), expanded)
   const totalAmount =
     totalSpendAmount != null ? parseFloat(totalSpendAmount) || 0 : items.reduce((s, it) => s + spendAmount(it), 0)
 
@@ -121,7 +136,11 @@ export function DistributionDonutPanel({
             />
           </div>
           <ul
-            className="min-w-0 flex-1 space-y-1 self-stretch overflow-y-auto pr-1 sm:max-h-[210px]"
+            className={cn(
+              'min-w-0 flex-1 space-y-1 self-stretch overflow-y-auto pr-1',
+              // 展开态图例行数多，放宽滚动区高度（与右侧展开的排行卡高度大体匹配）
+              expanded ? 'sm:max-h-[340px]' : 'sm:max-h-[210px]',
+            )}
             onMouseLeave={() => setActive(null)}
           >
             {slices.map((s, i) => (

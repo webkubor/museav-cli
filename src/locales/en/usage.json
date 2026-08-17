@@ -67,7 +67,9 @@
       },
       "bySpend": "By spend · Desc",
       "total": "Total spend",
-      "other": "Other"
+      "other": "Other",
+      "viewMore": "View more",
+      "collapse": "Collapse"
     },
     "meta": {
       "models": "{{count}} models"

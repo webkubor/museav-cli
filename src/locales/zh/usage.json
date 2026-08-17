@@ -67,7 +67,9 @@
       },
       "bySpend": "按费用 · 降序",
       "total": "总消费",
-      "other": "其他"
+      "other": "其他",
+      "viewMore": "查看更多",
+      "collapse": "收起"
     },
     "meta": {
       "models": "{{count}} 模型"

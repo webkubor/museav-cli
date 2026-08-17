@@ -83,6 +83,10 @@ export default function UsagePage() {
     dimLeading,
     dimSecondary,
     drillFromRanking,
+    detailExpanded,
+    handleDetailExpandedChange,
+    detailPage,
+    setDetailPage,
   } = useUsagePage()
 
   return (
@@ -289,6 +293,7 @@ export default function UsagePage() {
             currencySymbol={currencySymbol}
             emptyTitle={emptyTitle}
             emptyDesc={emptyDesc}
+            expanded={detailExpanded}
           />
           <DistributionPanel
             title={t(`usage.distribution.${effectiveDimension}.rankTitle`)}
@@ -303,6 +308,10 @@ export default function UsagePage() {
             leading={dimLeading}
             secondary={dimSecondary}
             onDrill={drillFromRanking}
+            expanded={detailExpanded}
+            onExpandedChange={handleDetailExpandedChange}
+            page={detailPage}
+            onPageChange={setDetailPage}
           />
         </div>
       </Card>

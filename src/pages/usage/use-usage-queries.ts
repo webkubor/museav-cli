@@ -50,21 +50,23 @@ export function useUsageQueries(ctx: UsageQueryContext) {
     enabled: !!activeTenantId && rangeReady,
   })
 
+  // #666 用量明细支持「查看更多」：三个明细维度 limit 用接口上限 100 一次取全，
+  // 展开态由前端本地分页；费用来源卡只取 items[0]，不受影响。
   const rankingsApiKeysQuery = useQuery({
     queryKey: ['usage-rankings-api-keys', activeTenantId, commonParams],
-    queryFn: () => getUsageRankingsApiKeys({ ...commonParams, limit: 10 }),
+    queryFn: () => getUsageRankingsApiKeys({ ...commonParams, limit: 100 }),
     enabled: !!activeTenantId && rangeReady,
   })
 
   const rankingsModelsQuery = useQuery({
     queryKey: ['usage-rankings-models', activeTenantId, commonParams],
-    queryFn: () => getUsageRankingsModels({ ...commonParams, limit: 10 }),
+    queryFn: () => getUsageRankingsModels({ ...commonParams, limit: 100 }),
     enabled: !!activeTenantId && rangeReady,
   })
 
   const rankingsAccountsQuery = useQuery({
     queryKey: ['usage-rankings-accounts', activeTenantId, commonParams],
-    queryFn: () => getUsageRankingsAccounts({ ...commonParams, limit: 10 }),
+    queryFn: () => getUsageRankingsAccounts({ ...commonParams, limit: 100 }),
     enabled: !!activeTenantId && rangeReady,
   })
 

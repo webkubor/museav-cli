@@ -9,6 +9,9 @@ import { formatMoney } from './usage-utils'
 /** 分布图 Top N，超出折叠成「其他」。 */
 export const DIST_TOP_N = 5
 
+/** 排行卡展开态（#666 查看更多）本地分页每页行数。 */
+export const DIST_PAGE_SIZE = 10
+
 /** 分布排行行网格列模板（供 DistributionBarRow 使用）。 */
 export const DIST_ROW_GRID = 'grid grid-cols-[minmax(130px,180px)_minmax(120px,1fr)_72px_46px] items-center gap-3'
 

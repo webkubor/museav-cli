@@ -72,6 +72,10 @@ export function useUsagePage() {
             ? 'model'
             : 'model'
   const [dimension, setDimension] = useState<UsageDimension>(initialDimension)
+  // #666 用量明细「查看更多」：展开态与展开页码由页面持有（饼图/排行双卡联动），
+  // 切维度/视图/筛选或收起时统一复位，避免残留旧页码
+  const [detailExpanded, setDetailExpanded] = useState(false)
+  const [detailPage, setDetailPage] = useState(1)
   const [userView, setUserView] = useState<'enterprise' | 'mine' | 'space' | null>(
     viewParam === 'mine' || viewParam === 'enterprise' || viewParam === 'space' ? viewParam : null,
   )
@@ -130,11 +134,13 @@ export function useUsagePage() {
   function handleWorkspaceChange(val: string) {
     const next = val === '__all__' ? '' : val
     setFilterWorkspaceId(next)
+    setDetailPage(1)
     trackEvent('usage_filter_change', { filter: 'workspace', value: next ? 'specific' : 'all' }, { view_mode: view })
   }
 
   function handleTimeRangeChange(val: DateRangeValue) {
     setTimeRange(val)
+    setDetailPage(1)
     trackEvent('usage_filter_change', { filter: 'time_range', preset: val.preset ?? 'unknown' }, { view_mode: view })
   }
 
@@ -145,11 +151,21 @@ export function useUsagePage() {
     // 工作空间回全部——避免残留旧筛选导致新视图数据口径被误读。
     setTimeRange(DEFAULT_TIME_RANGE)
     setFilterWorkspaceId('')
+    setDetailExpanded(false)
+    setDetailPage(1)
   }
 
   function handleDimensionChange(next: UsageDimension) {
     trackEvent('usage_dimension_switch', { dimension: next }, { view_mode: view })
     setDimension(next)
+    setDetailExpanded(false)
+    setDetailPage(1)
+  }
+
+  function handleDetailExpandedChange(next: boolean) {
+    trackEvent('usage_detail_expand', { action: next ? 'expand' : 'collapse', dimension: effectiveDimension }, { view_mode: view })
+    setDetailExpanded(next)
+    setDetailPage(1)
   }
 
   function handleMetricChange(next: Metric) {
@@ -386,5 +402,9 @@ export function useUsagePage() {
     dimLeading,
     dimSecondary,
     drillFromRanking,
+    detailExpanded,
+    handleDetailExpandedChange,
+    detailPage,
+    setDetailPage,
   }
 }

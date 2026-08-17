@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.2.0 · 2026-08-17
+
+**`reverse` 主路改本地：Ollama + qwen3-vl。** 中台 API 读图要上传、排队、等云端推理；本地 8b 量化模型在自己机器上跑，免登录、零成本、离线可用。本地不可用（服务没起 / 模型没拉 / 推理出错）自动回落中台 API，回落时明确提示较慢，缺什么会告诉你补什么命令。
+
+- 一次性配置：`brew install ollama && brew services start ollama && ollama pull qwen3-vl:8b`（Intel Mac / Linux 用官方安装脚本同理）。换模型档位设 `MUSEAV_LOCAL_VLM`（如 `qwen3-vl:4b`，更快、识图质量略降），自定服务地址走标准 `OLLAMA_HOST`。
+- SCULPT 提示词从中台移植，砍掉本地不消费的 genre / body_md；返回归一化后与 API 路完全同构，`$(museav reverse x.png)` 管线用法不变，stdout 仍只出英文 prompt。
+- 读图前复用上传同款压缩（压到视觉模型够用的尺寸），本地推理也跟着快。
+- URL 输入固定走中台 API（本地路只收文件路径）；`--api` 强制走中台。
+- 本地路完全不需要中台凭证——未登录也能用，只有真回落 API 时才提示登录。
+
+**修复 `video-templates create` 必被 400 拒**：中台视频模板契约硬性要求 `slug`（required=['zh_name','slug']），且 toapis 2026-08-14 下线后 CLI 默认的 `seedance-2` 成了悬空引用——不带参数建视频模板必挂。现在 `--slug` 缺省自动生成 `vt-` 短标识并在 stderr 回显，默认模型改 `auto`（交给中台路由），`--duration` 放宽到 4-30（Seedance 2.5 支持到 30 秒）。
+
+- `templates` / `video-templates` 列表兼容读 config 顶层的 `fields`（现行契约存法——CLI 自己 create 写的就是顶层，之前自己建的模板自己都列不出字段）。
+- `gen` / `video-templates` 帮助文案与 README / AGENTS.md 示例里已下线的 `seedance-2-*` 代号全部清掉，照旧文案传参会 400。
+
 ## 2.0.0 · 2026-08-16
 
 **改名：npm 包 `museav-cli`，命令 `museav`。** 产品叫 MUSE AV，命令却叫另一个名字，同一个东西两个叫法——这次统一到产品名。

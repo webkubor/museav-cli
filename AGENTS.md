@@ -59,6 +59,14 @@ museav image-to-template ./poster.jpg --no-create      # dry run: draft JSON on 
 # Upload a file (image/audio/video; type is detected from the bytes, not the extension)
 museav upload ./face.png
 
+# Local image tools — no login, no platform quota, work on macOS AND Windows
+# (all deps ship prebuilt binaries; zero platform-specific code):
+#   compress:  resize/re-encode via sharp. Output <name>-min.<fmt>, never overwrites input.
+#   remove-bg: ISNet via onnxruntime-node → alpha PNG (~170MB model auto-downloaded
+#              to ~/.museav-models on first use; %USERPROFILE%\.museav-models on Windows).
+museav compress ./photo.jpg --max-edge 800 --format webp --quality 70
+museav remove-bg ./shoe.png              # stdout: path to <name>-nobg.png
+
 # List your own (or, if using a tenant apiKey, your tenant's) recent jobs as JSON
 museav jobs --limit 10 --status failed
 
@@ -81,6 +89,7 @@ Full flag reference: `museav <command> --help`. Full command table and auth deta
 
 ## Failure modes worth knowing
 
+- **Cross-platform contract**: the CLI targets macOS AND Windows. No Unix-only assumptions anywhere — paths go through `node:path`/`os.homedir()`, no shell expansions, no brew/which calls in code (OS-specific text like Ollama start hints adapts via `process.platform`). Keep it that way in new code.
 - `gen` polls until the job finishes or times out (default 600s controlled by the underlying `generateAndWait`); a timeout throws, it does not hang forever.
 - `jobs --limit`/`--status` are filtered **client-side** — the server always returns your most recent 50 jobs; you cannot page past that.
 - Non-zero exit code + a message on stderr is the only failure signal; there's no separate machine-readable error format on stdout.

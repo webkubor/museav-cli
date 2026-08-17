@@ -322,6 +322,25 @@ museav upload face.png
 > `gen --ref` / `gen --video --image` 内部已经自动帮你上传了，不需要先手动跑一次 `upload`。
 > 单独用 `upload` 的场景是：同一张垫图要复用多次，或者你想把 URL 存下来给别的系统用。
 
+### 本地图像工具 `compress` / `remove-bg`
+
+纯本地、免登录、不消耗中台额度，macOS / Windows / Linux 通用（依赖全走 npm 预编译，无平台特化代码）：
+
+```bash
+# 压缩：默认同目录 <名>-min.<格式>，绝不覆写原文件
+museav compress photo.jpg
+museav compress photo.jpg --max-edge 800 --format webp --quality 70   # 597KB → 18KB 级别
+
+# 抠图去背景：输出带 alpha 的 PNG（ISNet 模型，本地 ONNX 推理，热跑秒级）
+museav remove-bg product.png
+# stdout 都是产物路径，方便管道串联
+museav gen --prompt "$(museav reverse $(museav remove-bg shoe.png))"   # 抠图 → 逆向 → 重生成
+```
+
+- `compress` 用 sharp（已是 CLI 可选依赖）；`remove-bg` 用 onnxruntime-node + ISNet/U2Net 模型（均 MIT/Apache 兼容许可证，刻意没用 AGPL 的现成 npm 包）。模型首次使用自动下载 ~170MB，缓存到 `~/.museav-models/`（Windows 是 `%USERPROFILE%\.museav-models`）。
+- 两个命令的输出默认带后缀（`-min` / `-nobg`），不会覆盖你的输入文件；要覆盖已存在的输出加 `--overwrite`。
+- 可选依赖缺失时不炸，报一行重装指引（`npm install -g museav-cli`）。
+
 ### 查模型 / 余额
 
 ```bash
@@ -424,6 +443,8 @@ console.log(r.sculpt.light)  // 光影分析
 | `reverse <file\|url>` | 读图，反推 prompt（**只读图**，不建模板） | 英文 prompt |
 | `image-to-template <file\|url>` | 图生模板：读图 + 文字层逆向 + 变量化 → 建成可复用图片模板 | 模板 id（`--no-create` 时是草稿 JSON） |
 | `upload <file>` | 上传素材（图片/音频/视频） | 公网直链 |
+| `compress <file>` | 本地压缩图片（免登录，`--max-edge`/`--quality`/`--format`） | 产物路径 |
+| `remove-bg <file>` | 本地抠图去背景（免登录，输出带 alpha 的 PNG） | 产物路径 |
 | `models` | 可用模型 | 模型名列表 |
 | `balance` | 上游余额 | JSON |
 | `jobs` | 查自己（租户则是自己业务下）的工作流 | JSON 数组 |

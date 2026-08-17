@@ -53,6 +53,7 @@
     "access": "public"
   },
   "optionalDependencies": {
-    "sharp": "^0.35.3"
+    "sharp": "^0.35.3",
+    "onnxruntime-node": "^1.27.0"
   }
 }

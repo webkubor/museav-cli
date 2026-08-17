@@ -28,6 +28,13 @@ export interface LocalVlmStatus {
   reason?: string
 }
 
+// 各系统启动 Ollama 的正确姿势不同，提示语跟着平台走（Windows 没有 brew）
+function ollamaStartHint(): string {
+  if (process.platform === 'win32') return '启动 Ollama 应用（开始菜单 / Ollama.exe），或命令行运行 ollama serve'
+  if (process.platform === 'darwin') return 'brew services start ollama，或 ollama serve'
+  return 'systemctl --user start ollama，或 ollama serve'
+}
+
 /** 探活 + 模型在位检查。3 秒探不通就是没起服务，不等推理超时才发现 */
 export async function checkLocalVlm(): Promise<LocalVlmStatus> {
   const host = ollamaHost()
@@ -43,7 +50,7 @@ export async function checkLocalVlm(): Promise<LocalVlmStatus> {
     }
     return { running: true, modelPresent: true, host }
   } catch {
-    return { running: false, modelPresent: false, host, reason: `Ollama 未运行（${host}），启动: ollama serve 或 brew services start ollama` }
+    return { running: false, modelPresent: false, host, reason: `Ollama 未运行（${host}），${ollamaStartHint()}` }
   }
 }
 

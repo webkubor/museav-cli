@@ -15,6 +15,7 @@ import { bindFeishu } from './commands/bind-feishu.js'
 import { printWelcome } from './commands/welcome.js'
 import { gen } from './commands/gen.js'
 import { reverse } from './commands/reverse.js'
+import { compressCmd, removeBgCmd } from './commands/img-tools.js'
 import { imageToTemplate } from './commands/image-to-template.js'
 import { upload } from './commands/upload.js'
 import { models } from './commands/models.js'
@@ -109,6 +110,18 @@ function withLazyClient(fn: (getClient: () => StudioClient, ...args: any[]) => P
   }
 }
 
+// 本地命令（compress / remove-bg 等）：不碰中台、不需要任何凭证，只包一层统一的错误出口
+function asyncRun(fn: (...args: any[]) => Promise<any>) {
+  return async (...args: any[]) => {
+    try {
+      await fn(...args)
+    } catch (e) {
+      process.stderr.write(`❌ ${(e as Error).message}\n`)
+      process.exit(1)
+    }
+  }
+}
+
 // products / assets 查的是租户自己后台的数据，不是 Studio 中台的，走独立的 TenantClient
 // （见 tenant-client.ts 顶部注释），只支持租户 apiKey 身份，不支持个人 login token。
 function withTenantClient<T extends (...args: any[]) => Promise<any>>(fn: T) {
@@ -156,6 +169,24 @@ program
   .option('--duration <sec>', '视频时长（秒，仅 --video；由模型与上游支持范围决定）', (v) => Number(v))
   .option('--image <file>', '图生视频首帧图（仅 --video，自动上传）')
   .action(withClient((client: StudioClient, opts: any) => gen(client, opts)))
+
+program
+  .command('compress <file>')
+  .description('本地压缩图片（sharp，免登录）：默认同目录 <名>-min.<格式>，不覆写原文件')
+  .option('--out <path>', '输出路径（默认 <名>-min.<格式>）')
+  .option('--max-edge <px>', '最长边缩到该像素（等比，inside）')
+  .option('--quality <1-100>', 'jpg/webp 质量，默认 82')
+  .option('--format <fmt>', '输出格式 jpg / png / webp（默认跟随原格式）')
+  .option('--overwrite', '允许覆盖已存在的输出文件')
+  .action(asyncRun((input: string, opts: any) => compressCmd(input, opts)))
+
+program
+  .command('remove-bg <file>')
+  .description('本地抠图去背景（ISNet/U2Net + onnxruntime，免登录）：输出带 alpha 的 PNG。首次使用自动下载模型（~170MB，缓存 ~/.museav-models）')
+  .option('--out <path>', '输出路径（默认 <名>-nobg.png）')
+  .option('--model <name>', 'isnet（默认，质量优先）/ u2net')
+  .option('--overwrite', '允许覆盖已存在的输出文件')
+  .action(asyncRun((input: string, opts: any) => removeBgCmd(input, opts)))
 
 program
   .command('reverse <input>')

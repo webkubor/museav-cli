@@ -38,6 +38,7 @@ import {
   LogDetailSheet,
   type PayloadView,
 } from './detail'
+import { SyncLogsSummary } from './summary'
 import { AsyncTasksPanel } from '@/pages/tasks'
 import { LuChevronDown, LuFileText, LuRefreshCw, LuSearch, LuTriangleAlert } from 'react-icons/lu'
 
@@ -135,7 +136,9 @@ export default function LogsPage() {
     trackEvent('logs_record_type_switch', { record_type: next })
     setRecordType(next)
     setSelectedLog(null)
-    resetPagination()
+    // 切换记录类型时恢复该类型默认筛选并同步刷新 Summary（需求方#668）；
+    // 异步侧筛选随 AsyncTasksPanel 卸载自然重置，这里只需重置同步侧。
+    clearFilters()
     setSearchParams((prev) => {
       const p = new URLSearchParams(prev)
       if (next === 'async') p.set('record_type', 'async')
@@ -650,6 +653,22 @@ export default function LogsPage() {
             </div>
           </div>
         )}
+
+        {/* Summary 指标条（需求方#668）：筛选器下方、已选筛选标签上方，与列表完全同参数口径 */}
+        <SyncLogsSummary
+          params={{
+            workspace_id: effectiveWorkspaceId,
+            account_id: effectiveAccountId,
+            api_key_id: apiKeyFilter === 'all' ? undefined : apiKeyFilter,
+            model_id: modelFilter === 'all' ? undefined : modelFilter,
+            status: backendStatus,
+            guardrail: effectiveGuardrail,
+            request_id: isRequestIdSearch ? debouncedSearch : undefined,
+            q: isRequestIdSearch ? undefined : debouncedSearch || undefined,
+            from,
+            to,
+          }}
+        />
 
         <ActiveFilterChips chips={activeChips} onClear={clearFilters} />
       </section>

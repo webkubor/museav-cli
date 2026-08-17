@@ -118,7 +118,7 @@ export type {
   HistogramBucket,
   LogHistogram,
   CallLogItem,
-  LogStats,
+  LogsSummary,
   LogPayload,
   ModelRequestState,
   GuardrailAction,

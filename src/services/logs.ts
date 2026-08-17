@@ -11,7 +11,7 @@ import type {
   GuardrailDecision,
   LogHistogram,
   LogPayload,
-  LogStats,
+  LogsSummary,
   ModelRequestState,
   Money,
 } from '@/types'
@@ -87,16 +87,21 @@ type ModelLogListResponse = {
   total?: number
 }
 
+// Summary 契约（需求方#668 · 后端 qa#605）：现接口 totals 仅有 requests/spend/tokens；
+// succeeded/failed/guardrail_hits/avg_duration_ms/avg_ttft_ms/spend_with_cost_count 为
+// qa#605 约定的补齐字段（最终字段名以其交付为准），交付前缺失 → undefined，展示层显「—」。
 type ModelLogStatsResponse = {
-  from?: string
-  to?: string
-  granularity?: string
-  group_by?: string
   totals?: {
     spend?: string
     requests?: number
     tokens?: number
     currency?: string
+    succeeded?: number
+    failed?: number
+    guardrail_hits?: number
+    avg_duration_ms?: number
+    avg_ttft_ms?: number
+    spend_with_cost_count?: number
   }
 }
 
@@ -266,22 +271,40 @@ function toCursorPage(
   }
 }
 
-function toLogStats(data: ModelLogStatsResponse): LogStats {
+function numberOrUndefined(value: number | undefined): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
+}
+
+// 后端未返回的指标保持 undefined（显「—」），不得填 0 冒充——0 是合法业务值（无结果时显 0）。
+function toLogsSummary(data: ModelLogStatsResponse): LogsSummary {
+  const totals = data.totals
   return {
-    from: data.from || '',
-    to: data.to || '',
-    granularity: data.granularity || '',
-    group_by: data.group_by || '',
-    totals: {
-      total_requests: data.totals?.requests ?? 0,
-      succeeded: 0,
-      failed: 0,
-      rejected: 0,
-      error_rate: 0,
-      avg_duration_ms: 0,
-      total_tokens: data.totals?.tokens ?? 0,
-      total_cost: money(data.totals?.spend, data.totals?.currency),
-    },
+    total_requests: numberOrUndefined(totals?.requests),
+    total_tokens: numberOrUndefined(totals?.tokens),
+    succeeded: numberOrUndefined(totals?.succeeded),
+    failed: numberOrUndefined(totals?.failed),
+    guardrail_hits: numberOrUndefined(totals?.guardrail_hits),
+    total_cost: totals?.spend?.trim() ? money(totals.spend, totals.currency) : undefined,
+    cost_records: numberOrUndefined(totals?.spend_with_cost_count),
+    avg_duration_ms: numberOrUndefined(totals?.avg_duration_ms),
+    avg_ttft_ms: numberOrUndefined(totals?.avg_ttft_ms),
+  }
+}
+
+// 与 toListQuery 同口径（需求方#668 硬性要求 Summary 与列表结果完全一致）；model_id → model 同列表。
+function toStatsQuery(params?: LogStatsParams) {
+  return {
+    from: params?.from,
+    to: params?.to,
+    workspace_id: params?.workspace_id,
+    account_id: params?.account_id,
+    api_key_id: params?.api_key_id,
+    model: params?.model_id,
+    status: params?.status,
+    guardrail: params?.guardrail,
+    q: params?.q,
+    request_id: params?.request_id,
+    api_key_type: params?.api_key_type,
   }
 }
 
@@ -290,10 +313,10 @@ export function getLogHistogram(params?: LogHistogramParams) {
   return get<LogHistogram>('model-logs/histogram', params)
 }
 
-/** 获取调用日志统计摘要（总量/错误率/耗时/Token/费用） */
-export async function getLogStats(params?: LogStatsParams) {
-  const data = await get<ModelLogStatsResponse>('model-logs/stats', params)
-  return toLogStats(data)
+/** 调用日志 Summary（需求方#668）：与列表同口径的聚合指标；筛选参数补齐待后端 qa#605。 */
+export async function getLogsSummary(params?: LogStatsParams) {
+  const data = await get<ModelLogStatsResponse>('model-logs/stats', toStatsQuery(params))
+  return toLogsSummary(data)
 }
 
 /** 获取调用日志列表 */

@@ -247,6 +247,20 @@
         "model_blacklist": "模型黑名单",
         "ip_allowlist": "IP 白名单"
       }
+    },
+    "summary": {
+      "totalCalls": "总调用数",
+      "totalTokens": "Token {{value}}",
+      "successRate": "成功率",
+      "succeededCount": "成功 {{value}}",
+      "guardrailHits": "护栏命中",
+      "hitRatio": "占比 {{value}}",
+      "errors": "异常请求",
+      "errorRate": "异常率 {{value}}",
+      "totalCost": "总费用",
+      "avgCost": "均值 {{value}}",
+      "avgDuration": "平均总耗时",
+      "avgTtft": "首 Token {{value}}"
     }
   }
 }

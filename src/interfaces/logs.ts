@@ -11,11 +11,22 @@ export interface LogHistogramParams extends QueryParams {
   api_key_type?: ApiKeyType
 }
 
-/** 日志统计摘要查询参数 */
+/** 日志 Summary 查询参数（需求方#668）：必须与列表 GET /model-logs 完全同口径。
+ *  status/guardrail/q/request_id 现契约不支持，后端 qa#605 补齐；先按同名参数透传。 */
 export interface LogStatsParams extends QueryParams {
   from?: string
   to?: string
   workspace_id?: string
+  account_id?: string
+  api_key_id?: string
+  model_id?: string
+  status?: 'accepted' | 'succeeded' | 'failed' | 'rejected'
+  /** 护栏命中筛选，与 status 正交（同列表口径） */
+  guardrail?: 'all' | 'hit' | 'not_hit'
+  /** 关键词搜索 request_id 或消息片段 */
+  q?: string
+  /** Request ID 精确检索（与模糊 q 分流） */
+  request_id?: string
   /** 按 API Key 类型过滤（私有/成员/服务）——需求 #22，后端 qa#449 支持 */
   api_key_type?: ApiKeyType
 }

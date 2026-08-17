@@ -100,21 +100,20 @@ export interface CallLogItem {
   guardrail_reason?: string | null
 }
 
-export interface LogStats {
-  from: string
-  to: string
-  granularity: string
-  group_by: string
-  totals: {
-    total_requests: number
-    succeeded: number
-    failed: number
-    rejected: number
-    error_rate: number
-    avg_duration_ms: number
-    total_tokens: number
-    total_cost: Money
-  }
+/** 调用日志 Summary（需求方#668）：跟随全部筛选的同步侧聚合指标。
+ *  后端契约 qa#605 交付前多数字段缺失 → undefined，展示层显「—」，不得用 0 冒充。 */
+export interface LogsSummary {
+  total_requests?: number
+  total_tokens?: number
+  succeeded?: number
+  failed?: number
+  guardrail_hits?: number
+  total_cost?: Money
+  /** 有实际费用的记录数（费用均值分母，避免未计费记录拉低均值） */
+  cost_records?: number
+  /** 仅统计有耗时数据的记录（被拦截/未发起不进分母） */
+  avg_duration_ms?: number
+  avg_ttft_ms?: number
 }
 
 export interface LogPayload {

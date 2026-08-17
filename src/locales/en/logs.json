@@ -247,6 +247,20 @@
         "model_blacklist": "Model blacklist",
         "ip_allowlist": "IP allowlist"
       }
+    },
+    "summary": {
+      "totalCalls": "Total calls",
+      "totalTokens": "Tokens {{value}}",
+      "successRate": "Success rate",
+      "succeededCount": "Succeeded {{value}}",
+      "guardrailHits": "Guardrail hits",
+      "hitRatio": "Ratio {{value}}",
+      "errors": "Failed requests",
+      "errorRate": "Error rate {{value}}",
+      "totalCost": "Total cost",
+      "avgCost": "Avg {{value}}",
+      "avgDuration": "Avg duration",
+      "avgTtft": "First token {{value}}"
     }
   }
 }

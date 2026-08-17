@@ -85,6 +85,27 @@
 
 两条路径互不依赖，选跟你身份匹配的那条，不用两个都配。下面「快速开始」走的是平台用户（login）这条路；如果你是租户，直接跳到下面「B 端 / CI 场景」那一节。
 
+## 能力速览（小白先看这个）
+
+`museav` 能干什么，一句话一组：
+
+| 分类 | 能力 | 命令 |
+|---|---|---|
+| **AI 生成**（中台） | 文字出图 / 垫图出图 / 技能出图 / 模板出图 | `gen`（含 `--ref` 垫图、`--transparent` 透明底） |
+| | 文生视频 / 图生视频 | `gen --video` |
+| | 从已有图片反推提示词 | `reverse` |
+| | 一张图做成可复用模板 | `image-to-template` |
+| | 建/查图片模板、视频模板 | `templates` / `video-templates` |
+| **项目管理**（中台） | 工作区（项目）+ 每个项目自己的素材库 | `projects`、`projects assets` |
+| | 素材直链垫图、作品归档进项目 | `gen --project`、`jobs --project` |
+| **本地图像处理**（免登录/免费/离线） | 压缩图片 | `compress` |
+| | 抠图去背景（输出透明 PNG） | `remove-bg` |
+| | **放大清晰度**（2M → 10M+ 级） | `upscale` |
+| | 去水印 | `remove-watermark` |
+| **素材与统计** | 上传素材 / 查任务 / 查余额 / 查模型 / 查身份 | `upload` / `jobs` / `balance` / `models` / `whoami` |
+
+> 本地工具（`compress` / `remove-bg` / `upscale` / `remove-watermark`）**不用登录、不花一分钱**，装了就能用；其余命令需要一个凭证（个人 `login` 或租户 apiKey）。
+
 ---
 
 ## 快速开始
@@ -476,6 +497,8 @@ console.log(r.sculpt.light)  // 光影分析
 | `upload <file>` | 上传素材（图片/音频/视频） | 公网直链 |
 | `compress <file>` | 本地压缩图片（免登录，`--max-edge`/`--quality`/`--format`） | 产物路径 |
 | `remove-bg <file>` | 本地抠图去背景（免登录，输出带 alpha 的 PNG） | 产物路径 |
+| `upscale <file>` | 本地超分放大，2M 图变 10M+（免登录，Real-ESRGAN GPU，`--scale 2/3/4`） | 产物路径 |
+| `remove-watermark <file>` | 本地去水印（免登录，自动定位 + LaMa 修复，`--mask` 手工兜底） | 产物路径 |
 | `projects` | 工作区（项目）列表：一账户多项目，各带自己的素材库 | 项目 id 列表 |
 | `projects assets --project` | 项目素材库：ls / add / rm（垫图母版，人像库/产品库各管各的） | `id<TAB>url` 行 |
 | `models` | 可用模型 | 模型名列表 |

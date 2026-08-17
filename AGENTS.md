@@ -64,8 +64,14 @@ museav upload ./face.png
 #   compress:  resize/re-encode via sharp. Output <name>-min.<fmt>, never overwrites input.
 #   remove-bg: ISNet via onnxruntime-node → alpha PNG (~170MB model auto-downloaded
 #              to ~/.museav-models on first use; %USERPROFILE%\.museav-models on Windows).
+#   upscale:   Real-ESRGAN via Vulkan GPU → 2M image becomes 10M+ (~65MB engine+model
+#              auto-downloaded once to ~/.museav-bin + ~/.museav-models).
+#   remove-watermark: pixel-heuristic auto-locate (zero model deps) + LaMa inpainting
+#              → clean PNG (~200MB model on-demand, freed after run).
 museav compress ./photo.jpg --max-edge 800 --format webp --quality 70
 museav remove-bg ./shoe.png              # stdout: path to <name>-nobg.png
+museav upscale ./photo.jpg --scale 4     # stdout: path to <name>-4x.png
+museav remove-watermark ./poster.jpg     # stdout: path to <name>-clean.png
 
 # List your own (or, if using a tenant apiKey, your tenant's) recent jobs as JSON
 museav jobs --limit 10 --status failed

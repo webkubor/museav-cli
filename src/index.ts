@@ -15,7 +15,7 @@ import { bindFeishu } from './commands/bind-feishu.js'
 import { printWelcome } from './commands/welcome.js'
 import { gen } from './commands/gen.js'
 import { reverse } from './commands/reverse.js'
-import { compressCmd, removeBgCmd } from './commands/img-tools.js'
+import { compressCmd, removeBgCmd, upscaleCmd, removeWatermarkCmd } from './commands/img-tools.js'
 import { projects, createProject, listAssets, addAsset, removeAsset, resolveWorkspace } from './commands/projects.js'
 import { imageToTemplate } from './commands/image-to-template.js'
 import { upload } from './commands/upload.js'
@@ -189,6 +189,23 @@ program
   .option('--model <name>', 'isnet（默认，质量优先）/ u2net')
   .option('--overwrite', '允许覆盖已存在的输出文件')
   .action(asyncRun((input: string, opts: any) => removeBgCmd(input, opts)))
+
+program
+  .command('upscale <file>')
+  .description('本地超分放大（Real-ESRGAN + Vulkan GPU，免登录）：默认 4x 输出 PNG。首次使用自动下载引擎与模型（~65MB，缓存 ~/.museav-bin 与 ~/.museav-models）')
+  .option('--out <path>', '输出路径（默认 <名>-<N>x.png）')
+  .option('--scale <n>', '放大倍数 2 / 3 / 4，默认 4')
+  .option('--model <name>', 'realesrgan-x4plus（通用照片，默认）/ realesrgan-x4plus-anime（插画动漫）')
+  .option('--overwrite', '允许覆盖已存在的输出文件')
+  .action(asyncRun((input: string, opts: any) => upscaleCmd(input, opts)))
+
+program
+  .command('remove-watermark <file>')
+  .description('本地去水印（免登录）：纯像素启发式自动定位水印 → LaMa 掩码修复，零模型依赖。首次使用自动下载修复模型（~200MB）；复杂画面用 --mask 手工指定（白=去除区）')
+  .option('--out <path>', '输出路径（默认 <名>-clean.png）')
+  .option('--mask <file>', '手工掩码图（白色=要去除的区域），跳过自动定位')
+  .option('--overwrite', '允许覆盖已存在的输出文件')
+  .action(asyncRun((input: string, opts: any) => removeWatermarkCmd(input, opts)))
 
 // 工作区（项目）与项目素材库：平台 → 账户 → 工作区三层归属，素材挂工作区
 const projectsCmd = program

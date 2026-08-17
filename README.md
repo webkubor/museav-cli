@@ -237,17 +237,17 @@ museav gen --template "$ID" --fields '{"artist":"..."}'
 
 ### 图片逆向 `reverse`
 
-逆推出图 prompt，可以直接拿去再出一张同风格的。**主路是本地 Ollama（qwen3-vl）**：快、零成本、无需登录；本地不可用时自动回落中台 API（SCULPT 六要素：主体/构图/世界观/光影/输出/质感），回落时会明确提示较慢：
+逆推出图 prompt，可以直接拿去再出一张同风格。**默认走中台 API**（SCULPT 六要素：主体/构图/世界观/光影/输出/质感）；`--local` 可显式切本地 Ollama（需自备 qwen3-vl，本地不可用时自动回落 API）：
 
 ```bash
-# 本地文件走本地模型（推荐，无需登录）
+# 默认：中台 API（需登录）
 museav reverse photo.png
 
-# 图片 URL 没法喂本地模型，走中台 API（需登录）
-museav reverse https://example.com/photo.png
+# 显式本地：需 ollama pull qwen3-vl:8b 自备模型（本地大模型默认不自动拉起）
+museav reverse photo.png --local
 
-# 强制走中台 API（跳过本地，慢，需登录）
-museav reverse photo.png --api
+# 图片 URL 走中台 API
+museav reverse https://example.com/photo.png
 
 # 逆向 + 出图，一条龙
 museav gen --prompt "$(museav reverse photo.png)"
@@ -340,6 +340,21 @@ museav gen --prompt "$(museav reverse $(museav remove-bg shoe.png))"   # 抠图 
 - `compress` 用 sharp（已是 CLI 可选依赖）；`remove-bg` 用 onnxruntime-node + ISNet/U2Net 模型（均 MIT/Apache 兼容许可证，刻意没用 AGPL 的现成 npm 包）。模型首次使用自动下载 ~170MB，缓存到 `~/.museav-models/`（Windows 是 `%USERPROFILE%\.museav-models`）。
 - 两个命令的输出默认带后缀（`-min` / `-nobg`），不会覆盖你的输入文件；要覆盖已存在的输出加 `--overwrite`。
 - 可选依赖缺失时不炸，报一行重装指引（`npm install -g museav-cli`）。
+
+### 超分 `upscale` 与去水印 `remove-watermark`（轻量工具，无大模型常驻）
+
+```bash
+# 超分放大（Real-ESRGAN + Vulkan GPU；首次自动下载引擎+模型 ~65MB）
+museav upscale photo.jpg --scale 4                     # 默认输出 <名>-4x.png
+museav upscale anime.png --model realesrgan-x4plus-anime
+
+# 去水印（纯像素启发式定位 → LaMa 修复，零模型依赖；修复模型 ~200MB 按需下载）
+museav remove-watermark photo.jpg                      # 角标式水印自动定位
+museav remove-watermark photo.jpg --mask mask.png      # 复杂画面手工掩码（白=去除区）
+```
+
+- 依赖红线：本地**绝不自动拉起开源大模型**——这些工具是轻量 CNN/传统算法，用完即释放内存。reverse 的本地路已翻回显式 `--local`（需自备 Ollama），默认走中台 API。
+- 二进制与模型缓存：`~/.museav-bin/upscayl`（引擎）、`~/.museav-models/`（模型），Windows 对应 `%USERPROFILE%` 下同名目录；删除即彻底清理。
 
 ### 项目（工作区）与项目素材库 `projects`
 

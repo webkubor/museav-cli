@@ -4,6 +4,8 @@
 import { stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, extname, join } from 'node:path'
 import { removeBackgroundLocal, BG_MODELS, type BgModelKey } from '../local-bg.js'
+import { upscaleLocal, UPSCALE_MODELS, type UpscaleModel } from '../local-upscale.js'
+import { detectWatermarkBoxes, inpaintLocal, maskFromBoxes } from '../local-watermark.js'
 
 async function fileExists(path: string): Promise<boolean> {
   try {
@@ -91,5 +93,64 @@ export async function removeBgCmd(input: string, opts: RemoveBgOpts): Promise<vo
   }
   await writeFile(outPath, png)
   process.stderr.write(`✅ 抠图完成（${BG_MODELS[modelKey].label}，用时 ${((Date.now() - start) / 1000).toFixed(1)}s，${fmtBytes(png.length)}）\n`)
+  console.log(outPath)
+}
+
+export interface RemoveWatermarkOpts {
+  out?: string
+  mask?: string
+  overwrite?: boolean
+}
+
+export async function removeWatermarkCmd(input: string, opts: RemoveWatermarkOpts): Promise<void> {
+  if (!(await fileExists(input))) throw new Error(`文件不存在: ${input}`)
+  const outPath = opts.out || defaultOut(input, 'clean', 'png')
+  if ((await fileExists(outPath)) && !opts.overwrite) {
+    throw new Error(`输出已存在（用 --overwrite 覆盖或 --out 换路径）: ${outPath}`)
+  }
+
+  const start = Date.now()
+  let mask: Buffer | string
+  if (opts.mask) {
+    if (!(await fileExists(opts.mask))) throw new Error(`掩码文件不存在: ${opts.mask}`)
+    mask = opts.mask
+    process.stderr.write('使用手工掩码，跳过自动定位\n')
+  } else {
+    // 纯像素启发式定位水印（零模型依赖），失败时明确指引改用 --mask
+    const boxes = await detectWatermarkBoxes(input)
+    if (!boxes.length) throw new Error('自动定位没找到水印（角标式半透明水印通常可识别；复杂画面请用 --mask 手工指定）')
+    process.stderr.write(`定位到 ${boxes.length} 处水印：${boxes.map((b) => `(${b.x1},${b.y1})-(${b.x2},${b.y2})`).join(' ')}\n`)
+    mask = await maskFromBoxes(input, boxes)
+  }
+
+  const png = await inpaintLocal(input, mask)
+  await writeFile(outPath, png)
+  process.stderr.write(`✅ 去水印完成（用时 ${((Date.now() - start) / 1000).toFixed(1)}s，${fmtBytes(png.length)}）\n`)
+  console.log(outPath)
+}
+
+export interface UpscaleOpts {
+  out?: string
+  scale?: string
+  model?: string
+  overwrite?: boolean
+}
+
+export async function upscaleCmd(input: string, opts: UpscaleOpts): Promise<void> {
+  if (!(await fileExists(input))) throw new Error(`文件不存在: ${input}`)
+  const scale = opts.scale ? Number(opts.scale) : 4
+  if (![2, 3, 4].includes(scale)) throw new Error('--scale 只支持 2 / 3 / 4')
+  const model = (opts.model || 'realesrgan-x4plus') as UpscaleModel
+  if (!(model in UPSCALE_MODELS)) throw new Error(`--model 只支持 ${Object.keys(UPSCALE_MODELS).join(' / ')}`)
+
+  const outPath = opts.out || defaultOut(input, `${scale}x`, 'png')
+  if ((await fileExists(outPath)) && !opts.overwrite) {
+    throw new Error(`输出已存在（用 --overwrite 覆盖或 --out 换路径）: ${outPath}`)
+  }
+
+  const start = Date.now()
+  await upscaleLocal({ input, output: outPath, scale, model })
+  const size = (await stat(outPath)).size
+  process.stderr.write(`✅ 超分完成（${UPSCALE_MODELS[model].label}，${scale}x，用时 ${((Date.now() - start) / 1000).toFixed(1)}s，${fmtBytes(size)}）\n`)
   console.log(outPath)
 }

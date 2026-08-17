@@ -6,19 +6,19 @@ import type { StudioClient } from '../client.js'
 
 export async function templates(client: StudioClient, opts: { category?: string; type?: string; mine?: boolean; tenant?: boolean; platform?: boolean } = {}): Promise<void> {
   const type = opts.type === 'image' || opts.type === 'article' ? opts.type : undefined
-  // --tenant 走服务端 source=mine（本租户专属）；--platform 走 source=platform；
-  // --mine 是「我这个人建的」——服务端 source 表达不了，用 created_by 客户端过滤：
-  // created_by 非空且不是 'platform'（那是系统种子模板的占位标记）
+  // 三个归属维度都走服务端 source 参数（正式 API，不再客户端猜）：
+  //   --mine     → source=personal（created_by = 当前账户邮箱，我这个人建的）
+  //   --tenant   → source=mine（本租户专属）
+  //   --platform → source=platform（平台共享）
   let list: Awaited<ReturnType<StudioClient['templates']>>
-  if (opts.tenant) {
+  if (opts.mine) {
+    list = await client.templates(type, 'personal')
+  } else if (opts.tenant) {
     list = await client.templates(type, 'mine')
   } else if (opts.platform) {
     list = await client.templates(type, 'platform')
   } else {
     list = await client.templates(type)
-  }
-  if (opts.mine) {
-    list = list.filter((t) => !!t.created_by && t.created_by !== 'platform')
   }
   if (opts.category) {
     const kw = opts.category.toLowerCase()
@@ -30,8 +30,9 @@ export async function templates(client: StudioClient, opts: { category?: string;
   }
 
   const tag = (t: (typeof list)[number]) => {
-    if (t.created_by && t.created_by !== 'platform') return `[个人:${t.created_by}]`
-    return t.tenant_id ? '[租户]' : '[平台]'
+    if (t.source === 'personal') return '[个人]'
+    if (t.tenant_id) return '[租户]'
+    return '[平台]'
   }
   const typeTag = (t: (typeof list)[number]) => (t.template_type === 'article' ? '[文字]' : t.template_type === 'image' ? '[图片]' : '')
 

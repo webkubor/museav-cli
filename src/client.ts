@@ -123,8 +123,8 @@ export interface TemplateOption {
   sample_cover_image?: string | null
   /** 归属：自己租户建的 vs 平台共享的（tenant_id 为空） */
   tenant_id: string | null
-  /** 中台下发的归属标记：mine=本租户建的 / platform=平台共享（SOURCE_FILTER 那套口径） */
-  source?: 'mine' | 'platform'
+  /** 中台下发的归属标记：mine=本租户建的 / platform=平台共享 / personal=我这个人建的 */
+  source?: 'mine' | 'platform' | 'personal'
   /** 创建人（平台管理员个人建的模板会带邮箱；租户建的为 null） */
   created_by?: string | null
   generation_configs: Array<{
@@ -391,8 +391,8 @@ export class StudioClient {
 
   /** 可用图片/文字模板清单：自己租户建的 + 平台共享的，服务端已按调用者权限过滤。
    *  type=image|article 二选一（不传则图片+文字都返回，跟中台默认一致）。
-   *  source=mine|platform|all 二选一（默认 all；mine=本租户建的，platform=平台共享的）。 */
-  async templates(type?: 'image' | 'article', source?: 'mine' | 'platform' | 'all'): Promise<TemplateOption[]> {
+   *  source=mine|platform|personal|all（默认 all；mine=本租户，platform=平台共享，personal=我这个人建的）。 */
+  async templates(type?: 'image' | 'article', source?: 'mine' | 'platform' | 'personal' | 'all'): Promise<TemplateOption[]> {
     const params = new URLSearchParams()
     if (type) params.set('type', type)
     if (source && source !== 'all') params.set('source', source)

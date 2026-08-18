@@ -252,14 +252,14 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         'flex flex-col gap-0.5 shrink-0',
         isCustomActive ? 'pr-3 mr-3 border-r border-mg-border/50 w-[108px]' : 'w-full'
       )}>
-        <span className="mg-text-label font-semibold text-mg-text-2 mb-1.5 px-[var(--mg-control-px-xs)]">{customTitle || t('common.dateRange.presetsTitle')}</span>
+        <span className="mg-text-label font-semibold text-mg-text-2 mb-1.5 px-[var(--mg-control-pad-x-xs)]">{customTitle || t('common.dateRange.presetsTitle')}</span>
         {activePresets.map(p => (
           <button
             key={p.key}
             type="button"
             onClick={() => handlePresetSelect(p.key, close)}
             className={cn(
-              "px-[var(--mg-control-px-xs)] py-1.5 rounded-lg mg-compact-badge text-left cursor-pointer transition-colors",
+              "px-[var(--mg-control-pad-x-xs)] py-1.5 rounded-lg mg-compact-badge text-left cursor-pointer transition-colors",
               activePreset === p.key
                 ? "bg-brand-base/15 text-brand-base font-bold ring-1 ring-brand-base/25"
                 : "text-mg-text-1 font-medium hover:text-mg-text-1 hover:bg-mg-fill-1"
@@ -276,7 +276,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         <span className="mg-text-label font-semibold text-mg-text-2">{customLabel || t('common.dateRange.customLabel')}</span>
 
         {/* Selected preview bar — 轻量纯文本 */}
-        <div className="flex items-center justify-between gap-2 px-[var(--mg-control-px-xs)] py-[var(--mg-space-1)] rounded-lg border border-brand-base/20 bg-brand-base/5 mg-text-caption font-semibold text-mg-text-1">
+        <div className="flex items-center justify-between gap-2 px-[var(--mg-control-pad-x-xs)] py-[var(--mg-space-1)] rounded-lg border border-brand-base/20 bg-brand-base/5 mg-text-caption font-semibold text-mg-text-1">
           {hideStartDate ? (
             <span className={customEnd ? 'text-mg-text-1' : 'text-mg-text-4'}>
               {t('common.dateRange.deadline')}: {customEnd || t('common.dateRange.selectBelow')}
@@ -316,7 +316,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
     <button
       type="button"
       className={cn(
-        "group flex items-center gap-2 px-[var(--mg-control-px-md)] py-[var(--mg-control-py-sm)] border border-mg-border rounded-full bg-mg-fill-0/50 hover:bg-mg-fill-0/70 mg-text-body font-bold text-mg-text-1 hover:text-mg-text-1 hover:border-brand-mid transition-all duration-300 shadow-inner select-none active:scale-[0.97]",
+        "group flex items-center gap-2 px-[var(--mg-control-pad-x-md)] py-[var(--mg-control-py-sm)] border border-mg-border rounded-full bg-mg-fill-0/50 hover:bg-mg-fill-0/70 mg-text-body font-bold text-mg-text-1 hover:text-mg-text-1 hover:border-brand-mid transition-all duration-300 shadow-inner select-none active:scale-[0.97]",
         className
       )}
     >

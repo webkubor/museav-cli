@@ -230,7 +230,7 @@ export const ProgressBar = React.forwardRef<HTMLDivElement, ProgressBarProps>(
           {showLabel && labelPosition === "right" && (
             <div
               className={cn(
-                "ml-3 shrink-0 mg-text-code font-bold tracking-tight px-[var(--mg-control-px-xs)] py-0.5 rounded-md border",
+                "ml-3 shrink-0 mg-text-code font-bold tracking-tight px-[var(--mg-control-pad-x-xs)] py-0.5 rounded-md border",
                 currentStyle.badge
               )}
             >

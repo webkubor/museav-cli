@@ -13,8 +13,8 @@ const badgeVariants = cva(
   {
     variants: {
       size: {
-        default: "px-[var(--mg-control-px-sm)] py-0.5 mg-compact-badge",
-        sm: "px-[var(--mg-control-px-xs)] py-0.5 mg-compact-badge",
+        default: "px-[var(--mg-control-pad-x-sm)] py-0.5 mg-compact-badge",
+        sm: "px-[var(--mg-control-pad-x-xs)] py-0.5 mg-compact-badge",
         xs: "px-1.5 py-px mg-compact-badge",
       },
       variant: {

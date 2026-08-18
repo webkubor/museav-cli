@@ -362,7 +362,7 @@ export function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; o
                 )}
                 {showVideo && videoUrl && (
                   <>
-                    <div className="flex items-center gap-2 rounded-md border border-mg-border bg-mg-fill-0/40 px-[var(--mg-control-px-sm)] py-[var(--mg-control-py-sm)]">
+                    <div className="flex items-center gap-2 rounded-md border border-mg-border bg-mg-fill-0/40 px-[var(--mg-control-pad-x-sm)] py-[var(--mg-control-py-sm)]">
                       <LuLink size={13} className="shrink-0 text-mg-text-4" />
                       <span className="flex-1 truncate mg-text-code text-mg-text-2" title={videoUrl}>{videoUrl}</span>
                       <CopyButton value={videoUrl} aria-label={t('detail.copyLink')} toast={t('detail.copySuccess')} className="h-5 w-5 shrink-0" />

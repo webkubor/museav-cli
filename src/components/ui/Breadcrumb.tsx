@@ -23,7 +23,7 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, className }) => {
   return (
     <nav
       className={cn(
-        "flex items-center gap-2 px-[var(--mg-control-px-md)] py-1.5 bg-mg-bg-0 border border-mg-border/60 rounded-full w-fit mb-[var(--mg-layout-breadcrumb-gap)] mg-compact-badge text-mg-text-3 tracking-wide select-none shadow-sm transition-all duration-300 hover:border-brand-base/30 hover:shadow-brand-glow/5 animate-in fade-in slide-in-from-top-1 duration-300",
+        "flex items-center gap-2 px-[var(--mg-control-pad-x-md)] py-1.5 bg-mg-bg-0 border border-mg-border/60 rounded-full w-fit mb-[var(--mg-layout-breadcrumb-gap)] mg-compact-badge text-mg-text-3 tracking-wide select-none shadow-sm transition-all duration-300 hover:border-brand-base/30 hover:shadow-brand-glow/5 animate-in fade-in slide-in-from-top-1 duration-300",
         className
       )}
     >

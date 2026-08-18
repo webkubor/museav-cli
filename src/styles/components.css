@@ -86,23 +86,23 @@
 }
 
 .mg-control-pad-xs {
-  padding-inline: var(--mg-control-px-xs);
+  padding-inline: var(--mg-control-pad-x-xs);
 }
 
 .mg-control-pad-sm {
-  padding-inline: var(--mg-control-px-sm);
+  padding-inline: var(--mg-control-pad-x-sm);
 }
 
 .mg-control-pad-md {
-  padding-inline: var(--mg-control-px-md);
+  padding-inline: var(--mg-control-pad-x-md);
 }
 
 .mg-control-pad-lg {
-  padding-inline: var(--mg-control-px-lg);
+  padding-inline: var(--mg-control-pad-x-lg);
 }
 
 .mg-control-pad-xl {
-  padding-inline: var(--mg-control-px-xl);
+  padding-inline: var(--mg-control-pad-x-xl);
 }
 
 .modern-btn {

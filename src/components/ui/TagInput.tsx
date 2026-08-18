@@ -200,13 +200,13 @@ export function TagInput({
     <div ref={containerRef} className={`relative ${className ?? ''}`}>
       <div
         ref={inputBoxRef}
-        className={`flex flex-wrap items-center gap-1.5 min-h-[var(--mg-control-h-md)] px-[var(--mg-control-px-xs)] py-1.5 rounded-lg border border-mg-border bg-mg-bg-0 transition-colors focus-within:border-brand-base ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-text'}`}
+        className={`flex flex-wrap items-center gap-1.5 min-h-[var(--mg-control-h-md)] px-[var(--mg-control-pad-x-xs)] py-1.5 rounded-lg border border-mg-border bg-mg-bg-0 transition-colors focus-within:border-brand-base ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-text'}`}
         onClick={() => { if (!disabled) inputRef.current?.focus() }}
       >
         {value.map((tag) => {
           const locked = isLocked(tag)
           return (
-            <span key={tag} className={`inline-flex items-center gap-1 px-[var(--mg-control-px-xs)] py-0.5 rounded-md mg-compact-badge border ${tagClass}`}>
+            <span key={tag} className={`inline-flex items-center gap-1 px-[var(--mg-control-pad-x-xs)] py-0.5 rounded-md mg-compact-badge border ${tagClass}`}>
               <code className="font-mono">{labelOf(tag)}</code>
               {locked ? (
                 lockedBadge && <span className="shrink-0 whitespace-nowrap font-semibold not-italic opacity-80">{lockedBadge}</span>

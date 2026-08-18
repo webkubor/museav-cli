@@ -239,7 +239,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
       {action && !loading && (
         <button
           onClick={(e) => { e.stopPropagation(); action.onClick() }}
-          className="z-10 mt-3 self-start inline-flex items-center gap-1.5 mg-compact-badge px-[var(--mg-control-px-sm)] py-[var(--mg-space-1)] rounded-full border transition-all duration-200 hover:opacity-80 active:scale-95"
+          className="z-10 mt-3 self-start inline-flex items-center gap-1.5 mg-compact-badge px-[var(--mg-control-pad-x-sm)] py-[var(--mg-space-1)] rounded-full border transition-all duration-200 hover:opacity-80 active:scale-95"
           style={{
             color: color,
             borderColor: `color-mix(in srgb, ${color} 25%, transparent)`,

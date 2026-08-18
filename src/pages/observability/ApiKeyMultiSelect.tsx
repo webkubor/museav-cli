@@ -48,7 +48,7 @@ export function ApiKeyMultiSelect({
       ref={triggerRef}
       type="button"
       onClick={() => setPanelWidth(triggerRef.current?.offsetWidth)}
-      className="flex h-[var(--mg-control-h-md)] w-full items-center justify-between rounded-lg border border-mg-border bg-mg-fill-0 px-[var(--mg-control-px-sm)] mg-text-body text-mg-text-1 outline-none transition-all duration-200 hover:border-brand-mid/50 focus:border-brand-base focus:ring-2 focus:ring-brand-glow"
+      className="flex h-[var(--mg-control-h-md)] w-full items-center justify-between rounded-lg border border-mg-border bg-mg-fill-0 px-[var(--mg-control-pad-x-sm)] mg-text-body text-mg-text-1 outline-none transition-all duration-200 hover:border-brand-mid/50 focus:border-brand-base focus:ring-2 focus:ring-brand-glow"
     >
       <span className={cn('line-clamp-1 text-left', selectedCount === 0 && 'text-mg-text-3/70')}>{display}</span>
       <IoChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

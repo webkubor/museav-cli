@@ -97,9 +97,16 @@ export type OAuthProvider = 'google' | 'github' | 'wechat'
 
 export function oauthAuthorizeUrl(
   provider: OAuthProvider,
-  redirect = '/'
+  redirect = '/',
+  captchaVerifyParam?: string | null
 ): string {
-  return `${apiBaseUrl()}/api/v1/auth/oauth/${provider}/authorize?redirect=${encodeURIComponent(redirect)}`
+  // captcha_verify_param 走 query 而不是请求体：这个端点是**浏览器导航**（GET + 302），没有请求体
+  // 可用。后端在跳转到厂商之前先校验它；不带（或带一个校验不过的）就会被 302 回登录页并附上
+  // error=captcha_required —— 表现就是"点一下立刻跳回来"，用户完全看不到发生了什么。
+  const base = `${apiBaseUrl()}/api/v1/auth/oauth/${provider}/authorize?redirect=${encodeURIComponent(redirect)}`
+  return captchaVerifyParam
+    ? `${base}&captcha_verify_param=${encodeURIComponent(captchaVerifyParam)}`
+    : base
 }
 
 /** 切换活跃 Tenant（前端需同步更新 X-Tenant-Id 和 localStorage） */

@@ -1,15 +1,18 @@
+import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { useMarket } from '@/hooks/useMarket'
 import { useTranslation } from 'react-i18next'
 import { oauthAuthorizeUrl, type OAuthProvider } from '@/services/auth'
 import { useOAuthMethods } from '@/hooks/use-platform-config'
 import { OAUTH_ICONS, OAUTH_LABELS } from '@/constants/oauth'
+import { getCaptchaParam, isCaptchaEnabled } from '@/lib/aliyun-captcha'
 
 interface Props {
   redirectTo: string
 }
 
 export function SocialLogin({ redirectTo }: Props) {
+  const [pending, setPending] = useState<OAuthProvider | null>(null)
   const market = useMarket()
   const { t } = useTranslation('account')
   const oauthMethods = useOAuthMethods()
@@ -29,6 +32,27 @@ export function SocialLogin({ redirectTo }: Props) {
 
   if (methods.length === 0) return null
 
+  // 第三方登录同样是一次登录，所以同样要先过人机校验（产品定论 2026-08-14）。
+  //
+  // 之前这里直接 window.location.href = authorize，不带任何 token：后端在跳去厂商之前先校验，
+  // 校验不过就把浏览器 302 回登录页 —— 用户看到的是"点一下立刻跳回来"，既没有滑块也没有提示。
+  // 正确顺序是**先解题拿到 token，再带着它导航**。
+  const startOAuth = async (method: OAuthProvider) => {
+    if (pending) return // 防抖：滑块弹出期间重复点击会开出第二个实例
+    setPending(method)
+    try {
+      const param = await getCaptchaParam()
+      // 拿不到 token 有两种情形，必须分开处理：
+      //   - 本市场根本没启用滑块 → 没有题可解，照常导航（后端此时也不要求）。
+      //   - 启用了但没拿到（用户关掉弹窗 / SDK 不可用 / 超时）→ **不导航**。带空 token 过去只会
+      //     被 302 弹回来，那正是这次要修掉的现象。
+      if (!param && isCaptchaEnabled()) return
+      window.location.href = oauthAuthorizeUrl(method, redirectTo, param)
+    } finally {
+      setPending(null)
+    }
+  }
+
   return (
     <>
       <div className="social-divider">
@@ -43,7 +67,8 @@ export function SocialLogin({ redirectTo }: Props) {
             key={method}
             variant="secondary"
             className="social-btn"
-            onClick={() => { window.location.href = oauthAuthorizeUrl(method, redirectTo) }}
+            disabled={pending !== null}
+            onClick={() => { void startOAuth(method) }}
           >
             {OAUTH_ICONS[method]}
             <span>{t(`account.auth.oauth.${method}`, { defaultValue: OAUTH_LABELS[method] ?? method })}</span>

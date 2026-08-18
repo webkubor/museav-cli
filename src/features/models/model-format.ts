@@ -46,6 +46,18 @@ export function priceTiersForCard(tiers: CatalogPriceTier[] | undefined | null):
   return tiers.slice(0, CARD_PRICE_TIER_LIMIT)
 }
 
+/** 纯媒体模型（文本输入/输出都没有正价）才用 price_tiers 替换卡片四格；
+ *  混合模型（如 gemini 图文）保留输入/输出/上下文，档位只在详情展示。 */
+export function catalogCardReplacesGridWithTiers(
+  pricing: { input_per_1m?: string; output_per_1m?: string } | null | undefined,
+  tiers: CatalogPriceTier[] | undefined | null,
+): boolean {
+  if (!tiers?.length) return false
+  const input = parseFloat(pricing?.input_per_1m ?? '0')
+  const output = parseFloat(pricing?.output_per_1m ?? '0')
+  return !(input > 0 || output > 0)
+}
+
 export function priceTierLabel(tier: CatalogPriceTier, isZh: boolean): string {
   return isZh ? tier.label : (tier.label_en || tier.label)
 }

@@ -13,11 +13,9 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (_k: string, o?: { defaultValue?: string }) => o?.defaultValue ?? 'Google' }),
 }))
 
-const getCaptchaParam = vi.fn()
-const isCaptchaEnabled = vi.fn()
+const getCaptchaOutcome = vi.fn()
 vi.mock('@/lib/aliyun-captcha', () => ({
-  getCaptchaParam: () => getCaptchaParam(),
-  isCaptchaEnabled: () => isCaptchaEnabled(),
+  getCaptchaOutcome: () => getCaptchaOutcome(),
 }))
 // 图标包（@lobehub/icons）在 jsdom 下会拖进 emoji-mart 的 JSON、需要 import attribute —— 与本用例
 // 要验的行为无关，直接替掉。
@@ -45,33 +43,30 @@ function stubNavigation() {
 
 describe('SocialLogin', () => {
   beforeEach(() => {
-    getCaptchaParam.mockReset()
-    isCaptchaEnabled.mockReset()
+    getCaptchaOutcome.mockReset()
   })
 
   it('解题成功后带着 token 导航', async () => {
     const href = stubNavigation()
-    getCaptchaParam.mockResolvedValue('solved-token')
-    isCaptchaEnabled.mockReturnValue(true)
+    getCaptchaOutcome.mockResolvedValue({ param: 'solved-token', presented: true })
     render(<SocialLogin redirectTo="/dashboard" />)
     fireEvent.click(screen.getByRole('button'))
     await waitFor(() => expect(href.value).toContain('captcha_verify_param=solved-token'))
   })
 
-  it('启用了滑块但没拿到 token（用户关掉弹窗）时不导航', async () => {
+  it('呈现过挑战但用户关掉弹窗时不导航', async () => {
     const href = stubNavigation()
-    getCaptchaParam.mockResolvedValue(null)
-    isCaptchaEnabled.mockReturnValue(true)
+    getCaptchaOutcome.mockResolvedValue({ param: null, presented: true })
     render(<SocialLogin redirectTo="/dashboard" />)
     fireEvent.click(screen.getByRole('button'))
-    await waitFor(() => expect(getCaptchaParam).toHaveBeenCalled())
+    await waitFor(() => expect(getCaptchaOutcome).toHaveBeenCalled())
     expect(href.value).toBe('') // 带空 token 过去只会被 302 弹回来
   })
 
-  it('本市场未启用滑块时照常导航（没有题可解）', async () => {
+  // 国际站目前没有挑战码：呈现不出来时必须照常导航，否则第三方登录在那边整条被掐死。
+  it('呈现不出挑战时照常导航（未启用 / SDK 不可用 —— 例如国际站）', async () => {
     const href = stubNavigation()
-    getCaptchaParam.mockResolvedValue(null)
-    isCaptchaEnabled.mockReturnValue(false)
+    getCaptchaOutcome.mockResolvedValue({ param: null, presented: false })
     render(<SocialLogin redirectTo="/dashboard" />)
     fireEvent.click(screen.getByRole('button'))
     await waitFor(() => expect(href.value).toContain('/authorize'))

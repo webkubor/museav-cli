@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { oauthAuthorizeUrl, type OAuthProvider } from '@/services/auth'
 import { useOAuthMethods } from '@/hooks/use-platform-config'
 import { OAUTH_ICONS, OAUTH_LABELS } from '@/constants/oauth'
-import { getCaptchaParam, isCaptchaEnabled } from '@/lib/aliyun-captcha'
+import { getCaptchaOutcome } from '@/lib/aliyun-captcha'
 
 interface Props {
   redirectTo: string
@@ -41,12 +41,13 @@ export function SocialLogin({ redirectTo }: Props) {
     if (pending) return // 防抖：滑块弹出期间重复点击会开出第二个实例
     setPending(method)
     try {
-      const param = await getCaptchaParam()
-      // 拿不到 token 有两种情形，必须分开处理：
-      //   - 本市场根本没启用滑块 → 没有题可解，照常导航（后端此时也不要求）。
-      //   - 启用了但没拿到（用户关掉弹窗 / SDK 不可用 / 超时）→ **不导航**。带空 token 过去只会
-      //     被 302 弹回来，那正是这次要修掉的现象。
-      if (!param && isCaptchaEnabled()) return
+      const { param, presented } = await getCaptchaOutcome()
+      // 拿不到 token 有两种情形，必须分开 —— 用 presented 而不是"是否启用"来分：
+      //   - **呈现过**挑战但没解出来（用户关掉弹窗 / 一分钟没动）→ 停在原地。带空 token 导航只会
+      //     被后端 302 弹回登录页，那正是这次要修的"点一下立刻弹回来"。
+      //   - **呈现不出来**（该环境未启用 / SDK 不可用 / init 失败）→ 照常导航。后端此时也不要求；
+      //     堵住会把尚未铺开挑战的站点（国际站）的第三方登录整条掐死。
+      if (!param && presented) return
       window.location.href = oauthAuthorizeUrl(method, redirectTo, param)
     } finally {
       setPending(null)

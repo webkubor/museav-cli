@@ -16,7 +16,7 @@
  */
 import { getMarketDefaultLang, type Market } from '@/lib/market'
 import { useLangStore } from '@/store/use-brand-store'
-import { fetchCaptchaConfig, getAlicaptchaParamOnce } from '@/lib/alicaptcha'
+import { fetchCaptchaConfig, getAlicaptchaOutcomeOnce, getAlicaptchaParamOnce, type CaptchaOutcome } from '@/lib/alicaptcha'
 
 const SDK_SRC = 'https://o.alicdn.com/captcha-frontend/aliyunCaptcha/AliyunCaptcha.js'
 const LOAD_TIMEOUT_MS = 8000
@@ -180,4 +180,25 @@ export async function getCaptchaParam(): Promise<string | null> {
       }
     })
   })
+}
+
+/**
+ * getCaptchaOutcome 与 getCaptchaParam 判定相同，额外报告**挑战是否被呈现**。
+ *
+ * 给浏览器导航型入口用（OAuth 起步）：那里"用户关掉弹窗"必须停在原地，而"呈现不出挑战"
+ * （未启用 / SDK 不可用 / init 失败）必须照常导航 —— 后端此时也不要求，堵住只会把第三方登录
+ * 整条掐死。表单提交仍用 getCaptchaParam：它们两种情形都降级放行，不需要这个区分。
+ */
+export async function getCaptchaOutcome(): Promise<CaptchaOutcome> {
+  const market = useLangStore.getState().market
+  const lang = getMarketDefaultLang(market) === 'zh' ? 'zh' : 'en'
+  const runtime = await fetchCaptchaConfig()
+  if (runtime?.provider === 'alicaptcha') {
+    if (!runtime.enabled || !runtime.app_id) return { param: null, presented: false }
+    return getAlicaptchaOutcomeOnce(lang)
+  }
+  if (runtime && !runtime.enabled) return { param: null, presented: false }
+  // Aliyun 验证码 2.0 这条路仍走原实现（构建期场景配置；未配置即未启用）。
+  const param = await getCaptchaParam()
+  return { param, presented: param !== null }
 }

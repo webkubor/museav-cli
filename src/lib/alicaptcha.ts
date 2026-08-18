@@ -184,14 +184,36 @@ export async function createAlicaptchaSession(
  * 之外把表单挂死。
  */
 export function getAlicaptchaParamOnce(lang: 'zh' | 'en', timeoutMs = 60000): Promise<string | null> {
+  return getAlicaptchaOutcomeOnce(lang, timeoutMs).then((o) => o.param)
+}
+
+/**
+ * CaptchaOutcome 把两件被 `string | null` 合并掉的事分开：
+ *
+ *   - `param`：解出来的凭据（null = 没拿到）
+ *   - `presented`：**挑战确实被呈现给用户了**
+ *
+ * 为什么必须分开：`null` 同时表示"用户关掉了弹窗"与"根本没法呈现"（SDK 拉不到 / 未启用 /
+ * init 抛错）。对表单提交无所谓（两者都降级放行），但对**浏览器导航型**入口（OAuth 起步）
+ * 就是两个相反的动作：前者应停在原地等用户解题，后者必须照常导航 —— 否则一个呈现不出挑战的
+ * 站点（例如尚未铺开挑战的国际站）会把第三方登录整条堵死。
+ */
+export interface CaptchaOutcome {
+  param: string | null
+  presented: boolean
+}
+
+export function getAlicaptchaOutcomeOnce(lang: 'zh' | 'en', timeoutMs = 60000): Promise<CaptchaOutcome> {
   return new Promise((resolve) => {
     let done = false
+    let presented = false
     const finish = (v: string | null, session?: AlicaptchaSession | null) => {
       if (done) return
       done = true
       session?.destroy()
-      resolve(v)
+      resolve({ param: v, presented })
     }
+    // 超时算"呈现过"：弹窗已经在用户面前了，只是没解 —— 这与"呈现不出来"是两回事。
     const timer = window.setTimeout(() => finish(null), timeoutMs)
     void createAlicaptchaSession(lang, {
       onVerified: (param) => {
@@ -212,6 +234,7 @@ export function getAlicaptchaParamOnce(lang: 'zh' | 'en', timeoutMs = 60000): Pr
         session.destroy()
         return
       }
+      presented = true
       session.show()
     })
   })

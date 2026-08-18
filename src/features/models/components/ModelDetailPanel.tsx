@@ -20,6 +20,7 @@ import { ModelIcon } from './ModelIcon'
 import { CopyButton } from '@/components/ui/CopyButton'
 import {
   currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, vendorFromModelId, autoSummary, modelVendorLabel,
+  priceTierLabel,
 } from '../model-format'
 import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 
@@ -109,6 +110,7 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
   const originalPrice = promo?.original_price
     ? `${symbol} ${trimPriceZeros(promo.original_price)}${unitSuffix}`
     : undefined
+  const priceTiers = detail.price_tiers ?? []
 
   const capabilities = pickCapabilities(detail.tags, [detail.provider, detail.vendor, vendor])
   const summary = detail.description?.trim() || detail.tagline?.trim() || autoSummary(detail, vendor, isZh)
@@ -174,43 +176,62 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
 
       {/* 规格条：横向 6 格（原型 App.tsx:5100-5168） */}
       <section className="mg-tile mg-detail-specs">
-        <Metric
-          label={t('models.detail.contextLength')}
-          value={detail.context_length > 0 ? formatContextLength(detail.context_length) : ''}
-          unit={detail.context_length > 0 ? 'tokens' : undefined}
-        />
-        <Metric
-          label={t('models.detail.pricingInput')}
-          value={input.value}
-          unit={input.unit}
-          valueTag={textInput.value ? mediaTag : undefined}
-          strike={originalPrice}
-          subValue={textInput.value ? `${textInput.value}${textInput.unit}` : undefined}
-          subTag={textInput.value ? textTag : undefined}
-          accent
-        />
-        <Metric
-          label={t('models.detail.pricingOutput')}
-          value={output.value}
-          unit={output.unit}
-          valueTag={textOutput.value ? mediaTag : undefined}
-          subValue={textOutput.value ? `${textOutput.value}${textOutput.unit}` : undefined}
-          subTag={textOutput.value ? textTag : undefined}
-          accent
-        />
-        <Metric
-          label={t('models.detail.pricingCacheRead')}
-          value={cacheRead.value}
-          unit={cacheRead.unit}
-        />
-        <Metric
-          label={t('models.detail.pricingCacheWrite')}
-          value={cacheWrite5m.value}
-          unit={cacheWrite5m.unit}
-          valueTag={cacheWrite5m.value ? '5min' : undefined}
-          subValue={cacheWrite1h.value ? `${cacheWrite1h.value}${cacheWrite1h.unit}` : undefined}
-          subTag={cacheWrite1h.value ? '1h' : undefined}
-        />
+        {detail.context_length > 0 && (
+          <Metric
+            label={t('models.detail.contextLength')}
+            value={formatContextLength(detail.context_length)}
+            unit="tokens"
+          />
+        )}
+        {priceTiers.length > 0 ? (
+          priceTiers.map((tier) => {
+            const shown = priceText(tier.price, symbol, isFree ? freeLabel : '', `/${tier.unit}`, isFree)
+            return (
+              <Metric
+                key={`${tier.bucket}-${tier.label}`}
+                label={priceTierLabel(tier, isZh)}
+                value={shown.value}
+                unit={shown.unit}
+                accent
+              />
+            )
+          })
+        ) : (
+          <>
+            <Metric
+              label={t('models.detail.pricingInput')}
+              value={input.value}
+              unit={input.unit}
+              valueTag={textInput.value ? mediaTag : undefined}
+              strike={originalPrice}
+              subValue={textInput.value ? `${textInput.value}${textInput.unit}` : undefined}
+              subTag={textInput.value ? textTag : undefined}
+              accent
+            />
+            <Metric
+              label={t('models.detail.pricingOutput')}
+              value={output.value}
+              unit={output.unit}
+              valueTag={textOutput.value ? mediaTag : undefined}
+              subValue={textOutput.value ? `${textOutput.value}${textOutput.unit}` : undefined}
+              subTag={textOutput.value ? textTag : undefined}
+              accent
+            />
+            <Metric
+              label={t('models.detail.pricingCacheRead')}
+              value={cacheRead.value}
+              unit={cacheRead.unit}
+            />
+            <Metric
+              label={t('models.detail.pricingCacheWrite')}
+              value={cacheWrite5m.value}
+              unit={cacheWrite5m.unit}
+              valueTag={cacheWrite5m.value ? '5min' : undefined}
+              subValue={cacheWrite1h.value ? `${cacheWrite1h.value}${cacheWrite1h.unit}` : undefined}
+              subTag={cacheWrite1h.value ? '1h' : undefined}
+            />
+          </>
+        )}
       </section>
 
       {/* qa#290：详情页原型没有单独的"技术规格"板块（zero_data_retention/

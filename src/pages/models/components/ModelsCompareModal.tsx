@@ -10,7 +10,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { cn, formatContextLength, trimPriceZeros } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
-import { modelVendorLabel, currencySymbol, isZhLang } from '@/features/models/model-format'
+import { modelVendorLabel, currencySymbol, isZhLang, priceTierLabel } from '@/features/models/model-format'
 import {
   resolveModelCategory, modelExperienceTasks, isPaidModel,
   type ExperienceCategoryKey, type ExperienceTaskType,
@@ -216,9 +216,17 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
   const ROWS: Array<{ label: string; render: (m: CatalogModelItem) => React.ReactNode }> = [
     { label: t('modelsCompare.row.contextLength'), render: (m) => formatContextLength(m.context_length) },
     { label: t('modelsCompare.row.modalityFlow'), render: (m) => <ModalityFlow model={m} /> },
-    { label: t('modelsCompare.row.inputPrice'), render: (m) => formatPrice(m.pricing?.input_per_1m, m.pricing?.currency) },
-    { label: t('modelsCompare.row.outputPrice'), render: (m) => formatPrice(m.pricing?.output_per_1m, m.pricing?.currency) },
-    { label: t('modelsCompare.row.cachePrice'), render: (m) => formatPrice(m.pricing?.cache_read_per_1m, m.pricing?.currency) },
+    { label: t('modelsCompare.row.inputPrice'), render: (m) => (
+      m.price_tiers?.length
+        ? m.price_tiers.map((tier) => `${priceTierLabel(tier, isZhLang())} ${formatPrice(tier.price, m.pricing?.currency)}/${tier.unit}`).join(' · ')
+        : formatPrice(m.pricing?.input_per_1m, m.pricing?.currency)
+    ) },
+    { label: t('modelsCompare.row.outputPrice'), render: (m) => (
+      m.price_tiers?.length ? '—' : formatPrice(m.pricing?.output_per_1m, m.pricing?.currency)
+    ) },
+    { label: t('modelsCompare.row.cachePrice'), render: (m) => (
+      m.price_tiers?.length ? '—' : formatPrice(m.pricing?.cache_read_per_1m, m.pricing?.currency)
+    ) },
     {
       label: t('modelsCompare.row.protocols'),
       render: (m) => (m.protocols && m.protocols.length > 0 ? m.protocols.join(' / ') : 'openai'),

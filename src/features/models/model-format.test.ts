@@ -8,7 +8,7 @@
 
 import { afterAll, describe, expect, it } from 'vitest'
 import i18n from '@/i18n'
-import { priceTierLabel, priceTiersForCard, priceUnitSuffix } from './model-format'
+import { catalogCardReplacesGridWithTiers, priceTierLabel, priceTiersForCard, priceUnitSuffix } from './model-format'
 
 afterAll(async () => {
   await i18n.changeLanguage('zh')
@@ -62,5 +62,27 @@ describe('price_tiers — 视频/矩阵多档价', () => {
   it('中文用 label，英文优先 label_en', () => {
     expect(priceTierLabel(h3[2], true)).toBe('图片输入')
     expect(priceTierLabel(h3[2], false)).toBe('Image input')
+  })
+})
+
+describe('catalogCardReplacesGridWithTiers — 纯媒体才用档位替换四格', () => {
+  const h3 = [
+    { label: '768P', label_en: '768P', price: '0.50', unit: '秒', bucket: 'video_seconds' },
+  ]
+
+  it('H3 文本输入/输出都是 0 → 卡片用档位替换四格', () => {
+    expect(catalogCardReplacesGridWithTiers({ input_per_1m: '0', output_per_1m: '0' }, h3)).toBe(true)
+  })
+
+  it('混合模型（有文本 token 价 + 档位）→ 保留输入/输出四格', () => {
+    expect(catalogCardReplacesGridWithTiers({ input_per_1m: '8', output_per_1m: '25' }, h3)).toBe(false)
+  })
+
+  it('只有输入价也算混合，不替换', () => {
+    expect(catalogCardReplacesGridWithTiers({ input_per_1m: '8', output_per_1m: '0' }, h3)).toBe(false)
+  })
+
+  it('没有档位 → 不替换', () => {
+    expect(catalogCardReplacesGridWithTiers({ input_per_1m: '0', output_per_1m: '0' }, [])).toBe(false)
   })
 })

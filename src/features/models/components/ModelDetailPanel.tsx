@@ -20,7 +20,7 @@ import { ModelIcon } from './ModelIcon'
 import { CopyButton } from '@/components/ui/CopyButton'
 import {
   currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, vendorFromModelId, autoSummary, modelVendorLabel,
-  priceTierLabel,
+  priceTierLabel, catalogCardReplacesGridWithTiers,
 } from '../model-format'
 import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 
@@ -111,6 +111,7 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
     ? `${symbol} ${trimPriceZeros(promo.original_price)}${unitSuffix}`
     : undefined
   const priceTiers = detail.price_tiers ?? []
+  const replaceGridWithTiers = catalogCardReplacesGridWithTiers(detail.pricing, priceTiers)
 
   const capabilities = pickCapabilities(detail.tags, [detail.provider, detail.vendor, vendor])
   const summary = detail.description?.trim() || detail.tagline?.trim() || autoSummary(detail, vendor, isZh)
@@ -183,20 +184,7 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
             unit="tokens"
           />
         )}
-        {priceTiers.length > 0 ? (
-          priceTiers.map((tier) => {
-            const shown = priceText(tier.price, symbol, isFree ? freeLabel : '', `/${tier.unit}`, isFree)
-            return (
-              <Metric
-                key={`${tier.bucket}-${tier.label}`}
-                label={priceTierLabel(tier, isZh)}
-                value={shown.value}
-                unit={shown.unit}
-                accent
-              />
-            )
-          })
-        ) : (
+        {!replaceGridWithTiers && (
           <>
             <Metric
               label={t('models.detail.pricingInput')}
@@ -232,6 +220,18 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
             />
           </>
         )}
+        {priceTiers.map((tier) => {
+          const shown = priceText(tier.price, symbol, isFree ? freeLabel : '', `/${tier.unit}`, isFree)
+          return (
+            <Metric
+              key={`${tier.bucket}-${tier.label}`}
+              label={priceTierLabel(tier, isZh)}
+              value={shown.value}
+              unit={shown.unit}
+              accent
+            />
+          )
+        })}
       </section>
 
       {/* qa#290：详情页原型没有单独的"技术规格"板块（zero_data_retention/

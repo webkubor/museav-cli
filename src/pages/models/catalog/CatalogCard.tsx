@@ -31,6 +31,7 @@ import { Button } from '@/components/ui/Button'
 import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 import {
   MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, autoSummary, modelVendorLabel,
+  priceTiersForCard, priceTierLabel,
 } from '@/features/models/model-format'
 import { hasPlaygroundExperience } from '../model-experience-data'
 import type { CatalogModelItem } from '@/types'
@@ -104,6 +105,7 @@ export function CatalogCard({
   // 缓存读取价：未配价回落「—」而非「免费」——输入/输出没配价基本等于免费，
   // 但缓存读取没配大多是模型不支持缓存计费，写「免费」会误导。限免模型仍随 isFree 显示免费。
   const cacheRead = priceText(isPerCall ? undefined : model.pricing?.cache_read_per_1m, symbol, isFree ? freeLabel : '—', unitSuffix, isFree)
+  const cardTiers = priceTiersForCard(model.price_tiers)
 
   // 输入 → 输出模态流。后端拆分下发；老数据只有合并 modalities 时退回并集。
   const inputMods = (model.input_modalities ?? model.modalities ?? []).filter((m) => MODALITY_CODES.includes(m))
@@ -232,16 +234,33 @@ export function CatalogCard({
           右侧，不另起一行。最大输出已按 shared/modelgo_prd#348 移除（后端无可靠数据），
           空出的第四格按需求方 2026-08-04 口径改放缓存读取价。 */}
       <div className="mg-mcard-specs">
-        <Metric
-          label={t('modelsCatalog.card.input')}
-          value={input.value}
-          unit={input.unit}
-          strike={promo?.original_price ? `${symbol}${trimPriceZeros(promo.original_price)}` : undefined}
-          accent
-        />
-        <Metric label={t('modelsCatalog.card.output')} value={output.value} unit={output.unit} accent />
-        <Metric label={t('modelsCatalog.card.context')} value={ctxValue} />
-        <Metric label={t('modelsCatalog.card.cacheRead')} value={cacheRead.value} unit={cacheRead.unit} />
+        {cardTiers.length > 0 ? (
+          cardTiers.map((tier) => {
+            const shown = priceText(tier.price, symbol, '—', `/${tier.unit}`, isFree)
+            return (
+              <Metric
+                key={`${tier.bucket}-${tier.label}`}
+                label={priceTierLabel(tier, isZh)}
+                value={shown.value}
+                unit={shown.unit}
+                accent
+              />
+            )
+          })
+        ) : (
+          <>
+            <Metric
+              label={t('modelsCatalog.card.input')}
+              value={input.value}
+              unit={input.unit}
+              strike={promo?.original_price ? `${symbol}${trimPriceZeros(promo.original_price)}` : undefined}
+              accent
+            />
+            <Metric label={t('modelsCatalog.card.output')} value={output.value} unit={output.unit} accent />
+            <Metric label={t('modelsCatalog.card.context')} value={ctxValue} />
+            <Metric label={t('modelsCatalog.card.cacheRead')} value={cacheRead.value} unit={cacheRead.unit} />
+          </>
+        )}
       </div>
 
       {/* 操作：hover / 键盘聚焦时浮出，覆盖最底一行，不改变卡片高度。

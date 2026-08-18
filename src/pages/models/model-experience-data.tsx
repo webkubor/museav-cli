@@ -558,6 +558,12 @@ export function playgroundSamplePrompts(): Array<{ label: string; prompt: string
  */
 export function dualPriceText(model: CatalogModelItem): string {
   const currency = model.pricing?.currency === 'USD' ? '$' : '¥'
+  if (model.price_tiers && model.price_tiers.length > 0) {
+    return model.price_tiers
+      .slice(0, 3)
+      .map((tier) => `${currency}${trimPriceZeros(tier.price)}/${tier.unit}`)
+      .join(' · ')
+  }
   const input = model.pricing?.input_per_1m
   const output = model.pricing?.output_per_1m
   const perM = i18n.t('modelsExperience.perM')
@@ -569,6 +575,7 @@ export function dualPriceText(model: CatalogModelItem): string {
 /** 是否付费模型：只认服务端显式限免标记 + 价格字段，不做其它推断（§9.1：价格为 0 但未标 free 的仍按付费处理） */
 export function isPaidModel(model: CatalogModelItem): boolean {
   if (model.promotion?.free) return false
+  if ((model.price_tiers ?? []).some((tier) => parseFloat(tier.price) > 0)) return true
   const input = parseFloat(model.pricing?.input_per_1m ?? '0')
   const output = parseFloat(model.pricing?.output_per_1m ?? '0')
   return (Number.isFinite(input) && input > 0) || (Number.isFinite(output) && output > 0)

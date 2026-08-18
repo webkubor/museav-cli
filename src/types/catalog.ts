@@ -68,11 +68,24 @@ export interface CatalogModelItem {
   text_input_price?: string
   text_output_price?: string
   /**
+   * 矩阵 / 额外分项价（视频按秒、图片按张）。有值时卡片/详情用它展示，
+   * 不要把缺失的 input/output token 单价当成免费。
+   */
+  price_tiers?: CatalogPriceTier[]
+  /**
    * 促销叠加层。**存在即代表此刻生效** —— 生效判定在服务端用服务端时钟做，
    * 前端不得按时间窗口自行重算（接口也刻意不下发窗口）。
    * original_price 只是划线装饰，真实扣费是 pricing 里的正常价格。
    */
   promotion?: CatalogPromotion
+}
+
+export interface CatalogPriceTier {
+  label: string
+  label_en?: string
+  price: string
+  unit: string
+  bucket: string
 }
 
 export interface CatalogPromotion {

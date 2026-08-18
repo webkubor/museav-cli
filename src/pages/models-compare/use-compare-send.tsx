@@ -109,7 +109,7 @@ export function useCompareSend(state: CompareState) {
           firstTokenMs: localTotalMs,
           totalMs: localTotalMs,
           spend: 0,
-          free: !Number(column.model.pricing?.input_per_1m ?? 0) && !Number(column.model.pricing?.output_per_1m ?? 0),
+          free: !isPaidModel(column.model),
         },
       })
       patchAssistant(idx, { metrics })

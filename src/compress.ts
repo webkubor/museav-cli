@@ -59,6 +59,14 @@ export async function compressForVision(filePath: string): Promise<CompressResul
   try {
     meta = await sharp(filePath).metadata()
   } catch {
+    // HEIC 解码失败会走到这里（libheif 安全检查拒绝），但它不是「视频/音频」——
+    // 原样上传会被中台按魔数判成 image/heic，而 gpt-image-2 上游解码不了 HEIC
+    // 字节 → 400 invalid_image_input。与其等到出图时才炸，不如上传前就报清楚。
+    // 判断依据：文件名扩展名 .heic/.heif/.avif 最可靠（HEIC 与 MP4 共享 ftyp 容器头，
+    // 不能靠字节区分；sharp 读不了恰恰说明它是图不是视频——视频不喂 sharp 走这里）。
+    if (/\.(heic|heif|avif)$/i.test(name)) {
+      throw new Error(`HEIC 图片 ${name} 无法直接上传：上游模型认不得 HEIC 字节。请先转成 JPG/PNG 再上传（macOS 可用「预览」打开后另存为 JPEG，或用 museav img min 转换）`)
+    }
     return { buffer: null, filename: name, note: '' }   // 不是 sharp 认识的图（视频/音频）→ 原样传
   }
 

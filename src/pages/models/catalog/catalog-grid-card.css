@@ -153,10 +153,8 @@
      不透明度和模糊都要给足。顶边不用分隔线（走查反馈横线生硬），
      用 mask 把玻璃上缘羽化掉，衔接处是渐隐的雾而不是一条线。 */
   background: var(--plaza-actions-bg);
-  /* 这里是规范档位的加重版（走查反馈：常规 blur 会露出底下的规格行文字），
-     用倍数挂住 token，规范调 blur 时这里跟着走，不再是独立的 24px */
-  -webkit-backdrop-filter: blur(calc(var(--mg-glass-blur) * 1.35));
-  backdrop-filter: blur(calc(var(--mg-glass-blur) * 1.35));
+  /* 毛玻璃 blur 只在 hover 浮出时启用。静止时 32 张卡各挂一个 backdrop-filter
+     层（哪怕 opacity:0 也在合成器里逐帧采样模糊背景），快速滚动会白屏。 */
   -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 14px);
   mask-image: linear-gradient(180deg, transparent 0, #000 14px);
   opacity: 0; pointer-events: none;
@@ -166,7 +164,12 @@
   transition: opacity 0.22s ease, transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .mg-mcard:hover .mg-mcard-actions,
-.mg-mcard:focus-within .mg-mcard-actions { opacity: 1; pointer-events: auto; transform: translateY(0); }
+.mg-mcard:focus-within .mg-mcard-actions {
+  opacity: 1; pointer-events: auto; transform: translateY(0);
+  /* hover 才挂 blur：单卡一次栅格化，不随滚动反复合成 */
+  -webkit-backdrop-filter: blur(calc(var(--mg-glass-blur) * 1.35));
+  backdrop-filter: blur(calc(var(--mg-glass-blur) * 1.35));
+}
 /* 浮出条只盖得住第二排规格（上下文/缓存读取），羽化上缘会把那排字切一半露出来
    （走查反馈）。解法不是调条的高度去对齐像素，而是悬停时让第二排自己淡出 ——
    条浮上来时底下没有字，羽化区里只剩干净的雾。 */

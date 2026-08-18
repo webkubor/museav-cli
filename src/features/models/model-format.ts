@@ -12,6 +12,9 @@
  */
 import i18n from '@/i18n'
 import { formatContextLength, trimPriceZeros } from '@/lib/utils'
+import type { CatalogPriceTier } from '@/types'
+
+export type { CatalogPriceTier }
 
 /** 货币代码 → 符号（后端给的是 CNY/USD 这类代码） */
 const CCY_SYMBOL: Record<string, string> = { CNY: '¥', RMB: '¥', USD: '$', EUR: '€', '¥': '¥', $: '$' }
@@ -33,6 +36,18 @@ export function currencySymbol(currency: string | undefined, isZh: boolean): str
 export function priceUnitSuffix(priceUnit: string | undefined, mode?: string | null): string {
   if (mode === 'per_call') return isZhLang() ? '/张' : '/image'
   return priceUnit ? `/${priceUnit}` : '/M'
+}
+
+const CARD_PRICE_TIER_LIMIT = 4
+
+/** 卡片最多展示 4 档；详情页用原数组。 */
+export function priceTiersForCard(tiers: CatalogPriceTier[] | undefined | null): CatalogPriceTier[] {
+  if (!tiers?.length) return []
+  return tiers.slice(0, CARD_PRICE_TIER_LIMIT)
+}
+
+export function priceTierLabel(tier: CatalogPriceTier, isZh: boolean): string {
+  return isZh ? tier.label : (tier.label_en || tier.label)
 }
 
 /**

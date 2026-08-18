@@ -88,6 +88,10 @@ function priceLabel(model: CatalogModelItem, kind: 'input' | 'output' = 'input')
   const currency = currencySymbol(model.pricing?.currency, isZhLang())
   const unit = model.price_unit ? `/${model.price_unit}` : '/1M tokens'
   if (!isPaidModel(model)) return i18n.t('modelsExperience.picker.free')
+  if (model.price_tiers?.length) {
+    const tier = kind === 'output' ? (model.price_tiers[1] ?? model.price_tiers[0]) : model.price_tiers[0]
+    return `${currency}${trimPriceZeros(tier.price)}/${tier.unit}`
+  }
   const amount = kind === 'output' ? model.pricing?.output_per_1m : model.pricing?.input_per_1m
   if (!amount) return '—'
   return `${currency}${trimPriceZeros(amount)}${unit}`

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "prepare": "sh scripts/install-hooks.sh",
-    "dev": "vite --host --mode test",
+    "dev": "vite --host",
     "build": "tsc -b && vite build && node scripts/generate-legacy-asset-aliases.mjs",
     "build:test": "tsc -b && vite build --mode test && node scripts/generate-legacy-asset-aliases.mjs",
     "build:prod": "tsc -b && vite build --mode production && node scripts/generate-legacy-asset-aliases.mjs",

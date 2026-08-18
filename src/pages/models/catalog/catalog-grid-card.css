@@ -20,11 +20,28 @@
 .mg-tile.mg-mcard {
   background: var(--plaza-card-bg);
   border-color: var(--plaza-card-border);
-  /* 白色毛玻璃质感：半透明底必须配模糊，否则只是发灰的半透明片 */
-  -webkit-backdrop-filter: blur(var(--mg-glass-blur));
-  backdrop-filter: blur(var(--mg-glass-blur));
+  /* 模型卡一屏外会有数十张；不要沿用 .mg-tile 的实时背景模糊，
+     否则快速滚动时 Chromium 会来不及合成，出现卡片内容短暂留白。 */
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 .mg-tile.mg-tile-hover.mg-mcard:hover { border-color: var(--plaza-card-hover-border); }
+
+/* IntersectionObserver 在卡片距视口 420px 时才加类名。默认状态永远是完整可见，
+   所以快速滚动跳过预热区也不会出现空白；命中时只播放一次轻量入场。 */
+.mg-mcard.is-entering-view {
+  animation: models-catalog-card-enter 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes models-catalog-card-enter {
+  from { opacity: 0.84; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mg-mcard.is-entering-view { animation: none; }
+}
+
 /* 顶行：图标在左，角标右对齐（qa#286：PRD §4.2 非目标明确排除收藏功能，已删除） */
 .mg-mcard-top {
   display: flex; align-items: flex-start; justify-content: space-between;
@@ -165,4 +182,3 @@
   .mg-mcard-actions { position: static; opacity: 1; pointer-events: auto; padding: 10px 0 0; background: transparent; transform: none; -webkit-mask-image: none; mask-image: none; }
 }
 .mg-mcard-icon-btn { flex-shrink: 0; width: 36px; padding-left: 0; padding-right: 0; }
-

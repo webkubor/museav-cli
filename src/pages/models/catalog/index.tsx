@@ -54,6 +54,8 @@ export default function ModelsCatalogPage() {
   const [compareInitialIds, setCompareInitialIds] = useState<string[]>([])
   const [compareCurrentModelId, setCompareCurrentModelId] = useState<string | undefined>(undefined)
   const sortRef = useRef<HTMLDivElement>(null)
+  const gridRef = useRef<HTMLDivElement>(null)
+  const revealedCardsRef = useRef(new WeakSet<Element>())
 
   const sortLabels: Record<SortKey, string> = {
     default: t('modelsCatalog.sort.default'),
@@ -187,6 +189,33 @@ export default function ModelsCatalogPage() {
    * 不必等后端就绪再"原地替换"（之前的决策）。
    */
   const visibleModels = allModels
+
+  /**
+   * 卡片进入视口前的轻量过渡。
+   *
+   * 不把未进入视口的卡片预先设成 opacity:0 —— 快速滚动跨过 observer 的预加载区时，
+   * 那种实现会再次露出整片空白。这里让内容始终正常绘制，只在卡片提前进入 420px
+   * 预热区时播放一次短促的 opacity + transform 动画；回调来不及时仍显示完整内容。
+   */
+  useEffect(() => {
+    const grid = gridRef.current
+    if (!grid || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting || revealedCardsRef.current.has(entry.target)) return
+        revealedCardsRef.current.add(entry.target)
+        observer.unobserve(entry.target)
+
+        entry.target.classList.add('is-entering-view')
+      })
+    }, { rootMargin: '420px 0px', threshold: 0.01 })
+
+    grid.querySelectorAll('.mg-mcard').forEach((card) => {
+      if (!revealedCardsRef.current.has(card)) observer.observe(card)
+    })
+    return () => observer.disconnect()
+  }, [visibleModels])
 
   // ── 埋点（PRD §10.2，qa#550）──────────────────────────────────────────────
   // visibleModelsRef：始终指向最新一次渲染的结果集，供下面的防抖/延迟回调在
@@ -416,7 +445,7 @@ export default function ModelsCatalogPage() {
               </button>
             </div>
           ) : (
-            <div className="models-catalog-grid">
+            <div ref={gridRef} className="models-catalog-grid">
               {visibleModels.map((model, index) => (
                 <CatalogCard
                   key={model.id}

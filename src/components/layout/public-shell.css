@@ -24,7 +24,15 @@
    2) 叠一层星场（DecorStarField，36 颗，与官网首屏同一份数据）。
    ══════════════════════════════════════════════════════════════════ */
 .mg-public-shell {
-  background-attachment: fixed;
+  /* 长列表不用 fixed 画布。Chromium 快速滚动时会持续重新合成固定背景，
+     与下方数十张模型卡叠加后容易出现 checkerboarding（整屏留白）。 */
+  background-attachment: scroll;
+}
+
+/* design-tokens 的高频 SVG 颗粒会生成一张与整个长页等高的混合图层。
+   公开模型页保留渐变画布，去掉这层动态合成成本。 */
+.mg-public-shell.mg-glass-canvas::before {
+  display: none;
 }
 
 /* 星场：fixed 铺满视口，落在内容之下；纯装饰，不挡点击 */
@@ -56,20 +64,21 @@
   opacity: var(--mg-star-opacity);
   transform: rotate(var(--mg-star-rotate)) scale(var(--mg-star-scale));
   transform-origin: 50% 50%;
-  animation: mg-decor-star-float 18s ease-in-out infinite;
-  will-change: transform, opacity;
+  /* 长列表页不让 36 颗 fixed 星点各自占一层并持续动画；
+     星点仍保留为静态氛围，滚动时则可以与背景一次性栅格化。 */
+  animation: none;
+  will-change: auto;
   /* 素材是纯白 SVG。曾试过 brightness(0.62) + hue-rotate(202deg) 想把它染成品牌蓝 ——
      行不通：白色没有色相，hue-rotate 无从作用，brightness 只是把白压暗，结果是灰黑星。
      浅底上正确的做法是保持白星本色、靠品牌蓝的外发光把它从背景里"托"出来。
      深色档沿用官网首屏的 screen 混合。 */
-  filter: drop-shadow(0 0 5px rgba(34, 61, 229, 0.30))
-    drop-shadow(0 0 12px rgba(120, 165, 235, 0.35));
+  filter: none;
   mix-blend-mode: normal;
 }
 
 [theme-mode='dark'] .mg-decor-star,
 body[theme-mode='dark'] .mg-decor-star {
-  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.22));
+  filter: none;
   mix-blend-mode: screen;
 }
 

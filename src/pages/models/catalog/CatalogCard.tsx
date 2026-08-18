@@ -31,7 +31,7 @@ import { Button } from '@/components/ui/Button'
 import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 import {
   MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, autoSummary, modelVendorLabel,
-  priceTiersForCard, priceTierLabel,
+  priceTiersForCard, priceTierLabel, catalogCardReplacesGridWithTiers,
 } from '@/features/models/model-format'
 import { hasPlaygroundExperience } from '../model-experience-data'
 import type { CatalogModelItem } from '@/types'
@@ -106,6 +106,7 @@ export function CatalogCard({
   // 但缓存读取没配大多是模型不支持缓存计费，写「免费」会误导。限免模型仍随 isFree 显示免费。
   const cacheRead = priceText(isPerCall ? undefined : model.pricing?.cache_read_per_1m, symbol, isFree ? freeLabel : '—', unitSuffix, isFree)
   const cardTiers = priceTiersForCard(model.price_tiers)
+  const useTierGrid = catalogCardReplacesGridWithTiers(model.pricing, cardTiers)
 
   // 输入 → 输出模态流。后端拆分下发；老数据只有合并 modalities 时退回并集。
   const inputMods = (model.input_modalities ?? model.modalities ?? []).filter((m) => MODALITY_CODES.includes(m))
@@ -234,7 +235,7 @@ export function CatalogCard({
           右侧，不另起一行。最大输出已按 shared/modelgo_prd#348 移除（后端无可靠数据），
           空出的第四格按需求方 2026-08-04 口径改放缓存读取价。 */}
       <div className="mg-mcard-specs">
-        {cardTiers.length > 0 ? (
+        {useTierGrid ? (
           cardTiers.map((tier) => {
             const shown = priceText(tier.price, symbol, '—', `/${tier.unit}`, isFree)
             return (

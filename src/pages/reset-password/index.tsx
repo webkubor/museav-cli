@@ -16,6 +16,7 @@ import type { TFunction } from 'i18next'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { PasswordStrength } from '@/components/auth/PasswordStrength'
 import { resetPassword } from '@/services/auth'
+import { getCaptchaParam } from '@/lib/aliyun-captcha'
 
 function createResetPasswordSchema(t: TFunction) {
   return z
@@ -86,7 +87,10 @@ export default function ResetPasswordPage() {
     setLoading(true)
     setServerError('')
     try {
-      await resetPassword(token, data.password)
+      // 这个页面是从邮件里打开的**新**页面，浏览器上没有任何先前的人机校验凭证 —— 所以它必须
+      // 自己解一次题（未启用时返回 null，请求照常发出，后端此时也不要求）。
+      const captchaParam = await getCaptchaParam()
+      await resetPassword(token, data.password, captchaParam)
       setDone(true)
     } catch {
       setServerError(t('account.auth.reset.failed'))

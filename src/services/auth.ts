@@ -122,14 +122,27 @@ export function switchTenant(body: SwitchTenantRequest) {
 }
 
 /** 发送密码重置邮件 */
-export function forgotPassword(email: string) {
+export function forgotPassword(email: string, captchaVerifyParam?: string | null) {
   const resetUrl = `${window.location.origin}/reset-password`
-  return post<AuthMailTTLResponse>('auth/password/forgot', { email, reset_url: resetUrl })
+  return post<AuthMailTTLResponse>('auth/password/forgot', {
+    email,
+    reset_url: resetUrl,
+    // 可选：后端把这个入口并入了风控判定（shared/modelgo_prd#709）。切到 enforce 之后不带就是
+    // 400/4007，而这个页面本来一个滑块都没有。
+    ...(captchaVerifyParam ? { captcha_verify_param: captchaVerifyParam } : {}),
+  })
 }
 
 /** 使用重置 token 设置新密码 */
-export function resetPassword(token: string, password: string) {
-  return post<null>('auth/password/reset', { token, password })
+export function resetPassword(token: string, password: string, captchaVerifyParam?: string | null) {
+  return post<null>('auth/password/reset', {
+    token,
+    password,
+    // 这个页面是从**邮件**里打开的新页面，浏览器上没有任何先前的人机校验凭证 —— 所以它必须能
+    // 自己带一枚新鲜的（shared/modelgo_prd#711 契约二）。沿用"登录页已经解过题"的假设会让这个
+    // 页面在 enforce 下 100% 卡死。
+    ...(captchaVerifyParam ? { captcha_verify_param: captchaVerifyParam } : {}),
+  })
 }
 
 /** 独立验证邮箱验证码（用于敏感操作二次确认，如换绑邮箱） */

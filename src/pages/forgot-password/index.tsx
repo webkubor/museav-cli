@@ -15,6 +15,7 @@ import type { TFunction } from 'i18next'
 
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { forgotPassword } from '@/services/auth'
+import { getCaptchaParam } from '@/lib/aliyun-captcha'
 
 function createForgotPasswordSchema(t: TFunction) {
   return z.object({
@@ -75,7 +76,9 @@ export default function ForgotPasswordPage() {
     setLoading(true)
     setServerError('')
     try {
-      const result = await forgotPassword(data.email)
+      // 先解题再发信（未启用时 getCaptchaParam 返回 null，请求照常发出，后端此时也不要求）。
+      const captchaParam = await getCaptchaParam()
+      const result = await forgotPassword(data.email, captchaParam)
       setExpiresIn(result.expires_in)
       setSent(true)
     } catch {

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { AccountBrief, TenantBrief, SessionMenu } from '@/types'
 import { storageKeys } from '@/lib/storage'
 import type { Permission } from '@/config/permissions'
+import { clearCsrfToken } from '@/lib/auth/csrf-token'
 
 interface AuthState {
   account: AccountBrief | null
@@ -86,6 +87,9 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
   },
 
   clearAuth: () => {
+    // 会话没了，它派生的 CSRF 值也必须作废，否则下一个登录的账号会拿上一个
+    // 会话的 token 去写，必然 40302（需求方#676）
+    clearCsrfToken()
     localStorage.removeItem(storageKeys.activeTenantId())
     // 清掉已知租户的 per-tenant 工作空间选择（key 现按租户隔离，逐个删）。
     const { tenants, activeTenantId } = get()

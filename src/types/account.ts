@@ -89,6 +89,12 @@ export interface SessionResult {
   tenants: TenantBrief[]
   permissions: SessionPermissions
   session: SessionInfo
+  /**
+   * 本会话的 CSRF 派生值，写请求的 X-CSRF-Token 必须用它（需求方#676）。
+   * 不能改回读 cookie —— 浏览器里存在同名影子 cookie 时 document.cookie 取到的
+   * 是先创建那一枚，而服务端按最后一枚校验，方向相反必然 40302。见 lib/auth/csrf-token.ts。
+   */
+  csrf_token?: string
 }
 
 export interface RegisterRequest {

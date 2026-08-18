@@ -8,6 +8,7 @@
 import i18n from 'i18next'
 import { storageKeys } from '@/lib/storage'
 import { getDeviceId } from '@/lib/device-fingerprint'
+import { getCsrfToken } from '@/lib/auth/csrf-token'
 
 // ─── 类型定义 ────────────────────────────
 
@@ -94,7 +95,10 @@ function generateTraceParent(): string {
 
 const headerDefs: Record<InjectedHeader, HeaderDef> = {
   'X-Tenant-Id': { resolve: activeTenantId },
-  'X-CSRF-Token': { resolve: () => readCookie('modelgo_csrf'), mutatingOnly: true },
+  // 取内存里 /auth/session 下发的值，不读 cookie —— 同名影子 cookie 下 document.cookie
+  // 取到的是先创建那一枚，服务端却按最后一枚校验，必然 40302（需求方#676）。
+  // cookie 仅作兜底：万一 session 还没拉回来就有写请求，至少维持旧行为而不是不发头。
+  'X-CSRF-Token': { resolve: () => getCsrfToken() ?? readCookie('modelgo_csrf'), mutatingOnly: true },
   traceparent: { resolve: generateTraceParent },
   'Accept-Language': { resolve: resolveLocale },
   'X-Origin': { resolve: resolveOrigin },

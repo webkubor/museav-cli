@@ -4,6 +4,7 @@
  * API：POST /auth/register、POST /auth/login、POST /auth/logout、GET /auth/session、GET /auth/oauth/:provider/authorize、POST /account/active-tenant
  */
 import { apiBaseUrl, get, post } from '@/lib/request'
+import { setCsrfToken } from '@/lib/auth/csrf-token'
 import type { AuthMailTTLResponse } from '@/interfaces/auth'
 import type {
   CheckLoginEmailResult,
@@ -82,8 +83,14 @@ export function logout() {
  * 传 workspaceId → 后端按该空间解析权限（granted/workspace_role）；不传按租户默认空间解析。
  * 传了当前用户不属于的空间 id 后端安全回落默认空间（不越权、不报错）。
  */
-export function getSession(workspaceId?: string) {
-  return get<SessionResult>(`auth/session${workspaceId ? `?workspace_id=${encodeURIComponent(workspaceId)}` : ''}`)
+export async function getSession(workspaceId?: string) {
+  const result = await get<SessionResult>(`auth/session${workspaceId ? `?workspace_id=${encodeURIComponent(workspaceId)}` : ''}`)
+  // 在唯一出口收下写请求要用的 CSRF 值（需求方#676）。放在这里而不是各调用方：
+  // 登录、OAuth 回调、切租户、组织设置都会拉 session，其中好几处是手写 setAuth
+  // 而非走 applySessionToStore —— 靠调用方记得收必然漏。token 是回包的副产物，
+  // 在拿到回包处收下最不容易错。
+  setCsrfToken(result.csrf_token)
+  return result
 }
 
 /**

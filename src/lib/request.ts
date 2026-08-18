@@ -4,6 +4,7 @@ import type { ApiError, ApiResponse, CursorPage, QueryParams } from '@/types'
 import { injectHeaders } from '@/lib/request-headers'
 import { useLangStore } from '@/store/use-brand-store'
 import { handleSessionExpired } from '@/lib/auth/auth-controller'
+import { setCsrfToken } from '@/lib/auth/csrf-token'
 import { encryptRequest, decryptResponse } from '@/lib/crypto/secure-transport'
 import { reportServerError, reportHttpServerError } from '@/lib/error-diagnostics'
 
@@ -189,7 +190,13 @@ export function isServerErrorCode(code: number) {
 
 async function refreshCsrf() {
   try {
-    await ky.get(apiPrefixUrl() + '/auth/session', { credentials: 'include' })
+    const resp = await ky.get(apiPrefixUrl() + '/auth/session', { credentials: 'include' })
+    // 必须接住响应体里的 csrf_token（需求方#676）：光重拉不取值，重放发的还是同一个
+    // 被影子 cookie 遮蔽的旧值，只会再吃一个 40302。
+    // 刻意不落 store —— 这里是裸调用、没带 workspace_id，落进去会把权限面换成
+    // 默认空间的（需求方#255 那个坑）。只取 token。
+    const envelope = await resp.json<ApiResponse<{ csrf_token?: string }>>()
+    setCsrfToken(envelope?.data?.csrf_token)
   } catch {
     // 即使失败也不阻塞重放
   }

@@ -16,6 +16,18 @@ describe('formatDuration', () => {
   it('毫秒达到一秒时转换为单小数秒', () => {
     expect(formatDuration(10697)).toBe('10.7s')
   })
+
+  // 2026-08-19 线上事故：/model-logs/summary 的 avg_ttft_ms 是聚合浮点，毫秒分支
+  // 当时直接模板拼接，调用日志 Summary 把「首 Token」显示成 323.90376406674426ms。
+  it('聚合来的浮点毫秒必须取整 —— 别把 323.90376406674426ms 吐到页面上', () => {
+    expect(formatDuration(323.90376406674426)).toBe('324ms')
+    expect(formatDuration(199.90057778262292)).toBe('200ms')
+    expect(formatDuration(0.4)).toBe('0ms')
+  })
+
+  it('秒档的浮点由 toFixed(1) 收敛，不受影响', () => {
+    expect(formatDuration(1274.764935458457)).toBe('1.3s')
+  })
 })
 
 // qa#491：common.json 里所有 key 实际嵌套在顶层 "common" 包裹对象下（跟 nav/header 等其他

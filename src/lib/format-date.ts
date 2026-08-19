@@ -117,7 +117,16 @@ export function formatChartTooltipDate(iso: string): string {
   return new Date(iso).toLocaleDateString(currentLocale(), dateOptions({ month: 'short', day: 'numeric' }))
 }
 
-/** "1.2s" / "350ms" — 接口耗时 */
+/**
+ * "1.2s" / "350ms" — 接口耗时。
+ *
+ * 毫秒分支必须取整：单条日志的 duration_ms 是整数，但**聚合值是浮点**
+ * （如 /model-logs/summary 的 avg_ttft_ms = 323.90376406674426），直接模板拼接会把
+ * 整个浮点吐到页面上。2026-08-19 线上就这么露出来过：调用日志 Summary 的「首 Token」
+ * 显示成 `323.90376406674426ms`，而同行的 2.0s 因为走 toFixed(1) 分支看着正常。
+ * use-usage-page.tsx 早先也踩过，当时是在调用处包 Math.round —— 补在调用侧治不住，
+ * 每个新调用方都得记着包一次，所以收到这里。
+ */
 export function formatDuration(ms: number): string {
-  return ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`
+  return ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${Math.round(ms)}ms`
 }

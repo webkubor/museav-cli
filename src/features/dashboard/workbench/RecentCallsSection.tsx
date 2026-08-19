@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/Card'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
 import { Money } from '@/components/ui/Money'
+import { TokenUsageCell } from '@/features/logs/TokenUsageCell'
 import { formatDuration } from '@/lib/format-date'
 import { deriveLogStatus } from '@/pages/logs/guardrail'
 import { buildStatusMap } from '@/pages/logs/status-map'
@@ -24,7 +25,7 @@ function formatSimple(iso: string) {
 
 /**
  * 模块 8：最近调用日志（最近 3 条）。
- * 列：时间 / 状态 / 模型 / 归属 / Token / 费用 / 延迟；「查看全部」跳 /logs。
+ * 列：时间 / 状态 / 模型 / 归属 / Token（总数+输入/输出，与日志页同组件）/ 费用 / 延迟；「查看全部」跳 /logs。
  */
 export function RecentCallsSection({ view = 'enterprise', accountId, granularity = 'month' }: { view?: WorkbenchView; accountId?: string; granularity?: Granularity }) {
   const { t } = useTranslation()
@@ -104,7 +105,9 @@ export function RecentCallsSection({ view = 'enterprise', accountId, granularity
                     </TableCell>
                     <TableCell className="text-xs font-semibold text-mg-text-1">{model}</TableCell>
                     <TableCell className="text-xs text-mg-text-2 max-w-[140px] truncate">{owner}</TableCell>
-                    <TableCell className="text-xs text-mg-text-2 font-mono">{(item.usage?.total_tokens ?? 0).toLocaleString()}</TableCell>
+                    {/* 与调用日志页同一实现（features/logs/TokenUsageCell）：总数 + 输入/输出分项，
+                        需求方 2026-08-19 要求两处视觉一致。 */}
+                    <TableCell className="whitespace-nowrap"><TokenUsageCell row={item} /></TableCell>
                     <TableCell>
                       <Money amount={item.cost?.amount} currency={item.cost?.currency} />
                     </TableCell>

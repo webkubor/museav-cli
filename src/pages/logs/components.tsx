@@ -17,9 +17,10 @@ import {
   TableRow,
 } from '@/components/ui/Table'
 import { formatDateTimeWithSeconds, formatDuration } from '@/lib/format-date'
-import { cn, formatNumber } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import type { CallLogItem } from '@/types'
 import { deriveLogStatus, isModelNotStarted } from './guardrail'
+import { TokenUsageCell } from '@/features/logs/TokenUsageCell'
 import { buildStatusMap } from './status-map'
 
 /** 延迟阈值着色：>3s 警告色，>6s 危险色，其余默认。让慢请求一眼可见。 */
@@ -196,31 +197,7 @@ export function LogsTable({
                 })()}
               </TableCell>
               <TableCell className="whitespace-nowrap">
-                {isModelNotStarted(row) ? (
-                  <div className="min-w-0">
-                    <strong className="block text-mg-text-3">—</strong>
-                    <span className="block mg-text-caption text-mg-text-3">{t('logs.metrics.noTokens')}</span>
-                  </div>
-                ) : row.usage.total_tokens > 0 ? (
-                  // 两行：T+总数一行、输入/输出一行（需求方定；比原三行紧凑、比一行清晰）
-                  <div className="min-w-0 whitespace-nowrap font-mono tabular-nums">
-                    <div className="flex items-center gap-1">
-                      {/* 「T」= Token 总量标记，颜色走 success 语义 token。 */}
-                      <span
-                        className="inline-flex cursor-default items-center justify-center rounded-sm bg-[var(--mg-success-bg)] px-1 py-0.5 text-[10px] font-bold leading-none text-[var(--mg-success-text)] transition-colors hover:bg-[var(--mg-success-bg-hover)]"
-                        title={t('logs.table.totalTokenTooltip')}
-                        aria-label={t('logs.table.totalTokenAria')}
-                      >T</span>
-                      <strong className="font-bold text-mg-text-1">{formatNumber(row.usage.total_tokens)}</strong>
-                    </div>
-                    <div className="mt-0.5 mg-text-caption text-mg-text-3">{t('logs.table.inputOutputTokens', { input: formatNumber(row.usage.input_tokens), output: formatNumber(row.usage.output_tokens) })}</div>
-                  </div>
-                ) : (
-                  <div className="min-w-0">
-                    <strong className="block text-mg-text-3">—</strong>
-                    <span className="block mg-text-caption text-mg-text-3">{t('logs.metrics.noTokens')}</span>
-                  </div>
-                )}
+                <TokenUsageCell row={row} />
               </TableCell>
               <TableCell>
                 {(() => {

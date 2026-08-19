@@ -332,15 +332,13 @@ export function useUsagePage() {
     )
   }
 
-  // 次级说明（归因）：模型→工作空间，成员→模型数，API Keys→归属人；缺省「—」（#447 归因未返回时）
+  // 次级说明（归因）：**只有 API Keys 维度保留**（显示归属人），模型与成员维度不再展示
+  // （需求方#718）。原本模型显「工作空间: xxx」、成员显「N 个模型」，但后端归因大多不返回，
+  // 满屏是「工作空间: —」这类空壳，占一行高度却不带信息。
+  // 返回 null 时渲染层（usage-distribution-panel 的 `secondary != null` 守卫）整行不渲染，
+  // 不留空位；缺省「—」的兜底（#447）只对 API Keys 维度还成立。
   const dimSecondary = (item: UsageRankingItem) => {
-    if (effectiveDimension === 'model') {
-      const ws = item.workspaces?.length ? item.workspaces.join('、') : item.workspace_name
-      return `${t('usage.attr.workspace')}: ${ws || '—'}`
-    }
-    if (effectiveDimension === 'member') {
-      return typeof item.model_count === 'number' ? t('usage.meta.models', { count: item.model_count }) : '—'
-    }
+    if (effectiveDimension === 'model' || effectiveDimension === 'member') return null
     return item.owner || '—'
   }
 

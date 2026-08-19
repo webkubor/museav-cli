@@ -10,7 +10,7 @@ vi.mock('@/lib/request', () => ({
 }))
 
 import { get } from '@/lib/request'
-import { listCallLogs } from '@/services/logs'
+import { listCallLogs, getLogsSummary } from '@/services/logs'
 
 const getMock = vi.mocked(get)
 
@@ -92,5 +92,64 @@ describe('getLogsSummary', () => {
     expect(query.guardrail).toBe('hit')
     expect(query.q).toBe('kw')
     expect(query.workspace_id).toBe('ws-1')
+  })
+})
+
+describe('getLogsSummary 打的端点', () => {
+  beforeEach(() => {
+    getMock.mockReset()
+  })
+
+  // 这条是这次踩坑的护栏：实现一度打的是 model-logs/stats。两个端点都活着、都回
+  // { totals }，所以类型和映射都不报错，但 stats 不认 preset（自己回落成最近 24h
+  // 分桶）且 totals 只有三项 —— 表现为指标条数值与列表差一个量级、六项里四项显「—」。
+  // 2026-08-19 test 实测：summary.requests 84765 == 列表 total 84765，stats 只有 4089。
+  it('必须是 model-logs/summary，不能回到 model-logs/stats', async () => {
+    getMock.mockResolvedValue({ totals: { requests: 1 } })
+
+    await getLogsSummary({ from: '2026-08-01', to: '2026-08-19' })
+
+    expect(getMock).toHaveBeenCalledTimes(1)
+    expect(getMock.mock.calls[0][0]).toBe('model-logs/summary')
+  })
+
+  it('六项指标全部映射，缺失项保持 undefined 而不是 0', async () => {
+    getMock.mockResolvedValue({
+      totals: {
+        requests: 84765,
+        tokens: 111822869,
+        spend: '2095.97',
+        currency: 'CNY',
+        succeeded: 80840,
+        failed: 1665,
+        guardrail_hits: 2224,
+        spend_with_cost_count: 79799,
+        avg_duration_ms: 1274.76,
+        avg_ttft_ms: 199.9,
+      },
+    })
+
+    const s = await getLogsSummary()
+
+    expect(s.total_requests).toBe(84765)
+    expect(s.succeeded).toBe(80840)
+    expect(s.failed).toBe(1665)
+    expect(s.guardrail_hits).toBe(2224)
+    expect(s.cost_records).toBe(79799)
+    expect(s.avg_duration_ms).toBeCloseTo(1274.76)
+    expect(s.avg_ttft_ms).toBeCloseTo(199.9)
+    expect(s.total_cost).toEqual({ amount: '2095.97', currency: 'CNY' })
+  })
+
+  it('后端某项缺失时该项为 undefined —— 不能用 0 冒充（会被读成「真的是 0」）', async () => {
+    getMock.mockResolvedValue({ totals: { requests: 10 } })
+
+    const s = await getLogsSummary()
+
+    expect(s.total_requests).toBe(10)
+    expect(s.succeeded).toBeUndefined()
+    expect(s.guardrail_hits).toBeUndefined()
+    expect(s.avg_ttft_ms).toBeUndefined()
+    expect(s.total_cost).toBeUndefined()
   })
 })

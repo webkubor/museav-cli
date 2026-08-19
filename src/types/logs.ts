@@ -101,7 +101,8 @@ export interface CallLogItem {
 }
 
 /** 调用日志 Summary（需求方#668）：跟随全部筛选的同步侧聚合指标。
- *  后端契约 qa#605 交付前多数字段缺失 → undefined，展示层显「—」，不得用 0 冒充。 */
+ *  后端 qa#605 已交付（2026-08-19 test 实打确认全字段可用）。字段仍标可选是防御性的：
+ *  后端某项缺失时宁可显「—」，不得用 0 冒充。 */
 export interface LogsSummary {
   total_requests?: number
   total_tokens?: number

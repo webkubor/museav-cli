@@ -87,9 +87,11 @@ type ModelLogListResponse = {
   total?: number
 }
 
-// Summary 契约（需求方#668 · 后端 qa#605）：现接口 totals 仅有 requests/spend/tokens；
-// succeeded/failed/guardrail_hits/avg_duration_ms/avg_ttft_ms/spend_with_cost_count 为
-// qa#605 约定的补齐字段（最终字段名以其交付为准），交付前缺失 → undefined，展示层显「—」。
+// Summary 契约（需求方#668 · 后端 qa#605，已交付）。
+// 2026-08-19 在 test 实打 GET /model-logs/summary 确认字段与下面的类型完全一致：
+//   totals = { requests, tokens, spend, currency, succeeded, failed, guardrail_hits,
+//              spend_with_cost_count, avg_duration_ms, avg_ttft_ms }
+// 字段可选是防御性的（后端某项缺失时宁可显「—」也不用 0 冒充），不代表还没交付。
 type ModelLogStatsResponse = {
   totals?: {
     spend?: string
@@ -313,9 +315,22 @@ export function getLogHistogram(params?: LogHistogramParams) {
   return get<LogHistogram>('model-logs/histogram', params)
 }
 
-/** 调用日志 Summary（需求方#668）：与列表同口径的聚合指标；筛选参数补齐待后端 qa#605。 */
+/**
+ * 调用日志 Summary（需求方#668）：与列表同口径的六项聚合指标。
+ *
+ * 端点必须是 `model-logs/summary`（qa#605 专门为本需求新增），**不是 `model-logs/stats`**。
+ * 两者都活着但口径完全不同，实测（2026-08-19 test，同一租户同一 preset=thisMonth）：
+ *   · summary.totals.requests = 84765 == 列表 total 84765  ✔ 同口径
+ *   · stats.totals.requests   =  4089                      ✗ 差 20 倍
+ * 因为 stats **不认 preset**，会自己回落成「最近 24h + granularity=hour」的分桶响应
+ * （from 08-18T07:55 → to 08-19T07:55），指标条会和下面的列表对不上。
+ * 而且 stats.totals 只有 requests/tokens/spend 三项，succeeded / failed /
+ * guardrail_hits / spend_with_cost_count / avg_duration_ms / avg_ttft_ms 全缺，
+ * 接在它上面这六项只能显「—」——那是端点选错，不是后端没交付。
+ * 响应体也差 40 倍（363B vs 14.9KB），summary 是轻量聚合、stats 带 buckets/groups。
+ */
 export async function getLogsSummary(params?: LogStatsParams) {
-  const data = await get<ModelLogStatsResponse>('model-logs/stats', toStatsQuery(params))
+  const data = await get<ModelLogStatsResponse>('model-logs/summary', toStatsQuery(params))
   return toLogsSummary(data)
 }
 

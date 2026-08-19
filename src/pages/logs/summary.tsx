@@ -1,8 +1,10 @@
 /**
  * 调用日志 Summary 指标条（需求方#668）
  * 位置：筛选器下方、已选筛选标签上方；始终按当前视图/记录类型/全部筛选计算，与列表口径一致。
- * 后端契约 qa#605：交付前 /model-logs/stats 仅回 requests/tokens/spend，其余指标显「—」；
- * 交付后由 services/logs 的 toLogsSummary 映射自动补全，本组件不感知契约差异。
+ * 数据源：GET /model-logs/summary（后端 qa#605，已交付并实打验证与列表同口径）。
+ * 注意别改回 /model-logs/stats——那个端点不认 preset、会回落成最近 24h 分桶，
+ * 数值与列表差一个量级，且缺六项指标里的四项（详见 services/logs.ts 的 getLogsSummary）。
+ * 某项指标缺失时显「—」，由 toLogsSummary 映射保证，本组件不感知契约差异。
  * PRD 数值规则：比例 1 位小数；分母为 0 / 无有效耗时费用显「—」；Token 紧凑格式；只看不可点。
  */
 import { useQuery } from '@tanstack/react-query'

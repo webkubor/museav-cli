@@ -99,9 +99,13 @@ export function useUsagePage() {
   // 而不是停在页面顶部（需求方#716）
   useEffect(() => {
     if (!dimensionParam) return
-    requestAnimationFrame(() => {
-      document.getElementById('usage-breakdown')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    })
+    // 图表/面板异步渲染会推后区块位置，首帧滚动会落空——延时两次定位兜底
+    const timers = [300, 1000].map((ms) =>
+      window.setTimeout(() => {
+        document.getElementById('usage-breakdown')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, ms),
+    )
+    return () => timers.forEach((t) => window.clearTimeout(t))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

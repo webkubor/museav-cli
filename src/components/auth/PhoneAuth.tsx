@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -26,6 +26,7 @@ import { getRequestErrorMessage, errorCodeOf, isApiErrorCode } from '@/lib/reque
 import { getCaptchaParam } from '@/lib/aliyun-captcha'
 import { CaptchaGate, type CaptchaGateHandle } from '@/components/auth/CaptchaGate'
 import { trackEvent } from '@/lib/track'
+import { resolveReferralCode, clearPersistedReferralCode } from '@/pages/signup/referral-code'
 
 function createPhoneAuthSchema(t: TFunction) {
   return z.object({
@@ -44,6 +45,10 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
   const isSessionLoading = useAuthStore((s) => s.isLoading)
 
   const [redirectAfterLogin] = useState(() => getRedirectTarget())
+  const [searchParams] = useSearchParams()
+  // 推荐注册归因（需求方#714）：/signup?aff=X 经市场重定向透传到本页，首渲染解析并
+  // 持久化到 sessionStorage（抗 OAuth 离站回跳），注册请求随 referral_code 上送。
+  const [referralCode] = useState(() => resolveReferralCode(searchParams))
   const [serverError, setServerError] = useState('')
   // 图形认证可见验证条：生效时发码前必须先通过（发码是刷量主入口）；发码消费
   // 一次性四元组后自动重置。不可用时回退弹窗流/放行。
@@ -122,7 +127,8 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
     setLoading(true)
     setServerError('')
     try {
-      await phoneLoginRegister(data.phone, data.code, gateParam ?? (await getCaptchaParam()))
+      await phoneLoginRegister(data.phone, data.code, gateParam ?? (await getCaptchaParam()), referralCode || undefined)
+      clearPersistedReferralCode()
       const session = await getSession()
       setAuth(
         session.account,
@@ -200,6 +206,12 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
           />
           {errors.code && <p className="auth-error-message">{errors.code.message}</p>}
         </div>
+
+        {referralCode && (
+          <p className="text-[12px] text-mg-text-3">
+            {t('account.auth.phoneLogin.referralNotice', { code: referralCode })}
+          </p>
+        )}
 
         <CaptchaGate onChange={setGateParam} onVerified={(param) => { autoSendParamRef.current = param; codeBtnRef.current?.trigger() }} onAvailability={setGateActive} handleRef={(h) => { gateRef.current = h }} />
 

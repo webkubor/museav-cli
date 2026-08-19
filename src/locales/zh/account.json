@@ -90,8 +90,8 @@
       "unbindSuccess": "第三方账号已解绑",
       "bindError": "发起绑定失败，请稍后重试",
       "identityAlreadyLinked": "该{{provider}}已被其他账户绑定，无法继续绑定",
-      "unbindError": "解绑失败，请稍后重试"
-      ,"unbindConfirmTitle": "解绑确认",
+      "unbindError": "解绑失败，请稍后重试",
+      "unbindConfirmTitle": "解绑确认",
       "unbindConfirm": "确认解绑",
       "unbindOnlyLoginMethod": "解绑后将无法登录你的账号，请先设置密码。",
       "unbindConfirmMessage": "确认解绑该账号？"
@@ -184,7 +184,8 @@
         "title": "登录 / 注册",
         "subtitle": "未注册的手机号将自动注册并登录",
         "useEmail": "使用邮箱登录",
-        "submit": "登录 / 注册"
+        "submit": "登录 / 注册",
+        "referralNotice": "邀请码 {{code}} 已应用，注册后自动生效"
       },
       "signup": {
         "title": "创建账号",

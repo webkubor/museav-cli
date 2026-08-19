@@ -141,11 +141,13 @@ export function DistributionDonutPanel({
               // space-y-3 与右侧排行卡的行间距同源（那边也是 space-y-3）：两侧行距一致，
               // 同一个模型在左图例与右排行里才横向对得齐。此前图例是 space-y-1，每行比右侧
               // 少 8px，越往下越错开。
-              'min-w-0 flex-1 space-y-3 self-stretch overflow-y-auto pr-1',
-              // 展开态图例行数多，放宽滚动区高度对齐右侧：排行卡展开后是 10 行 + 分页条 ≈ 470px。
-              // 原先 340px 比右侧矮一截，图例只露 7 行、下方留大片空白（需求方#666 期望图里
-              // 左侧图例是与右侧齐高、尽量多列的）。
-              expanded ? 'sm:max-h-[470px]' : 'sm:max-h-[210px]',
+              'min-w-0 flex-1 space-y-3 self-stretch pr-1',
+              // 收起态行数是定死的（DONUT_TOP_N=4 条 + 「其他」= 5 行），不会失控，所以
+              // 不设高度上限、也不要滚动条——原先 210px 装不下 5 行，把最后一条切掉一半
+              // （需求方#715：不需要滚动条，直接展示所有模型含「其他」）。
+              // 展开态才可能是几十行，那时仍限高滚动，并与右侧排行卡齐高：展开后是
+              // 10 行 + 分页条 ≈ 470px（需求方#666 要求左右齐高）。
+              expanded && 'overflow-y-auto sm:max-h-[470px]',
             )}
             onMouseLeave={() => setActive(null)}
           >

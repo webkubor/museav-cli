@@ -95,6 +95,16 @@ export function useUsagePage() {
     trackPageView('usage')
   }, [])
 
+  // 从总览排行卡「查看更多」带 ?dimension= 进入时，直接定位到「用量明细」区块，
+  // 而不是停在页面顶部（需求方#716）
+  useEffect(() => {
+    if (!dimensionParam) return
+    requestAnimationFrame(() => {
+      document.getElementById('usage-breakdown')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // 切到不含成员维度的视图时，若当前停在成员维度则回落到模型维度（派生，不 setState，避免看空面板）
   const effectiveDimension: UsageDimension =
     !canShowMemberDimension && dimension === 'member' ? 'model' : dimension

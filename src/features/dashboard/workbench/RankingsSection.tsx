@@ -10,7 +10,7 @@ import { trackEvent } from '@/lib/track'
 import { Card } from '@/components/ui/Card'
 import { Money } from '@/components/ui/Money'
 import { ModelIcon, type ModelIconLike } from '@/features/models/components/ModelIcon'
-import { abbreviateNumber, metricsRangeForGranularity, type Granularity, type WorkbenchView } from './shared'
+import { abbreviateNumber, metricsRangeForGranularity, timeRangeForGranularity, type Granularity, type WorkbenchView } from './shared'
 import type { UsageRankingItem } from '@/types'
 
 function RankingRow({ index, name, meta, metaTitle, spend, model }: { index: number; name: string; meta: string; metaTitle?: string; spend?: { amount?: string; currency?: string }; model?: ModelIconLike }) {
@@ -113,6 +113,8 @@ export function RankingsSection({ view, granularity, accountId }: { view: Workbe
   const range = useMemo(() => metricsRangeForGranularity(granularity), [granularity])
   const showMembers = view === 'enterprise'
   const periodLabel = t(`dashboard.workbench.periodLabel.${granularity}`)
+  // 深链时间口径：/usage 不读 granularity，按 PRD §9.2 用 time_range（#617）
+  const timeRange = timeRangeForGranularity(granularity)
 
   const handleRankingMore = (dimension: 'models' | 'members' | 'apiKeys', target: string) => {
     trackEvent('overview_ranking_more_click', { ...trackCtx, dimension }, { view_mode: view })
@@ -150,7 +152,7 @@ export function RankingsSection({ view, granularity, accountId }: { view: Workbe
         items={models?.items ?? null}
         isLoading={modelsLoading}
         emptyHint={t('dashboard.workbench.rankings.emptyHint')}
-        onViewMore={() => handleRankingMore('models', `/usage?view=${view}&granularity=${granularity}&dimension=model`)}
+        onViewMore={() => handleRankingMore('models', `/usage?view=${view}&time_range=${timeRange}&dimension=model`)}
         withModelIcon
       />
 
@@ -162,7 +164,7 @@ export function RankingsSection({ view, granularity, accountId }: { view: Workbe
           items={members?.items ?? null}
           isLoading={membersLoading}
           emptyHint={t('dashboard.workbench.rankings.emptyHint')}
-          onViewMore={() => handleRankingMore('members', `/usage?view=${view}&granularity=${granularity}&dimension=member`)}
+          onViewMore={() => handleRankingMore('members', `/usage?view=${view}&time_range=${timeRange}&dimension=member`)}
         />
       )}
 
@@ -173,7 +175,7 @@ export function RankingsSection({ view, granularity, accountId }: { view: Workbe
         items={apiKeys?.items ?? null}
         isLoading={apiKeysLoading}
         emptyHint={t('dashboard.workbench.rankings.emptyHint')}
-        onViewMore={() => handleRankingMore('apiKeys', `/usage?view=${view}&granularity=${granularity}&dimension=apiKey`)}
+        onViewMore={() => handleRankingMore('apiKeys', `/usage?view=${view}&time_range=${timeRange}&dimension=apiKey`)}
       />
     </div>
   )

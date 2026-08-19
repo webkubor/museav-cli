@@ -25,6 +25,15 @@ export function metricsRangeForGranularity(granularity: Granularity) {
 }
 
 /**
+ * 总览周期 → /usage 深链的 time_range 预设（PRD §9.2）：day→today、month→thisMonth。
+ * /usage 只消费 time_range / range_start+range_end，不读 granularity——带 granularity 会让
+ * 落地页时间口径回落到默认「本月」（#617）。
+ */
+export function timeRangeForGranularity(granularity: Granularity): 'today' | 'thisMonth' {
+  return granularity === 'day' ? 'today' : 'thisMonth'
+}
+
+/**
  * 趋势图/排行的取数窗口（画多周期序列用）：
  * - day  → 最近 30 天
  * - month→ 最近 12 个月（含当月）

@@ -10,7 +10,7 @@ import { useTrackContext } from '@/hooks/use-track-context'
 import { trackEvent } from '@/lib/track'
 import { Card } from '@/components/ui/Card'
 import { Money } from '@/components/ui/Money'
-import { abbreviateNumber, metricsRangeForGranularity, type Granularity, type WorkbenchView } from './shared'
+import { abbreviateNumber, metricsRangeForGranularity, timeRangeForGranularity, type Granularity, type WorkbenchView } from './shared'
 
 /**
  * 模块 6：工作空间明细。getUsageSummary(group_by:'workspace') 取 groups。
@@ -24,11 +24,21 @@ export function WorkspaceBreakdownSection({ granularity, accountId, view = 'ente
   const trackCtx = useTrackContext()
   const isMine = view === 'mine'
 
+  // 深链时间口径：/usage 不读 granularity，按 PRD §9.2 用 time_range（#617）
+  const timeRange = timeRangeForGranularity(granularity)
+
   const handleViewMore = () => {
     trackEvent('overview_breakdown_more_click', trackCtx, { view_mode: view })
     trackEvent('destination_page_view', { ...trackCtx, destination: '/usage' }, { source: 'workspace_breakdown' })
-    // 明细按工作空间分组，跳转带上下文：view + granularity（趋势 groupBy 已按需求方#66 移除）
-    navigate(`/usage?view=${view}&granularity=${granularity}`)
+    // 卡级「查看更多」= 全部空间，不带 workspace_id；单空间上下文走行级跳转（#617）
+    navigate(`/usage?view=${view}&time_range=${timeRange}`)
+  }
+
+  // PRD §9.2 把本卡列为 workspace_id 来源：点某一行带该空间跳转，落地页工作空间筛选定位到它（#617）
+  const handleWorkspaceClick = (workspaceId: string) => {
+    trackEvent('overview_breakdown_workspace_click', { ...trackCtx, workspace_id: workspaceId }, { view_mode: view })
+    trackEvent('destination_page_view', { ...trackCtx, destination: '/usage' }, { source: 'workspace_breakdown' })
+    navigate(`/usage?view=${view}&time_range=${timeRange}&workspace_id=${encodeURIComponent(workspaceId)}`)
   }
 
   // 副标题同样带「今日/本月」(periodLabel)，取数窗口与之对齐（prd#634）
@@ -89,7 +99,12 @@ export function WorkspaceBreakdownSection({ granularity, accountId, view = 'ente
       ) : groups.length > 0 ? (
         <div className="flex flex-col divide-y divide-mg-border">
           {groups.map((g) => (
-            <div key={g.key} className="flex items-center justify-between gap-3 py-3">
+            <button
+              key={g.key}
+              type="button"
+              onClick={() => handleWorkspaceClick(g.key)}
+              className="flex w-full items-center justify-between gap-3 py-3 px-2 -mx-2 text-left rounded-md hover:bg-mg-fill-1 transition-colors cursor-pointer"
+            >
               <div className="min-w-0">
                 <div className="truncate text-sm font-semibold text-mg-text-1">{nameById.get(g.key) || g.label || g.key}</div>
                 {/* 缩写数字悬浮显精确值（原生 title，不引入 Tooltip） */}
@@ -101,7 +116,7 @@ export function WorkspaceBreakdownSection({ granularity, accountId, view = 'ente
                 </div>
               </div>
               <Money amount={g.spend?.amount} currency={g.spend?.currency} size="md" tone="brand" />
-            </div>
+            </button>
           ))}
         </div>
       ) : (

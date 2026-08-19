@@ -28,7 +28,7 @@ import { ModelGoApiError } from '@/lib/request'
 import { errorCodeOf } from '@/lib/request-error-message'
 import { toast } from '@/lib/toast'
 import { trackEvent } from '@/lib/track'
-import { checkAuthGuard, clearAuthGuard, recordAuthGuardFailure } from '@/lib/auth/front-guard'
+import { throttleMessage } from '@/lib/auth/server-throttle'
 import { getRedirectTarget } from '@/lib/redirect'
 import { useMarket } from '@/hooks/useMarket'
 import { referralCodeFromSearchParams } from './referral-code'
@@ -120,23 +120,14 @@ function EmailSignupPage() {
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return
     }
-    const decision = checkAuthGuard({
-      action: 'signup-code',
-      subject: email,
-    })
-    if (!decision.allowed) {
-      setServerError(decision.message ?? t('account.auth.validation.rateLimited'))
-      return
-    }
-
     // qa#299 人机验证：通过取 param；未启用/降级/超时 → null → 照常发码（后端 fail-open）。
     const captchaParam = await getCaptchaParam()
     try {
-      const result = await sendEmailCode(email, captchaParam)
-      clearAuthGuard({ action: 'signup-code', subject: email })
-      return result.expires_in
+      return (await sendEmailCode(email, captchaParam)).expires_in
     } catch (error) {
-      recordAuthGuardFailure({ action: 'signup-code', subject: email })
+      // 限流的判定与秒数都来自服务端（prd#721）：把它的提示显示出来，不再本地计数。
+      const throttled = throttleMessage(error)
+      if (throttled) setServerError(throttled)
       throw error
     }
   }
@@ -161,12 +152,11 @@ function EmailSignupPage() {
         [],
         result.default_workspace_id
       )
-      clearAuthGuard({ action: 'signup', subject: data.email })
       trackEvent('signup_success', { method: 'email' }, { result: 'success' })
       navigate('/dashboard')
     } catch (e) {
-      recordAuthGuardFailure({ action: 'signup', subject: data.email })
-      const msg = e instanceof ModelGoApiError ? e.message : t('account.auth.signup.failed')
+      // 限流提示优先于通用失败文案：服务端已经把"还要等多久"算好并下发了（prd#721）。
+      const msg = throttleMessage(e) ?? (e instanceof ModelGoApiError ? e.message : t('account.auth.signup.failed'))
       trackEvent('signup_fail', { method: 'email' }, { result: 'fail', error_code: errorCodeOf(e) })
       setServerError(msg)
       toast.error(msg)
@@ -176,15 +166,6 @@ function EmailSignupPage() {
   }
 
   const onSubmit = async (data: Fields) => {
-    const decision = checkAuthGuard({
-      action: 'signup',
-      subject: data.email,
-    })
-    if (!decision.allowed) {
-      setServerError(decision.message ?? t('account.auth.validation.rateLimited'))
-      return
-    }
-
     // 验证条生效但未完成 → 调起挑战，等验证通过后自动提交
     if (gateActive && !gateParam) {
       autoSubmitRef.current = true

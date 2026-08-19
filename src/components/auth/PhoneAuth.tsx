@@ -19,11 +19,7 @@ import { SocialLogin } from '@/components/auth/SocialLogin'
 import { VerificationCodeButton, type VerificationCodeButtonHandle } from '@/components/auth/VerificationCodeButton'
 import { sendSmsCode, phoneLoginRegister, getSession } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
-import {
-  checkAuthGuard,
-  clearAuthGuard,
-  recordAuthGuardFailure,
-} from '@/lib/auth/front-guard'
+import { throttleMessage } from '@/lib/auth/server-throttle'
 import { getRedirectTarget } from '@/lib/redirect'
 import { navigateAfterLogin } from '@/lib/login-intent'
 import { getRequestErrorMessage, errorCodeOf, isApiErrorCode } from '@/lib/request-error-message'
@@ -86,10 +82,6 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
     // 静默 return 会导致「没真正发码却显示已发送并锁 60s」的假倒计时。
     if (!(await trigger('phone'))) throw new Error(t('account.auth.validation.phone'))
     const phone = getValues('phone')
-    const decision = checkAuthGuard({ action: 'phone-code', subject: phone })
-    if (!decision.allowed) {
-      throw new Error(decision.message ?? t('account.auth.validation.rateLimited'))
-    }
     setServerError('')
     // 人机验证通过后由 CaptchaGate onVerified 自动触发本函数，透传的四元组暂存在 autoSendParamRef
     // （同 tick gateParam state 尚未刷新，必须直接读 ref，消费即清）
@@ -104,24 +96,21 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
     const captchaParam = pendingParam ?? gateParam ?? (await getCaptchaParam())
     try {
       const result = await sendSmsCode(phone, captchaParam)
-      clearAuthGuard({ action: 'phone-code', subject: phone })
       // 发码成功后【不重置验证条】：用户刚过完挑战，界面必须保持「已完成安全验证」。
       // 此前这里 reset()，验证态在一秒内被自己清掉，用户看到的是「我明明验过了却又要验」。
       // 四元组留着给随后的登录提交复用（登录侧也要 captcha，prd#615 安全整改）；
       // 若后端因一次性语义拒 40025，onSubmit 的 catch 会把验证条退回可重验并给出提示。
       return result.expires_in
     } catch (error) {
-      recordAuthGuardFailure({ action: 'phone-code', subject: phone })
+      // 发码被服务端限流时把它的等待提示抛给调用方显示（prd#721），不再本地计数。
+      const throttled = throttleMessage(error)
+      // 带上 cause：重抛时丢掉原因链会让上层拿不到 code / request_id（lint 规则也会拦）。
+      if (throttled) throw new Error(throttled, { cause: error })
       throw error
     }
   }
 
   const onSubmit = async (data: Fields) => {
-    const decision = checkAuthGuard({ action: 'phone-login', subject: data.phone })
-    if (!decision.allowed) {
-      setServerError(decision.message ?? t('account.auth.validation.rateLimited'))
-      return
-    }
     // 登录侧也要带四元组：后端 sms-code/login 实测缺失即拒 40025。发码那次的四元组
     // 已在发码时消费（一次性），所以这里必须是一次新的验证——验证条生效但未通过时
     // 调起挑战并中止本次提交，用户完成后再点登录（短信码仍在 5 分钟有效期内，不用重发）。
@@ -135,7 +124,6 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
     try {
       await phoneLoginRegister(data.phone, data.code, gateParam ?? (await getCaptchaParam()))
       const session = await getSession()
-      clearAuthGuard({ action: 'phone-login', subject: data.phone })
       setAuth(
         session.account,
         session.active_tenant_id,
@@ -146,7 +134,6 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
       trackEvent('login_success', { method: 'phone' }, { result: 'success' })
       // 导航统一交给下面 isAuthenticated 的 effect，避免和它抢跑覆盖目的地
     } catch (error) {
-      recordAuthGuardFailure({ action: 'phone-login', subject: data.phone })
       // 展示后端返回的细分中文文案（验证码错误/已失效、账户冻结、发送过频等），
       // 5xxxx 内部错误由 getRequestErrorMessage 归一为通用「服务暂不可用」提示。
       trackEvent('login_fail', { method: 'phone' }, { result: 'fail', error_code: errorCodeOf(error) })

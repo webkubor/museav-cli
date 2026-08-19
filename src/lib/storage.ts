@@ -65,7 +65,6 @@ export const storageKeys = {
   // 避免跨租户串台（活跃租户 A + 残留 B 的 workspace → 接口 40301）。
   activeWorkspaceId: (tenantId: string) => buildKey(`active_workspace_id:${tenantId}`, 'market'),
   rememberedLogin: () => buildKey('remembered_login', 'market'),
-  authGuard:      (scope: string) => buildKey(`auth_guard:${scope}`, 'market'),
 
   // ── 主题（app 全局，与市场无关） ──────────────────────────────────────────
   theme:           ()           => buildKey('theme', 'app'),

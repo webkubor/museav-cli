@@ -24,12 +24,7 @@ import { useMarket } from '@/hooks/useMarket'
 import { useEmailAuthEnabled } from '@/hooks/use-platform-config'
 import { checkLoginEmail, login, getSession } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
-import {
-  checkAuthGuard,
-  clearAuthGuard,
-  recordAuthGuardFailure,
-  type AuthGuardAction,
-} from '@/lib/auth/front-guard'
+import { throttleMessage } from '@/lib/auth/server-throttle'
 import { getRedirectTarget } from '@/lib/redirect'
 import { navigateAfterLogin } from '@/lib/login-intent'
 import { storageKeys } from '@/lib/storage'
@@ -138,36 +133,26 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
     }
   }, [isAuthenticated, isSessionLoading, navigate, redirectAfterLogin])
 
-  const canSubmitAuth = (action: AuthGuardAction, subject: string) => {
-    const decision = checkAuthGuard({ action, subject })
-    if (decision.allowed) return true
-    setServerError(decision.message ?? t('account.auth.validation.rateLimited'))
-    return false
-  }
-
   const onEmailSubmit = async (data: EmailFields) => {
-    if (!canSubmitAuth('login-email', data.email)) return
     setLoading(true)
     setServerError('')
     try {
       const result = await checkLoginEmail(data.email)
-      clearAuthGuard({ action: 'login-email', subject: data.email })
       if (!result.registered) {
         navigate(`/signup?email=${encodeURIComponent(data.email)}`)
         return
       }
       setEmail(data.email)
       setStep('password')
-    } catch {
-      recordAuthGuardFailure({ action: 'login-email', subject: data.email })
-      setServerError(t('account.auth.login.emailCheckFailed'))
+    } catch (err) {
+      // 被服务端限流时显示它给的等待提示，而不是"邮箱校验失败" —— 后者会让用户以为邮箱有问题。
+      setServerError(throttleMessage(err) ?? t('account.auth.login.emailCheckFailed'))
     } finally {
       setLoading(false)
     }
   }
 
   const doLogin = async (password: string, captchaParam: string | null) => {
-    if (!canSubmitAuth('login-password', email)) return
     setLoading(true)
     setServerError('')
     let loginOk = false
@@ -175,7 +160,6 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
       await login({ email, password }, captchaParam)
       loginOk = true
       const session = await getSession()
-      clearAuthGuard({ action: 'login-password', subject: email })
       if (rememberPassword) {
         saveRememberedEmail(email)
       } else {
@@ -191,14 +175,19 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
       trackEvent('login_success', { method: 'password' }, { result: 'success' })
       // 导航统一交给下面 isAuthenticated 的 effect（navigateAfterLogin 是异步的模型
       // 意图重新校验，这里若再调一次会跟 effect 触发的那次抢跑，导致目的地被互相覆盖）
-    } catch {
-      if (!loginOk) {
-        recordAuthGuardFailure({ action: 'login-password', subject: email })
-      }
+    } catch (err) {
+      // 冷却/限流的判定与秒数都来自服务端（prd#721）：这里只负责把它显示出来。前端曾经自己算
+      // （localStorage 的 front-guard），而那套对攻击者零作用、又比服务端更严 —— 多出来的严格
+      // 全落在真实用户头上。
+      const throttled = throttleMessage(err)
       // loginOk=true 但走进 catch = 登录成功但拉 session 失败；否则是凭据错误
-      const errorCode = loginOk ? 'session_failed' : 'invalid_credentials'
+      const errorCode = loginOk ? 'session_failed' : throttled ? 'throttled' : 'invalid_credentials'
       trackEvent('login_fail', { method: 'password' }, { result: 'fail', error_code: errorCode })
-      setServerError(loginOk ? t('account.auth.login.sessionFailed') : t('account.auth.login.invalidCredentials'))
+      setServerError(
+        loginOk
+          ? t('account.auth.login.sessionFailed')
+          : (throttled ?? t('account.auth.login.invalidCredentials'))
+      )
       if (!loginOk) gateRef.current?.reset()
     } finally {
       setLoading(false)

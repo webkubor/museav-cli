@@ -95,56 +95,17 @@ export function useUsagePage() {
     trackPageView('usage')
   }, [])
 
-  /**
-   * 从总览排行卡「查看更多」进来时（?focus=breakdown），平滑滚到「用量明细」区块（需求方#716）。
-   * 那几张卡讲的就是这里的数据，落在页面顶部等于让人自己找。维度由 ?dimension= 推导，
-   * 两者配合才是「跳到 用量明细 → 模型 / API Keys」。
-   *
-   * 不能用 el.scrollIntoView()：本页真正的滚动容器是 DashboardLayout 里的
-   * `<main class="dashboard-main overflow-y-auto">`，不是 window——实测 scrollIntoView
-   * 在这种嵌套滚动容器下不生效（window.scrollY 与 main.scrollTop 都纹丝不动）。
-   * 所以显式取容器、按两者 getBoundingClientRect 的差值算容器内目标位置。
-   *
-   * 落点会漂：进页面时上方图表还是骨架屏，数据到位后区块被往下推，按骨架屏高度算出的
-   * 位置就偏了（实测偏 ~690px）。所以滚完等动画结束再校验一次，位置还差得多就补滚，
-   * 最多补 3 次；每次都重算，不累积误差。
-   */
+  // 从总览排行卡「查看更多」带 ?dimension= 进入时，直接定位到「用量明细」区块，
+  // 而不是停在页面顶部（需求方#716）
   useEffect(() => {
-    if (searchParams.get('focus') !== 'breakdown') return
-    let cancelled = false
-    let timer: ReturnType<typeof setTimeout>
-
-    const scrollOnce = (retriesLeft: number) => {
-      if (cancelled) return
-      const el = document.getElementById('usage-breakdown')
-      const scroller = document.querySelector('main.dashboard-main') as HTMLElement | null
-      if (!el || !scroller) return
-      const offset = el.getBoundingClientRect().top - scroller.getBoundingClientRect().top
-      const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-      scroller.scrollTo({
-        top: Math.max(0, scroller.scrollTop + offset - 12),
-        behavior: reduceMotion ? 'auto' : 'smooth',
-      })
-      if (retriesLeft <= 0) return
-      // 等 smooth 动画走完再看是否还差着（>24px 认为布局又变过，多因骨架屏换成真实数据）。
-      // 已经滚到底就别再重试：明细区块是页面最后一块，它下方没有内容可以把它继续顶上去，
-      // 此时「贴着视口底部完整显示」就是能达到的最好落点，再滚只会让 smooth 动画互相打断。
-      timer = setTimeout(() => {
-        if (cancelled) return
-        const atBottom = scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop <= 2
-        if (atBottom) return
-        const off = el.getBoundingClientRect().top - scroller.getBoundingClientRect().top
-        if (Math.abs(off - 12) > 24) scrollOnce(retriesLeft - 1)
-      }, 500)
-    }
-
-    const raf = requestAnimationFrame(() => scrollOnce(3))
-    return () => {
-      cancelled = true
-      cancelAnimationFrame(raf)
-      clearTimeout(timer)
-    }
-    // 仅在进入页面时执行一次：focus 是一次性的落点指令，不随后续筛选变化重滚
+    if (!dimensionParam) return
+    // 图表/面板异步渲染会推后区块位置，首帧滚动会落空——延时两次定位兜底
+    const timers = [300, 1000].map((ms) =>
+      window.setTimeout(() => {
+        document.getElementById('usage-breakdown')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, ms),
+    )
+    return () => timers.forEach((t) => window.clearTimeout(t))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

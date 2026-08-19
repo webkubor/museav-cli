@@ -64,8 +64,18 @@ export function sendSmsCode(phone: string, captchaVerifyParam?: string | null) {
  * 注解不一致，登录侧实际是 fail-closed。此前本方法漏传该字段，导致国内手机号登录
  * 100% 被 40025 拦死（发码那次的四元组已在发码时消费，不能复用）。
  */
-export function phoneLoginRegister(phone: string, code: string, captchaVerifyParam?: string | null) {
-  return post<LoginResult>('auth/sms-code/login', withCaptcha({ phone, code }, captchaVerifyParam))
+export function phoneLoginRegister(
+  phone: string,
+  code: string,
+  captchaVerifyParam?: string | null,
+  referralCode?: string
+) {
+  // referral_code 推荐归因（需求方#714）：后端 PhoneLoginCommand 目前缺该字段（registerPhoneOnce
+  // 写死空串），前端先按邮箱注册腿同名契约上送，后端补齐前会被忽略、不影响注册。后端单见 qa 看板。
+  return post<LoginResult>(
+    'auth/sms-code/login',
+    withCaptcha({ phone, code, ...(referralCode ? { referral_code: referralCode } : {}) }, captchaVerifyParam)
+  )
 }
 
 /** 邮箱密码登录 */

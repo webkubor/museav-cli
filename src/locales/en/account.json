@@ -184,7 +184,8 @@
         "title": "Sign In / Sign Up",
         "subtitle": "Unregistered phone numbers will be signed up automatically",
         "useEmail": "Use email sign-in",
-        "submit": "Sign In / Sign Up"
+        "submit": "Sign In / Sign Up",
+        "referralNotice": "Invitation code {{code}} applied — it takes effect when you sign up"
       },
       "signup": {
         "title": "Create Account",

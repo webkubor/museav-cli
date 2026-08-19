@@ -150,7 +150,7 @@ export function RankingsSection({ view, granularity, accountId }: { view: Workbe
         items={models?.items ?? null}
         isLoading={modelsLoading}
         emptyHint={t('dashboard.workbench.rankings.emptyHint')}
-        onViewMore={() => handleRankingMore('models', `/usage?view=${view}&granularity=${granularity}&dimension=model&focus=breakdown`)}
+        onViewMore={() => handleRankingMore('models', `/usage?view=${view}&granularity=${granularity}&dimension=model`)}
         withModelIcon
       />
 
@@ -162,7 +162,7 @@ export function RankingsSection({ view, granularity, accountId }: { view: Workbe
           items={members?.items ?? null}
           isLoading={membersLoading}
           emptyHint={t('dashboard.workbench.rankings.emptyHint')}
-          onViewMore={() => handleRankingMore('members', `/usage?view=${view}&granularity=${granularity}&dimension=member&focus=breakdown`)}
+          onViewMore={() => handleRankingMore('members', `/usage?view=${view}&granularity=${granularity}&dimension=member`)}
         />
       )}
 
@@ -173,7 +173,7 @@ export function RankingsSection({ view, granularity, accountId }: { view: Workbe
         items={apiKeys?.items ?? null}
         isLoading={apiKeysLoading}
         emptyHint={t('dashboard.workbench.rankings.emptyHint')}
-        onViewMore={() => handleRankingMore('apiKeys', `/usage?view=${view}&granularity=${granularity}&dimension=apiKey&focus=breakdown`)}
+        onViewMore={() => handleRankingMore('apiKeys', `/usage?view=${view}&granularity=${granularity}&dimension=apiKey`)}
       />
     </div>
   )

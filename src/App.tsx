@@ -1,6 +1,6 @@
 import { useEffect, useState, lazy, Suspense, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { Providers } from '@/components/providers'
 import { useActiveTheme } from '@/hooks/use-active-theme'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
@@ -14,6 +14,12 @@ import { CONSOLE_ROUTES, type ConsoleRouteMeta } from '@/config/console-routes'
 import type { LocaleNamespace } from '@/i18n'
 
 // 页面路由懒加载：各页面拆为独立 chunk，按需加载，缩小首屏体积
+/** 重定向并透传当前 query：推荐链接的 ?aff= 等参数不能在路由跳转中丢失（需求方#714）。 */
+function RedirectPreservingSearch({ to }: { to: string }) {
+  const location = useLocation()
+  return <Navigate to={{ pathname: to, search: location.search }} replace />
+}
+
 const DashboardPage = lazy(() => import('@/pages/dashboard'))
 const ApiKeysPage = lazy(() => import('@/pages/api-keys'))
 // `/api-keys`（不带 workspaceId）的中转：解析默认工作空间后重定向到真实路由
@@ -263,7 +269,7 @@ export default function App() {
           <Route path="/signup" element={withLocaleNamespaces(<SignupPage />, ['account'])} />
           {/* /register 无此路由——历史外链/书签（如国内官网旧 CTA）重定向到 /signup 防呆。
               指 /signup 而非 /login：/signup 已市场自适应（国内自动转 /login，国际是注册页），两端都对。 */}
-          <Route path="/register" element={<Navigate to="/signup" replace />} />
+          <Route path="/register" element={<RedirectPreservingSearch to="/signup" />} />
           <Route path="/legal/privacy" element={<LegalPage docType="privacy" />} />
           <Route path="/legal/terms" element={<LegalPage docType="terms" />} />
           <Route path="/forgot-password" element={withLocaleNamespaces(<ForgotPasswordPage />, ['account'])} />

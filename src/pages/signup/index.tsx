@@ -8,7 +8,7 @@
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { useNavigate, useSearchParams, Link, Navigate } from 'react-router-dom'
+import { useNavigate, useSearchParams, useLocation, Link, Navigate } from 'react-router-dom'
 import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -31,7 +31,7 @@ import { trackEvent } from '@/lib/track'
 import { throttleMessage } from '@/lib/auth/server-throttle'
 import { getRedirectTarget } from '@/lib/redirect'
 import { useMarket } from '@/hooks/useMarket'
-import { referralCodeFromSearchParams } from './referral-code'
+import { resolveReferralCode, clearPersistedReferralCode } from './referral-code'
 
 function createSignupSchema(t: TFunction) {
   return z.object({
@@ -64,7 +64,10 @@ export default function SignupPage() {
 }
 
 function DomesticSignupRedirect() {
-  return <Navigate to="/login" replace />
+  // 需求方#714：重定向必须透传 query——推荐链接 /signup?aff=X 在国内市场落到 /login，
+  // 丢了 search 就等于 100% 丢归因。
+  const location = useLocation()
+  return <Navigate to={{ pathname: '/login', search: location.search }} replace />
 }
 
 function EmailSignupPage() {
@@ -86,7 +89,7 @@ function EmailSignupPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   // 人机校验统一走阿里云验证码 2.0（getCaptchaParam）；旧纯前端滑块已移除。
 
-  const defaultReferralCode = referralCodeFromSearchParams(searchParams)
+  const defaultReferralCode = resolveReferralCode(searchParams)
   const hasReferralCode = !!defaultReferralCode
 
   const schema = useMemo(() => createSignupSchema(t), [t])
@@ -152,6 +155,7 @@ function EmailSignupPage() {
         [],
         result.default_workspace_id
       )
+      clearPersistedReferralCode()
       trackEvent('signup_success', { method: 'email' }, { result: 'success' })
       navigate('/dashboard')
     } catch (e) {

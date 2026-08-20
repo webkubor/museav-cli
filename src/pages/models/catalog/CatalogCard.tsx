@@ -100,10 +100,10 @@ export function CatalogCard({
   const freeLabel = t('modelsCatalog.card.free')
   // isFree 优先于金额：限免标记与 pricing 打架时（test 上确有这种数据）以标记为准，
   // 否则卡片会「角标写限时免费、价格写 ¥10」自相矛盾。
-  const input = priceText(isPerCall ? model.pricing?.per_call_price : model.pricing?.input_per_1m, symbol, freeLabel, unitSuffix, isFree)
-  const output = priceText(isPerCall ? undefined : model.pricing?.output_per_1m, symbol, isPerCall ? '—' : freeLabel, unitSuffix, isFree)
-  // 缓存读取价：未配价回落「—」而非「免费」——输入/输出没配价基本等于免费，
-  // 但缓存读取没配大多是模型不支持缓存计费，写「免费」会误导。限免模型仍随 isFree 显示免费。
+  // 未配价（金额为 0/缺省且无限免标记）一律回落「—」而非「免费」——§9.1 价格为 0
+  // 但未标 free 的仍按付费处理，写「免费」是误导（qa#624，与详情面板同口径）。
+  const input = priceText(isPerCall ? model.pricing?.per_call_price : model.pricing?.input_per_1m, symbol, isFree ? freeLabel : '—', unitSuffix, isFree)
+  const output = priceText(isPerCall ? undefined : model.pricing?.output_per_1m, symbol, isFree && !isPerCall ? freeLabel : '—', unitSuffix, isFree)
   const cacheRead = priceText(isPerCall ? undefined : model.pricing?.cache_read_per_1m, symbol, isFree ? freeLabel : '—', unitSuffix, isFree)
   const cardTiers = priceTiersForCard(model.price_tiers)
   const useTierGrid = catalogCardReplacesGridWithTiers(model.pricing, cardTiers)

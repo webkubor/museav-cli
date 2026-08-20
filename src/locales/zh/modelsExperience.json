@@ -30,6 +30,7 @@
     "errorUpstreamAuth": "该模型服务暂时不可用，请稍后重试",
     "errorUpstreamGeneric": "模型调用异常，请更换模型或稍后重试",
     "freeQuota": "免费额度",
+    "limitedFree": "限时免费",
     "perM": "每M",
     "balanceInsufficientTitle": "余额不足，仅可体验免费模型",
     "balanceInsufficientHint": "当前模型与输入已为你保留，充值后即可继续运行。",

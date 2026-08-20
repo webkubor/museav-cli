@@ -30,6 +30,7 @@
     "errorUpstreamAuth": "This model's service is temporarily unavailable. Please try again later.",
     "errorUpstreamGeneric": "The model call failed. Please try another model or retry later.",
     "freeQuota": "Free quota",
+    "limitedFree": "Free",
     "perM": "/M",
     "balanceInsufficientTitle": "Insufficient balance — free models only",
     "balanceInsufficientHint": "Your current model and input are kept — top up to continue.",

@@ -145,3 +145,41 @@ describe('dualPriceText 计价模式分支', () => {
     }))).toBe('$0.03/张')
   })
 })
+
+// qa#624：后端零价下发的是字符串 "0"（truthy），此前判空分支永远不进，
+// 13 个未配价模型被拼成「¥0 / ¥0 每M」。§9.1：价格为 0 但未标 free 的仍按付费
+// 处理，不得显示「免费」；限免真源是 promotion.free 显式标记。
+describe('dualPriceText 零价与限免口径（qa#624）', () => {
+  it('无 free 标记且输入/输出都是 "0" → 「—」，不显示 ¥0、不说免费', () => {
+    expect(dualPriceText(priceModel({
+      input_per_1m: '0', output_per_1m: '0', currency: 'CNY',
+    }))).toBe('—')
+  })
+
+  it('pricing 金额全缺省 → 同样回落「—」', () => {
+    expect(dualPriceText(priceModel({ currency: 'CNY' }))).toBe('—')
+  })
+
+  it('promotion.free=true 且价格为 0 → 限时免费（不再是「免费额度」）', () => {
+    expect(dualPriceText(priceModel(
+      { input_per_1m: '0', output_per_1m: '0', currency: 'CNY' },
+      { promotion: { free: true } },
+    ))).toBe('modelsExperience.limitedFree')
+  })
+
+  it('promotion.free 优先于金额：标记与 pricing 留着原价打架时以标记为准', () => {
+    expect(dualPriceText(priceModel(
+      { input_per_1m: '10', output_per_1m: '20', currency: 'CNY' },
+      { promotion: { free: true } },
+    ))).toBe('modelsExperience.limitedFree')
+  })
+
+  it('输入为 "0" 但输出有价 → 只显示输出那半（与原型数值 falsy 语义一致）', () => {
+    const text = dualPriceText(priceModel({
+      input_per_1m: '0', output_per_1m: '8', currency: 'CNY',
+    }))
+    expect(text).toContain('¥8')
+    expect(text).not.toContain(' / ')
+    expect(text).not.toContain('¥0')
+  })
+})

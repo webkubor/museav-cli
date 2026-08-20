@@ -115,10 +115,21 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
   const textInput = priceText(detail.text_input_price, symbol, '', '/1M tokens')
   const textOutput = priceText(detail.text_output_price, symbol, '', '/1M tokens')
 
-  // 划线原价只在原价真高于现价时渲染（见 strikeOriginalPrice），与广场卡片同口径。
-  const strikeOriginal = strikeOriginalPrice(promo?.original_price, detail.pricing?.input_per_1m, isFree)
-  const originalPrice = strikeOriginal != null
-    ? `${symbol} ${trimPriceZeros(strikeOriginal)}${unitSuffix}`
+  const strikeInputVal = strikeOriginalPrice(
+    promo?.original_input_per_1m ?? promo?.original_price,
+    detail.pricing?.input_per_1m,
+    isFree,
+  )
+  const strikeInput = strikeInputVal != null
+    ? `${symbol} ${trimPriceZeros(String(strikeInputVal))}${unitSuffix}`
+    : undefined
+  const strikeOutputVal = strikeOriginalPrice(
+    promo?.original_output_per_1m,
+    detail.pricing?.output_per_1m,
+    isFree,
+  )
+  const strikeOutput = strikeOutputVal != null
+    ? `${symbol} ${trimPriceZeros(String(strikeOutputVal))}${unitSuffix}`
     : undefined
   const priceTiers = detail.price_tiers ?? []
   const replaceGridWithTiers = catalogCardReplacesGridWithTiers(detail.pricing, priceTiers)
@@ -201,7 +212,7 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
               value={input.value}
               unit={input.unit}
               valueTag={textInput.value ? mediaTag : undefined}
-              strike={originalPrice}
+              strike={strikeInput}
               subValue={textInput.value ? `${textInput.value}${textInput.unit}` : undefined}
               subTag={textInput.value ? textTag : undefined}
               accent
@@ -211,6 +222,7 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
               value={output.value}
               unit={output.unit}
               valueTag={textOutput.value ? mediaTag : undefined}
+              strike={strikeOutput}
               subValue={textOutput.value ? `${textOutput.value}${textOutput.unit}` : undefined}
               subTag={textOutput.value ? textTag : undefined}
               accent

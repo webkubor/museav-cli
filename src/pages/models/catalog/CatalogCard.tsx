@@ -32,7 +32,7 @@ import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/util
 import {
   MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, autoSummary, modelVendorLabel,
   strikeOriginalPrice,
-  priceTiersForCard, priceTierLabel, catalogCardReplacesGridWithTiers,
+  priceTiersForCard, priceTierLabel, catalogCardReplacesGridWithTiers, hasPricingGradient, withPriceFrom,
 } from '@/features/models/model-format'
 import { hasPlaygroundExperience } from '../model-experience-data'
 import type { CatalogModelItem } from '@/types'
@@ -103,8 +103,11 @@ export function CatalogCard({
   // 否则卡片会「角标写限时免费、价格写 ¥10」自相矛盾。
   // 未配价（金额为 0/缺省且无限免标记）一律回落「—」而非「免费」——§9.1 价格为 0
   // 但未标 free 的仍按付费处理，写「免费」是误导（qa#624，与详情面板同口径）。
-  const input = priceText(isPerCall ? model.pricing?.per_call_price : model.pricing?.input_per_1m, symbol, isFree ? freeLabel : '—', unitSuffix, isFree)
-  const output = priceText(isPerCall ? undefined : model.pricing?.output_per_1m, symbol, isFree && !isPerCall ? freeLabel : '—', unitSuffix, isFree)
+  // 阶梯价（#800）：列表接口与详情同一份 pricing_rules。卡片不摆梯度表，只在
+  // 输入/输出价后面加「起」提示这是起始档（原型 marketplacePriceText 口径）。
+  const hasGradient = hasPricingGradient(model.pricing_rules)
+  const input = withPriceFrom(priceText(isPerCall ? model.pricing?.per_call_price : model.pricing?.input_per_1m, symbol, isFree ? freeLabel : '—', unitSuffix, isFree), hasGradient)
+  const output = withPriceFrom(priceText(isPerCall ? undefined : model.pricing?.output_per_1m, symbol, isFree && !isPerCall ? freeLabel : '—', unitSuffix, isFree), hasGradient)
   const cacheRead = priceText(isPerCall ? undefined : model.pricing?.cache_read_per_1m, symbol, isFree ? freeLabel : '—', unitSuffix, isFree)
   const cardTiers = priceTiersForCard(model.price_tiers)
   const strikeInputVal = strikeOriginalPrice(

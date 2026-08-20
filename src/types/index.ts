@@ -129,6 +129,7 @@ export type {
   ModelPricing,
   CatalogModelItem,
   CatalogPriceTier,
+  CatalogPricingRule,
   CatalogPromotion,
   CatalogFacetBucket,
   CatalogFacets,

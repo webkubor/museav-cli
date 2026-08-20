@@ -196,7 +196,13 @@
       "mediaText": "text",
       "newBadge": "New",
       "freeBadge": "Free",
-      "loadFailed": "Failed to load model information. Please try again later."
+      "loadFailed": "Failed to load model information. Please try again later.",
+      "pricingRules": "Pricing tiers",
+      "ruleDimContext": "Context length",
+      "ruleDimPeak": "Peak hours",
+      "ruleRange": "Context range",
+      "ruleTimeSlot": "Time slot",
+      "ruleTimezone": "Timezone"
     },
     "error.loadDetail": "Failed to load model detail. Please try again."
   }

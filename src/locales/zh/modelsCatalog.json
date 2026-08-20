@@ -196,7 +196,13 @@
       "mediaText": "文本",
       "newBadge": "最新发布",
       "freeBadge": "限时特惠·免费",
-      "loadFailed": "模型信息加载失败，请稍后重试"
+      "loadFailed": "模型信息加载失败，请稍后重试",
+      "pricingRules": "价格梯度",
+      "ruleDimContext": "上下文长度",
+      "ruleDimPeak": "峰值时间段",
+      "ruleRange": "上下文区间",
+      "ruleTimeSlot": "时段",
+      "ruleTimezone": "时区"
     },
     "error.loadDetail": "加载模型详情失败，请稍后重试。"
   }

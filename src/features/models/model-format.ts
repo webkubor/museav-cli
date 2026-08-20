@@ -12,9 +12,9 @@
  */
 import i18n from '@/i18n'
 import { formatContextLength, trimPriceZeros } from '@/lib/utils'
-import type { CatalogPriceTier } from '@/types'
+import type { CatalogPriceTier, CatalogPricingRule } from '@/types'
 
-export type { CatalogPriceTier }
+export type { CatalogPriceTier, CatalogPricingRule }
 
 /** 货币代码 → 符号（后端给的是 CNY/USD 这类代码） */
 const CCY_SYMBOL: Record<string, string> = { CNY: '¥', RMB: '¥', USD: '$', EUR: '€', '¥': '¥', $: '$' }
@@ -60,6 +60,81 @@ export function catalogCardReplacesGridWithTiers(
 
 export function priceTierLabel(tier: CatalogPriceTier, isZh: boolean): string {
   return isZh ? tier.label : (tier.label_en || tier.label)
+}
+
+/** 价格梯度维度的渲染顺序（原型 marketplacePricingDimensionOrder 的 token 子集）。
+ *  #800 契约目前只有这两维；未知维度不渲染（表头/字段无从谈起），契约扩了再加。 */
+export const PRICING_RULE_DIMENSIONS = ['context_length', 'peak_time'] as const
+export type PricingRuleDimension = (typeof PRICING_RULE_DIMENSIONS)[number]
+
+export interface PricingRuleGroup {
+  dimension: PricingRuleDimension
+  rules: CatalogPricingRule[]
+}
+
+/** 按维度分组，组内保持接口下发的档位顺序；未知维度丢弃。 */
+export function pricingRuleGroups(rules: CatalogPricingRule[] | undefined | null): PricingRuleGroup[] {
+  if (!rules?.length) return []
+  return PRICING_RULE_DIMENSIONS
+    .map((dimension) => ({ dimension, rules: rules.filter((r) => r.dimension === dimension) }))
+    .filter((g) => g.rules.length > 0)
+}
+
+/** 有可渲染的阶梯价 → 一口价挂「起」（原型 marketplacePriceText 的 hasConfirmedGradient）。 */
+export function hasPricingGradient(rules: CatalogPricingRule[] | undefined | null): boolean {
+  return pricingRuleGroups(rules).length > 0
+}
+
+/**
+ * 梯度区间/时段文案：label 优先（英文界面 label_en 回落 label），**不要前端自己拼**
+ * （#800 契约原话）。label 全缺时才按维度兜底：context_length 用 min/max 拼
+ * 「128K–256K / 256K 以上」，peak_time 用 start_time–end_time。
+ */
+export function pricingRuleLabel(rule: CatalogPricingRule, isZh: boolean): string {
+  const label = isZh ? rule.label : (rule.label_en || rule.label)
+  if (label) return label
+  if (rule.dimension === 'peak_time') {
+    return rule.start_time && rule.end_time ? `${rule.start_time}–${rule.end_time}` : '—'
+  }
+  if (rule.min != null || rule.max != null) {
+    const min = formatContextLength(rule.min ?? 0)
+    if (rule.max == null) return isZh ? `${min} 以上` : `${min}+`
+    return `${min}–${formatContextLength(rule.max)}`
+  }
+  return '—'
+}
+
+/**
+ * 梯度表单元格价格。金额格式与规格条同口径（货币符号 + trimPriceZeros + /unit）；
+ * mode=multiplier（倍率）没有绝对价时展示 ×倍率；两者都缺回落「—」（未配价 ≠ 免费，
+ * 限免口径只认 promotion.free，不从阶梯价推断）。
+ */
+export function pricingRulePriceText(
+  rule: CatalogPricingRule,
+  kind: 'input' | 'output',
+  symbol: string,
+): string {
+  const raw = kind === 'input' ? rule.input_per_1m : rule.output_per_1m
+  if (raw != null && raw !== '' && !Number.isNaN(parseFloat(raw))) {
+    return `${symbol} ${trimPriceZeros(raw)}/${rule.unit || 'M'}`
+  }
+  if (rule.mode === 'multiplier' && rule.rate) return `×${trimPriceZeros(rule.rate)}`
+  return '—'
+}
+
+/**
+ * 一口价挂「起」（原型 marketplacePriceText：有梯度时规格条/卡片价格后加「起」，
+ * 后端已把起始档写进 pricing.*）。中文跟在单位后（¥ 0.8/M 起）、英文改前缀
+ * （from $ 0.8/M）；免费/未配价（unit 为空）不挂。
+ */
+export function withPriceFrom(
+  price: { value: string; unit: string },
+  hasGradient: boolean,
+): { value: string; unit: string } {
+  if (!hasGradient || !price.unit) return price
+  return isZhLang()
+    ? { value: price.value, unit: `${price.unit} 起` }
+    : { value: `from ${price.value}`, unit: price.unit }
 }
 
 /**

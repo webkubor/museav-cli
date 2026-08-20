@@ -8,7 +8,7 @@
 
 import { afterAll, describe, expect, it } from 'vitest'
 import i18n from '@/i18n'
-import { catalogCardReplacesGridWithTiers, priceTierLabel, priceTiersForCard, priceUnitSuffix } from './model-format'
+import { catalogCardReplacesGridWithTiers, priceTierLabel, priceTiersForCard, priceUnitSuffix, strikeOriginalPrice } from './model-format'
 
 afterAll(async () => {
   await i18n.changeLanguage('zh')
@@ -84,5 +84,34 @@ describe('catalogCardReplacesGridWithTiers — 纯媒体才用档位替换四格
 
   it('没有档位 → 不替换', () => {
     expect(catalogCardReplacesGridWithTiers({ input_per_1m: '0', output_per_1m: '0' }, [])).toBe(false)
+  })
+})
+
+describe('strikeOriginalPrice — 划线原价的有效性守卫', () => {
+  it('原价高于现价（原型 kimi-k2.6 口径）→ 划线', () => {
+    expect(strikeOriginalPrice('5.6', '4.46')).toBe(5.6)
+  })
+
+  it('原价等于现价（线上 deepseek-v4-flash：3 / "3.0" 标限时95折）→ 不划线', () => {
+    expect(strikeOriginalPrice('3.0', '3')).toBeNull()
+  })
+
+  it('原价为 0（线上 glm-5.1 / qwen3-max 等）→ 不划线，避免渲染出「划掉 ¥0」', () => {
+    expect(strikeOriginalPrice('0', '6')).toBeNull()
+  })
+
+  it('原价缺省 / 非数值 → 不划线', () => {
+    expect(strikeOriginalPrice(undefined, '6')).toBeNull()
+    expect(strikeOriginalPrice('', '6')).toBeNull()
+    expect(strikeOriginalPrice('abc', '6')).toBeNull()
+  })
+
+  it('限免（isFree）→ 现价即 0，正原价直接划线，不比大小', () => {
+    expect(strikeOriginalPrice('3', '3', true)).toBe(3)
+    expect(strikeOriginalPrice('0', '3', true)).toBeNull()
+  })
+
+  it('现价缺省 → 无从比较，不划线', () => {
+    expect(strikeOriginalPrice('5', undefined)).toBeNull()
   })
 })

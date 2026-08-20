@@ -20,7 +20,7 @@ import { ModelIcon } from './ModelIcon'
 import { CopyButton } from '@/components/ui/CopyButton'
 import {
   currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, vendorFromModelId, autoSummary, modelVendorLabel,
-  priceTierLabel, catalogCardReplacesGridWithTiers,
+  priceTierLabel, catalogCardReplacesGridWithTiers, strikeOriginalPrice,
 } from '../model-format'
 import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 
@@ -109,8 +109,10 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
   const textInput = priceText(detail.text_input_price, symbol, '', '/1M tokens')
   const textOutput = priceText(detail.text_output_price, symbol, '', '/1M tokens')
 
-  const originalPrice = promo?.original_price
-    ? `${symbol} ${trimPriceZeros(promo.original_price)}${unitSuffix}`
+  // 划线原价只在原价真高于现价时渲染（见 strikeOriginalPrice），与广场卡片同口径。
+  const strikeOriginal = strikeOriginalPrice(promo?.original_price, detail.pricing?.input_per_1m, isFree)
+  const originalPrice = strikeOriginal != null
+    ? `${symbol} ${trimPriceZeros(strikeOriginal)}${unitSuffix}`
     : undefined
   const priceTiers = detail.price_tiers ?? []
   const replaceGridWithTiers = catalogCardReplacesGridWithTiers(detail.pricing, priceTiers)

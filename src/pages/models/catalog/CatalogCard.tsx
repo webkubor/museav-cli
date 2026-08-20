@@ -31,6 +31,7 @@ import { Button } from '@/components/ui/Button'
 import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 import {
   MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, autoSummary, modelVendorLabel,
+  strikeOriginalPrice,
   priceTiersForCard, priceTierLabel, catalogCardReplacesGridWithTiers,
 } from '@/features/models/model-format'
 import { hasPlaygroundExperience } from '../model-experience-data'
@@ -115,6 +116,13 @@ export function CatalogCard({
   const capabilities = pickCapabilities(model.tags, [model.provider, model.vendor], 3)
 
   const discountLabel = isZh ? promo?.discount_label : (promo?.discount_label_en || promo?.discount_label)
+  // 划线原价只在原价真高于现价时渲染（见 strikeOriginalPrice）：线上促销模型的
+  // original_price 目前等于现价或为 0，直接渲染会变成「¥3 划掉 ¥3」「划掉 ¥0」。
+  const strikeOriginal = strikeOriginalPrice(
+    promo?.original_price,
+    isPerCall ? model.pricing?.per_call_price : model.pricing?.input_per_1m,
+    isFree,
+  )
   // qa#286：tagline 为空的模型此前简介行直接不渲染，卡片比同排矮一截；跟详情页
   // 同款兜底（真实字段拼一句事实性简介，不杜撰能力），两处口径一致。
   const summary = model.tagline?.trim() || autoSummary(model, provider ?? '', isZh)
@@ -254,7 +262,7 @@ export function CatalogCard({
               label={t('modelsCatalog.card.input')}
               value={input.value}
               unit={input.unit}
-              strike={promo?.original_price ? `${symbol}${trimPriceZeros(promo.original_price)}` : undefined}
+              strike={strikeOriginal != null ? `${symbol}${trimPriceZeros(strikeOriginal)}` : undefined}
               accent
             />
             <Metric label={t('modelsCatalog.card.output')} value={output.value} unit={output.unit} accent />

@@ -86,6 +86,39 @@ export function priceText(
   return { value: `${symbol} ${trimPriceZeros(amount)}`, unit: unitSuffix }
 }
 
+/**
+ * 划线原价的有效性守卫。返回 null 表示这条促销数据不足以撑起双价，调用方只留现价。
+ *
+ * 原型口径（App.tsx:16410 kimi-k2.6：inputPrice 4.46 / originalInputPrice 5.6 /
+ * 「限时特惠·8折」）是 **pricing 为折后价、original_price 为折前原价**，划线只在
+ * 原价高于现价时成立。线上后端目前不满足这个口径：促销模型的 `original_price` 要么
+ * 直接等于现价（deepseek-v4-flash 现价 3、original_price "3.0"，角标标「限时95折」），
+ * 要么是 "0"（glm-5.1 / qwen3-max 等 6 个）—— 不加守卫就渲染成「¥3 划掉 ¥3」与
+ * 「划掉 ¥0」，反倒像折扣没生效。折后价的真源是 `pricing.*`，前端不得去解析
+ * `discount_label` 里的「95折」自行算价 —— 「广场现价按折扣率算折后实收」是后端单
+ * shared/modelgo_prd#747 的事（该单当前实现把划线原价定义成「取当前目录 input 价」，
+ * 与现价同源必然相等，需求方要的双价差异并未落地，已带证据回单）。
+ *
+ * isFree（服务端显式限免）时现价即 0，任何正原价都是有效划线，不参与大小比较。
+ */
+export function strikeOriginalPrice(
+  originalPrice: string | number | null | undefined,
+  currentPrice: string | number | null | undefined,
+  isFree = false,
+): number | null {
+  const toNum = (v: string | number | null | undefined): number | null => {
+    if (v == null || v === '') return null
+    const n = typeof v === 'string' ? parseFloat(v) : v
+    return Number.isFinite(n) ? n : null
+  }
+  const original = toNum(originalPrice)
+  if (original == null || original <= 0) return null
+  if (isFree) return original
+  const current = toNum(currentPrice)
+  if (current == null || original <= current) return null
+  return original
+}
+
 /** 协议标签文案照原型：带「兼容」后缀，明确这是入站协议兼容性而非厂商归属。 */
 export const PROTOCOL_LABEL_ZH: Record<string, string> = {
   openai: 'OpenAI 兼容', anthropic: 'Anthropic 兼容', other: '其他协议',

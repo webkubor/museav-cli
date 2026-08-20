@@ -91,7 +91,11 @@ export interface CatalogPriceTier {
 export interface CatalogPromotion {
   /** 显式限免标记，绝不从「价格为 0」推断 */
   free: boolean
+  /** @deprecated 兼容字段，等于 original_input_per_1m */
   original_price?: string
+  original_input_per_1m?: string
+  original_output_per_1m?: string
+  original_cache_read_per_1m?: string
   /** 中文角标文案 */
   discount_label?: string
   /** 英文角标文案；为空时回落中文 */

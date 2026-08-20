@@ -107,6 +107,16 @@ export function CatalogCard({
   const output = priceText(isPerCall ? undefined : model.pricing?.output_per_1m, symbol, isFree && !isPerCall ? freeLabel : '—', unitSuffix, isFree)
   const cacheRead = priceText(isPerCall ? undefined : model.pricing?.cache_read_per_1m, symbol, isFree ? freeLabel : '—', unitSuffix, isFree)
   const cardTiers = priceTiersForCard(model.price_tiers)
+  const strikeInputVal = strikeOriginalPrice(
+    promo?.original_input_per_1m ?? promo?.original_price,
+    isPerCall ? model.pricing?.per_call_price : model.pricing?.input_per_1m,
+    isFree,
+  )
+  const strikeOutputVal = strikeOriginalPrice(
+    promo?.original_output_per_1m,
+    model.pricing?.output_per_1m,
+    isFree,
+  )
   const useTierGrid = catalogCardReplacesGridWithTiers(model.pricing, cardTiers)
 
   // 输入 → 输出模态流。后端拆分下发；老数据只有合并 modalities 时退回并集。
@@ -117,12 +127,7 @@ export function CatalogCard({
 
   const discountLabel = isZh ? promo?.discount_label : (promo?.discount_label_en || promo?.discount_label)
   // 划线原价只在原价真高于现价时渲染（见 strikeOriginalPrice）：线上促销模型的
-  // original_price 目前等于现价或为 0，直接渲染会变成「¥3 划掉 ¥3」「划掉 ¥0」。
-  const strikeOriginal = strikeOriginalPrice(
-    promo?.original_price,
-    isPerCall ? model.pricing?.per_call_price : model.pricing?.input_per_1m,
-    isFree,
-  )
+  // original_* 若等于现价或为 0，直接渲染会变成「¥3 划掉 ¥3」「划掉 ¥0」。
   // qa#286：tagline 为空的模型此前简介行直接不渲染，卡片比同排矮一截；跟详情页
   // 同款兜底（真实字段拼一句事实性简介，不杜撰能力），两处口径一致。
   const summary = model.tagline?.trim() || autoSummary(model, provider ?? '', isZh)
@@ -262,10 +267,16 @@ export function CatalogCard({
               label={t('modelsCatalog.card.input')}
               value={input.value}
               unit={input.unit}
-              strike={strikeOriginal != null ? `${symbol}${trimPriceZeros(strikeOriginal)}` : undefined}
+              strike={strikeInputVal != null ? `${symbol}${trimPriceZeros(String(strikeInputVal))}` : undefined}
               accent
             />
-            <Metric label={t('modelsCatalog.card.output')} value={output.value} unit={output.unit} accent />
+            <Metric
+              label={t('modelsCatalog.card.output')}
+              value={output.value}
+              unit={output.unit}
+              strike={strikeOutputVal != null ? `${symbol}${trimPriceZeros(String(strikeOutputVal))}` : undefined}
+              accent
+            />
             <Metric label={t('modelsCatalog.card.context')} value={ctxValue} />
             <Metric label={t('modelsCatalog.card.cacheRead')} value={cacheRead.value} unit={cacheRead.unit} />
           </>

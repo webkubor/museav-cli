@@ -178,12 +178,16 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
                 <strong>{slide.name}</strong>
                 <span className="mg-featured-meta">
                   {slide.vendor}
+                  {/* 未配价（零价且无限免标记）不拼「· 输入 ¥0/M / 输出 ¥0/M」，价格段整个省去
+                      ——§9.1 未标 free 的零价模型不按免费展示（qa#624，与卡片/详情面板同口径） */}
                   {promo?.free
                     ? t('modelsCatalog.featured.freeMeta')
-                    : t('modelsCatalog.featured.priceMeta', {
-                        input: `${symbol}${trimPriceZeros(slide.input_price)}`,
-                        output: `${symbol}${trimPriceZeros(slide.output_price)}`,
-                      })}
+                    : parseFloat(slide.input_price) > 0 || parseFloat(slide.output_price) > 0
+                      ? t('modelsCatalog.featured.priceMeta', {
+                          input: `${symbol}${trimPriceZeros(slide.input_price)}`,
+                          output: `${symbol}${trimPriceZeros(slide.output_price)}`,
+                        })
+                      : null}
                 </span>
                 {pitch && <p>{pitch}</p>}
 

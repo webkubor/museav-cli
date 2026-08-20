@@ -64,6 +64,8 @@ function formatPrice(val: string | undefined, currency: string | undefined) {
   if (!val) return '—'
   const n = parseFloat(val)
   if (isNaN(n)) return val
+  // 零价（后端下发字符串 "0"）按未配价显示「—」，不渲染 ¥0（qa#624）
+  if (n <= 0) return '—'
   const symbol = currencySymbol(currency, isZhLang())
   return `${symbol}${trimPriceZeros(n)}`
 }

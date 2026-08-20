@@ -557,6 +557,11 @@ export function playgroundSamplePrompts(): Array<{ label: string; prompt: string
  * 免费模型「限时免费」；否则「¥输入价 / ¥输出价 每M」，只有输出价时省去输入价那半。
  * 单模型页与对比页共用（对比页每列头部也要展示同样的价格 chip）。
  *
+ * 限免真源是 promotion.free 显式标记（原型首行 `if (model.free) return "限时免费"`），
+ * 不从「价格为 0」推断——后端零价下发的是字符串 "0"（truthy），按 §9.1 未标 free 的
+ * 零价模型仍按付费处理，显示「—」而不是「免费」（qa#624；与 ModelDetailPanel /
+ * CatalogCard 的未配价口径一致）。
+ *
  * 三种计价模式各走一条分支，别让它们互相兜底（需求方#674）：
  *   · price_tiers 有值 → 按档展示（视频按秒、图片矩阵价）
  *   · mode=per_call   → 单价 + /张，**没有输入/输出两段**
@@ -564,6 +569,7 @@ export function playgroundSamplePrompts(): Array<{ label: string; prompt: string
  */
 export function dualPriceText(model: CatalogModelItem): string {
   const currency = model.pricing?.currency === 'USD' ? '$' : '¥'
+  if (model.promotion?.free) return i18n.t('modelsExperience.limitedFree')
   if (model.price_tiers && model.price_tiers.length > 0) {
     return model.price_tiers
       .slice(0, 3)
@@ -582,9 +588,13 @@ export function dualPriceText(model: CatalogModelItem): string {
   const input = model.pricing?.input_per_1m
   const output = model.pricing?.output_per_1m
   const perM = i18n.t('modelsExperience.perM')
-  if (!input && !output) return i18n.t('modelsExperience.freeQuota')
-  if (!input) return `${currency}${trimPriceZeros(output ?? '0')} ${perM}`
-  return `${currency}${trimPriceZeros(input)} / ${currency}${trimPriceZeros(output ?? input)} ${perM}`
+  // 判零必须数值化：后端下发的是字符串 "0"，直接当 truthy 判会把未配价模型拼成
+  // 「¥0 / ¥0 每M」（qa#624）。NaN > 0 为 false，缺省/脏数据一并落到未配价。
+  const hasInput = parseFloat(input ?? '') > 0
+  const hasOutput = parseFloat(output ?? '') > 0
+  if (!hasInput && !hasOutput) return '—'
+  if (!hasInput) return `${currency}${trimPriceZeros(output ?? '0')} ${perM}`
+  return `${currency}${trimPriceZeros(input ?? '0')} / ${currency}${trimPriceZeros(output ?? input ?? '0')} ${perM}`
 }
 
 /** 是否付费模型：只认服务端显式限免标记 + 价格字段，不做其它推断（§9.1：价格为 0 但未标 free 的仍按付费处理） */

@@ -3,6 +3,7 @@ import type { IconType } from 'react-icons'
 import i18n from '@/i18n'
 import { ModalityBadge } from '@/features/models/components/ModalityBadge'
 import { trimPriceZeros } from '@/lib/utils'
+import { priceUnitSuffix } from '@/features/models/model-format'
 import type { ExperienceArtifactRef } from '@/services/experience-sessions'
 import type { CatalogModelItem } from '@/types'
 
@@ -555,6 +556,11 @@ export function playgroundSamplePrompts(): Array<{ label: string; prompt: string
  * 价格 chip 文案：与原型 App.tsx `playgroundPriceText()` 逐字对齐——
  * 免费模型「限时免费」；否则「¥输入价 / ¥输出价 每M」，只有输出价时省去输入价那半。
  * 单模型页与对比页共用（对比页每列头部也要展示同样的价格 chip）。
+ *
+ * 三种计价模式各走一条分支，别让它们互相兜底（需求方#674）：
+ *   · price_tiers 有值 → 按档展示（视频按秒、图片矩阵价）
+ *   · mode=per_call   → 单价 + /张，**没有输入/输出两段**
+ *   · 其余（token）    → ¥输入 / ¥输出 每M
  */
 export function dualPriceText(model: CatalogModelItem): string {
   const currency = model.pricing?.currency === 'USD' ? '$' : '¥'
@@ -563,6 +569,15 @@ export function dualPriceText(model: CatalogModelItem): string {
       .slice(0, 3)
       .map((tier) => `${currency}${trimPriceZeros(tier.price)}/${tier.unit}`)
       .join(' · ')
+  }
+  // 按次/按张计价（文生图等）：只有一个单价，硬套 token 那套会显示成
+  // 「¥0.22 / ¥0 每M」——每张的价被当成输入价、不存在的输出价补成 ¥0、单位错成每 M token。
+  // 需求方#674 报的就是这个（Doubao Seedream 5.0 Lite）。单位复用 priceUnitSuffix，
+  // 与模型广场卡片、模型详情面板同一函数，避免同一模型在三处显示不同单位（#675）。
+  if (model.pricing?.mode === 'per_call') {
+    const perCall = model.pricing.per_call_price?.trim() || model.pricing.input_per_1m?.trim()
+    if (!perCall || parseFloat(perCall) <= 0) return i18n.t('modelsExperience.freeQuota')
+    return `${currency}${trimPriceZeros(perCall)}${priceUnitSuffix(model.price_unit, model.pricing.mode)}`
   }
   const input = model.pricing?.input_per_1m
   const output = model.pricing?.output_per_1m

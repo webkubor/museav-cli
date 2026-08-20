@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { resolveApiErrorDisplay, errorDisplayFields, cleanErrorMessage } from './model-experience-data'
+import { resolveApiErrorDisplay, errorDisplayFields, cleanErrorMessage, dualPriceText } from './model-experience-data'
 import { ModelGoApiError } from '@/lib/request'
+import '@/i18n'
 
 /** qa#549 真实载荷：国际站图片生成，Azure 内容安全拒绝（400），外层码曾误分类为 40031 */
 function makeAzureRejection(code: number, msg: string) {
@@ -85,5 +86,62 @@ describe('errorDisplayFields', () => {
       errorRequestId: 'f31951e5-b46c-4963-9f73-adc1c0505e80',
       errorTraceId: 'b13d9c3ce5fa9431fe11223b74a12232',
     })
+  })
+})
+
+/** 价格 chip 的三条计价分支（需求方#674）。构造最小 CatalogModelItem，只给价格相关字段。 */
+function priceModel(pricing: Record<string, unknown>, extra: Record<string, unknown> = {}) {
+  return { pricing, ...extra } as unknown as Parameters<typeof dualPriceText>[0]
+}
+
+describe('dualPriceText 计价模式分支', () => {
+  // 需求方#674：Doubao Seedream 5.0 Lite（文生图）显示成「¥0.22 / ¥0 每M」——
+  // 每张的价被当成输入价、不存在的输出价补成 ¥0、单位错成每 M token。
+  it('per_call：单价 + /张，不拼输出价、不写每M', () => {
+    const text = dualPriceText(priceModel({
+      mode: 'per_call', per_call_price: '0.22', input_per_1m: '0.22', output_per_1m: '0', currency: 'CNY',
+    }))
+    expect(text).toBe('¥0.22/张')
+    expect(text).not.toContain('每M')
+    expect(text).not.toContain('/ ¥0')
+  })
+
+  it('per_call：per_call_price 缺失时回落 input_per_1m（后端把每张价塞在这个字段里）', () => {
+    expect(dualPriceText(priceModel({
+      mode: 'per_call', input_per_1m: '0.05', output_per_1m: '0', currency: 'CNY',
+    }))).toBe('¥0.05/张')
+  })
+
+  it('per_call：单价为 0 走限时免费，不显示 ¥0/张', () => {
+    const text = dualPriceText(priceModel({
+      mode: 'per_call', per_call_price: '0', input_per_1m: '0', output_per_1m: '0', currency: 'CNY',
+    }))
+    expect(text).not.toContain('/张')
+  })
+
+  // 断言结构而不是翻译文案：单测里 i18n 未挂 modelsExperience namespace，t() 会原样回 key。
+  // 这里要守的是「token 模式仍是输入/输出两段、且不带 per_call 的 /张」。
+  it('token：保持「¥输入 / ¥输出 + 每M 文案」两段式不变', () => {
+    const text = dualPriceText(priceModel({
+      mode: 'token', input_per_1m: '6.5', output_per_1m: '27', currency: 'CNY',
+    }))
+    expect(text).toContain('¥6.5 / ¥27')
+    expect(text).not.toContain('/张')
+    expect(text).not.toContain('/image')
+  })
+
+  it('price_tiers 优先于 mode：有分档就按档展示（视频按秒 / 图片矩阵价）', () => {
+    expect(dualPriceText(priceModel(
+      { mode: 'per_call', per_call_price: '0.22', currency: 'CNY' },
+      { price_tiers: [{ label: '480p', label_en: '480p', price: '0.1', unit: '秒', bucket: 'v' }] },
+    ))).toBe('¥0.1/秒')
+  })
+
+  // 单位后缀跟**界面语言**走（priceUnitSuffix 里是 isZhLang()），与币种无关：
+  // 海外用户看人民币价也该是 /image，国内用户看美元价仍是 /张。别把两者绑在一起。
+  it('USD 只影响货币符号，单位后缀仍随界面语言（默认 zh → /张）', () => {
+    expect(dualPriceText(priceModel({
+      mode: 'per_call', per_call_price: '0.03', currency: 'USD',
+    }))).toBe('$0.03/张')
   })
 })

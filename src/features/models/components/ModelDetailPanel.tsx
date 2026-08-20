@@ -18,9 +18,11 @@ import type { CatalogModelDetail } from '@/types'
 import { ModalityBadge } from './ModalityBadge'
 import { ModelIcon } from './ModelIcon'
 import { CopyButton } from '@/components/ui/CopyButton'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
 import {
   currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, vendorFromModelId, autoSummary, modelVendorLabel,
   priceTierLabel, catalogCardReplacesGridWithTiers, strikeOriginalPrice,
+  pricingRuleGroups, pricingRuleLabel, pricingRulePriceText, withPriceFrom,
 } from '../model-format'
 import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 
@@ -90,8 +92,12 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
   const freeLabel = t('modelsCatalog.card.free')
   // 兜底词按上下文给：限免 → 「免费」；非限免而金额为 0/缺省 → 空串（Metric 渲染
   // 「—」）。未配价不能说成免费。
-  const input = priceText(detail.pricing?.input_per_1m, symbol, isFree ? freeLabel : '', unitSuffix, isFree)
-  const output = priceText(detail.pricing?.output_per_1m, symbol, isFree ? freeLabel : '', unitSuffix, isFree)
+  // 价格梯度（#800）：pricing_rules 按维度分组（context_length → peak_time）。
+  // 有梯度时规格条的输入/输出价仍是起始档（后端已写进 pricing.*），只在后面加「起」。
+  const ruleGroups = pricingRuleGroups(detail.pricing_rules)
+  const hasGradient = ruleGroups.length > 0
+  const input = withPriceFrom(priceText(detail.pricing?.input_per_1m, symbol, isFree ? freeLabel : '', unitSuffix, isFree), hasGradient)
+  const output = withPriceFrom(priceText(detail.pricing?.output_per_1m, symbol, isFree ? freeLabel : '', unitSuffix, isFree), hasGradient)
   const cacheRead = priceText(detail.pricing?.cache_read_per_1m, symbol, isFree ? freeLabel : '', unitSuffix, isFree)
   const cacheWrite5m = priceText(detail.cache_write_5m_per_1m, symbol, '', unitSuffix)
   const cacheWrite1h = priceText(detail.cache_write_1h_per_1m, symbol, '', unitSuffix)
@@ -237,6 +243,57 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
           )
         })}
       </section>
+
+      {/* 价格梯度（#800）：token 模型的上下文分档 / 峰时价，功能对照原型
+          App.tsx:5529-5654（MarketplacePricingRules / MarketplacePriceAndBilling），
+          表格视觉走现状控制台 ui/Table（全站表格统一居中）。price_tiers（媒体矩阵价）
+          仍走上面的规格条，两者互不替代；限免口径只认 promotion.free，不从阶梯价推断。 */}
+      {hasGradient && (
+        <section className="mg-tile mg-detail-card">
+          <h3 className="text-mg-text-1 mb-3 text-[14px] font-semibold">
+            {t('modelsCatalog.detail.pricingRules')}
+          </h3>
+          <div className="flex flex-col gap-4">
+            {ruleGroups.map(({ dimension, rules }) => (
+              <div key={dimension}>
+                <h4 className="mg-text-label text-mg-text-3 mb-2">
+                  {t(dimension === 'context_length'
+                    ? 'modelsCatalog.detail.ruleDimContext'
+                    : 'modelsCatalog.detail.ruleDimPeak')}
+                </h4>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>
+                        {t(dimension === 'context_length'
+                          ? 'modelsCatalog.detail.ruleRange'
+                          : 'modelsCatalog.detail.ruleTimeSlot')}
+                      </TableHead>
+                      {dimension === 'peak_time' && (
+                        <TableHead>{t('modelsCatalog.detail.ruleTimezone')}</TableHead>
+                      )}
+                      <TableHead>{t('models.detail.pricingInput')}</TableHead>
+                      <TableHead>{t('models.detail.pricingOutput')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rules.map((rule, idx) => (
+                      <TableRow key={`${dimension}-${idx}`}>
+                        <TableCell>{pricingRuleLabel(rule, isZh)}</TableCell>
+                        {dimension === 'peak_time' && (
+                          <TableCell>{rule.timezone || '—'}</TableCell>
+                        )}
+                        <TableCell>{pricingRulePriceText(rule, 'input', symbol)}</TableCell>
+                        <TableCell>{pricingRulePriceText(rule, 'output', symbol)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* qa#290：详情页原型没有单独的"技术规格"板块（zero_data_retention/
           in_region_routing/released_at/knowledge_cutoff 之前被塞进这里），

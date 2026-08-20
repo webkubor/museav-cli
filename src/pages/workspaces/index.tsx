@@ -217,10 +217,14 @@ export default function WorkspacesPage() {
                     )}
                   </div>
 
-                  {/* 描述（对齐 PRD space-card p） */}
-                  <p className="text-xs text-mg-text-3 leading-relaxed line-clamp-2" title={ws.description || undefined}>
-                    {ws.description || dash}
-                  </p>
+                  {/* 描述（对齐 PRD space-card p）。没填就整行不渲染——原先回落「—」占一行
+                      却不带信息，而且它正好落在早先 @slug 的位置，被连着误认成「slug 显示成
+                      —」报了缺陷（需求方#632）。slug 本身按 prd#596 已在 6815dbf8 移除。 */}
+                  {ws.description && (
+                    <p className="text-xs text-mg-text-3 leading-relaxed line-clamp-2" title={ws.description}>
+                      {ws.description}
+                    </p>
+                  )}
 
                   {/* 元信息 2×2（对齐 PRD space-card-meta：负责人 / 成员 / API Keys / 护栏） */}
                   <div className="mt-auto grid grid-cols-2 gap-y-1.5 gap-x-3 text-xs text-mg-text-3">

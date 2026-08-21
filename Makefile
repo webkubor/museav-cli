@@ -78,8 +78,11 @@ tag:
 # make deploy-test BRANCH=xxx 部署指定分支（须先 push origin）
 # make deploy-status          查最近一次 Jenkins 构建状态（不触发）
 # 一步到位：逻辑在 scripts/jenkins.sh（trigger/status）。token 走 cs secrets，
-# 不回显、不硬编码；cs 是 zsh function 故脚本里直接调 CortexOS 二进制真源。
+# 不回显、不硬编码；cs 是 zsh function 故脚本里直接调 CortexOS 二进制真源，
+# 路径自动发现（$CORTEXOS_ROOT 优先，见脚本头部），CortexOS 换目录也不用改这里。
 # 红线：触发前确保目标分支已 push origin；Jenkins 从远端拉，不读本地工作区。
+#      部署 test 环境要 BRANCH=test —— 默认值是 main，直接 make deploy-test 会拿
+#      main 的代码去构建 test 环境，和你刚合进 test 的改动无关。
 JOB_PATH ?= test/modelgo-console-web
 
 .PHONY: deploy-test deploy-status

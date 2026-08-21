@@ -53,8 +53,14 @@ export interface CatalogModelItem {
   default_experience_type?: string
   /** 模型级对比总开关 */
   compare_enabled?: boolean
-  /** 一句话卖点 */
+  /** 一句话卖点（PRD §9.1 的「卡片短描述」）；缺失时卡片回落 description，见 cardSummary */
   tagline?: string
+  /**
+   * 长描述（PRD §9.1 的「详情简介」）。**列表接口恒下发**（空值给空串，不省略键 ——
+   * shared/modelgo_prd#820 后端契约用例已守住），所以卡片回落到它不需要二次请求。
+   * 此前这个字段只声明在 CatalogModelDetail 上，卡片拿不到，才有了 #820 的症状。
+   */
+  description?: string
   /**
    * 「最新发布」角标由服务端判定（released_at 30 天窗口）。不要在前端按
    * released_at 自行计算 —— 会随本地时钟与时区翻转。

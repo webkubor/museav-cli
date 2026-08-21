@@ -30,7 +30,7 @@ import { CopyButton } from '@/components/ui/CopyButton'
 import { Button } from '@/components/ui/Button'
 import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 import {
-  MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, autoSummary, modelVendorLabel,
+  MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, cardSummary, modelVendorLabel,
   strikeOriginalPrice,
   priceTiersForCard, priceTierLabel, catalogCardReplacesGridWithTiers, hasPricingGradient, withPriceFrom,
 } from '@/features/models/model-format'
@@ -133,7 +133,9 @@ export function CatalogCard({
   // original_* 若等于现价或为 0，直接渲染会变成「¥3 划掉 ¥3」「划掉 ¥0」。
   // qa#286：tagline 为空的模型此前简介行直接不渲染，卡片比同排矮一截；跟详情页
   // 同款兜底（真实字段拼一句事实性简介，不杜撰能力），两处口径一致。
-  const summary = model.tagline?.trim() || autoSummary(model, provider ?? '', isZh)
+  // prd#820：兜底句前面还得先回落 description —— 线上没有一个模型配了 tagline，
+  // 卡片却因此全部渲染「详细简介待补充。」，详情页显示真描述。口径见 cardSummary。
+  const summary = cardSummary(model, provider ?? '', isZh)
   // PRD §模型广场 AC-13「暂未开放」：模型本身可浏览详情/API，但没配置任何可体验任务时
   // 「去体验」按钮禁用并说明原因（原型 App.tsx:4619-4620/5076-5081 逐字对齐）。
   const hasExperience = hasPlaygroundExperience(model)

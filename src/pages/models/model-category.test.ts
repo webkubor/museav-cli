@@ -34,6 +34,15 @@ describe('resolveModelCategory（模态推导）', () => {
   it('纯音频输入 + 文本输出（ASR）归音频类，不是对话', () => {
     expect(resolveModelCategory(model({ input_modalities: ['audio'], output_modalities: ['text'] }))).toBe('audio')
   })
+
+  it('输出 text+audio 的 omni 对话模型归对话类，不因兼具音频输出被列进 TTS（prd#821 回归）', () => {
+    // qwen-omni-turbo 实况：audio 是 chat completions 的输出形态，不是 /v1/audio/speech 能力，
+    // 归 audio 类会把它列进「文本转语音」入口，点了必失败（cn 该任务上线以来 0 成功）
+    expect(resolveModelCategory(model({
+      input_modalities: ['text', 'audio', 'image', 'video'],
+      output_modalities: ['audio', 'text'],
+    }))).toBe('dialogue')
+  })
 })
 
 describe('modelExperienceTasks（任务推导）', () => {
@@ -63,6 +72,20 @@ describe('modelExperienceTasks（任务推导）', () => {
       input_modalities: ['audio'],
       output_modalities: ['text'],
     }))).toEqual(['audio_to_text'])
+  })
+
+  it('专职 TTS（纯音频输出）推导出文本转语音', () => {
+    expect(modelExperienceTasks(model({
+      input_modalities: ['text'],
+      output_modalities: ['audio'],
+    }))).toEqual(['text_to_audio'])
+  })
+
+  it('omni 对话模型（out=text+audio）推导出对话类任务，无 text_to_audio（prd#821 回归）', () => {
+    expect(modelExperienceTasks(model({
+      input_modalities: ['text', 'audio', 'image', 'video'],
+      output_modalities: ['audio', 'text'],
+    }))).toEqual(['text_to_text', 'image_to_text', 'video_to_text'])
   })
 
   it('embedding 类（输出非文本非媒体）推导为空 = 暂未开放（§AC-13）', () => {

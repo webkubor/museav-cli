@@ -447,12 +447,19 @@ function outputMods(model: CatalogModelItem): string[] {
  * out=[text,image] 本体是图像生成模型，不因兼具聊天能力归对话）；纯文本输出的
  * 全模态模型归对话（#297 正向教训：mimo/seed 系不因输入含音频被判成语音识别）；
  * 纯音频输入且无文本输入的是 ASR，归音频类。
+ *
+ * audio 与 image 规则不同（shared/modelgo_prd#821）：只有**纯音频输出**才归音频类。
+ * out 同时含 text+audio 的是 omni 对话模型（qwen-omni-turbo 实况）——它的 audio 是
+ * chat completions 的输出形态，不是 /v1/audio/speech（TTS）能力；按 #297 的
+ * 媒体优先规则归 audio 会把它列进「文本转语音」入口，点了必失败（cn 该任务
+ * 上线以来 0 成功，两个上游都没有 audio_speech 接口）。专职 TTS 模型输出只有
+ * audio，不受影响。
  */
 export function resolveModelCategory(model: CatalogModelItem): ExperienceCategoryKey {
   const out = outputMods(model)
   const inp = inputMods(model)
   if (out.includes('video')) return 'video'
-  if (out.includes('audio')) return 'audio'
+  if (out.includes('audio') && !out.includes('text')) return 'audio'
   if (out.includes('image')) return 'image'
   if (!inp.includes('text') && inp.includes('audio')) return 'audio'
   return 'dialogue'

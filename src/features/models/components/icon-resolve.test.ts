@@ -130,3 +130,18 @@ describe('#791 回归：阿里系 vendor 收敛', () => {
     expect(new Set(brands).size).toBe(1)
   })
 })
+
+describe('#818 回归：可灵 / 小米 MiMo vendor 收敛', () => {
+  // 可灵 vendor 在 catalog 里有中英两种写法（快手 / kuaishou）
+  it.each(['kuaishou', '快手'])('%s 收敛到 kling', (v) => {
+    expect(BRAND_ALIASES[v]).toBe('kling')
+  })
+
+  it('中文 vendor「快手」可被 resolveVendorKeyFrom 精确命中', () => {
+    expect(resolveVendorKeyFrom(['kling', 'kuaishou', '快手'], '快手')).toBe('快手')
+  })
+
+  it('mimo 收敛到 xiaomi', () => {
+    expect(BRAND_ALIASES['mimo']).toBe('xiaomi')
+  })
+})

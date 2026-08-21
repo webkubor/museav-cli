@@ -78,6 +78,10 @@ export const BRAND_ALIASES: Record<string, string> = {
   alibaba: 'qwen',
   aliyun: 'qwen',
   tongyi: 'qwen',
+  // 可灵是快手的（vendor 写法有中英两种，见 #818）；MiMo 收敛到小米
+  kuaishou: 'kling',
+  快手: 'kling',
+  mimo: 'xiaomi',
 }
 
 /**

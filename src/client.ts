@@ -320,8 +320,13 @@ export interface ModelOption {
 }
 
 export interface Balance {
-  /** 数值单位是 ¥（人民币）。字段名带 usd 是历史遗留命名，不代表美元——中台侧不存在汇率换算 */
-  balance_usd: number
+  /** 余额（¥）。中台 2026-08-21 起发这个字段名 */
+  balance_cny?: number
+  /**
+   * 同一个数的旧字段名，中台仍在双发。字段名带 usd 纯属历史遗留，值一直是人民币——
+   * 中台侧不存在汇率换算。老版本 CLI 只认这个名字，所以中台不会立刻停发。
+   */
+  balance_usd?: number
   /** 租户加价率（0.2 = 加价 20%） */
   markup_pct: number
   checked_at: string

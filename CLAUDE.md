@@ -15,7 +15,7 @@ use_count: 0
 > 治「不读规范就动手」——本仓 UI/组件/样式任何改动，先按序做：
 > 1. `cs flow frontend` → 拿到必读规则与禁止项
 > 2. 读 `cs rule frontend_design_standard` + 本仓 `DESIGN.md`（圆角/颜色/组件/图标铁律）
-> 3. **组件铁律**：主操作用 `Button variant="brand"`，禁止手写 `<button className="bg-brand-*">`；卡片用 `.mg-tile`，勿拿 `bg-mg-fill-0` 凑层次；圆角只用 `rounded-sm/md/lg/full`（**禁 `rounded-xl/2xl/3xl`**，它们是禁用刻度＝直角）；图标只用 `react-icons` 或 `@lobehub/icons`。
+> 3. **组件铁律**：主操作用 `Button variant="brand"`，禁止手写 `<button className="bg-brand-*">`；卡片用 `.mg-tile`，勿拿 `bg-mg-fill-0` 凑层次；圆角只用 `rounded-sm/md/lg/full`（**禁 `rounded-xl/2xl/3xl`**，它们是禁用刻度＝直角）；图标按用途三选一：**模型/厂牌 logo 用 `@model-go/icons`**（私有库，与运营后台共用同一份 vendor 别名索引与厂牌主色；渲染统一走 `<ModelIcon>`，别直接 import 图标包）；通用 UI 图标用 `react-icons`；`@lobehub/icons` 仅限私有库还没收的第三方标识（OAuth 登录的 GitHub/Google/微信等），新增前先确认私有库里没有。
 > 4. 提交前 UI 门禁 `scripts/ui-guard.sh` 会硬拦上述违规；**完成前必须浏览器验证**（engineering_baseline §4.2 结构化验收），禁止"没验就说完成"。
 > 5. **布局/排版对标现状，不对标原型视觉（前置，别只靠最后验证）**：原型只给「功能 + 交互」，它自身的视觉 ≠ 本控制台视觉。布局、排版、间距、组件用法的真源是**现状控制台**——动手前先挑一个现有最像的页/模块（同类 表格/表单/抽屉/卡片/筛选条）当参照，照它的结构 + `ui/*` 组件 + `DESIGN.md` + token 排；别照原型视觉、也别凭空排。PRD 没 UI 方向是正常的（PRD 给功能，UI 方向的真源是现状代码）。UI 验证应是**开工选参照 + 中途对着它比**，不是最后才发现排版不对。
 > 6. **动业务模块前先读 `docs/ui-reference/<module>.md`**（现有：`api-keys`、`guardrails`）——里面是该模块的 UI 框架 + 字段文案（照 PRD 原型常量）+ 不同身份（owner/admin/space owner/member）的显示差异，是开工对齐的提炼，省掉每次全量扫代码。⚠️ 它是**衍生文档非真源**，冲突时以 PRD 原型 + 现状代码为准；PRD 改版后按 `docs/ui-reference/README.md` 重跑同步。

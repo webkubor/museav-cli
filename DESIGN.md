@@ -131,7 +131,7 @@ components:
 | 语义样式类 | `src/styles/components.css` | `.mg-text-*`、`.mg-panel-*`、`.mg-control-*`、`.mg-tile`、`.mg-tile-hover`。 | JSX 里堆长串 Tailwind 原子类复刻同一视觉；卡片继续手写 `bg-mg-bg-0 border border-mg-border shadow-sm`。 |
 | UI 组件 | `src/components/ui/*` | 表单、按钮、卡片、表格、弹窗、抽屉、复制、状态、分页、日期选择等统一从这里取。 | 引入 Semi / AntD / shadcn 新包；页面内手写按钮、复制按钮、弹窗、表格状态。 |
 | 通用图标 | `react-icons@^5.6.0` | 默认使用 `react-icons/lu`，少量基础符号用 `react-icons/io5`，品牌支付等用集中封装。 | 安装或直接使用 `lucide-react`；用 Unicode 符号代替图标；业务页面直接引用支付/OAuth 品牌图标。 |
-| 模型/厂商图标 | `@lobehub/icons@^5.8.0` + `ModelIcon` | 模型、供应商、AI 客户端 logo 使用 LobeHub 图标或 `ModelIcon` 兜底链。 | 自己截取首字母拼模型头像；在业务页散落 `@lobehub/icons` 映射。 |
+| 模型/厂牌图标 | `@model-go/icons` + `ModelIcon` | 厂牌 logo、vendor 别名索引、厂牌主色的唯一真源（私有库，与运营后台共用）；业务侧一律用 `ModelIcon`。 | 自己截取首字母拼模型头像；在业务页直接 import 图标包、自建 vendor 映射。 |
 | 品牌/支付/OAuth 图标 | `src/constants/brand-icons.tsx`、`src/constants/oauth.tsx` | 支付渠道、OAuth 登录入口等从常量封装导入。 | 在页面组件中直接 `import { SiWechat } from 'react-icons/si'` 等。 |
 
 ### `modelgo-design-tokens` 维护边界
@@ -146,7 +146,8 @@ components:
 
 1. **产品通用图标默认 `react-icons/lu`**：例如搜索、刷新、设置、下载、复制、状态提示。已有页面大量使用 `Lu*`，保持线性、克制、统一笔触。
 2. **关闭、下拉、勾选等基础控件可用 `react-icons/io5`**：仅限控件级符号，优先复用现有组件，不在业务页面扩散。
-3. **模型/厂商/AI 客户端使用 `@lobehub/icons`，但业务侧优先用 `ModelIcon`**：只有 `vendor-icons.tsx`、API Keys 接入配置等图标映射层可以直接引入 LobeHub 图标。
+3. **模型/厂牌 logo 走 `@model-go/icons`，业务侧一律用 `ModelIcon`**：解析（vendor 别名索引、厂牌主色）在私有库里，与运营后台共用同一份，控制台不再自建映射表。
+   `@lobehub/icons` 只剩两处非厂牌用途：OAuth 登录标识（`src/constants/oauth.tsx`）与 API Keys 协议图标——私有库还没收这类第三方标识，新增前先确认库里没有。
 4. **品牌支付/OAuth 图标走常量封装**：支付渠道走 `src/constants/brand-icons.tsx`，OAuth 走 `src/constants/oauth.tsx`。
 5. **禁用 `lucide-react`**：`modelgo-design-tokens/USAGE.md` 是四端通用建议，里面的 lucide-react 建议不适用于控制台；本仓 README 和现状代码以 `react-icons/lu` 为准。`@lobehub/icons` 的传递依赖里可能带 lucide，但本项目代码不直接 import。需要新图标时从 `react-icons/lu` 找，找不到再评估是否补封装。
 6. **图标按钮必须有可访问名称**：纯图标按钮要有 `aria-label` / `title`，复制场景优先 `CopyButton`。
@@ -227,7 +228,7 @@ YAML front matter 里的值是 **「国内 + 浅色」** 默认态；其余三�
   - 行内 / 字段行 / ID / 链接旁的紧凑复制 → `variant="icon"`（默认，一个图标搞定，别上大按钮）
   - 独立强调的复制 CTA（如新建 Key 横幅、收银台付款信息）→ `variant="labeled"`
   - 唯一例外：API Key 明文的「惰性 reveal + 手势栈内 ClipboardItem 写入」（`api-keys/index.tsx`），因剪贴板需在用户手势栈同步发起，不走 CopyButton。
-- **ModelIcon（模型身份唯一真源，2026-07-29 定）**：任何展示"这是哪个模型/供应商"的地方（模型选择条、聊天消息头像、列表行、对比列头等）一律用 `@/features/models/components/ModelIcon`（四层兜底：真实 logo → `@lobehub/icons` 供应商图标 → 模型名前缀推断供应商 → 首字母色块）。**禁止**自己拿模型名/供应商名首字母 `.slice(0,1).toUpperCase()` 拼一个文字色块替代——这是反复出现的问题（模型体验单页/对比工作台的模型条与消息头像都各自手写过一次，均已改回 `ModelIcon`），新写模型相关 UI 前先确认有没有复用它。
+- **ModelIcon（模型身份唯一真源，2026-07-29 定）**：任何展示"这是哪个模型/供应商"的地方（模型选择条、聊天消息头像、列表行、对比列头等）一律用 `@/features/models/components/ModelIcon`（兜底链：真实 logo → `@model-go/icons` 按 `logo_url` / `vendor`（含别名）/ 模型名前缀解析 → 首字母色块）。**禁止**自己拿模型名/供应商名首字母 `.slice(0,1).toUpperCase()` 拼一个文字色块替代——这是反复出现的问题（模型体验单页/对比工作台的模型条与消息头像都各自手写过一次，均已改回 `ModelIcon`），新写模型相关 UI 前先确认有没有复用它。
 - **状态优先**：交互注册第一——路由/Tab 切换立即给反馈（骨架 + loading），不让用户干等请求。
 
 ## Do's and Don'ts

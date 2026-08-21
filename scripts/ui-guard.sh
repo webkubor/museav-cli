@@ -53,13 +53,29 @@ while IFS= read -r f; do
     block=$((block + 1))
   fi
 
-  # ── BLOCK 2：图标库越界。只允许 react-icons（通用）与 @lobehub/icons（模型/品牌 logo）。
+  # ── BLOCK 2：图标库越界。按用途三选一：
+  #    · 模型/厂牌 logo → @model-go/icons（私有库，与运营后台共用同一份 vendor 映射）
+  #    · 通用 UI 图标   → react-icons
+  #    · @lobehub/icons → 仅限私有库还没收的第三方标识（OAuth 登录的 GitHub/Google/微信等）
   hits="$(printf '%s' "$content" | grep -nE "from ['\"](lucide-react|@ant-design/icons|@heroicons/|@icon-park/|@mui/icons)" || true)"
   if [ -n "$hits" ]; then
-    echo "✗ [图标库越界] $f — 图标只用 react-icons 或 @lobehub/icons"
+    echo "✗ [图标库越界] $f — 图标按用途选：模型/厂牌 logo 用 @model-go/icons，通用图标用 react-icons"
     printf '%s\n' "$hits" | sed 's/^/      /'
     block=$((block + 1))
   fi
+
+  # ── WARN 0：模型/厂牌 logo 别直接 import @lobehub/icons。
+  #    厂牌图标的真源是 @model-go/icons（含 vendor 别名索引与厂牌主色），渲染统一走 <ModelIcon>。
+  #    直接 import 上游图标包会绕开别名索引 —— 这正是 #791 的成因（控制台与运营后台各写一份
+  #    映射，运营选了控制台没 import 的图标，就静默掉到模型名推断，千问渲染成 OpenAI）。
+  case "$f" in
+    *features/models/*|*pages/models/*|*pages/models-compare/*)
+      if printf '%s' "$content" | grep -q "from ['\"]@lobehub/icons"; then
+        echo "⚠ [厂牌图标绕过私有库] $f — 模型/厂牌 logo 走 <ModelIcon> 或 @model-go/icons，别直接 import @lobehub/icons"
+        warn=$((warn + 1))
+      fi
+      ;;
+  esac
 
   # ── WARN 1：疑似自写品牌按钮。主操作应 <Button variant="brand">，禁止手写 <button className="bg-brand-*">。
   # 只认「实底」bg-brand-base/deep（后面不接 /opacity），tint 如 bg-brand-base/12 是合法点缀，放行

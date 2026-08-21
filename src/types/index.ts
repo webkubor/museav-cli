@@ -175,4 +175,6 @@ export type {
   TaskDetail,
   TaskListParams,
   TaskListResponse,
+  TaskSummaryParams,
+  AsyncTasksSummary,
 } from './tasks'

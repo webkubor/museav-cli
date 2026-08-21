@@ -108,3 +108,38 @@ export interface TaskListResponse {
   limit: number
   offset: number
 }
+
+/**
+ * 异步任务 Summary 查询参数（需求方#668）。
+ * 就是列表参数去掉分页 —— Swagger 实测 /async-tasks/summary 接受的 query 与
+ * /async-tasks 完全一致，只少 limit/offset。用 Omit 派生而非另写一份，是为了
+ * 让「Summary 与列表同口径」这个硬性要求在类型层就成立：列表加了新筛选，
+ * 这里自动跟上，不会像 #668 早期那样两边口径悄悄分叉。
+ */
+export type TaskSummaryParams = Omit<TaskListParams, 'limit' | 'offset'>
+
+/**
+ * 异步任务 Summary 响应（后端 qa#605，spec 202608201144 实测字段）。
+ *
+ * ⚠️ total_spend / currency 有已知的后端缺陷：跨币种裸求和、且 currency 取的是
+ * 少数派币种。QA 2026-08-19 实测 preset=thisMonth：CNY 2365 条合计 5172.540982
+ * + USD 15 条合计 3.04 → total_spend 5175.580982、currency "USD"。
+ * 所以前端**不使用本字段的 currency**，改用租户结算币种（useCurrency），
+ * 与同步侧 total_cost 的既有做法一致。金额本身的跨币种误差归后端修：**qa/ai-quality-platform#669**。
+ */
+export interface AsyncTasksSummary {
+  total_tasks?: number
+  succeeded_tasks?: number
+  queued_tasks?: number
+  running_tasks?: number
+  failed_tasks?: number
+  expired_tasks?: number
+  /** 后端已实测等于 failed_tasks + expired_tasks，直接用，不在前端重算 */
+  failed_or_expired_tasks?: number
+  total_spend?: string
+  /** 见上：少数派币种，前端不用 */
+  currency?: string
+  pending_billing_tasks?: number
+  available_products?: number
+  expired_products?: number
+}

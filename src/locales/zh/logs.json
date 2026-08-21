@@ -261,6 +261,19 @@
       "avgCost": "均值 {{value}}",
       "avgDuration": "平均总耗时",
       "avgTtft": "首 Token {{value}}"
+    },
+    "asyncSummary": {
+      "totalTasks": "总任务数",
+      "completionRate": "完成率",
+      "succeededCount": "已完成 {{value}}",
+      "inFlight": "处理中",
+      "queuedRunning": "排队 {{queued}} · 执行 {{running}}",
+      "failedOrExpired": "失败 / 过期",
+      "failedRatio": "占比 {{value}}",
+      "totalSpend": "总费用",
+      "pendingBilling": "待结算 {{value}}",
+      "availableProducts": "可用产物",
+      "expiredProducts": "已过期 {{value}}"
     }
   }
 }

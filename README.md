@@ -102,9 +102,14 @@
 | | 抠图去背景（输出透明 PNG） | `remove-bg` |
 | | **放大清晰度**（2M → 10M+ 级） | `upscale` |
 | | 去水印 | `remove-watermark` |
+| **语音**（直连小米 MiMo，需 `MIMO_API_KEY`） | 文字转语音 / 音色设计 / 音色克隆 | `speak` |
+| | 语音转文字 | `transcribe` |
 | **素材与统计** | 上传素材 / 查任务 / 查余额 / 查模型 / 查身份 | `upload` / `jobs` / `balance` / `models` / `whoami` |
 
 > 本地工具（`compress` / `remove-bg` / `upscale` / `remove-watermark`）**不用登录、不花一分钱**，装了就能用；其余命令需要一个凭证（个人 `login` 或租户 apiKey）。
+>
+> 语音（`speak` / `transcribe`）是第三种情况：**不走中台身份**，直连小米 MiMo，只认 `MIMO_API_KEY` 环境变量。
+> 中台的出音链路还没接完，这批能力目前内部用，没有那把 key 的人（包括租户）用不了。
 
 ---
 
@@ -327,6 +332,48 @@ museav gen --template "$ID" --fields '{"title":"新的主标题"}'
   模板库里添资产，跟出图不是一回事），这种情况下读图结果照常返回，只是模板建不成并说明原因。
 - **降级不是失败**：文字层逆向 / 变量化 / 建模板任一步出问题，读图结果（SCULPT、prompt）照常给你，
   只是没有模具。命令会明确告诉你卡在哪一步。
+
+### 文字转语音 `speak` / 语音转文字 `transcribe`
+
+直连小米 MiMo，**不用 `museav login`**，只要一个环境变量：
+
+```bash
+export MIMO_API_KEY=...
+# 或者不落盘，用密钥库注入一次性子进程
+cs kyvault run --env MIMO_API_KEY=secret://mimo/api-key -- museav speak '声影成诗'
+```
+
+三种音色来源，给了哪个参数就走哪条路：
+
+```bash
+# 预置音色（默认 Chloe）
+museav speak '声影成诗，一念成像。' --out hello.wav
+
+# 音色设计：一句话描述，当场造一个音色
+museav speak '欢迎收听山鬼电台' --design '低沉沙哑的中年男声，像深夜电台'
+
+# 音色克隆：拿一段音频当样本，复刻它的音色
+museav speak '这句换个音色来念' --clone ./sample.wav
+
+# 语气/风格指令，三种模式都能叠加
+museav speak '慢一点念这句' --instruction '语速放慢，温柔一些'
+```
+
+输出是 24kHz / 16bit 单声道 WAV，stdout 只打印文件路径（方便直接接管道）：
+
+```bash
+museav upload "$(museav speak '开场白')"      # 合成完直接上传到中台图库
+```
+
+语音转文字：
+
+```bash
+museav transcribe ./recording.wav             # stdout 只有识别出的文本
+```
+
+> ⚠️ **识别结果的同音字会飘。** 同一段合成音频，一次识别成「声影成诗，一念成相」，
+> 另一次成「上庸城失，一面呈象」。别把它的输出直接用在计费、入库或需要精确匹配的判断上，
+> 重要场景请人工核对一遍。
 
 ### 上传素材 `upload`
 

@@ -601,8 +601,11 @@ export function ModelPickerDialog({
                   </div>
                 </div>
 
+                {/* prd#820 同因：此前只读 tagline，而线上没有一个模型配了 tagline，
+                    这栏对 100% 的模型都显示「暂无简介」。缺 tagline 时回落长描述
+                    （同一份列表接口已下发，不需要二次请求），两者都空才说暂无。 */}
                 <p className="text-sm text-mg-text-2 leading-relaxed">
-                  {detailModel.tagline || t('modelsExperience.picker.noTagline')}
+                  {detailModel.tagline?.trim() || detailModel.description?.trim() || t('modelsExperience.picker.noTagline')}
                 </p>
 
                 {detailModel.tags && detailModel.tags.length > 0 && (

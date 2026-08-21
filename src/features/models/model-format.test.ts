@@ -11,6 +11,7 @@ import i18n from '@/i18n'
 import {
   catalogCardReplacesGridWithTiers, priceTierLabel, priceTiersForCard, priceUnitSuffix, strikeOriginalPrice,
   pricingRuleGroups, hasPricingGradient, pricingRuleLabel, pricingRulePriceText, withPriceFrom,
+  autoSummary, cardSummary, detailSummary,
 } from './model-format'
 
 afterAll(async () => {
@@ -173,5 +174,51 @@ describe('pricing_rules — 上下文分档 / 峰时价（#800）', () => {
     expect(withPriceFrom({ value: '免费', unit: '' }, true)).toEqual({ value: '免费', unit: '' })
     await i18n.changeLanguage('en')
     expect(withPriceFrom({ value: '$ 0.8', unit: '/M' }, true)).toEqual({ value: 'from $ 0.8', unit: '/M' })
+  })
+})
+
+/**
+ * shared/modelgo_prd#820：广场卡片只读 tagline、不回落 description，而目录接口至今
+ * 一个模型都没有 tagline（cn 生产 43/43 空、test 53 个全空），于是每张卡都渲染
+ * autoSummary 的「详细简介待补充。」，点进详情又是真描述 —— 提单人看到的
+ * 「广场与详情描述不一致」。这一组把两个位置的回落链钉住。
+ */
+describe('cardSummary / detailSummary — 简介回落链（prd#820）', () => {
+  const base = { modalities: ['text'], context_length: 1_000_000 }
+
+  it('卡片：tagline 缺失时回落 description，不再跳到「详细简介待补充。」', () => {
+    const model = { ...base, description: 'DeepSeek V4 Flash 是面向低延迟与高吞吐场景的大语言模型。' }
+    expect(cardSummary(model, 'DeepSeek', true)).toBe(model.description)
+    expect(cardSummary(model, 'DeepSeek', true)).not.toContain('详细简介待补充')
+  })
+
+  it('卡片：tagline 有值时仍优先 tagline（PRD §9.1「卡片短描述」）', () => {
+    const model = { ...base, tagline: '低延迟高吞吐', description: '很长的详情描述' }
+    expect(cardSummary(model, 'DeepSeek', true)).toBe('低延迟高吞吐')
+  })
+
+  it('详情：description 优先，与卡片只差前两项顺序', () => {
+    const model = { ...base, tagline: '低延迟高吞吐', description: '很长的详情描述' }
+    expect(detailSummary(model, 'DeepSeek', true)).toBe('很长的详情描述')
+    expect(cardSummary(model, 'DeepSeek', true)).not.toBe(detailSummary(model, 'DeepSeek', true))
+  })
+
+  it('两个字段都空 → 两处都落到同一句 autoSummary，卡片不再空一行', () => {
+    const model = { ...base }
+    const auto = autoSummary(model, 'DeepSeek', true)
+    expect(cardSummary(model, 'DeepSeek', true)).toBe(auto)
+    expect(detailSummary(model, 'DeepSeek', true)).toBe(auto)
+    expect(auto).toContain('详细简介待补充')
+  })
+
+  it('纯空白的 tagline/description 当作没填（后端空值给空串，不是省略键）', () => {
+    const model = { ...base, tagline: '   ', description: '\n ' }
+    expect(cardSummary(model, 'DeepSeek', true)).toBe(autoSummary(model, 'DeepSeek', true))
+    expect(detailSummary(model, 'DeepSeek', true)).toBe(autoSummary(model, 'DeepSeek', true))
+  })
+
+  it('线上真实形态：无 tagline + 有 description → 卡片与详情逐字相同（本单的验收点）', () => {
+    const model = { ...base, description: 'DeepSeek V4 系列的效率型版本，响应更快。' }
+    expect(cardSummary(model, 'DeepSeek', true)).toBe(detailSummary(model, 'DeepSeek', true))
   })
 })

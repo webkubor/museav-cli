@@ -37,20 +37,22 @@
   --mg-primary-light:    var(--brand-pale);
   --mg-on-primary:       #ffffff; /* 品牌底上的前景（白），与主按钮文字同源 */
   --mg-danger:           var(--mg-error);
-  --mg-success-text:     var(--mg-success);
+  /* ⚠️ --mg-success-text / --mg-warning-text / --mg-error-text / --mg-info-text 已上收到库（0.10.0，qa#614）。
+     本地不要再声明：index.css 里库在本文件之前 @import，同选择器同特异性后者胜，
+     写在这儿会把库的 AAA 值遮死。原写法 `-text: var(--mg-success)` 是拿填充级语义色当文字色，
+     浅色实测 1.77~3.01，四端所有状态 badge 都受影响 —— 那正是 qa#614 的根因。 */
   --mg-success-bg:       color-mix(in oklab, var(--mg-success) 10%, transparent);
   --mg-success-bg-hover: color-mix(in oklab, var(--mg-success) 16%, transparent);
   --mg-success-border:   color-mix(in oklab, var(--mg-success) 28%, transparent);
-  --mg-warning:          #FFA000; /* 警示橙本体：部署环境不依赖 node_modules 缓存 */
-  --mg-warning-text:     var(--mg-warning);
+  /* --mg-warning 已上收到库：库 :root 同值 #FFA000，且 [data-theme='dark'] 另给莫兰迪 #cda971。
+     本地在 :root 写一条会把库的深色档压死（原注释的「不依赖 node_modules 缓存」不成立：
+     库缺失时几百个 token 一起失效，单独兜住一个 warning 没有意义）。 */
   --mg-warning-bg:       color-mix(in oklab, var(--mg-warning) 11%, transparent);
   --mg-warning-bg-hover: color-mix(in oklab, var(--mg-warning) 17%, transparent);
   --mg-warning-border:   var(--mg-warning);
-  --mg-error-text:       var(--mg-error);
   --mg-error-bg:         color-mix(in oklab, var(--mg-error) 9%, transparent);
   --mg-error-bg-hover:   color-mix(in oklab, var(--mg-error) 15%, transparent);
   --mg-error-border:     color-mix(in oklab, var(--mg-error) 28%, transparent);
-  --mg-info-text:        var(--mg-info);
   --mg-info-bg:          color-mix(in oklab, var(--mg-info) 9%, transparent);
   --mg-info-bg-hover:    color-mix(in oklab, var(--mg-info) 15%, transparent);
   --mg-info-border:      color-mix(in oklab, var(--mg-info) 26%, transparent);
@@ -60,12 +62,6 @@
   --mg-danger-border:    var(--mg-error-border);
   --mg-favorite:         var(--mg-error);
   --mg-favorite-bg-hover: var(--mg-error-bg-hover);
-  --mg-chart-cat-1: #2a78d6;
-  --mg-chart-cat-2: #1baf7a;
-  --mg-chart-cat-3: #eda100;
-  --mg-chart-cat-4: #008300;
-  --mg-chart-cat-5: #4a3aa7;
-  --mg-chart-cat-6: #e34948;
   --mg-chart-cat-1-bg: color-mix(in oklab, var(--mg-chart-cat-1) 10%, transparent);
   --mg-chart-cat-2-bg: color-mix(in oklab, var(--mg-chart-cat-2) 10%, transparent);
   --mg-chart-cat-3-bg: color-mix(in oklab, var(--mg-chart-cat-3) 12%, transparent);
@@ -80,7 +76,7 @@
   --mg-chart-cat-6-border: color-mix(in oklab, var(--mg-chart-cat-6) 30%, transparent);
   --mg-link:             var(--brand-base);
   --mg-link-hover:       var(--brand-mid);
-  --mg-nav-text-active:  var(--brand-deep);
+  /* --mg-nav-text-active 交给库：深色档库给 var(--mg-brand-mid) 提亮，本地这条 :root 会把它压成 deep（深色下过暗）。 */
   --mg-nav-icon-active:  var(--brand-base);
   --nav-item-active-bg:  var(--brand-selected-bg);
   --shadow-focus: 0 0 0 3px var(--brand-glow);
@@ -192,17 +188,16 @@
   --mg-tooltip-pad-x: 0.625rem;             /* InfoTip 原 px-2.5 */
   --mg-tooltip-pad-y: 0.375rem;             /* InfoTip 原 py-1.5 */
 
-  --mg-control-h-xs: 1.75rem;
-  --mg-control-h-sm: 2rem;
-  --mg-control-h-md: 2.5rem;
-  --mg-control-h-lg: 3rem;
-  --mg-control-h-xl: 3.5rem;
-  --mg-control-height-xs: var(--mg-control-h-xs);
-  --mg-control-height-sm: var(--mg-control-h-sm);
-  --mg-control-height-md: var(--mg-control-h-md);
-  --mg-control-height: var(--mg-control-height-md);
-  --mg-control-height-lg: var(--mg-control-h-lg);
-  --mg-control-height-xl: var(--mg-control-h-xl);
+  /* ⚠️⚠️ 控件尺寸整组已上收到库（0.10.0，qa#615 组 3）——这 11 行必须整段删、绝不能只删一半。
+     本地原来的指向方向和库是**相反**的：
+        本地： --mg-control-h-md      : 2.5rem                        （旧短名持字面值）
+               --mg-control-height-md: var(--mg-control-h-md)         （规范名 → 旧短名）
+        库  ： --mg-control-h-md      : var(--mg-control-height-md)   （旧短名 → 规范名，仅作迁移别名）
+               --mg-control-height-md: 2.5rem                        （规范名持字面值）
+     只删旧短名那半、留下规范名那半 → 两者互相引用成环 → CSS 判 cyclic var 为
+     invalid at computed-value time → 两个 token 一起变初始值 → **全站控件高度静默消失、不报错**。
+     而 check:closure 的环检测只扫 design-tokens 仓，不扫消费方，删错了没有任何门禁会拦。
+     旧短名仍被 Button / Select / Combobox / TagInput / components.css 大量消费，靠库的别名接住。 */
   --mg-control-py-sm: var(--mg-space-2);
   --mg-control-pad-y-sm: var(--mg-control-py-sm);
   --mg-control-border-hover: var(--mg-border-hover);
@@ -255,7 +250,9 @@
   --mg-progress-info-badge-border: var(--mg-info-border);
   --mg-status-dot-size-sm: 6px;
   --mg-status-dot-size-md: 8px;
-  --mg-status-online-bg: var(--mg-success-text);
+  /* 在线圆点是「填充」不是「文字」，必须取 --mg-success 本体。
+     原写法取 --mg-success-text：qa#614 把 -text 改成 7:1 的深色后，圆点会变墨绿看不出是"在线"。库同值，删本地遮蔽。 */
+  --mg-status-online-bg: var(--mg-success);
   --mg-status-online-shadow: 0 0 8px color-mix(in oklab, var(--mg-success) 50%, transparent);
   --mg-avatar-size-2xs: 1.25rem;
   --mg-avatar-size-xs: 1.5rem;
@@ -268,7 +265,7 @@
   --mg-avatar-text-sm: var(--mg-text-xs);
   --mg-avatar-text-md: var(--mg-text-sm);
   --mg-avatar-status-offset: -1px;
-  --mg-avatar-success-bg: var(--mg-success-text);
+  --mg-avatar-success-bg: var(--mg-success);  /* 同 --mg-status-online-bg：填充取本体，不取 -text（qa#614） */
   --mg-textarea-min-h: 5rem;
   --mg-table-head-h: var(--mg-control-h-md);
   --mg-table-cell-px: var(--mg-space-4);
@@ -351,10 +348,10 @@
   --mg-btn-transition: all var(--mg-duration-base) var(--mg-ease-emphasized);
   --mg-btn-hover-y: -0.5px;
   --mg-btn-press-scale: var(--mg-state-pressed-scale);
-  --mg-btn-primary-bg: var(--mg-brand-base);
-  --mg-btn-primary-bg-hover: var(--mg-brand-deep);
-  --mg-btn-primary-bg-active: var(--mg-brand-deep);
-  --mg-btn-primary-text: #ffffff;
+  /* ⚠️ --mg-btn-primary-bg / -hover / -active 已上收到库（0.10.0，ab47051…ab03582「修主按钮白字不达标」）。
+     本地不要在 :root 声明：库在 [data-market='global'] 与 [data-theme='dark'] 里把底色压深 22%
+     （color-mix(brand-base 78%, #000)）来让白字达标，而属性选择器与 :root 特异性相同、本地文件后加载
+     —— 在这儿写一条 :root 就会把库那两档全压死，海外绿底/深色底上的白字继续不达标，且 diff 上看不出来。 */
   --mg-btn-primary-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
   --mg-btn-primary-shadow-hover: 0 4px 16px var(--mg-brand-glow), 0 2px 4px rgba(0, 0, 0, 0.1);
   --mg-btn-neutral-bg: #0f172a;
@@ -377,7 +374,7 @@
   --mg-btn-ghost-text: var(--mg-text-2);
   --mg-btn-ghost-text-hover: var(--mg-text-1);
   --mg-btn-link-text: var(--mg-brand-base);
-  --mg-btn-link-text-hover: var(--mg-brand-deep);
+  /* --mg-btn-link-text-hover 交给库：深色档库给 var(--mg-brand-mid)，同上，本地 :root 会压死。 */
   --mg-btn-danger-bg: #d9534f;
   --mg-btn-danger-bg-hover: color-mix(in oklab, var(--mg-btn-danger-bg) 88%, black);
   --mg-btn-danger-bg-active: color-mix(in oklab, var(--mg-btn-danger-bg) 80%, black);
@@ -425,13 +422,14 @@
   --mg-toast-duration-warning: 5000ms;
   --mg-toast-duration-error: 6000ms;
 
+  /* ⚠️ 6 个 --mg-modality-*-fg 已全部上收到库（0.10.0，qa#614 定 AAA 7:1）。本地不要再声明，会遮死库的值。
+     原本地值浅色实测全部不达标（text 2.57 海外 / image 4.51 / video 2.89 / embedding 4.10 / reranker 4.01 / audio 2.08）。
+     text-fg 原取 var(--mg-brand-base)：国内蓝达标、海外品牌绿只有 2.57，换市场就掉链子 —— 库已改为按市场分档的固定值。 */
   --mg-modality-text-bg: var(--mg-brand-selected-bg);
-  --mg-modality-text-fg: var(--mg-brand-base);
   --mg-modality-text-border: color-mix(in oklab, var(--mg-brand-base) 22%, transparent);
   --mg-modality-image: #8b5cf6;
   --mg-modality-image-bg: color-mix(in oklab, var(--mg-modality-image) 10%, transparent);
   --mg-modality-image-bg-hover: color-mix(in oklab, var(--mg-modality-image) 16%, transparent);
-  --mg-modality-image-fg: #7c3aed;
   --mg-modality-image-border: color-mix(in oklab, var(--mg-modality-image) 24%, transparent);
   --mg-accent-purple: var(--mg-modality-image);
   --mg-accent-purple-bg: var(--mg-modality-image-bg);
@@ -440,21 +438,17 @@
   --mg-accent-purple-border: var(--mg-modality-image-border);
   --mg-modality-audio-bg: var(--mg-success-bg);
   --mg-modality-audio-bg-hover: var(--mg-success-bg-hover);
-  --mg-modality-audio-fg: var(--mg-success-text);
   --mg-modality-audio-border: var(--mg-success-border);
   --mg-modality-video: #f97316;
   --mg-modality-video-bg: color-mix(in oklab, var(--mg-modality-video) 10%, transparent);
   --mg-modality-video-bg-hover: color-mix(in oklab, var(--mg-modality-video) 16%, transparent);
-  --mg-modality-video-fg: #ea580c;
   --mg-modality-video-border: color-mix(in oklab, var(--mg-modality-video) 24%, transparent);
   --mg-modality-embedding: #eab308;
   --mg-modality-embedding-bg: color-mix(in oklab, var(--mg-modality-embedding) 12%, transparent);
   --mg-modality-embedding-bg-hover: color-mix(in oklab, var(--mg-modality-embedding) 18%, transparent);
-  --mg-modality-embedding-fg: #a16207;
   --mg-modality-embedding-border: color-mix(in oklab, var(--mg-modality-embedding) 28%, transparent);
   --mg-modality-reranker-bg: var(--mg-fill-0);
   --mg-modality-reranker-bg-hover: var(--mg-fill-1);
-  --mg-modality-reranker-fg: var(--mg-text-2);
   --mg-modality-reranker-border: var(--mg-border);
   --mg-featured-chip-bg: rgba(255, 255, 255, 0.08);
   --mg-featured-chip-border: rgba(255, 255, 255, 0.15);
@@ -515,16 +509,14 @@
   --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.05);
   --shadow-md: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 10px -2px rgba(16, 24, 40, 0.06), 0 10px 24px -8px rgba(16, 24, 40, 0.08);
   --shadow-lg: 0 2px 4px rgba(16, 24, 40, 0.04), 0 8px 20px -4px rgba(16, 24, 40, 0.08), 0 20px 40px -12px rgba(16, 24, 40, 0.12);
-  --mg-shadow-hover-sm: 0 4px 12px -6px rgba(16, 24, 40, 0.14);
-  --mg-shadow-hover-md: 0 10px 28px -12px rgba(16, 24, 40, 0.20), 0 0 0 1px color-mix(in oklab, var(--mg-brand-base) 10%, transparent);
-  --mg-shadow-hover-lg: 0 18px 48px -18px rgba(16, 24, 40, 0.24), 0 0 0 1px color-mix(in oklab, var(--mg-brand-base) 12%, transparent);
   --mg-hover-y-sm: -1px;
   --mg-hover-y-md: -2px;
   --mg-hover-y-lg: -3px;
 
   /* 卡片语言（Apple 风：淡边框 + 柔和扩散阴影撑层次，2026-07-23 与用户定，仅控制台）。
-     浅色：边框降到近乎 hairline，靠多层柔和阴影"浮起"，不再硬线框。 */
-  --mg-card-border: rgba(16, 24, 40, 0.05);
+     浅色边框已上收到库（0.10.0 = rgba(16,24,40,0.13)）—— UI 侧 qa#615 裁决：只提 alpha 不换色相，
+     仍是「淡边框、近乎 hairline」，与 7-23 的意图不冲突，只是补到治理文档第 5 节要求的
+     hairline 对比 ≥1.3（原 .05 只有 1.11，在玻璃画布上糊边）。本地不再声明。 */
   --mg-card-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 6px 16px -6px rgba(16, 24, 40, 0.10), 0 16px 32px -14px rgba(16, 24, 40, 0.08);
 
   /* 导航 */
@@ -571,12 +563,8 @@ body[theme-mode='dark'] {
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.04);
   --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.04);
-  --mg-shadow-hover-sm: 0 6px 16px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(255, 255, 255, 0.04);
-  --mg-shadow-hover-md: 0 12px 30px rgba(0, 0, 0, 0.38), 0 0 0 1px rgba(255, 255, 255, 0.05);
-  --mg-shadow-hover-lg: 0 20px 52px rgba(0, 0, 0, 0.46), 0 0 0 1px rgba(255, 255, 255, 0.06);
 
   /* 卡片语言（深色：阴影在暗底近乎不可见，改靠「顶部高光描边 + inset 高光」提亮浮起，配柔和烟灰投影） */
-  --mg-card-border: rgba(255, 255, 255, 0.08);
   --mg-card-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 28px -10px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
 
   /* 导航 */
@@ -603,18 +591,8 @@ body[theme-mode='dark'] {
   --mg-btn-neutral-text: #f0f0f2;
   --mg-btn-neutral-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   --mg-btn-neutral-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.2);
-  --mg-modality-image-fg: #c4b5fd;
-  --mg-modality-video-fg: #fed7aa;
-  --mg-modality-embedding-fg: #fde68a;
-  --mg-modality-reranker-fg: var(--mg-text-2);
 
   /* 图表分类色暗色档 — 同一批 hue 为暗色面重新取步（dataviz 校验器暗色 PASS） */
-  --mg-chart-cat-1: #3987e5;
-  --mg-chart-cat-2: #199e70;
-  --mg-chart-cat-3: #c98500;
-  --mg-chart-cat-4: #008300;
-  --mg-chart-cat-5: #9085e9;
-  --mg-chart-cat-6: #e66767;
   --chart-cat-1: var(--mg-chart-cat-1);
   --chart-cat-2: var(--mg-chart-cat-2);
   --chart-cat-3: var(--mg-chart-cat-3);

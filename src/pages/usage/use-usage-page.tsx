@@ -16,7 +16,7 @@ import { formatDuration } from '@/lib/format-date'
 import type { UsageRankingItem } from '@/types'
 import { LuBot, LuKey, LuKeyRound, LuUsers } from 'react-icons/lu'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
-import { type Metric, rangeToDates, formatMoney, formatNumber } from './usage-utils'
+import { type Metric, rangeToDates, formatMoney, formatNumber, USAGE_TIME_RANGE_PRESETS } from './usage-utils'
 import type { CostSourceSection } from './usage-panels'
 import { useUsageQueries } from './use-usage-queries'
 
@@ -31,8 +31,9 @@ function initialTimeRangeFromParams(sp: URLSearchParams): DateRangeValue {
   const rangeEnd = sp.get('range_end')
   if (rangeStart && rangeEnd) return { preset: 'custom', startDate: rangeStart, endDate: rangeEnd }
   const tr = sp.get('time_range')
-  const valid = ['today', '7d', '30d', 'thisMonth', 'lastMonth']
-  if (tr && valid.includes(tr)) return { preset: tr }
+  // 值域走 usage-utils 的导出常量（qa#617）：原先这里内联一份数组，上游总览页
+  // 拼深链时无从校验，参数写错也不会有任何提示 —— 集中一处才能被测试锁住
+  if (tr && (USAGE_TIME_RANGE_PRESETS as readonly string[]).includes(tr)) return { preset: tr }
   return DEFAULT_TIME_RANGE
 }
 

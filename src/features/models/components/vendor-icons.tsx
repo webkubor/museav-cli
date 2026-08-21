@@ -37,6 +37,11 @@ import Volcengine from '@lobehub/icons/es/Volcengine'
 import AzureAI from '@lobehub/icons/es/AzureAI'
 import OpenCode from '@lobehub/icons/es/OpenCode'
 import FastGPT from '@lobehub/icons/es/FastGPT'
+import {
+  BRAND_ALIASES,
+  pickIconComponent,
+  resolveVendorKeyFrom,
+} from './icon-resolve'
 
 /**
  * 厂商图标工厂：vendor 名（小写）→ 按尺寸渲染图标。
@@ -51,6 +56,11 @@ const ICON_FACTORY: Record<string, (size: number) => React.ReactNode> = {
   google:    (s) => <Google.Color size={s} />,
   deepseek:  (s) => <DeepSeek.Color size={s} />,
   qwen:      (s) => <Qwen.Color size={s} />,
+  // 通义千问的 vendor 字段后端实际写 alibaba / aliyun（catalog 实测 text-embedding-v4
+  // 的 vendor 就是 "alibaba"），不补这两个 key 时 vendor 层解析不出、只能靠模型名推断（#791）
+  alibaba:   (s) => <Qwen.Color size={s} />,
+  aliyun:    (s) => <Qwen.Color size={s} />,
+  tongyi:    (s) => <Qwen.Color size={s} />,
   mistral:   (s) => <Mistral.Color size={s} />,
   ollama:    (s) => <Ollama size={s} />,
   meta:      (s) => <Meta.Color size={s} />,
@@ -99,27 +109,9 @@ const ICON_FACTORY: Record<string, (size: number) => React.ReactNode> = {
  * （deepseek / deepseek-v4 / deepseek-chat）会命中同一 key，只需展示一个图标。
  */
 export function resolveVendorKey(vendor: string | null | undefined): string | null {
-  if (!vendor) return null
-  const v = vendor.toLowerCase()
-  if (ICON_FACTORY[v]) return v
-  return Object.keys(ICON_FACTORY).find((k) => v.includes(k)) ?? null
+  return resolveVendorKeyFrom(Object.keys(ICON_FACTORY), vendor)
 }
 
-/**
- * 别名 → 规范品牌：多个 ICON_FACTORY key 实际是同一品牌/同一 logo，
- * 去重时需收敛到同一品牌，避免头部排出多个相同/同家图标。
- */
-const BRAND_ALIASES: Record<string, string> = {
-  claude: 'anthropic',
-  chatgpt: 'openai',
-  llama: 'meta',
-  kimi: 'moonshot',
-  ernie: 'baidu',
-  seedream: 'doubao',
-  skylark: 'doubao',
-  bytedance: 'doubao',
-  ark: 'doubao',
-}
 
 /** 解析厂商名命中的「规范品牌」（别名已收敛）。用于同品牌去重，只展示一个图标。 */
 export function resolveVendorBrand(vendor: string | null | undefined): string | null {
@@ -224,6 +216,7 @@ export function inferVendorByModelName(
   return null
 }
 
+// 纯逻辑在 icon-resolve.ts（不 import lobehub，故可单测）；本文件只负责真实图标表与 JSX
 type LobehubIconComp = React.ComponentType<{ size?: number }> & Record<string, React.ComponentType<{ size?: number }>>
 
 /**
@@ -243,16 +236,13 @@ const LOBEHUB_BY_NAME: Record<string, LobehubIconComp> = {
  * 按 lobehub 组件名解析图标（对应后端 logo_url，如 "OpenRouter.Color"）。
  * 格式：「图标名」或「图标名.变体」（变体如 Color / Mono / Text / Avatar）。
  * 命中精选表则渲染对应尺寸图标，否则返回 null（交由调用方走 vendor / 文字兜底）。
+ * 名字大小写不敏感，变体名保持大小写敏感（lobehub 的变体就是 Color/Mono/Text/Avatar）。
  */
 export function resolveLobehubIcon(
   logoRef: string | null | undefined,
   size = 28
 ): React.ReactNode | null {
-  if (!logoRef) return null
-  const [name, variant] = logoRef.split('.')
-  const Mod = LOBEHUB_BY_NAME[name]
-  if (!Mod) return null
-  const Comp = variant && Mod[variant] ? Mod[variant] : Mod
-  if (typeof Comp !== 'function') return null
+  const Comp = pickIconComponent(LOBEHUB_BY_NAME, logoRef) as LobehubIconComp | null
+  if (!Comp) return null
   return <Comp size={size} />
 }

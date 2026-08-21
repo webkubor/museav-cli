@@ -335,6 +335,9 @@ export async function streamExperienceMessage(opts: StreamExperienceMessageOptio
     },
     headers: Object.fromEntries(probe.headers.entries()),
     signal: opts.signal,
+    // 同 experience.ts：ai-sse-kit 0.2.0 起 credentials 不再默认 'include'，
+    // 本控制台是 cookie 会话鉴权，必须显式声明（漏了表现为静默 401，不报错）。
+    credentials: 'include',
   })) {
     // 统计帧：分流给 onStats，不进正文
     if (ev.event === 'modelgo.stats') {

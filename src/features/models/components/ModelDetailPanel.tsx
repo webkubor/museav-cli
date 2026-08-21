@@ -20,7 +20,7 @@ import { ModelIcon } from './ModelIcon'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
 import {
-  currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, vendorFromModelId, autoSummary, modelVendorLabel,
+  currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, vendorFromModelId, detailSummary, modelVendorLabel,
   priceTierLabel, catalogCardReplacesGridWithTiers, strikeOriginalPrice,
   pricingRuleGroups, pricingRuleLabel, pricingRulePriceText, withPriceFrom,
 } from '../model-format'
@@ -135,7 +135,8 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
   const replaceGridWithTiers = catalogCardReplacesGridWithTiers(detail.pricing, priceTiers)
 
   const capabilities = pickCapabilities(detail.tags, [detail.provider, detail.vendor, vendor])
-  const summary = detail.description?.trim() || detail.tagline?.trim() || autoSummary(detail, vendor, isZh)
+  // 详情位取长描述优先（prd#820 起与卡片位的 cardSummary 成对定义，见那边的注释）。
+  const summary = detailSummary(detail, vendor, isZh)
 
   return (
     <>

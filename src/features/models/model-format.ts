@@ -255,6 +255,40 @@ export function autoSummary(
   return `${vendor ? vendor + ' ' : ''}${modText} model${ctx ? `, ${ctx} context window` : ''}${free ? ', currently free' : ''}. Full description coming soon.`
 }
 
+/** cardSummary / detailSummary 的入参：autoSummary 那几个字段 + 两个文案字段。 */
+type SummarySource = Parameters<typeof autoSummary>[0] & { tagline?: string; description?: string }
+
+/**
+ * 卡片位（模型广场网格、体验选型弹窗）的简介取值：
+ * **tagline → description → autoSummary**。
+ *
+ * tagline 是 PRD §9.1 的「卡片短描述」，所以卡片仍然优先它；但 tagline 缺失时必须回落
+ * 长描述 description，不能直接跳到合成兜底句。
+ *
+ * shared/modelgo_prd#820：卡片此前只读 tagline（`model.tagline?.trim() || autoSummary(...)`），
+ * 而目录接口至今**一个模型都没有 tagline** —— cn 生产 43/43 空、test 53 个全空；description
+ * 反而 cn 生产 43/43 都有正经文案。于是广场每张卡都写「…详细简介待补充。」，点进详情又是
+ * 真描述，提单人看到的「广场与详情描述不一致」就是这个。回落到 description 后，43/43 张卡
+ * 立刻与详情同文，不必等运营逐个补 tagline（补了则自动优先 tagline，两条路不冲突）。
+ *
+ * 卡片侧长度由 CSS `-webkit-line-clamp: 2` 收口（PRD §7.3「简介最多两行」）：线上 description
+ * 最长 120 字符，两行放得下，不在 JS 里截断以免把中英文都切坏。
+ */
+export function cardSummary(model: SummarySource, vendor: string, isZh: boolean): string {
+  return model.tagline?.trim() || model.description?.trim() || autoSummary(model, vendor, isZh)
+}
+
+/**
+ * 详情页（Hero 简介）的取值：**description → tagline → autoSummary**。
+ *
+ * 与 cardSummary 只差前两项的优先级 —— 详情位要的是长描述，卡片位要的是短描述，
+ * 这是 PRD §9.1 对两个字段的定义（「卡片短描述与详情简介」），不是漂移。两处口径放在
+ * 一起是为了改一处时能立刻看见另一处的约定。
+ */
+export function detailSummary(model: SummarySource, vendor: string, isZh: boolean): string {
+  return model.description?.trim() || model.tagline?.trim() || autoSummary(model, vendor, isZh)
+}
+
 /**
  * 模型副标题（原厂名）的唯一取值规则：provider（对外厂商名，见 types/catalog.ts 注释
  * 「替代暴露上游的 vendor」）优先，退 vendor，都缺再退 fallback（默认平台名 ModelGo）。

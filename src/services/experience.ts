@@ -41,6 +41,10 @@ export async function streamExperienceChat(opts: StreamExperienceChatOptions): P
     body: { model: opts.model, messages: opts.messages, stream: true },
     headers: Object.fromEntries(probe.headers.entries()),
     signal: opts.signal,
+    // ai-sse-kit 0.2.0 起 credentials 不再默认 'include'（库侧理由：多数 AI 后端用
+    // Authorization 头，跨域强行 include 会让预检失败）。本控制台是 cookie 会话鉴权，
+    // 必须显式声明 —— 漏了不会报错，只是请求不带 cookie，表现为静默 401。
+    credentials: 'include',
   })) {
     accumulated += delta
     opts.onDelta(delta)

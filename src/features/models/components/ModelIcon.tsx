@@ -1,6 +1,6 @@
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
+import { iconSvgFor } from '@model-go/icons'
 import { cn, getFallbackAvatarText } from '@/lib/utils'
-import { resolveVendorIcon, resolveLobehubIcon, inferVendorByModelName } from './vendor-icons'
 
 /** 渲染模型图标所需的最小字段（CatalogModelItem / CatalogModelDetail 均兼容） */
 export interface ModelIconLike {
@@ -20,11 +20,17 @@ interface ModelIconProps {
 }
 
 /**
- * 统一的模型图标组件。四层兜底，全站复用：
- * 1. model.logo_url（后端 logo）
- * 2. 本地图标库 resolveVendorIcon(vendor)（含包含匹配）
- * 3. 模型名前缀推断 inferVendorByModelName（logs/usage/tasks 无 vendor 时兜底）
- * 4. 厂商名首字母文字块
+ * 统一的模型图标组件，全站复用。
+ *
+ * 解析逻辑在 `@model-go/icons` 里（厂牌图标 + vendor 别名索引 + 厂牌主色的唯一真源，
+ * 与运营后台共用同一份），本组件只负责渲染与兜底：
+ *   1. logo_url 是真实图片 URL → `<img>`（加载失败回退到下面几层）
+ *   2. 交给包解析：logo_url（图标名）→ vendor（含别名）→ 模型名前缀
+ *   3. 都不中 → 厂商名首字母文字块
+ *
+ * 为什么解析要放包里：控制台与运营后台原先各写一份 vendor 映射（45 条 vs 13 条、
+ * 各缺对方的条目），运营能选到控制台渲染不出的图标，就会静默掉到名字推断 ——
+ * 通义千问的 text-embedding-v4 因此渲染出 OpenAI 图标（需求方 #791）。
  */
 export function ModelIcon({ model, size = 32, rounded = 'rounded-md', className }: ModelIconProps) {
   const [imgError, setImgError] = useState(false)
@@ -36,9 +42,8 @@ export function ModelIcon({ model, size = 32, rounded = 'rounded-md', className 
   }
 
   const box = cn('shrink-0 inline-flex items-center justify-center overflow-hidden', rounded, className)
-  const iconSize = Math.round(size * 0.9)
   const logo = model.logo_url
-  // 真实图片 URL（http(s) / data / 绝对路径）才当 <img>，其余按 lobehub 组件名解析
+  // 真实图片 URL（http(s) / data / 绝对路径）才当 <img>，其余按图标名交给包解析
   const isImageUrl = !!logo && /^(https?:|data:|\/)/.test(logo)
 
   if (logo && isImageUrl && !imgError) {
@@ -53,18 +58,22 @@ export function ModelIcon({ model, size = 32, rounded = 'rounded-md', className 
     )
   }
 
-  // 依次尝试：lobehub 组件名 → vendor 本地映射 → 模型名前缀推断（logs/usage/tasks 无 vendor 时兜底）
-  const icon: ReactNode =
-    (logo && !isImageUrl ? resolveLobehubIcon(logo, iconSize) : null) ??
-    resolveVendorIcon(model.vendor, iconSize) ??
-    resolveVendorIcon(inferVendorByModelName(model.vendor), iconSize) ??
-    // vendor（如 logs 的 provider.name）无法解析时，再用模型名反查（deepseek-v4 → deepseek）
-    resolveVendorIcon(inferVendorByModelName(model.display_name), iconSize)
-  if (icon) {
+  const hit = iconSvgFor({
+    icon: isImageUrl ? null : logo,
+    vendor: model.vendor,
+    name: model.display_name,
+  })
+
+  if (hit) {
     return (
-      <span style={{ width: size, height: size }} className={box}>
-        {icon}
-      </span>
+      <span
+        // 包里的 SVG 用 width/height="1em"，所以尺寸靠 fontSize 给；单色图标走
+        // currentColor，会继承此处的文字色，深浅主题自动跟随
+        style={{ width: size, height: size, fontSize: Math.round(size * 0.9) }}
+        className={box}
+        // SVG 来自本仓依赖的产物（构建期内联），非用户输入
+        dangerouslySetInnerHTML={{ __html: hit.svg }}
+      />
     )
   }
 

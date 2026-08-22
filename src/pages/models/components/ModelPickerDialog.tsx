@@ -40,7 +40,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
-import { modelVendorLabel, currencySymbol, isZhLang } from '@/features/models/model-format'
+import { modelVendorLabel, currencySymbol, isZhLang, sortProtocols } from '@/features/models/model-format'
 import { cn, formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 import {
@@ -174,7 +174,7 @@ function compareRows(): Array<{ label: string; render: (m: CatalogModelItem) => 
     } },
     { label: i18n.t('modelsExperience.picker.cachePrice'), render: (m) => cachePriceLabel(m) },
     { label: i18n.t('modelsExperience.picker.modalityFlow'), render: (m) => <ModalityFlow model={m} /> },
-    { label: i18n.t('modelsExperience.picker.compatibleProtocols'), render: (m) => (m.protocols && m.protocols.length > 0 ? m.protocols.join(' / ') : 'openai') },
+    { label: i18n.t('modelsExperience.picker.compatibleProtocols'), render: (m) => (m.protocols && m.protocols.length > 0 ? sortProtocols(m.protocols).join(' / ') : 'openai') },
     {
       label: i18n.t('modelsExperience.picker.capabilityTags'),
       render: (m) => (
@@ -663,7 +663,7 @@ export function ModelPickerDialog({
                   <div>
                     <div className="text-xs text-mg-text-3 font-semibold">{t('modelsExperience.picker.compatibleProtocols')}</div>
                     <div className="flex flex-wrap gap-1.5 mt-1">
-                      {(detailModel.protocols && detailModel.protocols.length > 0 ? detailModel.protocols : ['openai']).map((p) => (
+                      {sortProtocols(detailModel.protocols && detailModel.protocols.length > 0 ? detailModel.protocols : ['openai']).map((p) => (
                         <span key={p} className="model-picker-dialog__detail-chip capitalize">{p}</span>
                       ))}
                     </div>

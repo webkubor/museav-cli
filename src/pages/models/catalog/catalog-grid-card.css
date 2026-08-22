@@ -99,7 +99,10 @@
 /* qa#286：文本模态用字母「T」而非图标，跟 12px 图标同高、字重加粗以保持可辨识度 */
 .mg-mcard-flow-text { font-size: 11px; font-weight: 700; line-height: 12px; }
 
-/* API 协议标签：分层描边（DESIGN.md 不给彩色实底，用描边区分） */
+/* API 协议标签：统一中性描边（需求方 2026-08-22 拍板，主动偏离 PRD 原型的
+ * openai=蓝/anthropic=紫分层配色 redesign.css:16185-16198 —— 协议无主次，
+ * 不与品牌色抢焦点）。is-openai/is-anthropic 变体类保留在 TSX 上，样式全部
+ * 收敛到 .mg-proto 基础态，后续要再分层时在这里加回。 */
 .mg-mcard-protocols { display: flex; flex-wrap: wrap; gap: 5px; }
 .mg-proto {
   padding: 1px 7px; border-radius: var(--radius-sm);
@@ -109,16 +112,6 @@
 }
 .mg-proto:not(:disabled) { cursor: pointer; }
 .mg-proto:not(:disabled):hover { color: var(--mg-text-1); }
-.mg-proto.is-openai {
-  color: var(--brand-base);
-  border-color: color-mix(in oklab, var(--brand-base) 40%, var(--mg-border));
-}
-.mg-proto.is-anthropic {
-  /* PRD 原型 redesign.css:16190-16193：Anthropic 协议走紫色 #705c8e（描边 38% 透明）。
-   * 控制台色板无紫色 token，按原型色值落地；设计侧收编紫色后再换 token。 */
-  color: #705c8e;
-  border-color: color-mix(in oklab, #705c8e 38%, var(--mg-border));
-}
 
 .mg-mcard-tags { display: flex; flex-wrap: wrap; gap: 5px; }
 .mg-mcard-tag {

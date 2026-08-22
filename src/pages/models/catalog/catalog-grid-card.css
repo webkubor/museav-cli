@@ -114,8 +114,10 @@
   border-color: color-mix(in oklab, var(--brand-base) 40%, var(--mg-border));
 }
 .mg-proto.is-anthropic {
-  color: var(--mg-text-2);
-  border-color: color-mix(in oklab, var(--mg-text-2) 30%, var(--mg-border));
+  /* PRD 原型 redesign.css:16190-16193：Anthropic 协议走紫色 #705c8e（描边 38% 透明）。
+   * 控制台色板无紫色 token，按原型色值落地；设计侧收编紫色后再换 token。 */
+  color: #705c8e;
+  border-color: color-mix(in oklab, #705c8e 38%, var(--mg-border));
 }
 
 .mg-mcard-tags { display: flex; flex-wrap: wrap; gap: 5px; }

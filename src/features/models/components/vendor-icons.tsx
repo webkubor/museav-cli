@@ -37,6 +37,8 @@ import Volcengine from '@lobehub/icons/es/Volcengine'
 import AzureAI from '@lobehub/icons/es/AzureAI'
 import OpenCode from '@lobehub/icons/es/OpenCode'
 import FastGPT from '@lobehub/icons/es/FastGPT'
+import Kling from '@lobehub/icons/es/Kling'
+import XiaomiMiMo from '@lobehub/icons/es/XiaomiMiMo'
 
 /**
  * 厂商图标工厂：vendor 名（小写）→ 按尺寸渲染图标。
@@ -87,6 +89,13 @@ const ICON_FACTORY: Record<string, (size: number) => React.ReactNode> = {
   volcengine:(s) => <Volcengine.Color size={s} />,
   volcano:   (s) => <Volcengine.Color size={s} />,
   azure:     (s) => <AzureAI.Color size={s} />,
+  // 可灵（快手）：catalog 里 vendor 写「快手」，含中文 key 才能命中（需求方#818）
+  kling:     (s) => <Kling.Color size={s} />,
+  kuaishou:  (s) => <Kling.Color size={s} />,
+  快手:      (s) => <Kling.Color size={s} />,
+  // 小米 MiMo（lobehub 无 Color 变体）
+  xiaomi:    (s) => <XiaomiMiMo size={s} />,
+  mimo:      (s) => <XiaomiMiMo size={s} />,
 }
 
 /**
@@ -119,6 +128,10 @@ const BRAND_ALIASES: Record<string, string> = {
   skylark: 'doubao',
   bytedance: 'doubao',
   ark: 'doubao',
+  // 可灵是快手的（vendor 写法有中英两种，见 #818）；MiMo 收敛到小米
+  kuaishou: 'kling',
+  快手: 'kling',
+  mimo: 'xiaomi',
 }
 
 /** 解析厂商名命中的「规范品牌」（别名已收敛）。用于同品牌去重，只展示一个图标。 */
@@ -203,6 +216,10 @@ const MODEL_PREFIX_TO_VENDOR: Array<[string, string]> = [
   ['perplexity', 'perplexity'], ['sonar', 'perplexity'],
   // Ollama
   ['ollama', 'ollama'],
+  // 可灵（kling-v3 / kling-v3-omni）
+  ['kling', 'kling'],
+  // 小米 MiMo（mimo-v2.5-pro / MiMo-V2-Omni，inferVendorByModelName 已先转小写）
+  ['mimo', 'xiaomi'],
 ]
 
 /**
@@ -234,7 +251,7 @@ const LOBEHUB_BY_NAME: Record<string, LobehubIconComp> = {
   OpenAI, OpenRouter, Anthropic, Claude, Gemini, Google, DeepSeek, Qwen, Mistral, Ollama,
   Meta, Moonshot, Kimi, Minimax, ChatGLM, Zhipu, Cohere, Groq, Baidu, Wenxin, Grok, XAI,
   Doubao, Hunyuan, Spark, Yi, Stepfun, Baichuan, InternLM, Together, Fireworks, Perplexity, Hailuo,
-  Volcengine, AzureAI, OpenCode, FastGPT,
+  Volcengine, AzureAI, OpenCode, FastGPT, Kling, XiaomiMiMo,
   // ByteDanceSeed 是后端写错的 lobehub 名，实际不存在，映射到 Doubao 兜底
   ByteDanceSeed: Doubao,
 } as unknown as Record<string, LobehubIconComp>

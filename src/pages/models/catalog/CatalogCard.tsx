@@ -30,9 +30,9 @@ import { CopyButton } from '@/components/ui/CopyButton'
 import { Button } from '@/components/ui/Button'
 import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 import {
-  MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, autoSummary, modelVendorLabel,
+  MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, cardSummary, modelVendorLabel,
   strikeOriginalPrice,
-  priceTiersForCard, priceTierLabel, catalogCardReplacesGridWithTiers,
+  priceTiersForCard, priceTierLabel, catalogCardReplacesGridWithTiers, hasPricingGradient, withPriceFrom,
 } from '@/features/models/model-format'
 import { hasPlaygroundExperience } from '../model-experience-data'
 import type { CatalogModelItem } from '@/types'
@@ -103,8 +103,11 @@ export function CatalogCard({
   // 否则卡片会「角标写限时免费、价格写 ¥10」自相矛盾。
   // 未配价（金额为 0/缺省且无限免标记）一律回落「—」而非「免费」——§9.1 价格为 0
   // 但未标 free 的仍按付费处理，写「免费」是误导（qa#624，与详情面板同口径）。
-  const input = priceText(isPerCall ? model.pricing?.per_call_price : model.pricing?.input_per_1m, symbol, isFree ? freeLabel : '—', unitSuffix, isFree)
-  const output = priceText(isPerCall ? undefined : model.pricing?.output_per_1m, symbol, isFree && !isPerCall ? freeLabel : '—', unitSuffix, isFree)
+  // 阶梯价（#800）：列表接口与详情同一份 pricing_rules。卡片不摆梯度表，只在
+  // 输入/输出价后面加「起」提示这是起始档（原型 marketplacePriceText 口径）。
+  const hasGradient = hasPricingGradient(model.pricing_rules)
+  const input = withPriceFrom(priceText(isPerCall ? model.pricing?.per_call_price : model.pricing?.input_per_1m, symbol, isFree ? freeLabel : '—', unitSuffix, isFree), hasGradient)
+  const output = withPriceFrom(priceText(isPerCall ? undefined : model.pricing?.output_per_1m, symbol, isFree && !isPerCall ? freeLabel : '—', unitSuffix, isFree), hasGradient)
   const cacheRead = priceText(isPerCall ? undefined : model.pricing?.cache_read_per_1m, symbol, isFree ? freeLabel : '—', unitSuffix, isFree)
   const cardTiers = priceTiersForCard(model.price_tiers)
   const strikeInputVal = strikeOriginalPrice(
@@ -130,7 +133,9 @@ export function CatalogCard({
   // original_* 若等于现价或为 0，直接渲染会变成「¥3 划掉 ¥3」「划掉 ¥0」。
   // qa#286：tagline 为空的模型此前简介行直接不渲染，卡片比同排矮一截；跟详情页
   // 同款兜底（真实字段拼一句事实性简介，不杜撰能力），两处口径一致。
-  const summary = model.tagline?.trim() || autoSummary(model, provider ?? '', isZh)
+  // prd#820：兜底句前面还得先回落 description —— 线上没有一个模型配了 tagline，
+  // 卡片却因此全部渲染「详细简介待补充。」，详情页显示真描述。口径见 cardSummary。
+  const summary = cardSummary(model, provider ?? '', isZh)
   // PRD §模型广场 AC-13「暂未开放」：模型本身可浏览详情/API，但没配置任何可体验任务时
   // 「去体验」按钮禁用并说明原因（原型 App.tsx:4619-4620/5076-5081 逐字对齐）。
   const hasExperience = hasPlaygroundExperience(model)

@@ -8,7 +8,11 @@
 
 import { afterAll, describe, expect, it } from 'vitest'
 import i18n from '@/i18n'
-import { catalogCardReplacesGridWithTiers, priceTierLabel, priceTiersForCard, priceUnitSuffix, strikeOriginalPrice } from './model-format'
+import {
+  catalogCardReplacesGridWithTiers, priceTierLabel, priceTiersForCard, priceUnitSuffix, strikeOriginalPrice,
+  pricingRuleGroups, hasPricingGradient, pricingRuleLabel, pricingRulePriceText, withPriceFrom,
+  autoSummary, cardSummary, detailSummary,
+} from './model-format'
 
 afterAll(async () => {
   await i18n.changeLanguage('zh')
@@ -113,5 +117,108 @@ describe('strikeOriginalPrice — 划线原价的有效性守卫', () => {
 
   it('现价缺省 → 无从比较，不划线', () => {
     expect(strikeOriginalPrice('5', undefined)).toBeNull()
+  })
+})
+
+/**
+ * shared/modelgo_prd#800：上下文阶梯价 pricing_rules（与 price_tiers 媒体矩阵价是两套东西）。
+ * 详情页按维度分组出「价格梯度」表，规格条/卡片一口价挂「起」。
+ */
+describe('pricing_rules — 上下文分档 / 峰时价（#800）', () => {
+  const rules = [
+    { dimension: 'peak_time', label: '09:00–12:00', start_time: '09:00', end_time: '12:00', timezone: 'Asia/Shanghai', mode: 'replace', input_per_1m: '6.72', output_per_1m: '26.88' },
+    { dimension: 'context_length', label: '0–128K', label_en: '0–128K', min: 0, max: 128000, input_per_1m: '0.80', output_per_1m: '4.8' },
+    { dimension: 'context_length', label: '256K以上', min: 256001, input_per_1m: '4', output_per_1m: '24' },
+  ]
+
+  it('按维度分组：context_length 在前、peak_time 在后，组内保持下发顺序', () => {
+    const groups = pricingRuleGroups(rules)
+    expect(groups.map((g) => g.dimension)).toEqual(['context_length', 'peak_time'])
+    expect(groups[0].rules.map((r) => r.label)).toEqual(['0–128K', '256K以上'])
+  })
+
+  it('未知维度丢弃；全是未知维度 → 没有梯度', () => {
+    const unknown = [{ dimension: 'image_spec', label: '1024×1024', input_per_1m: '1' }]
+    expect(pricingRuleGroups(unknown)).toEqual([])
+    expect(hasPricingGradient(unknown)).toBe(false)
+    expect(hasPricingGradient(undefined)).toBe(false)
+    expect(hasPricingGradient(rules)).toBe(true)
+  })
+
+  it('区间文案 label 优先，英文回落 label（256K以上 没配 label_en）', () => {
+    expect(pricingRuleLabel(rules[1], true)).toBe('0–128K')
+    expect(pricingRuleLabel(rules[2], false)).toBe('256K以上')
+  })
+
+  it('label 全缺才兜底拼：context 用 min/max，peak 用起止时间', () => {
+    expect(pricingRuleLabel({ dimension: 'context_length', min: 128001, max: 256000 }, true)).toBe('128K–256K')
+    expect(pricingRuleLabel({ dimension: 'context_length', min: 256001 }, true)).toBe('256K 以上')
+    expect(pricingRuleLabel({ dimension: 'context_length', min: 256001 }, false)).toBe('256K+')
+    expect(pricingRuleLabel({ dimension: 'peak_time', start_time: '09:00', end_time: '12:00' }, true)).toBe('09:00–12:00')
+  })
+
+  it('单元格价格与规格条同口径：符号 + 去尾零 + /unit（缺省 M）', () => {
+    expect(pricingRulePriceText(rules[1], 'input', '¥')).toBe('¥ 0.8/M')
+    expect(pricingRulePriceText(rules[0], 'output', '¥')).toBe('¥ 26.88/M')
+    expect(pricingRulePriceText({ dimension: 'context_length', input_per_1m: '2', unit: 'M' }, 'output', '¥')).toBe('—')
+  })
+
+  it('mode=multiplier 无绝对价 → 展示 ×倍率', () => {
+    expect(pricingRulePriceText({ dimension: 'peak_time', mode: 'multiplier', rate: '1.50' }, 'input', '¥')).toBe('×1.5')
+  })
+
+  it('「起」：中文缀在单位后、英文改 from 前缀；免费/未配价（unit 空）不挂', async () => {
+    await i18n.changeLanguage('zh')
+    expect(withPriceFrom({ value: '¥ 0.8', unit: '/M' }, true)).toEqual({ value: '¥ 0.8', unit: '/M 起' })
+    expect(withPriceFrom({ value: '¥ 0.8', unit: '/M' }, false)).toEqual({ value: '¥ 0.8', unit: '/M' })
+    expect(withPriceFrom({ value: '免费', unit: '' }, true)).toEqual({ value: '免费', unit: '' })
+    await i18n.changeLanguage('en')
+    expect(withPriceFrom({ value: '$ 0.8', unit: '/M' }, true)).toEqual({ value: 'from $ 0.8', unit: '/M' })
+  })
+})
+
+/**
+ * shared/modelgo_prd#820：广场卡片只读 tagline、不回落 description，而目录接口至今
+ * 一个模型都没有 tagline（cn 生产 43/43 空、test 53 个全空），于是每张卡都渲染
+ * autoSummary 的「详细简介待补充。」，点进详情又是真描述 —— 提单人看到的
+ * 「广场与详情描述不一致」。这一组把两个位置的回落链钉住。
+ */
+describe('cardSummary / detailSummary — 简介回落链（prd#820）', () => {
+  const base = { modalities: ['text'], context_length: 1_000_000 }
+
+  it('卡片：tagline 缺失时回落 description，不再跳到「详细简介待补充。」', () => {
+    const model = { ...base, description: 'DeepSeek V4 Flash 是面向低延迟与高吞吐场景的大语言模型。' }
+    expect(cardSummary(model, 'DeepSeek', true)).toBe(model.description)
+    expect(cardSummary(model, 'DeepSeek', true)).not.toContain('详细简介待补充')
+  })
+
+  it('卡片：tagline 有值时仍优先 tagline（PRD §9.1「卡片短描述」）', () => {
+    const model = { ...base, tagline: '低延迟高吞吐', description: '很长的详情描述' }
+    expect(cardSummary(model, 'DeepSeek', true)).toBe('低延迟高吞吐')
+  })
+
+  it('详情：description 优先，与卡片只差前两项顺序', () => {
+    const model = { ...base, tagline: '低延迟高吞吐', description: '很长的详情描述' }
+    expect(detailSummary(model, 'DeepSeek', true)).toBe('很长的详情描述')
+    expect(cardSummary(model, 'DeepSeek', true)).not.toBe(detailSummary(model, 'DeepSeek', true))
+  })
+
+  it('两个字段都空 → 两处都落到同一句 autoSummary，卡片不再空一行', () => {
+    const model = { ...base }
+    const auto = autoSummary(model, 'DeepSeek', true)
+    expect(cardSummary(model, 'DeepSeek', true)).toBe(auto)
+    expect(detailSummary(model, 'DeepSeek', true)).toBe(auto)
+    expect(auto).toContain('详细简介待补充')
+  })
+
+  it('纯空白的 tagline/description 当作没填（后端空值给空串，不是省略键）', () => {
+    const model = { ...base, tagline: '   ', description: '\n ' }
+    expect(cardSummary(model, 'DeepSeek', true)).toBe(autoSummary(model, 'DeepSeek', true))
+    expect(detailSummary(model, 'DeepSeek', true)).toBe(autoSummary(model, 'DeepSeek', true))
+  })
+
+  it('线上真实形态：无 tagline + 有 description → 卡片与详情逐字相同（本单的验收点）', () => {
+    const model = { ...base, description: 'DeepSeek V4 系列的效率型版本，响应更快。' }
+    expect(cardSummary(model, 'DeepSeek', true)).toBe(detailSummary(model, 'DeepSeek', true))
   })
 })

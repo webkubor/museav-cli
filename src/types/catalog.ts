@@ -53,8 +53,14 @@ export interface CatalogModelItem {
   default_experience_type?: string
   /** 模型级对比总开关 */
   compare_enabled?: boolean
-  /** 一句话卖点 */
+  /** 一句话卖点（PRD §9.1 的「卡片短描述」）；缺失时卡片回落 description，见 cardSummary */
   tagline?: string
+  /**
+   * 长描述（PRD §9.1 的「详情简介」）。**列表接口恒下发**（空值给空串，不省略键 ——
+   * shared/modelgo_prd#820 后端契约用例已守住），所以卡片回落到它不需要二次请求。
+   * 此前这个字段只声明在 CatalogModelDetail 上，卡片拿不到，才有了 #820 的症状。
+   */
+  description?: string
   /**
    * 「最新发布」角标由服务端判定（released_at 30 天窗口）。不要在前端按
    * released_at 自行计算 —— 会随本地时钟与时区翻转。
@@ -73,6 +79,13 @@ export interface CatalogModelItem {
    */
   price_tiers?: CatalogPriceTier[]
   /**
+   * token 模型的上下文分档 / 峰时价（shared/modelgo_prd#800）。与 price_tiers
+   * （视频按秒/图片按张的媒体矩阵价）是两套东西，互不替代；平坦一口价模型接口
+   * 省略该字段。起始档价格后端已写进 pricing.*，规格条继续展示起始档并加「起」，
+   * 完整档位在详情页「价格梯度」区块渲染。
+   */
+  pricing_rules?: CatalogPricingRule[]
+  /**
    * 促销叠加层。**存在即代表此刻生效** —— 生效判定在服务端用服务端时钟做，
    * 前端不得按时间窗口自行重算（接口也刻意不下发窗口）。
    * original_price 只是划线装饰，真实扣费是 pricing 里的正常价格。
@@ -86,6 +99,33 @@ export interface CatalogPriceTier {
   price: string
   unit: string
   bucket: string
+}
+
+/** 阶梯价规则（#800 契约）。dimension 目前两种：context_length（上下文分档）/
+ *  peak_time（峰值时段）；未知维度前端不渲染，等契约扩展后再加。 */
+export interface CatalogPricingRule {
+  dimension: 'context_length' | 'peak_time' | string
+  /** 区间展示文案，优先用（不要前端自己拼区间） */
+  label?: string
+  /** 英文文案；缺省回落 label */
+  label_en?: string
+  /** 上下文 token 上下界；最高档可能只有 min（「以上」） */
+  min?: number
+  max?: number
+  /** 每 1M token 单价，十进制字符串 */
+  input_per_1m?: string
+  output_per_1m?: string
+  cache_read_per_1m?: string
+  /** 峰值时段（dimension=peak_time） */
+  start_time?: string
+  end_time?: string
+  timezone?: string
+  /** replace（绝对价）或 multiplier（倍率） */
+  mode?: 'replace' | 'multiplier' | string
+  /** mode=multiplier 时的倍率 */
+  rate?: string
+  /** 计价单位，一般为 M */
+  unit?: string
 }
 
 export interface CatalogPromotion {

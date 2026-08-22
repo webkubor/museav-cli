@@ -11,7 +11,7 @@ import i18n from '@/i18n'
 import {
   catalogCardReplacesGridWithTiers, priceTierLabel, priceTiersForCard, priceUnitSuffix, strikeOriginalPrice,
   pricingRuleGroups, hasPricingGradient, pricingRuleLabel, pricingRulePriceText, withPriceFrom,
-  autoSummary, cardSummary, detailSummary,
+  autoSummary, cardSummary, detailSummary, sortProtocols,
 } from './model-format'
 
 afterAll(async () => {
@@ -220,5 +220,26 @@ describe('cardSummary / detailSummary — 简介回落链（prd#820）', () => {
   it('线上真实形态：无 tagline + 有 description → 卡片与详情逐字相同（本单的验收点）', () => {
     const model = { ...base, description: 'DeepSeek V4 系列的效率型版本，响应更快。' }
     expect(cardSummary(model, 'DeepSeek', true)).toBe(detailSummary(model, 'DeepSeek', true))
+  })
+})
+
+describe('sortProtocols — 协议展示统一顺序（QA：模型广场端点兼容顺序不一致）', () => {
+  it('固定 openai → anthropic → other，不跟后端数组顺序走', () => {
+    expect(sortProtocols(['other', 'anthropic', 'openai'])).toEqual(['openai', 'anthropic', 'other'])
+    expect(sortProtocols(['anthropic', 'openai'])).toEqual(['openai', 'anthropic'])
+  })
+
+  it('native（api-code-samples 内部枚举）排在 anthropic 之后', () => {
+    expect(sortProtocols(['native', 'openai', 'anthropic'])).toEqual(['openai', 'anthropic', 'native'])
+  })
+
+  it('未知值排最后且稳定；不修改入参数组', () => {
+    const input = ['zzz', 'other', 'aaa']
+    expect(sortProtocols(input)).toEqual(['other', 'zzz', 'aaa'])
+    expect(input).toEqual(['zzz', 'other', 'aaa'])
+  })
+
+  it('空数组原样返回', () => {
+    expect(sortProtocols([])).toEqual([])
   })
 })

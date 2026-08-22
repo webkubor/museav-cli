@@ -22,7 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import {
   currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, vendorFromModelId, detailSummary, modelVendorLabel,
   priceTierLabel, catalogCardReplacesGridWithTiers, strikeOriginalPrice,
-  pricingRuleGroups, pricingRuleLabel, pricingRulePriceText, withPriceFrom,
+  pricingRuleGroups, pricingRuleLabel, pricingRulePriceText, withPriceFrom, sortProtocols,
 } from '../model-format'
 import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 
@@ -186,7 +186,7 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
 
           <div className="mg-detail-tags">
             {detail.modalities.map((m) => <ModalityBadge key={m} modality={m} />)}
-            {(detail.protocols ?? []).map((p) => (
+            {sortProtocols(detail.protocols ?? []).map((p) => (
               <span key={p} className={`mg-proto is-${p}`}>{protocolLabel(p, isZh)}</span>
             ))}
             {capabilities.map((c) => (

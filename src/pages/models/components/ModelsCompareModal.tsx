@@ -10,7 +10,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { cn, formatContextLength, trimPriceZeros } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
-import { modelVendorLabel, currencySymbol, isZhLang, priceTierLabel } from '@/features/models/model-format'
+import { modelVendorLabel, currencySymbol, isZhLang, priceTierLabel, sortProtocols } from '@/features/models/model-format'
 import {
   resolveModelCategory, modelExperienceTasks, isPaidModel,
   type ExperienceCategoryKey, type ExperienceTaskType,
@@ -231,7 +231,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
     ) },
     {
       label: t('modelsCompare.row.protocols'),
-      render: (m) => (m.protocols && m.protocols.length > 0 ? m.protocols.join(' / ') : 'openai'),
+      render: (m) => (m.protocols && m.protocols.length > 0 ? sortProtocols(m.protocols).join(' / ') : 'openai'),
     },
     {
       label: t('modelsCompare.row.tags'),

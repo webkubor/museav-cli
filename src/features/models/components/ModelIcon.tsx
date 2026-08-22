@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { iconSvgFor } from '@model-go/icons'
 import { cn, getFallbackAvatarText } from '@/lib/utils'
+import { modelIconVendor } from './model-icon-vendor'
 
 /** 渲染模型图标所需的最小字段（CatalogModelItem / CatalogModelDetail 均兼容） */
 export interface ModelIconLike {
   logo_url?: string | null
+  /** 对外模型厂牌；目录卡优先用它，避免内部上游名覆盖用户看到的品牌。 */
+  provider?: string | null
   vendor?: string
   display_name: string
 }
@@ -43,6 +46,7 @@ export function ModelIcon({ model, size = 32, rounded = 'rounded-md', className 
 
   const box = cn('shrink-0 inline-flex items-center justify-center overflow-hidden', rounded, className)
   const logo = model.logo_url
+  const vendor = modelIconVendor(model)
   // 真实图片 URL（http(s) / data / 绝对路径）才当 <img>，其余按图标名交给包解析
   const isImageUrl = !!logo && /^(https?:|data:|\/)/.test(logo)
 
@@ -50,7 +54,7 @@ export function ModelIcon({ model, size = 32, rounded = 'rounded-md', className 
     return (
       <img
         src={logo}
-        alt={model.vendor ?? model.display_name}
+        alt={vendor ?? model.display_name}
         style={{ width: size, height: size }}
         className={cn(box, 'object-contain')}
         onError={() => setImgError(true)}
@@ -60,7 +64,7 @@ export function ModelIcon({ model, size = 32, rounded = 'rounded-md', className 
 
   const hit = iconSvgFor({
     icon: isImageUrl ? null : logo,
-    vendor: model.vendor,
+    vendor,
     name: model.display_name,
   })
 
@@ -82,7 +86,7 @@ export function ModelIcon({ model, size = 32, rounded = 'rounded-md', className 
       style={{ width: size, height: size, fontSize: Math.round(size * 0.4) }}
       className={cn(box, 'bg-mg-fill-0 font-bold text-mg-text-3 uppercase')}
     >
-      {getFallbackAvatarText(model.vendor ?? model.display_name)}
+      {getFallbackAvatarText(vendor ?? model.display_name)}
     </span>
   )
 }

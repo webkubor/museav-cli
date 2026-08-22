@@ -9,6 +9,7 @@
  * 协议单一来源：代码 Tab 从 protocols 派生，无对应协议时不显示空 Tab（§11「协议单一来源」）。
  */
 import { getGatewayDomain } from '@/config/gateway'
+import { sortProtocols } from '@/features/models/model-format'
 
 export type ApiProtocol = 'openai' | 'anthropic' | 'native'
 export type ApiCodeLanguage = 'curl' | 'nodejs' | 'python' | 'typescript' | 'claudeCode'
@@ -62,7 +63,8 @@ export function languageLabel(protocol: ApiProtocol, language: ApiCodeLanguage):
 
 /** CatalogModelItem/Detail 的 protocols 用 'other'，本模块内部用 'native'——统一在此映射，避免各处各写一份。 */
 export function mapApiProtocols(protocols: ('openai' | 'anthropic' | 'other')[] | undefined): ApiProtocol[] {
-  return (protocols ?? []).map((p) => (p === 'other' ? 'native' : p))
+  // 顺序统一 sortProtocols（QA：端点兼容顺序不一致），协议 Tab 顺序不再跟后端数组走
+  return sortProtocols((protocols ?? []).map((p) => (p === 'other' ? 'native' : p)))
 }
 
 /** 固定代码示例模板：不读取当前草稿、附件和模型参数，只做格式展示 */

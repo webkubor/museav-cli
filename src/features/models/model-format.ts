@@ -206,6 +206,22 @@ export function protocolLabel(protocol: string, isZh: boolean): string {
   return (isZh ? PROTOCOL_LABEL_ZH : PROTOCOL_LABEL_EN)[protocol] ?? protocol
 }
 
+/**
+ * 协议展示统一顺序（QA：模型广场「端点兼容」顺序不一致）：openai → anthropic → other。
+ * 后端下发的 protocols 数组顺序不保证，前端任何展示（卡片 chips / 详情标签 / 对比行 /
+ * API 接入 Tab）前一律过这里排序；与侧栏筛选固定顺序（CatalogSidebar）对齐。
+ * 未知值排最后且保持相对稳定（sort 在 V8 里是稳定排序）。
+ * 源头治理单：qa/ai-quality-platform#685（管理后台提交侧校验归一，OpenAI 恒在前）。
+ */
+const PROTOCOL_ORDER = ['openai', 'anthropic', 'other', 'native']
+export function sortProtocols<T extends string>(protocols: readonly T[]): T[] {
+  const rank = (p: string) => {
+    const i = PROTOCOL_ORDER.indexOf(p)
+    return i === -1 ? PROTOCOL_ORDER.length : i
+  }
+  return [...protocols].sort((a, b) => rank(a) - rank(b))
+}
+
 export const MODALITY_CODES = ['text', 'image', 'audio', 'video']
 
 /**

@@ -31,7 +31,7 @@ import { Button } from '@/components/ui/Button'
 import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 import {
   MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, cardSummary, modelVendorLabel,
-  strikeOriginalPrice,
+  strikeOriginalPrice, sortProtocols,
   priceTiersForCard, priceTierLabel, catalogCardReplacesGridWithTiers, hasPricingGradient, withPriceFrom,
 } from '@/features/models/model-format'
 import { hasPlaygroundExperience } from '../model-experience-data'
@@ -213,7 +213,7 @@ export function CatalogCard({
       {/* API 协议：可点击反查筛选 */}
       {(model.protocols ?? []).length > 0 && (
         <div className="mg-mcard-protocols" aria-label={t('modelsCatalog.sidebar.apiProtocolAria')}>
-          {(model.protocols ?? []).map((p) => (
+          {sortProtocols(model.protocols ?? []).map((p) => (
             <button
               key={p}
               type="button"

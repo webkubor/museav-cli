@@ -15,7 +15,9 @@ import { formatMoney } from '@/lib/utils'
 import { formatDuration } from '@/lib/format-date'
 import { abbreviateNumber } from '@/features/dashboard/workbench/shared'
 import { getLogsSummary } from '@/services/logs'
+import { getAsyncTasksSummary } from '@/services/tasks'
 import type { LogStatsParams } from '@/interfaces/logs'
+import type { TaskSummaryParams } from '@/types'
 
 const EM_DASH = '—'
 
@@ -117,6 +119,80 @@ export function SyncLogsSummary({ params }: { params: LogStatsParams }) {
       label: t('logs.summary.avgDuration'),
       value: duration(data?.avg_duration_ms),
       sub: t('logs.summary.avgTtft', { value: duration(data?.avg_ttft_ms) }),
+    },
+  ]
+
+  return <SummaryTiles tiles={tiles} loading={isLoading} />
+}
+
+/**
+ * 异步任务 Summary：六项指标跟随全部筛选（需求方#668）。
+ * 外观与同步侧共用 SummaryTiles，指标定义按 PRD 的「异步任务」段。
+ * 数据源 GET /async-tasks/summary（后端 qa#605）。
+ */
+export function AsyncTasksSummaryBar({ params }: { params: TaskSummaryParams }) {
+  const { t } = useTranslation()
+  const { symbol } = useCurrency()
+  const activeTenantId = useAuthStore((s) => s.activeTenantId)
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['async-tasks-summary', activeTenantId, params],
+    queryFn: () => getAsyncTasksSummary(params),
+    enabled: Boolean(activeTenantId),
+    staleTime: 10_000,
+    refetchOnWindowFocus: false,
+    retry: false,
+    meta: { silentError: true }, // 拉取失败静默显 —，不打断列表主流程（同同步侧）
+  })
+
+  // 处理中 = 排队中 + 执行中（PRD）。两个字段任一缺失就显 —，而不是把 undefined
+  // 当 0 加进去 —— 那会把「读不到」渲染成「本来就没有」。
+  const inFlight = (() => {
+    const q = data?.queued_tasks
+    const r = data?.running_tasks
+    if (typeof q !== 'number' || typeof r !== 'number') return EM_DASH
+    return (q + r).toLocaleString()
+  })()
+
+  const tiles: SummaryTile[] = [
+    {
+      label: t('logs.asyncSummary.totalTasks'),
+      value: count(data?.total_tasks),
+    },
+    {
+      label: t('logs.asyncSummary.completionRate'),
+      value: pct(data?.succeeded_tasks, data?.total_tasks),
+      sub: t('logs.asyncSummary.succeededCount', { value: count(data?.succeeded_tasks) }),
+    },
+    {
+      label: t('logs.asyncSummary.inFlight'),
+      value: inFlight,
+      sub: t('logs.asyncSummary.queuedRunning', {
+        queued: count(data?.queued_tasks),
+        running: count(data?.running_tasks),
+      }),
+    },
+    {
+      // failed_or_expired_tasks 用后端给的合计值，不在前端做 failed + expired ——
+      // QA 已实测两者相等，前端重算只会在后端口径变化时悄悄分叉。
+      label: t('logs.asyncSummary.failedOrExpired'),
+      value: count(data?.failed_or_expired_tasks),
+      sub: t('logs.asyncSummary.failedRatio', {
+        value: pct(data?.failed_or_expired_tasks, data?.total_tasks),
+      }),
+    },
+    {
+      // 币种用租户结算币种（useCurrency），**不用响应里的 currency** ——
+      // 后端那个字段取的是少数派币种（QA 实测 15/2380 条 USD 就把整体标成 USD）。
+      // 金额本身跨币种裸求和的问题归后端修（qa#669），前端至少不再叠加一个错误的币种符号。
+      label: t('logs.asyncSummary.totalSpend'),
+      value: data?.total_spend !== undefined ? formatMoney(data.total_spend, symbol) : EM_DASH,
+      sub: t('logs.asyncSummary.pendingBilling', { value: count(data?.pending_billing_tasks) }),
+    },
+    {
+      label: t('logs.asyncSummary.availableProducts'),
+      value: count(data?.available_products),
+      sub: t('logs.asyncSummary.expiredProducts', { value: count(data?.expired_products) }),
     },
   ]
 

@@ -19,6 +19,7 @@ import {
   TableRow,
 } from '@/components/ui/Table'
 import { useAuthStore } from '@/store/auth'
+import { AsyncTasksSummaryBar } from '@/pages/logs/summary'
 import { listTasks } from '@/services/tasks'
 import { listWorkspaces } from '@/services/workspaces'
 import { listTenantMembers } from '@/services/tenants'
@@ -26,7 +27,7 @@ import { listApiKeys } from '@/services/api-keys'
 import { trackEvent } from '@/lib/track'
 import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import { cn } from '@/lib/utils'
-import type { TaskArtifactState, TaskBillingState, TaskItem } from '@/types'
+import type { TaskArtifactState, TaskBillingState, TaskItem, TaskSummaryParams } from '@/types'
 import { VideoPreviewModal } from './VideoPreviewModal'
 import { PAGE_SIZE, REFRESH_INTERVAL, EMPTY_TASK_ITEMS, timePresetOptions, resolveKind, getArtifactState, isVideoExpired } from './task-list-utils'
 import { TaskDetailSheet } from './TaskDetailSheet'
@@ -102,6 +103,16 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
     limit: PAGE_SIZE,
     offset,
   }), [statusFilter, artifactFilter, billingFilter, presetFilter, debouncedSearch, offset, view, currentAccountId, workspaceFilter, apiKeyFilter, memberFilter])
+
+  // Summary 参数 = 列表参数去掉分页（需求方#668：Summary 按全部筛选算、与列表同口径）。
+  // 从 params 派生而不是另拼一份 —— 同步侧当初两处各写一套，才会出现误接
+  // model-logs/stats、数值与列表差 20 倍的事故。这里让「同口径」由结构保证。
+  const summaryParams = useMemo(() => {
+    const rest: TaskSummaryParams = { ...params }
+    delete rest.limit
+    delete rest.offset
+    return rest
+  }, [params])
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['tasks', tenantId, params],
@@ -264,6 +275,13 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
           onMemberChange={handleMember}
         />
       )}
+
+      {/*
+        Summary 指标条（需求方#668）：位置对齐同步侧 —— 筛选器下方、列表上方，在筛选白卡内。
+        参数用 summaryParams（从列表 params 去掉分页派生），保证「Summary 与列表结果完全一致」
+        是结构性的：列表加新筛选会自动带上，不靠人记得两处都改。
+      */}
+      <AsyncTasksSummaryBar params={summaryParams} />
       </section>
 
       {/* 提示条：只放唯一注意事项（有效期/保存），不与页头描述重复 */}

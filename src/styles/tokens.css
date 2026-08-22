@@ -35,55 +35,22 @@
   --mg-primary-active:   var(--brand-deep);
   --mg-primary-disabled: var(--brand-light);
   --mg-primary-light:    var(--brand-pale);
-  --mg-on-primary:       #ffffff; /* 品牌底上的前景（白），与主按钮文字同源 */
-  --mg-danger:           var(--mg-error);
-  --mg-success-text:     var(--mg-success);
-  --mg-success-bg:       color-mix(in oklab, var(--mg-success) 10%, transparent);
-  --mg-success-bg-hover: color-mix(in oklab, var(--mg-success) 16%, transparent);
-  --mg-success-border:   color-mix(in oklab, var(--mg-success) 28%, transparent);
-  --mg-warning:          #FFA000; /* 警示橙本体：部署环境不依赖 node_modules 缓存 */
-  --mg-warning-text:     var(--mg-warning);
-  --mg-warning-bg:       color-mix(in oklab, var(--mg-warning) 11%, transparent);
-  --mg-warning-bg-hover: color-mix(in oklab, var(--mg-warning) 17%, transparent);
-  --mg-warning-border:   var(--mg-warning);
-  --mg-error-text:       var(--mg-error);
-  --mg-error-bg:         color-mix(in oklab, var(--mg-error) 9%, transparent);
-  --mg-error-bg-hover:   color-mix(in oklab, var(--mg-error) 15%, transparent);
-  --mg-error-border:     color-mix(in oklab, var(--mg-error) 28%, transparent);
-  --mg-info-text:        var(--mg-info);
-  --mg-info-bg:          color-mix(in oklab, var(--mg-info) 9%, transparent);
-  --mg-info-bg-hover:    color-mix(in oklab, var(--mg-info) 15%, transparent);
-  --mg-info-border:      color-mix(in oklab, var(--mg-info) 26%, transparent);
-  --mg-danger-text:      var(--mg-error-text);
-  --mg-danger-bg:        var(--mg-error-bg);
-  --mg-danger-bg-hover:  var(--mg-error-bg-hover);
-  --mg-danger-border:    var(--mg-error-border);
-  --mg-favorite:         var(--mg-error);
-  --mg-favorite-bg-hover: var(--mg-error-bg-hover);
-  --mg-chart-cat-1: #2a78d6;
-  --mg-chart-cat-2: #1baf7a;
-  --mg-chart-cat-3: #eda100;
-  --mg-chart-cat-4: #008300;
-  --mg-chart-cat-5: #4a3aa7;
-  --mg-chart-cat-6: #e34948;
-  --mg-chart-cat-1-bg: color-mix(in oklab, var(--mg-chart-cat-1) 10%, transparent);
-  --mg-chart-cat-2-bg: color-mix(in oklab, var(--mg-chart-cat-2) 10%, transparent);
-  --mg-chart-cat-3-bg: color-mix(in oklab, var(--mg-chart-cat-3) 12%, transparent);
-  --mg-chart-cat-4-bg: color-mix(in oklab, var(--mg-chart-cat-4) 10%, transparent);
-  --mg-chart-cat-5-bg: color-mix(in oklab, var(--mg-chart-cat-5) 10%, transparent);
-  --mg-chart-cat-6-bg: color-mix(in oklab, var(--mg-chart-cat-6) 10%, transparent);
-  --mg-chart-cat-1-border: color-mix(in oklab, var(--mg-chart-cat-1) 30%, transparent);
-  --mg-chart-cat-2-border: color-mix(in oklab, var(--mg-chart-cat-2) 30%, transparent);
-  --mg-chart-cat-3-border: color-mix(in oklab, var(--mg-chart-cat-3) 34%, transparent);
-  --mg-chart-cat-4-border: color-mix(in oklab, var(--mg-chart-cat-4) 30%, transparent);
-  --mg-chart-cat-5-border: color-mix(in oklab, var(--mg-chart-cat-5) 30%, transparent);
-  --mg-chart-cat-6-border: color-mix(in oklab, var(--mg-chart-cat-6) 30%, transparent);
+  /* ⚠️ --mg-success-text / --mg-warning-text / --mg-error-text / --mg-info-text 已上收到库（0.10.0，qa#614）。
+     本地不要再声明：index.css 里库在本文件之前 @import，同选择器同特异性后者胜，
+     写在这儿会把库的 AAA 值遮死。原写法 `-text: var(--mg-success)` 是拿填充级语义色当文字色，
+     浅色实测 1.77~3.01，四端所有状态 badge 都受影响 —— 那正是 qa#614 的根因。 */
+  /* --mg-warning 已上收到库：库 :root 同值 #FFA000，且 [data-theme='dark'] 另给莫兰迪 #cda971。
+     本地在 :root 写一条会把库的深色档压死（原注释的「不依赖 node_modules 缓存」不成立：
+     库缺失时几百个 token 一起失效，单独兜住一个 warning 没有意义）。 */
   --mg-link:             var(--brand-base);
-  --mg-link-hover:       var(--brand-mid);
-  --mg-nav-text-active:  var(--brand-deep);
-  --mg-nav-icon-active:  var(--brand-base);
+  /* --mg-nav-text-active 交给库：深色档库给 var(--mg-brand-mid) 提亮，本地这条 :root 会把它压成 deep（深色下过暗）。 */
   --nav-item-active-bg:  var(--brand-selected-bg);
   --shadow-focus: 0 0 0 3px var(--brand-glow);
+  /* ⚠️ 与库值**真的不同**，不是冗余副本，别当重复声明删掉（qa#611 ④ 清理时逐条实测确认）：
+     本地 var(--brand-glow) 解析后 alpha = 0.14；库 0.11.0 是
+     color-mix(in oklab, var(--mg-brand-base) 35%, transparent) → alpha = 0.35。
+     差 2.5 倍，焦点环明显程度是可见差异，属设计口径分歧，需 UI 定后再决定谁对。
+     在定论之前保留本地值，避免无授权改动全站焦点态观感。 */
   --mg-focus-ring: var(--shadow-focus);
 
   /* 圆角 — 转发共享 --mg-radius-*（控制台特有命名 --radius-* 保留，值对齐 SSoT） */
@@ -91,7 +58,6 @@
   --radius-md:   var(--mg-radius-md);    /* 14px */
   --radius-lg:   var(--mg-radius-lg);    /* 18px */
   --radius-full: var(--mg-radius-pill);  /* 999px（原本地 9999px，对齐 SSoT） */
-  --mg-radius-control: var(--mg-radius-md);
 
   /* 字体：2026-08-06 收敛进 SSOT —— 原来这里自持一套「Inter 优先」并注释「不收敛」，
      结果同一个「推荐排序」在规范预览页与控制台里西文/数字不一样。需求方定以控制台
@@ -110,57 +76,16 @@
   --mg-line-height-display-sm: 2.25rem;
   --mg-font-size-page-title: 1.5rem;
   --mg-line-height-page-title: 2rem;
-  --mg-letter-spacing-label: 0.04em;
-  --mg-text-2xs: 10px;
-  --mg-text-2xs-line: 1.4;
-  --mg-text-micro: 11px;
-  --mg-text-micro-line: 1.45;
-  --mg-text-caption: var(--mg-text-xs, 12px);
-  --mg-text-caption-line: var(--mg-text-xs-line, 1.5);
-  --mg-text-ui: var(--mg-text-sm, 14px);
-  --mg-text-ui-line: 1.55;
 
-  --mg-duration-instant: 0.1s;
 
   /* 密度尺寸 — space-1/2/3/4/6 用共享同名变量（不再本地重复定义，避免 rem/px 单位分歧与覆盖）；
      space-5(20px) 共享无，保留控制台特有 */
-  --mg-space-5: 1.25rem;            /* 20px，控制台特有，SSoT 无 */
-  --mg-space-9: 2.25rem;
-  --mg-space-10: 2.5rem;
   /* 兼容 modelgo-design-tokens 0.6.4 缺失的控制台布局语义 token。
      发新版 token 后这些值会继续同名对齐，页面只消费语义，不再散写 p-6/md:p-9。 */
-  --mg-layout-section-gap: var(--mg-space-8);
-  --mg-layout-panel-gap: var(--mg-space-6);
-  --mg-layout-toolbar-gap: var(--mg-space-4);
-  --mg-layout-inline-gap: var(--mg-space-2);
-  --mg-layout-breadcrumb-gap: var(--mg-space-6);
-  --mg-layout-console-page-pad-x: var(--mg-space-6);
-  --mg-layout-console-page-pad-y: var(--mg-space-6);
-  --mg-layout-console-page-pad-bottom: var(--mg-space-6);
-  --mg-layout-console-page-pad-x-lg: var(--mg-space-10);
-  --mg-layout-console-page-pad-y-lg: var(--mg-space-8);
-  --mg-layout-console-page-pad-bottom-lg: var(--mg-space-12);
-  --mg-layout-content-pad: var(--mg-space-6);
-  --mg-layout-content-pad-lg: var(--mg-space-9);
-  --mg-layout-workbench-gap: var(--mg-space-4);
-  --mg-motion-press: var(--mg-duration-instant, 0.1s) var(--mg-ease-standard, cubic-bezier(0.4, 0, 0.2, 1));
-  --mg-motion-enter-y: 8px;
-  --mg-motion-enter-scale: 0.98;
-  --mg-motion-exit-y: 4px;
-  --mg-motion-exit-scale: 0.99;
-  --mg-motion-stagger-gap: 45ms;
-  --mg-motion-skeleton-duration: 1.4s;
-  --mg-motion-attention-duration: 0.6s;
-  --mg-motion-reduced-duration: 0.01ms;
 
   /* 兼容 modelgo-design-tokens 0.6.4 缺失的浮层层级。
      客服弹窗 / Popover 需要压过页面内容与顶栏。
      ⚠️ 由弹窗内唤起的浮层（下拉/菜单/气泡/提示）必须**高于** modal，见下方覆盖。 */
-  --mg-z-base: 0;
-  --mg-z-raised: 10;
-  --mg-z-sheet: 1350;
-  --mg-z-blocking: 1500;
-  --mg-z-devtool: 2000;
 
   /* ── 弹窗内浮层：必须压过 overlay(1300) 与 modal(1400) ──────────────────
      共享包 0.6.4 的层级是「按标准约定」排的：dropdown(1000) < overlay(1300)
@@ -175,156 +100,34 @@
 
      不改共享包（会牵动官网两端且要发版），在控制台本地把这三个抬到 modal
      之上；仍低于 blocking(1500) / toast(1600) / devtool(2000)。 */
-  --mg-z-dropdown: 1450;
-  --mg-z-popover: 1450;
-  --mg-z-tooltip: 1470;
 
   /* ── 191d2dd 引用了但从没定义的浮层尺寸 token ──────────────────────────
      同一个 commit 把这些位置的硬编码类换成了 var(...)，但变量没建。
      CSS 里 var() 取到空值 = **整条声明失效**，所以这些组件的圆角/内边距
      直接消失（tooltip 连 padding 都没了，文字贴边）。
      值严格还原成被替换掉的原始刻度，不趁机改视觉： */
-  --mg-dialog-radius: var(--mg-radius-lg);  /* Dialog/Sheet 原 rounded-lg */
-  --mg-dialog-gap: var(--mg-space-4);       /* Dialog/Sheet 原 gap-4 */
-  --mg-popover-radius: var(--mg-radius-md); /* Select/DropdownMenu 原 rounded-md */
-  --mg-popover-pad: var(--mg-space-3);      /* 护栏说明气泡原 p-3 */
-  --mg-tooltip-radius: var(--mg-radius-md); /* InfoTip 原 rounded-md */
-  --mg-tooltip-pad-x: 0.625rem;             /* InfoTip 原 px-2.5 */
-  --mg-tooltip-pad-y: 0.375rem;             /* InfoTip 原 py-1.5 */
 
-  --mg-control-h-xs: 1.75rem;
-  --mg-control-h-sm: 2rem;
-  --mg-control-h-md: 2.5rem;
-  --mg-control-h-lg: 3rem;
-  --mg-control-h-xl: 3.5rem;
-  --mg-control-height-xs: var(--mg-control-h-xs);
-  --mg-control-height-sm: var(--mg-control-h-sm);
-  --mg-control-height-md: var(--mg-control-h-md);
-  --mg-control-height: var(--mg-control-height-md);
-  --mg-control-height-lg: var(--mg-control-h-lg);
-  --mg-control-height-xl: var(--mg-control-h-xl);
-  --mg-control-py-sm: var(--mg-space-2);
-  --mg-control-pad-y-sm: var(--mg-control-py-sm);
-  --mg-control-border-hover: var(--mg-border-hover);
-  --mg-control-text-xs: var(--mg-text-xs);
-  --mg-control-text-sm: var(--mg-text-xs);
-  --mg-control-text-md: var(--mg-text-sm);
-  --mg-control-text-lg: var(--mg-text-sm);
-  --mg-control-text-xl: var(--mg-text-body);
-  --mg-control-line-xs: var(--mg-text-xs-line);
-  --mg-control-line-sm: var(--mg-text-xs-line);
-  --mg-control-line-md: var(--mg-text-sm-line);
-  --mg-control-line-lg: var(--mg-text-sm-line);
-  --mg-control-line-xl: var(--mg-text-body-line);
-  --mg-control-font-weight: var(--mg-weight-semibold);
-  --mg-control-icon-xs: var(--mg-icon-xs);
-  --mg-control-icon-sm: var(--mg-icon-sm);
-  --mg-control-icon-md: var(--mg-icon-sm);
-  --mg-control-icon-lg: var(--mg-icon-md);
-  --mg-control-icon-xl: var(--mg-icon-md);
-  --mg-control-gap: var(--mg-space-2);
-  --mg-control-affix-gap: var(--mg-space-2);
-  --mg-control-helper-gap: var(--mg-space-1);
-  --mg-progress-track-bg: var(--mg-fill-0);
-  --mg-progress-track-border: color-mix(in oklab, var(--mg-border) 40%, transparent);
-  --mg-progress-thumb-bg: #ffffff;
-  --mg-progress-brand-bar: linear-gradient(90deg, var(--mg-brand-base), var(--mg-brand-mid));
-  --mg-progress-brand-glow: 0 0 12px var(--mg-brand-glow);
-  --mg-progress-brand-text: var(--mg-brand-base);
-  --mg-progress-brand-badge-bg: var(--mg-brand-selected-bg);
-  --mg-progress-brand-badge-border: color-mix(in oklab, var(--mg-brand-base) 22%, transparent);
-  --mg-progress-rainbow-bar: linear-gradient(90deg, #4285f4 0%, #9b72cb 36%, #d96570 68%, #f4af42 100%);
-  --mg-progress-rainbow-glow: 0 0 15px rgba(155, 114, 203, 0.6);
-  --mg-progress-rainbow-text: var(--mg-brand-base);
-  --mg-progress-rainbow-badge-bg: var(--mg-brand-selected-bg);
-  --mg-progress-rainbow-badge-border: color-mix(in oklab, var(--mg-brand-base) 22%, transparent);
-  --mg-progress-success-bar: linear-gradient(90deg, var(--mg-success), color-mix(in oklab, var(--mg-success) 70%, var(--mg-info)));
-  --mg-progress-success-glow: 0 0 12px color-mix(in oklab, var(--mg-success) 60%, transparent);
-  --mg-progress-success-text: var(--mg-success-text);
+  /* ⚠️⚠️ 控件尺寸整组已上收到库（0.10.0，qa#615 组 3）——这 11 行必须整段删、绝不能只删一半。
+     本地原来的指向方向和库是**相反**的：
+        本地： --mg-control-h-md      : 2.5rem                        （旧短名持字面值）
+               --mg-control-height-md: var(--mg-control-h-md)         （规范名 → 旧短名）
+        库  ： --mg-control-h-md      : var(--mg-control-height-md)   （旧短名 → 规范名，仅作迁移别名）
+               --mg-control-height-md: 2.5rem                        （规范名持字面值）
+     只删旧短名那半、留下规范名那半 → 两者互相引用成环 → CSS 判 cyclic var 为
+     invalid at computed-value time → 两个 token 一起变初始值 → **全站控件高度静默消失、不报错**。
+     而 check:closure 的环检测只扫 design-tokens 仓，不扫消费方，删错了没有任何门禁会拦。
+     旧短名仍被 Button / Select / Combobox / TagInput / components.css 大量消费，靠库的别名接住。 */
+  /* ⚠️ 与库值真的不同（qa#611 ④ 实测）：本地 var(--mg-success-bg) alpha=0.10，
+     库指向 var(--mg-success-subtle) alpha=0.12。差异极小但确实非等价，一并留给 UI 定。 */
   --mg-progress-success-badge-bg: var(--mg-success-bg);
-  --mg-progress-success-badge-border: var(--mg-success-border);
-  --mg-progress-warning-bar: linear-gradient(90deg, var(--mg-warning), color-mix(in oklab, var(--mg-warning) 78%, var(--mg-error)));
-  --mg-progress-warning-glow: 0 0 12px color-mix(in oklab, var(--mg-warning) 60%, transparent);
-  --mg-progress-warning-text: var(--mg-warning-text);
-  --mg-progress-warning-badge-bg: var(--mg-warning-bg);
-  --mg-progress-warning-badge-border: var(--mg-warning-border);
-  --mg-progress-info-bar: linear-gradient(90deg, var(--mg-info), color-mix(in oklab, var(--mg-info) 70%, var(--mg-brand-base)));
-  --mg-progress-info-glow: 0 0 12px color-mix(in oklab, var(--mg-info) 60%, transparent);
-  --mg-progress-info-text: var(--mg-info-text);
-  --mg-progress-info-badge-bg: var(--mg-info-bg);
-  --mg-progress-info-badge-border: var(--mg-info-border);
-  --mg-status-dot-size-sm: 6px;
-  --mg-status-dot-size-md: 8px;
-  --mg-status-online-bg: var(--mg-success-text);
-  --mg-status-online-shadow: 0 0 8px color-mix(in oklab, var(--mg-success) 50%, transparent);
-  --mg-avatar-size-2xs: 1.25rem;
-  --mg-avatar-size-xs: 1.5rem;
-  --mg-avatar-size-sm: 1.75rem;
-  --mg-avatar-size-lg: 2.5rem;
-  --mg-avatar-size-xl: 3rem;
-  --mg-avatar-size-2xl: 3.5rem;
-  --mg-avatar-radius: var(--mg-radius-pill);
-  --mg-avatar-text-xs: var(--mg-text-2xs);
-  --mg-avatar-text-sm: var(--mg-text-xs);
-  --mg-avatar-text-md: var(--mg-text-sm);
-  --mg-avatar-status-offset: -1px;
-  --mg-avatar-success-bg: var(--mg-success-text);
+  /* 在线圆点是「填充」不是「文字」，必须取 --mg-success 本体。
+     原写法取 --mg-success-text：qa#614 把 -text 改成 7:1 的深色后，圆点会变墨绿看不出是"在线"。库同值，删本地遮蔽。 */
   --mg-textarea-min-h: 5rem;
-  --mg-table-head-h: var(--mg-control-h-md);
-  --mg-table-cell-px: var(--mg-space-4);
-  --mg-table-cell-py: var(--mg-space-3);
-  --mg-table-bg: var(--mg-bg-0);
-  --mg-table-border: var(--mg-border);
-  --mg-table-radius: var(--mg-radius-md);
-  --mg-table-header-bg: var(--mg-fill-0);
-  --mg-table-header-text: var(--mg-text-2);
-  --mg-table-header-height: var(--mg-table-head-h);
-  --mg-table-row-height-sm: var(--mg-control-h-md);
-  --mg-table-row-height-md: 3rem;
-  --mg-table-row-height-lg: 3.5rem;
-  --mg-table-cell-pad-x-sm: var(--mg-space-3);
-  --mg-table-cell-pad-x-md: var(--mg-table-cell-px);
-  --mg-table-cell-pad-x-lg: var(--mg-space-5);
-  --mg-table-cell-pad-y-sm: var(--mg-space-2);
-  --mg-table-cell-pad-y-md: var(--mg-table-cell-py);
-  --mg-table-cell-pad-y-lg: var(--mg-space-4);
-  --mg-table-text-size: var(--mg-text-sm);
-  --mg-table-text-line: var(--mg-text-sm-line);
-  --mg-table-header-text-size: var(--mg-text-xs);
-  --mg-table-header-text-line: var(--mg-text-xs-line);
-  --mg-table-row-hover-bg: var(--mg-state-hover-bg);
-  --mg-table-row-selected-bg: var(--mg-state-selected-bg);
   --mg-menu-padding: 0.375rem;
   --mg-menu-item-px: var(--mg-space-3);
   --mg-menu-item-py: var(--mg-space-2);
-  --mg-calendar-cell-size: 1.75rem;
   --mg-progress-milestone-h: 2rem;
-  --mg-sparkline-h: 1.75rem;
-  --mg-skeleton-h-md: 2rem;
-  --mg-avatar-size-md: 2.5rem;
-  --mg-icon-empty-size: 2rem;
-  --mg-preview-thumb-size: 3rem;
-  --mg-empty-min-h: 12.5rem;
-  --mg-panel-padding-sm: var(--mg-space-3);
-  --mg-panel-padding-md: var(--mg-space-4);
-  --mg-panel-padding-lg: var(--mg-space-5);
-  --mg-panel-padding-xl: var(--mg-space-6);
   --mg-panel-padding: var(--mg-panel-padding-md);
-  --mg-radius-xs: 6px;
-  --mg-radius-panel: var(--mg-radius-lg);
-  --mg-tile-radius: var(--mg-radius-md);
-  --mg-card-title-size: var(--mg-text-h3);
-  --mg-card-title-line: var(--mg-text-h3-line);
-  --mg-card-title-tracking: var(--mg-text-h3-tracking);
-  --mg-card-subtitle-size: var(--mg-text-sm);
-  --mg-card-subtitle-line: var(--mg-text-sm-line);
-  --mg-card-meta-size: var(--mg-text-xs);
-  --mg-card-meta-line: var(--mg-text-xs-line);
-  --mg-card-kicker-size: var(--mg-text-2xs);
-  --mg-card-kicker-line: var(--mg-text-2xs-line);
-  --mg-card-media-gap: var(--mg-space-4);
-  --mg-card-row-gap: var(--mg-space-3);
-  --mg-card-section-gap: var(--mg-space-5);
 
   /* 账号浮层：只定义语义，不跨主题写死色值。
      浮层必须实底 —— --mg-bg-0 已并入玻璃（半透明），改用悬浮层 --mg-bg-2 / 顶层 --mg-bg-3（#529） */
@@ -339,144 +142,18 @@
   --account-menu-text-3: var(--mg-text-4);
   --account-menu-danger: var(--mg-danger);
 
-  --mg-state-hover-bg: var(--mg-fill-0);
-  --mg-state-hover-border: var(--mg-border-hover);
-  --mg-state-pressed-bg: var(--mg-fill-1);
-  --mg-state-pressed-scale: 0.98;
-  --mg-state-disabled-opacity: 0.5;
-  --mg-state-disabled-bg: var(--mg-fill-0);
-  --mg-state-selected-bg: var(--mg-brand-selected-bg);
-  --mg-state-selected-border: color-mix(in oklab, var(--mg-brand-base) 35%, var(--mg-border));
 
-  --mg-btn-transition: all var(--mg-duration-base) var(--mg-ease-emphasized);
-  --mg-btn-hover-y: -0.5px;
-  --mg-btn-press-scale: var(--mg-state-pressed-scale);
-  --mg-btn-primary-bg: var(--mg-brand-base);
-  --mg-btn-primary-bg-hover: var(--mg-brand-deep);
-  --mg-btn-primary-bg-active: var(--mg-brand-deep);
-  --mg-btn-primary-text: #ffffff;
-  --mg-btn-primary-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-  --mg-btn-primary-shadow-hover: 0 4px 16px var(--mg-brand-glow), 0 2px 4px rgba(0, 0, 0, 0.1);
-  --mg-btn-neutral-bg: #0f172a;
-  --mg-btn-neutral-bg-hover: #1e293b;
-  --mg-btn-neutral-border: var(--mg-btn-neutral-bg);
-  --mg-btn-neutral-border-hover: var(--mg-btn-neutral-bg-hover);
-  --mg-btn-neutral-text: #ffffff;
-  --mg-btn-neutral-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
-  --mg-btn-neutral-shadow-hover: 0 4px 12px rgba(15, 23, 42, 0.12), 0 1px 2px rgba(0, 0, 0, 0.05);
-  --mg-btn-outline-bg: transparent;
-  --mg-btn-outline-bg-hover: var(--mg-fill-0);
-  --mg-btn-outline-border: var(--mg-border);
-  --mg-btn-outline-border-hover: var(--mg-state-hover-border);
-  --mg-btn-outline-text: var(--mg-text-1);
-  --mg-btn-secondary-bg: var(--mg-fill-0);
-  --mg-btn-secondary-bg-hover: var(--mg-fill-1);
-  --mg-btn-secondary-text: var(--mg-text-2);
-  --mg-btn-secondary-text-hover: var(--mg-text-1);
-  --mg-btn-ghost-bg-hover: var(--mg-fill-0);
-  --mg-btn-ghost-text: var(--mg-text-2);
-  --mg-btn-ghost-text-hover: var(--mg-text-1);
-  --mg-btn-link-text: var(--mg-brand-base);
-  --mg-btn-link-text-hover: var(--mg-brand-deep);
-  --mg-btn-danger-bg: #d9534f;
-  --mg-btn-danger-bg-hover: color-mix(in oklab, var(--mg-btn-danger-bg) 88%, black);
-  --mg-btn-danger-bg-active: color-mix(in oklab, var(--mg-btn-danger-bg) 80%, black);
-  --mg-btn-danger-text: #ffffff;
-  --mg-btn-danger-shadow: 0 1px 2px color-mix(in oklab, var(--mg-btn-danger-bg) 18%, transparent);
-  --mg-btn-danger-shadow-hover: 0 4px 12px color-mix(in oklab, var(--mg-btn-danger-bg) 28%, transparent), 0 1px 2px rgba(0, 0, 0, 0.05);
+  /* ⚠️ --mg-btn-primary-bg / -hover / -active 已上收到库（0.10.0，ab47051…ab03582「修主按钮白字不达标」）。
+     本地不要在 :root 声明：库在 [data-market='global'] 与 [data-theme='dark'] 里把底色压深 22%
+     （color-mix(brand-base 78%, #000)）来让白字达标，而属性选择器与 :root 特异性相同、本地文件后加载
+     —— 在这儿写一条 :root 就会把库那两档全压死，海外绿底/深色底上的白字继续不达标，且 diff 上看不出来。 */
+  /* --mg-btn-link-text-hover 交给库：深色档库给 var(--mg-brand-mid)，同上，本地 :root 会压死。 */
 
-  --mg-segmented-bg: var(--mg-fill-0);
-  --mg-segmented-border: var(--mg-border);
-  --mg-segmented-radius: var(--mg-radius-md);
-  --mg-segmented-pad: var(--mg-space-1);
-  --mg-segmented-gap: var(--mg-space-1);
-  --mg-segmented-item-radius: var(--mg-radius-xs, 6px);
-  --mg-segmented-item-height-sm: 28px;
-  --mg-segmented-item-height-md: 32px;
-  --mg-segmented-item-pad-x-sm: 10px;
-  --mg-segmented-item-pad-x-md: var(--mg-space-3);
-  --mg-segmented-text: var(--mg-text-3);
-  --mg-segmented-text-hover: var(--mg-text-1);
-  --mg-segmented-active-bg: var(--mg-bg-3);
-  --mg-segmented-active-text: var(--mg-brand-base);
-  --mg-segmented-active-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 
-  --mg-toast-width: 360px;
-  --mg-toast-gap: var(--mg-space-2);
-  --mg-toast-pad-x: var(--mg-space-4);
-  --mg-toast-pad-y: var(--mg-space-3);
-  --mg-toast-radius: var(--mg-radius-md);
-  --mg-toast-bg: var(--mg-bg-3);
-  --mg-toast-border: var(--mg-border);
-  --mg-toast-shadow: var(--shadow-lg);
-  --mg-toast-title: var(--mg-text-1);
-  --mg-toast-description: var(--mg-text-2);
-  --mg-toast-close-color: var(--mg-text-3);
-  --mg-toast-success-icon: var(--mg-success-text);
-  --mg-toast-warning-icon: var(--mg-warning-text);
-  --mg-toast-error-icon: var(--mg-error-text);
-  --mg-toast-info-icon: var(--mg-info-text);
-  --mg-toast-offset-x: var(--mg-space-6);
-  --mg-toast-offset-y: var(--mg-space-6);
-  --mg-toast-stack-gap: var(--mg-space-2);
-  --mg-toast-max-visible: 4;
-  --mg-toast-duration-success: 3500ms;
-  --mg-toast-duration-info: 4000ms;
-  --mg-toast-duration-warning: 5000ms;
-  --mg-toast-duration-error: 6000ms;
 
-  --mg-modality-text-bg: var(--mg-brand-selected-bg);
-  --mg-modality-text-fg: var(--mg-brand-base);
-  --mg-modality-text-border: color-mix(in oklab, var(--mg-brand-base) 22%, transparent);
-  --mg-modality-image: #8b5cf6;
-  --mg-modality-image-bg: color-mix(in oklab, var(--mg-modality-image) 10%, transparent);
-  --mg-modality-image-bg-hover: color-mix(in oklab, var(--mg-modality-image) 16%, transparent);
-  --mg-modality-image-fg: #7c3aed;
-  --mg-modality-image-border: color-mix(in oklab, var(--mg-modality-image) 24%, transparent);
-  --mg-accent-purple: var(--mg-modality-image);
-  --mg-accent-purple-bg: var(--mg-modality-image-bg);
-  --mg-accent-purple-bg-hover: var(--mg-modality-image-bg-hover);
-  --mg-accent-purple-fg: var(--mg-modality-image-fg);
-  --mg-accent-purple-border: var(--mg-modality-image-border);
-  --mg-modality-audio-bg: var(--mg-success-bg);
-  --mg-modality-audio-bg-hover: var(--mg-success-bg-hover);
-  --mg-modality-audio-fg: var(--mg-success-text);
-  --mg-modality-audio-border: var(--mg-success-border);
-  --mg-modality-video: #f97316;
-  --mg-modality-video-bg: color-mix(in oklab, var(--mg-modality-video) 10%, transparent);
-  --mg-modality-video-bg-hover: color-mix(in oklab, var(--mg-modality-video) 16%, transparent);
-  --mg-modality-video-fg: #ea580c;
-  --mg-modality-video-border: color-mix(in oklab, var(--mg-modality-video) 24%, transparent);
-  --mg-modality-embedding: #eab308;
-  --mg-modality-embedding-bg: color-mix(in oklab, var(--mg-modality-embedding) 12%, transparent);
-  --mg-modality-embedding-bg-hover: color-mix(in oklab, var(--mg-modality-embedding) 18%, transparent);
-  --mg-modality-embedding-fg: #a16207;
-  --mg-modality-embedding-border: color-mix(in oklab, var(--mg-modality-embedding) 28%, transparent);
-  --mg-modality-reranker-bg: var(--mg-fill-0);
-  --mg-modality-reranker-bg-hover: var(--mg-fill-1);
-  --mg-modality-reranker-fg: var(--mg-text-2);
-  --mg-modality-reranker-border: var(--mg-border);
-  --mg-featured-chip-bg: rgba(255, 255, 255, 0.08);
-  --mg-featured-chip-border: rgba(255, 255, 255, 0.15);
-  --mg-featured-chip-fg: #f4f4f5;
-  --mg-modality-text-featured-bg: color-mix(in oklab, var(--mg-brand-base) 22%, transparent);
-  --mg-modality-text-featured-border: color-mix(in oklab, var(--mg-brand-base) 40%, transparent);
-  --mg-modality-text-featured-fg: #dbe3ff;
-  --mg-modality-image-featured-bg: color-mix(in oklab, var(--mg-modality-image) 22%, transparent);
-  --mg-modality-image-featured-border: color-mix(in oklab, var(--mg-modality-image) 40%, transparent);
-  --mg-modality-image-featured-fg: #ddd6fe;
-  --mg-modality-audio-featured-bg: color-mix(in oklab, var(--mg-success) 22%, transparent);
-  --mg-modality-audio-featured-border: color-mix(in oklab, var(--mg-success) 40%, transparent);
-  --mg-modality-audio-featured-fg: #d1fae5;
-  --mg-modality-video-featured-bg: color-mix(in oklab, var(--mg-modality-video) 22%, transparent);
-  --mg-modality-video-featured-border: color-mix(in oklab, var(--mg-modality-video) 40%, transparent);
-  --mg-modality-video-featured-fg: #ffedd5;
-  --mg-modality-embedding-featured-bg: color-mix(in oklab, var(--mg-modality-embedding) 24%, transparent);
-  --mg-modality-embedding-featured-border: color-mix(in oklab, var(--mg-modality-embedding) 44%, transparent);
-  --mg-modality-embedding-featured-fg: #fef9c3;
-  --mg-modality-reranker-featured-bg: var(--mg-featured-chip-bg);
-  --mg-modality-reranker-featured-border: var(--mg-featured-chip-border);
-  --mg-modality-reranker-featured-fg: #e4e4e7;
+  /* ⚠️ 6 个 --mg-modality-*-fg 已全部上收到库（0.10.0，qa#614 定 AAA 7:1）。本地不要再声明，会遮死库的值。
+     原本地值浅色实测全部不达标（text 2.57 海外 / image 4.51 / video 2.89 / embedding 4.10 / reranker 4.01 / audio 2.08）。
+     text-fg 原取 var(--mg-brand-base)：国内蓝达标、海外品牌绿只有 2.57，换市场就掉链子 —— 库已改为按市场分档的固定值。 */
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -502,30 +179,27 @@
   /* 边框 — 用共享 --mg-border（已上提市场分色：随 [data-market] 品牌色自动切紫/绿） */
   /* 填充 --mg-fill-0/1/2 同名共享，不在此覆盖（自引用会失效），直接用共享值 */
 
-  /* 代码块面（payload 查看器） */
+  /* 代码块面（payload 查看器）
+     ⚠️ 与库值真的不同（qa#611 ④ 实测），不是冗余副本，别当重复声明删：
+       浅色  本地 bg #e9ecf1 / text #1f2937   ← 库 --mg-gray-100 rgb(241,245,249) / --mg-gray-900 rgb(33,33,33)
+       深色  本地 bg #131316 / text #e4e4e7   ← 库 --mg-gray-900 / --mg-gray-100
+     本地是为 payload 查看器单独调过的（比库的灰阶更冷、对比更强），换成库值是可见变化。
+     另外本地还有 [data-market] 两档分色（#eef0f8 / #eaf3f1）库里没有，也不能丢。
+     需 UI 定「代码块是否统一走库灰阶」后再动。 */
   --mg-code-bg:   #e9ecf1;
   --mg-code-text: #1f2937;
 
   /* 语义色 — success/warning/info 用共享（不在此覆盖，避免自引用死循环）；danger 名保留，值引用共享 error */
-  --mg-danger:  var(--mg-error);
-  --mg-overlay-bg: var(--mg-overlay, rgba(15, 23, 42, 0.5));
-  --mg-overlay-blur: 8px;
 
   /* 阴影 — 浅色分层柔和阴影（多层叠加做出"悬浮"高级感，卡片靠阴影而非硬边框浮起） */
   --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.05);
   --shadow-md: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 10px -2px rgba(16, 24, 40, 0.06), 0 10px 24px -8px rgba(16, 24, 40, 0.08);
   --shadow-lg: 0 2px 4px rgba(16, 24, 40, 0.04), 0 8px 20px -4px rgba(16, 24, 40, 0.08), 0 20px 40px -12px rgba(16, 24, 40, 0.12);
-  --mg-shadow-hover-sm: 0 4px 12px -6px rgba(16, 24, 40, 0.14);
-  --mg-shadow-hover-md: 0 10px 28px -12px rgba(16, 24, 40, 0.20), 0 0 0 1px color-mix(in oklab, var(--mg-brand-base) 10%, transparent);
-  --mg-shadow-hover-lg: 0 18px 48px -18px rgba(16, 24, 40, 0.24), 0 0 0 1px color-mix(in oklab, var(--mg-brand-base) 12%, transparent);
-  --mg-hover-y-sm: -1px;
-  --mg-hover-y-md: -2px;
-  --mg-hover-y-lg: -3px;
 
   /* 卡片语言（Apple 风：淡边框 + 柔和扩散阴影撑层次，2026-07-23 与用户定，仅控制台）。
-     浅色：边框降到近乎 hairline，靠多层柔和阴影"浮起"，不再硬线框。 */
-  --mg-card-border: rgba(16, 24, 40, 0.05);
-  --mg-card-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 6px 16px -6px rgba(16, 24, 40, 0.10), 0 16px 32px -14px rgba(16, 24, 40, 0.08);
+     浅色边框已上收到库（0.10.0 = rgba(16,24,40,0.13)）—— UI 侧 qa#615 裁决：只提 alpha 不换色相，
+     仍是「淡边框、近乎 hairline」，与 7-23 的意图不冲突，只是补到治理文档第 5 节要求的
+     hairline 对比 ≥1.3（原 .05 只有 1.11，在玻璃画布上糊边）。本地不再声明。 */
 
   /* 导航 */
   --nav-item-hover-bg: rgba(15, 23, 42, 0.035);
@@ -571,13 +245,8 @@ body[theme-mode='dark'] {
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.04);
   --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.04);
-  --mg-shadow-hover-sm: 0 6px 16px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(255, 255, 255, 0.04);
-  --mg-shadow-hover-md: 0 12px 30px rgba(0, 0, 0, 0.38), 0 0 0 1px rgba(255, 255, 255, 0.05);
-  --mg-shadow-hover-lg: 0 20px 52px rgba(0, 0, 0, 0.46), 0 0 0 1px rgba(255, 255, 255, 0.06);
 
   /* 卡片语言（深色：阴影在暗底近乎不可见，改靠「顶部高光描边 + inset 高光」提亮浮起，配柔和烟灰投影） */
-  --mg-card-border: rgba(255, 255, 255, 0.08);
-  --mg-card-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 28px -10px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
 
   /* 导航 */
   --nav-item-hover-bg: rgba(255, 255, 255, 0.04);
@@ -596,25 +265,8 @@ body[theme-mode='dark'] {
   --account-menu-text-3: #6f7280;
   --account-menu-danger: #ff6b6b;
 
-  --mg-btn-neutral-bg: rgba(255, 255, 255, 0.10);
-  --mg-btn-neutral-bg-hover: rgba(255, 255, 255, 0.16);
-  --mg-btn-neutral-border: rgba(255, 255, 255, 0.13);
-  --mg-btn-neutral-border-hover: rgba(255, 255, 255, 0.20);
-  --mg-btn-neutral-text: #f0f0f2;
-  --mg-btn-neutral-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --mg-btn-neutral-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.2);
-  --mg-modality-image-fg: #c4b5fd;
-  --mg-modality-video-fg: #fed7aa;
-  --mg-modality-embedding-fg: #fde68a;
-  --mg-modality-reranker-fg: var(--mg-text-2);
 
   /* 图表分类色暗色档 — 同一批 hue 为暗色面重新取步（dataviz 校验器暗色 PASS） */
-  --mg-chart-cat-1: #3987e5;
-  --mg-chart-cat-2: #199e70;
-  --mg-chart-cat-3: #c98500;
-  --mg-chart-cat-4: #008300;
-  --mg-chart-cat-5: #9085e9;
-  --mg-chart-cat-6: #e66767;
   --chart-cat-1: var(--mg-chart-cat-1);
   --chart-cat-2: var(--mg-chart-cat-2);
   --chart-cat-3: var(--mg-chart-cat-3);
@@ -631,12 +283,8 @@ body[theme-mode='dark'] {
 
 /* 国内市场特有趋势 (红涨绿跌) */
 [data-market='china'] {
-  --mg-trend-up:   var(--mg-danger);
-  --mg-trend-down: var(--mg-success);
 }
 
 /* 国际市场特有趋势 (绿涨红跌) */
 [data-market='global'] {
-  --mg-trend-up:   var(--mg-success);
-  --mg-trend-down: var(--mg-danger);
 }

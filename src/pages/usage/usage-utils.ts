@@ -15,6 +15,20 @@ export type Metric = 'spend' | 'requests' | 'tokens'
 /** 用量页快捷时间范围对应天数。 */
 export const USAGE_PRESET_DAYS: Record<string, number> = { '7d': 7, '30d': 30, '90d': 90 }
 
+/**
+ * /usage 认得的 `?time_range=` 预设值域 —— 深链参数的唯一真源（qa#617）。
+ *
+ * 提成常量是为了治本单的病根：总览的「查看更多」原先带的是 `granularity=day|month`，
+ * 而本页从来只读 `time_range`，那个参数一路没人消费、也没有任何东西会报错，
+ * 于是「总览切今日 → 落地页回落本月」这种口径不一致能一直躺着。
+ *
+ * 上游（总览 timeRangeForGranularity）的产出必须落在这个集合里，该约束由
+ * `src/features/dashboard/workbench/shared.test.ts` 断言锁住 —— 只在测试层引用，
+ * 不让 features 在运行时依赖 pages。往后加预设改这里一处即可。
+ */
+export const USAGE_TIME_RANGE_PRESETS = ['today', '7d', '30d', 'thisMonth', 'lastMonth'] as const
+export type UsageTimeRangePreset = (typeof USAGE_TIME_RANGE_PRESETS)[number]
+
 function todayKey() {
   return new Intl.DateTimeFormat('en-CA', {
     day: '2-digit',

@@ -261,6 +261,19 @@
       "avgCost": "Avg {{value}}",
       "avgDuration": "Avg duration",
       "avgTtft": "First token {{value}}"
+    },
+    "asyncSummary": {
+      "totalTasks": "Total tasks",
+      "completionRate": "Completion rate",
+      "succeededCount": "{{value}} completed",
+      "inFlight": "In progress",
+      "queuedRunning": "{{queued}} queued · {{running}} running",
+      "failedOrExpired": "Failed / expired",
+      "failedRatio": "{{value}} of total",
+      "totalSpend": "Total spend",
+      "pendingBilling": "{{value}} pending billing",
+      "availableProducts": "Available artifacts",
+      "expiredProducts": "{{value}} expired"
     }
   }
 }

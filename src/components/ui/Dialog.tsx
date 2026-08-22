@@ -49,14 +49,14 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        // max-h-[90dvh] + overflow-y-auto：内容超高时弹窗封顶到视口内并内部滚动，避免超出浏览器范围（#458）
-        // padding 走 --mg-dialog-pad（= --mg-space-6 24px，与原 mg-panel-roomy 同值），min-width 走规范下限 360px。
-        // ⚠️ max-w-lg(512) 与 max-h-[90dvh] 暂不换成 --mg-dialog-max-width(720) / --mg-dialog-max-height：
-        //   · 库给的是区间上限而非目标值，而这里有 w-full，换成 720 会让**所有**弹窗一律撑到 720，
-        //     小确认框和大表单一样宽 —— 库里缺"默认宽度"这一档，需要设计给分档（如 sm/md/lg）才能接
-        //   · max-height 换成 min(720px, 100dvh-128px) 会让高弹窗从约 970px 压到 720px，
-        //     属于会影响 #458 已验收行为的可见变化，同样等设计确认
-        "fixed left-[50%] top-[50%] z-[var(--mg-z-modal)] grid w-full min-w-[var(--mg-dialog-min-width)] max-w-lg max-h-[90dvh] overflow-y-auto translate-x-[-50%] translate-y-[-50%] gap-[var(--mg-dialog-gap)] border border-mg-border bg-mg-bg-3 p-[var(--mg-dialog-pad)] shadow-xl shadow-black/10 rounded-[var(--mg-dialog-radius)] duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-1/2 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-1/2 focus:outline-none",
+        // 宽度走库的区间（min 360 / max 720），不配固定档位，由内容在区间内自适应（qa#611 ③ 定案）。
+        //   · 去掉 w-full：它才是"所有弹窗一律撑到 max"的根因 —— 有 w-full 时 max-width 等于目标宽度，
+        //     小确认框和大表单会一样宽；去掉后 grid 按内容定宽，min-width 保底、max-width 封顶。
+        //   · UI 明确不给 sm/md/lg 分档（"各弹窗归哪一档定不下来，配了也要反复调"），所以这里不补默认档。
+        // max-height 走 --mg-dialog-max-height：0.10.0 起 = 90dvh，与原硬编码同值，#458 已验收行为不变
+        // （0.9.0 那版是 min(720px, 100dvh-128px)，会把高弹窗压低，所以本次接入与依赖升级必须同步）。
+        // padding 走 --mg-dialog-pad（= --mg-space-6 24px，与原 mg-panel-roomy 同值）。
+        "fixed left-[50%] top-[50%] z-[var(--mg-z-modal)] grid min-w-[var(--mg-dialog-min-width)] max-w-[var(--mg-dialog-max-width)] max-h-[var(--mg-dialog-max-height)] overflow-y-auto translate-x-[-50%] translate-y-[-50%] gap-[var(--mg-dialog-gap)] border border-mg-border bg-mg-bg-3 p-[var(--mg-dialog-pad)] shadow-xl shadow-black/10 rounded-[var(--mg-dialog-radius)] duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-1/2 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-1/2 focus:outline-none",
         className
       )}
       {...props}

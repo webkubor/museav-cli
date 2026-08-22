@@ -26,7 +26,10 @@ cd ../wt-my-branch && ln -s ../modelgo-console-web/node_modules .
 ### 收工
 
 ```bash
-# 代码合入后清理
+# 用 cs land 合入的话，worktree + 分支已被自动回收，这里不用做任何事
+cs land --base test
+
+# 手动合并的才需要自己清（详见 §4 步骤 5）
 git worktree remove ../wt-my-branch
 ```
 
@@ -168,7 +171,10 @@ node $S claim 100 --project 46  # PRD 看板
   → 需求方验收后已完成 / Closed
 ```
 
-**任务单边界：** 需求方任务单优先，后续不再新增 QA 问题单。已有 QA 单只做验证、状态同步或关闭；除非需求方明确要求，否则不得把 QA 单当作新的需求入口，也不得为了“补流程”新建 QA 单。
+**任务单边界（看板分工先判对地方，2026-08 教训：单建错仓两次）：**
+- **PM 需求单**（PRD 派下来的功能需求）→ `shared/modelgo_prd`(46)，生产验收回归证据也回这张单。
+- **开发内部任务单**（跨仓前端要求 / 技术债 / BUG 单 / 内部协作）→ `qa/ai-quality-platform`(1)，**这是用户指定的建单处**，别建在目标仓或 46。
+- 生产验收 Loop 中：已有需求方任务单时不再新增 QA 单，已有 QA 单只做验证、状态同步或关闭；**没有需求单的开发内部事项**（如对管理后台前端的校验要求）才在 QA 看板新建。
 
 #### 1. 先给验收结论，再给证据
 
@@ -216,7 +222,7 @@ HTTP 200 不等于业务成功：必须同时记录 HTTP 状态和响应体 `cod
 
 #### 3. 需求方任务单的 SCQA 模板
 
-先在 `shared/modelgo_prd` 找到需求方任务单；不要在 `qa/ai-quality-platform` 新建替代单。一张需求方任务单只对应一个可验证根因。
+生产验收场景：先在 `shared/modelgo_prd` 找到需求方任务单；此时不要在 `qa/ai-quality-platform` 新建替代单（回归证据回需求方任务单）。一张任务单只对应一个可验证根因。开发内部任务（无对应 PM 需求单）按上方「任务单边界」建在 `qa/ai-quality-platform`，格式同样用 SCQA + 验收 checkbox。
 
 ````md
 ## SCQA
@@ -350,13 +356,23 @@ PRD 原型 > 飞书文档 > 现状控制台代码
 **日常开发流程：**
 1. 开隔离 worktree + 分支：`cs wt fix/<名>`（或 `git worktree add -b fix/<名> ../wt-<名> origin/test`）
 2. 在 worktree 里开发、提交（与其他 session 物理隔离，互不看见对方未提交改动）
-3. 合并进 test：`git checkout test && git pull && git merge fix/<名> && git push origin test`
+3. 合并进 test：**`cs land --base test`**（fetch→rebase→push HEAD:test，push 撞并行提交会自动 refetch+rebase 重试）
 4. 触发测试环境部署：`test/modelgo-console-web`
-5. **合并确认成功后立刻清理，别拖到「合并上线」才做**（治「分支只增不减，几十个 worktree 残留没人清」——2026-07-28 一次清理攒了 60+ 个已合并分支）：
-   - 删 worktree：`git worktree remove ../wt-<名>`（worktree 还占着分支，删分支前必须先删它，否则 git 会拒绝）
-   - 删本地分支：`git branch -d <名>`
-   - 删远端分支：`git push origin --delete <名>`
-   - 这三步是「合并进 test 就做」的日常收尾，不是「合并进 main 才做」的发布收尾——功能分支的生命周期到「进了 test」就结束了，没有理由在合并 main 前一直留着
+5. **清理已由 `cs land` 自动完成，不用再手动跑**（2026-08-21 起）：land 成功后它会自动
+   `worktree remove` + 删本地分支 + 删远端同名分支（存在才删）+ `fetch --prune`。
+   - 删前强制校验 `merge-base --is-ancestor <分支> origin/<base>`，**未合入一律不删**
+   - `worktree remove` 不加 `--force`，里面有未提交改动时 git 会拒绝并提示，不会丢东西
+   - 不想自动清理：`cs land --base test --no-cleanup`（退回打印提示的老行为）
+
+   ⚠️ **不要以为 GitLab 会替你删**：本仓 `remove_source_branch_after_merge` 虽为 `true`，
+   但它只在**走 MR 合并**时触发；`cs land` 是直推 `HEAD:test`、不走 MR，那条设置盖不到它。
+   这就是为什么在 land 自动清理之前，规则明明写在本节却仍持续漏——执行路径上没人做。
+   （2026-07-28 一次清理攒了 60+ 个已合并分支；2026-08-21 又发现早已合入 test 的
+   `fix/617-usage-link-params`，worktree 和分支都还挂着。）
+
+   手动合并（不用 `cs land`）时，仍要自己走完三步：`git worktree remove ../wt-<名>`
+   → `git branch -d <名>` → `git push origin --delete <名>`。功能分支的生命周期到
+   「进了 test」就结束，没有理由留到合并 main 前。
 
 **线上发布流程：**
 1. 测试验证通过
@@ -594,17 +610,25 @@ cs secrets run --env JENKINS_TOKEN=secret://jenkins/modelgo -- \
 
 ## 10. 收工清理
 
-这是**会话结束前的自查清单**，不是另一套独立的清理规则——真正「什么时候删分支」的判断标准只有一个，见 §4「日常开发流程」步骤 5（**合并进 test 就删，不等 main**）。这里只是收工前照着 `git worktree list` 过一遍，确认每个自己开过的 worktree 都已经按 §4 走完三步（删 worktree → 删本地分支 → 删远端分支），别漏。
+这是**会话结束前的自查清单**，不是另一套独立的清理规则——真正「什么时候删分支」的判断标准只有一个，见 §4「日常开发流程」步骤 5（**合并进 test 就删，不等 main**）。走 `cs land` 的话清理已自动完成，这里只是兜住「手动合并」「land 被未提交改动拦下」「别人留下的残留」这三类漏网。
 
 ```bash
-# ① 看自己这次开了哪些 worktree，逐一确认是否已按 §4 清理
+# ① 看还挂着哪些 worktree（走 cs land 的应该已经自己消失了）
 git worktree list
 
-# ② 还没清理的，按 §4 补做（不是可选项）：
-git worktree remove <path>
-git branch -d <分支名>
-git push origin --delete <分支名>
+# ② 判断哪些是真残留：已合入 test 却还在的分支
+git fetch origin --prune                 # 先 prune，否则会把远端已删的分支误判成僵尸
+git branch --merged origin/test | grep -vE '^\*|test|main'
 
-# ③ 确认认领锁已释放
+# ③ 上一步列出来的，按 §4 补做（不是可选项）：
+git worktree remove <path>
+git branch -d <分支名>                    # 拒绝时先确认已合入，再用 -D
+git push origin --delete <分支名>         # 仅当远端真有该分支
+
+# ④ 确认认领锁已释放
 node $S status | grep <iid>      # 确认不在「进行中」
 ```
+
+> ⚠️ **`git branch -r` 里的分支不等于远端真有**。remote-tracking ref 会滞留，
+> 远端早删掉的分支仍会被列出来，看着像僵尸 —— 2026-08-21 就据此误判过一次，
+> 差点去删一个远端已不存在的分支。判定僵尸前先 `git fetch origin --prune`。

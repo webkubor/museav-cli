@@ -48,8 +48,8 @@ importers:
         specifier: ^5.100.14
         version: 5.100.14(react@19.2.6)
       ai-sse-kit:
-        specifier: ^0.1.0
-        version: 0.1.0(react@19.2.6)
+        specifier: ^0.3.0
+        version: 0.3.0(react@19.2.6)
       canvas-confetti:
         specifier: ^1.9.4
         version: 1.9.4
@@ -78,8 +78,8 @@ importers:
         specifier: ^2.0.2
         version: 2.0.2
       modelgo-design-tokens:
-        specifier: ^0.9.0
-        version: 0.9.0
+        specifier: ^0.11.0
+        version: 0.11.0
       qrcode.react:
         specifier: ^4.2.0
         version: 4.2.0(react@19.2.6)
@@ -2942,8 +2942,8 @@ packages:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
-  ai-sse-kit@0.1.0:
-    resolution: {integrity: sha512-14im9xDU8vn0NuhZRGNqnLLdgqIsiaPP0DpzmM7FQhc9bfPTObWeyqgmAnhgEItIAz9uxIZXWaX1Hr+4MJBpGw==}
+  ai-sse-kit@0.3.0:
+    resolution: {integrity: sha512-S7a9NY0TqeNx+iJ7dTgLjKSi0jPz+CS2UiDR9oDm1lNbIaLNYSc6wqz6f1Lg6gYauC7W33uuPweiahOKUSxEYQ==}
     engines: {node: '>=18'}
     peerDependencies:
       react: '>=18'
@@ -4745,8 +4745,8 @@ packages:
     resolution: {integrity: sha512-WRoDn//mXBiJ1H40rqa3vH0toePwSsGb45iInWlTySa+Uu4k3tYUSxa2v1KqAiLtvlrSzaExqS1gtk96A9zvEA==}
     engines: {node: '>=0.10.0'}
 
-  modelgo-design-tokens@0.9.0:
-    resolution: {integrity: sha512-ii5QWwGmH2+EJimLQFMDB8w/5HLjo7lu5RtKOkjr4huGG7N1af/hiaOZB/3j6/jz9DsYTRJ/GhXdJFqLBhCyMg==}
+  modelgo-design-tokens@0.11.0:
+    resolution: {integrity: sha512-nMnseUpcYQLlBmt2lPZ4nHRTl+r8i8OzEE0DZErLNKtJziUzSW7dzPVYUI5POZihNv78GWLtmErZ8RqMcVvHMA==}
 
   motion-dom@12.43.0:
     resolution: {integrity: sha512-azKON4d9S65PEoFUiQTMTgPheEmzf2QngdRc50AKfJp9Q9mmcBVw22c8eMq9k8kxOFHdL7+WZY7N/5F/lwiDag==}
@@ -9218,7 +9218,7 @@ snapshots:
       screenfull: 5.2.0
       tslib: 2.8.1
 
-  ai-sse-kit@0.1.0(react@19.2.6):
+  ai-sse-kit@0.3.0(react@19.2.6):
     optionalDependencies:
       react: 19.2.6
 
@@ -11491,7 +11491,7 @@ snapshots:
       for-in: 1.0.2
       is-extendable: 1.0.1
 
-  modelgo-design-tokens@0.9.0: {}
+  modelgo-design-tokens@0.11.0: {}
 
   motion-dom@12.43.0:
     dependencies:

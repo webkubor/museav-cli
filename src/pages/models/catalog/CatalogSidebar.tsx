@@ -12,7 +12,7 @@
  * 所有筛选由服务端执行；每项计数来自 facets，且每个维度的计数已排除该维度自身的
  * 条件 —— 否则选中一个选项会让同组其它选项全变 0、侧栏成为死路。
  */
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LuChevronDown, LuX } from 'react-icons/lu'
 import type { CatalogModelTag, CatalogFacets, CatalogFacetBucket } from '@/types'
@@ -83,8 +83,30 @@ export function CatalogSidebar({ tags, selected, setSelected, isZh, facets, grou
   const countOf = (buckets: CatalogFacetBucket[] | undefined, value: string) =>
     buckets?.find((b) => b.value === value)?.count
 
-  const vendors = facets?.vendors ?? []
+  /**
+   * 厂商桶防御性去重。
+   *
+   * 后端 catalog/model-facets 在聚合 vendors 桶时可能因 vendor identifier 大小写
+   * /拼写不一致（同一品牌出现 `qwen` 与 `Qwen` 等）下发多个桶（qa#<TBD>）。
+   * vendor 维度是单值字段，桶之间互斥计数（标准 faceted search），合并 count 安全。
+   * 同步把 v.value 归一成小写，让选中态比较也对大小写不敏感（旧 URL 里残留
+   * `vendor:Qwen` 也能命中合并后的 `vendor:qwen`，不会高亮错位）。
+   * 后端 facets 修好去重后可移除该兜底。
+   */
+  const vendors = useMemo(() => {
+    const raw = facets?.vendors ?? []
+    const map = new Map<string, CatalogFacetBucket>()
+    for (const v of raw) {
+      const key = v.value.toLowerCase()
+      const existing = map.get(key)
+      if (existing) existing.count += v.count
+      else map.set(key, { value: key, count: v.count })
+    }
+    return Array.from(map.values())
+  }, [facets?.vendors])
   const shownVendors = showAllVendors ? vendors : vendors.slice(0, VENDOR_PREVIEW)
+  /** 大小写不敏感的选中值（用于 active 行高亮 & 取消选中判断） */
+  const vendorActiveLower = vendorActive?.toLowerCase()
   const total = facets?.total
   /** 某组「全部」的计数：优先用已排除本组自身条件的 groupTotals；该组没有选中项时二者本就相等。 */
   const allCount = (group: FilterGroupId) => groupTotals?.[group] ?? total
@@ -123,10 +145,10 @@ export function CatalogSidebar({ tags, selected, setSelected, isZh, facets, grou
           {shownVendors.map((v) => (
             <Row
               key={v.value}
-              active={vendorActive === v.value}
+              active={vendorActiveLower === v.value}
               label={vendorLabel(v.value, isZh)}
               count={v.count}
-              onClick={() => pickOne('vendor', vendorActive === v.value ? null : v.value)}
+              onClick={() => pickOne('vendor', vendorActiveLower === v.value ? null : v.value)}
             />
           ))}
           {vendors.length > VENDOR_PREVIEW && (

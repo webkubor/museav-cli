@@ -73,6 +73,11 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
   const { t } = useTranslation()
   const navigate = useNavigate()
 
+  /** 胶囊入口的完整名称（供 aria-label 与悬停气泡）：企业=租户名，个人=显示名 */
+  const pillLabel = isNonPersonal
+    ? activeTenant?.name || t('header.organizations')
+    : account?.display_name || t('header.personalTag')
+
   function renderTenantMenuItem(tenant: TenantBrief | TenantItem) {
     const displayName = getTenantDisplayName(tenant, account, t)
     const isActive = tenant.tenant_id === activeTenantId
@@ -116,15 +121,17 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         {/* #304：右上角胶囊显式带「企业/个人」标识——头像 + 类型图标(企业=楼宇/个人=人) + 当前租户名 + 下拉箭头 */}
+        {/* prd#828：原生 title 气泡跟着光标弹、正好压住胶囊里的组织名。
+            换成下方自绘气泡（按钮末尾的 tooltip span），位置可控、与组织名同读。 */}
         <button
           data-track="header:tenant_switcher_open"
           className={cn(
-            'flex items-center gap-2 rounded-full py-1 pl-1 pr-1.5 outline-none select-none md:pr-2.5',
+            'group relative flex items-center gap-2 rounded-full py-1 pl-1 pr-1.5 outline-none select-none md:pr-2.5',
             'border border-mg-border/70 bg-[rgba(var(--mg-bg-0-rgb),0.4)] transition-all duration-200',
             'hover:border-brand-base/55 hover:bg-brand-base/[0.05] hover:shadow-sm',
             'focus-visible:ring-2 focus-visible:ring-brand-base active:scale-[0.97]',
           )}
-          title={isNonPersonal ? (activeTenant?.name || t('header.organizations')) : (account?.display_name || t('header.personalTag'))}
+          aria-label={pillLabel}
         >
           <Avatar className="h-7 w-7 block shrink-0">
             {activeTenantAvatarUrl && (
@@ -147,6 +154,20 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
               {activeTenant ? getTenantDisplayName(activeTenant, account, t) : (account?.display_name || t('header.personalTag'))}
             </span>
             <LuChevronDown size={15} className="shrink-0 text-mg-text-3" />
+          </span>
+          {/* 悬停气泡：贴按钮下缘、右对齐（入口在屏幕右上角，右对齐不越界），
+              永不遮挡胶囊本体；菜单展开时隐藏，别和下拉面板叠在一起 */}
+          <span
+            role="tooltip"
+            className={cn(
+              'pointer-events-none absolute right-0 top-[calc(100%+8px)] z-[var(--mg-z-tooltip)]',
+              'w-max max-w-[240px] truncate rounded-[var(--mg-tooltip-radius)] border border-mg-border bg-mg-bg-3',
+              'px-[var(--mg-tooltip-pad-x)] py-[var(--mg-tooltip-pad-y)] mg-text-caption font-medium text-mg-text-2 shadow-lg',
+              'opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-hover:delay-300',
+              'group-aria-expanded:hidden',
+            )}
+          >
+            {pillLabel}
           </span>
         </button>
       </DropdownMenuTrigger>

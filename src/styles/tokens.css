@@ -215,6 +215,25 @@
   --chart-cat-6: var(--mg-chart-cat-6);
 }
 
+/* 画布渐变的实色兜底（prd#827）：--mg-glass-canvas 是纯 linear-gradient，没有
+   background-color，快速滚动时未栅格化的瓦片会按文档根底色（默认白）填充 → 闪白。
+   四象限各取库里渐变两端的中间值；库若调画布渐变，这四个值要跟着改。
+   库侧（modelgo-design-tokens）补 --mg-glass-canvas-base 后本组可撤。 */
+:root,
+[data-market='china'] {
+  --mg-canvas-base: #f0f8ff;
+}
+[data-market='global'] {
+  --mg-canvas-base: #f8fcf9;
+}
+[data-theme='dark'] {
+  --mg-canvas-base: #181c27;
+}
+[data-theme='dark'][data-market='global'],
+[data-theme='dark'] [data-market='global'] {
+  --mg-canvas-base: #141d1a;
+}
+
 /* 国内市场：代码块/网格的品牌色调（border/fill/语义交共享，本块只留控制台特有项） */
 :root,
 [data-market='china'] {

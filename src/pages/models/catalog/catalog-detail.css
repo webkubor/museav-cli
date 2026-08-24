@@ -24,7 +24,9 @@
   background: var(--mg-fill-1); font-size: 11.5px; color: var(--mg-text-2);
 }
 .mg-detail-desc {
-  margin: 2px 0 0; max-width: 76ch;
+  /* prd#822：去掉 76ch 上限（约 570px，宽屏下不到主信息列一半就换行）。
+     描述铺满 hero 主信息列，右界天然由操作列（去体验/对比）挡住，窄屏随列缩。 */
+  margin: 2px 0 0;
   font-size: 12.5px; line-height: 1.6; color: var(--mg-text-3);
 }
 .mg-detail-tags { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 2px; }

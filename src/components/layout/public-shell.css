@@ -27,6 +27,17 @@
   /* 长列表不用 fixed 画布。Chromium 快速滚动时会持续重新合成固定背景，
      与下方数十张模型卡叠加后容易出现 checkerboarding（整屏留白）。 */
   background-attachment: scroll;
+  /* prd#827：渐变下垫一层同色系实底，让整块画布成为不透明内容 ——
+     快速滚动时来不及栅格化的区域露出的是画布色而不是透明（→白）。 */
+  background-color: var(--mg-canvas-base);
+}
+
+/* prd#827：#680 把画布从 fixed 改随滚后，快速上下往复滑动时 Chromium 来不及
+   栅格化新露出的瓦片，缺席瓦片按文档根底色填充 —— html/body 从未设置过背景色，
+   默认白，深浅主题都表现为「闪白」。给根节点补与画布同色的实底后，
+   瓦片缺席时露出的就是画布色，肉眼不可辨。 */
+body:has(.mg-public-shell) {
+  background-color: var(--mg-canvas-base);
 }
 
 /* design-tokens 的高频 SVG 颗粒会生成一张与整个长页等高的混合图层。

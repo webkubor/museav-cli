@@ -9,7 +9,7 @@
   padding: 10px 14px;
   margin-bottom: 14px;
   border: 1px solid var(--mg-glass-line);
-  border-radius: 8px;
+  border-radius: var(--mg-radius-sm);
   background: var(--mg-glass-surface-strong);
   -webkit-backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.15);
   backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.15);
@@ -51,7 +51,7 @@
   background: var(--mg-glass-surface-strong);
   -webkit-backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.15);
   backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.15);
-  border-radius: 8px;
+  border-radius: var(--mg-radius-sm);
   /* 列高交给容器拉伸（grid/flex 默认 stretch 已把列填满可用高度），不设固定保底。
      此前的 min-height:420px 在矮视口会把列顶出 .models-compare-columns 的盒子：
      溢出的最后几行正文和底部 Token/耗时/费用统计行，线上被半透明共享 composer

@@ -38,7 +38,7 @@
   min-height: 28px;
   max-width: 160px;
   padding: 0 10px;
-  border-radius: 999px;
+  border-radius: var(--mg-radius-pill);
   background: var(--mg-fill-0);
   color: var(--mg-text-2);
   font-size: 12px;

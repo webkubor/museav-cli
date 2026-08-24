@@ -10,7 +10,7 @@
   cursor: pointer;
   text-align: left;
   transform: translateZ(0);
-  transition: border-color 0.45s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: border-color 0.45s var(--mg-ease-emphasized), box-shadow 0.45s var(--mg-ease-emphasized);
 }
 
 /* 默认的科技发光投影效果，在 hover 时强化 */

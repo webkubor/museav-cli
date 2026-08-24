@@ -14,7 +14,7 @@
   box-shadow:
     0 34px 90px -54px rgba(15, 23, 42, 0.42),
     0 1px 0 rgba(255, 255, 255, 0.76) inset !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s var(--mg-ease-standard);
 }
 
 /* 流光边框 */
@@ -110,7 +110,7 @@ body[theme-mode='dark'] .glass-auth-card .auth-policy-text {
   box-sizing: border-box;
   color: var(--mg-text-1) !important;
   background-color: var(--mg-bg-1) !important;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s var(--mg-ease-standard);
 }
 
 .modern-auth-input::placeholder {
@@ -135,7 +135,7 @@ body[theme-mode='dark'] .glass-auth-card .auth-policy-text {
   border: 1px solid var(--mg-btn-neutral-border) !important;
   color: var(--mg-btn-neutral-text) !important;
   box-shadow: var(--mg-btn-neutral-shadow) !important;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: all 0.2s var(--mg-ease-standard) !important;
 }
 
 .modern-auth-btn:hover {
@@ -411,7 +411,7 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
 .social-btn {
   @apply flex-1 flex items-center justify-center gap-2 border rounded-md text-sm font-semibold;
   height: var(--mg-control-height);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.2s var(--mg-ease-emphasized);
   border-color: var(--mg-border) !important;
   background-color: rgba(var(--mg-bg-0-rgb), 0.56) !important;
   color: var(--mg-text-2);
@@ -458,7 +458,7 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
 .auth-form-container .modern-input-field,
 .auth-form-container .modern-input-wrapper {
   position: relative;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: all 0.25s var(--mg-ease-standard) !important;
   z-index: 1;
 }
 

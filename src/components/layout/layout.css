@@ -152,9 +152,9 @@ body[theme-mode='dark'] .dashboard-global-bottom-bg {
     inset 0 1px 0 rgba(255, 255, 255, 0.62),
     var(--shadow-sm) !important;
   transition:
-    border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    border-color 0.25s var(--mg-ease-emphasized),
+    box-shadow 0.25s var(--mg-ease-emphasized),
+    transform 0.25s var(--mg-ease-emphasized) !important;
 }
 
 body[theme-mode='dark'] .glass-card-glow {
@@ -175,7 +175,7 @@ body[theme-mode='dark'] .glass-card-glow {
   border-radius: var(--radius-full);
   background: linear-gradient(90deg, transparent, var(--brand-base), transparent);
   opacity: 0.72;
-  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: width 0.3s var(--mg-ease-emphasized);
   pointer-events: none;
   z-index: 1;
 }

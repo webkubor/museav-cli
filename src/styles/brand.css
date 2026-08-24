@@ -62,7 +62,7 @@
   width: 0.42em;
   height: 0.42em;
   flex: 0 0 auto;
-  border-radius: 999px;
+  border-radius: var(--mg-radius-pill);
   background: var(--brand-base);
   box-shadow: 0 0 18px var(--brand-glow);
   animation: pulse-breathing 3s ease-in-out infinite;
@@ -89,7 +89,7 @@
   content: '';
   position: absolute;
   inset: -22%;
-  border-radius: 999px;
+  border-radius: var(--mg-radius-pill);
   background: radial-gradient(circle, var(--brand-glow) 0%, transparent 65%);
   z-index: 0;
   pointer-events: none;

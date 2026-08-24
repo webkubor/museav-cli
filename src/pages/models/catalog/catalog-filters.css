@@ -5,7 +5,7 @@
   min-height: 28px;
   padding: 0 10px;
   border: 1px solid var(--mg-border);
-  border-radius: 999px;
+  border-radius: var(--mg-radius-pill);
   background: rgba(var(--mg-bg-0-rgb), 0.72);
   color: var(--mg-text-2);
   font-family: inherit;
@@ -35,7 +35,7 @@
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
-  border-radius: 999px;
+  border-radius: var(--mg-radius-pill);
   background: var(--brand-base);
   color: #fff;
   font-size: 11px;
@@ -48,7 +48,7 @@
   margin-top: 4px;
   padding: 14px;
   border: 1px solid var(--mg-glass-line);
-  border-radius: 14px;
+  border-radius: var(--mg-radius-md);
   background: var(--mg-glass-surface-strong);
   -webkit-backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.15);
   backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.15);

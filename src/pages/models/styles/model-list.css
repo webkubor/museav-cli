@@ -16,7 +16,7 @@
   width: 100%;
   min-height: 58px;
   padding: 9px 10px;
-  border-radius: 8px;
+  border-radius: var(--mg-radius-sm);
   border: 1px solid transparent;
   background: transparent;
   color: var(--mg-text-2);
@@ -59,7 +59,7 @@
 .models-experience-status-dot {
   width: 7px;
   height: 7px;
-  border-radius: 999px;
+  border-radius: var(--mg-radius-pill);
   background: var(--mg-success);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--mg-success) 14%, transparent);
   flex: none;

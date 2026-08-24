@@ -65,7 +65,7 @@
 .catalog-hot-chip {
   padding: 5px 13px;
   border: 1px solid var(--mg-border);
-  border-radius: 999px;
+  border-radius: var(--mg-radius-pill);
   background: var(--mg-bg-0);
   color: var(--mg-text-2);
   font-size: 12.5px;
@@ -89,7 +89,7 @@
 /* 搜索/排序配色走定稿变量（catalog-palette.css）；聚焦只亮描边和光圈，底色不跳变。 */
 .mg-search-input {
   width: 100%; height: 48px; padding: 0 16px 0 44px;
-  border: 1px solid var(--plaza-card-border); border-radius: 999px;  /* 与卡片同一条描边（规范 --mg-glass-line） */
+  border: 1px solid var(--plaza-card-border); border-radius: var(--mg-radius-pill);  /* 与卡片同一条描边（规范 --mg-glass-line） */
   background: var(--plaza-input-bg); color: var(--mg-text-1); font-size: 14px; outline: none;
   -webkit-backdrop-filter: blur(var(--mg-glass-blur));
   backdrop-filter: blur(var(--mg-glass-blur));

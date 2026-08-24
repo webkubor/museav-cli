@@ -165,7 +165,7 @@
   height: 24px;
   border: 2px solid var(--mg-border);
   border-top-color: var(--brand-base);
-  border-radius: 999px;
+  border-radius: var(--mg-radius-pill);
   animation: models-catalog-spin 720ms linear infinite;
 }
 

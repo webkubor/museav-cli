@@ -233,7 +233,7 @@
   width: 55%;
   background: linear-gradient(100deg, transparent 0%, rgba(255, 255, 255, 0.28) 50%, transparent 100%);
   transform: translateX(-200%) skewX(-14deg);
-  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.7s var(--mg-ease-emphasized);
   pointer-events: none;
 }
 .modern-btn-brand:hover::before {
@@ -275,7 +275,7 @@
   backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.15);
   border-radius: var(--mg-tile-radius);
   box-shadow: var(--mg-card-shadow);
-  transition: box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: box-shadow 0.25s var(--mg-ease-emphasized), transform 0.25s var(--mg-ease-emphasized), border-color 0.25s var(--mg-ease-emphasized);
 }
 .mg-tile-hover {
   cursor: pointer;
@@ -404,7 +404,7 @@
 /* 1. 终极平滑过渡与弹性曲线（硅谷极客动效 ease-out-expo） */
 .transition-ux {
   transition-property: all;
-  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition-timing-function: var(--mg-ease-emphasized) !important;
   transition-duration: 350ms !important;
 }
 
@@ -424,7 +424,7 @@
 /* 3. 卡片微光与弹簧悬浮 (Card Spring Glow) */
 .card-glow-hover {
   position: relative;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition: all 0.3s var(--mg-ease-emphasized) !important;
 }
 
 .card-glow-hover:hover {
@@ -438,7 +438,7 @@
 /* 交互型 Badge 徽章动效 */
 .badge-interactive {
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition: all 0.2s var(--mg-ease-emphasized) !important;
 }
 
 .badge-interactive:hover {
@@ -483,7 +483,7 @@
 .logo-status-dot {
   width: 6px;
   height: 6px;
-  border-radius: 9999px;
+  border-radius: var(--mg-radius-pill);
   background: var(--brand-base);
   animation: logo-dot-pulse 2.4s ease-in-out infinite;
   flex-shrink: 0;
@@ -529,8 +529,8 @@
 }
 
 .magnetic-hover {
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
-              box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+  transition: transform 0.25s var(--mg-ease-emphasized), 
+              box-shadow 0.25s var(--mg-ease-emphasized),
               border-color 0.2s ease-out !important;
 }
 

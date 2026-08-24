@@ -59,7 +59,7 @@
   min-height: 27px;
   max-width: 260px;
   padding: 0 9px;
-  border-radius: 999px;
+  border-radius: var(--mg-radius-pill);
   border: 1px solid var(--mg-border);
   background: var(--mg-fill-0);
   color: var(--mg-text-2);
@@ -88,7 +88,7 @@
 
 .models-experience-quota div {
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--mg-radius-pill);
   background: var(--mg-fill-0);
   overflow: hidden;
 }
@@ -147,7 +147,7 @@
 .models-experience-message-bubble {
   max-width: min(720px, 82%);
   padding: 13px 15px;
-  border-radius: 8px;
+  border-radius: var(--mg-radius-sm);
   border: 1px solid var(--mg-border);
   background: var(--mg-bg-0);
   color: var(--mg-text-2);

@@ -9,7 +9,7 @@
 
 .models-experience-search {
   width: 100%;
-  border-radius: 8px !important;
+  border-radius: var(--mg-radius-sm) !important;
 }
 
 .models-experience-categories {
@@ -21,7 +21,7 @@
 .models-experience-categories button {
   height: 28px;
   padding: 0 10px;
-  border-radius: 999px;
+  border-radius: var(--mg-radius-pill);
   border: 1px solid var(--mg-border);
   background: var(--mg-fill-0);
   color: var(--mg-text-2);

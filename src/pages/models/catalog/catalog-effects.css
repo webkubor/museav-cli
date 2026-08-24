@@ -78,7 +78,7 @@
   height: 24px;
   margin-left: auto;
   border: 1px solid var(--mg-border);
-  border-radius: 6px;
+  border-radius: var(--mg-radius-xs);
   background: transparent;
   color: var(--mg-text-3);
   cursor: pointer;
@@ -120,7 +120,7 @@
   margin-bottom: 8px;
   padding: 0 8px;
   border: 1px solid color-mix(in srgb, var(--brand-base) 16%, var(--mg-border));
-  border-radius: 999px;
+  border-radius: var(--mg-radius-pill);
   background: var(--brand-selected-bg);
   color: var(--brand-base);
   font-size: 11px;
@@ -179,7 +179,7 @@
   align-items: center !important;
   gap: 6px !important;
   height: 36px !important;
-  border-radius: 999px !important;
+  border-radius: var(--mg-radius-pill) !important;
   padding-inline: 14px !important;
   font-size: 12px !important;
   font-weight: 800 !important;
@@ -204,7 +204,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  border-radius: 18px;
+  border-radius: var(--mg-radius-lg);
   padding: 14px;
 }
 
@@ -242,7 +242,7 @@
   min-height: 28px;
   padding: 0 12px;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: var(--mg-radius-pill);
   background: var(--mg-fill-0);
   color: var(--mg-text-2);
   font-size: 12px;

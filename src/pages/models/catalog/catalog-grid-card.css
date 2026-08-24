@@ -30,7 +30,7 @@
 /* IntersectionObserver 在卡片距视口 420px 时才加类名。默认状态永远是完整可见，
    所以快速滚动跳过预热区也不会出现空白；命中时只播放一次轻量入场。 */
 .mg-mcard.is-entering-view {
-  animation: models-catalog-card-enter 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: models-catalog-card-enter 220ms var(--mg-ease-emphasized);
 }
 
 @keyframes models-catalog-card-enter {
@@ -152,7 +152,7 @@
   /* 浮出走「上滑 + 渐显」：纯 opacity 硬切生硬（走查反馈）。曲线跟 .mg-tile
      的抬升同族（ease-out 弹性），出场稍慢、收场稍快。 */
   transform: translateY(10px);
-  transition: opacity 0.22s ease, transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.22s ease, transform 0.28s var(--mg-ease-emphasized);
 }
 .mg-mcard:hover .mg-mcard-actions,
 .mg-mcard:focus-within .mg-mcard-actions {

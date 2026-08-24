@@ -120,6 +120,12 @@ export function CatalogCard({
     model.pricing?.output_per_1m,
     isFree,
   )
+  // 缓存读取与输入/输出同口径补画线（prd#831）；per_call 模型卡上本就不显示缓存价
+  const strikeCacheReadVal = strikeOriginalPrice(
+    promo?.original_cache_read_per_1m,
+    isPerCall ? undefined : model.pricing?.cache_read_per_1m,
+    isFree,
+  )
   const useTierGrid = catalogCardReplacesGridWithTiers(model.pricing, cardTiers)
 
   // 输入 → 输出模态流。后端拆分下发；老数据只有合并 modalities 时退回并集。
@@ -283,7 +289,12 @@ export function CatalogCard({
               accent
             />
             <Metric label={t('modelsCatalog.card.context')} value={ctxValue} />
-            <Metric label={t('modelsCatalog.card.cacheRead')} value={cacheRead.value} unit={cacheRead.unit} />
+            <Metric
+              label={t('modelsCatalog.card.cacheRead')}
+              value={cacheRead.value}
+              unit={cacheRead.unit}
+              strike={strikeCacheReadVal != null ? `${symbol}${trimPriceZeros(String(strikeCacheReadVal))}` : undefined}
+            />
           </>
         )}
       </div>

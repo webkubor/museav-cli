@@ -131,6 +131,16 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
   const strikeOutput = strikeOutputVal != null
     ? `${symbol} ${trimPriceZeros(String(strikeOutputVal))}${unitSuffix}`
     : undefined
+  // 缓存读取的原价画线与输入/输出同口径（prd#831：后端有下发、此前没渲染）。
+  // 缓存写入契约里没有 original_* 字段（CatalogPromotion 只有 read），有价无原价，不画。
+  const strikeCacheReadVal = strikeOriginalPrice(
+    promo?.original_cache_read_per_1m,
+    detail.pricing?.cache_read_per_1m,
+    isFree,
+  )
+  const strikeCacheRead = strikeCacheReadVal != null
+    ? `${symbol} ${trimPriceZeros(String(strikeCacheReadVal))}${unitSuffix}`
+    : undefined
   const priceTiers = detail.price_tiers ?? []
   const replaceGridWithTiers = catalogCardReplacesGridWithTiers(detail.pricing, priceTiers)
 
@@ -232,6 +242,7 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
               label={t('models.detail.pricingCacheRead')}
               value={cacheRead.value}
               unit={cacheRead.unit}
+              strike={strikeCacheRead}
             />
             <Metric
               label={t('models.detail.pricingCacheWrite')}

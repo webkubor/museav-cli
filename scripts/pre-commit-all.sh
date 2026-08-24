@@ -26,3 +26,23 @@ bash scripts/ui-guard.sh || exit 1
 # （z-index 退回 auto、圆角/间距归零），而 tsc/eslint/vite build 全部照过——
 # 2026-08-12 的「全局组件无法点击」就是这么进 test 的，必须在提交期拦。
 node scripts/check-css-tokens.mjs || exit 1
+
+# 硬编码回归门禁（2026-08-24 接入）：库里已有 token 却写死字面值 ——
+# ease / duration / radius / shadow / z-index / 语义色六类。规则真源在
+# modelgo-design-tokens 包里，本仓只调用、不复述清单，避免两处漂移。
+#
+# 存量不阻断：token-usage-baseline.json 是本仓存量快照（105 处），只拦新增。
+# 收口：pnpm dlx 不需要，直接 node <上面那个脚本> src --update-baseline。
+# 整 file 豁免：在文件里写注释 token-check-ignore。详见包里 TOKEN-GOVERNANCE.md §6.1。
+#
+# 为什么必须显式给 MODELGO_WORKSPACE：脚本默认按「兄弟仓布局」推断工作区根，
+# 在 worktree 里跑会把 .claude/worktrees/<名>/ 也写进 baseline 的 key，
+# 换个 worktree 名就全部失配、每处都被当成新增。钉到 show-toplevel 之后
+# key 恒为 src/...，主检出与任意 worktree 通用。
+USAGE_GUARD='node_modules/modelgo-design-tokens/scripts/check-token-usage.mjs'
+if [ -f "$USAGE_GUARD" ]; then
+  MODELGO_WORKSPACE="$(git rev-parse --show-toplevel)" node "$USAGE_GUARD" src || exit 1
+else
+  # 不静默跳过：说清哪道门禁没跑、为什么。依赖没装时前面的快检本来也过不了。
+  echo "pre-commit: ⚠ 硬编码门禁未运行 —— 找不到 $USAGE_GUARD，先 pnpm install" >&2
+fi

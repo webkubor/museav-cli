@@ -508,7 +508,7 @@
     transparent 85%
   );
   opacity: 0;
-  transition: opacity 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+  transition: opacity 0.35s var(--mg-ease-decelerate);
   pointer-events: none;
   z-index: 1;
 }
@@ -547,7 +547,7 @@
 
 /* ── 🚀 KPI 卡片主数值大字 Hover 品牌色渐变（与 Logo 渐变呼应，视觉极具张力） ── */
 .kpi-value-text {
-  transition: color 0.3s cubic-bezier(0.25, 1, 0.5, 1), background 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  transition: color 0.3s var(--mg-ease-decelerate), background 0.3s var(--mg-ease-decelerate);
 }
 
 .mouse-glow-card:hover .kpi-value-text {

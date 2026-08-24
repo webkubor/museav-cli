@@ -6,12 +6,7 @@
   "counts": {
     "src/components/customer-service/index.tsx::hardcoded-transition-duration": 1,
     "src/components/customer-service/index.tsx::legacy-global-z": 2,
-    "src/components/layout/dashboard-header-nav.tsx::hardcoded-easing": 1,
     "src/components/ui/AvatarUpload.tsx::hardcoded-transition-duration": 1,
-    "src/components/ui/KpiCard.tsx::hardcoded-easing": 1,
-    "src/components/ui/KpiCard.tsx::hardcoded-transition-duration": 1,
-    "src/index.css::hardcoded-easing": 3,
-    "src/index.css::hardcoded-transition-duration": 1,
     "src/pages/billing/billing.css::hardcoded-transition-duration": 1,
     "src/pages/device/index.tsx::hardcoded-transition-duration": 1,
     "src/pages/models/catalog/catalog-card-row.css::hardcoded-shadow": 1,
@@ -33,10 +28,8 @@
     "src/pages/models/styles/model-composer.css::hardcoded-transition-duration": 1,
     "src/pages/models/styles/model-experience-layout.css::hardcoded-shadow": 4,
     "src/pages/models/styles/model-experience-layout.css::hardcoded-transition-duration": 3,
-    "src/pages/models/styles/model-featured-card.css::hardcoded-easing": 3,
     "src/pages/models/styles/model-featured-card.css::hardcoded-radius-px": 1,
     "src/pages/models/styles/model-featured-card.css::hardcoded-shadow": 7,
-    "src/pages/models/styles/model-featured-card.css::hardcoded-transition-duration": 1,
     "src/pages/models/styles/model-list.css::hardcoded-transition-duration": 1,
     "src/pages/models/styles/model-picker-dialog.css::hardcoded-transition-duration": 2,
     "src/pages/models/styles/model-picker.css::hardcoded-transition-duration": 1,
@@ -46,12 +39,10 @@
     "src/styles/auth.css::hardcoded-transition-duration": 3,
     "src/styles/brand.css::hardcoded-easing": 1,
     "src/styles/brand.css::hardcoded-transition-duration": 1,
-    "src/styles/components.css::hardcoded-easing": 3,
     "src/styles/components.css::hardcoded-shadow": 1,
-    "src/styles/components.css::hardcoded-transition-duration": 5,
-    "src/styles/effects.css::hardcoded-easing": 3,
+    "src/styles/components.css::hardcoded-transition-duration": 3,
     "src/styles/effects.css::hardcoded-radius-px": 1,
     "src/styles/effects.css::hardcoded-shadow": 1,
-    "src/styles/effects.css::hardcoded-transition-duration": 2
+    "src/styles/effects.css::hardcoded-transition-duration": 1
   }
 }

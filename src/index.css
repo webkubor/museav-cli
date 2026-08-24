@@ -98,10 +98,10 @@ header,
 aside, 
 .card,
 .glass-card {
-  transition: background-color 0.22s cubic-bezier(0.25, 1, 0.5, 1),
-              border-color 0.22s cubic-bezier(0.25, 1, 0.5, 1),
+  transition: background-color 0.22s var(--mg-ease-decelerate),
+              border-color 0.22s var(--mg-ease-decelerate),
               color 0.18s ease-out,
-              box-shadow 0.22s cubic-bezier(0.25, 1, 0.5, 1);
+              box-shadow 0.22s var(--mg-ease-decelerate);
 }
 
 /* recharts 给 svg surface 加了 tabIndex（无障碍层），点击图表会触发浏览器默认 focus 边框，

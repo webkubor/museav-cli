@@ -83,9 +83,9 @@
   height: 100%;
   object-fit: cover;
   pointer-events: none;
-  transition: opacity 0.65s cubic-bezier(0.25, 1, 0.5, 1),
-              transform 0.75s cubic-bezier(0.25, 1, 0.5, 1),
-              filter 0.65s cubic-bezier(0.25, 1, 0.5, 1);
+  transition: opacity 0.65s var(--mg-ease-decelerate),
+              transform 0.75s var(--mg-ease-decelerate),
+              filter 0.65s var(--mg-ease-decelerate);
 }
 
 .featured-bg-img.is-active {

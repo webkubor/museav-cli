@@ -63,7 +63,8 @@ function RatioRing({ current, total, color }: { current: number; total: number; 
         <circle
           cx="22" cy="22" r={r} fill="none" stroke={color} strokeWidth="3.5" strokeLinecap="round"
           strokeDasharray={circ} strokeDashoffset={circ * (1 - pct)} transform="rotate(-90 22 22)"
-          style={{ transition: 'stroke-dashoffset 1s cubic-bezier(0.22,1,0.36,1)' }}
+          // 走 Tailwind 类而非内联 style：ui-guard BLOCK 3 不许在 style 对象里引 --mg- 开头的 token
+          className="transition-[stroke-dashoffset] duration-1000 ease-[var(--mg-ease-decelerate)]"
         />
       </svg>
       <span className="absolute inset-0 flex items-center justify-center mg-text-caption font-bold" style={{ color }}>

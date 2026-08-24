@@ -129,7 +129,7 @@ body[theme-mode='dark'] .sidebar-flow-line::after {
     transparent 100%
   );
   filter: drop-shadow(0 0 2px var(--brand-glow));
-  animation: verticalFlow 3.4s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+  animation: verticalFlow 3.4s var(--mg-ease-decelerate) infinite;
 }
 
 /* ── 🚀 侧边栏子菜单物理高度折叠滑入收缩 (Vercel Style Accordion) ── */
@@ -188,7 +188,7 @@ body[theme-mode='dark'] .sidebar-flow-line::after {
   animation: shimmer-slide 2.5s ease-in-out infinite;
   opacity: 0;
   flex-shrink: 0;
-  transition: height 350ms cubic-bezier(0.25, 1, 0.5, 1), opacity 350ms cubic-bezier(0.25, 1, 0.5, 1);
+  transition: height 350ms var(--mg-ease-decelerate), opacity 350ms var(--mg-ease-decelerate);
 }
 
 .shimmer-line.navigating {

@@ -48,7 +48,7 @@ export const DashboardHeaderNav: React.FC<DashboardHeaderNavProps> = ({ items, o
       {/* 磁性悬浮滑块（胶囊气泡） */}
       <div
         style={sliderStyle}
-        className="pointer-events-none absolute top-1.5 bottom-1.5 rounded-lg bg-brand-base/[0.08] transition-all duration-[380ms] ease-[cubic-bezier(0.25,1,0.33,1)]"
+        className="pointer-events-none absolute top-1.5 bottom-1.5 rounded-lg bg-brand-base/[0.08] transition-all duration-[380ms] ease-[var(--mg-ease-decelerate)]"
       />
 
       {items.map((item) => {

@@ -34,7 +34,9 @@ describe('secure-transport 混合加密', () => {
     expect(a.iv).not.toBe(b.iv) // 同密钥不同 IV
   })
 
-  it('encryptRequest 信封可被「后端」RSA 私钥 + AES 解开（端到端契约自检）', () => {
+  // 2048 位 RSA 生成耗时随机（实测 1~6s，撞默认 5s 超时会偶发变红——本用例只验信封契约，
+  // 不是性能测试），单独放宽超时，不要因为它偶发失败就删掉这条端到端自检。
+  it('encryptRequest 信封可被「后端」RSA 私钥 + AES 解开（端到端契约自检）', { timeout: 20_000 }, () => {
     // 模拟后端：生成 RSA 密钥对
     const rsa = new JSEncrypt({ default_key_size: '2048' })
     const publicKey = rsa.getPublicKey()

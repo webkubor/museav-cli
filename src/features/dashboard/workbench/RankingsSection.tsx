@@ -17,7 +17,7 @@ function RankingRow({ index, name, meta, metaTitle, spend, model }: { index: num
   return (
     <div className="flex items-center gap-3 py-2.5">
       <span className="w-4 shrink-0 text-center font-mono text-xs font-bold text-mg-text-3">{String(index + 1)}</span>
-      {model && <ModelIcon model={model} size={24} className="border border-mg-border/40" />}
+      {model && <ModelIcon model={model} variant="compact" className="border border-mg-border/40" />}
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-semibold text-mg-text-1">{name}</div>
         {/* 缩写数字悬浮显精确值（原生 title，不引入 Tooltip） */}

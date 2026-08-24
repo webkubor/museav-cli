@@ -334,7 +334,7 @@ export function useUsagePage() {
       return (
         <ModelIcon
           model={{ display_name: item.name || item.key || '', vendor: item.vendor || item.name || item.key || '' }}
-          size={22}
+          variant="inline"
           rounded="rounded-md"
         />
       )

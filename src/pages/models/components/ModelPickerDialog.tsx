@@ -449,7 +449,7 @@ export function ModelPickerDialog({
                 <div className="model-picker-dialog__group-label">{t('modelsExperience.picker.selectedModels')}</div>
                 {alreadySelectedModels.map((model) => (
                   <div key={model.id} className="model-picker-dialog__row is-fixed-selected" aria-disabled>
-                    <ModelIcon model={model} size={30} rounded="rounded-md" className="bg-mg-bg-0" />
+                    <ModelIcon model={model} variant="picker" rounded="rounded-md" className="bg-mg-bg-0" />
                     <div className="model-picker-dialog__row-main">
                       <span className="mg-text-body font-semibold text-mg-text-1 truncate">
                         {prettyModelName(model.display_name, model.model_id, modelVendorLabel(model, ''))}
@@ -511,7 +511,7 @@ export function ModelPickerDialog({
                       {checked && <LuCheck size={11} />}
                     </span>
                   )}
-                  <ModelIcon model={model} size={30} rounded="rounded-md" className="bg-mg-bg-0" />
+                  <ModelIcon model={model} variant="picker" rounded="rounded-md" className="bg-mg-bg-0" />
                   <div className="model-picker-dialog__row-main">
                     <span className="mg-text-body font-semibold text-mg-text-1 truncate">
                       {prettyModelName(model.display_name, model.model_id, modelVendorLabel(model, ''))}
@@ -564,7 +564,7 @@ export function ModelPickerDialog({
                   {compareModels.map((m) => (
                     <div key={m.id} className="min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <ModelIcon model={m} size={18} rounded="rounded-sm" />
+                        <ModelIcon model={m} variant="dense" rounded="rounded-sm" />
                         <span className="text-xs font-bold text-mg-text-1 truncate">{prettyModelName(m.display_name, m.model_id, modelVendorLabel(m, ''))}</span>
                       </div>
                     </div>
@@ -592,7 +592,7 @@ export function ModelPickerDialog({
             ) : (
               <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-3">
-                  <ModelIcon model={detailModel} size={40} rounded="rounded-lg" className="bg-mg-bg-0" />
+                  <ModelIcon model={detailModel} variant="panel" rounded="rounded-lg" className="bg-mg-bg-0" />
                   <div className="min-w-0">
                     <div className="mg-text-title-sm font-bold text-mg-text-1 truncate">
                       {prettyModelName(detailModel.display_name, detailModel.model_id, modelVendorLabel(detailModel, ''))}

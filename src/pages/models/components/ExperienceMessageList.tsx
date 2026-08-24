@@ -249,7 +249,7 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
         return (
           <div key={`${message.role}-${index}`} className={cn('models-experience-message', message.role === 'user' && 'is-user')}>
             {message.role === 'assistant' && assistantModel ? (
-              <ModelIcon model={assistantModel} size={28} rounded="rounded-full" className="models-experience-message-avatar" />
+              <ModelIcon model={assistantModel} variant="row" rounded="rounded-full" className="models-experience-message-avatar" />
             ) : (
               <span className="models-experience-message-avatar">
                 {message.role === 'user' ? 'J' : (message.metrics?.model ?? 'AI').slice(0, 1).toUpperCase()}

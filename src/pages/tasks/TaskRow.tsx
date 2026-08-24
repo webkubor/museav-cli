@@ -84,7 +84,7 @@ export function TaskRow({ item, expired, onOpen, onPreview, onExpired }: TaskRow
         <span className="inline-flex items-center gap-1.5 max-w-[220px] mx-auto truncate">
           <ModelIcon
             model={{ display_name: item.requested_model, vendor: item.vendor ?? undefined }}
-            size={18}
+            variant="dense"
             rounded="rounded-md"
             className="shrink-0"
           />

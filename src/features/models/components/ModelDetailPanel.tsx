@@ -144,7 +144,7 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
       <section className="mg-tile mg-detail-hero">
         <ModelIcon
           model={{ logo_url: detail.logo_url, vendor, display_name: detail.display_name }}
-          size={48}
+          variant="hero"
           rounded="rounded-sm"
           className="mg-detail-avatar"
         />

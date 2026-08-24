@@ -84,7 +84,7 @@ function CompareColumnCard({ ctx, column, idx }: { ctx: ModelsCompareContext; co
           {isOfflineModel(column.model) ? (
             <span className="models-experience-model-avatar is-offline">!</span>
           ) : (
-            <ModelIcon model={column.model} size={32} rounded="rounded-md" />
+            <ModelIcon model={column.model} variant="bar" rounded="rounded-md" />
           )}
           <div className="min-w-0">
             <div className="models-experience-modelbar-title">

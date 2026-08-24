@@ -269,7 +269,7 @@ export default function ModelDetailPage() {
                     <span className="mg-related-head">
                       <ModelIcon
                         model={{ logo_url: item.logo_url, vendor: item.vendor, display_name: item.name }}
-                        size={22}
+                        variant="inline"
                         rounded="rounded-full"
                         className="mg-related-avatar"
                       />

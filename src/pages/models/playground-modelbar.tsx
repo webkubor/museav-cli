@@ -47,7 +47,7 @@ export function PlaygroundModelBar({
             {offline ? (
               <span className="models-experience-model-avatar is-offline">!</span>
             ) : (
-              <ModelIcon model={selectedModel} size={32} rounded="rounded-md" />
+              <ModelIcon model={selectedModel} variant="bar" rounded="rounded-md" />
             )}
             <div className="min-w-0">
               <div className="models-experience-modelbar-title">

@@ -210,7 +210,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
 
   // 厂商 Logo 渲染，提供精美后备
   const renderLogo = (m: CatalogModelItem) => (
-    <ModelIcon model={m} size={24} rounded="rounded-sm" className="bg-white border border-mg-border/40" />
+    <ModelIcon model={m} variant="compact" rounded="rounded-sm" className="bg-white border border-mg-border/40" />
   )
 
   // 参数明细行（PRD §7.7：厂商、上下文窗口、输入/输出价格、缓存价格、输入→输出模态、

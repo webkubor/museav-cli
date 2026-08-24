@@ -150,7 +150,7 @@ export function CatalogCard({
     >
       {/* 顶行：图标 + 角标（右对齐） */}
       <div className="mg-mcard-top">
-        <ModelIcon model={model} size={38} rounded="rounded-full" className="mg-mcard-avatar" />
+        <ModelIcon model={model} variant="card" rounded="rounded-full" className="mg-mcard-avatar" />
         <div className="mg-mcard-badges">
           {model.is_new && (
             <em className="mg-badge is-new">

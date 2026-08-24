@@ -260,11 +260,17 @@
    卡片靠阴影"浮起"而非硬线框。边框/阴影走 --mg-card-* token（深浅各一套，见 tokens.css）。
    .mg-tile 给静态容器；.mg-tile-hover 追加可交互抬升（悬浮上浮 + 阴影加深 + 品牌色边框） */
 .mg-tile {
-  /* 表面并入玻璃系统（design-tokens 的 --mg-glass-*）：四象限自动跟随，
-     控制台所有用 .mg-tile 的页面一次生效，不必逐页改。
-     原来是 --mg-bg-0 实色 + --mg-card-border，和玻璃画布放一起是两套语言。 */
-  background: var(--mg-glass-surface);
-  border: 1px solid var(--mg-glass-line);
+  /* 表面并入玻璃系统：--mg-tile-bg / --mg-tile-border 是 design-tokens 里
+     指向 --mg-glass-* 的语义别名，四象限自动跟随，控制台所有用 .mg-tile 的
+     页面一次生效，不必逐页改。原来是 --mg-bg-0 实色 + --mg-card-border，
+     和玻璃画布放一起是两套语言。
+     这里引语义名而非 --mg-glass-* 本体：将来包里想让 tile 的表面脱离玻璃
+     （或换一档 veil），改包即可，不用回来改控制台。
+     ⚠️ 阴影仍走 --mg-card-shadow 而不是 --mg-tile-shadow：包里那两个名字
+     指向不同的值（tile→--mg-shadow-sm 两层紧贴，card→三层扩散），换过去
+     会让卡片失去"浮起"感。见 t_2026080608314363b3ae。 */
+  background: var(--mg-tile-bg);
+  border: 1px solid var(--mg-tile-border);
   -webkit-backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.15);
   backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.15);
   border-radius: var(--mg-tile-radius);
@@ -278,6 +284,53 @@
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
   border-color: color-mix(in oklab, var(--brand-base) 24%, var(--mg-card-border));
+}
+
+/* 模型 logo 九档尺寸 —— 值的唯一真源是 design-tokens 的 --mg-logo-size-*，
+   按场景密度定档（不是 t-shirt 档：1~2px 的差异各有出处，见该包 tokens.css 注释）。
+   组件侧不再写像素数字：档位类只注入 --logo-box，盒子与字号都由它推导，
+   包里改档位值四端一次生效。ModelIcon 之外不要直接用这些类。
+     .mg-logo-glyph — 包内 SVG（width/height="1em"，尺寸靠字号给）
+     .mg-logo-text  — 首字母兜底块（字号比例更小，避免撑破盒子） */
+.mg-logo {
+  /* 默认档与 ModelIcon 的 variant 默认值一致；档位类在后面覆盖它 */
+  --logo-box: var(--mg-logo-size-bar);
+  width: var(--logo-box);
+  height: var(--logo-box);
+}
+.mg-logo-glyph {
+  font-size: calc(var(--logo-box) * 0.9);
+}
+.mg-logo-text {
+  font-size: calc(var(--logo-box) * 0.4);
+}
+
+.mg-logo-dense {
+  --logo-box: var(--mg-logo-size-dense);
+}
+.mg-logo-inline {
+  --logo-box: var(--mg-logo-size-inline);
+}
+.mg-logo-compact {
+  --logo-box: var(--mg-logo-size-compact);
+}
+.mg-logo-row {
+  --logo-box: var(--mg-logo-size-row);
+}
+.mg-logo-picker {
+  --logo-box: var(--mg-logo-size-picker);
+}
+.mg-logo-bar {
+  --logo-box: var(--mg-logo-size-bar);
+}
+.mg-logo-card {
+  --logo-box: var(--mg-logo-size-card);
+}
+.mg-logo-panel {
+  --logo-box: var(--mg-logo-size-panel);
+}
+.mg-logo-hero {
+  --logo-box: var(--mg-logo-size-hero);
 }
 
 /* 通用输入框与复合输入框极雅样式抽离 */

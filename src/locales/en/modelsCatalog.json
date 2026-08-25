@@ -206,6 +206,14 @@
       "ruleTimeSlot": "Time slot",
       "ruleTimezone": "Timezone"
     },
-    "error.loadDetail": "Failed to load model detail. Please try again."
+    "error.loadDetail": "Failed to load model detail. Please try again.",
+    "discovery": {
+      "title": "Model Discovery",
+      "subtitle": "Compare performance, cost and speed across models by output type and task.",
+      "backToCatalog": "Back to Marketplace",
+      "entry": "Model Discovery",
+      "placeholder": "Analysis modules are being wired up.",
+      "backToDiscovery": "Back to Discovery"
+    }
   }
 }

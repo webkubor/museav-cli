@@ -44,6 +44,7 @@ const GuardrailsPage = lazy(() => import('@/pages/guardrails'))
 const ModelsPage = lazy(() => import('@/pages/models'))
 const ModelsCatalogPage = lazy(() => import('@/pages/models/catalog'))
 const ModelDetailPage = lazy(() => import('@/pages/models/detail'))
+const ModelDiscoveryPage = lazy(() => import('@/pages/models/discovery'))
 const ModelsComparePage = lazy(() => import('@/pages/models-compare'))
 // DEV 专属页面/工具必须放在可静态消除的条件分支内，确保生产构建既不生成对应 chunk，
 // 也不注册路由——否则 /dev-config 在生产环境仍可被直接访问到。
@@ -283,6 +284,9 @@ export default function App() {
           {/* 模型广场（公开，免登录，双主题）— 与官网同路径 /models，官网「模型」直接跳此 */}
           <Route path="/models" element={<PublicShell />}>
             <Route index element={withLocaleNamespaces(<ModelsCatalogPage />, MODEL_NAMESPACES)} />
+            {/* discovery 必须声明在 :modelId **之前** —— 否则会被参数路由吃掉，
+                当成一个叫 "discovery" 的模型 ID 去请求详情。 */}
+            <Route path="discovery" element={withLocaleNamespaces(<ModelDiscoveryPage />, MODEL_NAMESPACES)} />
             <Route path=":modelId" element={withLocaleNamespaces(<ModelDetailPage />, MODEL_NAMESPACES)} />
           </Route>
 

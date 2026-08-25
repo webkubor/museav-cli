@@ -4,8 +4,8 @@ import type { CatalogModelTag, QueryParams } from '@/types'
 export interface CatalogModelListParams extends QueryParams {
   /** 关键词搜索 */
   q?: string
-  /** 模态：后端按 input_modality/output_modality/tags 匹配 */
-  modality?: 'text' | 'image' | 'audio' | 'video' | 'embedding'
+  /** 模态：后端按 output_modality 匹配 */
+  modality?: 'text' | 'image' | 'audio' | 'video' | 'embedding' | 'rerank' | 'transcription'
   /** Prompt Pricing 范围（每 1M 输入 token 价格，单位 USD） */
   min_input_price?: number
   max_input_price?: number

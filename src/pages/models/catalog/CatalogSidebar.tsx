@@ -38,9 +38,8 @@ function vendorLabel(code: string, isZh: boolean): string {
   return labels[code.toLowerCase()] || code.charAt(0).toUpperCase() + code.slice(1)
 }
 
-// 模型类型的桶由服务端 facets 下发，取值是 gateway_models 的模态码（自由文本列，
-// 不是闭合枚举），未收录的码回落显示原码。embedding / file 之前就会漏出英文原码，
-// qa#332 修好计数口径后 file 桶（Claude/GPT-5 的文档输入）开始出现，一并补上。
+// 模型类型的桶由服务端 facets 下发，取值是 gateway_models.output_modality
+//（text/image/audio/video/embedding/rerank/transcription）。未收录的码回落显示原码。
 const PROTOCOL_LABEL: Record<string, string> = { openai: 'OpenAI', anthropic: 'Anthropic' }
 
 /** token 数 → 展示标签（1048576 → ≥1M）。阈值由服务端 facets 下发。

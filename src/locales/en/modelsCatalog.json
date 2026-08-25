@@ -180,6 +180,8 @@
       "audio": "Audio",
       "video": "Video",
       "embedding": "Embedding",
+      "rerank": "Rerank",
+      "transcription": "Transcription",
       "file": "File"
     },
     "detail.title": "Model Detail",

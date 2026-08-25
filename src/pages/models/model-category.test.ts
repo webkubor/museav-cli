@@ -35,6 +35,13 @@ describe('resolveModelCategory（模态推导）', () => {
     expect(resolveModelCategory(model({ input_modalities: ['audio'], output_modalities: ['text'] }))).toBe('audio')
   })
 
+  it('输出 transcription 的 ASR 归音频类，不是对话', () => {
+    expect(resolveModelCategory(model({
+      input_modalities: ['audio'],
+      output_modalities: ['transcription'],
+    }))).toBe('audio')
+  })
+
   it('输出 text+audio 的 omni 对话模型归对话类，不因兼具音频输出被列进 TTS（prd#821 回归）', () => {
     // qwen-omni-turbo 实况：audio 是 chat completions 的输出形态，不是 /v1/audio/speech 能力，
     // 归 audio 类会把它列进「文本转语音」入口，点了必失败（cn 该任务上线以来 0 成功）
@@ -72,6 +79,19 @@ describe('modelExperienceTasks（任务推导）', () => {
       input_modalities: ['audio'],
       output_modalities: ['text'],
     }))).toEqual(['audio_to_text'])
+  })
+
+  it('output=transcription 的 ASR 仍推导出音频转文字', () => {
+    expect(modelExperienceTasks(model({
+      input_modalities: ['audio'],
+      output_modalities: ['transcription'],
+    }))).toEqual(['audio_to_text'])
+  })
+
+  it('rerank 类推导为空 = 暂未开放', () => {
+    const m = model({ input_modalities: ['text'], output_modalities: ['rerank'] })
+    expect(modelExperienceTasks(m)).toEqual([])
+    expect(hasPlaygroundExperience(m)).toBe(false)
   })
 
   it('专职 TTS（纯音频输出）推导出文本转语音', () => {

@@ -300,7 +300,8 @@ export function useCompareSend(state: CompareState) {
       return acc
     }, [])
     if (onlineIndexes.length === 0) return
-    if (isBalanceZero && columns.some((c, idx) => onlineIndexes.includes(idx) && isPaidModel(c.model))) return
+    // 需求方 #833（1.0.6）：余额为 0 时免费模型也一并拦截
+    if (isBalanceZero) return
     const dispatchId = crypto.randomUUID()
     pendingByDispatch.current.set(dispatchId, onlineIndexes.length)
     const currentAttachment = attachment
@@ -334,7 +335,7 @@ export function useCompareSend(state: CompareState) {
     if (!columns) return
     const prompt = columns[idx].draft.trim()
     if (compareTask !== 'audio_to_text' && !prompt) return
-    if (isBalanceZero && isPaidModel(columns[idx].model)) return
+    if (isBalanceZero) return
     const conversationId = columns[idx].conversationId
     const colAttachment = columnAttachments[conversationId]
     if (compareNeedsFileTask && !colAttachment) {
@@ -365,7 +366,7 @@ export function useCompareSend(state: CompareState) {
   /** 媒体结果失败重试（PRD §AC-13）：原样复用失败那条用户消息的文本与附件 resource_id */
   function retryMediaMessage(idx: number, userMessage: ExperienceMessage) {
     if (!columns || !userMessage.content || columns[idx]?.streaming) return
-    if (isBalanceZero && isPaidModel(columns[idx].model)) return
+    if (isBalanceZero) return
     const dispatchId = crypto.randomUUID()
     void sendOne(idx, userMessage.content, dispatchId, {
       resourceIds: userMessage.attachmentResourceIds ?? [],

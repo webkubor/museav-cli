@@ -28,7 +28,6 @@ import type { CatalogModelItem } from '@/types'
 import {
   estimateTokens,
   estimateComposerSpend,
-  isPaidModel,
   hashId,
   sizeBucket,
   experienceTaskLabel,
@@ -161,7 +160,8 @@ export function useModelsPlayground() {
         : categoryTasks[0]
   const needsFileTask = !isDialogue && taskNeedsFile(effectiveTask)
 
-  // §9.1 余额资格状态机：可消费合计（主+赠送+奖励）为 0 时，付费模型禁止发送，只能体验限免模型。
+  // §9.1 余额资格状态机 + 需求方 #833（1.0.6）：可消费合计（主+赠送+奖励）为 0 时，
+  // 付费与免费模型一律禁止发送（免费模型也要求余额 > 0，防脚本薅羊毛），文案按免费/付费分场景。
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
   const { data: balance } = useBalance(tenantId)
   const { data: balanceBreakdown } = useBalanceBreakdown(tenantId)
@@ -171,7 +171,7 @@ export function useModelsPlayground() {
     balanceBreakdown?.reward?.amount,
   )
   const isBalanceZero = spendableBalance !== undefined && spendableBalance <= 0
-  const isBlockedByBalance = isBalanceZero && !!selectedModel && isPaidModel(selectedModel)
+  const isBlockedByBalance = isBalanceZero && !!selectedModel
   /** dialogue 类允许附哪种附件（§7.5）。对话类的音频附件在真实 task 枚举里没有对应的子任务
    *  （image_to_text/video_to_text 之外没有 audio 版本），先不开放，只开放能对应到真实
    *  任务枚举的图片/视频。image/audio/video 类不走这条通用回形针路径，改用 needsFileTask

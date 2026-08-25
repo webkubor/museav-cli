@@ -66,7 +66,7 @@ export default function ModelsCatalogPage() {
   // 原型的第一组筛选是「模型厂商」(vendor)，不是模型系列(family)。
   const selectedVendor = selected.find((k) => k.startsWith('vendor:'))?.split(':')[1]
   const selectedModality = selected.find((k) => k.startsWith('modality:'))?.split(':')[1] as
-    | 'text' | 'image' | 'audio' | 'video' | 'embedding' | undefined
+    | 'text' | 'image' | 'audio' | 'video' | 'embedding' | 'rerank' | 'transcription' | undefined
   const selectedTags = selected.filter((k) => k.startsWith('tag:')).map((k) => k.split(':')[1])
   const selectedCtx = selected.find((k) => k.startsWith('ctx:'))?.split(':')[1]
   const selectedPrice = selected.find((k) => k.startsWith('price:'))?.split(':')[1]

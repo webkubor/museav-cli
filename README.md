@@ -392,6 +392,20 @@ museav upload face.png
 > `gen --ref` / `gen --video --image` 内部已经自动帮你上传了，不需要先手动跑一次 `upload`。
 > 单独用 `upload` 的场景是：同一张垫图要复用多次，或者你想把 URL 存下来给别的系统用。
 
+**把外面做好的成品收进账户**：加 `--to-works`。
+
+```bash
+museav upload my-clip.mp4 --to-works                    # 收进「我的作品」
+museav upload my-clip.mp4 --to-works --workspace <id>   # 顺便归档到某个项目
+```
+
+区别在于**落不落库**：默认只把文件存进图库、回一个直链（参考图就该这样，它是原料不是成品）；
+加了 `--to-works` 会额外记一条作品，这样它才会出现在网页的「我的作品」、后台画廊和项目归档里。
+不加的话文件只存在存储桶里，界面上哪儿都找不到它。
+
+只对**账户身份**生效（`museav login` 或账户 Key）：作品要归到具体某个人头上，
+租户 Key 没有具体的人，中台会忽略这个参数，CLI 也会明确告诉你没记成作品。
+
 ### 本地图像工具 `compress` / `remove-bg`
 
 纯本地、免登录、不消耗中台额度，macOS / Windows / Linux 通用（依赖全走 npm 预编译，无平台特化代码）：

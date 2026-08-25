@@ -264,7 +264,10 @@ program
 program
   .command('upload <file>')
   .description('上传素材（图片/音频/视频，按字节内容判类型；图片 8MB / 音频 20MB / 视频 50MB），stdout 输出公网直链')
-  .action(withClient((client: StudioClient, file: string) => upload(client, file)))
+  .option('--to-works', '同时收进「我的作品」（在外面做好的成品视频/图片用这个；参考图不用）')
+  .option('--workspace <id>', '归档到指定项目')
+  .action(withClient((client: StudioClient, file: string, opts: { toWorks?: boolean; workspace?: string }) =>
+    upload(client, file, { toWorks: opts.toWorks, workspace: opts.workspace })))
 
 program
   .command('speak <text>')

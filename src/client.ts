@@ -629,9 +629,22 @@ export class StudioClient {
    * 上传素材。图片会先压到视觉模型够用的尺寸再传（见 compress.ts）——
    * 参考图是给模型看的，不是留档，原图直传只会拖慢上传和解析。
    */
-  async uploadRef(filePath: string): Promise<{ url: string; media_type?: string; mime?: string }> {
-    const r = await this.request('upload-ref', { method: 'POST', body: await fileForm(filePath) })
-    return { url: r.url, media_type: r.media_type, mime: r.mime }
+  /**
+   * 上传素材。默认只存文件、回直链（参考图/垫图就该这样）。
+   *
+   * asWork=true 时另外记一条作品：不落库的话文件只存在 R2 里，
+   * 作品页、后台画廊、项目归档全都看不见它 —— 「传到我的账户」就没发生。
+   * 只对账户身份生效（作品要归到具体某个人头上），租户 key 传了也会被中台忽略。
+   */
+  async uploadRef(
+    filePath: string,
+    opts: { asWork?: boolean; workspaceId?: string } = {},
+  ): Promise<{ url: string; media_type?: string; mime?: string; job_id?: string | null }> {
+    const form = await fileForm(filePath)
+    if (opts.asWork) form.append('as_work', '1')
+    if (opts.workspaceId) form.append('workspace_id', opts.workspaceId)
+    const r = await this.request('upload-ref', { method: 'POST', body: form })
+    return { url: r.url, media_type: r.media_type, mime: r.mime, job_id: r.job_id ?? null }
   }
 
   /**

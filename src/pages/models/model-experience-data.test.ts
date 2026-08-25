@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolveApiErrorDisplay, errorDisplayFields, cleanErrorMessage, dualPriceText } from './model-experience-data'
+import { resolveApiErrorDisplay, errorDisplayFields, cleanErrorMessage, dualPriceText, estimateComposerSpend } from './model-experience-data'
 import { ModelGoApiError } from '@/lib/request'
 import '@/i18n'
 
@@ -181,5 +181,40 @@ describe('dualPriceText 零价与限免口径（qa#624）', () => {
     expect(text).toContain('¥8')
     expect(text).not.toContain(' / ')
     expect(text).not.toContain('¥0')
+  })
+})
+
+describe('estimateComposerSpend 预估费用口径（prd#851）', () => {
+  // prd#851：Doubao-Seedream-4.0（¥0.2/张）首次进入体验页预估显示 <¥0.01——
+  // 每张价被套进 token 公式（0.2/1M × 若干 token）。per_call 一次发送 = 一次调用。
+  it('per_call：预估 = 单张价，与草稿长度无关', () => {
+    const m = priceModel({ mode: 'per_call', per_call_price: '0.2', input_per_1m: '0.2', output_per_1m: '0', currency: 'CNY' })
+    expect(estimateComposerSpend(m, '一只在月球上的猫', 4096, '¥')).toBe('¥0.20')
+    expect(estimateComposerSpend(m, '', 4096, '¥')).toBe('¥0.20')
+  })
+
+  it('per_call：per_call_price 缺失回落 input_per_1m 镜像', () => {
+    const m = priceModel({ mode: 'per_call', input_per_1m: '0.05', output_per_1m: '0', currency: 'CNY' })
+    expect(estimateComposerSpend(m, 'x', 4096, '¥')).toBe('¥0.05')
+  })
+
+  it('per_call：单价为 0 显示 ¥0.00（未配价），不显示 <¥0.01', () => {
+    const m = priceModel({ mode: 'per_call', per_call_price: '0', input_per_1m: '0', output_per_1m: '0', currency: 'CNY' })
+    expect(estimateComposerSpend(m, 'x', 4096, '¥')).toBe('¥0.00')
+  })
+
+  it('token：短草稿仍是 <¥0.01，行为不因抽函数改变', () => {
+    const m = priceModel({ mode: 'token', input_per_1m: '0.95', output_per_1m: '1.9', currency: 'CNY' })
+    expect(estimateComposerSpend(m, '你好', 4096, '¥')).toBe('<¥0.01')
+  })
+
+  it('token：大 max_tokens 上限按 400 截断（原型 estimatePlaygroundTaskSpend）', () => {
+    const m = priceModel({ mode: 'token', input_per_1m: '0', output_per_1m: '100', currency: 'CNY' })
+    // 400 token × ¥100/1M = ¥0.04
+    expect(estimateComposerSpend(m, 'x', 128000, '¥')).toBe('¥0.04')
+  })
+
+  it('未选模型 → ¥0.00', () => {
+    expect(estimateComposerSpend(null, 'x', 4096, '¥')).toBe('¥0.00')
   })
 })

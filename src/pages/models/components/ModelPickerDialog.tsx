@@ -56,6 +56,7 @@ import {
   type ExperienceCategoryKey,
   type ExperienceTaskType,
 } from '../model-experience-data'
+import { priceLabel, cachePriceLabel } from './model-picker-price'
 import { TaskSwitch } from './TaskSwitch'
 import '../styles/model-picker-dialog.css'
 
@@ -82,30 +83,6 @@ function disableReasonOf(model: CatalogModelItem, isBalanceZero: boolean, requir
   if (isBalanceZero && isPaidModel(model)) return 'balance'
   if (requiredAttachmentKind && !modelSupportsAttachment(model, requiredAttachmentKind)) return 'attachment'
   return null
-}
-
-function priceLabel(model: CatalogModelItem, kind: 'input' | 'output' = 'input'): string {
-  const currency = currencySymbol(model.pricing?.currency, isZhLang())
-  const unit = model.price_unit ? `/${model.price_unit}` : '/1M tokens'
-  // 「免费」只认 promotion.free 显式标记；未配价（零价无标记）显示「—」，不算免费
-  // ——§9.1，qa#624。isPaidModel 是付费/余额判定（未配价确实不扣费），不能反推成展示上的免费。
-  if (model.promotion?.free) return i18n.t('modelsExperience.picker.free')
-  if (model.price_tiers?.length) {
-    const tier = kind === 'output' ? (model.price_tiers[1] ?? model.price_tiers[0]) : model.price_tiers[0]
-    return `${currency}${trimPriceZeros(tier.price)}/${tier.unit}`
-  }
-  const amount = kind === 'output' ? model.pricing?.output_per_1m : model.pricing?.input_per_1m
-  // 判零数值化：后端零价下发字符串 "0"（truthy），直接判会拼出「¥0/1M tokens」
-  if (!(parseFloat(amount ?? '') > 0)) return '—'
-  return `${currency}${trimPriceZeros(amount ?? '0')}${unit}`
-}
-
-function cachePriceLabel(model: CatalogModelItem): string {
-  const currency = currencySymbol(model.pricing?.currency, isZhLang())
-  const cache = model.pricing?.cache_read_per_1m
-  // 判零数值化：零价下发字符串 "0"，truthy 判会显示「¥0/1M」（qa#624）
-  if (!(parseFloat(cache ?? '') > 0)) return '—'
-  return `${currency}${trimPriceZeros(cache)}/1M`
 }
 
 function ModalityFlow({ model }: { model: CatalogModelItem }) {

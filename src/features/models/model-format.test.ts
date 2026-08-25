@@ -158,8 +158,8 @@ describe('pricing_rules — 上下文分档 / 峰时价（#800）', () => {
   })
 
   it('单元格价格与规格条同口径：符号 + 去尾零 + /unit（缺省 M）', () => {
-    expect(pricingRulePriceText(rules[1], 'input', '¥')).toBe('¥ 0.8/M')
-    expect(pricingRulePriceText(rules[0], 'output', '¥')).toBe('¥ 26.88/M')
+    expect(pricingRulePriceText(rules[1], 'input', '¥')).toBe('¥0.8/M')
+    expect(pricingRulePriceText(rules[0], 'output', '¥')).toBe('¥26.88/M')
     expect(pricingRulePriceText({ dimension: 'context_length', input_per_1m: '2', unit: 'M' }, 'output', '¥')).toBe('—')
   })
 
@@ -169,8 +169,8 @@ describe('pricing_rules — 上下文分档 / 峰时价（#800）', () => {
 
   it('「起」：中文缀在单位后、英文改 from 前缀；免费/未配价（unit 空）不挂', async () => {
     await i18n.changeLanguage('zh')
-    expect(withPriceFrom({ value: '¥ 0.8', unit: '/M' }, true)).toEqual({ value: '¥ 0.8', unit: '/M 起' })
-    expect(withPriceFrom({ value: '¥ 0.8', unit: '/M' }, false)).toEqual({ value: '¥ 0.8', unit: '/M' })
+    expect(withPriceFrom({ value: '¥0.8', unit: '/M' }, true)).toEqual({ value: '¥0.8', unit: '/M 起' })
+    expect(withPriceFrom({ value: '¥0.8', unit: '/M' }, false)).toEqual({ value: '¥0.8', unit: '/M' })
     expect(withPriceFrom({ value: '免费', unit: '' }, true)).toEqual({ value: '免费', unit: '' })
     await i18n.changeLanguage('en')
     expect(withPriceFrom({ value: '$ 0.8', unit: '/M' }, true)).toEqual({ value: 'from $ 0.8', unit: '/M' })

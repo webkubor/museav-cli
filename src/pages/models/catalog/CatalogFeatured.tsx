@@ -18,7 +18,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { currencySymbol, isZhLang } from '@/features/models/model-format'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { trimPriceZeros } from '@/lib/utils'
+import { prettyModelName, trimPriceZeros } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
 import { trackEvent } from '@/lib/track'
 import type { CatalogFeaturedSlide } from '@/types'
@@ -175,7 +175,7 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
                     <em className="mg-badge is-discount">{discountLabel}</em>
                   ) : null}
                 </div>
-                <strong>{slide.name}</strong>
+                <strong>{prettyModelName(slide.name, slide.model_id, slide.vendor)}</strong>
                 <span className="mg-featured-meta">
                   {slide.vendor}
                   {/* 未配价（零价且无限免标记）不拼「· 输入 ¥0/M / 输出 ¥0/M」，价格段整个省去

@@ -86,7 +86,7 @@ function RequiredPhoneBindingDialogContent({
       className="sm:max-w-[460px] modal-glow-flow"
       title={
         <span className="flex flex-col items-start gap-2">
-          <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-brand-soft text-brand-base">
+          <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-brand-pale text-brand-base">
             <LuSmartphone size={22} />
           </span>
           {t('account.auth.phoneBinding.title')}

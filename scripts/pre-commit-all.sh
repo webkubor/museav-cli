@@ -27,6 +27,13 @@ bash scripts/ui-guard.sh || exit 1
 # 2026-08-12 的「全局组件无法点击」就是这么进 test 的，必须在提交期拦。
 node scripts/check-css-tokens.mjs || exit 1
 
+# Tailwind 颜色类名门禁（2026-08-25 接入）：写 text-mg-brand / text-mg-text-0 这种
+# 未在 @theme 注册的类名，**Tailwind 不报错、构建不报错、tsc 也不报错** —— 只是那条
+# 声明生成不出来、颜色静默继承父级。跑起来看着"差不多对"，事后完全回想不起哪里错了。
+# 同一天踩两次（mg-brand 22 处、mg-text-0 17 处），并顺带查出 5 处存量同类问题，
+# 说明靠人工比对 index.css 是不可靠的。
+node scripts/check-tailwind-tokens.mjs || exit 1
+
 # 硬编码回归门禁（2026-08-24 接入）：库里已有 token 却写死字面值 ——
 # ease / duration / radius / shadow / z-index / 语义色六类。规则真源在
 # modelgo-design-tokens 包里，本仓只调用、不复述清单，避免两处漂移。

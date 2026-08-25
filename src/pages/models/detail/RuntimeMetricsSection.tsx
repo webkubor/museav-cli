@@ -99,7 +99,7 @@ function MetricCard({ metric }: { metric: RuntimeMetric }) {
       ) : (
         <>
           <p className="mb-0.5">
-            <span className="text-[20px] font-bold text-mg-text-0">
+            <span className="text-[20px] font-bold text-mg-text-1">
               {snapshot.current.toLocaleString()}
             </span>
             <span className="ml-1 text-[12px] text-mg-text-3">{metric.unit}</span>
@@ -182,7 +182,7 @@ export function RuntimeMetricsSection({
     <section className="mg-tile mg-detail-card">
       <header className="mb-3 flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-[14px] font-semibold text-mg-text-0">平台运行表现</h3>
+          <h3 className="text-[14px] font-semibold text-mg-text-1">平台运行表现</h3>
           <p className="mt-0.5 text-[12px] text-mg-text-3">
             基于 ModelGo 平台真实调用统计，非厂商标称值
           </p>

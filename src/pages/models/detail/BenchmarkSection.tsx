@@ -22,7 +22,7 @@ export function BenchmarkSection({ data = MOCK_BENCHMARK }: { data?: BenchmarkDa
   return (
     <section className="mg-tile mg-detail-card">
       <header className="mb-3 flex flex-wrap items-baseline gap-2">
-        <h3 className="text-[14px] font-semibold text-mg-text-0">Benchmark 基准评测</h3>
+        <h3 className="text-[14px] font-semibold text-mg-text-1">Benchmark 基准评测</h3>
         {/* 来源标签只出现一次 */}
         <span className="rounded-sm bg-mg-fill-1 px-1.5 py-0.5 text-[10px] text-mg-text-3">
           Artificial Analysis
@@ -53,10 +53,10 @@ export function BenchmarkSection({ data = MOCK_BENCHMARK }: { data?: BenchmarkDa
                 {group.evaluations.map((item) => (
                   <li key={item.name}>
                     <div className="mb-1 flex items-baseline justify-between gap-2">
-                      <span className="min-w-0 truncate text-[12px] text-mg-text-0">
+                      <span className="min-w-0 truncate text-[12px] text-mg-text-1">
                         {item.name}
                       </span>
-                      <span className="shrink-0 text-[12px] font-semibold text-mg-text-0">
+                      <span className="shrink-0 text-[12px] font-semibold text-mg-text-1">
                         {item.result}
                       </span>
                     </div>

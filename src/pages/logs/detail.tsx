@@ -52,6 +52,7 @@ function buildStatusMap(t: (key: string) => string): Record<DerivedLogStatus, St
     success: { label: t('logs.status.success'), variant: 'success' },
     guarded: { label: t('logs.status.guarded'), variant: 'warning' },
     error: { label: t('logs.status.error'), variant: 'destructive' },
+    canceled: { label: t('logs.status.canceled'), variant: 'secondary' },
   }
 }
 

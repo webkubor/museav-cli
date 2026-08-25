@@ -110,3 +110,19 @@ describe('deriveLogStatus - 降级（后端未返回新字段）', () => {
     expect(modelCallState(row)).toBe('not_started')
   })
 })
+
+describe('deriveLogStatus - 客户端取消 (prd#830)', () => {
+  it('error_code=client_canceled 显示已取消，不算异常', () => {
+    const row = makeRow({ status: 'failed', error_code: 'client_canceled', http_status: 499 })
+    expect(deriveLogStatus(row)).toBe('canceled')
+  })
+
+  it('finish_reason=canceled 覆盖 model_request_state=failed', () => {
+    const row = makeRow({
+      status: 'failed',
+      model_request_state: 'failed',
+      finish_reason: 'canceled',
+    })
+    expect(deriveLogStatus(row)).toBe('canceled')
+  })
+})

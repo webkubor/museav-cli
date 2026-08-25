@@ -446,7 +446,8 @@ function outputMods(model: CatalogModelItem): string[] {
  * 输出含媒体的按产物归类（优先级 video > audio > image——#297 回归教训：gemini
  * out=[text,image] 本体是图像生成模型，不因兼具聊天能力归对话）；纯文本输出的
  * 全模态模型归对话（#297 正向教训：mimo/seed 系不因输入含音频被判成语音识别）；
- * 纯音频输入且无文本输入的是 ASR，归音频类。
+ * 纯音频输入且无文本输入的是 ASR，归音频类。输出 transcription 的 ASR 同样归音频类
+ * （广场类型是「语音转写」，体验入口仍是 audio_to_text）。
  *
  * audio 与 image 规则不同（shared/modelgo_prd#821）：只有**纯音频输出**才归音频类。
  * out 同时含 text+audio 的是 omni 对话模型（qwen-omni-turbo 实况）——它的 audio 是
@@ -459,6 +460,7 @@ export function resolveModelCategory(model: CatalogModelItem): ExperienceCategor
   const out = outputMods(model)
   const inp = inputMods(model)
   if (out.includes('video')) return 'video'
+  if (out.includes('transcription')) return 'audio'
   if (out.includes('audio') && !out.includes('text')) return 'audio'
   if (out.includes('image')) return 'image'
   if (!inp.includes('text') && inp.includes('audio')) return 'audio'
@@ -489,7 +491,7 @@ export function modelExperienceTasks(model: CatalogModelItem): ExperienceTaskTyp
       break
     case 'audio':
       if (out.includes('audio') && hasTextIn) tasks.push('text_to_audio')
-      if (inp.includes('audio') && out.includes('text')) tasks.push('audio_to_text')
+      if (inp.includes('audio') && (out.includes('text') || out.includes('transcription'))) tasks.push('audio_to_text')
       break
     case 'video':
       if (hasTextIn) tasks.push('text_to_video')

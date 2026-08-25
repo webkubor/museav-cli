@@ -176,10 +176,12 @@
     },
     "modality": {
       "text": "文本",
-      "image": "图像",
+      "image": "图片",
       "audio": "音频",
       "video": "视频",
-      "embedding": "向量",
+      "embedding": "向量嵌入",
+      "rerank": "重排序",
+      "transcription": "语音转写",
       "file": "文件"
     },
     "detail.title": "模型详情",

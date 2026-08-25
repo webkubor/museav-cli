@@ -72,16 +72,46 @@ export function prettyModelName(displayName?: string | null, modelId?: string | 
 
 /** 格式化计费价格，若零额或空则返回 "免费"，带货币符号及自适应后缀 */
 /**
- * 裁掉后端 NUMERIC 的尾随零，保留有效小数。
+ * 价格显示最多保留 4 位小数并四舍五入，再裁掉无意义的尾随零。
  *
- * 后端下发的是全精度字符串（"30.000000000000"、"7.200000000000"），直接拼进 UI
- * 会显示成「¥30.000000000000/M」。这里只做**显示层**裁剪，不做四舍五入 —— 价格
- * 不能被前端改写，只能去掉不携带信息的尾零。
+ * 国际站会收到汇率换算后的高精度 NUMERIC 字符串（如 "0.073529411765"）。展示层
+ * 不能原样铺满卡片，也不能直接依赖 Number#toFixed 的二进制浮点舍入，因此在十进制
+ * 字符串上完成进位；接口原值与实际计费精度不受影响。
  */
 export function trimPriceZeros(amount: number | string): string {
-  const raw = String(amount)
-  if (!raw.includes('.')) return raw
-  const trimmed = raw.replace(/0+$/, '').replace(/\.$/, '')
+  const raw = String(amount).trim()
+  const match = raw.match(/^([+-]?)(\d+)(?:\.(\d*))?$/)
+  if (!match) return raw
+
+  const [, sign, integer, fraction = ''] = match
+  if (!raw.includes('.')) return `${sign}${integer}`
+  if (fraction.length <= 4) {
+    const trimmed = `${sign}${integer}${fraction ? `.${fraction}` : ''}`
+      .replace(/0+$/, '')
+      .replace(/\.$/, '')
+    return trimmed === '' || trimmed === '-' || trimmed === '+' ? '0' : trimmed
+  }
+
+  const kept = fraction.slice(0, 4)
+  let digits = `${integer}${kept}`
+  if (fraction[4] >= '5') {
+    let carry = 1
+    const rounded: string[] = []
+    for (let i = digits.length - 1; i >= 0; i -= 1) {
+      const next = Number(digits[i]) + carry
+      rounded.push(String(next % 10))
+      carry = next >= 10 ? 1 : 0
+    }
+    if (carry) rounded.push('1')
+    digits = rounded.reverse().join('')
+  }
+
+  const splitAt = digits.length - 4
+  const roundedInteger = digits.slice(0, splitAt) || '0'
+  const roundedFraction = digits.slice(splitAt).padStart(4, '0')
+  const trimmed = `${sign}${roundedInteger}.${roundedFraction}`
+    .replace(/0+$/, '')
+    .replace(/\.$/, '')
   return trimmed === '' || trimmed === '-' ? '0' : trimmed
 }
 
@@ -94,7 +124,7 @@ export function formatModelPrice(
   if (amount == null || amount === '') return freeLabel
   const parsed = typeof amount === 'string' ? parseFloat(amount) : amount
   if (isNaN(parsed) || parsed <= 0) return freeLabel
-  // 不舍入，只裁尾零；parsed 仅用于判断免费/有效
+  // parsed 仅用于判断免费/有效；展示值统一最多 4 位小数并四舍五入
   return `${currency}${trimPriceZeros(amount)}${suffix}`
 }
 
@@ -192,5 +222,3 @@ export function formatFriendlyAmount(
 
   return `${currencySymbol}${formatted}`
 }
-
-

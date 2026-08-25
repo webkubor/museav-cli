@@ -32,7 +32,7 @@ import { cn, formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/
 import {
   MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, cardSummary, modelVendorLabel,
   strikeOriginalPrice, sortProtocols,
-  priceTiersForCard, mediaPrimaryPrice, hasPricingGradient, withPriceFrom,
+  priceTiersForCard, mediaPrimaryPrice, firstPositivePrice, hasPricingGradient, withPriceFrom,
 } from '@/features/models/model-format'
 import { experienceTaskLabel, modelExperienceTasks, resolveModelCategory } from '../model-experience-data'
 import type { CatalogModelItem } from '@/types'
@@ -137,8 +137,10 @@ export function CatalogCard({
   const primaryRaw = mediaPrimaryPrice(model.pricing, model.price_unit, cardTiers)
   const primary = withPriceFrom(priceText(primaryRaw.amount, symbol, isFree ? freeLabel : '—', primaryRaw.unit, isFree), hasGradient)
   // 主价的划线原价：原型 originalOutputPrice ?? originalInputPrice（主价本身也是 output 优先）
+  // firstPositivePrice 而非 ??：per_call 模型 original_output 恒 "0"，会把镜像在
+  // original_input 的折前价截住（seedream「限时71折」无划线的前端侧成因）
   const strikePrimaryVal = strikeOriginalPrice(
-    promo?.original_output_per_1m ?? promo?.original_input_per_1m ?? promo?.original_price,
+    firstPositivePrice(promo?.original_output_per_1m, promo?.original_input_per_1m, promo?.original_price),
     primaryRaw.amount,
     isFree,
   )

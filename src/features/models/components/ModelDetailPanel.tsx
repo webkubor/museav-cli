@@ -159,8 +159,13 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
   const primary = withPriceFrom(priceText(primaryRaw.amount, symbol, isFree ? freeLabel : '', primaryRaw.unit, isFree), hasGradient)
   // firstPositivePrice 而非 ??：per_call 模型 original_output 恒 "0"，会把镜像在
   // original_input 的折前价截住（seedream「限时71折」无划线的前端侧成因）
+  // 末位候选 per_call_price：促销期它维持折前原价（折后现价在 input_per_1m），
+  // original_* 缺发时靠它兜底；仅促销卡参与，守卫会拦掉 ≤ 现价的取值
   const strikePrimaryVal = strikeOriginalPrice(
-    firstPositivePrice(promo?.original_output_per_1m, promo?.original_input_per_1m, promo?.original_price),
+    firstPositivePrice(
+      promo?.original_output_per_1m, promo?.original_input_per_1m, promo?.original_price,
+      promo ? detail.pricing?.per_call_price : undefined,
+    ),
     primaryRaw.amount,
     isFree,
   )

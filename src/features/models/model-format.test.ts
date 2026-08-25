@@ -108,6 +108,21 @@ describe('mediaPrimaryPrice — 媒体模型主价格', () => {
       .toEqual({ amount: '0.05', unit: '/张', unitName: '张' })
   })
 
+  it('per_call 促销期折后现价在 input_per_1m、per_call_price 是折前原价 → 取较低正值（seedream 生产实测）', async () => {
+    await i18n.changeLanguage('zh')
+    // doubao-seedream-4.0：折后 0.13 在 input，per_call 留原价 0.2
+    expect(mediaPrimaryPrice({ mode: 'per_call', per_call_price: '0.2', input_per_1m: '0.13' }, undefined, []).amount)
+      .toBe('0.13')
+    // 5.0-pro：后端未下发折后价，两侧同为 0.3 → 只能展示 0.3
+    expect(mediaPrimaryPrice({ mode: 'per_call', per_call_price: '0.3', input_per_1m: '0.3' }, undefined, []).amount)
+      .toBe('0.3')
+    // 一侧为 "0"/缺失时取另一侧正值；全无正值 → undefined（渲染为 —）
+    expect(mediaPrimaryPrice({ mode: 'per_call', per_call_price: '0', input_per_1m: '0.22' }, undefined, []).amount)
+      .toBe('0.22')
+    expect(mediaPrimaryPrice({ mode: 'per_call', per_call_price: '0', input_per_1m: '0' }, undefined, []).amount)
+      .toBeUndefined()
+  })
+
   it('有档位矩阵 → 取价格最高的一档，且优先于文本 token 价（gemini 图片产出 204 vs 文本 10.2）', () => {
     // 需求方 2026-08-25：主价格取最高档；tiers 是媒体产物价，pricing.* 只是文本侧分项
     expect(mediaPrimaryPrice({ mode: 'token', input_per_1m: '1.7', output_per_1m: '10.2' }, undefined, [
@@ -172,6 +187,13 @@ describe('strikeOriginalPrice — 划线原价的有效性守卫', () => {
     // 选出的折前价高于现价才划线；后端把 original 配成现价（#747 老问题）依旧不划
     expect(strikeOriginalPrice(firstPositivePrice('0', '0.3'), '0.3')).toBeNull()
     expect(strikeOriginalPrice(firstPositivePrice('0', '0.42'), '0.3')).toBe(0.42)
+  })
+
+  it('per_call 促销 original_* 缺发时，划线兜底到折前的 per_call_price（seedream-4.5 生产实测）', () => {
+    // original_* 全 None，per_call_price=0.25 是折前价、现价 0.1875 在 input
+    expect(strikeOriginalPrice(firstPositivePrice(undefined, undefined, undefined, '0.25'), '0.1875')).toBe(0.25)
+    // 5.0-pro：兜底值 = 现价 → 守卫拦下，不划无意义的等值线
+    expect(strikeOriginalPrice(firstPositivePrice('0', '0.3', '0.3', '0.3'), '0.3')).toBeNull()
   })
 })
 

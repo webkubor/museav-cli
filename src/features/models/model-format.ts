@@ -68,8 +68,16 @@ export function mediaPrimaryPrice(
   const suffix = priceUnitSuffix(priceUnit, pricing?.mode)
   if (pricing?.mode === 'per_call') {
     // per_call 的每张价镜像在 input_per_1m（#851 契约），unitName 从后缀剥出
-    // （zh 张 / en image，priceUnitSuffix 已本地化）
-    return { amount: pricing.per_call_price?.trim() || pricing.input_per_1m, unit: suffix, unitName: suffix.slice(1) }
+    // （zh 张 / en image，priceUnitSuffix 已本地化）。
+    // 促销期后端把折后现价写进 input_per_1m、per_call_price 维持折前原价
+    // （2026-08-25 生产实测：seedream-4.0 0.13/0.2、4.5 0.1875/0.25、
+    // 5.0-lite 0.165/0.22），故现价取两者中较低的正值；非促销期两者相等，不受影响。
+    const candidates = [pricing.per_call_price?.trim(), pricing.input_per_1m?.trim()]
+      .filter((v): v is string => !!v && parseFloat(v) > 0)
+    const amount = candidates.length
+      ? candidates.reduce((min, v) => (parseFloat(v) < parseFloat(min) ? v : min))
+      : undefined
+    return { amount, unit: suffix, unitName: suffix.slice(1) }
   }
   const top = (tiers ?? []).reduce<CatalogPriceTier | undefined>(
     (max, tier) => (parseFloat(tier.price) > parseFloat(max?.price ?? '0') ? tier : max),

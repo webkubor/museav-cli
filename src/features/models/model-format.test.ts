@@ -107,14 +107,18 @@ describe('mediaPrimaryPrice — 媒体模型主价格', () => {
       .toEqual({ amount: '0.05', unit: '/张', unitName: '张' })
   })
 
-  it('按 token 计价的媒体模型（Seedance 类）→ output 优先，unitName M', () => {
-    expect(mediaPrimaryPrice({ mode: 'token', input_per_1m: '20', output_per_1m: '46' }, undefined, tiers))
-      .toEqual({ amount: '46', unit: '/M', unitName: 'M' })
+  it('有档位矩阵 → 取价格最高的一档，且优先于文本 token 价（gemini 图片产出 204 vs 文本 10.2）', () => {
+    // 需求方 2026-08-25：主价格取最高档；tiers 是媒体产物价，pricing.* 只是文本侧分项
+    expect(mediaPrimaryPrice({ mode: 'token', input_per_1m: '1.7', output_per_1m: '10.2' }, undefined, [
+      { label: '图片输出', price: '204', unit: 'M', bucket: 'image_output' },
+    ])).toEqual({ amount: '204', unit: '/M', unitName: 'M' })
+    expect(mediaPrimaryPrice({ input_per_1m: '0', output_per_1m: '0' }, undefined, tiers))
+      .toEqual({ amount: '1.5', unit: '/秒', unitName: '秒' })
   })
 
-  it('pricing 全 0、价格只在矩阵里（可灵类）→ 首档价 + 首档单位', () => {
-    expect(mediaPrimaryPrice({ input_per_1m: '0', output_per_1m: '0' }, undefined, tiers))
-      .toEqual({ amount: '0.9', unit: '/秒', unitName: '秒' })
+  it('按 token 计价且无矩阵的媒体模型（Seedance 类）→ output 优先，unitName M', () => {
+    expect(mediaPrimaryPrice({ mode: 'token', input_per_1m: '20', output_per_1m: '46' }, undefined, []))
+      .toEqual({ amount: '46', unit: '/M', unitName: 'M' })
   })
 
   it('未配价（全 0 且无档位）→ amount undefined，调用方渲染「—」', () => {

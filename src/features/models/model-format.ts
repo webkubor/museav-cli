@@ -51,9 +51,12 @@ export function priceTiersForCard(tiers: CatalogPriceTier[] | undefined | null):
  * marketplacePrimaryPriceText，App.tsx:4199）：媒体卡片/详情条只摆一个主价，
  * 不再铺输入/输出/缓存四格或整张档位矩阵（完整档位进详情「价格梯度」表）。
  *
- * 取值顺序：per_call 的每张价 → pricing 的 output||input（原型口径，Seedance
- * 这类按 token 计价的视频模型走这里，¥46/M）→ price_tiers 首档（可灵这类
- * pricing 全 0、价格只在矩阵里的，首档即基础档 ¥0.6/秒）→ 未配价 undefined。
+ * 取值顺序：per_call 的每张价 → price_tiers 里**价格最高的一档**（需求方
+ * 2026-08-25：主价格取最高档。媒体模型的 price_tiers 才是媒体产物价，pricing.*
+ * 是文本 token 侧分项价 —— gemini-3.1-flash-lite-image 图片产出 ¥204/M、文本
+ * output 仅 ¥10.2/M，先读 pricing 会把主价格错标成便宜一个量级的文本价）→
+ * pricing 的 output||input（Seedance 这类按 token 计价、无矩阵的视频模型，
+ * ¥46/M）→ 未配价 undefined。
  * unit 是随金额来源配对的后缀（/张、/M、/秒），unitName 是给「计费单位」格的
  * 裸单位名（张、M、秒）。
  */
@@ -68,15 +71,18 @@ export function mediaPrimaryPrice(
     // （zh 张 / en image，priceUnitSuffix 已本地化）
     return { amount: pricing.per_call_price?.trim() || pricing.input_per_1m, unit: suffix, unitName: suffix.slice(1) }
   }
+  const top = (tiers ?? []).reduce<CatalogPriceTier | undefined>(
+    (max, tier) => (parseFloat(tier.price) > parseFloat(max?.price ?? '0') ? tier : max),
+    undefined,
+  )
+  if (top) {
+    return { amount: top.price, unit: `/${top.unit}`, unitName: top.unit }
+  }
   if (parseFloat(pricing?.output_per_1m ?? '') > 0) {
     return { amount: pricing?.output_per_1m, unit: suffix, unitName: priceUnit || 'M' }
   }
   if (parseFloat(pricing?.input_per_1m ?? '') > 0) {
     return { amount: pricing?.input_per_1m, unit: suffix, unitName: priceUnit || 'M' }
-  }
-  const first = tiers?.[0]
-  if (first && parseFloat(first.price) > 0) {
-    return { amount: first.price, unit: `/${first.unit}`, unitName: first.unit }
   }
   return { amount: undefined, unit: suffix, unitName: priceUnit || 'M' }
 }

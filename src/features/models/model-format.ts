@@ -237,6 +237,22 @@ export function strikeOriginalPrice(
   return original
 }
 
+/**
+ * 从若干候选价里取第一个正数（媒体主价格的划线原价选值用）。
+ * 后端零值下发字符串 "0" 而非省略键：per_call（按张）模型的 original_output_per_1m
+ * 恒为 "0"，折前价镜像在 original_input_per_1m —— 用 `??` 链会被 "0" 截住，
+ * 折前价永远取不到（doubao-seedream-5.0-pro「限时71折」复查时发现）。
+ */
+export function firstPositivePrice(
+  ...values: Array<string | number | null | undefined>
+): string | number | undefined {
+  for (const v of values) {
+    const n = typeof v === 'string' ? parseFloat(v) : v
+    if (n != null && Number.isFinite(n) && n > 0) return v ?? undefined
+  }
+  return undefined
+}
+
 /** 协议标签文案照原型：带「兼容」后缀，明确这是入站协议兼容性而非厂商归属。 */
 export const PROTOCOL_LABEL_ZH: Record<string, string> = {
   openai: 'OpenAI 兼容', anthropic: 'Anthropic 兼容', other: '其他协议',

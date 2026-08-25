@@ -21,7 +21,7 @@ import { CopyButton } from '@/components/ui/CopyButton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
 import {
   currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, vendorFromModelId, detailSummary, modelVendorLabel,
-  priceTierLabel, mediaPrimaryPrice, strikeOriginalPrice,
+  priceTierLabel, mediaPrimaryPrice, firstPositivePrice, strikeOriginalPrice,
   pricingRuleGroups, pricingRuleLabel, pricingRulePriceText, withPriceFrom, sortProtocols,
 } from '../model-format'
 import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
@@ -157,8 +157,10 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
     : t('modelsCatalog.button.comingSoon')
   const primaryRaw = mediaPrimaryPrice(detail.pricing, detail.price_unit, priceTiers)
   const primary = withPriceFrom(priceText(primaryRaw.amount, symbol, isFree ? freeLabel : '', primaryRaw.unit, isFree), hasGradient)
+  // firstPositivePrice 而非 ??：per_call 模型 original_output 恒 "0"，会把镜像在
+  // original_input 的折前价截住（seedream「限时71折」无划线的前端侧成因）
   const strikePrimaryVal = strikeOriginalPrice(
-    promo?.original_output_per_1m ?? promo?.original_input_per_1m ?? promo?.original_price,
+    firstPositivePrice(promo?.original_output_per_1m, promo?.original_input_per_1m, promo?.original_price),
     primaryRaw.amount,
     isFree,
   )

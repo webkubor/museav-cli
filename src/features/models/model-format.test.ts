@@ -9,6 +9,7 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import i18n from '@/i18n'
 import {
+  firstPositivePrice,
   catalogCardReplacesGridWithTiers, mediaPrimaryPrice, priceTierLabel, priceTiersForCard, priceUnitSuffix, strikeOriginalPrice,
   pricingRuleGroups, hasPricingGradient, pricingRuleLabel, pricingRulePriceText, withPriceFrom,
   autoSummary, cardSummary, detailSummary, sortProtocols,
@@ -152,6 +153,15 @@ describe('strikeOriginalPrice — 划线原价的有效性守卫', () => {
 
   it('现价缺省 → 无从比较，不划线', () => {
     expect(strikeOriginalPrice('5', undefined)).toBeNull()
+  })
+
+  it('媒体主价的原价选值跳过 "0"：per_call 的 original_output 恒 "0"，折前价在 original_input（seedream 限时71折）', () => {
+    expect(firstPositivePrice('0', '0.42', '0.3')).toBe('0.42')
+    expect(firstPositivePrice('0', '0', undefined)).toBeUndefined()
+    expect(firstPositivePrice(undefined, '', '2')).toBe('2')
+    // 选出的折前价高于现价才划线；后端把 original 配成现价（#747 老问题）依旧不划
+    expect(strikeOriginalPrice(firstPositivePrice('0', '0.3'), '0.3')).toBeNull()
+    expect(strikeOriginalPrice(firstPositivePrice('0', '0.42'), '0.3')).toBe(0.42)
   })
 })
 

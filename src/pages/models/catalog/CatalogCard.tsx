@@ -386,7 +386,8 @@ function Metric({
   return (
     <div className={cn('mg-metric', primary && 'is-primary')}>
       <span className="mg-metric-label">{label}</span>
-      <span className={`mg-metric-value ${free ? 'is-free' : ''}`}>
+      {/* title：可体验任务这类长值超出省略后，悬停仍能看到全文 */}
+      <span className={`mg-metric-value ${free ? 'is-free' : ''}`} title={value}>
         {value}
         {unit && <small className="mg-metric-unit">{unit}</small>}
         {/* 划线原价内联在现价右侧（原型口径）；仅有促销时渲染，是装饰而非真实价格 */}

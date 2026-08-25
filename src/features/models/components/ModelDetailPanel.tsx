@@ -62,8 +62,9 @@ function Metric({
   return (
     <div className="mg-metric">
       <span className="mg-metric-label">{label}</span>
-      <span className={`mg-metric-value ${free ? 'is-free' : ''}`}>
-        {value || '—'}
+      <span className={`mg-metric-value ${free ? 'is-free' : ''}`} title={value || undefined}>
+        {/* 主文本单独包一层：值容器是 flex，超出省略只能打在真实子元素上 */}
+        <span className="mg-metric-value-main">{value || '—'}</span>
         {unit && <i className="mg-metric-unit">{unit}</i>}
         {valueTag && <i className="mg-metric-ttl">{valueTag}</i>}
         {/* 划线原价：跟在折扣后价格后面，装饰性，不是真实扣费价 */}

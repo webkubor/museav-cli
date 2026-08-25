@@ -45,7 +45,7 @@ interface ModelDetailPanelProps {
  * 行，窄格时原价整块折到下一行，不会再挤出格外。次行价仍是独立一行。
  */
 function Metric({
-  label, value, unit, strike, subValue, subTag, valueTag, accent,
+  label, value, unit, strike, subValue, subTag, valueTag, free,
 }: {
   label: string
   value: string
@@ -54,12 +54,12 @@ function Metric({
   subValue?: string
   subTag?: string
   valueTag?: string
-  accent?: boolean
+  free?: boolean
 }) {
   return (
     <div className="mg-metric">
       <span className="mg-metric-label">{label}</span>
-      <span className={`mg-metric-value ${accent ? 'is-accent' : ''}`}>
+      <span className={`mg-metric-value ${free ? 'is-free' : ''}`}>
         {value || '—'}
         {unit && <i className="mg-metric-unit">{unit}</i>}
         {valueTag && <i className="mg-metric-ttl">{valueTag}</i>}
@@ -121,7 +121,7 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
     isFree,
   )
   const strikeInput = strikeInputVal != null
-    ? `${symbol} ${trimPriceZeros(String(strikeInputVal))}${unitSuffix}`
+    ? `${symbol}${trimPriceZeros(String(strikeInputVal))}${unitSuffix}`
     : undefined
   const strikeOutputVal = strikeOriginalPrice(
     promo?.original_output_per_1m,
@@ -129,7 +129,7 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
     isFree,
   )
   const strikeOutput = strikeOutputVal != null
-    ? `${symbol} ${trimPriceZeros(String(strikeOutputVal))}${unitSuffix}`
+    ? `${symbol}${trimPriceZeros(String(strikeOutputVal))}${unitSuffix}`
     : undefined
   // 缓存读取的原价画线与输入/输出同口径（prd#831：后端有下发、此前没渲染）。
   // 缓存写入契约里没有 original_* 字段（CatalogPromotion 只有 read），有价无原价，不画。
@@ -139,7 +139,7 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
     isFree,
   )
   const strikeCacheRead = strikeCacheReadVal != null
-    ? `${symbol} ${trimPriceZeros(String(strikeCacheReadVal))}${unitSuffix}`
+    ? `${symbol}${trimPriceZeros(String(strikeCacheReadVal))}${unitSuffix}`
     : undefined
   const priceTiers = detail.price_tiers ?? []
   const replaceGridWithTiers = catalogCardReplacesGridWithTiers(detail.pricing, priceTiers)
@@ -161,7 +161,7 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
         <div className="mg-detail-hero-main">
           <div className="mg-detail-title">
             <h2 className="mg-text-title-sm font-bold text-[var(--mg-text-1)]">
-              {prettyModelName(detail.display_name, detail.model_id)}
+              {prettyModelName(detail.display_name, detail.model_id, vendor)}
             </h2>
             {detail.is_new && (
               <em className="mg-badge is-new">
@@ -226,7 +226,7 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
               strike={strikeInput}
               subValue={textInput.value ? `${textInput.value}${textInput.unit}` : undefined}
               subTag={textInput.value ? textTag : undefined}
-              accent
+              free={isFree}
             />
             <Metric
               label={t('models.detail.pricingOutput')}
@@ -236,13 +236,14 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
               strike={strikeOutput}
               subValue={textOutput.value ? `${textOutput.value}${textOutput.unit}` : undefined}
               subTag={textOutput.value ? textTag : undefined}
-              accent
+              free={isFree}
             />
             <Metric
               label={t('models.detail.pricingCacheRead')}
               value={cacheRead.value}
               unit={cacheRead.unit}
               strike={strikeCacheRead}
+              free={isFree}
             />
             <Metric
               label={t('models.detail.pricingCacheWrite')}
@@ -262,7 +263,6 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
               label={priceTierLabel(tier, isZh)}
               value={shown.value}
               unit={shown.unit}
-              accent
             />
           )
         })}

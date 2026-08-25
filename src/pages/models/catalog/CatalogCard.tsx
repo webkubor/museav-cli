@@ -28,7 +28,7 @@ import type { IconType } from 'react-icons'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { Button } from '@/components/ui/Button'
-import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
+import { cn, formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 import {
   MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, cardSummary, modelVendorLabel,
   strikeOriginalPrice, sortProtocols,
@@ -88,7 +88,9 @@ export function CatalogCard({
   const detailHref = `/models/${model.slug || model.id}`
   const symbol = currencySymbol(model.pricing?.currency, isZh)
   const ctxValue = (model.context_length ?? 0) > 0 ? formatContextLength(model.context_length) : '—'
-  const name = prettyModelName(model.display_name, model.model_id)
+  // 传 vendor 才会剥「DeepSeek: DeepSeek V4 Pro」这类厂商前缀（原型卡片只写模型名，
+  // 厂商另起一行）；线上 display_name 恒带前缀，漏传就整块显示（2026-08-25 原型对齐）。
+  const name = prettyModelName(model.display_name, model.model_id, modelVendorLabel(model, ''))
   const provider = modelVendorLabel(model, '') || undefined
   const promo = model.promotion
   // free 只认服务端的显式限免标记，不从「价格为 0」推断 —— 未配价的模型也是 0。
@@ -258,7 +260,7 @@ export function CatalogCard({
       {/* 贴底：价格规格。第一行输入/输出价，第二行上下文/缓存读取。划线原价内联在现价
           右侧，不另起一行。最大输出已按 shared/modelgo_prd#348 移除（后端无可靠数据），
           空出的第四格按需求方 2026-08-04 口径改放缓存读取价。 */}
-      <div className="mg-mcard-specs">
+      <div className={cn('mg-mcard-specs', useTierGrid && 'is-tiers')}>
         {useTierGrid ? (
           cardTiers.map((tier) => {
             const shown = priceText(tier.price, symbol, '—', `/${tier.unit}`, isFree)
@@ -268,32 +270,35 @@ export function CatalogCard({
                 label={priceTierLabel(tier, isZh)}
                 value={shown.value}
                 unit={shown.unit}
-                accent
               />
             )
           })
         ) : (
           <>
+            {/* 价格值不再用品牌蓝：原型规格值一律正文色（--text），仅「免费」标
+                success 绿（2026-08-25 需求方对齐原型口径）。划线原价带单位
+                （原型 <s>¥5.6/M</s>），光秃金额会读成另一个价。 */}
             <Metric
               label={t('modelsCatalog.card.input')}
               value={input.value}
               unit={input.unit}
-              strike={strikeInputVal != null ? `${symbol}${trimPriceZeros(String(strikeInputVal))}` : undefined}
-              accent
+              strike={strikeInputVal != null ? `${symbol}${trimPriceZeros(String(strikeInputVal))}${unitSuffix}` : undefined}
+              free={isFree}
             />
             <Metric
               label={t('modelsCatalog.card.output')}
               value={output.value}
               unit={output.unit}
-              strike={strikeOutputVal != null ? `${symbol}${trimPriceZeros(String(strikeOutputVal))}` : undefined}
-              accent
+              strike={strikeOutputVal != null ? `${symbol}${trimPriceZeros(String(strikeOutputVal))}${unitSuffix}` : undefined}
+              free={isFree && !isPerCall}
             />
             <Metric label={t('modelsCatalog.card.context')} value={ctxValue} />
             <Metric
               label={t('modelsCatalog.card.cacheRead')}
               value={cacheRead.value}
               unit={cacheRead.unit}
-              strike={strikeCacheReadVal != null ? `${symbol}${trimPriceZeros(String(strikeCacheReadVal))}` : undefined}
+              strike={strikeCacheReadVal != null ? `${symbol}${trimPriceZeros(String(strikeCacheReadVal))}${unitSuffix}` : undefined}
+              free={isFree}
             />
           </>
         )}
@@ -346,12 +351,12 @@ export function CatalogCard({
 }
 
 function Metric({
-  label, value, unit, accent, strike,
-}: { label: string; value: string; unit?: string; accent?: boolean; strike?: string }) {
+  label, value, unit, free, strike,
+}: { label: string; value: string; unit?: string; free?: boolean; strike?: string }) {
   return (
     <div className="mg-metric">
       <span className="mg-metric-label">{label}</span>
-      <span className={`mg-metric-value ${accent ? 'is-accent' : ''}`}>
+      <span className={`mg-metric-value ${free ? 'is-free' : ''}`}>
         {value}
         {unit && <small className="mg-metric-unit">{unit}</small>}
         {/* 划线原价内联在现价右侧（原型口径）；仅有促销时渲染，是装饰而非真实价格 */}

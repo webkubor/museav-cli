@@ -116,7 +116,7 @@ export function pricingRulePriceText(
 ): string {
   const raw = kind === 'input' ? rule.input_per_1m : rule.output_per_1m
   if (raw != null && raw !== '' && !Number.isNaN(parseFloat(raw))) {
-    return `${symbol} ${trimPriceZeros(raw)}/${rule.unit || 'M'}`
+    return `${symbol}${trimPriceZeros(raw)}/${rule.unit || 'M'}`
   }
   if (rule.mode === 'multiplier' && rule.rate) return `×${trimPriceZeros(rule.rate)}`
   return '—'
@@ -158,7 +158,9 @@ export function priceText(
   if (amount == null || amount === '' || Number.isNaN(n) || (n ?? 0) <= 0) {
     return { value: freeLabel, unit: '' }
   }
-  return { value: `${symbol} ${trimPriceZeros(amount)}`, unit: unitSuffix }
+  // 符号与金额之间不留空格：原型全站是「¥4.46/M」紧凑式，「¥ 4.46」对不上
+  // （2026-08-25 需求方走查；选择模型弹窗 priceLabel 本就是紧凑式，就此统一）。
+  return { value: `${symbol}${trimPriceZeros(amount)}`, unit: unitSuffix }
 }
 
 /**

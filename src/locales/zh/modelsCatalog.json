@@ -169,7 +169,7 @@
       "try": "立即体验",
       "apiDocs": "API 请求",
       "compare": "对比模型",
-      "context": "上下文长度",
+      "context": "上下文",
       "cacheRead": "缓存读取",
       "input": "输入",
       "output": "输出"

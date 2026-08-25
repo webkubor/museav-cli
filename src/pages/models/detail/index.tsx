@@ -273,7 +273,7 @@ export default function ModelDetailPage() {
                         rounded="rounded-full"
                         className="mg-related-avatar"
                       />
-                      <span className="mg-related-name">{prettyModelName(item.name, item.model_id)}</span>
+                      <span className="mg-related-name">{prettyModelName(item.name, item.model_id, item.vendor)}</span>
                     </span>
                     <span className="mg-related-meta">
                       {item.vendor}
@@ -290,15 +290,15 @@ export default function ModelDetailPage() {
                         ? t('modelsCatalog.detail.limitedFree')
                         : item.pricing_mode === 'per_call'
                           ? parseFloat(item.per_call_price ?? '') > 0
-                            ? `${currencySymbol(item.currency, isZh)} ${trimPriceZeros(item.per_call_price ?? '0')}${priceUnitSuffix(undefined, 'per_call')}`
+                            ? `${currencySymbol(item.currency, isZh)}${trimPriceZeros(item.per_call_price ?? '0')}${priceUnitSuffix(undefined, 'per_call')}`
                             : '—'
                           : parseFloat(item.output_price) > 0
                             ? t('modelsCatalog.detail.relatedPrice', {
-                                input: `${currencySymbol(item.currency, isZh)} ${trimPriceZeros(item.input_price)}`,
+                                input: `${currencySymbol(item.currency, isZh)}${trimPriceZeros(item.input_price)}`,
                                 output: trimPriceZeros(item.output_price),
                               })
                             : parseFloat(item.input_price) > 0
-                              ? `${currencySymbol(item.currency, isZh)} ${trimPriceZeros(item.input_price)}`
+                              ? `${currencySymbol(item.currency, isZh)}${trimPriceZeros(item.input_price)}`
                               : '—'}
                     </span>
                   </button>

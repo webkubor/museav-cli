@@ -282,15 +282,20 @@ export default function ModelDetailPage() {
                     </span>
                     <span className="mg-related-price">
                       {/* 未配价（零价且无限免标记）显示「—」而非「$0 / 0 每M」——§9.1，
-                          与详情面板/广场卡片同口径（qa#624） */}
+                          与详情面板/广场卡片同口径（qa#624）。
+                          输出价为 0 时只展示输入价、不带单位：related 契约没有计价模式字段，
+                          per_call（按张）模型会被拼成「¥0.22 / 0 每M」（prd#852，后端补字段
+                          后这里按 mode 渲染 /张）。 */}
                       {item.is_free
                         ? t('modelsCatalog.detail.limitedFree')
-                        : parseFloat(item.input_price) > 0 || parseFloat(item.output_price) > 0
+                        : parseFloat(item.output_price) > 0
                           ? t('modelsCatalog.detail.relatedPrice', {
                               input: `${currencySymbol(item.currency, isZh)} ${trimPriceZeros(item.input_price)}`,
                               output: trimPriceZeros(item.output_price),
                             })
-                          : '—'}
+                          : parseFloat(item.input_price) > 0
+                            ? `${currencySymbol(item.currency, isZh)} ${trimPriceZeros(item.input_price)}`
+                            : '—'}
                     </span>
                   </button>
                 ))}

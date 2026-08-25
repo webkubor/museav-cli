@@ -618,7 +618,10 @@ export function useModelsPlayground() {
       const localOutputTokens = estimateTokens(reply)
       const inputPrice = Number(selectedModel.pricing?.input_per_1m ?? 0)
       const outputPrice = Number(selectedModel.pricing?.output_per_1m ?? 0)
-      const localFree = !inputPrice && !outputPrice
+      // per_call（按张计价）：兜底消费 = 单张价，不套 token 公式（prd#851 同族口径）
+      const isPerCallModel = selectedModel.pricing?.mode === 'per_call'
+      const perCallPrice = Number(selectedModel.pricing?.per_call_price || selectedModel.pricing?.input_per_1m || 0)
+      const localFree = isPerCallModel ? !(perCallPrice > 0) : !inputPrice && !outputPrice
       const metrics = buildDialogueMetrics({
         modelLabel,
         stats: s,
@@ -627,7 +630,7 @@ export function useModelsPlayground() {
           outputTokens: localOutputTokens,
           firstTokenMs: (firstDeltaAt ?? Date.now()) - startedAt,
           totalMs: localTotalMs,
-          spend: localFree ? 0 : (localInputTokens * inputPrice + localOutputTokens * outputPrice) / 1_000_000,
+          spend: localFree ? 0 : isPerCallModel ? perCallPrice : (localInputTokens * inputPrice + localOutputTokens * outputPrice) / 1_000_000,
           free: localFree,
         },
       })

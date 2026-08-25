@@ -86,7 +86,9 @@
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .mg-related-meta { font-size: 12px; color: var(--mg-text-3); }
-.mg-related-price { font-size: 12px; color: var(--brand-base); }
+/* 中性弱化色对齐原型 .marketplace-related-price（--text-soft）：prd#853 QA 复验
+   全站唯一残留的品牌蓝价格就在这里，价格一律正文/中性色，不用品牌蓝。 */
+.mg-related-price { font-size: 12px; color: var(--mg-text-2); }
 
 /* .mg-proto / .mg-mcard-tag 样式回归 catalog-grid-card.css（卡片版面撤回旧版，
    协议/标签行重新在卡片上渲染），详情页 ModelDetailPanel 共用同一套。 */

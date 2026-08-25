@@ -294,8 +294,9 @@ export default function ModelDetailPage() {
                             : '—'
                           : parseFloat(item.output_price) > 0
                             ? t('modelsCatalog.detail.relatedPrice', {
+                                // 两个数各带货币符号（原型 App.tsx:5996「¥输入 / ¥输出 每M」；prd#853 QA 复验指出）
                                 input: `${currencySymbol(item.currency, isZh)}${trimPriceZeros(item.input_price)}`,
-                                output: trimPriceZeros(item.output_price),
+                                output: `${currencySymbol(item.currency, isZh)}${trimPriceZeros(item.output_price)}`,
                               })
                             : parseFloat(item.input_price) > 0
                               ? `${currencySymbol(item.currency, isZh)}${trimPriceZeros(item.input_price)}`

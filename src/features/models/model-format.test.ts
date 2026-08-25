@@ -117,9 +117,19 @@ describe('mediaPrimaryPrice — 媒体模型主价格', () => {
       .toEqual({ amount: '1.5', unit: '/秒', unitName: '秒' })
   })
 
-  it('按 token 计价且无矩阵的媒体模型（Seedance 类）→ output 优先，unitName M', () => {
+  it('按 token 计价且无矩阵的媒体模型 → output 优先，unitName M', () => {
     expect(mediaPrimaryPrice({ mode: 'token', input_per_1m: '20', output_per_1m: '46' }, undefined, []))
       .toEqual({ amount: '46', unit: '/M', unitName: 'M' })
+  })
+
+  it('token 计价（unit=M）+ 档位矩阵的视频模型（Seedance 实况）→ 取最高档 37，不取 output 的 22（prd#858）', () => {
+    // doubao-seedance-2.0-fast：pricing.output_per_1m=22（最低档镜像），档位 文生视频37/图生视频37/视频生视频22
+    // 线上卡片曾显示 ¥22/M（最低档）——主价格必须走档位最高档，与档位 unit 是 M 还是 秒/张 无关
+    expect(mediaPrimaryPrice({ mode: 'token', input_per_1m: '0', output_per_1m: '22' }, undefined, [
+      { label: '文生视频', price: '37', unit: 'M', bucket: 'video_t2v' },
+      { label: '图生视频', price: '37', unit: 'M', bucket: 'video_i2v' },
+      { label: '视频生视频', price: '22', unit: 'M', bucket: 'video_v2v' },
+    ])).toEqual({ amount: '37', unit: '/M', unitName: 'M' })
   })
 
   it('未配价（全 0 且无档位）→ amount undefined，调用方渲染「—」', () => {

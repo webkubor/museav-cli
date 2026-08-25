@@ -27,6 +27,7 @@ import { appToast } from '@/lib/app-toast'
 import type { CatalogModelItem } from '@/types'
 import {
   estimateTokens,
+  estimateComposerSpend,
   isPaidModel,
   hashId,
   sizeBucket,
@@ -50,7 +51,6 @@ import {
   offlineModelPlaceholder,
   isOfflineModel,
   modelSupportsAttachment,
-  formatSpendAmount,
   type ExperienceMessage,
   type ExperienceTaskType,
 } from './model-experience-data'
@@ -190,16 +190,10 @@ export function useModelsPlayground() {
    *  输出 token 取 min(400, max_tokens) 上限估算（App.tsx:16967-16990） */
   const composerEstimatedSpend = useMemo(() => {
     // 符号走全局结算币种（#372：此前写死 ¥，国际站 settlement_currency=USD 也显示人民币符号）
-    if (!selectedModel) return formatSpendAmount(0, currencySymbol_)
-    const inputPrice = Number(selectedModel.pricing?.input_per_1m ?? 0)
-    const outputPrice = Number(selectedModel.pricing?.output_per_1m ?? 0)
-    if (!inputPrice && !outputPrice) return formatSpendAmount(0, currencySymbol_)
+    // 计算抽成纯函数 estimateComposerSpend（prd#851：per_call 模型走单张价，不套 token 公式）
     const systemPrompt = typeof chatParams.system_prompt === 'string' ? chatParams.system_prompt : ''
     const maxTokens = typeof chatParams.max_tokens === 'number' ? chatParams.max_tokens : 4096
-    const inputTokens = estimateTokens(`${input}${systemPrompt}`)
-    const outputTokens = Math.min(400, maxTokens)
-    const spend = (inputTokens * inputPrice + outputTokens * outputPrice) / 1_000_000
-    return formatSpendAmount(spend, currencySymbol_)
+    return estimateComposerSpend(selectedModel, `${input}${systemPrompt}`, maxTokens, currencySymbol_)
   }, [selectedModel, input, chatParams, currencySymbol_])
 
   useEffect(() => {

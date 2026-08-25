@@ -92,6 +92,28 @@ export function estimateTokens(text: string): number {
   return Math.max(1, Math.round(text.length / 4))
 }
 
+/** composer 底部预估费用（原型 estimatePlaygroundTaskSpend）：token 模型按草稿估 input token、
+ *  输出取 min(400, max_tokens) 上限；per_call（按张/按次，文生图类）一次发送 = 一次调用，
+ *  预估就是单张价——token 那套会把 ¥0.2/张 当 ¥0.2/1M token 算成 <¥0.01（prd#851）。
+ *  取价口径与 dualPriceText / CatalogCard 一致：per_call_price 缺省回落 input_per_1m 镜像。 */
+export function estimateComposerSpend(
+  model: Pick<CatalogModelItem, 'pricing'> | null | undefined,
+  draftText: string,
+  maxTokens: number,
+  symbol: string,
+): string {
+  if (!model) return formatSpendAmount(0, symbol)
+  if (model.pricing?.mode === 'per_call') {
+    const perCall = Number(model.pricing.per_call_price || model.pricing.input_per_1m || 0)
+    return formatSpendAmount(perCall, symbol)
+  }
+  const inputPrice = Number(model.pricing?.input_per_1m ?? 0)
+  const outputPrice = Number(model.pricing?.output_per_1m ?? 0)
+  if (!inputPrice && !outputPrice) return formatSpendAmount(0, symbol)
+  const spend = (estimateTokens(draftText) * inputPrice + Math.min(400, maxTokens) * outputPrice) / 1_000_000
+  return formatSpendAmount(spend, symbol)
+}
+
 /** 图片/视频产物标题 · 规格明细行（PRD §7.10 PlaygroundArtifactCard 逐字对齐：
  *  title = 用户输入文本 || 附件文件名 || 任务默认标签；detail 按任务类型拼规格参数）。
  *  chatParams 取的是发送这轮时 ModelSettingsModal 里的比例/分辨率/格式等配置，缺省值

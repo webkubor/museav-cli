@@ -9,21 +9,29 @@ import type { CallLogItem, GuardrailAction, ModelRequestState } from '@/types'
  * 到原有 status 三状态，保证页面不崩。
  */
 
-export type DerivedLogStatus = 'success' | 'guarded' | 'error'
+export type DerivedLogStatus = 'success' | 'guarded' | 'error' | 'canceled'
 
 /** 是否携带原型新字段（护栏决策 / 模型请求态）；都缺省时走 status 降级分支。 */
 function hasGuardrailModel(row: CallLogItem): boolean {
   return row.model_request_state != null || row.guardrail_decision != null
 }
 
+function isClientCanceled(row: CallLogItem): boolean {
+  if (row.error_code === 'client_canceled') return true
+  if (row.finish_reason === 'canceled') return true
+  return row.http_status === 499
+}
+
 /**
- * 列表主状态派生（仅 3 态，不加次级标签）：
+ * 列表主状态派生：
+ * - 客户端取消（prd#830）优先：error_code=client_canceled / finish_reason=canceled / HTTP 499 → 已取消
  * - model_request_state === 'failed' → 异常
  * - 否则有 guardrail_decision（命中）→ 护栏命中
  * - 其余 → 成功
  * 降级（无新字段）：failed→异常 / rejected→护栏命中 / 其余→成功。
  */
 export function deriveLogStatus(row: CallLogItem): DerivedLogStatus {
+  if (isClientCanceled(row)) return 'canceled'
   if (hasGuardrailModel(row)) {
     if (row.model_request_state === 'failed') return 'error'
     if (row.guardrail_decision) return 'guarded'

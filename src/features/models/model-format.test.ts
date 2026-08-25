@@ -9,7 +9,7 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import i18n from '@/i18n'
 import {
-  catalogCardReplacesGridWithTiers, priceTierLabel, priceTiersForCard, priceUnitSuffix, strikeOriginalPrice,
+  catalogCardReplacesGridWithTiers, mediaPrimaryPrice, priceTierLabel, priceTiersForCard, priceUnitSuffix, strikeOriginalPrice,
   pricingRuleGroups, hasPricingGradient, pricingRuleLabel, pricingRulePriceText, withPriceFrom,
   autoSummary, cardSummary, detailSummary, sortProtocols,
 } from './model-format'
@@ -88,6 +88,37 @@ describe('catalogCardReplacesGridWithTiers — 纯媒体才用档位替换四格
 
   it('没有档位 → 不替换', () => {
     expect(catalogCardReplacesGridWithTiers({ input_per_1m: '0', output_per_1m: '0' }, [])).toBe(false)
+  })
+})
+
+/**
+ * 媒体模型「主价格」取值（需求方 2026-08-25 对齐原型 marketplacePrimaryPriceText）：
+ * per_call 每张价 → pricing 的 output||input → price_tiers 首档 → 未配价 undefined。
+ */
+describe('mediaPrimaryPrice — 媒体模型主价格', () => {
+  const tiers = [
+    { label: '文生视频 · 720P · 含音频', price: '0.9', unit: '秒', bucket: 'video_seconds' },
+    { label: '文生视频 · 1080P · 含音频', price: '1.5', unit: '秒', bucket: 'video_seconds' },
+  ]
+
+  it('per_call（按张）→ 每张价 + /张，unitName 从本地化后缀剥出', async () => {
+    await i18n.changeLanguage('zh')
+    expect(mediaPrimaryPrice({ mode: 'per_call', per_call_price: '0.05', input_per_1m: '0.05' }, undefined, []))
+      .toEqual({ amount: '0.05', unit: '/张', unitName: '张' })
+  })
+
+  it('按 token 计价的媒体模型（Seedance 类）→ output 优先，unitName M', () => {
+    expect(mediaPrimaryPrice({ mode: 'token', input_per_1m: '20', output_per_1m: '46' }, undefined, tiers))
+      .toEqual({ amount: '46', unit: '/M', unitName: 'M' })
+  })
+
+  it('pricing 全 0、价格只在矩阵里（可灵类）→ 首档价 + 首档单位', () => {
+    expect(mediaPrimaryPrice({ input_per_1m: '0', output_per_1m: '0' }, undefined, tiers))
+      .toEqual({ amount: '0.9', unit: '/秒', unitName: '秒' })
+  })
+
+  it('未配价（全 0 且无档位）→ amount undefined，调用方渲染「—」', () => {
+    expect(mediaPrimaryPrice({ input_per_1m: '0', output_per_1m: '0' }, undefined, []).amount).toBeUndefined()
   })
 })
 

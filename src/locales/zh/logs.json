@@ -204,7 +204,8 @@
     "status": {
       "success": "成功",
       "guarded": "护栏命中",
-      "error": "异常"
+      "error": "异常",
+      "canceled": "已取消"
     },
     "metrics": {
       "notStarted": "未发起",

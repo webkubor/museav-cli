@@ -177,4 +177,5 @@ export type {
   TaskListResponse,
   TaskSummaryParams,
   AsyncTasksSummary,
+  AsyncSpendByCurrency,
 } from './tasks'

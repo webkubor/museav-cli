@@ -211,6 +211,7 @@ function toCallLogItem(row: ModelLogRow): CallLogItem {
     app_name: row.app_name ?? null,
     status: normalizeStatus(row.status),
     finish_reason: row.finish_reason ?? null,
+    error_code: row.error_code ?? null,
     usage: {
       input_tokens: inputTokens,
       output_tokens: outputTokens,

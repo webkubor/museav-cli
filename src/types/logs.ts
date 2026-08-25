@@ -72,6 +72,8 @@ export interface CallLogItem {
   app_name: string | null
   status: 'accepted' | 'succeeded' | 'failed' | 'rejected'
   finish_reason: string | null
+  /** 网关错误分类；client_canceled 表示客户端取消（prd#830） */
+  error_code?: string | null
   usage: {
     input_tokens: number
     output_tokens: number

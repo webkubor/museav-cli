@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/store/auth'
 import { useCurrency } from '@/hooks/use-platform-config'
 import { formatMoney } from '@/lib/utils'
+import { currencySymbol, isZhLang } from '@/features/models/model-format'
 import { formatDuration } from '@/lib/format-date'
 import { abbreviateNumber } from '@/features/dashboard/workbench/shared'
 import { getLogsSummary } from '@/services/logs'
@@ -39,6 +40,8 @@ interface SummaryTile {
   label: string
   value: string
   sub?: string
+  /** 数值被 truncate 截断时的完整文本（混币费用会并列多个币种，肉眼容易被截断误读） */
+  valueTitle?: string
 }
 
 /** 纯展示的六指标条（同步/异步共用外观）；无结果时显 —/0，不隐藏（PRD） */
@@ -52,7 +55,12 @@ export function SummaryTiles({ tiles, loading }: { tiles: SummaryTile[]; loading
             <div className="mt-1.5 h-6 w-16 animate-pulse rounded-sm bg-mg-fill-1" />
           ) : (
             <>
-              <div className="mt-0.5 truncate font-mono text-lg font-bold tabular-nums text-mg-text-1">{tile.value}</div>
+              <div
+                className="mt-0.5 truncate font-mono text-lg font-bold tabular-nums text-mg-text-1"
+                title={tile.valueTitle}
+              >
+                {tile.value}
+              </div>
               {tile.sub && <div className="mg-text-caption truncate text-mg-text-2">{tile.sub}</div>}
             </>
           )}
@@ -128,7 +136,7 @@ export function SyncLogsSummary({ params }: { params: LogStatsParams }) {
 /**
  * 异步任务 Summary：六项指标跟随全部筛选（需求方#668）。
  * 外观与同步侧共用 SummaryTiles，指标定义按 PRD 的「异步任务」段。
- * 数据源 GET /async-tasks/summary（后端 qa#605）。
+ * 数据源 GET /async-tasks/summary（后端 qa#605，费用口径经 qa#669 改为按币种分组）。
  */
 export function AsyncTasksSummaryBar({ params }: { params: TaskSummaryParams }) {
   const { t } = useTranslation()
@@ -152,6 +160,22 @@ export function AsyncTasksSummaryBar({ params }: { params: TaskSummaryParams }) 
     const r = data?.running_tasks
     if (typeof q !== 'number' || typeof r !== 'number') return EM_DASH
     return (q + r).toLocaleString()
+  })()
+
+  // 总费用（qa#669 修正后的口径）：spend_by_currency 是权威源，各币种分别显示、不相加
+  // ——CNY 和 USD 加一起没有意义。混币时后端把 total_spend/currency 置为空字符串，
+  // 空串不能交给 formatMoney：Number('') 是 0，会把「5203.30 元 + 3.04 美元」渲染成 ¥0。
+  const spend = (() => {
+    const groups = data?.spend_by_currency?.filter((g) => g && g.currency)
+    if (groups?.length) {
+      return groups
+        .map((g) => formatMoney(g.amount, currencySymbol(g.currency, isZhLang())))
+        .join(' · ')
+    }
+    // 单币种窗口（或 qa#669 上线前的旧响应）：回落标量，币种仍走租户结算币种
+    const scalar = data?.total_spend
+    if (scalar === undefined || scalar === '') return EM_DASH
+    return formatMoney(scalar, symbol)
   })()
 
   const tiles: SummaryTile[] = [
@@ -182,11 +206,10 @@ export function AsyncTasksSummaryBar({ params }: { params: TaskSummaryParams }) 
       }),
     },
     {
-      // 币种用租户结算币种（useCurrency），**不用响应里的 currency** ——
-      // 后端那个字段取的是少数派币种（QA 实测 15/2380 条 USD 就把整体标成 USD）。
-      // 金额本身跨币种裸求和的问题归后端修（qa#669），前端至少不再叠加一个错误的币种符号。
+      // 见上方 spend：混币按币种并列，不相加、不取少数派币种当标签（qa#669）
       label: t('logs.asyncSummary.totalSpend'),
-      value: data?.total_spend !== undefined ? formatMoney(data.total_spend, symbol) : EM_DASH,
+      value: spend,
+      valueTitle: spend === EM_DASH ? undefined : spend,
       sub: t('logs.asyncSummary.pendingBilling', { value: count(data?.pending_billing_tasks) }),
     },
     {

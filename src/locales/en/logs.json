@@ -204,7 +204,8 @@
     "status": {
       "success": "Success",
       "guarded": "Guardrail Triggered",
-      "error": "Error"
+      "error": "Error",
+      "canceled": "Canceled"
     },
     "metrics": {
       "notStarted": "Not sent",

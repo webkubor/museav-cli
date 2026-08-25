@@ -180,6 +180,50 @@ describe('AsyncTasksSummaryBar', () => {
     await waitFor(() => expect(values()[5]).toBe('0'))
   })
 
+  // ── 费用口径：qa#669 后端改为按币种分组 ──
+
+  it('混币窗口按币种并列显示，不相加、不吐 ¥0', async () => {
+    // qa#669 修复后的真实形状：混币时 total_spend/currency 都是空字符串
+    getAsyncTasksSummary.mockResolvedValue({
+      ...FULL,
+      total_spend: '',
+      currency: '',
+      spend_by_currency: [
+        { currency: 'CNY', amount: '5203.30' },
+        { currency: 'USD', amount: '3.04' },
+      ],
+    })
+    renderBar()
+
+    await waitFor(() => expect(values()[4]).toContain('5,203.3'))
+    const spend = values()[4]
+    expect(spend).toContain('¥')
+    expect(spend).toContain('$')
+    expect(spend).toContain('3.04')
+    // 回归闸门：空字符串曾走 formatMoney(Number('')=0) 渲染成 ¥0，把 5203 元说成 0
+    expect(spend).not.toBe('¥0')
+  })
+
+  it('单币种窗口用后端给的币种，不再是跨币种裸求和', async () => {
+    getAsyncTasksSummary.mockResolvedValue({
+      ...FULL,
+      total_spend: '43.89',
+      currency: 'CNY',
+      spend_by_currency: [{ currency: 'CNY', amount: '43.89' }],
+    })
+    renderBar()
+
+    await waitFor(() => expect(values()[4]).toBe('¥43.89'))
+  })
+
+  it('total_spend 是空字符串且没有分组数据时显「—」，不显 ¥0', async () => {
+    getAsyncTasksSummary.mockResolvedValue({ ...FULL, total_spend: '', currency: '' })
+    renderBar()
+
+    await waitFor(() => expect(values()[0]).toBe('2,380'))
+    expect(values()[4]).toBe('—')
+  })
+
   it('接口失败时静默显「—」，不抛错打断列表', async () => {
     getAsyncTasksSummary.mockRejectedValue(new Error('boom'))
     renderBar()

@@ -118,14 +118,22 @@ export interface TaskListResponse {
  */
 export type TaskSummaryParams = Omit<TaskListParams, 'limit' | 'offset'>
 
+/** 按币种分组的费用（qa#669 后端新增，混币窗口下唯一权威的费用口径） */
+export interface AsyncSpendByCurrency {
+  currency: string
+  amount: string
+}
+
 /**
- * 异步任务 Summary 响应（后端 qa#605，spec 202608201144 实测字段）。
+ * 异步任务 Summary 响应（后端 qa#605，费用口径经 qa#669 修正）。
  *
- * ⚠️ total_spend / currency 有已知的后端缺陷：跨币种裸求和、且 currency 取的是
- * 少数派币种。QA 2026-08-19 实测 preset=thisMonth：CNY 2365 条合计 5172.540982
- * + USD 15 条合计 3.04 → total_spend 5175.580982、currency "USD"。
- * 所以前端**不使用本字段的 currency**，改用租户结算币种（useCurrency），
- * 与同步侧 total_cost 的既有做法一致。金额本身的跨币种误差归后端修：**qa/ai-quality-platform#669**。
+ * **费用只认 spend_by_currency**：qa#669 修完后，后端按币种分组返回，
+ * 混币窗口下 total_spend / currency **返回空字符串**（不再吐跨币种裸求和的误导标量），
+ * 只有单币种窗口才给这两个标量。所以 total_spend 必须判空——`Number('')` 是 0，
+ * 直接 formatMoney 会把「5203.30 元 + 3.04 美元」渲染成 ¥0（比原来的币种标错更糟）。
+ *
+ * 历史（留着防回退）：qa#669 修复前 total_spend 是跨币种裸求和、currency 取少数派币种，
+ * QA 2026-08-19 实测 CNY 2365 条 5172.540982 + USD 15 条 3.04 → total_spend 5175.580982、currency "USD"。
  */
 export interface AsyncTasksSummary {
   total_tasks?: number
@@ -136,8 +144,11 @@ export interface AsyncTasksSummary {
   expired_tasks?: number
   /** 后端已实测等于 failed_tasks + expired_tasks，直接用，不在前端重算 */
   failed_or_expired_tasks?: number
+  /** 按币种分组的费用；混币窗口下这是唯一可用的费用口径 */
+  spend_by_currency?: AsyncSpendByCurrency[]
+  /** 仅单币种窗口有值；混币时后端返回空字符串 */
   total_spend?: string
-  /** 见上：少数派币种，前端不用 */
+  /** 仅单币种窗口有值；混币时后端返回空字符串 */
   currency?: string
   pending_billing_tasks?: number
   available_products?: number

@@ -49,7 +49,7 @@ import { CreateKeyModal } from './CreateKeyModal'
 import { ApiKeyTable } from './ApiKeyTable'
 import { ApiKeySummaryCards } from './ApiKeySummaryCards'
 import { ApiKeyDetailDrawer } from './ApiKeyDetailDrawer'
-import { deriveKeyType, deriveUserMonthSpend, responsibleOf, isExpiringSoon, KEY_ACTION_PERMS, type ApiKeyAction } from './derive'
+import { deriveKeyType, deriveUserMonthSpend, responsibleOf, KEY_ACTION_PERMS, type ApiKeyAction } from './derive'
 import type { ApiKeyCreated, ApiKeyItem, ApiKeyType } from '@/types'
 
 const ALL = 'all'
@@ -127,17 +127,18 @@ export default function ApiKeysPage() {
   const debouncedSearch = useDebouncedValue(searchValue.trim(), 350)
 
   // #60 列表接口已改为 CursorPage 分页对象：表格走真·游标分页（page_size=20，不处理 has_more 会漏显）。
-  // q / key_type / responsible_member_id 三个后端支持的筛选下推服务端，跨页命中不漏；
-  // status 后端无筛选参数（#383），仍在当前页客户端过滤（见 filteredData）。
+  // q / key_type / responsible_member_id / status 四个筛选全部下推服务端，跨页命中不漏；
+  // status 于 qa#684 交付（后端分页前过滤），前端不再做当前页客户端过滤（prd#825：过期 Key 在第 2 页及以后时筛不出）。
   const listParams: ApiKeyListParams = {
     page_size: PAGE_SIZE,
     cursor: pager.cursor,
     q: debouncedSearch || undefined,
     key_type: typeFilter === ALL ? undefined : (typeFilter as ApiKeyListParams['key_type']),
     responsible_member_id: ownerFilter === ALL ? undefined : ownerFilter,
+    status: statusFilter === ALL ? undefined : (statusFilter as ApiKeyListParams['status']),
   }
   const { data, isLoading, isFetching, error: listError } = useQuery({
-    queryKey: ['api-keys', workspaceId, 'page', pager.page, pager.cursor, debouncedSearch, typeFilter, ownerFilter],
+    queryKey: ['api-keys', workspaceId, 'page', pager.page, pager.cursor, debouncedSearch, typeFilter, ownerFilter, statusFilter],
     queryFn: () => listApiKeys(workspaceId, listParams),
     enabled: !!workspaceId,
     placeholderData: keepPreviousData,
@@ -341,15 +342,7 @@ export default function ApiKeysPage() {
     [workspaceId, canReveal, copy, copyingKeyId, t, commonEventProps, isActiveWorkspaceOwner]
   )
 
-  // 搜索/类型/负责人已下推服务端（见 listParams）；status 后端无筛选参数，仅在当前页客户端过滤
-  const filteredData = useMemo(() => {
-    return apiKeyItems.filter((item) => {
-      if (statusFilter === ALL) return true
-      if (statusFilter === 'expiring') return isExpiringSoon(item)
-      return item.status === statusFilter
-    })
-  }, [apiKeyItems, statusFilter])
-
+  // 搜索/类型/负责人/状态四项筛选全部下推服务端（见 listParams），当前页直接渲染后端结果，不再客户端二次过滤
   const isFiltered = searchValue.trim() !== '' || typeFilter !== ALL || statusFilter !== ALL || ownerFilter !== ALL
 
   // 筛选/搜索埋点（PRD §11.2）；筛选条件变化后回到第一页，避免把旧条件的 cursor 发给新数据源
@@ -360,6 +353,7 @@ export default function ApiKeysPage() {
   }
   const handleStatusFilter = (v: string) => {
     setStatusFilter(v)
+    pager.reset()
     trackEvent('api_keys:filter_change', { ...commonEventProps, filter_type: 'status', filter_value: v }, { source: 'toolbar' })
   }
   const handleOwnerFilter = (v: string) => {
@@ -490,7 +484,7 @@ export default function ApiKeysPage() {
 
       <ApiKeyTable
         isLoading={isLoading}
-        items={filteredData}
+        items={apiKeyItems}
         canAction={canAction}
         canReveal={canReveal}
         hasKeys={allKeys.length > 0}
@@ -506,7 +500,7 @@ export default function ApiKeysPage() {
         enablePendingId={enablePendingId}
       />
 
-      {/* #60 游标翻页：首页且无更多时隐藏（同 AuditTab）；status 页内过滤可能使当前页显示少于 PAGE_SIZE 条 */}
+      {/* #60 游标翻页：首页且无更多时隐藏（同 AuditTab）；筛选全部下推服务端，has_more/next_cursor 基于过滤后集合 */}
       {(pager.page > 1 || hasMore) && (
         <Pagination
           mode="cursor"

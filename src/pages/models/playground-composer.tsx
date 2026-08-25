@@ -1,9 +1,7 @@
 import type { RefObject } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { LuPaperclip, LuTriangleAlert, LuX } from 'react-icons/lu'
 import { Composer } from '@/components/ui/Composer'
-import { trackEvent } from '@/lib/track'
 import type { CatalogModelItem } from '@/types'
 import {
   ATTACHMENT_LIMITS,
@@ -11,9 +9,11 @@ import {
   attachmentLimitLabel,
   categoryPlaceholder,
   isOfflineModel,
+  isPaidModel,
   type ExperienceCategoryKey,
   type ExperienceTaskType,
 } from './model-experience-data'
+import { ExperienceBalanceNotice } from './ExperienceBalanceNotice'
 import { TaskFileDropZone } from './components/TaskFileDropZone'
 import { TaskSwitch } from './components/TaskSwitch'
 import type { PlaygroundPendingAttachment } from './playground-utils'
@@ -72,29 +72,16 @@ export function PlaygroundComposer({
   onRemoveAttachment,
 }: PlaygroundComposerProps) {
   const { t } = useTranslation()
-  const navigate = useNavigate()
 
   return (
     <>
-      {/* §9.1 余额资格状态机：可消费合计为 0 且当前模型付费时，锁定发送并引导充值
-          （原型 App.tsx playground-balance-notice 逐字对齐） */}
+      {/* §9.1 余额资格状态机 + 需求方 #833（1.0.6）：可消费合计为 0 时免费/付费模型
+          均锁定发送，按场景引导充值（文案与充值入口见 ExperienceBalanceNotice） */}
       {isBlockedByBalance && (
-        <div className="playground-balance-notice" role="alert">
-          <LuTriangleAlert size={15} />
-          <span>
-            <strong>{t('modelsExperience.balanceInsufficientTitle')}</strong>
-            {t('modelsExperience.balanceInsufficientHint')}
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              trackEvent('playground_recharge_click', { locked_model_count: 1 })
-              navigate('/billing', { state: { entrySource: 'recharge_cta' } })
-            }}
-          >
-            {t('modelsExperience.recharge')}
-          </button>
-        </div>
+        <ExperienceBalanceNotice
+          free={!!selectedModel && !isPaidModel(selectedModel)}
+          lockedModelCount={1}
+        />
       )}
 
       {/* 下线模型（PRD §AC-18，对齐原型 App.tsx:18634-18641）：composer 整体替换为

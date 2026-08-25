@@ -32,9 +32,9 @@ import { cn, formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/
 import {
   MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, cardSummary, modelVendorLabel,
   strikeOriginalPrice, sortProtocols,
-  priceTiersForCard, priceTierLabel, catalogCardReplacesGridWithTiers, hasPricingGradient, withPriceFrom,
+  priceTiersForCard, mediaPrimaryPrice, hasPricingGradient, withPriceFrom,
 } from '@/features/models/model-format'
-import { hasPlaygroundExperience } from '../model-experience-data'
+import { experienceTaskLabel, modelExperienceTasks, resolveModelCategory } from '../model-experience-data'
 import type { CatalogModelItem } from '@/types'
 
 const MODALITY_ICON: Record<string, IconType> = { image: LuImage, audio: LuMic, video: LuVideo }
@@ -128,7 +128,23 @@ export function CatalogCard({
     isPerCall ? undefined : model.pricing?.cache_read_per_1m,
     isFree,
   )
-  const useTierGrid = catalogCardReplacesGridWithTiers(model.pricing, cardTiers)
+  // 媒体产物模型（图片/视频/音频，与原型 usesTokenPricing 反向同义）：卡片价格区
+  // 只摆「主价格 / 计费单位 / 可体验任务」三件套（原型 marketplace-card-media-specs，
+  // App.tsx:5133-5155），不铺输入/输出/缓存四格、也不铺档位矩阵 —— 需求方 2026-08-25：
+  // 「视频模型展示的是主价格，不需要展示那么细致」。完整档位在详情「价格梯度」表。
+  const category = resolveModelCategory(model)
+  const isMediaCard = category !== 'dialogue'
+  const primaryRaw = mediaPrimaryPrice(model.pricing, model.price_unit, cardTiers)
+  const primary = withPriceFrom(priceText(primaryRaw.amount, symbol, isFree ? freeLabel : '—', primaryRaw.unit, isFree), hasGradient)
+  // 主价的划线原价：原型 originalOutputPrice ?? originalInputPrice（主价本身也是 output 优先）
+  const strikePrimaryVal = strikeOriginalPrice(
+    promo?.original_output_per_1m ?? promo?.original_input_per_1m ?? promo?.original_price,
+    primaryRaw.amount,
+    isFree,
+  )
+  const billingUnit = primaryRaw.unitName === 'M'
+    ? t('modelsCatalog.card.perMillionTokens')
+    : t('modelsCatalog.card.perUnit', { unit: primaryRaw.unitName })
 
   // 输入 → 输出模态流。后端拆分下发；老数据只有合并 modalities 时退回并集。
   const inputMods = (model.input_modalities ?? model.modalities ?? []).filter((m) => MODALITY_CODES.includes(m))
@@ -146,7 +162,12 @@ export function CatalogCard({
   const summary = cardSummary(model, provider ?? '', isZh)
   // PRD §模型广场 AC-13「暂未开放」：模型本身可浏览详情/API，但没配置任何可体验任务时
   // 「去体验」按钮禁用并说明原因（原型 App.tsx:4619-4620/5076-5081 逐字对齐）。
-  const hasExperience = hasPlaygroundExperience(model)
+  // 任务列表同时供媒体卡「可体验任务」格展示（对话向任务共用「对话」标签，去重）。
+  const experienceTasks = modelExperienceTasks(model)
+  const hasExperience = experienceTasks.length > 0
+  const tasksLabel = hasExperience
+    ? [...new Set(experienceTasks.map(experienceTaskLabel))].join(' / ')
+    : t('modelsCatalog.button.comingSoon')
 
   return (
     <article
@@ -257,22 +278,24 @@ export function CatalogCard({
         </div>
       )}
 
-      {/* 贴底：价格规格。第一行输入/输出价，第二行上下文/缓存读取。划线原价内联在现价
-          右侧，不另起一行。最大输出已按 shared/modelgo_prd#348 移除（后端无可靠数据），
-          空出的第四格按需求方 2026-08-04 口径改放缓存读取价。 */}
-      <div className={cn('mg-mcard-specs', useTierGrid && 'is-tiers')}>
-        {useTierGrid ? (
-          cardTiers.map((tier) => {
-            const shown = priceText(tier.price, symbol, '—', `/${tier.unit}`, isFree)
-            return (
-              <Metric
-                key={`${tier.bucket}-${tier.label}`}
-                label={priceTierLabel(tier, isZh)}
-                value={shown.value}
-                unit={shown.unit}
-              />
-            )
-          })
+      {/* 贴底：价格规格。对话模型第一行输入/输出价，第二行上下文/缓存读取（最大输出已按
+          shared/modelgo_prd#348 移除，第四格按需求方 2026-08-04 口径放缓存读取价）；
+          媒体产物模型只摆 主价格/计费单位/可体验任务 三件套（isMediaCard 注释）。
+          划线原价内联在现价右侧，不另起一行。 */}
+      <div className={cn('mg-mcard-specs', isMediaCard && 'is-media')}>
+        {isMediaCard ? (
+          <>
+            <Metric
+              primary
+              label={t('modelsCatalog.card.primaryPrice')}
+              value={primary.value}
+              unit={primary.unit}
+              strike={strikePrimaryVal != null ? `${symbol}${trimPriceZeros(String(strikePrimaryVal))}${primaryRaw.unit}` : undefined}
+              free={isFree}
+            />
+            <Metric label={t('modelsCatalog.card.billingUnit')} value={billingUnit} />
+            <Metric label={t('modelsCatalog.card.experienceTasks')} value={tasksLabel} />
+          </>
         ) : (
           <>
             {/* 价格值不再用品牌蓝：原型规格值一律正文色（--text），仅「免费」标
@@ -351,10 +374,10 @@ export function CatalogCard({
 }
 
 function Metric({
-  label, value, unit, free, strike,
-}: { label: string; value: string; unit?: string; free?: boolean; strike?: string }) {
+  label, value, unit, free, strike, primary,
+}: { label: string; value: string; unit?: string; free?: boolean; strike?: string; primary?: boolean }) {
   return (
-    <div className="mg-metric">
+    <div className={cn('mg-metric', primary && 'is-primary')}>
       <span className="mg-metric-label">{label}</span>
       <span className={`mg-metric-value ${free ? 'is-free' : ''}`}>
         {value}

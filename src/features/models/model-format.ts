@@ -46,6 +46,41 @@ export function priceTiersForCard(tiers: CatalogPriceTier[] | undefined | null):
   return tiers.slice(0, CARD_PRICE_TIER_LIMIT)
 }
 
+/**
+ * 媒体模型（图片/视频/音频产物）的「主价格」（需求方 2026-08-25 对齐原型
+ * marketplacePrimaryPriceText，App.tsx:4199）：媒体卡片/详情条只摆一个主价，
+ * 不再铺输入/输出/缓存四格或整张档位矩阵（完整档位进详情「价格梯度」表）。
+ *
+ * 取值顺序：per_call 的每张价 → pricing 的 output||input（原型口径，Seedance
+ * 这类按 token 计价的视频模型走这里，¥46/M）→ price_tiers 首档（可灵这类
+ * pricing 全 0、价格只在矩阵里的，首档即基础档 ¥0.6/秒）→ 未配价 undefined。
+ * unit 是随金额来源配对的后缀（/张、/M、/秒），unitName 是给「计费单位」格的
+ * 裸单位名（张、M、秒）。
+ */
+export function mediaPrimaryPrice(
+  pricing: { mode?: string; per_call_price?: string; input_per_1m?: string; output_per_1m?: string } | undefined,
+  priceUnit: string | undefined,
+  tiers: CatalogPriceTier[] | undefined | null,
+): { amount: string | undefined; unit: string; unitName: string } {
+  const suffix = priceUnitSuffix(priceUnit, pricing?.mode)
+  if (pricing?.mode === 'per_call') {
+    // per_call 的每张价镜像在 input_per_1m（#851 契约），unitName 从后缀剥出
+    // （zh 张 / en image，priceUnitSuffix 已本地化）
+    return { amount: pricing.per_call_price?.trim() || pricing.input_per_1m, unit: suffix, unitName: suffix.slice(1) }
+  }
+  if (parseFloat(pricing?.output_per_1m ?? '') > 0) {
+    return { amount: pricing?.output_per_1m, unit: suffix, unitName: priceUnit || 'M' }
+  }
+  if (parseFloat(pricing?.input_per_1m ?? '') > 0) {
+    return { amount: pricing?.input_per_1m, unit: suffix, unitName: priceUnit || 'M' }
+  }
+  const first = tiers?.[0]
+  if (first && parseFloat(first.price) > 0) {
+    return { amount: first.price, unit: `/${first.unit}`, unitName: first.unit }
+  }
+  return { amount: undefined, unit: suffix, unitName: priceUnit || 'M' }
+}
+
 /** 纯媒体模型（文本输入/输出都没有正价）才用 price_tiers 替换卡片四格；
  *  混合模型（如 gemini 图文）保留输入/输出/上下文，档位只在详情展示。 */
 export function catalogCardReplacesGridWithTiers(

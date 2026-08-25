@@ -172,7 +172,12 @@
       "context": "Context",
       "cacheRead": "Cache read",
       "input": "Input",
-      "output": "Output"
+      "output": "Output",
+      "primaryPrice": "Price",
+      "billingUnit": "Billing unit",
+      "experienceTasks": "Playground tasks",
+      "perMillionTokens": "Per 1M tokens",
+      "perUnit": "Per {{unit}}"
     },
     "modality": {
       "text": "Text",
@@ -204,7 +209,15 @@
       "ruleDimPeak": "Peak hours",
       "ruleRange": "Context range",
       "ruleTimeSlot": "Time slot",
-      "ruleTimezone": "Timezone"
+      "ruleTimezone": "Timezone",
+      "byInterface": "Per API contract",
+      "byTaskSpec": "By task spec",
+      "specImage": "Image specs",
+      "specVideo": "Video specs",
+      "specAudio": "Audio specs",
+      "ruleUnit": "Unit",
+      "rulePrice": "Price",
+      "mainSpec": "Main specs"
     },
     "error.loadDetail": "Failed to load model detail. Please try again."
   }

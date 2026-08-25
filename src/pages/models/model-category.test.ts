@@ -31,6 +31,15 @@ describe('resolveModelCategory（模态推导）', () => {
     expect(resolveModelCategory(model({ input_modalities: ['text'], output_modalities: ['audio'] }))).toBe('audio')
   })
 
+  it('多模态输入 + 视频输出（Seedance 实况）归视频类 → 广场走媒体卡，不落文本四格（prd#858/#859）', () => {
+    // doubao-seedance-2.0-fast 线上实况：4 种入参模态、视频出参、档位 unit=M（token 计价）
+    // —— 媒体判定只看 output_modalities，与档位 unit 字面值（M/秒/张）无关
+    expect(resolveModelCategory(model({
+      input_modalities: ['text', 'image', 'video', 'audio'],
+      output_modalities: ['video'],
+    }))).toBe('video')
+  })
+
   it('纯音频输入 + 文本输出（ASR）归音频类，不是对话', () => {
     expect(resolveModelCategory(model({ input_modalities: ['audio'], output_modalities: ['text'] }))).toBe('audio')
   })

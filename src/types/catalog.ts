@@ -198,6 +198,14 @@ export interface CatalogRelatedModel {
   currency: string
   is_free: boolean
   logo_url?: string
+  /**
+   * 计价模式（shared/modelgo_prd#852 契约定稿，恒下发）：token / per_call / ""（未配价行）。
+   * per_call（按张）模型的每张价镜像在 input_price、output_price 恒 "0"，没有这个字段时
+   * 前端无从与「便宜的 token 模型」区分——渲染必须按它分支，不要从价格形态推断。
+   */
+  pricing_mode?: 'token' | 'per_call' | '' | string
+  /** 每张/每次价（#852，恒下发；token 模型为 "0"）。单位渲染走 priceUnitSuffix(undefined, 'per_call')。 */
+  per_call_price?: string
 }
 
 /** 相关模型。curated 标明来源（运营配置 vs 回退算法），两者渲染一致。 */

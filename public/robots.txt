@@ -1,0 +1,29 @@
+# ModelGo 控制台 robots.txt
+#
+# 控制台是登录态应用：默认整站不收录，只放行确实对外公开的页面。
+# 这里刻意用白名单（Disallow: / 打底 + Allow 例外）而不是逐条 Disallow ——
+# 后者每加一个应用路由都得回来补一行，漏一条就把登录态页面暴露给爬虫。
+#
+# /models 保持放行的原因：两个官网的 /models 是 301 指到这里的，
+# 而 301 指向被 Disallow 的 URL 会导致权重无法传递。该页目前是客户端
+# 渲染、爬虫读不到模型内容，属于已知待办，不是靠 robots 能解决的事。
+User-agent: *
+Disallow: /
+Allow: /models
+Allow: /legal/
+
+# 训练型爬虫一律拦截（含公开页，不喂数据采集）
+User-agent: GPTBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: Meta-ExternalAgent
+Disallow: /

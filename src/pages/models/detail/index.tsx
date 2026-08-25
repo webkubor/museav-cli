@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/Button'
 import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 import { ModelDetailPanel } from '@/features/models/components/ModelDetailPanel'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
-import { currencySymbol } from '@/features/models/model-format'
+import { currencySymbol, priceUnitSuffix } from '@/features/models/model-format'
 import { resolveModelCategory, hasPlaygroundExperience } from '../model-experience-data'
 import { mapApiProtocols } from '../api-code-samples'
 import { ModelsCompareModal } from '../components/ModelsCompareModal'
@@ -283,19 +283,23 @@ export default function ModelDetailPage() {
                     <span className="mg-related-price">
                       {/* 未配价（零价且无限免标记）显示「—」而非「$0 / 0 每M」——§9.1，
                           与详情面板/广场卡片同口径（qa#624）。
-                          输出价为 0 时只展示输入价、不带单位：related 契约没有计价模式字段，
-                          per_call（按张）模型会被拼成「¥0.22 / 0 每M」（prd#852，后端补字段
-                          后这里按 mode 渲染 /张）。 */}
+                          per_call（按张）按 pricing_mode 分支渲染 /张（prd#852 契约：恒下发，
+                          不要从「output 为 0」的价格形态反推）；token 模型输出价为 0 时
+                          只展示输入价、不带单位，兜住脏数据。 */}
                       {item.is_free
                         ? t('modelsCatalog.detail.limitedFree')
-                        : parseFloat(item.output_price) > 0
-                          ? t('modelsCatalog.detail.relatedPrice', {
-                              input: `${currencySymbol(item.currency, isZh)} ${trimPriceZeros(item.input_price)}`,
-                              output: trimPriceZeros(item.output_price),
-                            })
-                          : parseFloat(item.input_price) > 0
-                            ? `${currencySymbol(item.currency, isZh)} ${trimPriceZeros(item.input_price)}`
-                            : '—'}
+                        : item.pricing_mode === 'per_call'
+                          ? parseFloat(item.per_call_price ?? '') > 0
+                            ? `${currencySymbol(item.currency, isZh)} ${trimPriceZeros(item.per_call_price ?? '0')}${priceUnitSuffix(undefined, 'per_call')}`
+                            : '—'
+                          : parseFloat(item.output_price) > 0
+                            ? t('modelsCatalog.detail.relatedPrice', {
+                                input: `${currencySymbol(item.currency, isZh)} ${trimPriceZeros(item.input_price)}`,
+                                output: trimPriceZeros(item.output_price),
+                              })
+                            : parseFloat(item.input_price) > 0
+                              ? `${currencySymbol(item.currency, isZh)} ${trimPriceZeros(item.input_price)}`
+                              : '—'}
                     </span>
                   </button>
                 ))}

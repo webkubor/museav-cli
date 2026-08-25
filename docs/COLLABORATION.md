@@ -348,8 +348,30 @@ PRD 原型 > 飞书文档 > 现状控制台代码
 | 场景 | 开发分支 | 部署来源分支 | 流程 |
 |:---|:---|:---|:---|
 | 日常开发 | worktree（`fix/`·`feat/`） | test | worktree 里开发 → 合并进 test → test 分支部署测试环境 |
-| 测试通过上线 | — | main | 合并 test → main → 部署线上 |
+| 整批上线 | — | main | 合并 test → main → 打 tag → 部署线上 |
+| 按修复粒度上线 | worktree（`fix/`·`feat/`） | main | 同一分支**分别**合进 test（验证）和 main（发布），各自产生一个 merge commit |
 | 线上 hotfix | main | main | main 分支修复 → 部署线上 → 同步到 test |
+
+**部署分支按环境定，不是按项目定**：测试 job 传 `GIT_BRANCH=test`，生产 job 传 `GIT_BRANCH=main` + `GIT_TAG`。抄命令前先核一眼 Jenkins 上次构建的实参（`job/<n>/api/json` 的 `parameters`）——**分支传错不报错**，构建照样 SUCCESS，只是把另一个分支发了出去（2026-08-25 踩过：部署卡把测试环境的分支渲染成 `main`，而当时 main 落后 test 16 个提交，照抄等于把测试环境回滚半个月）。
+
+#### test / main 分叉：成因与处理
+
+「按修复粒度上线」这条路径**必然**产生 test 与 main 的双向分叉——同一份改动走两条路合并，内容一样但 commit 不同，于是两边各有对方没有的提交。这不是操作失误，是这条路径的固有结果。2026-08-25 一天内出现三次（任杰 ×2、陆浩 ×1），此前 08-04、08-05 也各撞过一次。
+
+判断与处理：
+
+```bash
+git fetch origin
+git log --oneline origin/test..origin/main   # main 独有 → 有分叉
+git merge-base --is-ancestor origin/main origin/test && echo "可快进"
+```
+
+- **要整批上线前**：先把 main 并回 test（`git merge origin/main` 在 test 上），使 test 完全包含 main，之后 `test → main` 就是快进、没有三方合并的解析空间。
+- **这个方向的合并通常零改动**：因为内容本来就在 test 里，合并只归并历史。合完用 `git diff HEAD^1 HEAD` 确认为空、树哈希不变，就能确定没引入任何代码变化。
+- **不要为了"历史干净"去 reset/force push**：main 上的 commit 已经被 release tag 引用、已经发过生产，改写会让 tag 指向消失的对象。
+- **别拿分叉当阻塞**：只走「按修复粒度上线」时，分叉是常态，不影响任何一次发布的正确性。只在准备整批合并时才需要处理。
+
+> 想彻底消除分叉，得约束「改动只能从 test 单向进 main」。但那与「按修复粒度上线」直接冲突——后者要的就是绕开 test 里其他未完成的改动、只放行自己那一个修复。上哪种取决于团队要发布速度还是要历史线性，**不要在没定论时用 CI 门禁去堵**，会把正在用的发布路径卡死。
 
 > ⚠️ **`test` 是集成/部署来源分支，不是开发地**。别 `git checkout test` 直接在上面写代码——多个 session 共用同一工作树 + 同分支会互相踩（未提交改动串台、被迫 autostash rebase）。开发一律在隔离 worktree（见第 1 节），`test` 只接受**合并**。这与顶部「代码隔离 > 任务互斥」原则一致。
 

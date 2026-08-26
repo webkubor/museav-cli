@@ -124,7 +124,8 @@
     },
     "filtersButton": "Filters",
     "search": {
-      "placeholder": "Search model, API ID, provider or keyword…"
+      "placeholder": "Search model, API ID, provider or keyword…",
+      "clear": "Clear search"
     },
     "sort": {
       "default": "Recommended",

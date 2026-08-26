@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import {
   LuSearch, LuChevronDown, LuCheck, LuSlidersHorizontal, LuLayers, LuZap, LuBuilding2, LuShieldCheck,
-  LuColumns2, LuType, LuImage, LuVideo, LuAudioLines, LuDatabase,
+  LuColumns2, LuType, LuImage, LuVideo, LuAudioLines, LuDatabase, LuX,
 } from 'react-icons/lu'
 import type { IconType } from 'react-icons'
 import { listModels, listModelTags, listFeatured } from '@/services/catalog'
@@ -74,6 +74,7 @@ export default function ModelsCatalogPage() {
   const [compareInitialIds, setCompareInitialIds] = useState<string[]>([])
   const [compareCurrentModelId, setCompareCurrentModelId] = useState<string | undefined>(undefined)
   const sortRef = useRef<HTMLDivElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
   const gridRef = useRef<HTMLDivElement>(null)
   const revealedCardsRef = useRef(new WeakSet<Element>())
 
@@ -378,12 +379,26 @@ export default function ModelsCatalogPage() {
             <div className="catalog-search-wrap relative flex-1">
               <LuSearch size={16} className="catalog-search-icon absolute left-4 top-1/2 -translate-y-1/2" />
               <input
+                ref={searchInputRef}
                 type="text"
                 placeholder={t('modelsCatalog.search.placeholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="mg-search-input"
               />
+              {/* 有输入内容时显示清空按钮（#872 需求点 11，原型 marketplace-search-clear）：
+                  清空后焦点留在搜索框，方便继续输入 */}
+              {search && (
+                <button
+                  type="button"
+                  className="mg-search-clear"
+                  title={t('modelsCatalog.search.clear')}
+                  aria-label={t('modelsCatalog.search.clear')}
+                  onClick={() => { setSearch(''); searchInputRef.current?.focus() }}
+                >
+                  <LuX size={14} />
+                </button>
+              )}
             </div>
             <div className="relative" ref={sortRef}>
               <button type="button" onClick={() => setSortOpen((v) => !v)} className="mg-sort-btn">

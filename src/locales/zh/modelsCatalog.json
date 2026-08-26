@@ -124,7 +124,8 @@
     },
     "filtersButton": "筛选",
     "search": {
-      "placeholder": "搜索模型名、API ID、供应商或描述关键词…"
+      "placeholder": "搜索模型名、API ID、供应商或描述关键词…",
+      "clear": "清空搜索"
     },
     "sort": {
       "default": "推荐排序",

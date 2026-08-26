@@ -22,6 +22,7 @@ import type {
   CatalogFacets,
   CatalogFeaturedSlide,
   CatalogRelatedResult,
+  PublicProtocolLabelItem,
 } from '@/types'
 
 // ─── 模型列表 ─────────────────────────────────────
@@ -62,6 +63,15 @@ export function listRelatedModels(modelId: string) {
 /** 获取模型族（模型组）目录，用于「模型组」官方筛选 */
 export function listModelFamilies(enabled = true) {
   return get<CatalogModelFamiliesResponse>('catalog/model-families', { enabled })
+}
+
+/**
+ * 协议标签目录（真源见 PublicProtocolLabelItem 注释）。前端各处的协议展示/筛选
+ * 文案不再硬编码，改从这里拿；调用方在请求未完成或失败时一律回落本地兜底文案
+ * （usePublicProtocolsStore，见 store/use-public-protocols-store.ts），不阻塞渲染。
+ */
+export function listPublicProtocols() {
+  return get<{ items: PublicProtocolLabelItem[] }>('catalog/public-protocols')
 }
 
 // ─── 供应商列表 ───────────────────────────────────

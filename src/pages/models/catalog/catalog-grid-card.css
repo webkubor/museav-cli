@@ -147,9 +147,11 @@
 .mg-mcard-specs.is-media .mg-metric.is-primary .mg-metric-value { font-size: 15px; }
 /* 长值格（可体验任务）超出省略：轨道是 minmax(0,1fr)，但 .mg-metric-value 的
    nowrap 会把长值顶穿卡边；.mg-metric 基类的 min-width:64px 还挡着格子收缩，
-   两层都得放开。完整内容在 title 悬停可见。 */
+   两层都得放开。值容器改 flex：省略号打在 OverflowTip 主文本上（截断时悬停
+   冒气泡显全文），单位/划线原价保持可见不被截。 */
 .mg-mcard-specs .mg-metric { min-width: 0; }
-.mg-mcard-specs .mg-metric-value { overflow: hidden; text-overflow: ellipsis; }
+.mg-mcard-specs .mg-metric-value { display: flex; align-items: baseline; overflow: hidden; }
+.mg-mcard-specs .mg-metric-unit { flex-shrink: 0; }
 /* 规格值配色对齐原型（2026-08-25 需求方走查）：价格一律正文色，此前整排品牌蓝
    与原型对不上；仅「免费」用 success 绿（原型 strong.free → --success）。 */
 .mg-metric-value.is-free { color: var(--mg-success); }

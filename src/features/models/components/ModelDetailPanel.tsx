@@ -18,6 +18,7 @@ import type { CatalogModelDetail } from '@/types'
 import { ModalityBadge } from './ModalityBadge'
 import { ModelIcon } from './ModelIcon'
 import { CopyButton } from '@/components/ui/CopyButton'
+import { OverflowTip } from '@/components/ui/OverflowTip'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
 import {
   currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, vendorFromModelId, detailSummary, modelVendorLabel,
@@ -62,9 +63,10 @@ function Metric({
   return (
     <div className="mg-metric">
       <span className="mg-metric-label">{label}</span>
-      <span className={`mg-metric-value ${free ? 'is-free' : ''}`} title={value || undefined}>
-        {/* 主文本单独包一层：值容器是 flex，超出省略只能打在真实子元素上 */}
-        <span className="mg-metric-value-main">{value || '—'}</span>
+      <span className={`mg-metric-value ${free ? 'is-free' : ''}`}>
+        {/* 主文本单独包一层：值容器是 flex，超出省略只能打在真实子元素上；
+            截断时悬停冒气泡显全文（OverflowTip，没截断不冒） */}
+        <OverflowTip text={value || '—'} className="mg-metric-value-main" />
         {unit && <i className="mg-metric-unit">{unit}</i>}
         {valueTag && <i className="mg-metric-ttl">{valueTag}</i>}
         {/* 划线原价：跟在折扣后价格后面，装饰性，不是真实扣费价 */}

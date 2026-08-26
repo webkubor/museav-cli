@@ -25,7 +25,9 @@ import {
   priceTierLabel, priceTierUnit, mediaPrimaryPrice, firstPositivePrice, strikeOriginalPrice,
   pricingRuleGroups, pricingRuleLabel, pricingRulePriceText, pricingRuleStrikeText,
   pricingRuleSubLabel, pricingRulesHaveSub, withPriceFrom, sortProtocols,
+  PROTOCOL_LABEL_ZH, PROTOCOL_LABEL_EN, mergeProtocolLabels,
 } from '../model-format'
+import { usePublicProtocolsStore } from '@/store/use-public-protocols-store'
 import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 // 任务/类别推导与广场卡片共用一份（lib/login-intent.ts 已有同向引用的先例）；
 // 媒体判定与「可体验任务」格都以模态推导为准，不读已废弃的 experience_types。
@@ -93,6 +95,12 @@ function Metric({
 export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions }: ModelDetailPanelProps) {
   const { t, i18n } = useTranslation()
   const isZh = i18n.language.startsWith('zh')
+  const publicProtocolItems = usePublicProtocolsStore((s) => s.items)
+  const protocolLabelMap = mergeProtocolLabels(
+    isZh ? PROTOCOL_LABEL_ZH : PROTOCOL_LABEL_EN,
+    publicProtocolItems,
+    isZh ? 'label' : 'label_en',
+  )
   // provider（对外厂商名）优先；详情接口两者都不下发时用 model_id 前缀兜底（见 model-format）
   const vendor = modelVendorLabel(detail, '') || vendorHint || vendorFromModelId(detail.model_id)
 
@@ -254,7 +262,7 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
           <div className="mg-detail-tags">
             {detail.modalities.map((m) => <ModalityBadge key={m} modality={m} />)}
             {sortProtocols(detail.protocols ?? []).map((p) => (
-              <span key={p} className={`mg-proto is-${p}`}>{protocolLabel(p, isZh)}</span>
+              <span key={p} className={`mg-proto is-${p}`}>{protocolLabel(p, isZh, protocolLabelMap)}</span>
             ))}
             {capabilities.map((c) => (
               <span key={c} className="mg-mcard-tag">{c}</span>

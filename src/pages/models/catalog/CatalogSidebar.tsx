@@ -17,6 +17,8 @@ import { useTranslation } from 'react-i18next'
 import { LuChevronDown, LuX } from 'react-icons/lu'
 import type { CatalogModelTag, CatalogFacets, CatalogFacetBucket } from '@/types'
 import type { FilterGroupId } from './modelCatalogFilterLogic'
+import { usePublicProtocolsStore } from '@/store/use-public-protocols-store'
+import { mergeProtocolLabels } from '@/features/models/model-format'
 
 const VENDOR_PREVIEW = 6
 
@@ -47,27 +49,33 @@ function vendorLabel(code: string, isZh: boolean): string {
  * 派生——理由同 vendor/modality 之外的固定分组：筛选项本身是产品口径而非数据驱动，
  * 顺序固定成 Chat 优先、Anthropic Messages / 其他兜底在后，跟卡片/详情标签排序
  * （model-format.ts PROTOCOL_ORDER）保持一致体感。
+ *
+ * 下面两张表是**本地兜底**，不是真源——真源是 modelgo-model-gateway
+ * `pkg/publicprotocols` 注册表，经 /catalog/public-protocols 运行时拉取
+ * （usePublicProtocolsStore），拿到数据后用 mergeProtocolLabels 覆盖同名 code；
+ * 接口未上线/未返回时保留这份兜底文案，与 model-format.ts 的 PROTOCOL_LABEL_ZH/EN
+ * 用同一套措辞（2026-08-26 对齐口径），只有 other 这条本页有专属兜底文案，维持不变。
  */
 const PROTOCOL_FILTER_ORDER = [
   'openai_chat', 'openai_responses', 'openai_images', 'openai_embeddings', 'openai_audio',
   'anthropic_messages', 'other',
 ] as const
 const PROTOCOL_LABEL_ZH: Record<string, string> = {
-  openai_chat: '对话（Chat）',
-  openai_responses: 'Responses',
-  openai_images: '图片生成',
-  openai_embeddings: '向量（Embeddings）',
-  openai_audio: '语音（Audio）',
-  anthropic_messages: 'Anthropic Messages',
+  openai_chat: 'OpenAI 兼容',
+  openai_responses: 'OpenAI Response',
+  openai_images: 'OpenAI 图片',
+  openai_embeddings: 'OpenAI 向量',
+  openai_audio: 'OpenAI 语音',
+  anthropic_messages: 'Anthropic 兼容',
   other: '其他（异步任务类，如图像/音视频）',
 }
 const PROTOCOL_LABEL_EN: Record<string, string> = {
-  openai_chat: 'Chat',
-  openai_responses: 'Responses',
-  openai_images: 'Images',
-  openai_embeddings: 'Embeddings',
-  openai_audio: 'Audio',
-  anthropic_messages: 'Anthropic Messages',
+  openai_chat: 'OpenAI Compatible',
+  openai_responses: 'OpenAI Responses',
+  openai_images: 'OpenAI Images',
+  openai_embeddings: 'OpenAI Embeddings',
+  openai_audio: 'OpenAI Audio',
+  anthropic_messages: 'Anthropic Compatible',
   other: 'Other',
 }
 
@@ -95,6 +103,18 @@ export function CatalogSidebar({ tags, selected, setSelected, isZh, facets, grou
   const { t } = useTranslation()
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [showAllVendors, setShowAllVendors] = useState(false)
+
+  // 协议筛选项文案：/catalog/public-protocols 拿到数据前后都直接渲染，不为它加
+  // loading 态——items 为 null 时 mergeProtocolLabels 原样返回下面这份本地兜底表。
+  const publicProtocolItems = usePublicProtocolsStore((s) => s.items)
+  const protocolLabelMap = useMemo(
+    () => mergeProtocolLabels(
+      isZh ? PROTOCOL_LABEL_ZH : PROTOCOL_LABEL_EN,
+      publicProtocolItems,
+      isZh ? 'label' : 'label_en',
+    ),
+    [isZh, publicProtocolItems],
+  )
 
   const pickOne = (dim: string, code: string | null) =>
     setSelected((prev) => [...prev.filter((k) => !k.startsWith(`${dim}:`)), ...(code ? [`${dim}:${code}`] : [])])
@@ -210,7 +230,7 @@ export function CatalogSidebar({ tags, selected, setSelected, isZh, facets, grou
             <Row
               key={p}
               active={protocolActive === p}
-              label={(isZh ? PROTOCOL_LABEL_ZH : PROTOCOL_LABEL_EN)[p]}
+              label={protocolLabelMap[p]}
               count={countOf(facets?.protocols, p)}
               onClick={() => pickOne('protocol', protocolActive === p ? null : p)}
             />

@@ -150,6 +150,13 @@
   margin-left: 5px; font-size: 11px; color: var(--mg-text-4);
   text-decoration: line-through; font-weight: 400;
 }
+/* 卡片作用域：宽度不够时划线原价段先省略（主价格 shrink-0 不裁，prd#860 QA 复验
+   ——反了会把用户最需要读的折后价裁成「¥…」而装饰性的原价反而完整）。
+   flex 容器 + min-width:0 让内部 OverflowTip 的省略号生效；划线不会从 flex
+   容器传播进 flex item（CSS text-decor 规范），补到内部文本。详情规格条空间
+   充裕不收窄，保持内联不动 */
+.mg-mcard-specs .mg-metric-strike { display: flex; min-width: 0; }
+.mg-mcard-specs .mg-metric-strike > span { text-decoration: line-through; }
 
 /* 操作条：静止不占位、不可见；hover 或键盘聚焦时覆盖最底的规格行浮出，
    因此卡片高度不变（原型口径）。触屏设备常驻可见 —— 没有 hover 就无从触发。 */

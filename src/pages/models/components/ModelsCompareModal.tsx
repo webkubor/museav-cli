@@ -239,7 +239,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
     ) },
     {
       label: t('modelsCompare.row.protocols'),
-      render: (m) => (m.protocols && m.protocols.length > 0 ? sortProtocols(m.protocols).join(' / ') : 'openai'),
+      render: (m) => (m.protocols && m.protocols.length > 0 ? sortProtocols(m.protocols).join(' / ') : 'openai_chat'),
     },
     {
       label: t('modelsCompare.row.tags'),

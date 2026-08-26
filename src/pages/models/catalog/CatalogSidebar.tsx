@@ -40,7 +40,36 @@ function vendorLabel(code: string, isZh: boolean): string {
 
 // 模型类型的桶由服务端 facets 下发，取值是 gateway_models.output_modality
 //（text/image/audio/video/embedding/rerank/transcription）。未收录的码回落显示原码。
-const PROTOCOL_LABEL: Record<string, string> = { openai: 'OpenAI', anthropic: 'Anthropic' }
+
+/**
+ * API 协议筛选项：固定顺序展示端点粒度 7 值（2026-08 由 openai/anthropic/other
+ * 3 值升级而来，见 gateway_models.public_protocols）。静态列表而非从 facets 动态
+ * 派生——理由同 vendor/modality 之外的固定分组：筛选项本身是产品口径而非数据驱动，
+ * 顺序固定成 Chat 优先、Anthropic Messages / 其他兜底在后，跟卡片/详情标签排序
+ * （model-format.ts PROTOCOL_ORDER）保持一致体感。
+ */
+const PROTOCOL_FILTER_ORDER = [
+  'openai_chat', 'openai_responses', 'openai_images', 'openai_embeddings', 'openai_audio',
+  'anthropic_messages', 'other',
+] as const
+const PROTOCOL_LABEL_ZH: Record<string, string> = {
+  openai_chat: '对话（Chat）',
+  openai_responses: 'Responses',
+  openai_images: '图片生成',
+  openai_embeddings: '向量（Embeddings）',
+  openai_audio: '语音（Audio）',
+  anthropic_messages: 'Anthropic Messages',
+  other: '其他（异步任务类，如图像/音视频）',
+}
+const PROTOCOL_LABEL_EN: Record<string, string> = {
+  openai_chat: 'Chat',
+  openai_responses: 'Responses',
+  openai_images: 'Images',
+  openai_embeddings: 'Embeddings',
+  openai_audio: 'Audio',
+  anthropic_messages: 'Anthropic Messages',
+  other: 'Other',
+}
 
 /** token 数 → 展示标签（1048576 → ≥1M）。阈值由服务端 facets 下发。
  *  qa#288 二轮反馈：原型 App.tsx:3942-3944 是"≥ 128K"（大于等于，带空格），
@@ -177,11 +206,11 @@ export function CatalogSidebar({ tags, selected, setSelected, isZh, facets, grou
       <Group id="protocol" title={t('modelsCatalog.sidebar.apiProtocol')} collapsed={collapsed} onToggle={toggleCollapse}>
         <div className="mg-side-list">
           <Row active={!protocolActive} label={t('modelsCatalog.sidebar.all')} count={allCount('protocol')} onClick={() => pickOne('protocol', null)} />
-          {(['openai', 'anthropic', 'other'] as const).map((p) => (
+          {PROTOCOL_FILTER_ORDER.map((p) => (
             <Row
               key={p}
               active={protocolActive === p}
-              label={p === 'other' ? t('modelsCatalog.sidebar.otherProtocol') : PROTOCOL_LABEL[p]}
+              label={(isZh ? PROTOCOL_LABEL_ZH : PROTOCOL_LABEL_EN)[p]}
               count={countOf(facets?.protocols, p)}
               onClick={() => pickOne('protocol', protocolActive === p ? null : p)}
             />

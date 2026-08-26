@@ -19,7 +19,7 @@ import { CatalogSidebar } from './CatalogSidebar'
 import { GROUP_PARAM_KEY, type FilterGroupId } from './modelCatalogFilterLogic'
 import { ModelsCompareModal } from '../components/ModelsCompareModal'
 import { queryLengthBucket, diffFilterChange, buildFilterSummary } from './catalog-tracking'
-import type { CatalogModelItem } from '@/types'
+import type { CatalogModelItem, PublicProtocol } from '@/types'
 import './catalog.css'
 
 type SortKey = 'default' | 'newest' | 'cheapest'
@@ -72,7 +72,7 @@ export default function ModelsCatalogPage() {
   const selectedPrice = selected.find((k) => k.startsWith('price:'))?.split(':')[1]
 
   const selectedProtocol = selected.find((k) => k.startsWith('protocol:'))?.split(':')[1] as
-    | 'openai' | 'anthropic' | 'other' | undefined
+    | PublicProtocol | undefined
   const promoOnly = selected.includes('promo:1')
 
   /**

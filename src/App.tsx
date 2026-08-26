@@ -112,7 +112,6 @@ import { applyBrandTheme, applyTheme, getSavedBrandTheme, getSavedTheme, readThe
 import { getPlatformConfig } from '@/services/platform'
 import { useLangStore } from '@/store/use-brand-store'
 import { usePublicProtocolsStore } from '@/store/use-public-protocols-store'
-import { AppUpdatePrompt } from '@/components/app-update/AppUpdatePrompt'
 
 import { Toaster } from 'sonner'
 
@@ -248,7 +247,6 @@ export default function App() {
           },
         }}
       />
-      <AppUpdatePrompt />
       <BrowserRouter>
         {NavLogger && <Suspense fallback={null}><NavLogger /></Suspense>}
         <PlatformLoader onReady={() => setPlatformReady(true)} />

@@ -1,12 +1,11 @@
 /**
  * 应用入口
  * 路由：全局 React 挂载
- * API：无直接请求，初始化主题、设备指纹、PWA 与开发环境清理
+ * API：无直接请求，初始化主题、设备指纹与开发环境清理
  */
 
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { registerSW } from 'virtual:pwa-register'
 import './index.css'
 import './i18n'
 import App from './App.tsx'
@@ -19,8 +18,6 @@ import { getMarket } from './lib/market'
 import { installChunkReloadGuard } from './lib/chunk-reload'
 import { apiBaseUrl } from './lib/request'
 import { useAuthStore } from './store/auth'
-import { useAppUpdateStore } from './store/use-app-update-store'
-import { fetchLatestVersion } from './lib/app-version'
 
 // 前端运行时错误上报（仅 DEV）：未捕获异常 / rejection / 全控制台 + DOM 快照，
 // 内置 5s 去重 + 去 HMR 戳防刷爆。统一由 vite-plugin-agent-eyes 提供，替代原 dev-error-reporter。
@@ -48,66 +45,19 @@ initTrack({
 // 全局兜底：未被 ErrorBoundary 兜住的异常（如事件回调里的报错）与未处理 rejection 也上报
 installGlobalClientErrorReporting()
 
-const DEV_SW_RESET_KEY = 'modelgo:dev-sw-reset'
-
-function getRegistrationScriptUrl(registration: ServiceWorkerRegistration) {
-  return (
-    registration.active?.scriptURL ||
-    registration.waiting?.scriptURL ||
-    registration.installing?.scriptURL ||
-    ''
-  )
-}
-
-// 开发环境不能被历史 PWA / MSW 控制，否则会加载旧 bundle，造成本地改动点击无效。
+// ── PWA 下线迁移：注销历史 ServiceWorker 与 Cache Storage ────────────────────
+// 控制台已移除 PWA（不再产出 sw.js）。但老用户浏览器里仍装着历史 SW，若不清理会继续
+// 由旧 SW 控制页面、吃到过期 precache——所以这里**所有环境**都注销 SW 并清空 caches，
+// 让后续导航回到纯 HTTP。等线上流量全部换代后，本段可整体删除。
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(async (registrations) => {
-    let removed = false
-
-    await Promise.all(
-      registrations.map((registration) => {
-        const scriptUrl = getRegistrationScriptUrl(registration)
-        const shouldRemove = import.meta.env.DEV || scriptUrl.includes('mockServiceWorker')
-        if (!shouldRemove) return Promise.resolve(false)
-        removed = true
-        return registration.unregister()
-      }),
-    )
-
-    if (!import.meta.env.DEV) return
-    if (!removed) {
-      sessionStorage.removeItem(DEV_SW_RESET_KEY)
-      return
-    }
-
-    if (!sessionStorage.getItem(DEV_SW_RESET_KEY)) {
-      sessionStorage.setItem(DEV_SW_RESET_KEY, '1')
-      window.location.reload()
-    }
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const registration of registrations) registration.unregister().catch(() => {})
   })
 }
-
-if (import.meta.env.PROD) {
-  // PWA 版本更新（registerType: 'prompt'）：检测到新版本 → 置 store.updateReady →
-  // 全局 <AppUpdatePrompt/> 弹强制更新窗；用户点「立即更新」调 updateSW(true) 激活新 SW + 刷新。
-  const updateSW = registerSW({
-    onNeedRefresh() {
-      useAppUpdateStore.getState().setUpdateReady(true)
-      // 拉取服务器最新版本，供弹窗展示「当前 → 最新」对比（失败则弹窗只显当前版本）
-      fetchLatestVersion().then((v) => useAppUpdateStore.getState().setLatestVersion(v))
-    },
-    onRegisteredSW(_swUrl, registration) {
-      if (!registration) return
-      // 主动轮询新版本（每 5 分钟）+ 标签页重新可见时各查一次，让更新提示尽快出现，
-      // 不必等用户手动刷新才发现新版本。
-      const checkUpdate = () => registration.update().catch(() => {})
-      setInterval(checkUpdate, 5 * 60 * 1000)
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') checkUpdate()
-      })
-    },
+if ('caches' in window) {
+  caches.keys().then((keys) => {
+    for (const key of keys) caches.delete(key).catch(() => {})
   })
-  useAppUpdateStore.getState().setUpdateSW(updateSW)
 }
 
 // 兜底（不限 PROD）：部署窗口期/停留旧页面时动态 import 失败（服务器 SPA 回退把缺失的

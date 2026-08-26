@@ -60,6 +60,7 @@ function Metric({
   valueTag?: string
   free?: boolean
 }) {
+  const { t } = useTranslation()
   return (
     <div className="mg-metric">
       <span className="mg-metric-label">{label}</span>
@@ -69,8 +70,14 @@ function Metric({
         <OverflowTip text={value || '—'} className="mg-metric-value-main" />
         {unit && <i className="mg-metric-unit">{unit}</i>}
         {valueTag && <i className="mg-metric-ttl">{valueTag}</i>}
-        {/* 划线原价：跟在折扣后价格后面，装饰性，不是真实扣费价 */}
-        {strike && <s className="mg-metric-strike">{strike}</s>}
+        {/* 划线原价：跟在折扣后价格后面，装饰性，不是真实扣费价。
+            带「原价」前缀——有梯度时现价挂「起」，裸划线价紧邻会被读成
+            「¥1.6–¥2 区间」（prd#860），前缀把两个数的角色钉死 */}
+        {strike && (
+          <s className="mg-metric-strike">
+            {t('modelsCatalog.card.strikeOriginal', { price: strike })}
+          </s>
+        )}
       </span>
       {subValue && (
         <span className="mg-metric-sub">

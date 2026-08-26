@@ -384,6 +384,7 @@ export function CatalogCard({
 function Metric({
   label, value, unit, free, strike, primary,
 }: { label: string; value: string; unit?: string; free?: boolean; strike?: string; primary?: boolean }) {
+  const { t } = useTranslation()
   return (
     <div className={cn('mg-metric', primary && 'is-primary')}>
       <span className="mg-metric-label">{label}</span>
@@ -391,8 +392,13 @@ function Metric({
         {/* 可体验任务这类长值超出省略，悬停冒气泡显全文（没截断不冒） */}
         <OverflowTip text={value} />
         {unit && <small className="mg-metric-unit">{unit}</small>}
-        {/* 划线原价内联在现价右侧（原型口径）；仅有促销时渲染，是装饰而非真实价格 */}
-        {strike && <s className="mg-metric-strike">{strike}</s>}
+        {/* 划线原价内联在现价右侧（原型口径）；仅有促销时渲染，是装饰而非真实价格。
+            带「原价」前缀与详情规格条同口径（prd#860 排版歧义） */}
+        {strike && (
+          <s className="mg-metric-strike">
+            {t('modelsCatalog.card.strikeOriginal', { price: strike })}
+          </s>
+        )}
       </span>
     </div>
   )

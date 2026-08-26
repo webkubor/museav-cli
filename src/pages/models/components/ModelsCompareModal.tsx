@@ -11,7 +11,11 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { cn, formatContextLength, trimPriceZeros } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
-import { modelVendorLabel, currencySymbol, isZhLang, priceTierLabel, sortProtocols, priceUnitSuffix } from '@/features/models/model-format'
+import {
+  modelVendorLabel, currencySymbol, isZhLang, priceTierLabel, sortProtocols, priceUnitSuffix,
+  protocolLabel, PROTOCOL_LABEL_ZH, PROTOCOL_LABEL_EN, mergeProtocolLabels,
+} from '@/features/models/model-format'
+import { usePublicProtocolsStore } from '@/store/use-public-protocols-store'
 import {
   resolveModelCategory, modelExperienceTasks, isPaidModel,
   type ExperienceCategoryKey, type ExperienceTaskType,
@@ -115,6 +119,13 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
   onConfirmAdd,
 }) => {
   const { t } = useTranslation()
+  const isZhCurrent = isZhLang()
+  const publicProtocolItems = usePublicProtocolsStore((s) => s.items)
+  const protocolLabelMap = mergeProtocolLabels(
+    isZhCurrent ? PROTOCOL_LABEL_ZH : PROTOCOL_LABEL_EN,
+    publicProtocolItems,
+    isZhCurrent ? 'label' : 'label_en',
+  )
   const anchorId = currentModelId ?? initialSelectedIds[0] ?? lockedIds?.[0]
   /** 固定参与对比、不可取消的模型集合。模型广场只有基准一个，对比页是当前所有列。 */
   const lockedIdList = useMemo(
@@ -239,7 +250,9 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
     ) },
     {
       label: t('modelsCompare.row.protocols'),
-      render: (m) => (m.protocols && m.protocols.length > 0 ? sortProtocols(m.protocols).join(' / ') : 'openai_chat'),
+      render: (m) => (m.protocols && m.protocols.length > 0
+        ? sortProtocols(m.protocols).map((p) => protocolLabel(p, isZhCurrent, protocolLabelMap)).join(' / ')
+        : protocolLabel('openai_chat_completions', isZhCurrent, protocolLabelMap)),
     },
     {
       label: t('modelsCompare.row.tags'),

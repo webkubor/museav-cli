@@ -170,7 +170,6 @@
     },
     "card": {
       "free": "Free",
-      "strikeOriginal": "was {{price}}",
       "copyApiId": "Copy API ID",
       "try": "Try now",
       "apiDocs": "API docs",

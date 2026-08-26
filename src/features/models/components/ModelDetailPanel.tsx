@@ -62,7 +62,6 @@ function Metric({
   valueTag?: string
   free?: boolean
 }) {
-  const { t } = useTranslation()
   return (
     <div className="mg-metric">
       <span className="mg-metric-label">{label}</span>
@@ -73,13 +72,9 @@ function Metric({
         {unit && <i className="mg-metric-unit">{unit}</i>}
         {valueTag && <i className="mg-metric-ttl">{valueTag}</i>}
         {/* 划线原价：跟在折扣后价格后面，装饰性，不是真实扣费价。
-            带「原价」前缀——有梯度时现价挂「起」，裸划线价紧邻会被读成
-            「¥1.6–¥2 区间」（prd#860），前缀把两个数的角色钉死 */}
-        {strike && (
-          <s className="mg-metric-strike">
-            {t('modelsCatalog.card.strikeOriginal', { price: strike })}
-          </s>
-        )}
+            裸划线对齐原型（App.tsx <s>¥2/M</s>），2026-08-26 产品拍板回退
+            #860 加的「原价/was」前缀 */}
+        {strike && <s className="mg-metric-strike">{strike}</s>}
       </span>
       {subValue && (
         <span className="mg-metric-sub">
@@ -368,13 +363,11 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
                           <TableCell>{tierUnit}</TableCell>
                           <TableCell>
                             {`${symbol}${trimPriceZeros(tier.price)}/${tierUnit}`}
-                            {/* 与梯度表/摘要行同口径（prd#860）：「原价/was」前缀 + 带单位，
-                                裸金额紧贴现价会读成一个数或一个区间 */}
+                            {/* 与梯度表/摘要行同口径：裸划线对齐原型，带单位与 5px 间距
+                                （mg-metric-strike），角色靠划线+灰字区分 */}
                             {tierStrike != null && (
                               <s className="mg-metric-strike">
-                                {t('modelsCatalog.card.strikeOriginal', {
-                                  price: `${symbol}${trimPriceZeros(String(tierStrike))}/${tierUnit}`,
-                                })}
+                                {`${symbol}${trimPriceZeros(String(tierStrike))}/${tierUnit}`}
                               </s>
                             )}
                           </TableCell>
@@ -437,11 +430,7 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
                             return (
                               <TableCell key={kind}>
                                 {pricingRulePriceText(rule, kind, symbol)}
-                                {strike && (
-                                  <s className="mg-metric-strike">
-                                    {t('modelsCatalog.card.strikeOriginal', { price: strike })}
-                                  </s>
-                                )}
+                                {strike && <s className="mg-metric-strike">{strike}</s>}
                               </TableCell>
                             )
                           })}

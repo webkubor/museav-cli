@@ -29,7 +29,8 @@ import {
 import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 // 任务/类别推导与广场卡片共用一份（lib/login-intent.ts 已有同向引用的先例）；
 // 媒体判定与「可体验任务」格都以模态推导为准，不读已废弃的 experience_types。
-import { experienceTaskLabel, modelExperienceTasks, resolveModelCategory } from '@/pages/models/model-experience-data'
+import { modelExperienceTasks, resolveModelCategory } from '@/pages/models/model-experience-data'
+import { ExperienceTaskTags } from './ExperienceTaskTags'
 
 interface ModelDetailPanelProps {
   detail: CatalogModelDetail
@@ -164,9 +165,6 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
   const category = resolveModelCategory(detail)
   const isMediaModel = category !== 'dialogue'
   const experienceTasks = modelExperienceTasks(detail)
-  const tasksLabel = experienceTasks.length > 0
-    ? [...new Set(experienceTasks.map(experienceTaskLabel))].join(' / ')
-    : t('modelsCatalog.button.comingSoon')
   const primaryRaw = mediaPrimaryPrice(detail.pricing, detail.price_unit, priceTiers, detail.price_unit_en)
   const primary = withPriceFrom(priceText(primaryRaw.amount, symbol, isFree ? freeLabel : '', primaryRaw.unit, isFree), hasGradient)
   // firstPositivePrice 而非 ??：per_call 模型 original_output 恒 "0"，会把镜像在
@@ -279,7 +277,11 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
             />
             <Metric label={t('modelsCatalog.detail.ruleUnit')} value={billingUnitText} />
             <Metric label={t('modelsCatalog.detail.mainSpec')} value={mainSpecText} />
-            <Metric label={t('modelsCatalog.card.experienceTasks')} value={tasksLabel} />
+            {/* 可体验任务改独立标签展示（#872 需求点 10） */}
+            <div className="mg-metric">
+              <span className="mg-metric-label">{t('modelsCatalog.card.experienceTasks')}</span>
+              <ExperienceTaskTags tasks={experienceTasks} />
+            </div>
           </>
         ) : (
           <>

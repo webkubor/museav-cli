@@ -228,7 +228,7 @@ export default function ModelsPage() {
           onClose={() => setApiCallOpen(false)}
           modelName={prettyModelName(selectedModel.display_name, selectedModel.model_id, modelVendorLabel(selectedModel, ''))}
           modelId={selectedModel.model_id}
-          supportedProtocols={selectedModel.protocols?.length ? (selectedModel.protocols as never) : ['openai_chat']}
+          supportedProtocols={selectedModel.protocols?.length ? (selectedModel.protocols as never) : ['openai_chat_completions']}
           onAction={(action, protocol, language) => trackEvent('playground_api_modal_action', { action, protocol, language, model_id: selectedModel.model_id })}
         />
       )}

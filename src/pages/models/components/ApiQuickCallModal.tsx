@@ -70,7 +70,7 @@ export function ApiQuickCallModal({
   )
   const protocols = useMemo(
     // sortProtocols：协议 Tab 顺序统一 openai → anthropic → other/native（QA：端点兼容顺序不一致）
-    () => (supportedProtocols.length > 0 ? sortProtocols(supportedProtocols) : (['openai_chat'] as ApiProtocol[])),
+    () => (supportedProtocols.length > 0 ? sortProtocols(supportedProtocols) : (['openai_chat_completions'] as ApiProtocol[])),
     [supportedProtocols]
   )
   const [protocol, setProtocol] = useState<ApiProtocol>(protocols[0])

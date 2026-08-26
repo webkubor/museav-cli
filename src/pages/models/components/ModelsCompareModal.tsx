@@ -252,7 +252,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
       label: t('modelsCompare.row.protocols'),
       render: (m) => (m.protocols && m.protocols.length > 0
         ? sortProtocols(m.protocols).map((p) => protocolLabel(p, isZhCurrent, protocolLabelMap)).join(' / ')
-        : protocolLabel('openai_chat', isZhCurrent, protocolLabelMap)),
+        : protocolLabel('openai_chat_completions', isZhCurrent, protocolLabelMap)),
     },
     {
       label: t('modelsCompare.row.tags'),

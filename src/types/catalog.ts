@@ -1,5 +1,23 @@
 import type { Money } from './account'
 
+/**
+ * 模型级公开协议。2026-08 由粗粒度 3 值（openai/anthropic/other）升级为端点粒度 7 值
+ * （openai_chat/openai_responses/openai_images/openai_embeddings/openai_audio/
+ * anthropic_messages/other，见 controller/observer/web-api 同批切换）。过渡期内未
+ * 重新打标的模型仍可能下发旧的 openai/anthropic/other 三值——这是渐进迁移的预期状态，
+ * 不是 bug，前端展示/筛选都要兼容两套取值。
+ */
+export type PublicProtocol =
+  | 'openai_chat'
+  | 'openai_responses'
+  | 'openai_images'
+  | 'openai_embeddings'
+  | 'openai_audio'
+  | 'anthropic_messages'
+  | 'openai'
+  | 'anthropic'
+  | 'other'
+
 export interface ModelPricing {
   input_per_1m: string
   output_per_1m: string
@@ -43,7 +61,7 @@ export interface CatalogModelItem {
   input_modalities?: string[]
   output_modalities?: string[]
   /** 模型级公开协议 */
-  protocols?: ('openai' | 'anthropic' | 'other')[]
+  protocols?: PublicProtocol[]
   /** 适配的编程客户端；恒下发（可能为空数组），不会是 null（qa#583） */
   coding_tools?: ('claude-code' | 'codex')[]
   /** @deprecated 后端将删除（2026-07-31 口径变更）：可体验任务一律由 input/output_modalities

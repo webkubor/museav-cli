@@ -329,12 +329,28 @@ export function firstPositivePrice(
   return undefined
 }
 
-/** 协议标签文案照原型：带「兼容」后缀，明确这是入站协议兼容性而非厂商归属。 */
+/**
+ * 协议标签文案。旧 3 值（openai/anthropic/other，过渡期未重新打标的模型仍会下发）
+ * 照原型带「兼容」后缀，明确这是入站协议兼容性而非厂商归属；2026-08 新增的端点粒度
+ * 7 值（openai_chat 起）已经是具体端点名，不再需要「兼容」后缀。
+ */
 export const PROTOCOL_LABEL_ZH: Record<string, string> = {
   openai: 'OpenAI 兼容', anthropic: 'Anthropic 兼容', other: '其他协议',
+  openai_chat: '对话（Chat）',
+  openai_responses: 'Responses',
+  openai_images: '图片生成',
+  openai_embeddings: '向量（Embeddings）',
+  openai_audio: '语音（Audio）',
+  anthropic_messages: 'Anthropic Messages',
 }
 export const PROTOCOL_LABEL_EN: Record<string, string> = {
   openai: 'OpenAI compatible', anthropic: 'Anthropic compatible', other: 'Other',
+  openai_chat: 'Chat',
+  openai_responses: 'Responses',
+  openai_images: 'Images',
+  openai_embeddings: 'Embeddings',
+  openai_audio: 'Audio',
+  anthropic_messages: 'Anthropic Messages',
 }
 
 export function protocolLabel(protocol: string, isZh: boolean): string {
@@ -348,7 +364,11 @@ export function protocolLabel(protocol: string, isZh: boolean): string {
  * 未知值排最后且保持相对稳定（sort 在 V8 里是稳定排序）。
  * 源头治理单：qa/ai-quality-platform#685（管理后台提交侧校验归一，OpenAI 恒在前）。
  */
-const PROTOCOL_ORDER = ['openai', 'anthropic', 'other', 'native']
+const PROTOCOL_ORDER = [
+  'openai_chat', 'openai_responses', 'openai_images', 'openai_embeddings', 'openai_audio',
+  'anthropic_messages',
+  'openai', 'anthropic', 'other', 'native',
+]
 export function sortProtocols<T extends string>(protocols: readonly T[]): T[] {
   const rank = (p: string) => {
     const i = PROTOCOL_ORDER.indexOf(p)

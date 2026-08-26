@@ -28,7 +28,7 @@ import '../styles/api-quick-call-modal.css'
 
 export interface ApiAccessPanelProps {
   modelId: string
-  /** 该模型支持哪些协议，决定协议 Tab 展示哪些；无协议数据时按 openai 兜底 */
+  /** 该模型支持哪些协议，决定协议 Tab 展示哪些；无协议数据时按 openai_chat 兜底 */
   protocols: ApiProtocol[]
   isZh: boolean
   onGetKeyClick: () => void
@@ -43,7 +43,7 @@ const ApiAccessPanel = forwardRef<HTMLDivElement, ApiAccessPanelProps>(function 
   ref,
 ) {
   const { t } = useTranslation()
-  const safeProtocols = protocols.length > 0 ? protocols : (['openai'] as ApiProtocol[])
+  const safeProtocols = protocols.length > 0 ? protocols : (['openai_chat'] as ApiProtocol[])
   const [protocol, setProtocol] = useState<ApiProtocol>(safeProtocols[0])
   const activeProtocol = safeProtocols.includes(protocol) ? protocol : safeProtocols[0]
 

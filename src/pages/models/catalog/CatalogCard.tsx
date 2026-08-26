@@ -389,14 +389,17 @@ function Metric({
     <div className={cn('mg-metric', primary && 'is-primary')}>
       <span className="mg-metric-label">{label}</span>
       <span className={`mg-metric-value ${free ? 'is-free' : ''}`}>
-        {/* 可体验任务这类长值超出省略，悬停冒气泡显全文（没截断不冒） */}
-        <OverflowTip text={value} />
+        {/* 可体验任务这类长值超出省略，悬停冒气泡显全文（没截断不冒）。
+            有划线原价时主价格禁止收缩：宽度不够先裁装饰性的原价段，
+            不能反过来把用户最需要读的折后价裁成「¥…」（prd#860 QA 复验） */}
+        <OverflowTip text={value} className={strike ? 'shrink-0' : undefined} />
         {unit && <small className="mg-metric-unit">{unit}</small>}
         {/* 划线原价内联在现价右侧（原型口径）；仅有促销时渲染，是装饰而非真实价格。
-            带「原价」前缀与详情规格条同口径（prd#860 排版歧义） */}
+            带「原价」前缀与详情规格条同口径（prd#860 排版歧义）；
+            窄栅格下该段先省略，悬停冒气泡显全文 */}
         {strike && (
           <s className="mg-metric-strike">
-            {t('modelsCatalog.card.strikeOriginal', { price: strike })}
+            <OverflowTip text={t('modelsCatalog.card.strikeOriginal', { price: strike })} />
           </s>
         )}
       </span>

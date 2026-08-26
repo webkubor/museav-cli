@@ -140,6 +140,7 @@ export type {
   ModelVariant,
   CatalogModelDetail,
   CatalogModelTag,
+  PublicProtocolLabelItem,
   CatalogProviderItem,
   PlanFeatures,
   PlanCTA,

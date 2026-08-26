@@ -24,6 +24,8 @@ import {
   type ApiProtocol,
   type ApiCodeLanguage,
 } from '../api-code-samples'
+import { mergeProtocolLabels } from '@/features/models/model-format'
+import { usePublicProtocolsStore } from '@/store/use-public-protocols-store'
 import '../styles/api-quick-call-modal.css'
 
 export interface ApiAccessPanelProps {
@@ -52,7 +54,12 @@ const ApiAccessPanel = forwardRef<HTMLDivElement, ApiAccessPanelProps>(function 
   const [language, setLanguage] = useState<ApiCodeLanguage>(languages[0])
   const activeLanguage = languages.includes(language) ? language : languages[0]
 
-  const protocolLabel = isZh ? PROTOCOL_LABEL : PROTOCOL_LABEL_EN
+  const publicProtocolItems = usePublicProtocolsStore((s) => s.items)
+  const protocolLabel = mergeProtocolLabels(
+    isZh ? PROTOCOL_LABEL : PROTOCOL_LABEL_EN,
+    publicProtocolItems,
+    isZh ? 'label' : 'label_en',
+  )
 
   return (
     // 分隔靠外层区块卡（详情页已按原型拆成 hero / 规格 / API / 相关模型 四块卡），

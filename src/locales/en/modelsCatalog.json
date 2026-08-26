@@ -217,6 +217,9 @@
       "specAudio": "Audio specs",
       "ruleUnit": "Unit",
       "rulePrice": "Price",
+      "ruleDimOther": "Tiered pricing",
+      "ruleRangeOther": "Range",
+      "gradientFootnote": "Prices are tiered by context and output length; final billing follows actual metered usage.",
       "mainSpec": "Main specs"
     },
     "error.loadDetail": "Failed to load model detail. Please try again."

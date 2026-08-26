@@ -214,12 +214,23 @@ describe('pricing_rules — 上下文分档 / 峰时价（#800）', () => {
     expect(groups[0].rules.map((r) => r.label)).toEqual(['0–128K', '256K以上'])
   })
 
-  it('未知维度丢弃；全是未知维度 → 没有梯度', () => {
-    const unknown = [{ dimension: 'image_spec', label: '1024×1024', input_per_1m: '1' }]
-    expect(pricingRuleGroups(unknown)).toEqual([])
-    expect(hasPricingGradient(unknown)).toBe(false)
+  it('未知维度不丢弃：降级成组、排已知维度后，且照常算「有梯度」（prd#864 A3）', () => {
+    const unknown = [{ dimension: 'output_length', label: '输出 ≥200', input_per_1m: '3', output_per_1m: '14' }]
+    expect(pricingRuleGroups(unknown)).toEqual([{ dimension: 'output_length', rules: unknown }])
+    expect(hasPricingGradient(unknown)).toBe(true)
     expect(hasPricingGradient(undefined)).toBe(false)
     expect(hasPricingGradient(rules)).toBe(true)
+    // 已知维度在前，未知维度按首现顺序在后；无 dimension 的脏行仍丢弃
+    const mixed = [...unknown, ...rules, { dimension: '', label: '没维度', input_per_1m: '1' }]
+    expect(pricingRuleGroups(mixed).map((g) => g.dimension))
+      .toEqual(['context_length', 'peak_time', 'output_length'])
+  })
+
+  it('梯度表缓存读取列：cache_read 取 cache_read_per_1m，缺省回落 —（prd#864 A1）', () => {
+    expect(pricingRulePriceText({ dimension: 'context_length', cache_read_per_1m: '0.4' }, 'cache_read', '¥')).toBe('¥0.4/M')
+    expect(pricingRulePriceText({ dimension: 'context_length', input_per_1m: '2' }, 'cache_read', '¥')).toBe('—')
+    // multiplier 时段规则无绝对价 → 倍率对三列同义，照常展示 ×rate
+    expect(pricingRulePriceText({ dimension: 'peak_time', mode: 'multiplier', rate: '1.2' }, 'cache_read', '¥')).toBe('×1.2')
   })
 
   it('区间文案 label 优先，英文回落 label（256K以上 没配 label_en）', () => {

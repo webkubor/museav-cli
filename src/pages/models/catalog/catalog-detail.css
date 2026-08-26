@@ -52,6 +52,11 @@
   display: flex; flex-wrap: wrap; align-items: baseline; row-gap: 2px;
   font-size: 15px;
 }
+/* 长值格（主要规格/可体验任务）超出省略：值容器是 flex，text-overflow 对匿名
+   文本项不生效，所以省略号打在 .mg-metric-value-main（Metric 里包住主文本的
+   span）上；min-width:0 两层都要放开，否则格子拒绝收缩、长值互相压字。 */
+.mg-detail-specs .mg-metric { min-width: 0; }
+.mg-detail-specs .mg-metric-value-main { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 /* 次行价（媒体模型的文本分项价 / 缓存写入 1h） */
 .mg-metric-sub { font-size: 11.5px; color: var(--mg-text-4); }
 /* TTL / 计价口径小标签：5min·1h·文本·图片 */
@@ -86,7 +91,9 @@
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .mg-related-meta { font-size: 12px; color: var(--mg-text-3); }
-.mg-related-price { font-size: 12px; color: var(--brand-base); }
+/* 中性弱化色对齐原型 .marketplace-related-price（--text-soft）：prd#853 QA 复验
+   全站唯一残留的品牌蓝价格就在这里，价格一律正文/中性色，不用品牌蓝。 */
+.mg-related-price { font-size: 12px; color: var(--mg-text-2); }
 
 /* .mg-proto / .mg-mcard-tag 样式回归 catalog-grid-card.css（卡片版面撤回旧版，
    协议/标签行重新在卡片上渲染），详情页 ModelDetailPanel 共用同一套。 */

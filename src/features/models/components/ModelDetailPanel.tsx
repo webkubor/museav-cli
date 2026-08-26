@@ -18,13 +18,17 @@ import type { CatalogModelDetail } from '@/types'
 import { ModalityBadge } from './ModalityBadge'
 import { ModelIcon } from './ModelIcon'
 import { CopyButton } from '@/components/ui/CopyButton'
+import { OverflowTip } from '@/components/ui/OverflowTip'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
 import {
   currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, vendorFromModelId, detailSummary, modelVendorLabel,
-  priceTierLabel, catalogCardReplacesGridWithTiers, strikeOriginalPrice,
+  priceTierLabel, mediaPrimaryPrice, firstPositivePrice, strikeOriginalPrice,
   pricingRuleGroups, pricingRuleLabel, pricingRulePriceText, withPriceFrom, sortProtocols,
 } from '../model-format'
 import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
+// 任务/类别推导与广场卡片共用一份（lib/login-intent.ts 已有同向引用的先例）；
+// 媒体判定与「可体验任务」格都以模态推导为准，不读已废弃的 experience_types。
+import { experienceTaskLabel, modelExperienceTasks, resolveModelCategory } from '@/pages/models/model-experience-data'
 
 interface ModelDetailPanelProps {
   detail: CatalogModelDetail
@@ -60,7 +64,9 @@ function Metric({
     <div className="mg-metric">
       <span className="mg-metric-label">{label}</span>
       <span className={`mg-metric-value ${free ? 'is-free' : ''}`}>
-        {value || '—'}
+        {/* 主文本单独包一层：值容器是 flex，超出省略只能打在真实子元素上；
+            截断时悬停冒气泡显全文（OverflowTip，没截断不冒） */}
+        <OverflowTip text={value || '—'} className="mg-metric-value-main" />
         {unit && <i className="mg-metric-unit">{unit}</i>}
         {valueTag && <i className="mg-metric-ttl">{valueTag}</i>}
         {/* 划线原价：跟在折扣后价格后面，装饰性，不是真实扣费价 */}
@@ -98,7 +104,8 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
   const hasGradient = ruleGroups.length > 0
   const input = withPriceFrom(priceText(detail.pricing?.input_per_1m, symbol, isFree ? freeLabel : '', unitSuffix, isFree), hasGradient)
   const output = withPriceFrom(priceText(detail.pricing?.output_per_1m, symbol, isFree ? freeLabel : '', unitSuffix, isFree), hasGradient)
-  const cacheRead = priceText(detail.pricing?.cache_read_per_1m, symbol, isFree ? freeLabel : '', unitSuffix, isFree)
+  // 缓存读取同为起始档价（glm-4.7 两档 0.4/0.8），与输入/输出一样挂「起」（prd#864 A2）
+  const cacheRead = withPriceFrom(priceText(detail.pricing?.cache_read_per_1m, symbol, isFree ? freeLabel : '', unitSuffix, isFree), hasGradient)
   const cacheWrite5m = priceText(detail.cache_write_5m_per_1m, symbol, '', unitSuffix)
   const cacheWrite1h = priceText(detail.cache_write_1h_per_1m, symbol, '', unitSuffix)
 
@@ -142,7 +149,47 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
     ? `${symbol}${trimPriceZeros(String(strikeCacheReadVal))}${unitSuffix}`
     : undefined
   const priceTiers = detail.price_tiers ?? []
-  const replaceGridWithTiers = catalogCardReplacesGridWithTiers(detail.pricing, priceTiers)
+  // 媒体产物模型（图片/视频/音频）：规格条改摆「主价格 / 计价单位 / 主要规格 /
+  // 可体验任务」四格（原型 marketplace-pricing-summary media 变体，App.tsx:5637-5642），
+  // 不再铺输入/输出/缓存，档位矩阵挪进下方「价格梯度」表 —— 需求方 2026-08-25：
+  // 视频/图片模型只展示主价格，不需要那么细致。
+  const category = resolveModelCategory(detail)
+  const isMediaModel = category !== 'dialogue'
+  const experienceTasks = modelExperienceTasks(detail)
+  const tasksLabel = experienceTasks.length > 0
+    ? [...new Set(experienceTasks.map(experienceTaskLabel))].join(' / ')
+    : t('modelsCatalog.button.comingSoon')
+  const primaryRaw = mediaPrimaryPrice(detail.pricing, detail.price_unit, priceTiers)
+  const primary = withPriceFrom(priceText(primaryRaw.amount, symbol, isFree ? freeLabel : '', primaryRaw.unit, isFree), hasGradient)
+  // firstPositivePrice 而非 ??：per_call 模型 original_output 恒 "0"，会把镜像在
+  // original_input 的折前价截住（seedream「限时71折」无划线的前端侧成因）
+  // 末位候选 per_call_price：促销期它维持折前原价（折后现价在 input_per_1m），
+  // original_* 缺发时靠它兜底；仅促销卡参与，守卫会拦掉 ≤ 现价的取值
+  const strikePrimaryVal = strikeOriginalPrice(
+    firstPositivePrice(
+      promo?.original_output_per_1m, promo?.original_input_per_1m, promo?.original_price,
+      promo ? detail.pricing?.per_call_price : undefined,
+    ),
+    primaryRaw.amount,
+    isFree,
+  )
+  const strikePrimary = strikePrimaryVal != null
+    ? `${symbol}${trimPriceZeros(String(strikePrimaryVal))}${primaryRaw.unit}`
+    : undefined
+  // 计价单位：有明确单位（张/秒/万字符）写「每X」；按 token 计价的媒体模型
+  // （Seedance 类）原型详情条写「按接口约定」（App.tsx:5638），与卡片的
+  // 「每百万 Token」口径不同，以原型详情为准。
+  const billingUnitText = primaryRaw.unitName !== 'M'
+    ? t('modelsCatalog.card.perUnit', { unit: primaryRaw.unitName })
+    : t('modelsCatalog.detail.byInterface')
+  const mainSpecText = priceTiers.length > 0
+    ? priceTiers.slice(0, 3).map((tier) => priceTierLabel(tier, isZh)).join(' / ')
+    : t('modelsCatalog.detail.byTaskSpec')
+  const mediaSpecHead = t(category === 'video'
+    ? 'modelsCatalog.detail.specVideo'
+    : category === 'audio'
+      ? 'modelsCatalog.detail.specAudio'
+      : 'modelsCatalog.detail.specImage')
 
   const capabilities = pickCapabilities(detail.tags, [detail.provider, detail.vendor, vendor])
   // 详情位取长描述优先（prd#820 起与卡片位的 cardSummary 成对定义，见那边的注释）。
@@ -207,8 +254,25 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
         {actions && <div className="mg-detail-hero-actions">{actions}</div>}
       </section>
 
-      {/* 规格条：横向 6 格（原型 App.tsx:5100-5168） */}
+      {/* 规格条：对话模型横向 6 格（原型 App.tsx:5622-5626）；媒体模型
+          主价格/计价单位/主要规格/可体验任务 四格（原型 App.tsx:5637-5642，
+          无上下文/缓存格）。 */}
       <section className="mg-tile mg-detail-specs">
+        {isMediaModel ? (
+          <>
+            <Metric
+              label={t('modelsCatalog.card.primaryPrice')}
+              value={primary.value}
+              unit={primary.unit}
+              strike={strikePrimary}
+              free={isFree}
+            />
+            <Metric label={t('modelsCatalog.detail.ruleUnit')} value={billingUnitText} />
+            <Metric label={t('modelsCatalog.detail.mainSpec')} value={mainSpecText} />
+            <Metric label={t('modelsCatalog.card.experienceTasks')} value={tasksLabel} />
+          </>
+        ) : (
+          <>
         {detail.context_length > 0 && (
           <Metric
             label={t('models.detail.contextLength')}
@@ -216,7 +280,6 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
             unit="tokens"
           />
         )}
-        {!replaceGridWithTiers && (
           <>
             <Metric
               label={t('models.detail.pricingInput')}
@@ -254,36 +317,54 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
               subTag={cacheWrite1h.value ? '1h' : undefined}
             />
           </>
+          </>
         )}
-        {priceTiers.map((tier) => {
-          const shown = priceText(tier.price, symbol, isFree ? freeLabel : '', `/${tier.unit}`, isFree)
-          return (
-            <Metric
-              key={`${tier.bucket}-${tier.label}`}
-              label={priceTierLabel(tier, isZh)}
-              value={shown.value}
-              unit={shown.unit}
-            />
-          )
-        })}
       </section>
 
       {/* 价格梯度（#800）：token 模型的上下文分档 / 峰时价，功能对照原型
           App.tsx:5529-5654（MarketplacePricingRules / MarketplacePriceAndBilling），
-          表格视觉走现状控制台 ui/Table（全站表格统一居中）。price_tiers（媒体矩阵价）
-          仍走上面的规格条，两者互不替代；限免口径只认 promotion.free，不从阶梯价推断。 */}
-      {hasGradient && (
+          表格视觉走现状控制台 ui/Table（全站表格统一居中）。媒体模型的档位矩阵
+          （price_tiers）也进这里的「规格/计价单位/价格」表（原型 image_spec/video_spec
+          表，App.tsx:5540-5570）——规格条只留主价格，不再铺档位（需求方 2026-08-25）。
+          限免口径只认 promotion.free，不从阶梯价推断。 */}
+      {(hasGradient || (isMediaModel && priceTiers.length > 0)) && (
         <section className="mg-tile mg-detail-card">
           <h3 className="text-mg-text-1 mb-3 text-[14px] font-semibold">
             {t('modelsCatalog.detail.pricingRules')}
           </h3>
           <div className="flex flex-col gap-4">
+            {isMediaModel && priceTiers.length > 0 && (
+              <div>
+                <h4 className="mg-text-label text-mg-text-3 mb-2">{mediaSpecHead}</h4>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{mediaSpecHead}</TableHead>
+                      <TableHead>{t('modelsCatalog.detail.ruleUnit')}</TableHead>
+                      <TableHead>{t('modelsCatalog.detail.rulePrice')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {priceTiers.map((tier, idx) => (
+                      <TableRow key={`${tier.bucket}-${tier.label}-${idx}`}>
+                        <TableCell>{priceTierLabel(tier, isZh)}</TableCell>
+                        <TableCell>{tier.unit}</TableCell>
+                        <TableCell>{`${symbol}${trimPriceZeros(tier.price)}/${tier.unit}`}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
             {ruleGroups.map(({ dimension, rules }) => (
               <div key={dimension}>
                 <h4 className="mg-text-label text-mg-text-3 mb-2">
+                  {/* 未知维度降级用通用表头，区间列直接吃后端 label（prd#864 A3） */}
                   {t(dimension === 'context_length'
                     ? 'modelsCatalog.detail.ruleDimContext'
-                    : 'modelsCatalog.detail.ruleDimPeak')}
+                    : dimension === 'peak_time'
+                      ? 'modelsCatalog.detail.ruleDimPeak'
+                      : 'modelsCatalog.detail.ruleDimOther')}
                 </h4>
                 <Table>
                   <TableHeader>
@@ -291,13 +372,16 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
                       <TableHead>
                         {t(dimension === 'context_length'
                           ? 'modelsCatalog.detail.ruleRange'
-                          : 'modelsCatalog.detail.ruleTimeSlot')}
+                          : dimension === 'peak_time'
+                            ? 'modelsCatalog.detail.ruleTimeSlot'
+                            : 'modelsCatalog.detail.ruleRangeOther')}
                       </TableHead>
                       {dimension === 'peak_time' && (
                         <TableHead>{t('modelsCatalog.detail.ruleTimezone')}</TableHead>
                       )}
                       <TableHead>{t('models.detail.pricingInput')}</TableHead>
                       <TableHead>{t('models.detail.pricingOutput')}</TableHead>
+                      <TableHead>{t('models.detail.pricingCacheRead')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -309,12 +393,18 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
                         )}
                         <TableCell>{pricingRulePriceText(rule, 'input', symbol)}</TableCell>
                         <TableCell>{pricingRulePriceText(rule, 'output', symbol)}</TableCell>
+                        <TableCell>{pricingRulePriceText(rule, 'cache_read', symbol)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </div>
             ))}
+            {ruleGroups.length > 0 && (
+              // prd#864 A4：0–32K 档还存在输出长度子档（后端投影暂只保留最低价），
+              // 脚注兜住「把起始档当唯一价」的误读
+              <p className="text-xs text-mg-text-3">{t('modelsCatalog.detail.gradientFootnote')}</p>
+            )}
           </div>
         </section>
       )}

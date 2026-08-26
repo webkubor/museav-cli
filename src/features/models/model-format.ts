@@ -46,6 +46,55 @@ export function priceTiersForCard(tiers: CatalogPriceTier[] | undefined | null):
   return tiers.slice(0, CARD_PRICE_TIER_LIMIT)
 }
 
+/**
+ * 媒体模型（图片/视频/音频产物）的「主价格」（需求方 2026-08-25 对齐原型
+ * marketplacePrimaryPriceText，App.tsx:4199）：媒体卡片/详情条只摆一个主价，
+ * 不再铺输入/输出/缓存四格或整张档位矩阵（完整档位进详情「价格梯度」表）。
+ *
+ * 取值顺序：per_call 的每张价 → price_tiers 里**价格最高的一档**（需求方
+ * 2026-08-25：主价格取最高档。媒体模型的 price_tiers 才是媒体产物价，pricing.*
+ * 是文本 token 侧分项价 —— gemini-3.1-flash-lite-image 图片产出 ¥204/M、文本
+ * output 仅 ¥10.2/M，先读 pricing 会把主价格错标成便宜一个量级的文本价）→
+ * pricing 的 output||input（Seedance 这类按 token 计价、无矩阵的视频模型，
+ * ¥46/M）→ 未配价 undefined。
+ * unit 是随金额来源配对的后缀（/张、/M、/秒），unitName 是给「计费单位」格的
+ * 裸单位名（张、M、秒）。
+ */
+export function mediaPrimaryPrice(
+  pricing: { mode?: string; per_call_price?: string; input_per_1m?: string; output_per_1m?: string } | undefined,
+  priceUnit: string | undefined,
+  tiers: CatalogPriceTier[] | undefined | null,
+): { amount: string | undefined; unit: string; unitName: string } {
+  const suffix = priceUnitSuffix(priceUnit, pricing?.mode)
+  if (pricing?.mode === 'per_call') {
+    // per_call 的每张价镜像在 input_per_1m（#851 契约），unitName 从后缀剥出
+    // （zh 张 / en image，priceUnitSuffix 已本地化）。
+    // 促销期后端把折后现价写进 input_per_1m、per_call_price 维持折前原价
+    // （2026-08-25 生产实测：seedream-4.0 0.13/0.2、4.5 0.1875/0.25、
+    // 5.0-lite 0.165/0.22），故现价取两者中较低的正值；非促销期两者相等，不受影响。
+    const candidates = [pricing.per_call_price?.trim(), pricing.input_per_1m?.trim()]
+      .filter((v): v is string => !!v && parseFloat(v) > 0)
+    const amount = candidates.length
+      ? candidates.reduce((min, v) => (parseFloat(v) < parseFloat(min) ? v : min))
+      : undefined
+    return { amount, unit: suffix, unitName: suffix.slice(1) }
+  }
+  const top = (tiers ?? []).reduce<CatalogPriceTier | undefined>(
+    (max, tier) => (parseFloat(tier.price) > parseFloat(max?.price ?? '0') ? tier : max),
+    undefined,
+  )
+  if (top) {
+    return { amount: top.price, unit: `/${top.unit}`, unitName: top.unit }
+  }
+  if (parseFloat(pricing?.output_per_1m ?? '') > 0) {
+    return { amount: pricing?.output_per_1m, unit: suffix, unitName: priceUnit || 'M' }
+  }
+  if (parseFloat(pricing?.input_per_1m ?? '') > 0) {
+    return { amount: pricing?.input_per_1m, unit: suffix, unitName: priceUnit || 'M' }
+  }
+  return { amount: undefined, unit: suffix, unitName: priceUnit || 'M' }
+}
+
 /** 纯媒体模型（文本输入/输出都没有正价）才用 price_tiers 替换卡片四格；
  *  混合模型（如 gemini 图文）保留输入/输出/上下文，档位只在详情展示。 */
 export function catalogCardReplacesGridWithTiers(
@@ -63,21 +112,31 @@ export function priceTierLabel(tier: CatalogPriceTier, isZh: boolean): string {
 }
 
 /** 价格梯度维度的渲染顺序（原型 marketplacePricingDimensionOrder 的 token 子集）。
- *  #800 契约目前只有这两维；未知维度不渲染（表头/字段无从谈起），契约扩了再加。 */
+ *  已知维度按此序在前，有专属表头；未知维度**不再整组丢弃**而是降级渲染
+ *  （通用表头 + 后端 label），否则后端扩维度时前端不发版就整组消失，
+ *  hasPricingGradient 还会连带把规格条的「起」摘掉（prd#864 A3）。 */
 export const PRICING_RULE_DIMENSIONS = ['context_length', 'peak_time'] as const
 export type PricingRuleDimension = (typeof PRICING_RULE_DIMENSIONS)[number]
 
 export interface PricingRuleGroup {
-  dimension: PricingRuleDimension
+  dimension: string
   rules: CatalogPricingRule[]
 }
 
-/** 按维度分组，组内保持接口下发的档位顺序；未知维度丢弃。 */
+/** 按维度分组，组内保持接口下发的档位顺序；未知维度排已知维度后、按首现顺序。 */
 export function pricingRuleGroups(rules: CatalogPricingRule[] | undefined | null): PricingRuleGroup[] {
   if (!rules?.length) return []
-  return PRICING_RULE_DIMENSIONS
+  const known: PricingRuleGroup[] = PRICING_RULE_DIMENSIONS
     .map((dimension) => ({ dimension, rules: rules.filter((r) => r.dimension === dimension) }))
     .filter((g) => g.rules.length > 0)
+  const unknownDims = [...new Set(
+    rules.map((r) => r.dimension)
+      .filter((d): d is string => !!d && !(PRICING_RULE_DIMENSIONS as readonly string[]).includes(d)),
+  )]
+  return [
+    ...known,
+    ...unknownDims.map((dimension) => ({ dimension, rules: rules.filter((r) => r.dimension === dimension) })),
+  ]
 }
 
 /** 有可渲染的阶梯价 → 一口价挂「起」（原型 marketplacePriceText 的 hasConfirmedGradient）。 */
@@ -111,10 +170,10 @@ export function pricingRuleLabel(rule: CatalogPricingRule, isZh: boolean): strin
  */
 export function pricingRulePriceText(
   rule: CatalogPricingRule,
-  kind: 'input' | 'output',
+  kind: 'input' | 'output' | 'cache_read',
   symbol: string,
 ): string {
-  const raw = kind === 'input' ? rule.input_per_1m : rule.output_per_1m
+  const raw = kind === 'input' ? rule.input_per_1m : kind === 'output' ? rule.output_per_1m : rule.cache_read_per_1m
   if (raw != null && raw !== '' && !Number.isNaN(parseFloat(raw))) {
     return `${symbol}${trimPriceZeros(raw)}/${rule.unit || 'M'}`
   }
@@ -194,6 +253,22 @@ export function strikeOriginalPrice(
   const current = toNum(currentPrice)
   if (current == null || original <= current) return null
   return original
+}
+
+/**
+ * 从若干候选价里取第一个正数（媒体主价格的划线原价选值用）。
+ * 后端零值下发字符串 "0" 而非省略键：per_call（按张）模型的 original_output_per_1m
+ * 恒为 "0"，折前价镜像在 original_input_per_1m —— 用 `??` 链会被 "0" 截住，
+ * 折前价永远取不到（doubao-seedream-5.0-pro「限时71折」复查时发现）。
+ */
+export function firstPositivePrice(
+  ...values: Array<string | number | null | undefined>
+): string | number | undefined {
+  for (const v of values) {
+    const n = typeof v === 'string' ? parseFloat(v) : v
+    if (n != null && Number.isFinite(n) && n > 0) return v ?? undefined
+  }
+  return undefined
 }
 
 /** 协议标签文案照原型：带「兼容」后缀，明确这是入站协议兼容性而非厂商归属。 */

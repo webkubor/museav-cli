@@ -99,23 +99,13 @@
 /* qa#286：文本模态用字母「T」而非图标，跟 12px 图标同高、字重加粗以保持可辨识度 */
 .mg-mcard-flow-text { font-size: 11px; font-weight: 700; line-height: 12px; }
 
-/* API 协议标签：按协议分色（原型 .marketplace-protocol-tag.openai/.anthropic），
-   OpenAI 品牌蓝、Anthropic 紫、其他中性 —— 此前一律中性描边，与原型对不上
-   （2026-08-25 需求方走查推翻早前「协议不是选中态不用品牌色」的口径）。 */
+/* API 协议标签：中性描边；协议类型不是选中态，不使用品牌色。 */
 .mg-mcard-protocols { display: flex; flex-wrap: wrap; gap: 5px; }
 .mg-proto {
   padding: 1px 7px; border-radius: var(--radius-sm);
   border: 1px solid var(--mg-border); background: transparent;
   font-size: 11px; line-height: 1.6; color: var(--mg-text-3);
   transition: border-color 0.15s ease, color 0.15s ease;
-}
-.mg-proto.is-openai {
-  border-color: color-mix(in oklab, var(--brand-base) 38%, transparent);
-  color: var(--brand-base);
-}
-.mg-proto.is-anthropic {
-  border-color: rgba(112, 92, 142, 0.38);
-  color: #705c8e;
 }
 .mg-proto:not(:disabled) { cursor: pointer; }
 .mg-proto:not(:disabled):hover { color: var(--mg-text-1); }
@@ -136,15 +126,22 @@
   /* 2 列网格：第一行 输入/输出，第二行 上下文/缓存读取（最大输出已按 #348 移除） */
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px;
 }
-/* 媒体矩阵价（price_tiers，如视频「文生视频 · 720P · 含音频」）：三段式档位名在
-   2 列网格的 ~130px 格子里必然折行（需求方走查反馈）。切成单列行式——每档一行，
-   档位名居左不折行、价格居右，整体反而比「标签两行+价格一行」的格子更矮。 */
-.mg-mcard-specs.is-tiers { grid-template-columns: 1fr; gap: 6px; }
-.mg-mcard-specs.is-tiers .mg-metric {
-  display: flex; flex-direction: row; align-items: baseline;
-  justify-content: space-between; gap: 8px; min-width: 0;
-}
-.mg-mcard-specs.is-tiers .mg-metric-label { white-space: nowrap; }
+/* 媒体产物模型（图片/视频/音频）的价格区：原型 marketplace-card-media-specs ——
+   主价格独占一整行（跨两列），下一行 计费单位 | 可体验任务。不铺档位矩阵，
+   完整档位在详情「价格梯度」表（需求方 2026-08-25：视频模型只展示主价格）。 */
+.mg-mcard-specs.is-media .mg-metric.is-primary { grid-column: 1 / -1; }
+/* 卡片规格值字号对齐原型（普通格 13px、主价格 15px，.marketplace-card-chat-specs
+   strong 13px / -primary-price 15px）——共享的 .mg-metric-value 16px 在卡片密度下
+   太大（需求方 2026-08-25 反馈），只在卡片作用域内收小，详情条不受影响。 */
+.mg-mcard-specs .mg-metric-value { font-size: 13px; }
+.mg-mcard-specs.is-media .mg-metric.is-primary .mg-metric-value { font-size: 15px; }
+/* 长值格（可体验任务）超出省略：轨道是 minmax(0,1fr)，但 .mg-metric-value 的
+   nowrap 会把长值顶穿卡边；.mg-metric 基类的 min-width:64px 还挡着格子收缩，
+   两层都得放开。值容器改 flex：省略号打在 OverflowTip 主文本上（截断时悬停
+   冒气泡显全文），单位/划线原价保持可见不被截。 */
+.mg-mcard-specs .mg-metric { min-width: 0; }
+.mg-mcard-specs .mg-metric-value { display: flex; align-items: baseline; overflow: hidden; }
+.mg-mcard-specs .mg-metric-unit { flex-shrink: 0; }
 /* 规格值配色对齐原型（2026-08-25 需求方走查）：价格一律正文色，此前整排品牌蓝
    与原型对不上；仅「免费」用 success 绿（原型 strong.free → --success）。 */
 .mg-metric-value.is-free { color: var(--mg-success); }

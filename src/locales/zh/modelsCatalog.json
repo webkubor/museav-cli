@@ -172,7 +172,12 @@
       "context": "上下文",
       "cacheRead": "缓存读取",
       "input": "输入",
-      "output": "输出"
+      "output": "输出",
+      "primaryPrice": "主价格",
+      "billingUnit": "计费单位",
+      "experienceTasks": "可体验任务",
+      "perMillionTokens": "每百万 Token",
+      "perUnit": "每{{unit}}"
     },
     "modality": {
       "text": "文本",
@@ -204,7 +209,18 @@
       "ruleDimPeak": "峰值时间段",
       "ruleRange": "上下文区间",
       "ruleTimeSlot": "时段",
-      "ruleTimezone": "时区"
+      "ruleTimezone": "时区",
+      "byInterface": "按接口约定",
+      "byTaskSpec": "按任务规格",
+      "specImage": "图片规格",
+      "specVideo": "视频规格",
+      "specAudio": "音频规格",
+      "ruleUnit": "计价单位",
+      "rulePrice": "价格",
+      "ruleDimOther": "分档价格",
+      "ruleRangeOther": "区间",
+      "gradientFootnote": "价格按上下文长度与输出长度分档，最终以实际调用结算为准",
+      "mainSpec": "主要规格"
     },
     "error.loadDetail": "加载模型详情失败，请稍后重试。",
     "discovery": {

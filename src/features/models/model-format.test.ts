@@ -9,7 +9,8 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import i18n from '@/i18n'
 import {
-  catalogCardReplacesGridWithTiers, priceTierLabel, priceTiersForCard, priceUnitSuffix, strikeOriginalPrice,
+  firstPositivePrice,
+  catalogCardReplacesGridWithTiers, mediaPrimaryPrice, priceTierLabel, priceTiersForCard, priceUnitSuffix, strikeOriginalPrice,
   pricingRuleGroups, hasPricingGradient, pricingRuleLabel, pricingRulePriceText, withPriceFrom,
   autoSummary, cardSummary, detailSummary, sortProtocols,
 } from './model-format'
@@ -91,6 +92,66 @@ describe('catalogCardReplacesGridWithTiers — 纯媒体才用档位替换四格
   })
 })
 
+/**
+ * 媒体模型「主价格」取值（需求方 2026-08-25 对齐原型 marketplacePrimaryPriceText）：
+ * per_call 每张价 → pricing 的 output||input → price_tiers 首档 → 未配价 undefined。
+ */
+describe('mediaPrimaryPrice — 媒体模型主价格', () => {
+  const tiers = [
+    { label: '文生视频 · 720P · 含音频', price: '0.9', unit: '秒', bucket: 'video_seconds' },
+    { label: '文生视频 · 1080P · 含音频', price: '1.5', unit: '秒', bucket: 'video_seconds' },
+  ]
+
+  it('per_call（按张）→ 每张价 + /张，unitName 从本地化后缀剥出', async () => {
+    await i18n.changeLanguage('zh')
+    expect(mediaPrimaryPrice({ mode: 'per_call', per_call_price: '0.05', input_per_1m: '0.05' }, undefined, []))
+      .toEqual({ amount: '0.05', unit: '/张', unitName: '张' })
+  })
+
+  it('per_call 促销期折后现价在 input_per_1m、per_call_price 是折前原价 → 取较低正值（seedream 生产实测）', async () => {
+    await i18n.changeLanguage('zh')
+    // doubao-seedream-4.0：折后 0.13 在 input，per_call 留原价 0.2
+    expect(mediaPrimaryPrice({ mode: 'per_call', per_call_price: '0.2', input_per_1m: '0.13' }, undefined, []).amount)
+      .toBe('0.13')
+    // 5.0-pro：后端未下发折后价，两侧同为 0.3 → 只能展示 0.3
+    expect(mediaPrimaryPrice({ mode: 'per_call', per_call_price: '0.3', input_per_1m: '0.3' }, undefined, []).amount)
+      .toBe('0.3')
+    // 一侧为 "0"/缺失时取另一侧正值；全无正值 → undefined（渲染为 —）
+    expect(mediaPrimaryPrice({ mode: 'per_call', per_call_price: '0', input_per_1m: '0.22' }, undefined, []).amount)
+      .toBe('0.22')
+    expect(mediaPrimaryPrice({ mode: 'per_call', per_call_price: '0', input_per_1m: '0' }, undefined, []).amount)
+      .toBeUndefined()
+  })
+
+  it('有档位矩阵 → 取价格最高的一档，且优先于文本 token 价（gemini 图片产出 204 vs 文本 10.2）', () => {
+    // 需求方 2026-08-25：主价格取最高档；tiers 是媒体产物价，pricing.* 只是文本侧分项
+    expect(mediaPrimaryPrice({ mode: 'token', input_per_1m: '1.7', output_per_1m: '10.2' }, undefined, [
+      { label: '图片输出', price: '204', unit: 'M', bucket: 'image_output' },
+    ])).toEqual({ amount: '204', unit: '/M', unitName: 'M' })
+    expect(mediaPrimaryPrice({ input_per_1m: '0', output_per_1m: '0' }, undefined, tiers))
+      .toEqual({ amount: '1.5', unit: '/秒', unitName: '秒' })
+  })
+
+  it('按 token 计价且无矩阵的媒体模型 → output 优先，unitName M', () => {
+    expect(mediaPrimaryPrice({ mode: 'token', input_per_1m: '20', output_per_1m: '46' }, undefined, []))
+      .toEqual({ amount: '46', unit: '/M', unitName: 'M' })
+  })
+
+  it('token 计价（unit=M）+ 档位矩阵的视频模型（Seedance 实况）→ 取最高档 37，不取 output 的 22（prd#858）', () => {
+    // doubao-seedance-2.0-fast：pricing.output_per_1m=22（最低档镜像），档位 文生视频37/图生视频37/视频生视频22
+    // 线上卡片曾显示 ¥22/M（最低档）——主价格必须走档位最高档，与档位 unit 是 M 还是 秒/张 无关
+    expect(mediaPrimaryPrice({ mode: 'token', input_per_1m: '0', output_per_1m: '22' }, undefined, [
+      { label: '文生视频', price: '37', unit: 'M', bucket: 'video_t2v' },
+      { label: '图生视频', price: '37', unit: 'M', bucket: 'video_i2v' },
+      { label: '视频生视频', price: '22', unit: 'M', bucket: 'video_v2v' },
+    ])).toEqual({ amount: '37', unit: '/M', unitName: 'M' })
+  })
+
+  it('未配价（全 0 且无档位）→ amount undefined，调用方渲染「—」', () => {
+    expect(mediaPrimaryPrice({ input_per_1m: '0', output_per_1m: '0' }, undefined, []).amount).toBeUndefined()
+  })
+})
+
 describe('strikeOriginalPrice — 划线原价的有效性守卫', () => {
   it('原价高于现价（原型 kimi-k2.6 口径）→ 划线', () => {
     expect(strikeOriginalPrice('5.6', '4.46')).toBe(5.6)
@@ -118,6 +179,22 @@ describe('strikeOriginalPrice — 划线原价的有效性守卫', () => {
   it('现价缺省 → 无从比较，不划线', () => {
     expect(strikeOriginalPrice('5', undefined)).toBeNull()
   })
+
+  it('媒体主价的原价选值跳过 "0"：per_call 的 original_output 恒 "0"，折前价在 original_input（seedream 限时71折）', () => {
+    expect(firstPositivePrice('0', '0.42', '0.3')).toBe('0.42')
+    expect(firstPositivePrice('0', '0', undefined)).toBeUndefined()
+    expect(firstPositivePrice(undefined, '', '2')).toBe('2')
+    // 选出的折前价高于现价才划线；后端把 original 配成现价（#747 老问题）依旧不划
+    expect(strikeOriginalPrice(firstPositivePrice('0', '0.3'), '0.3')).toBeNull()
+    expect(strikeOriginalPrice(firstPositivePrice('0', '0.42'), '0.3')).toBe(0.42)
+  })
+
+  it('per_call 促销 original_* 缺发时，划线兜底到折前的 per_call_price（seedream-4.5 生产实测）', () => {
+    // original_* 全 None，per_call_price=0.25 是折前价、现价 0.1875 在 input
+    expect(strikeOriginalPrice(firstPositivePrice(undefined, undefined, undefined, '0.25'), '0.1875')).toBe(0.25)
+    // 5.0-pro：兜底值 = 现价 → 守卫拦下，不划无意义的等值线
+    expect(strikeOriginalPrice(firstPositivePrice('0', '0.3', '0.3', '0.3'), '0.3')).toBeNull()
+  })
 })
 
 /**
@@ -137,12 +214,23 @@ describe('pricing_rules — 上下文分档 / 峰时价（#800）', () => {
     expect(groups[0].rules.map((r) => r.label)).toEqual(['0–128K', '256K以上'])
   })
 
-  it('未知维度丢弃；全是未知维度 → 没有梯度', () => {
-    const unknown = [{ dimension: 'image_spec', label: '1024×1024', input_per_1m: '1' }]
-    expect(pricingRuleGroups(unknown)).toEqual([])
-    expect(hasPricingGradient(unknown)).toBe(false)
+  it('未知维度不丢弃：降级成组、排已知维度后，且照常算「有梯度」（prd#864 A3）', () => {
+    const unknown = [{ dimension: 'output_length', label: '输出 ≥200', input_per_1m: '3', output_per_1m: '14' }]
+    expect(pricingRuleGroups(unknown)).toEqual([{ dimension: 'output_length', rules: unknown }])
+    expect(hasPricingGradient(unknown)).toBe(true)
     expect(hasPricingGradient(undefined)).toBe(false)
     expect(hasPricingGradient(rules)).toBe(true)
+    // 已知维度在前，未知维度按首现顺序在后；无 dimension 的脏行仍丢弃
+    const mixed = [...unknown, ...rules, { dimension: '', label: '没维度', input_per_1m: '1' }]
+    expect(pricingRuleGroups(mixed).map((g) => g.dimension))
+      .toEqual(['context_length', 'peak_time', 'output_length'])
+  })
+
+  it('梯度表缓存读取列：cache_read 取 cache_read_per_1m，缺省回落 —（prd#864 A1）', () => {
+    expect(pricingRulePriceText({ dimension: 'context_length', cache_read_per_1m: '0.4' }, 'cache_read', '¥')).toBe('¥0.4/M')
+    expect(pricingRulePriceText({ dimension: 'context_length', input_per_1m: '2' }, 'cache_read', '¥')).toBe('—')
+    // multiplier 时段规则无绝对价 → 倍率对三列同义，照常展示 ×rate
+    expect(pricingRulePriceText({ dimension: 'peak_time', mode: 'multiplier', rate: '1.2' }, 'cache_read', '¥')).toBe('×1.2')
   })
 
   it('区间文案 label 优先，英文回落 label（256K以上 没配 label_en）', () => {

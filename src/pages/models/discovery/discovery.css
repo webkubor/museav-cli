@@ -85,6 +85,8 @@
      控制台的 --mg-shadow-* 是另一套投影语言（更大扩散、带品牌染色），
      换上去卡片浮起感与原型明显不同。1:1 要求保留原值。 */
   --discovery-shadow-chip: 0 3px 9px color-mix(in srgb, #31557f 12%, transparent);
+  /* 分段控件选中态的贴边投影，比 chip 更近更浅（原型 runtime-range-switch） */
+  --discovery-shadow-segment: 0 1px 3px rgba(24, 34, 48, 0.12);
   --discovery-shadow-tooltip: 0 8px 20px rgba(35, 52, 84, 0.16);
   --discovery-shadow-tooltip-lg: 0 10px 24px rgba(32, 48, 75, 0.18);
   --discovery-shadow-popover: 0 16px 32px rgba(34, 53, 82, 0.16);
@@ -665,6 +667,53 @@
 
 .model-discovery-agent-popularity-head {
   align-items: center;
+}
+
+/* 热门 Agent 排行的周期分段控件（本日 / 本周 / 本月）。
+   原型这块复用的类名是 `.runtime-range-switch` —— 它在 redesign.css 里归
+   「运行表现」分节（17101-17135），不在本页搬运的 `Model discovery` 分节内，
+   所以按分节整段搬时漏了。表现：三个按钮完全无样式，挤成「本日本周本月」
+   一串纯文字，既看不出是分段控件、也没有选中态。
+   这里按原型规则补回，作用域收在 .model-discovery-page 内 —— 类名太通用，
+   泄到全局会撞上详情页自己的运行表现区块。 */
+.model-discovery-page .runtime-range-switch {
+  align-items: center;
+  /* 原型这里取 --surface-muted 并回退到写死的 #f3f5f9：控制台没有这个 token，
+     直接搬就会永远吃那个浅灰、深色模式下瞎掉。按本页 .model-discovery-scope
+     同款「muted 底」表达桥接。
+     （变量名刻意不写成 var(...) 形式：check-css-tokens 会把注释里的举例当成
+      真引用，报「引用了未声明的变量」。） */
+  background: color-mix(in srgb, var(--line) 46%, transparent);
+  border-radius: var(--discovery-radius-md);
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  padding: 2px;
+}
+
+.model-discovery-page .runtime-range-switch button {
+  background: transparent;
+  border: 0;
+  border-radius: var(--discovery-radius-xs);
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  height: 24px;
+  min-width: 34px;
+  padding: 0 8px;
+}
+
+.model-discovery-page .runtime-range-switch button.active {
+  background: var(--panel);
+  box-shadow: var(--discovery-shadow-segment);
+  color: var(--accent);
+}
+
+.model-discovery-page .runtime-range-switch button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 2px;
 }
 
 .model-discovery-agent-popularity-card {
@@ -2160,7 +2209,17 @@
     display: flex;
   }
 
-  .model-discovery-summary-grid {
+  /* ⚠️ 这三条是本页唯一一处**偏离原型逐字搬运**的地方，改的是特异性、不是意图。
+     原型在这一段只写了 `.model-discovery-summary-grid { 1fr 1fr }`（特异性 0,1,0），
+     但上面 1120px 段里的 `.cards-3/4/5`（0,2,0）在 ≤760px 时同样命中且特异性更高，
+     于是 760 这条永远不生效 —— 390px 下 5 张摘要卡仍按五列排，每张只有 ~55px，
+     标题「综合评分最高」被逐字竖排、数值单位换行，完全不可读。
+     原型作者写了这条规则本身就说明意图是窄屏降到两列，只是被自己压掉了。
+     所以这里把选择器提到同一特异性来兑现那个意图。若需求方要求连 bug 一起 1:1，
+     删掉这三条即可回到原型表现。 */
+  .model-discovery-summary-grid.cards-3,
+  .model-discovery-summary-grid.cards-4,
+  .model-discovery-summary-grid.cards-5 {
     grid-template-columns: 1fr 1fr;
   }
 

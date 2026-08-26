@@ -12,7 +12,7 @@
  */
 import i18n from '@/i18n'
 import { formatContextLength, trimPriceZeros } from '@/lib/utils'
-import type { CatalogPriceTier, CatalogPricingRule } from '@/types'
+import type { CatalogPriceTier, CatalogPricingRule, PublicProtocolLabelItem } from '@/types'
 
 export type { CatalogPriceTier, CatalogPricingRule }
 
@@ -330,31 +330,68 @@ export function firstPositivePrice(
 }
 
 /**
- * 协议标签文案。旧 3 值（openai/anthropic/other，过渡期未重新打标的模型仍会下发）
- * 照原型带「兼容」后缀，明确这是入站协议兼容性而非厂商归属；2026-08 新增的端点粒度
- * 7 值（openai_chat 起）已经是具体端点名，不再需要「兼容」后缀。
+ * 协议标签文案 —— **本地兜底**，不是真源。
+ *
+ * 真源已迁移到 modelgo-model-gateway `pkg/publicprotocols` 的静态注册表，经
+ * controller/web-api 透传，运行时通过 usePublicProtocolsStore（GET
+ * /catalog/public-protocols）拉取；这里的两张表只在该接口还没上线（本仓这次改动
+ * 依赖的三个后端仓库尚未合并）、请求未完成或失败时兜底，文案需要跟后端注册表的
+ * 措辞对齐（2026-08-26 对齐：openai_chat/anthropic_messages 等端点粒度值统一用
+ * 「OpenAI 兼容」「Anthropic 兼容」这类协议族文案，不再是端点动作名）。
+ * 旧 3 值（openai/anthropic/other，过渡期未重新打标的模型仍会下发）维持原文案。
  */
 export const PROTOCOL_LABEL_ZH: Record<string, string> = {
   openai: 'OpenAI 兼容', anthropic: 'Anthropic 兼容', other: '其他协议',
-  openai_chat: '对话（Chat）',
-  openai_responses: 'Responses',
-  openai_images: '图片生成',
-  openai_embeddings: '向量（Embeddings）',
-  openai_audio: '语音（Audio）',
-  anthropic_messages: 'Anthropic Messages',
+  openai_chat: 'OpenAI 兼容',
+  openai_responses: 'OpenAI Response',
+  openai_images: 'OpenAI 图片',
+  openai_embeddings: 'OpenAI 向量',
+  openai_audio: 'OpenAI 语音',
+  anthropic_messages: 'Anthropic 兼容',
 }
 export const PROTOCOL_LABEL_EN: Record<string, string> = {
   openai: 'OpenAI compatible', anthropic: 'Anthropic compatible', other: 'Other',
-  openai_chat: 'Chat',
-  openai_responses: 'Responses',
-  openai_images: 'Images',
-  openai_embeddings: 'Embeddings',
-  openai_audio: 'Audio',
-  anthropic_messages: 'Anthropic Messages',
+  openai_chat: 'OpenAI Compatible',
+  openai_responses: 'OpenAI Responses',
+  openai_images: 'OpenAI Images',
+  openai_embeddings: 'OpenAI Embeddings',
+  openai_audio: 'OpenAI Audio',
+  anthropic_messages: 'Anthropic Compatible',
 }
 
-export function protocolLabel(protocol: string, isZh: boolean): string {
-  return (isZh ? PROTOCOL_LABEL_ZH : PROTOCOL_LABEL_EN)[protocol] ?? protocol
+/**
+ * labelMap 缺省时退回本地兜底表；传入时优先用它（调用方一般传
+ * mergeProtocolLabels(PROTOCOL_LABEL_ZH/EN, usePublicProtocolsStore 的 items, ...)
+ * 算出的合并结果，让展示文案跟着 /catalog/public-protocols 的最新下发走）。
+ */
+export function protocolLabel(protocol: string, isZh: boolean, labelMap?: Record<string, string>): string {
+  const map = labelMap ?? (isZh ? PROTOCOL_LABEL_ZH : PROTOCOL_LABEL_EN)
+  return map[protocol] ?? protocol
+}
+
+/**
+ * 用 /catalog/public-protocols 下发的目录覆盖本地兜底表。只覆盖 base 里已声明的
+ * code——未知/尚未收录的远端 code 不会凭空长出新条目，避免和 sortProtocols /
+ * 卡片 CSS（.mg-proto.is-<code>）等按固定值集合工作的逻辑对不上。items 为
+ * null/空（接口未完成、失败、或依赖的后端仓库还没合并）时原样返回 base，即「不
+ * 拿到新数据就完全维持现状」，这是本次改造要的非阻塞降级行为。
+ */
+export function mergeProtocolLabels<T extends string>(
+  base: Record<T, string>,
+  items: Pick<PublicProtocolLabelItem, 'code' | 'label' | 'label_en'>[] | null | undefined,
+  field: 'label' | 'label_en',
+): Record<T, string> {
+  if (!items?.length) return base
+  let merged: Record<T, string> | null = null
+  for (const item of items) {
+    const code = item.code as T
+    const value = item[field]
+    if (code in base && value && base[code] !== value) {
+      if (!merged) merged = { ...base }
+      merged[code] = value
+    }
+  }
+  return merged ?? base
 }
 
 /**

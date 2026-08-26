@@ -70,9 +70,6 @@ export interface CatalogModelItem {
   cache_write_1h_per_1m?: string
   /** 计价单位：缺省为每 1M token；张 / 秒 / 万字符等用于媒体模型 */
   price_unit?: string
-  /** price_unit 的英文形态（秒→s、张→image）；缺省回落 price_unit。
-   *  海外站此前直接渲染中文单位（`$ 0.0735/秒`），shared/modelgo_prd#857 腿 D。 */
-  price_unit_en?: string
   /** 媒体模型的文本 Token 分项价，作为主价格下的次行展示 */
   text_input_price?: string
   text_output_price?: string
@@ -101,8 +98,6 @@ export interface CatalogPriceTier {
   label_en?: string
   price: string
   unit: string
-  /** 英文单位；缺省回落 unit（后端只对已知单位下发，不猜） */
-  unit_en?: string
   bucket: string
 }
 
@@ -131,8 +126,6 @@ export interface CatalogPricingRule {
   rate?: string
   /** 计价单位，一般为 M */
   unit?: string
-  /** 英文单位；缺省回落 unit */
-  unit_en?: string
 }
 
 export interface CatalogPromotion {

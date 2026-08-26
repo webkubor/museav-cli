@@ -3,7 +3,7 @@ import type { IconType } from 'react-icons'
 import i18n from '@/i18n'
 import { ModalityBadge } from '@/features/models/components/ModalityBadge'
 import { trimPriceZeros } from '@/lib/utils'
-import { priceTierUnit, priceUnitSuffix } from '@/features/models/model-format'
+import { priceUnitSuffix } from '@/features/models/model-format'
 import type { ExperienceArtifactRef } from '@/services/experience-sessions'
 import type { CatalogModelItem } from '@/types'
 
@@ -604,7 +604,7 @@ export function dualPriceText(model: CatalogModelItem): string {
   if (model.price_tiers && model.price_tiers.length > 0) {
     return model.price_tiers
       .slice(0, 3)
-      .map((tier) => `${currency}${trimPriceZeros(tier.price)}/${priceTierUnit(tier)}`)
+      .map((tier) => `${currency}${trimPriceZeros(tier.price)}/${tier.unit}`)
       .join(' · ')
   }
   // 按次/按张计价（文生图等）：只有一个单价，硬套 token 那套会显示成

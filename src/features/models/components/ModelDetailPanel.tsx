@@ -22,7 +22,7 @@ import { OverflowTip } from '@/components/ui/OverflowTip'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
 import {
   currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, vendorFromModelId, detailSummary, modelVendorLabel,
-  priceTierLabel, priceTierUnit, mediaPrimaryPrice, firstPositivePrice, strikeOriginalPrice,
+  priceTierLabel, mediaPrimaryPrice, firstPositivePrice, strikeOriginalPrice,
   pricingRuleGroups, pricingRuleLabel, pricingRulePriceText, withPriceFrom, sortProtocols,
 } from '../model-format'
 import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
@@ -94,7 +94,7 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
   const discountLabel = isZh ? promo?.discount_label : (promo?.discount_label_en || promo?.discount_label)
 
   const symbol = currencySymbol(detail.pricing?.currency, isZh)
-  const unitSuffix = priceUnitSuffix(detail.price_unit, detail.pricing?.mode, detail.price_unit_en)
+  const unitSuffix = priceUnitSuffix(detail.price_unit, detail.pricing?.mode)
   const freeLabel = t('modelsCatalog.card.free')
   // 兜底词按上下文给：限免 → 「免费」；非限免而金额为 0/缺省 → 空串（Metric 渲染
   // 「—」）。未配价不能说成免费。
@@ -158,7 +158,7 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
   const tasksLabel = experienceTasks.length > 0
     ? [...new Set(experienceTasks.map(experienceTaskLabel))].join(' / ')
     : t('modelsCatalog.button.comingSoon')
-  const primaryRaw = mediaPrimaryPrice(detail.pricing, detail.price_unit, priceTiers, detail.price_unit_en)
+  const primaryRaw = mediaPrimaryPrice(detail.pricing, detail.price_unit, priceTiers)
   const primary = withPriceFrom(priceText(primaryRaw.amount, symbol, isFree ? freeLabel : '', primaryRaw.unit, isFree), hasGradient)
   // firstPositivePrice 而非 ??：per_call 模型 original_output 恒 "0"，会把镜像在
   // original_input 的折前价截住（seedream「限时71折」无划线的前端侧成因）
@@ -347,8 +347,8 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
                     {priceTiers.map((tier, idx) => (
                       <TableRow key={`${tier.bucket}-${tier.label}-${idx}`}>
                         <TableCell>{priceTierLabel(tier, isZh)}</TableCell>
-                        <TableCell>{priceTierUnit(tier)}</TableCell>
-                        <TableCell>{`${symbol}${trimPriceZeros(tier.price)}/${priceTierUnit(tier)}`}</TableCell>
+                        <TableCell>{tier.unit}</TableCell>
+                        <TableCell>{`${symbol}${trimPriceZeros(tier.price)}/${tier.unit}`}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

@@ -29,36 +29,13 @@ export function currencySymbol(currency: string | undefined, isZh: boolean): str
   return CCY_SYMBOL[(currency || '').toUpperCase()] || currency || (isZh ? '¥' : '$')
 }
 
-/**
- * 计价单位的展示形态。中文站用 `unit`，英文站优先接口下发的 `unit_en`。
- *
- * per_call 的「张 / image」一直是前端按语言硬翻的，但档位单位（秒、万字符）只有中文
- * 一份，于是海外站出现「Text to video · 768P  $0.0735/秒」——档位文案全英、单位是
- * 中文（shared/modelgo_prd#857 腿 D）。后端现在对已知单位下发 `unit_en`，未知单位
- * 留空**故意**回落中文：印一个猜出来的英文单位比留着中文更糟。
- */
-export function displayUnitText(unit: string | undefined, unitEN?: string): string {
-  if (!unit) return ''
-  return isZhLang() ? unit : (unitEN || unit)
-}
-
-/** 档位单位（秒 / 张 / M），按当前语言取。 */
-export function priceTierUnit(tier: CatalogPriceTier): string {
-  return displayUnitText(tier.unit, tier.unit_en)
-}
-
 /** 计价单位后缀。mode=per_call（按次/按张计价，图片生成类）→ /张（en /image）；
  *  price_unit 为空表示按每 M token 计价（对话模型）。
  *  qa#286 二轮反馈：PRD §9.1 字段口径 price_unit 枚举值是「M、张、秒、万字符等」，
  *  不带数字前缀，兜底要跟这套枚举同形态，不能写死「1M」。 */
-export function priceUnitSuffix(
-  priceUnit: string | undefined,
-  mode?: string | null,
-  priceUnitEN?: string,
-): string {
+export function priceUnitSuffix(priceUnit: string | undefined, mode?: string | null): string {
   if (mode === 'per_call') return isZhLang() ? '/张' : '/image'
-  const unit = displayUnitText(priceUnit, priceUnitEN)
-  return unit ? `/${unit}` : '/M'
+  return priceUnit ? `/${priceUnit}` : '/M'
 }
 
 const CARD_PRICE_TIER_LIMIT = 4
@@ -87,10 +64,8 @@ export function mediaPrimaryPrice(
   pricing: { mode?: string; per_call_price?: string; input_per_1m?: string; output_per_1m?: string } | undefined,
   priceUnit: string | undefined,
   tiers: CatalogPriceTier[] | undefined | null,
-  priceUnitEN?: string,
 ): { amount: string | undefined; unit: string; unitName: string } {
-  const suffix = priceUnitSuffix(priceUnit, pricing?.mode, priceUnitEN)
-  const unitName = displayUnitText(priceUnit, priceUnitEN) || 'M'
+  const suffix = priceUnitSuffix(priceUnit, pricing?.mode)
   if (pricing?.mode === 'per_call') {
     // per_call 的每张价镜像在 input_per_1m（#851 契约），unitName 从后缀剥出
     // （zh 张 / en image，priceUnitSuffix 已本地化）。
@@ -109,16 +84,15 @@ export function mediaPrimaryPrice(
     undefined,
   )
   if (top) {
-    const tierUnit = priceTierUnit(top)
-    return { amount: top.price, unit: `/${tierUnit}`, unitName: tierUnit }
+    return { amount: top.price, unit: `/${top.unit}`, unitName: top.unit }
   }
   if (parseFloat(pricing?.output_per_1m ?? '') > 0) {
-    return { amount: pricing?.output_per_1m, unit: suffix, unitName }
+    return { amount: pricing?.output_per_1m, unit: suffix, unitName: priceUnit || 'M' }
   }
   if (parseFloat(pricing?.input_per_1m ?? '') > 0) {
-    return { amount: pricing?.input_per_1m, unit: suffix, unitName }
+    return { amount: pricing?.input_per_1m, unit: suffix, unitName: priceUnit || 'M' }
   }
-  return { amount: undefined, unit: suffix, unitName }
+  return { amount: undefined, unit: suffix, unitName: priceUnit || 'M' }
 }
 
 /** 纯媒体模型（文本输入/输出都没有正价）才用 price_tiers 替换卡片四格；
@@ -191,7 +165,7 @@ export function pricingRulePriceText(
 ): string {
   const raw = kind === 'input' ? rule.input_per_1m : rule.output_per_1m
   if (raw != null && raw !== '' && !Number.isNaN(parseFloat(raw))) {
-    return `${symbol}${trimPriceZeros(raw)}/${displayUnitText(rule.unit, rule.unit_en) || 'M'}`
+    return `${symbol}${trimPriceZeros(raw)}/${rule.unit || 'M'}`
   }
   if (rule.mode === 'multiplier' && rule.rate) return `×${trimPriceZeros(rule.rate)}`
   return '—'

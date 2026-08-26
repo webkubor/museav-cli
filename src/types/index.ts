@@ -126,6 +126,7 @@ export type {
 } from './logs'
 
 export type {
+  PublicProtocol,
   ModelPricing,
   CatalogModelItem,
   CatalogPriceTier,

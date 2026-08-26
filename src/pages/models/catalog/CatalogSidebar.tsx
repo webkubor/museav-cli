@@ -27,7 +27,6 @@ import { ModelIcon } from '@/features/models/components/ModelIcon'
 import type { CatalogModelItem, CatalogModelTag } from '@/types'
 import {
   INPUT_TYPE_CODES,
-  PROTOCOL_CODES,
   CONTEXT_SLIDER_STOPS,
   modelVendorCode,
 } from './modelCatalogFilterLogic'
@@ -54,7 +53,35 @@ function vendorLabel(code: string, fallback: string, isZh: boolean): string {
   return labels[code] || raw.charAt(0).toUpperCase() + raw.slice(1)
 }
 
-const PROTOCOL_LABEL: Record<string, string> = { openai: 'OpenAI', anthropic: 'Anthropic' }
+/**
+ * API 协议筛选项：固定顺序展示端点粒度 7 值（2026-08 由 openai/anthropic/other
+ * 3 值升级而来，见 gateway_models.public_protocols）。静态列表而非从 facets 动态
+ * 派生——理由同 vendor/modality 之外的固定分组：筛选项本身是产品口径而非数据驱动，
+ * 顺序固定成 Chat 优先、Anthropic Messages / 其他兜底在后，跟卡片/详情标签排序
+ * （model-format.ts PROTOCOL_ORDER）保持一致体感。
+ */
+const PROTOCOL_FILTER_ORDER = [
+  'openai_chat', 'openai_responses', 'openai_images', 'openai_embeddings', 'openai_audio',
+  'anthropic_messages', 'other',
+] as const
+const PROTOCOL_LABEL_ZH: Record<string, string> = {
+  openai_chat: '对话（Chat）',
+  openai_responses: 'Responses',
+  openai_images: '图片生成',
+  openai_embeddings: '向量（Embeddings）',
+  openai_audio: '语音（Audio）',
+  anthropic_messages: 'Anthropic Messages',
+  other: '其他（异步任务类，如图像/音视频）',
+}
+const PROTOCOL_LABEL_EN: Record<string, string> = {
+  openai_chat: 'Chat',
+  openai_responses: 'Responses',
+  openai_images: 'Images',
+  openai_embeddings: 'Embeddings',
+  openai_audio: 'Audio',
+  anthropic_messages: 'Anthropic Messages',
+  other: 'Other',
+}
 
 /** 输入类型小图标（原型 catalogModalityIcons + 文件 FileText） */
 const INPUT_TYPE_ICON: Record<string, IconType> = {
@@ -209,11 +236,11 @@ export function CatalogSidebar({ tags, models, selected, setSelected, isZh }: Pr
         onClear={() => clearDim('protocol')}
       >
         <div className="mg-side-list">
-          {PROTOCOL_CODES.map((p) => (
+          {PROTOCOL_FILTER_ORDER.map((p) => (
             <Row
               key={p}
               active={protocolActive.includes(p)}
-              label={p === 'other' ? t('modelsCatalog.sidebar.otherProtocol') : PROTOCOL_LABEL[p]}
+              label={(isZh ? PROTOCOL_LABEL_ZH : PROTOCOL_LABEL_EN)[p]}
               onClick={() => toggle(`protocol:${p}`)}
             />
           ))}

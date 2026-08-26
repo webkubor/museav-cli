@@ -19,8 +19,9 @@ import type { CatalogModelItem } from '@/types'
 export const INPUT_TYPE_CODES = ['text', 'image', 'audio', 'video', 'file'] as const
 export type InputTypeCode = (typeof INPUT_TYPE_CODES)[number]
 
-/** API 协议选项（原型 marketplaceProtocolFilterOptions）。 */
-export const PROTOCOL_CODES = ['openai', 'anthropic', 'other'] as const
+// API 协议选项已升级为端点粒度 7 值，选项与文案见 CatalogSidebar 的
+// PROTOCOL_FILTER_ORDER / PROTOCOL_LABEL_*（2026-08 public_protocols 升级，
+// 过渡期未重新打标模型仍下发旧 3 值 openai/anthropic/other，匹配按字符串精确比较兼容两套）。
 
 /**
  * 上下文滑杆档位（原型 marketplaceContextOptions，#872 需求点 8）。
@@ -114,8 +115,8 @@ export function matchesCatalogFiltersExceptOutput(model: CatalogModelItem, f: Ca
     if (!f.inputs.some((code) => inputs.includes(code))) return false
   }
   if (f.protocols.length > 0) {
-    const protocols = model.protocols ?? []
-    if (!f.protocols.some((code) => protocols.includes(code as 'openai' | 'anthropic' | 'other'))) return false
+    const protocols: readonly string[] = model.protocols ?? []
+    if (!f.protocols.some((code) => protocols.includes(code))) return false
   }
   if (f.tags.length > 0) {
     const tags = (model.tags ?? []).map((tg) => tg.toLowerCase())

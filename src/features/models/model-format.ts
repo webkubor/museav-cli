@@ -33,9 +33,22 @@ export function currencySymbol(currency: string | undefined, isZh: boolean): str
  *  price_unit 为空表示按每 M token 计价（对话模型）。
  *  qa#286 二轮反馈：PRD §9.1 字段口径 price_unit 枚举值是「M、张、秒、万字符等」，
  *  不带数字前缀，兜底要跟这套枚举同形态，不能写死「1M」。 */
-export function priceUnitSuffix(priceUnit: string | undefined, mode?: string | null): string {
+export function priceUnitSuffix(
+  priceUnit: string | undefined,
+  mode?: string | null,
+  priceUnitEN?: string | null,
+): string {
   if (mode === 'per_call') return isZhLang() ? '/张' : '/image'
-  return priceUnit ? `/${priceUnit}` : '/M'
+  // 英文站取 price_unit_en：单位是后端下发的中文枚举（M/张/秒/万字符），
+  // 直接渲染会在英文页上打出「$0.1176 /秒」（shared/modelgo_prd#857 腿 D）。
+  // 为空时仍回落中文单位——漏配一个单位不该把价格整格吞掉。
+  const unit = (!isZhLang() && priceUnitEN?.trim()) || priceUnit
+  return unit ? `/${unit}` : '/M'
+}
+
+/** 档位行的计价单位：与 priceUnitSuffix 同口径，英文站优先 unit_en。 */
+export function priceTierUnit(tier: Pick<CatalogPriceTier, 'unit' | 'unit_en'>): string {
+  return (!isZhLang() && tier.unit_en?.trim()) || tier.unit
 }
 
 const CARD_PRICE_TIER_LIMIT = 4
@@ -64,8 +77,9 @@ export function mediaPrimaryPrice(
   pricing: { mode?: string; per_call_price?: string; input_per_1m?: string; output_per_1m?: string } | undefined,
   priceUnit: string | undefined,
   tiers: CatalogPriceTier[] | undefined | null,
-): { amount: string | undefined; unit: string; unitName: string } {
-  const suffix = priceUnitSuffix(priceUnit, pricing?.mode)
+  priceUnitEN?: string | null,
+): { amount: string | undefined; unit: string; unitName: string; originalAmount?: string } {
+  const suffix = priceUnitSuffix(priceUnit, pricing?.mode, priceUnitEN)
   if (pricing?.mode === 'per_call') {
     // per_call 的每张价镜像在 input_per_1m（#851 契约），unitName 从后缀剥出
     // （zh 张 / en image，priceUnitSuffix 已本地化）。
@@ -83,16 +97,26 @@ export function mediaPrimaryPrice(
     (max, tier) => (parseFloat(tier.price) > parseFloat(max?.price ?? '0') ? tier : max),
     undefined,
   )
+  const unitName = (!isZhLang() && priceUnitEN?.trim()) || priceUnit || 'M'
   if (top) {
-    return { amount: top.price, unit: `/${top.unit}`, unitName: top.unit }
+    // originalAmount 必须跟主价同源：doubao-seedance-2.0-mini 主价取最高档
+    // 20.24（折前 23），而 promotion.original_output_per_1m 是 token 侧的 14，
+    // 14 < 20.24 会被 strikeOriginalPrice 的守卫判成无效划线直接吞掉
+    // （shared/modelgo_prd#863 ④）。
+    return {
+      amount: top.price,
+      unit: `/${priceTierUnit(top)}`,
+      unitName: priceTierUnit(top),
+      originalAmount: top.original_price,
+    }
   }
   if (parseFloat(pricing?.output_per_1m ?? '') > 0) {
-    return { amount: pricing?.output_per_1m, unit: suffix, unitName: priceUnit || 'M' }
+    return { amount: pricing?.output_per_1m, unit: suffix, unitName }
   }
   if (parseFloat(pricing?.input_per_1m ?? '') > 0) {
-    return { amount: pricing?.input_per_1m, unit: suffix, unitName: priceUnit || 'M' }
+    return { amount: pricing?.input_per_1m, unit: suffix, unitName }
   }
-  return { amount: undefined, unit: suffix, unitName: priceUnit || 'M' }
+  return { amount: undefined, unit: suffix, unitName }
 }
 
 /** 纯媒体模型（文本输入/输出都没有正价）才用 price_tiers 替换卡片四格；
@@ -305,12 +329,28 @@ export function firstPositivePrice(
   return undefined
 }
 
-/** 协议标签文案照原型：带「兼容」后缀，明确这是入站协议兼容性而非厂商归属。 */
+/**
+ * 协议标签文案。旧 3 值（openai/anthropic/other，过渡期未重新打标的模型仍会下发）
+ * 照原型带「兼容」后缀，明确这是入站协议兼容性而非厂商归属；2026-08 新增的端点粒度
+ * 7 值（openai_chat 起）已经是具体端点名，不再需要「兼容」后缀。
+ */
 export const PROTOCOL_LABEL_ZH: Record<string, string> = {
   openai: 'OpenAI 兼容', anthropic: 'Anthropic 兼容', other: '其他协议',
+  openai_chat: '对话（Chat）',
+  openai_responses: 'Responses',
+  openai_images: '图片生成',
+  openai_embeddings: '向量（Embeddings）',
+  openai_audio: '语音（Audio）',
+  anthropic_messages: 'Anthropic Messages',
 }
 export const PROTOCOL_LABEL_EN: Record<string, string> = {
   openai: 'OpenAI compatible', anthropic: 'Anthropic compatible', other: 'Other',
+  openai_chat: 'Chat',
+  openai_responses: 'Responses',
+  openai_images: 'Images',
+  openai_embeddings: 'Embeddings',
+  openai_audio: 'Audio',
+  anthropic_messages: 'Anthropic Messages',
 }
 
 export function protocolLabel(protocol: string, isZh: boolean): string {
@@ -324,7 +364,11 @@ export function protocolLabel(protocol: string, isZh: boolean): string {
  * 未知值排最后且保持相对稳定（sort 在 V8 里是稳定排序）。
  * 源头治理单：qa/ai-quality-platform#685（管理后台提交侧校验归一，OpenAI 恒在前）。
  */
-const PROTOCOL_ORDER = ['openai', 'anthropic', 'other', 'native']
+const PROTOCOL_ORDER = [
+  'openai_chat', 'openai_responses', 'openai_images', 'openai_embeddings', 'openai_audio',
+  'anthropic_messages',
+  'openai', 'anthropic', 'other', 'native',
+]
 export function sortProtocols<T extends string>(protocols: readonly T[]): T[] {
   const rank = (p: string) => {
     const i = PROTOCOL_ORDER.indexOf(p)

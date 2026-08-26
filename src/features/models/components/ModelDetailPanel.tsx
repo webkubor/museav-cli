@@ -22,7 +22,7 @@ import { OverflowTip } from '@/components/ui/OverflowTip'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
 import {
   currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, vendorFromModelId, detailSummary, modelVendorLabel,
-  priceTierLabel, mediaPrimaryPrice, firstPositivePrice, strikeOriginalPrice,
+  priceTierLabel, priceTierUnit, mediaPrimaryPrice, firstPositivePrice, strikeOriginalPrice,
   pricingRuleGroups, pricingRuleLabel, pricingRulePriceText, pricingRuleStrikeText,
   pricingRuleSubLabel, pricingRulesHaveSub, withPriceFrom, sortProtocols,
 } from '../model-format'
@@ -62,7 +62,6 @@ function Metric({
   valueTag?: string
   free?: boolean
 }) {
-  const { t } = useTranslation()
   return (
     <div className="mg-metric">
       <span className="mg-metric-label">{label}</span>
@@ -73,13 +72,9 @@ function Metric({
         {unit && <i className="mg-metric-unit">{unit}</i>}
         {valueTag && <i className="mg-metric-ttl">{valueTag}</i>}
         {/* 划线原价：跟在折扣后价格后面，装饰性，不是真实扣费价。
-            带「原价」前缀——有梯度时现价挂「起」，裸划线价紧邻会被读成
-            「¥1.6–¥2 区间」（prd#860），前缀把两个数的角色钉死 */}
-        {strike && (
-          <s className="mg-metric-strike">
-            {t('modelsCatalog.card.strikeOriginal', { price: strike })}
-          </s>
-        )}
+            裸划线对齐原型（App.tsx <s>¥2/M</s>），2026-08-26 产品拍板回退
+            #860 加的「原价/was」前缀 */}
+        {strike && <s className="mg-metric-strike">{strike}</s>}
       </span>
       {subValue && (
         <span className="mg-metric-sub">
@@ -165,14 +160,16 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
   const category = resolveModelCategory(detail)
   const isMediaModel = category !== 'dialogue'
   const experienceTasks = modelExperienceTasks(detail)
-  const primaryRaw = mediaPrimaryPrice(detail.pricing, detail.price_unit, priceTiers)
+  const primaryRaw = mediaPrimaryPrice(detail.pricing, detail.price_unit, priceTiers, detail.price_unit_en)
   const primary = withPriceFrom(priceText(primaryRaw.amount, symbol, isFree ? freeLabel : '', primaryRaw.unit, isFree), hasGradient)
   // firstPositivePrice 而非 ??：per_call 模型 original_output 恒 "0"，会把镜像在
   // original_input 的折前价截住（seedream「限时71折」无划线的前端侧成因）
   // 末位候选 per_call_price：促销期它维持折前原价（折后现价在 input_per_1m），
   // original_* 缺发时靠它兜底；仅促销卡参与，守卫会拦掉 ≤ 现价的取值
+  // 首位候选与卡片同口径：主价那一档自己的折前价优先（prd#863 ④）。
   const strikePrimaryVal = strikeOriginalPrice(
     firstPositivePrice(
+      primaryRaw.originalAmount,
       promo?.original_output_per_1m, promo?.original_input_per_1m, promo?.original_price,
       promo ? detail.pricing?.per_call_price : undefined,
     ),
@@ -355,13 +352,28 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {priceTiers.map((tier, idx) => (
-                      <TableRow key={`${tier.bucket}-${tier.label}-${idx}`}>
-                        <TableCell>{priceTierLabel(tier, isZh)}</TableCell>
-                        <TableCell>{tier.unit}</TableCell>
-                        <TableCell>{`${symbol}${trimPriceZeros(tier.price)}/${tier.unit}`}</TableCell>
-                      </TableRow>
-                    ))}
+                    {priceTiers.map((tier, idx) => {
+                      // 矩阵促销逐档打折，划线也得逐档给（prd#863）：original_price
+                      // 只在这一档真被促销改过时才下发，守卫仍拦 ≤ 现价的取值。
+                      const tierUnit = priceTierUnit(tier)
+                      const tierStrike = strikeOriginalPrice(tier.original_price, tier.price, isFree)
+                      return (
+                        <TableRow key={`${tier.bucket}-${tier.label}-${idx}`}>
+                          <TableCell>{priceTierLabel(tier, isZh)}</TableCell>
+                          <TableCell>{tierUnit}</TableCell>
+                          <TableCell>
+                            {`${symbol}${trimPriceZeros(tier.price)}/${tierUnit}`}
+                            {/* 与梯度表/摘要行同口径：裸划线对齐原型，带单位与 5px 间距
+                                （mg-metric-strike），角色靠划线+灰字区分 */}
+                            {tierStrike != null && (
+                              <s className="mg-metric-strike">
+                                {`${symbol}${trimPriceZeros(String(tierStrike))}/${tierUnit}`}
+                              </s>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -418,11 +430,7 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
                             return (
                               <TableCell key={kind}>
                                 {pricingRulePriceText(rule, kind, symbol)}
-                                {strike && (
-                                  <s className="mg-metric-strike">
-                                    {t('modelsCatalog.card.strikeOriginal', { price: strike })}
-                                  </s>
-                                )}
+                                {strike && <s className="mg-metric-strike">{strike}</s>}
                               </TableCell>
                             )
                           })}

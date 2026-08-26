@@ -197,7 +197,9 @@
   position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 20;
   display: grid; gap: 2px; max-height: 280px; overflow-y: auto; padding: 6px;
   border: 1px solid var(--mg-border); border-radius: var(--radius-md);
-  background: var(--mg-bg-0); box-shadow: var(--mg-card-shadow);
+  /* 悬浮菜单用 Dropdown 语义层 --mg-bg-2（不透明，与排序下拉同层级）——
+     --mg-bg-0 已并入玻璃是半透明面，浮在列表上会透出底下的筛选行文字 */
+  background: var(--mg-bg-2); box-shadow: var(--mg-shadow-lg, var(--mg-card-shadow));
 }
 .mg-side-tag-menu-empty { padding: 6px 8px; font-size: 12px; color: var(--mg-text-4); }
 .mg-side-tag-option {

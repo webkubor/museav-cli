@@ -303,7 +303,7 @@ export function CatalogCard({
             {/* 可体验任务改独立标签展示（#872 需求点 10），不再复用 Metric 的省略文本值 */}
             <div className="mg-metric">
               <span className="mg-metric-label">{t('modelsCatalog.card.experienceTasks')}</span>
-              <ExperienceTaskTags tasks={experienceTasks} />
+              <ExperienceTaskTags tasks={experienceTasks} max={3} />
             </div>
           </>
         ) : (

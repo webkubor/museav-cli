@@ -122,11 +122,15 @@
 /* 「可体验任务」独立标签（#872 需求点 10，原型 marketplace-task-tags）：
    卡片与详情规格条共用，替代旧的斜杠拼接文本。 */
 .mg-task-tags { display: flex; flex-wrap: wrap; gap: 4px; }
-.mg-task-tags > em {
+.mg-task-tags > em,
+.mg-task-tags-more {
   font-style: normal; padding: 1px 7px; border-radius: var(--radius-sm);
   background: var(--mg-fill-0); font-size: 11px; line-height: 1.6;
   color: var(--mg-text-2); white-space: nowrap;
 }
+/* 「+N」折叠计数标签：悬停/聚焦冒气泡列出其余任务（组件内 portal 渲染） */
+.mg-task-tags-more { cursor: help; color: var(--mg-text-3); }
+.mg-task-tags-more:hover, .mg-task-tags-more:focus-visible { color: var(--mg-text-1); }
 
 /* 价格规格：贴底 */
 .mg-mcard-specs {

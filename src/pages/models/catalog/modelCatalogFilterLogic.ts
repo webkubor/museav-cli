@@ -115,8 +115,10 @@ export function matchesCatalogFiltersExceptOutput(model: CatalogModelItem, f: Ca
     if (!f.inputs.some((code) => inputs.includes(code))) return false
   }
   if (f.protocols.length > 0) {
-    const protocols = model.protocols ?? []
-    if (!f.protocols.some((code) => protocols.includes(code as 'openai' | 'anthropic' | 'other'))) return false
+    // 按字符串精确比较而非窄化到旧 3 值联合：筛选项已是端点粒度 7 值，而过渡期
+    // 未重新打标的模型仍下发 openai/anthropic/other，两套要同时匹配得上。
+    const protocols: readonly string[] = model.protocols ?? []
+    if (!f.protocols.some((code) => protocols.includes(code))) return false
   }
   if (f.tags.length > 0) {
     const tags = (model.tags ?? []).map((tg) => tg.toLowerCase())

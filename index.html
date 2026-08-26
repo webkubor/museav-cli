@@ -10,39 +10,44 @@
     <meta name="theme-color" content="#3b82f6" />
     <title>ModelGo 控制台</title>
     <script>
+      // PWA 下线迁移：历史版本给用户浏览器装过 ServiceWorker，不清会一直由旧 SW
+      // 控制页面、吃到过期 precache。页面一加载就注销全部 SW 并清空 Cache Storage，
+      // 之后回到纯 HTTP。等线上流量全部换代后，本段可整体删除。
+      ;(function () {
+        var purge = []
+        if ('serviceWorker' in navigator) {
+          purge.push(
+            navigator.serviceWorker
+              .getRegistrations()
+              .then(function (registrations) {
+                return Promise.all(
+                  registrations.map(function (registration) {
+                    return registration.unregister()
+                  }),
+                )
+              })
+              .catch(function () {}),
+          )
+        }
+        if ('caches' in window) {
+          purge.push(
+            caches
+              .keys()
+              .then(function (keys) {
+                return Promise.all(keys.map(function (key) { return caches.delete(key) }))
+              })
+              .catch(function () {}),
+          )
+        }
+        Promise.all(purge)
+      })()
+    </script>
+    <script>
       // 部署切版本时，旧 HTML 可能继续引用已删除的 /assets/*.js。
       // 一旦服务器把缺失 chunk fallback 成 index.html，浏览器会因 MIME text/html 拒绝执行。
+      // 资产失效自愈：30s 节流硬刷新(带 sessionStorage 标记防循环)。
       ;(function () {
         var reloadKey = 'mg:asset-reload-ts'
-        var clearRuntimeCaches = function () {
-          var tasks = []
-          if ('serviceWorker' in navigator) {
-            tasks.push(
-              navigator.serviceWorker
-                .getRegistrations()
-                .then(function (registrations) {
-                  return Promise.all(
-                    registrations.map(function (registration) {
-                      return registration.unregister()
-                    }),
-                  )
-                })
-                .catch(function () {}),
-            )
-          }
-          if ('caches' in window) {
-            tasks.push(
-              caches
-                .keys()
-                .then(function (keys) {
-                  return Promise.all(keys.map(function (key) { return caches.delete(key) }))
-                })
-                .catch(function () {}),
-            )
-          }
-          return Promise.all(tasks)
-        }
-
         window.addEventListener(
           'error',
           function (event) {
@@ -53,9 +58,7 @@
             var last = Number(sessionStorage.getItem(reloadKey) || '0')
             if (Date.now() - last <= 30000) return
             sessionStorage.setItem(reloadKey, String(Date.now()))
-            clearRuntimeCaches().finally(function () {
-              window.location.reload()
-            })
+            window.location.reload()
           },
           true,
         )
@@ -75,12 +78,6 @@
         // apple-touch-icon 也随市场:国内靛紫(默认),国际翠绿
         var at = document.querySelector('link[rel="apple-touch-icon"]')
         if (at) at.href = '/brand/apple-touch-icon-global.png'
-        // PWA 安装图标/名称同样随市场:构建注入的 manifest link 在本脚本之后,
-        // DOMContentLoaded 后把它切到国际版 manifest(浏览器按需拉取,不早于此)
-        window.addEventListener('DOMContentLoaded', function () {
-          var m = document.querySelector('link[rel="manifest"]')
-          if (m) m.href = '/manifest-global.webmanifest'
-        })
       })()
     </script>
   </head>

@@ -37,8 +37,8 @@ import {
   PROTOCOL_LABEL_ZH, PROTOCOL_LABEL_EN, mergeProtocolLabels,
 } from '@/features/models/model-format'
 import { ExperienceTaskTags } from '@/features/models/components/ExperienceTaskTags'
+import { usePublicProtocolsStore } from '@/store/use-public-protocols-store'
 import { modelExperienceTasks, resolveModelCategory } from '../model-experience-data'
-import { usePublicProtocolsStore } from '@/store/use-public-protocols-store' 
 import type { CatalogModelItem } from '@/types'
 
 const MODALITY_ICON: Record<string, IconType> = { image: LuImage, audio: LuMic, video: LuVideo }

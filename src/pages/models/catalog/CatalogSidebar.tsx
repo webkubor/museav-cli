@@ -31,7 +31,7 @@ import {
   modelVendorCode,
 } from './modelCatalogFilterLogic'
 import { usePublicProtocolsStore } from '@/store/use-public-protocols-store'
-import { mergeProtocolLabels } from '@/features/models/model-format' 
+import { mergeProtocolLabels } from '@/features/models/model-format'
 
 const VENDOR_PREVIEW = 6
 

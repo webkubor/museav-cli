@@ -1,7 +1,6 @@
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
-import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 import { execSync } from 'child_process'
 import { readFileSync } from 'fs'
@@ -85,48 +84,6 @@ export default defineConfig(({ mode }) => {
       },
     }),
     devRequirementsPlugin(),
-    VitePWA({
-      // prompt 模式：新版本就绪时触发 onNeedRefresh，由 <AppUpdatePrompt/> 弹强制更新窗，
-      // 而非 autoUpdate 静默替换（静默模式下页面仍跑旧代码，导航易撞旧 chunk 白屏，需求方#233）。
-      registerType: 'prompt',
-      includeAssets: ['favicon.svg', 'brand/**'],
-      // 国内版 manifest(默认);国际站(.ai)由 index.html 域名前置脚本切到
-      // public/manifest-global.webmanifest(qa#481)——单一构建产物,安装图标/名称随市场。
-      manifest: {
-        name: 'ModelGo 控制台',
-        short_name: 'ModelGo',
-        description: 'ModelGo AI 平台控制台',
-        theme_color: '#3b82f6',
-        background_color: '#ffffff',
-        display: 'standalone',
-        icons: [
-          {
-            src: '/brand/modelgo-pwa-icon.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any',
-          },
-          {
-            src: '/brand/modelgo-pwa-icon.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable',
-          },
-        ],
-      },
-      workbox: {
-        navigateFallback: '/index.html',
-        runtimeCaching: [
-          {
-            urlPattern: ({ request }) => request.mode === 'navigate',
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'pages',
-            },
-          },
-        ],
-      },
-    }),
   ],
   build: {
     chunkSizeWarningLimit: 900,

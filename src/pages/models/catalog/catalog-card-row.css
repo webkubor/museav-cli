@@ -113,6 +113,11 @@
   transition: color var(--mg-duration-fast) ease, background var(--mg-duration-fast) ease;
 }
 .mg-side-clear:hover { color: var(--brand-base); background: var(--plaza-row-hover-bg); }
+/* 折叠箭头独立成钮（清空按钮固定在它左边）；点击行为与标题一致 */
+.mg-side-head-toggle {
+  display: inline-flex; align-items: center; flex-shrink: 0;
+  padding: 6px 2px; min-height: var(--mg-control-height-sm, 32px); cursor: pointer;
+}
 .mg-side-list { display: flex; flex-direction: column; gap: 2px; margin-top: 2px; }
 /* 2026-08 视觉改版稿：行改胶囊（radius-full），高度收矮一档 */
 .mg-side-row {

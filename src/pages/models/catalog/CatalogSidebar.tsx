@@ -334,10 +334,12 @@ function Group({
   const isCollapsed = collapsed.has(id)
   return (
     <div className="mg-side-group">
+      {/* 组头顺序：标题(撑满) → 清空 → 折叠箭头 —— 清空按钮固定在下拉图标左手边
+          （需求方 2026-08-26 口径）。箭头单独成钮只为排版，与标题同为折叠开关，
+          键盘路径走标题按钮（箭头 tabIndex=-1 不重复进焦点链）。 */}
       <div className="mg-side-head-row">
         <button type="button" className="mg-side-head" onClick={() => onToggle(id)} aria-expanded={!isCollapsed}>
           <span>{title}</span>
-          <LuChevronDown size={15} className={`mg-side-head-chevron ${isCollapsed ? '-rotate-90' : ''}`} />
         </button>
         {hasSelection && onClear && (
           <button
@@ -350,6 +352,9 @@ function Group({
             <LuRotateCcw size={12} strokeWidth={1.9} aria-hidden />
           </button>
         )}
+        <button type="button" className="mg-side-head-toggle" tabIndex={-1} aria-hidden onClick={() => onToggle(id)}>
+          <LuChevronDown size={15} className={`mg-side-head-chevron ${isCollapsed ? '-rotate-90' : ''}`} />
+        </button>
       </div>
       {!isCollapsed && children}
     </div>

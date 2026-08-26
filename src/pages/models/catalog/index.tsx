@@ -363,7 +363,9 @@ export default function ModelsCatalogPage() {
           2026-08 视觉改版稿：搜索/排序不再全宽独立一行，收进右列与筛选侧栏
           顶部平行对齐（侧栏顶 = 搜索框顶）。 */}
       <div className="mg-plaza-layout">
-        <div className={`models-sticky mg-side-card ${filtersOpen ? 'block' : 'hidden lg:block'}`}>
+        {/* 筛选栏不吸顶（需求方 2026-08-26 口径）：往下滚动浏览模型时侧栏随页面滚走，
+            左列留空；lg:self-start 防止 grid 列拉伸把卡片撑满整列高度 */}
+        <div className={`mg-side-card lg:self-start ${filtersOpen ? 'block' : 'hidden lg:block'}`}>
           <CatalogSidebar
             tags={tags}
             models={allModels}

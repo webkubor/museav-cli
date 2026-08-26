@@ -368,10 +368,14 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
                           <TableCell>{tierUnit}</TableCell>
                           <TableCell>
                             {`${symbol}${trimPriceZeros(tier.price)}/${tierUnit}`}
+                            {/* 与梯度表/摘要行同口径（prd#860）：「原价/was」前缀 + 带单位，
+                                裸金额紧贴现价会读成一个数或一个区间 */}
                             {tierStrike != null && (
-                              <span className="ml-1 text-mg-text-4 line-through">
-                                {`${symbol}${trimPriceZeros(String(tierStrike))}`}
-                              </span>
+                              <s className="mg-metric-strike">
+                                {t('modelsCatalog.card.strikeOriginal', {
+                                  price: `${symbol}${trimPriceZeros(String(tierStrike))}/${tierUnit}`,
+                                })}
+                              </s>
                             )}
                           </TableCell>
                         </TableRow>

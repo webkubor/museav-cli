@@ -99,23 +99,13 @@
 /* qa#286：文本模态用字母「T」而非图标，跟 12px 图标同高、字重加粗以保持可辨识度 */
 .mg-mcard-flow-text { font-size: 11px; font-weight: 700; line-height: 12px; }
 
-/* API 协议标签：按协议分色（原型 .marketplace-protocol-tag.openai/.anthropic），
-   OpenAI 品牌蓝、Anthropic 紫、其他中性 —— 此前一律中性描边，与原型对不上
-   （2026-08-25 需求方走查推翻早前「协议不是选中态不用品牌色」的口径）。 */
+/* API 协议标签：中性描边；协议类型不是选中态，不使用品牌色。 */
 .mg-mcard-protocols { display: flex; flex-wrap: wrap; gap: 5px; }
 .mg-proto {
   padding: 1px 7px; border-radius: var(--radius-sm);
   border: 1px solid var(--mg-border); background: transparent;
   font-size: 11px; line-height: 1.6; color: var(--mg-text-3);
   transition: border-color 0.15s ease, color 0.15s ease;
-}
-.mg-proto.is-openai {
-  border-color: color-mix(in oklab, var(--brand-base) 38%, transparent);
-  color: var(--brand-base);
-}
-.mg-proto.is-anthropic {
-  border-color: rgba(112, 92, 142, 0.38);
-  color: #705c8e;
 }
 .mg-proto:not(:disabled) { cursor: pointer; }
 .mg-proto:not(:disabled):hover { color: var(--mg-text-1); }

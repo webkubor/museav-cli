@@ -23,7 +23,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import {
   currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, vendorFromModelId, detailSummary, modelVendorLabel,
   priceTierLabel, mediaPrimaryPrice, firstPositivePrice, strikeOriginalPrice,
-  pricingRuleGroups, pricingRuleLabel, pricingRulePriceText, withPriceFrom, sortProtocols,
+  pricingRuleGroups, pricingRuleLabel, pricingRulePriceText, pricingRuleSubLabel,
+  pricingRulesHaveSub, withPriceFrom, sortProtocols,
 } from '../model-format'
 import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 // 任务/类别推导与广场卡片共用一份（lib/login-intent.ts 已有同向引用的先例）；
@@ -363,50 +364,61 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
                 </Table>
               </div>
             )}
-            {ruleGroups.map(({ dimension, rules }) => (
-              <div key={dimension}>
-                <h4 className="mg-text-label text-mg-text-3 mb-2">
-                  {/* 未知维度降级用通用表头，区间列直接吃后端 label（prd#864 A3） */}
-                  {t(dimension === 'context_length'
-                    ? 'modelsCatalog.detail.ruleDimContext'
-                    : dimension === 'peak_time'
-                      ? 'modelsCatalog.detail.ruleDimPeak'
-                      : 'modelsCatalog.detail.ruleDimOther')}
-                </h4>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>
-                        {t(dimension === 'context_length'
-                          ? 'modelsCatalog.detail.ruleRange'
-                          : dimension === 'peak_time'
-                            ? 'modelsCatalog.detail.ruleTimeSlot'
-                            : 'modelsCatalog.detail.ruleRangeOther')}
-                      </TableHead>
-                      {dimension === 'peak_time' && (
-                        <TableHead>{t('modelsCatalog.detail.ruleTimezone')}</TableHead>
-                      )}
-                      <TableHead>{t('models.detail.pricingInput')}</TableHead>
-                      <TableHead>{t('models.detail.pricingOutput')}</TableHead>
-                      <TableHead>{t('models.detail.pricingCacheRead')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {rules.map((rule, idx) => (
-                      <TableRow key={`${dimension}-${idx}`}>
-                        <TableCell>{pricingRuleLabel(rule, isZh)}</TableCell>
-                        {dimension === 'peak_time' && (
-                          <TableCell>{rule.timezone || '—'}</TableCell>
+            {ruleGroups.map(({ dimension, rules }) => {
+              // 同一区间被输出长度等次级条件拆成多行时补「条件」列区分
+              //（prd#864：后端 sub_label 已下发，缺列会读成两行同名脏数据）
+              const hasSub = pricingRulesHaveSub(rules)
+              return (
+                <div key={dimension}>
+                  <h4 className="mg-text-label text-mg-text-3 mb-2">
+                    {/* 未知维度降级用通用表头，区间列直接吃后端 label（prd#864 A3） */}
+                    {t(dimension === 'context_length'
+                      ? 'modelsCatalog.detail.ruleDimContext'
+                      : dimension === 'peak_time'
+                        ? 'modelsCatalog.detail.ruleDimPeak'
+                        : 'modelsCatalog.detail.ruleDimOther')}
+                  </h4>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>
+                          {t(dimension === 'context_length'
+                            ? 'modelsCatalog.detail.ruleRange'
+                            : dimension === 'peak_time'
+                              ? 'modelsCatalog.detail.ruleTimeSlot'
+                              : 'modelsCatalog.detail.ruleRangeOther')}
+                        </TableHead>
+                        {hasSub && (
+                          <TableHead>{t('modelsCatalog.detail.ruleCondition')}</TableHead>
                         )}
-                        <TableCell>{pricingRulePriceText(rule, 'input', symbol)}</TableCell>
-                        <TableCell>{pricingRulePriceText(rule, 'output', symbol)}</TableCell>
-                        <TableCell>{pricingRulePriceText(rule, 'cache_read', symbol)}</TableCell>
+                        {dimension === 'peak_time' && (
+                          <TableHead>{t('modelsCatalog.detail.ruleTimezone')}</TableHead>
+                        )}
+                        <TableHead>{t('models.detail.pricingInput')}</TableHead>
+                        <TableHead>{t('models.detail.pricingOutput')}</TableHead>
+                        <TableHead>{t('models.detail.pricingCacheRead')}</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            ))}
+                    </TableHeader>
+                    <TableBody>
+                      {rules.map((rule, idx) => (
+                        <TableRow key={`${dimension}-${idx}`}>
+                          <TableCell>{pricingRuleLabel(rule, isZh)}</TableCell>
+                          {hasSub && (
+                            <TableCell>{pricingRuleSubLabel(rule, isZh) ?? '—'}</TableCell>
+                          )}
+                          {dimension === 'peak_time' && (
+                            <TableCell>{rule.timezone || '—'}</TableCell>
+                          )}
+                          <TableCell>{pricingRulePriceText(rule, 'input', symbol)}</TableCell>
+                          <TableCell>{pricingRulePriceText(rule, 'output', symbol)}</TableCell>
+                          <TableCell>{pricingRulePriceText(rule, 'cache_read', symbol)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )
+            })}
             {ruleGroups.length > 0 && (
               // prd#864 A4：0–32K 档还存在输出长度子档（后端投影暂只保留最低价），
               // 脚注兜住「把起始档当唯一价」的误读

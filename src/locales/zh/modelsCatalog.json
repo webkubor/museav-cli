@@ -209,6 +209,7 @@
       "ruleDimContext": "上下文长度",
       "ruleDimPeak": "峰值时间段",
       "ruleRange": "上下文区间",
+      "ruleCondition": "条件",
       "ruleTimeSlot": "时段",
       "ruleTimezone": "时区",
       "byInterface": "按接口约定",

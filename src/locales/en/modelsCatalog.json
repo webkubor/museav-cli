@@ -209,6 +209,7 @@
       "ruleDimContext": "Context length",
       "ruleDimPeak": "Peak hours",
       "ruleRange": "Context range",
+      "ruleCondition": "Condition",
       "ruleTimeSlot": "Time slot",
       "ruleTimezone": "Timezone",
       "byInterface": "Per API contract",

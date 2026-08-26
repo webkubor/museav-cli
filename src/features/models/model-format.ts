@@ -164,6 +164,21 @@ export function pricingRuleLabel(rule: CatalogPricingRule, isZh: boolean): strin
 }
 
 /**
+ * 次级分档条件文案（prd#864）：同一上下文区间被输出长度等条件拆成多行时，
+ * 每行的区分文案（如「输出 <200」）。与主 label 同口径：后端 sub_label 优先、
+ * 英文回落中文，**不要前端自己拼**；无次级条件返回 null（渲染成「—」由调用方定）。
+ */
+export function pricingRuleSubLabel(rule: CatalogPricingRule, isZh: boolean): string | null {
+  const label = isZh ? rule.sub_label : (rule.sub_label_en || rule.sub_label)
+  return label || null
+}
+
+/** 组内任一行带次级条件 → 梯度表补「条件」列；否则不加列，维持原三列布局。 */
+export function pricingRulesHaveSub(rules: CatalogPricingRule[]): boolean {
+  return rules.some((r) => !!(r.sub_label || r.sub_label_en))
+}
+
+/**
  * 梯度表单元格价格。金额格式与规格条同口径（货币符号 + trimPriceZeros + /unit）；
  * mode=multiplier（倍率）没有绝对价时展示 ×倍率；两者都缺回落「—」（未配价 ≠ 免费，
  * 限免口径只认 promotion.free，不从阶梯价推断）。

@@ -11,7 +11,8 @@ import i18n from '@/i18n'
 import {
   firstPositivePrice,
   catalogCardReplacesGridWithTiers, mediaPrimaryPrice, priceTierLabel, priceTiersForCard, priceUnitSuffix, strikeOriginalPrice,
-  pricingRuleGroups, hasPricingGradient, pricingRuleLabel, pricingRulePriceText, withPriceFrom,
+  pricingRuleGroups, hasPricingGradient, pricingRuleLabel, pricingRulePriceText,
+  pricingRuleSubLabel, pricingRulesHaveSub, withPriceFrom,
   autoSummary, cardSummary, detailSummary, sortProtocols,
 } from './model-format'
 
@@ -249,6 +250,29 @@ describe('pricing_rules — 上下文分档 / 峰时价（#800）', () => {
     expect(pricingRulePriceText(rules[1], 'input', '¥')).toBe('¥0.8/M')
     expect(pricingRulePriceText(rules[0], 'output', '¥')).toBe('¥26.88/M')
     expect(pricingRulePriceText({ dimension: 'context_length', input_per_1m: '2', unit: 'M' }, 'output', '¥')).toBe('—')
+  })
+
+  it('次级分档（#864）：sub_label 中英各走各的、英文回落中文，无 sub 返回 null', () => {
+    const withSub = {
+      dimension: 'context_length', label: '0–32K', min: 0, max: 31999,
+      sub_dimension: 'output_length', sub_label: '输出 <200', sub_label_en: 'output <200',
+      input_per_1m: '2', output_per_1m: '8',
+    }
+    expect(pricingRuleSubLabel(withSub, true)).toBe('输出 <200')
+    expect(pricingRuleSubLabel(withSub, false)).toBe('output <200')
+    expect(pricingRuleSubLabel({ ...withSub, sub_label_en: undefined }, false)).toBe('输出 <200')
+    expect(pricingRuleSubLabel(rules[1], true)).toBeNull()
+  })
+
+  it('次级分档（#864）：组内任一行带 sub_label 才补「条件」列，纯主档组不加列', () => {
+    const withSub = {
+      dimension: 'context_length', label: '0–32K',
+      sub_label: '输出 ≥200', input_per_1m: '3', output_per_1m: '14',
+    }
+    expect(pricingRulesHaveSub([...rules, withSub])).toBe(true)
+    expect(pricingRulesHaveSub(rules)).toBe(false)
+    // sub_label 缺但 sub_label_en 在（后端只发英文的脏数据）也算有
+    expect(pricingRulesHaveSub([{ dimension: 'context_length', sub_label_en: 'output <200' }])).toBe(true)
   })
 
   it('mode=multiplier 无绝对价 → 展示 ×倍率', () => {

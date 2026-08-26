@@ -102,7 +102,7 @@ export interface CatalogPriceTier {
 }
 
 /** 阶梯价规则（#800 契约）。dimension 目前两种：context_length（上下文分档）/
- *  peak_time（峰值时段）；未知维度前端不渲染，等契约扩展后再加。 */
+ *  peak_time（峰值时段）；未知维度降级渲染（prd#864 A3）。 */
 export interface CatalogPricingRule {
   dimension: 'context_length' | 'peak_time' | string
   /** 区间展示文案，优先用（不要前端自己拼区间） */
@@ -112,6 +112,13 @@ export interface CatalogPricingRule {
   /** 上下文 token 上下界；最高档可能只有 min（「以上」） */
   min?: number
   max?: number
+  /** 次级分档（prd#864）：同一区间内再按输出长度等条件拆行，
+   *  sub_label 是该行的条件文案（如「输出 <200」），缺省即无次级条件 */
+  sub_dimension?: string
+  sub_label?: string
+  sub_label_en?: string
+  sub_min?: number
+  sub_max?: number
   /** 每 1M token 单价，十进制字符串 */
   input_per_1m?: string
   output_per_1m?: string

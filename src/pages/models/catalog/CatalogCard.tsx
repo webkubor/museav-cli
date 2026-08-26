@@ -35,7 +35,8 @@ import {
   strikeOriginalPrice, sortProtocols,
   priceTiersForCard, mediaPrimaryPrice, firstPositivePrice, hasPricingGradient, withPriceFrom,
 } from '@/features/models/model-format'
-import { experienceTaskLabel, modelExperienceTasks, resolveModelCategory } from '../model-experience-data'
+import { ExperienceTaskTags } from '@/features/models/components/ExperienceTaskTags'
+import { modelExperienceTasks, resolveModelCategory } from '../model-experience-data'
 import type { CatalogModelItem } from '@/types'
 
 const MODALITY_ICON: Record<string, IconType> = { image: LuImage, audio: LuMic, video: LuVideo }
@@ -174,12 +175,9 @@ export function CatalogCard({
   const summary = cardSummary(model, provider ?? '', isZh)
   // PRD §模型广场 AC-13「暂未开放」：模型本身可浏览详情/API，但没配置任何可体验任务时
   // 「去体验」按钮禁用并说明原因（原型 App.tsx:4619-4620/5076-5081 逐字对齐）。
-  // 任务列表同时供媒体卡「可体验任务」格展示（对话向任务共用「对话」标签，去重）。
+  // 任务列表同时供媒体卡「可体验任务」格展示（独立标签，#872 需求点 10）。
   const experienceTasks = modelExperienceTasks(model)
   const hasExperience = experienceTasks.length > 0
-  const tasksLabel = hasExperience
-    ? [...new Set(experienceTasks.map(experienceTaskLabel))].join(' / ')
-    : t('modelsCatalog.button.comingSoon')
 
   return (
     <article
@@ -306,7 +304,11 @@ export function CatalogCard({
               free={isFree}
             />
             <Metric label={t('modelsCatalog.card.billingUnit')} value={billingUnit} />
-            <Metric label={t('modelsCatalog.card.experienceTasks')} value={tasksLabel} />
+            {/* 可体验任务改独立标签展示（#872 需求点 10），不再复用 Metric 的省略文本值 */}
+            <div className="mg-metric">
+              <span className="mg-metric-label">{t('modelsCatalog.card.experienceTasks')}</span>
+              <ExperienceTaskTags tasks={experienceTasks} max={3} />
+            </div>
           </>
         ) : (
           <>
@@ -388,7 +390,6 @@ export function CatalogCard({
 function Metric({
   label, value, unit, free, strike, primary,
 }: { label: string; value: string; unit?: string; free?: boolean; strike?: string; primary?: boolean }) {
-  const { t } = useTranslation()
   return (
     <div className={cn('mg-metric', primary && 'is-primary')}>
       <span className="mg-metric-label">{label}</span>
@@ -398,12 +399,12 @@ function Metric({
             不能反过来把用户最需要读的折后价裁成「¥…」（prd#860 QA 复验） */}
         <OverflowTip text={value} className={strike ? 'shrink-0' : undefined} />
         {unit && <small className="mg-metric-unit">{unit}</small>}
-        {/* 划线原价内联在现价右侧（原型口径）；仅有促销时渲染，是装饰而非真实价格。
-            带「原价」前缀与详情规格条同口径（prd#860 排版歧义）；
+        {/* 划线原价内联在现价右侧（原型口径 <s>¥2/M</s>，裸划线无前缀）；
+            仅有促销时渲染，是装饰而非真实价格。
             窄栅格下该段先省略，悬停冒气泡显全文 */}
         {strike && (
           <s className="mg-metric-strike">
-            <OverflowTip text={t('modelsCatalog.card.strikeOriginal', { price: strike })} />
+            <OverflowTip text={strike} />
           </s>
         )}
       </span>

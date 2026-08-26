@@ -29,7 +29,8 @@ import {
 import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 // 任务/类别推导与广场卡片共用一份（lib/login-intent.ts 已有同向引用的先例）；
 // 媒体判定与「可体验任务」格都以模态推导为准，不读已废弃的 experience_types。
-import { experienceTaskLabel, modelExperienceTasks, resolveModelCategory } from '@/pages/models/model-experience-data'
+import { modelExperienceTasks, resolveModelCategory } from '@/pages/models/model-experience-data'
+import { ExperienceTaskTags } from './ExperienceTaskTags'
 
 interface ModelDetailPanelProps {
   detail: CatalogModelDetail
@@ -61,7 +62,6 @@ function Metric({
   valueTag?: string
   free?: boolean
 }) {
-  const { t } = useTranslation()
   return (
     <div className="mg-metric">
       <span className="mg-metric-label">{label}</span>
@@ -72,13 +72,9 @@ function Metric({
         {unit && <i className="mg-metric-unit">{unit}</i>}
         {valueTag && <i className="mg-metric-ttl">{valueTag}</i>}
         {/* 划线原价：跟在折扣后价格后面，装饰性，不是真实扣费价。
-            带「原价」前缀——有梯度时现价挂「起」，裸划线价紧邻会被读成
-            「¥1.6–¥2 区间」（prd#860），前缀把两个数的角色钉死 */}
-        {strike && (
-          <s className="mg-metric-strike">
-            {t('modelsCatalog.card.strikeOriginal', { price: strike })}
-          </s>
-        )}
+            裸划线对齐原型（App.tsx <s>¥2/M</s>），2026-08-26 产品拍板回退
+            #860 加的「原价/was」前缀 */}
+        {strike && <s className="mg-metric-strike">{strike}</s>}
       </span>
       {subValue && (
         <span className="mg-metric-sub">
@@ -164,9 +160,6 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
   const category = resolveModelCategory(detail)
   const isMediaModel = category !== 'dialogue'
   const experienceTasks = modelExperienceTasks(detail)
-  const tasksLabel = experienceTasks.length > 0
-    ? [...new Set(experienceTasks.map(experienceTaskLabel))].join(' / ')
-    : t('modelsCatalog.button.comingSoon')
   const primaryRaw = mediaPrimaryPrice(detail.pricing, detail.price_unit, priceTiers, detail.price_unit_en)
   const primary = withPriceFrom(priceText(primaryRaw.amount, symbol, isFree ? freeLabel : '', primaryRaw.unit, isFree), hasGradient)
   // firstPositivePrice 而非 ??：per_call 模型 original_output 恒 "0"，会把镜像在
@@ -279,7 +272,11 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
             />
             <Metric label={t('modelsCatalog.detail.ruleUnit')} value={billingUnitText} />
             <Metric label={t('modelsCatalog.detail.mainSpec')} value={mainSpecText} />
-            <Metric label={t('modelsCatalog.card.experienceTasks')} value={tasksLabel} />
+            {/* 可体验任务改独立标签展示（#872 需求点 10） */}
+            <div className="mg-metric">
+              <span className="mg-metric-label">{t('modelsCatalog.card.experienceTasks')}</span>
+              <ExperienceTaskTags tasks={experienceTasks} />
+            </div>
           </>
         ) : (
           <>
@@ -366,10 +363,12 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
                           <TableCell>{tierUnit}</TableCell>
                           <TableCell>
                             {`${symbol}${trimPriceZeros(tier.price)}/${tierUnit}`}
+                            {/* 与梯度表/摘要行同口径：裸划线对齐原型，带单位与 5px 间距
+                                （mg-metric-strike），角色靠划线+灰字区分 */}
                             {tierStrike != null && (
-                              <span className="ml-1 text-mg-text-4 line-through">
-                                {`${symbol}${trimPriceZeros(String(tierStrike))}`}
-                              </span>
+                              <s className="mg-metric-strike">
+                                {`${symbol}${trimPriceZeros(String(tierStrike))}/${tierUnit}`}
+                              </s>
                             )}
                           </TableCell>
                         </TableRow>
@@ -431,11 +430,7 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
                             return (
                               <TableCell key={kind}>
                                 {pricingRulePriceText(rule, kind, symbol)}
-                                {strike && (
-                                  <s className="mg-metric-strike">
-                                    {t('modelsCatalog.card.strikeOriginal', { price: strike })}
-                                  </s>
-                                )}
+                                {strike && <s className="mg-metric-strike">{strike}</s>}
                               </TableCell>
                             )
                           })}

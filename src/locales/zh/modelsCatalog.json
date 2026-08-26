@@ -124,7 +124,8 @@
     },
     "filtersButton": "筛选",
     "search": {
-      "placeholder": "搜索模型名、API ID、供应商或描述关键词…"
+      "placeholder": "搜索模型名、API ID、供应商或描述关键词…",
+      "clear": "清空搜索"
     },
     "sort": {
       "default": "推荐排序",
@@ -161,11 +162,14 @@
       "new": "最新",
       "limitedFree": "限时特惠·免费",
       "modalityEmbedding": "向量",
-      "modalityFile": "文件"
+      "modalityFile": "文件",
+      "inputType": "输入类型",
+      "any": "任意",
+      "contextMinAria": "最低上下文长度",
+      "clearGroup": "清空{{group}}筛选"
     },
     "card": {
       "free": "免费",
-      "strikeOriginal": "原价 {{price}}",
       "copyApiId": "复制 API ID",
       "try": "立即体验",
       "apiDocs": "API 请求",
@@ -224,6 +228,10 @@
       "gradientFootnote": "价格按上下文长度与输出长度分档，最终以实际调用结算为准",
       "mainSpec": "主要规格"
     },
-    "error.loadDetail": "加载模型详情失败，请稍后重试。"
+    "error.loadDetail": "加载模型详情失败，请稍后重试。",
+    "outputModality": {
+      "label": "输出模态",
+      "all": "全部"
+    }
   }
 }

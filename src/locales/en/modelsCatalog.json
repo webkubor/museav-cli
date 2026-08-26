@@ -124,7 +124,8 @@
     },
     "filtersButton": "Filters",
     "search": {
-      "placeholder": "Search model, API ID, provider or keyword…"
+      "placeholder": "Search model, API ID, provider or keyword…",
+      "clear": "Clear search"
     },
     "sort": {
       "default": "Recommended",
@@ -161,11 +162,14 @@
       "new": "New",
       "limitedFree": "Free",
       "modalityEmbedding": "Embedding",
-      "modalityFile": "File"
+      "modalityFile": "File",
+      "inputType": "Input types",
+      "any": "Any",
+      "contextMinAria": "Minimum context length",
+      "clearGroup": "Clear {{group}} filters"
     },
     "card": {
       "free": "Free",
-      "strikeOriginal": "was {{price}}",
       "copyApiId": "Copy API ID",
       "try": "Try now",
       "apiDocs": "API docs",
@@ -224,6 +228,10 @@
       "gradientFootnote": "Prices are tiered by context and output length; final billing follows actual metered usage.",
       "mainSpec": "Main specs"
     },
-    "error.loadDetail": "Failed to load model detail. Please try again."
+    "error.loadDetail": "Failed to load model detail. Please try again.",
+    "outputModality": {
+      "label": "Output modality",
+      "all": "All"
+    }
   }
 }

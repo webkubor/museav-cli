@@ -88,7 +88,8 @@
 .models-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
 /* 搜索/排序配色走定稿变量（catalog-palette.css）；聚焦只亮描边和光圈，底色不跳变。 */
 .mg-search-input {
-  width: 100%; height: 48px; padding: 0 16px 0 44px;
+  /* 右侧 44px 给清空按钮留位（#872 需求点 11），空态多出的留白不影响观感 */
+  width: 100%; height: 48px; padding: 0 44px 0 44px;
   border: 1px solid var(--plaza-card-border); border-radius: var(--mg-radius-pill);  /* 与卡片同一条描边（规范 --mg-glass-line） */
   background: var(--plaza-input-bg); color: var(--mg-text-1); font-size: 14px; outline: none;
   -webkit-backdrop-filter: blur(var(--mg-glass-blur));
@@ -101,6 +102,15 @@
   border-color: var(--plaza-focus-border);
   box-shadow: 0 0 0 4px var(--plaza-focus-ring);
 }
+/* 搜索清空按钮（#872 需求点 11，原型 marketplace-search-clear）：有输入时才渲染 */
+.mg-search-clear {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: var(--radius-full);
+  color: var(--mg-text-4); cursor: pointer;
+  transition: color var(--mg-duration-fast) ease, background var(--mg-duration-fast) ease;
+}
+.mg-search-clear:hover { color: var(--mg-text-1); background: var(--plaza-row-hover-bg); }
 .mg-sort-btn {
   display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 18px;
   border: 1px solid var(--plaza-card-border); border-radius: var(--radius-md); background: var(--plaza-input-bg);

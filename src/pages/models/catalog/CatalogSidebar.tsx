@@ -56,38 +56,51 @@ function vendorLabel(code: string, fallback: string, isZh: boolean): string {
 }
 
 /**
- * API 协议筛选项：固定顺序展示端点粒度 7 值（2026-08 由 openai/anthropic/other
- * 3 值升级而来，见 gateway_models.public_protocols）。静态列表而非从 facets 动态
- * 派生——理由同 vendor/modality 之外的固定分组：筛选项本身是产品口径而非数据驱动，
- * 顺序固定成 Chat 优先、Anthropic Messages / 其他兜底在后，跟卡片/详情标签排序
- * （model-format.ts PROTOCOL_ORDER）保持一致体感。
+ * API 协议筛选项：固定顺序展示端点粒度 12 值（2026-08-26 由 7 值扩容而来，
+ * 见 gateway_models.public_protocols/modelgo-model-gateway pkg/publicprotocols）。
+ * 静态列表而非从 facets 动态派生——理由同 vendor/modality 之外的固定分组：筛选项
+ * 本身是产品口径而非数据驱动，顺序固定成 Chat 优先、Google 原生透传 / 其他兜底在
+ * 后，跟卡片/详情标签排序（model-format.ts PROTOCOL_ORDER）保持一致体感。
  *
  * 下面两张表是**本地兜底**，不是真源——真源是 modelgo-model-gateway
  * `pkg/publicprotocols` 注册表，经 /catalog/public-protocols 运行时拉取
  * （usePublicProtocolsStore），拿到数据后用 mergeProtocolLabels 覆盖同名 code；
  * 接口未上线/未返回时保留这份兜底文案，与 model-format.ts 的 PROTOCOL_LABEL_ZH/EN
- * 用同一套措辞（2026-08-26 对齐口径），只有 other 这条本页有专属兜底文案，维持不变。
+ * 用同一套措辞（厂商+能力英文专名，中英同名；只有 other 保留双语）。
  */
 const PROTOCOL_FILTER_ORDER = [
-  'openai_chat', 'openai_responses', 'openai_images', 'openai_embeddings', 'openai_audio',
-  'anthropic_messages', 'other',
+  'openai_chat_completions', 'openai_responses', 'openai_embeddings', 'openai_rerank',
+  'openai_images', 'openai_speech', 'openai_transcriptions',
+  'anthropic_messages',
+  'google_gemini', 'google_imagen', 'google_video',
+  'other',
 ] as const
 const PROTOCOL_LABEL_ZH: Record<string, string> = {
-  openai_chat: 'OpenAI 兼容',
-  openai_responses: 'OpenAI Response',
-  openai_images: 'OpenAI 图片',
-  openai_embeddings: 'OpenAI 向量',
-  openai_audio: 'OpenAI 语音',
-  anthropic_messages: 'Anthropic 兼容',
+  openai_chat_completions: 'OpenAI Chat Completions',
+  openai_responses: 'OpenAI Responses',
+  openai_embeddings: 'OpenAI Embeddings',
+  openai_rerank: 'OpenAI Rerank',
+  openai_images: 'OpenAI Images',
+  openai_speech: 'OpenAI Speech',
+  openai_transcriptions: 'OpenAI Transcriptions',
+  anthropic_messages: 'Anthropic Messages',
+  google_gemini: 'Google Gemini',
+  google_imagen: 'Google Imagen',
+  google_video: 'Google Video',
   other: '其他（异步任务类，如图像/音视频）',
 }
 const PROTOCOL_LABEL_EN: Record<string, string> = {
-  openai_chat: 'OpenAI Compatible',
+  openai_chat_completions: 'OpenAI Chat Completions',
   openai_responses: 'OpenAI Responses',
-  openai_images: 'OpenAI Images',
   openai_embeddings: 'OpenAI Embeddings',
-  openai_audio: 'OpenAI Audio',
-  anthropic_messages: 'Anthropic Compatible',
+  openai_rerank: 'OpenAI Rerank',
+  openai_images: 'OpenAI Images',
+  openai_speech: 'OpenAI Speech',
+  openai_transcriptions: 'OpenAI Transcriptions',
+  anthropic_messages: 'Anthropic Messages',
+  google_gemini: 'Google Gemini',
+  google_imagen: 'Google Imagen',
+  google_video: 'Google Video',
   other: 'Other',
 }
 

@@ -111,7 +111,8 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
   const hasGradient = ruleGroups.length > 0
   const input = withPriceFrom(priceText(detail.pricing?.input_per_1m, symbol, isFree ? freeLabel : '', unitSuffix, isFree), hasGradient)
   const output = withPriceFrom(priceText(detail.pricing?.output_per_1m, symbol, isFree ? freeLabel : '', unitSuffix, isFree), hasGradient)
-  const cacheRead = priceText(detail.pricing?.cache_read_per_1m, symbol, isFree ? freeLabel : '', unitSuffix, isFree)
+  // 缓存读取同为起始档价（glm-4.7 两档 0.4/0.8），与输入/输出一样挂「起」（prd#864 A2）
+  const cacheRead = withPriceFrom(priceText(detail.pricing?.cache_read_per_1m, symbol, isFree ? freeLabel : '', unitSuffix, isFree), hasGradient)
   const cacheWrite5m = priceText(detail.cache_write_5m_per_1m, symbol, '', unitSuffix)
   const cacheWrite1h = priceText(detail.cache_write_1h_per_1m, symbol, '', unitSuffix)
 
@@ -365,9 +366,12 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
             {ruleGroups.map(({ dimension, rules }) => (
               <div key={dimension}>
                 <h4 className="mg-text-label text-mg-text-3 mb-2">
+                  {/* 未知维度降级用通用表头，区间列直接吃后端 label（prd#864 A3） */}
                   {t(dimension === 'context_length'
                     ? 'modelsCatalog.detail.ruleDimContext'
-                    : 'modelsCatalog.detail.ruleDimPeak')}
+                    : dimension === 'peak_time'
+                      ? 'modelsCatalog.detail.ruleDimPeak'
+                      : 'modelsCatalog.detail.ruleDimOther')}
                 </h4>
                 <Table>
                   <TableHeader>
@@ -375,13 +379,16 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
                       <TableHead>
                         {t(dimension === 'context_length'
                           ? 'modelsCatalog.detail.ruleRange'
-                          : 'modelsCatalog.detail.ruleTimeSlot')}
+                          : dimension === 'peak_time'
+                            ? 'modelsCatalog.detail.ruleTimeSlot'
+                            : 'modelsCatalog.detail.ruleRangeOther')}
                       </TableHead>
                       {dimension === 'peak_time' && (
                         <TableHead>{t('modelsCatalog.detail.ruleTimezone')}</TableHead>
                       )}
                       <TableHead>{t('models.detail.pricingInput')}</TableHead>
                       <TableHead>{t('models.detail.pricingOutput')}</TableHead>
+                      <TableHead>{t('models.detail.pricingCacheRead')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -393,12 +400,18 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
                         )}
                         <TableCell>{pricingRulePriceText(rule, 'input', symbol)}</TableCell>
                         <TableCell>{pricingRulePriceText(rule, 'output', symbol)}</TableCell>
+                        <TableCell>{pricingRulePriceText(rule, 'cache_read', symbol)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </div>
             ))}
+            {ruleGroups.length > 0 && (
+              // prd#864 A4：0–32K 档还存在输出长度子档（后端投影暂只保留最低价），
+              // 脚注兜住「把起始档当唯一价」的误读
+              <p className="text-xs text-mg-text-3">{t('modelsCatalog.detail.gradientFootnote')}</p>
+            )}
           </div>
         </section>
       )}

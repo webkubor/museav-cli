@@ -218,6 +218,9 @@
       "specAudio": "音频规格",
       "ruleUnit": "计价单位",
       "rulePrice": "价格",
+      "ruleDimOther": "分档价格",
+      "ruleRangeOther": "区间",
+      "gradientFootnote": "价格按上下文长度与输出长度分档，最终以实际调用结算为准",
       "mainSpec": "主要规格"
     },
     "error.loadDetail": "加载模型详情失败，请稍后重试。"

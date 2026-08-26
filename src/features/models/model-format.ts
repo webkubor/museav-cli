@@ -112,21 +112,31 @@ export function priceTierLabel(tier: CatalogPriceTier, isZh: boolean): string {
 }
 
 /** 价格梯度维度的渲染顺序（原型 marketplacePricingDimensionOrder 的 token 子集）。
- *  #800 契约目前只有这两维；未知维度不渲染（表头/字段无从谈起），契约扩了再加。 */
+ *  已知维度按此序在前，有专属表头；未知维度**不再整组丢弃**而是降级渲染
+ *  （通用表头 + 后端 label），否则后端扩维度时前端不发版就整组消失，
+ *  hasPricingGradient 还会连带把规格条的「起」摘掉（prd#864 A3）。 */
 export const PRICING_RULE_DIMENSIONS = ['context_length', 'peak_time'] as const
 export type PricingRuleDimension = (typeof PRICING_RULE_DIMENSIONS)[number]
 
 export interface PricingRuleGroup {
-  dimension: PricingRuleDimension
+  dimension: string
   rules: CatalogPricingRule[]
 }
 
-/** 按维度分组，组内保持接口下发的档位顺序；未知维度丢弃。 */
+/** 按维度分组，组内保持接口下发的档位顺序；未知维度排已知维度后、按首现顺序。 */
 export function pricingRuleGroups(rules: CatalogPricingRule[] | undefined | null): PricingRuleGroup[] {
   if (!rules?.length) return []
-  return PRICING_RULE_DIMENSIONS
+  const known: PricingRuleGroup[] = PRICING_RULE_DIMENSIONS
     .map((dimension) => ({ dimension, rules: rules.filter((r) => r.dimension === dimension) }))
     .filter((g) => g.rules.length > 0)
+  const unknownDims = [...new Set(
+    rules.map((r) => r.dimension)
+      .filter((d): d is string => !!d && !(PRICING_RULE_DIMENSIONS as readonly string[]).includes(d)),
+  )]
+  return [
+    ...known,
+    ...unknownDims.map((dimension) => ({ dimension, rules: rules.filter((r) => r.dimension === dimension) })),
+  ]
 }
 
 /** 有可渲染的阶梯价 → 一口价挂「起」（原型 marketplacePriceText 的 hasConfirmedGradient）。 */
@@ -160,10 +170,10 @@ export function pricingRuleLabel(rule: CatalogPricingRule, isZh: boolean): strin
  */
 export function pricingRulePriceText(
   rule: CatalogPricingRule,
-  kind: 'input' | 'output',
+  kind: 'input' | 'output' | 'cache_read',
   symbol: string,
 ): string {
-  const raw = kind === 'input' ? rule.input_per_1m : rule.output_per_1m
+  const raw = kind === 'input' ? rule.input_per_1m : kind === 'output' ? rule.output_per_1m : rule.cache_read_per_1m
   if (raw != null && raw !== '' && !Number.isNaN(parseFloat(raw))) {
     return `${symbol}${trimPriceZeros(raw)}/${rule.unit || 'M'}`
   }

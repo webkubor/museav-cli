@@ -334,29 +334,45 @@ export function firstPositivePrice(
  *
  * 真源已迁移到 modelgo-model-gateway `pkg/publicprotocols` 的静态注册表，经
  * controller/web-api 透传，运行时通过 usePublicProtocolsStore（GET
- * /catalog/public-protocols）拉取；这里的两张表只在该接口还没上线（本仓这次改动
- * 依赖的三个后端仓库尚未合并）、请求未完成或失败时兜底，文案需要跟后端注册表的
- * 措辞对齐（2026-08-26 对齐：openai_chat/anthropic_messages 等端点粒度值统一用
- * 「OpenAI 兼容」「Anthropic 兼容」这类协议族文案，不再是端点动作名）。
+ * /catalog/public-protocols）拉取；这里的两张表只在该接口还没上线、请求未完成或
+ * 失败时兜底，文案需要跟后端注册表的措辞对齐。
+ *
+ * 2026-08-26 命名规范改版：由「协议族」文案（OpenAI 兼容/Anthropic 兼容）换成
+ * 「厂商 + 能力」的英文专有名词命名（OpenAI Chat Completions、Google Gemini
+ * 等），闭集同时从 7 值扩到 12 值（openai_chat 改名 openai_chat_completions，
+ * openai_audio 拆成 openai_speech/openai_transcriptions，新增 openai_rerank 与
+ * google_gemini/google_imagen/google_video 三个原生透传条目——仅信息展示，不参与
+ * defaultPublicProtocols 的自动派生，需运营手动打标）。厂商+能力类值中英文同名，
+ * 只有 other 保留中英双语。
  * 旧 3 值（openai/anthropic/other，过渡期未重新打标的模型仍会下发）维持原文案。
  */
 export const PROTOCOL_LABEL_ZH: Record<string, string> = {
-  openai: 'OpenAI 兼容', anthropic: 'Anthropic 兼容', other: '其他协议',
-  openai_chat: 'OpenAI 兼容',
-  openai_responses: 'OpenAI Response',
-  openai_images: 'OpenAI 图片',
-  openai_embeddings: 'OpenAI 向量',
-  openai_audio: 'OpenAI 语音',
-  anthropic_messages: 'Anthropic 兼容',
+  openai: 'OpenAI 兼容', anthropic: 'Anthropic 兼容', other: '其他（异步任务类，如图像/音视频）',
+  openai_chat_completions: 'OpenAI Chat Completions',
+  openai_responses: 'OpenAI Responses',
+  openai_embeddings: 'OpenAI Embeddings',
+  openai_rerank: 'OpenAI Rerank',
+  openai_images: 'OpenAI Images',
+  openai_speech: 'OpenAI Speech',
+  openai_transcriptions: 'OpenAI Transcriptions',
+  anthropic_messages: 'Anthropic Messages',
+  google_gemini: 'Google Gemini',
+  google_imagen: 'Google Imagen',
+  google_video: 'Google Video',
 }
 export const PROTOCOL_LABEL_EN: Record<string, string> = {
   openai: 'OpenAI compatible', anthropic: 'Anthropic compatible', other: 'Other',
-  openai_chat: 'OpenAI Compatible',
+  openai_chat_completions: 'OpenAI Chat Completions',
   openai_responses: 'OpenAI Responses',
-  openai_images: 'OpenAI Images',
   openai_embeddings: 'OpenAI Embeddings',
-  openai_audio: 'OpenAI Audio',
-  anthropic_messages: 'Anthropic Compatible',
+  openai_rerank: 'OpenAI Rerank',
+  openai_images: 'OpenAI Images',
+  openai_speech: 'OpenAI Speech',
+  openai_transcriptions: 'OpenAI Transcriptions',
+  anthropic_messages: 'Anthropic Messages',
+  google_gemini: 'Google Gemini',
+  google_imagen: 'Google Imagen',
+  google_video: 'Google Video',
 }
 
 /**
@@ -402,8 +418,10 @@ export function mergeProtocolLabels<T extends string>(
  * 源头治理单：qa/ai-quality-platform#685（管理后台提交侧校验归一，OpenAI 恒在前）。
  */
 const PROTOCOL_ORDER = [
-  'openai_chat', 'openai_responses', 'openai_images', 'openai_embeddings', 'openai_audio',
+  'openai_chat_completions', 'openai_responses', 'openai_embeddings', 'openai_rerank',
+  'openai_images', 'openai_speech', 'openai_transcriptions',
   'anthropic_messages',
+  'google_gemini', 'google_imagen', 'google_video',
   'openai', 'anthropic', 'other', 'native',
 ]
 export function sortProtocols<T extends string>(protocols: readonly T[]): T[] {

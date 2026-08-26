@@ -2209,27 +2209,52 @@
     display: flex;
   }
 
-  /* ⚠️ 这三条是本页唯一一处**偏离原型逐字搬运**的地方，改的是特异性、不是意图。
-     原型在这一段只写了 `.model-discovery-summary-grid { 1fr 1fr }`（特异性 0,1,0），
-     但上面 1120px 段里的 `.cards-3/4/5`（0,2,0）在 ≤760px 时同样命中且特异性更高，
-     于是 760 这条永远不生效 —— 390px 下 5 张摘要卡仍按五列排，每张只有 ~55px，
-     标题「综合评分最高」被逐字竖排、数值单位换行，完全不可读。
-     原型作者写了这条规则本身就说明意图是窄屏降到两列，只是被自己压掉了。
-     所以这里把选择器提到同一特异性来兑现那个意图。若需求方要求连 bug 一起 1:1，
-     删掉这三条即可回到原型表现。 */
+  /* ⚠️ 下面两条是本页唯一**偏离原型逐字搬运**的地方，改的是特异性与轨道下限、
+     不是布局意图。两个症状同源，一起说明：
+
+     ① 摘要卡在 390px 仍按五列排，每张只有 ~55px，标题「综合评分最高」被逐字
+        竖排、数值单位换行。原型在这一段只写了 .model-discovery-summary-grid
+        （特异性 0,1,0），但 1120 段的 .cards-3/4/5（0,2,0）在 ≤760px 时同样
+        命中且更高，于是 760 这条永远不生效。原型写了它就说明意图是窄屏两列，
+        只是被自己压掉了 —— 所以这里把选择器提到同一特异性来兑现。
+     ② 整页横向滚动（docScrollWidth 487 > 390）。1120 段把 overview 设成单列
+        `1fr`，而 `1fr` 等价于 `minmax(auto, 1fr)`：轨道下限是 auto，被 item 的
+        min-content 顶大。顶它的就是①里那些摘要卡（两列各自「标题 + 数值 +
+        InfoTip」的 min-content 合起来 ≈ 455px）；Top 5 卡本身能压缩，只是被
+        同一条轨道一起拉宽，所以看起来像表格撑破了页面。下限归零后轨道才真正
+        受视口约束。
+
+     若需求方要求连 bug 一起 1:1，删掉这两条即可回到原型表现。 */
+  .model-discovery-overview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .model-discovery-summary-grid.cards-3,
   .model-discovery-summary-grid.cards-4,
   .model-discovery-summary-grid.cards-5 {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 
   .model-discovery-summary-card.wide {
     grid-column: 1 / -1;
   }
 
+  /* 两列之后每张卡只有 158px，扣掉 padding 与 20px 厂牌图标，18px 字号下
+     「DeepSeek V4 Flash」这类长名仍会 ellipsis 成「DeepSee…」——摘要卡的
+     主信息就是这个模型名，截掉等于白给一张卡。窄屏改成 15px + 允许折两行：
+     字号写死不走刻度是为了先保住视觉，两处值都只在 ≤760px 生效，桌面不动。 */
+  .model-discovery-summary-model > strong {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: 15px;
+    white-space: normal;
+    word-break: break-word;
+  }
+
   .model-discovery-rank-head,
   .model-discovery-rank-row {
-    grid-template-columns: 24px minmax(135px, 1fr) minmax(94px, 0.8fr);
+    grid-template-columns: 24px minmax(0, 1fr) minmax(0, 0.8fr);
   }
 
   .model-discovery-rank-head > span:nth-child(3),
@@ -2243,6 +2268,52 @@
 
   .model-discovery-specialties article:last-child:nth-child(odd) {
     grid-column: auto;
+  }
+
+  /* grid item 的 min-width 默认是 auto，会被下面 703px 宽的柱图撑开 ——
+     卡片跟着变宽、整页横向滚动，chart 自己的 overflow-x 反而永远不触发。
+     归零后溢出才被关进图表容器里。 */
+  .model-discovery-specialties article {
+    min-width: 0;
+  }
+
+  /* 窄屏下 10 根柱挤在 ~330px 里，每列只剩 ~28px —— 13px 的厂牌图标之后
+     只够放一个字符，模型名被 ellipsis 砍成「O G / A C / G G …」，图表等于
+     不可读。原型没给这块窄屏规则，这里沿用它对完整榜单用的同一手法：
+     容器横向滚动 + 内容保底宽度，不压缩内容、也不减柱数。
+     64px 是写死值：13px 图标 + 4px gap 之后给文字留 ~45px，配合下面放开的
+     两行换行，"GPT-5.5" / "Grok 4.5" 一行显示完，"Claude Opus 5" 折两行，
+     都不再出现 ellipsis。先按视觉效果定值，接真实数据后再回看。 */
+  .model-discovery-specialty-chart {
+    grid-template-columns: repeat(10, minmax(64px, 1fr));
+    overflow-x: auto;
+    /* 网格线是 ::before 的绝对定位层，在滚动容器里只会铺满可视宽度、
+       滚过去右侧就没线了。改成画在容器自身的背景上并跟随内容滚动
+       （background-attachment: local），线就能铺满整个 580px 的内容宽。 */
+    background-attachment: local;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 44px,
+      color-mix(in srgb, var(--line) 72%, transparent) 44px,
+      color-mix(in srgb, var(--line) 72%, transparent) 45px
+    );
+    background-repeat: no-repeat;
+    background-size: 100% 179px;
+  }
+
+  .model-discovery-specialty-chart::before {
+    content: none;
+  }
+
+  /* 桌面是单行 + ellipsis（空间够）。窄屏放开两行：宁可标签区高 11px，
+     也不要把 "Claude Opus 5" 截成 "Claud…"。三行以上仍然截断兜底。 */
+  .model-discovery-specialty-label strong {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+    word-break: break-word;
   }
 
   .model-discovery-selects {

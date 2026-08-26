@@ -15,6 +15,7 @@ import {
   LuX,
 } from 'react-icons/lu'
 import { useMemo, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { ModelIcon } from '@/features/models/components/ModelIcon'
 
 type ModalityKey = "agent" | "text" | "image" | "video" | "audio";
 type RankingMetric = "overall" | "value" | "price" | "usage";
@@ -727,17 +728,12 @@ function completeSpecialtyRows(
   }));
 }
 
-const providerMarks: Record<string, string> = {
-  Anthropic: "A", OpenAI: "O", "Z.ai": "Z", Qwen: "Q", DeepSeek: "D", Moonshot: "K",
-  Google: "G", xAI: "X", Meta: "M", MiniMax: "M", Midjourney: "M", Recraft: "R",
-  Ideogram: "I", Tencent: "T", Kuaishou: "K", Runway: "R", Wan: "W", Kling: "K",
-  Luma: "L", PixVerse: "P", ElevenLabs: "E", FunAudioLLM: "F", Hexgrad: "H",
-  Microsoft: "M", Suno: "S", Doubao: "D", "Black Forest Labs": "B", Inworld: "I",
-  Alibaba: "A", SpeechifyAI: "S", "VUI Labs": "V", Cartesia: "C", StepFun: "S",
-  "Smallest.ai": "S", Mistral: "M", Deepgram: "D", "Together AI": "T", Modulate: "M", Groq: "G",
-  Mureka: "M", "Producer.ai": "P", "Stability.ai": "S", Udio: "U",
-};
-
+/* 原型的 providerMarks（42 条厂牌首字母）已删除 —— 模型/厂牌标识改走 ModelIcon，
+   见下面 DiscoveryModelIcon 的说明。下面这张色表还留着，只用于图表着色（趋势柱、
+   散点点色与图例），不再参与图标渲染。
+   ⚠️ 它同样是硬编码的厂牌色，而 @model-go/icons 导出了 brandColor(vendor, theme)
+   ——  库里那份还按深浅双轴分了档（深蓝深紫在深底压不住、亮黄亮青在浅底压不住）。
+   图表配色换过去是下一步，属独立改动，不混在图标这一刀里。 */
 const providerMarkColors: Record<string, string> = {
   Anthropic: "#b56b48", OpenAI: "#111827", DeepSeek: "#315ec8", "Z.ai": "#3968d7",
   Qwen: "#6555ce", Moonshot: "#111827", Google: "#2b7de9", xAI: "#111827", Meta: "#2176d2",
@@ -749,6 +745,23 @@ const providerMarkColors: Record<string, string> = {
   "Smallest.ai": "#24776f", Mistral: "#ec6a4c", Deepgram: "#6c55ce", "Together AI": "#111827", Modulate: "#59708d", Groq: "#e45a45",
   Mureka: "#c5598f", "Producer.ai": "#7555c7", "Stability.ai": "#34766e", Udio: "#305fc8",
 };
+
+/**
+ * 模型 / 厂牌标识 —— 走控制台统一的 `ModelIcon`（`@model-go/icons` 是 vendor
+ * 别名索引与厂牌主色的唯一真源，与运营后台共用同一份）。
+ *
+ * 原型自带 `providerMarks`（42 条首字母）+ `providerMarkColors`（42 条硬编码色）
+ * 两张表，那正是 ModelIcon 注释里记的那起事故的翻版：控制台与运营后台各写一份
+ * vendor 映射，条目对不上，通义千问的 embedding 模型因此渲染出 OpenAI 图标。
+ * 所以图标这块不做 1:1 —— 原型用首字母是因为它没有图标库，不是设计意图；
+ * UI flow 文档 §3.1 也明确「模型/厂商身份用 ModelIcon」。
+ *
+ * 唯一例外是热门 Agent 排行：那里按 PRD 显示应用名首字符（Agent 应用不是模型，
+ * 图标库里没有它们），继续用 .model-discovery-model-mark。
+ */
+function DiscoveryModelIcon({ model, provider, className }: { model: string; provider: string; className?: string }) {
+  return <ModelIcon className={className} model={{ display_name: model, provider }} rounded="rounded-sm" variant="dense" />;
+}
 
 function AgentPopularityLeaderboard() {
   const [period, setPeriod] = useState<AgentPopularityPeriod>("day");
@@ -1290,7 +1303,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
               <span>{item.label}<button aria-label={`${item.label}说明`} className="model-discovery-info-trigger" type="button"><LuInfo size={12} /><span role="tooltip">{item.tooltip}</span></button></span>
               <div className="model-discovery-summary-content">
                 <div className="model-discovery-summary-model">
-                  <i className="model-discovery-model-mark" style={{ "--model-mark-color": providerMarkColors[item.provider] ?? "#5472b8" } as CSSProperties}>{providerMarks[item.provider] ?? item.provider.slice(0, 1)}</i>
+                  <DiscoveryModelIcon model={item.model} provider={item.provider} />
                   <strong>{item.model}</strong>
                 </div>
                 <div className="model-discovery-summary-value"><b>{item.value}</b><small>{item.unit}</small></div>
@@ -1316,10 +1329,10 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                 const costProfile = costModel ? taskCostProfileFor(task, costModel) : undefined;
                 return <div aria-label={`第 ${index + 1} 名，${row.model}，${row.value}`} className="model-discovery-specialty-column" key={row.model} style={{ "--bar-height": `${barHeight}%` } as CSSProperties} tabIndex={0}>
                 <div className="model-discovery-specialty-plot">
-                  <div className="model-discovery-specialty-tooltip" role="tooltip"><strong><i className="model-discovery-model-mark" style={{ "--model-mark-color": providerMarkColors[row.provider] ?? "#5472b8" } as CSSProperties}>{providerMarks[row.provider] ?? row.provider.slice(0, 1)}</i>{row.model}</strong><span>第 {index + 1} 名 · {item.description}</span><b>{row.value}</b>{costProfile && <dl className="model-discovery-cost-breakdown"><div><dt>输出</dt><dd>{formatTaskCost(costProfile.answer)}</dd></div><div><dt>推理</dt><dd>{formatTaskCost(costProfile.reasoning)}</dd></div><div><dt>缓存写入</dt><dd>{formatTaskCost(costProfile.cacheWrite)}</dd></div><div><dt>缓存命中</dt><dd>{formatTaskCost(costProfile.cacheHit)}</dd></div><div><dt>输入</dt><dd>{formatTaskCost(costProfile.input)}</dd></div></dl>}</div>
+                  <div className="model-discovery-specialty-tooltip" role="tooltip"><strong><DiscoveryModelIcon model={row.model} provider={row.provider} />{row.model}</strong><span>第 {index + 1} 名 · {item.description}</span><b>{row.value}</b>{costProfile && <dl className="model-discovery-cost-breakdown"><div><dt>输出</dt><dd>{formatTaskCost(costProfile.answer)}</dd></div><div><dt>推理</dt><dd>{formatTaskCost(costProfile.reasoning)}</dd></div><div><dt>缓存写入</dt><dd>{formatTaskCost(costProfile.cacheWrite)}</dd></div><div><dt>缓存命中</dt><dd>{formatTaskCost(costProfile.cacheHit)}</dd></div><div><dt>输入</dt><dd>{formatTaskCost(costProfile.input)}</dd></div></dl>}</div>
                   <i className="model-discovery-specialty-bar"><b>{row.value}</b></i>
                 </div>
-                <div className="model-discovery-specialty-label"><i className="model-discovery-model-mark" style={{ "--model-mark-color": providerMarkColors[row.provider] ?? "#5472b8" } as CSSProperties}>{providerMarks[row.provider] ?? row.provider.slice(0, 1)}</i><strong title={row.model}>{row.model}</strong></div>
+                <div className="model-discovery-specialty-label"><DiscoveryModelIcon model={row.model} provider={row.provider} /><strong title={row.model}>{row.model}</strong></div>
               </div>;
               })}
             </div>
@@ -1368,7 +1381,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                 {modelFilterOpen && <div className="model-discovery-model-filter-popover">
                   <label><LuSearch size={14} /><input autoFocus placeholder="搜索模型" value={modelFilterSearch} onChange={(event) => setModelFilterSearch(event.target.value)} /></label>
                   <div className="model-discovery-model-filter-list">
-                    {filteredModelOptions.map((model) => <button className={selectedModelNames.includes(model.name) ? "selected" : ""} key={model.name} onClick={() => toggleChartModel(model.name)} type="button"><i className="model-discovery-model-mark" style={{ "--model-mark-color": providerMarkColors[model.provider] ?? "#5472b8" } as CSSProperties}>{providerMarks[model.provider] ?? model.provider.slice(0, 1)}</i><span><strong>{model.name}</strong><small>{model.provider}</small></span>{selectedModelNames.includes(model.name) && <LuCheck size={14} />}</button>)}
+                    {filteredModelOptions.map((model) => <button className={selectedModelNames.includes(model.name) ? "selected" : ""} key={model.name} onClick={() => toggleChartModel(model.name)} type="button"><DiscoveryModelIcon model={model.name} provider={model.provider} /><span><strong>{model.name}</strong><small>{model.provider}</small></span>{selectedModelNames.includes(model.name) && <LuCheck size={14} />}</button>)}
                     {filteredModelOptions.length === 0 && <em>未找到匹配模型</em>}
                   </div>
                   <footer><button onClick={() => setSelectedModelNames([])} type="button"><LuX size={13} />清空</button><button onClick={() => setSelectedModelNames(visibleModels.map((model) => model.name))} type="button"><LuCheckCheck size={13} />全选</button><button onClick={() => setSelectedModelNames(visibleModels.slice(0, 7).map((model) => model.name))} type="button"><LuRotateCcw size={13} />恢复默认</button></footer>

@@ -605,12 +605,6 @@
   min-width: 0;
 }
 
-.model-discovery-summary-model .model-discovery-model-mark {
-  border-radius: var(--discovery-radius-xs);
-  font-size: 7px;
-  height: 20px;
-  width: 20px;
-}
 
 .model-discovery-summary-model > strong {
   font-size: 18px;
@@ -1606,13 +1600,22 @@
   text-align: center;
 }
 
-.model-discovery-specialty-label .model-discovery-model-mark {
-  border-radius: var(--discovery-radius-2xs);
-  font-size: 6px;
-  height: 13px;
-  width: 13px;
+
+/* 模型 / 厂牌标识走 ModelIcon（见 ModelDiscoveryPagePrototype 里 DiscoveryModelIcon
+   的说明）。它的语义档位最小是 dense=18px，而原型在这两处用了 20px 与 13px ——
+   摘要卡的标识略大、柱图标签下的更小。档位像素的真源在 design-tokens，为两个
+   一次性尺寸去改跨仓 token 不划算，所以在本页作用域内重设 --logo-box：仍然走
+   组件自己的变量通道，不在调用点写 width/height。 */
+.model-discovery-summary-model .mg-logo {
+  --logo-box: 20px;
 }
 
+.model-discovery-specialty-label .mg-logo {
+  --logo-box: 13px;
+}
+
+/* 只剩热门 Agent 排行用它（按 PRD 显示应用名首字符，Agent 应用不是模型，
+   图标库里没有它们） */
 .model-discovery-model-mark {
   align-items: center;
   background: var(--model-mark-color);

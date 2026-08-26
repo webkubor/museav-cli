@@ -32,15 +32,23 @@ export type ApiProtocol =
   | 'native'
 export type ApiCodeLanguage = 'curl' | 'nodejs' | 'python' | 'typescript' | 'claudeCode'
 
+/**
+ * 下面两张表是**本地兜底**——真源是 modelgo-model-gateway `pkg/publicprotocols`
+ * 注册表，经 /catalog/public-protocols 运行时拉取后用 mergeProtocolLabels 覆盖
+ * （见 ApiQuickCallModal.tsx / ApiAccessPanel.tsx）；文案与 model-format.ts 的
+ * PROTOCOL_LABEL_ZH/EN 同口径（2026-08-26 对齐）。openai/anthropic（过渡期旧值）
+ * 与 native（本模块内部值，对应远端 'other'，不在远端目录里，恒用本地文案）不参与
+ * 覆盖。
+ */
 export const PROTOCOL_LABEL: Record<ApiProtocol, string> = {
   openai: 'OpenAI',
   anthropic: 'Anthropic',
-  openai_chat: '对话（Chat）',
-  openai_responses: 'Responses',
-  openai_images: '图片生成',
-  openai_embeddings: '向量（Embeddings）',
-  openai_audio: '语音（Audio）',
-  anthropic_messages: 'Anthropic Messages',
+  openai_chat: 'OpenAI 兼容',
+  openai_responses: 'OpenAI Response',
+  openai_images: 'OpenAI 图片',
+  openai_embeddings: 'OpenAI 向量',
+  openai_audio: 'OpenAI 语音',
+  anthropic_messages: 'Anthropic 兼容',
   // 原生协议不展示推理供应商名称
   native: '原生 API',
 }
@@ -48,12 +56,12 @@ export const PROTOCOL_LABEL: Record<ApiProtocol, string> = {
 export const PROTOCOL_LABEL_EN: Record<ApiProtocol, string> = {
   openai: 'OpenAI',
   anthropic: 'Anthropic',
-  openai_chat: 'Chat',
-  openai_responses: 'Responses',
-  openai_images: 'Images',
-  openai_embeddings: 'Embeddings',
-  openai_audio: 'Audio',
-  anthropic_messages: 'Anthropic Messages',
+  openai_chat: 'OpenAI Compatible',
+  openai_responses: 'OpenAI Responses',
+  openai_images: 'OpenAI Images',
+  openai_embeddings: 'OpenAI Embeddings',
+  openai_audio: 'OpenAI Audio',
+  anthropic_messages: 'Anthropic Compatible',
   native: 'Native API',
 }
 

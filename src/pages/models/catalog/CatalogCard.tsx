@@ -34,9 +34,11 @@ import {
   MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, cardSummary, modelVendorLabel,
   strikeOriginalPrice, sortProtocols,
   priceTiersForCard, mediaPrimaryPrice, firstPositivePrice, hasPricingGradient, withPriceFrom,
+  PROTOCOL_LABEL_ZH, PROTOCOL_LABEL_EN, mergeProtocolLabels,
 } from '@/features/models/model-format'
 import { ExperienceTaskTags } from '@/features/models/components/ExperienceTaskTags'
 import { modelExperienceTasks, resolveModelCategory } from '../model-experience-data'
+import { usePublicProtocolsStore } from '@/store/use-public-protocols-store' 
 import type { CatalogModelItem } from '@/types'
 
 const MODALITY_ICON: Record<string, IconType> = { image: LuImage, audio: LuMic, video: LuVideo }
@@ -86,6 +88,12 @@ export function CatalogCard({
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
+  const publicProtocolItems = usePublicProtocolsStore((s) => s.items)
+  const protocolLabelMap = mergeProtocolLabels(
+    isZh ? PROTOCOL_LABEL_ZH : PROTOCOL_LABEL_EN,
+    publicProtocolItems,
+    isZh ? 'label' : 'label_en',
+  )
 
   const detailHref = `/models/${model.slug || model.id}`
   const symbol = currencySymbol(model.pricing?.currency, isZh)
@@ -257,11 +265,11 @@ export function CatalogCard({
               key={p}
               type="button"
               className={`mg-proto is-${p}`}
-              title={t('modelsCatalog.sidebar.filterTitle', { label: protocolLabel(p, isZh) })}
+              title={t('modelsCatalog.sidebar.filterTitle', { label: protocolLabel(p, isZh, protocolLabelMap) })}
               onClick={(e) => { e.stopPropagation(); onPickProtocol?.(p) }}
               disabled={!onPickProtocol}
             >
-              {protocolLabel(p, isZh)}
+              {protocolLabel(p, isZh, protocolLabelMap)}
             </button>
           ))}
         </div>

@@ -278,6 +278,21 @@ export interface CatalogModelTag {
   updated_at: string
 }
 
+/**
+ * 协议标签目录项（GET /catalog/public-protocols，公开、无需鉴权）。
+ * 展示文案的真源现在是 modelgo-model-gateway `pkg/publicprotocols` 的静态注册表，
+ * 经 controller（10min TTL 缓存 + 降级回源）→ web-api 逐层透传下发；前端不再手写
+ * 协议 label 映射，只在这个接口不可用（未上线/未合并/请求失败）时回落本地兜底文案
+ * （见 model-format.ts PROTOCOL_LABEL_ZH/EN、api-code-samples.ts PROTOCOL_LABEL/_EN）。
+ * endpoint 对 code='other' 缺省（该协议不对应单一具体端点）。
+ */
+export interface PublicProtocolLabelItem {
+  code: string
+  label: string
+  label_en: string
+  endpoint?: string
+}
+
 export interface CatalogProviderItem {
   provider_id: string
   provider_name: string

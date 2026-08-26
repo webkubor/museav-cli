@@ -12,7 +12,7 @@ import {
   firstPositivePrice,
   catalogCardReplacesGridWithTiers, mediaPrimaryPrice, priceTierLabel, priceTiersForCard, priceUnitSuffix, strikeOriginalPrice,
   pricingRuleGroups, hasPricingGradient, pricingRuleLabel, pricingRulePriceText,
-  pricingRuleSubLabel, pricingRulesHaveSub, withPriceFrom,
+  pricingRuleStrikeText, pricingRuleSubLabel, pricingRulesHaveSub, withPriceFrom,
   autoSummary, cardSummary, detailSummary, sortProtocols,
 } from './model-format'
 
@@ -273,6 +273,24 @@ describe('pricing_rules — 上下文分档 / 峰时价（#800）', () => {
     expect(pricingRulesHaveSub(rules)).toBe(false)
     // sub_label 缺但 sub_label_en 在（后端只发英文的脏数据）也算有
     expect(pricingRulesHaveSub([{ dimension: 'context_length', sub_label_en: 'output <200' }])).toBe(true)
+  })
+
+  it('梯度表划线折前价（#860 方案 2 / #867 字段）：原价>现价才划，缺失/等值/脏值不划', () => {
+    const discounted = {
+      dimension: 'context_length', label: '0–256K',
+      input_per_1m: '1.6', output_per_1m: '6.4', cache_read_per_1m: '0.32',
+      original_input_per_1m: '2', original_output_per_1m: '8', original_cache_read_per_1m: '0.4',
+      unit: 'M',
+    }
+    expect(pricingRuleStrikeText(discounted, 'input', '¥')).toBe('¥2/M')
+    expect(pricingRuleStrikeText(discounted, 'output', '¥')).toBe('¥8/M')
+    expect(pricingRuleStrikeText(discounted, 'cache_read', '¥')).toBe('¥0.4/M')
+    // 无促销档没有 original_* → 不划（存量模型维持现状）
+    expect(pricingRuleStrikeText(rules[1], 'input', '¥')).toBeNull()
+    // 原价 = 现价（5.0-pro 那类脏数据）→ #747 守卫拦下
+    expect(pricingRuleStrikeText({ ...discounted, original_input_per_1m: '1.6' }, 'input', '¥')).toBeNull()
+    // 原价 < 现价（通道错配回归，#863 的 2.0-mini 形态）→ 同样不划
+    expect(pricingRuleStrikeText({ ...discounted, original_output_per_1m: '5' }, 'output', '¥')).toBeNull()
   })
 
   it('mode=multiplier 无绝对价 → 展示 ×倍率', () => {

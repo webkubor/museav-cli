@@ -197,6 +197,25 @@ export function pricingRulePriceText(
 }
 
 /**
+ * 梯度表单元格的划线折前价（prd#860 方案 2：每档折后为主、折前划线并列）。
+ * 与摘要行同一守卫（strikeOriginalPrice / #747 口径）：原价缺失或 ≤ 现价
+ * 不划线 —— 数据不对时宁可不划，不渲染「原价 ≤ 现价」的自相矛盾划线。
+ * 返回格式化好的价格文本（¥2/M），「原价/was」前缀由渲染层的 i18n 模板加。
+ */
+export function pricingRuleStrikeText(
+  rule: CatalogPricingRule,
+  kind: 'input' | 'output' | 'cache_read',
+  symbol: string,
+): string | null {
+  const original = kind === 'input' ? rule.original_input_per_1m
+    : kind === 'output' ? rule.original_output_per_1m : rule.original_cache_read_per_1m
+  const current = kind === 'input' ? rule.input_per_1m
+    : kind === 'output' ? rule.output_per_1m : rule.cache_read_per_1m
+  if (strikeOriginalPrice(original, current) == null) return null
+  return `${symbol}${trimPriceZeros(original!)}/${rule.unit || 'M'}`
+}
+
+/**
  * 一口价挂「起」（原型 marketplacePriceText：有梯度时规格条/卡片价格后加「起」，
  * 后端已把起始档写进 pricing.*）。中文跟在单位后（¥ 0.8/M 起）、英文改前缀
  * （from $ 0.8/M）；免费/未配价（unit 为空）不挂。

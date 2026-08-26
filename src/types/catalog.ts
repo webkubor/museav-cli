@@ -119,10 +119,14 @@ export interface CatalogPricingRule {
   sub_label_en?: string
   sub_min?: number
   sub_max?: number
-  /** 每 1M token 单价，十进制字符串 */
+  /** 每 1M token 单价，十进制字符串；促销期为折后价（#867 后端算好，前端只渲染） */
   input_per_1m?: string
   output_per_1m?: string
   cache_read_per_1m?: string
+  /** 促销期逐档折前原价（#867/#860）：仅划线装饰，缺失或 ≤ 现价时不划 */
+  original_input_per_1m?: string
+  original_output_per_1m?: string
+  original_cache_read_per_1m?: string
   /** 峰值时段（dimension=peak_time） */
   start_time?: string
   end_time?: string

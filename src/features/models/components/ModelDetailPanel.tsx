@@ -23,8 +23,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import {
   currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, vendorFromModelId, detailSummary, modelVendorLabel,
   priceTierLabel, mediaPrimaryPrice, firstPositivePrice, strikeOriginalPrice,
-  pricingRuleGroups, pricingRuleLabel, pricingRulePriceText, pricingRuleSubLabel,
-  pricingRulesHaveSub, withPriceFrom, sortProtocols,
+  pricingRuleGroups, pricingRuleLabel, pricingRulePriceText, pricingRuleStrikeText,
+  pricingRuleSubLabel, pricingRulesHaveSub, withPriceFrom, sortProtocols,
 } from '../model-format'
 import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 // 任务/类别推导与广场卡片共用一份（lib/login-intent.ts 已有同向引用的先例）；
@@ -409,9 +409,21 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
                           {dimension === 'peak_time' && (
                             <TableCell>{rule.timezone || '—'}</TableCell>
                           )}
-                          <TableCell>{pricingRulePriceText(rule, 'input', symbol)}</TableCell>
-                          <TableCell>{pricingRulePriceText(rule, 'output', symbol)}</TableCell>
-                          <TableCell>{pricingRulePriceText(rule, 'cache_read', symbol)}</TableCell>
+                          {/* 促销期每档折后为主、折前划线并列（prd#860 方案 2，#867 字段）；
+                              与摘要行同一守卫，原价缺失或 ≤ 现价不划 */}
+                          {(['input', 'output', 'cache_read'] as const).map((kind) => {
+                            const strike = pricingRuleStrikeText(rule, kind, symbol)
+                            return (
+                              <TableCell key={kind}>
+                                {pricingRulePriceText(rule, kind, symbol)}
+                                {strike && (
+                                  <s className="mg-metric-strike">
+                                    {t('modelsCatalog.card.strikeOriginal', { price: strike })}
+                                  </s>
+                                )}
+                              </TableCell>
+                            )
+                          })}
                         </TableRow>
                       ))}
                     </TableBody>

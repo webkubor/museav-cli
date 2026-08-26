@@ -22,7 +22,7 @@ import { OverflowTip } from '@/components/ui/OverflowTip'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
 import {
   currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, vendorFromModelId, detailSummary, modelVendorLabel,
-  priceTierLabel, mediaPrimaryPrice, firstPositivePrice, strikeOriginalPrice,
+  priceTierLabel, priceTierUnit, mediaPrimaryPrice, firstPositivePrice, strikeOriginalPrice,
   pricingRuleGroups, pricingRuleLabel, pricingRulePriceText, withPriceFrom, sortProtocols,
 } from '../model-format'
 import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
@@ -159,14 +159,16 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
   const tasksLabel = experienceTasks.length > 0
     ? [...new Set(experienceTasks.map(experienceTaskLabel))].join(' / ')
     : t('modelsCatalog.button.comingSoon')
-  const primaryRaw = mediaPrimaryPrice(detail.pricing, detail.price_unit, priceTiers)
+  const primaryRaw = mediaPrimaryPrice(detail.pricing, detail.price_unit, priceTiers, detail.price_unit_en)
   const primary = withPriceFrom(priceText(primaryRaw.amount, symbol, isFree ? freeLabel : '', primaryRaw.unit, isFree), hasGradient)
   // firstPositivePrice 而非 ??：per_call 模型 original_output 恒 "0"，会把镜像在
   // original_input 的折前价截住（seedream「限时71折」无划线的前端侧成因）
   // 末位候选 per_call_price：促销期它维持折前原价（折后现价在 input_per_1m），
   // original_* 缺发时靠它兜底；仅促销卡参与，守卫会拦掉 ≤ 现价的取值
+  // 首位候选与卡片同口径：主价那一档自己的折前价优先（prd#863 ④）。
   const strikePrimaryVal = strikeOriginalPrice(
     firstPositivePrice(
+      primaryRaw.originalAmount,
       promo?.original_output_per_1m, promo?.original_input_per_1m, promo?.original_price,
       promo ? detail.pricing?.per_call_price : undefined,
     ),
@@ -345,13 +347,26 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {priceTiers.map((tier, idx) => (
-                      <TableRow key={`${tier.bucket}-${tier.label}-${idx}`}>
-                        <TableCell>{priceTierLabel(tier, isZh)}</TableCell>
-                        <TableCell>{tier.unit}</TableCell>
-                        <TableCell>{`${symbol}${trimPriceZeros(tier.price)}/${tier.unit}`}</TableCell>
-                      </TableRow>
-                    ))}
+                    {priceTiers.map((tier, idx) => {
+                      // 矩阵促销逐档打折，划线也得逐档给（prd#863）：original_price
+                      // 只在这一档真被促销改过时才下发，守卫仍拦 ≤ 现价的取值。
+                      const tierUnit = priceTierUnit(tier)
+                      const tierStrike = strikeOriginalPrice(tier.original_price, tier.price, isFree)
+                      return (
+                        <TableRow key={`${tier.bucket}-${tier.label}-${idx}`}>
+                          <TableCell>{priceTierLabel(tier, isZh)}</TableCell>
+                          <TableCell>{tierUnit}</TableCell>
+                          <TableCell>
+                            {`${symbol}${trimPriceZeros(tier.price)}/${tierUnit}`}
+                            {tierStrike != null && (
+                              <span className="ml-1 text-mg-text-4 line-through">
+                                {`${symbol}${trimPriceZeros(String(tierStrike))}`}
+                              </span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
                   </TableBody>
                 </Table>
               </div>

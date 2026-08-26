@@ -10,7 +10,7 @@ import { afterAll, describe, expect, it } from 'vitest'
 import i18n from '@/i18n'
 import {
   firstPositivePrice,
-  catalogCardReplacesGridWithTiers, mediaPrimaryPrice, priceTierLabel, priceTiersForCard, priceUnitSuffix, strikeOriginalPrice,
+  catalogCardReplacesGridWithTiers, mediaPrimaryPrice, priceTierLabel, priceTierUnit, priceTiersForCard, priceUnitSuffix, strikeOriginalPrice,
   pricingRuleGroups, hasPricingGradient, pricingRuleLabel, pricingRulePriceText, withPriceFrom,
   autoSummary, cardSummary, detailSummary, sortProtocols,
 } from './model-format'
@@ -329,5 +329,54 @@ describe('sortProtocols — 协议展示统一顺序（QA：模型广场端点�
 
   it('空数组原样返回', () => {
     expect(sortProtocols([])).toEqual([])
+  })
+})
+
+describe('媒体主价与划线原价同源（shared/modelgo_prd#863 ④）', () => {
+  const tiers = [
+    { label: '文生视频', price: '20.24', original_price: '23', unit: 'M', bucket: 'output' },
+    { label: '图生视频', price: '20.24', original_price: '23', unit: 'M', bucket: 'output' },
+    { label: '视频生视频', price: '12.32', original_price: '14', unit: 'M', bucket: 'output' },
+  ]
+
+  it('主价取最高档时，折前价也取同一档', () => {
+    const got = mediaPrimaryPrice({ output_per_1m: '12.32' }, 'M', tiers)
+    expect(got.amount).toBe('20.24')
+    expect(got.originalAmount).toBe('23')
+  })
+
+  it('同源的原价能通过划线守卫，token 侧的 14 则不能', () => {
+    const got = mediaPrimaryPrice({ output_per_1m: '12.32' }, 'M', tiers)
+    expect(strikeOriginalPrice(got.originalAmount, got.amount)).toBe(23)
+    // 这是修复前的取值：promotion.original_output_per_1m
+    expect(strikeOriginalPrice('14', got.amount)).toBeNull()
+  })
+
+  it('没有促销时不伪造划线', () => {
+    const plain = tiers.map((t) => ({ label: t.label, price: t.price, unit: t.unit, bucket: t.bucket }))
+    const got = mediaPrimaryPrice({ output_per_1m: '12.32' }, 'M', plain)
+    expect(got.originalAmount).toBeUndefined()
+  })
+})
+
+describe('英文站计价单位（shared/modelgo_prd#857 腿 D）', () => {
+  it('中文站保持中文单位', async () => {
+    await i18n.changeLanguage('zh')
+    expect(priceUnitSuffix('秒', undefined, 's')).toBe('/秒')
+    expect(priceTierUnit({ unit: '秒', unit_en: 's' })).toBe('秒')
+  })
+
+  it('英文站取 price_unit_en / unit_en', async () => {
+    await i18n.changeLanguage('en')
+    try {
+      expect(priceUnitSuffix('秒', undefined, 's')).toBe('/s')
+      expect(priceTierUnit({ unit: '秒', unit_en: 's' })).toBe('s')
+      // 漏配英文单位时回落中文，而不是把价格整格吞掉
+      expect(priceUnitSuffix('秒', undefined, undefined)).toBe('/秒')
+      expect(priceTierUnit({ unit: '秒' })).toBe('秒')
+      expect(mediaPrimaryPrice({ output_per_1m: '1' }, '秒', [], 's').unitName).toBe('s')
+    } finally {
+      await i18n.changeLanguage('zh')
+    }
   })
 })

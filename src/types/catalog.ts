@@ -70,6 +70,8 @@ export interface CatalogModelItem {
   cache_write_1h_per_1m?: string
   /** 计价单位：缺省为每 1M token；张 / 秒 / 万字符等用于媒体模型 */
   price_unit?: string
+  /** 英文站的计价单位（「秒」→「s」）；为空时回落 price_unit。 */
+  price_unit_en?: string
   /** 媒体模型的文本 Token 分项价，作为主价格下的次行展示 */
   text_input_price?: string
   text_output_price?: string
@@ -98,7 +100,15 @@ export interface CatalogPriceTier {
   label_en?: string
   price: string
   unit: string
+  /** 英文站的计价单位（「秒」→「s」）；为空时回落 unit。 */
+  unit_en?: string
   bucket: string
+  /**
+   * 本档的折前价，**仅**在促销真的改动了这一档价格时下发。矩阵促销作用于每一档，
+   * 单靠 promotion.original_price 撑不起「价格梯度」表的逐行划线
+   * （shared/modelgo_prd#863）。与 promotion.original_* 同口径：只是划线装饰。
+   */
+  original_price?: string
 }
 
 /** 阶梯价规则（#800 契约）。dimension 目前两种：context_length（上下文分档）/

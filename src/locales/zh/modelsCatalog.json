@@ -161,7 +161,11 @@
       "new": "最新",
       "limitedFree": "限时特惠·免费",
       "modalityEmbedding": "向量",
-      "modalityFile": "文件"
+      "modalityFile": "文件",
+      "inputType": "输入类型",
+      "any": "任意",
+      "contextMinAria": "最低上下文长度",
+      "clearGroup": "清空{{group}}筛选"
     },
     "card": {
       "free": "免费",
@@ -224,6 +228,10 @@
       "gradientFootnote": "价格按上下文长度与输出长度分档，最终以实际调用结算为准",
       "mainSpec": "主要规格"
     },
-    "error.loadDetail": "加载模型详情失败，请稍后重试。"
+    "error.loadDetail": "加载模型详情失败，请稍后重试。",
+    "outputModality": {
+      "label": "输出模态",
+      "all": "全部"
+    }
   }
 }

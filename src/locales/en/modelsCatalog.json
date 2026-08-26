@@ -161,7 +161,11 @@
       "new": "New",
       "limitedFree": "Free",
       "modalityEmbedding": "Embedding",
-      "modalityFile": "File"
+      "modalityFile": "File",
+      "inputType": "Input types",
+      "any": "Any",
+      "contextMinAria": "Minimum context length",
+      "clearGroup": "Clear {{group}} filters"
     },
     "card": {
       "free": "Free",
@@ -224,6 +228,10 @@
       "gradientFootnote": "Prices are tiered by context and output length; final billing follows actual metered usage.",
       "mainSpec": "Main specs"
     },
-    "error.loadDetail": "Failed to load model detail. Please try again."
+    "error.loadDetail": "Failed to load model detail. Please try again.",
+    "outputModality": {
+      "label": "Output modality",
+      "all": "All"
+    }
   }
 }

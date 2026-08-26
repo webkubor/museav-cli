@@ -35,7 +35,8 @@ import {
   strikeOriginalPrice, sortProtocols,
   priceTiersForCard, mediaPrimaryPrice, firstPositivePrice, hasPricingGradient, withPriceFrom,
 } from '@/features/models/model-format'
-import { experienceTaskLabel, modelExperienceTasks, resolveModelCategory } from '../model-experience-data'
+import { ExperienceTaskTags } from '@/features/models/components/ExperienceTaskTags'
+import { modelExperienceTasks, resolveModelCategory } from '../model-experience-data'
 import type { CatalogModelItem } from '@/types'
 
 const MODALITY_ICON: Record<string, IconType> = { image: LuImage, audio: LuMic, video: LuVideo }
@@ -170,12 +171,9 @@ export function CatalogCard({
   const summary = cardSummary(model, provider ?? '', isZh)
   // PRD §模型广场 AC-13「暂未开放」：模型本身可浏览详情/API，但没配置任何可体验任务时
   // 「去体验」按钮禁用并说明原因（原型 App.tsx:4619-4620/5076-5081 逐字对齐）。
-  // 任务列表同时供媒体卡「可体验任务」格展示（对话向任务共用「对话」标签，去重）。
+  // 任务列表同时供媒体卡「可体验任务」格展示（独立标签，#872 需求点 10）。
   const experienceTasks = modelExperienceTasks(model)
   const hasExperience = experienceTasks.length > 0
-  const tasksLabel = hasExperience
-    ? [...new Set(experienceTasks.map(experienceTaskLabel))].join(' / ')
-    : t('modelsCatalog.button.comingSoon')
 
   return (
     <article
@@ -302,7 +300,11 @@ export function CatalogCard({
               free={isFree}
             />
             <Metric label={t('modelsCatalog.card.billingUnit')} value={billingUnit} />
-            <Metric label={t('modelsCatalog.card.experienceTasks')} value={tasksLabel} />
+            {/* 可体验任务改独立标签展示（#872 需求点 10），不再复用 Metric 的省略文本值 */}
+            <div className="mg-metric">
+              <span className="mg-metric-label">{t('modelsCatalog.card.experienceTasks')}</span>
+              <ExperienceTaskTags tasks={experienceTasks} />
+            </div>
           </>
         ) : (
           <>

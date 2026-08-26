@@ -11,7 +11,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { cn, formatContextLength, trimPriceZeros } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
-import { modelVendorLabel, currencySymbol, isZhLang, priceTierLabel, sortProtocols, priceUnitSuffix } from '@/features/models/model-format'
+import { modelVendorLabel, currencySymbol, isZhLang, priceTierLabel, priceTierUnit, sortProtocols, priceUnitSuffix } from '@/features/models/model-format'
 import {
   resolveModelCategory, modelExperienceTasks, isPaidModel,
   type ExperienceCategoryKey, type ExperienceTaskType,
@@ -223,7 +223,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
       // 限免只认 promotion.free 显式标记（与 dualPriceText / 广场卡片同口径，qa#624）
       if (m.promotion?.free) return i18n.t('modelsExperience.limitedFree')
       if (m.price_tiers?.length)
-        return m.price_tiers.map((tier) => `${priceTierLabel(tier, isZhLang())} ${formatPrice(tier.price, m.pricing?.currency)}/${tier.unit}`).join(' · ')
+        return m.price_tiers.map((tier) => `${priceTierLabel(tier, isZhLang())} ${formatPrice(tier.price, m.pricing?.currency)}/${priceTierUnit(tier)}`).join(' · ')
       // per_call（按张计价）：行标签写死「(百万)」不适用，价格带上 /张 免得被读成每 M（prd#851 同族）
       if (m.pricing?.mode === 'per_call') {
         const perCall = formatPrice(m.pricing.per_call_price || m.pricing.input_per_1m, m.pricing?.currency)

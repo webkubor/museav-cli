@@ -119,6 +119,19 @@
 .mg-mcard-tag:not(:disabled) { cursor: pointer; }
 .mg-mcard-tag:not(:disabled):hover { color: var(--mg-text-1); }
 
+/* 「可体验任务」独立标签（#872 需求点 10，原型 marketplace-task-tags）：
+   卡片与详情规格条共用，替代旧的斜杠拼接文本。 */
+.mg-task-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.mg-task-tags > em,
+.mg-task-tags-more {
+  font-style: normal; padding: 1px 7px; border-radius: var(--radius-sm);
+  background: var(--mg-fill-0); font-size: 11px; line-height: 1.6;
+  color: var(--mg-text-2); white-space: nowrap;
+}
+/* 「+N」折叠计数标签：悬停/聚焦冒气泡列出其余任务（组件内 portal 渲染） */
+.mg-task-tags-more { cursor: help; color: var(--mg-text-3); }
+.mg-task-tags-more:hover, .mg-task-tags-more:focus-visible { color: var(--mg-text-1); }
+
 /* 价格规格：贴底 */
 .mg-mcard-specs {
   margin-top: auto; padding-top: 10px;
@@ -150,6 +163,13 @@
   margin-left: 5px; font-size: 11px; color: var(--mg-text-4);
   text-decoration: line-through; font-weight: 400;
 }
+/* 卡片作用域：宽度不够时划线原价段先省略（主价格 shrink-0 不裁，prd#860 QA 复验
+   ——反了会把用户最需要读的折后价裁成「¥…」而装饰性的原价反而完整）。
+   flex 容器 + min-width:0 让内部 OverflowTip 的省略号生效；划线不会从 flex
+   容器传播进 flex item（CSS text-decor 规范），补到内部文本。详情规格条空间
+   充裕不收窄，保持内联不动 */
+.mg-mcard-specs .mg-metric-strike { display: flex; min-width: 0; }
+.mg-mcard-specs .mg-metric-strike > span { text-decoration: line-through; }
 
 /* 操作条：静止不占位、不可见；hover 或键盘聚焦时覆盖最底的规格行浮出，
    因此卡片高度不变（原型口径）。触屏设备常驻可见 —— 没有 hover 就无从触发。 */

@@ -124,7 +124,8 @@
     },
     "filtersButton": "筛选",
     "search": {
-      "placeholder": "搜索模型名、API ID、供应商或描述关键词…"
+      "placeholder": "搜索模型名、API ID、供应商或描述关键词…",
+      "clear": "清空搜索"
     },
     "sort": {
       "default": "推荐排序",
@@ -161,7 +162,11 @@
       "new": "最新",
       "limitedFree": "限时特惠·免费",
       "modalityEmbedding": "向量",
-      "modalityFile": "文件"
+      "modalityFile": "文件",
+      "inputType": "输入类型",
+      "any": "任意",
+      "contextMinAria": "最低上下文长度",
+      "clearGroup": "清空{{group}}筛选"
     },
     "card": {
       "free": "免费",
@@ -208,6 +213,7 @@
       "ruleDimContext": "上下文长度",
       "ruleDimPeak": "峰值时间段",
       "ruleRange": "上下文区间",
+      "ruleCondition": "条件",
       "ruleTimeSlot": "时段",
       "ruleTimezone": "时区",
       "byInterface": "按接口约定",
@@ -230,6 +236,10 @@
       "entry": "模型发现",
       "placeholder": "分析模块正在接入，敬请期待。",
       "backToDiscovery": "返回模型发现"
+    },
+    "outputModality": {
+      "label": "输出模态",
+      "all": "全部"
     }
   }
 }

@@ -12,7 +12,7 @@
  */
 import i18n from '@/i18n'
 import { formatContextLength, trimPriceZeros } from '@/lib/utils'
-import type { CatalogPriceTier, CatalogPricingRule } from '@/types'
+import type { CatalogPriceTier, CatalogPricingRule, PublicProtocolLabelItem } from '@/types'
 
 export type { CatalogPriceTier, CatalogPricingRule }
 
@@ -33,9 +33,22 @@ export function currencySymbol(currency: string | undefined, isZh: boolean): str
  *  price_unit 为空表示按每 M token 计价（对话模型）。
  *  qa#286 二轮反馈：PRD §9.1 字段口径 price_unit 枚举值是「M、张、秒、万字符等」，
  *  不带数字前缀，兜底要跟这套枚举同形态，不能写死「1M」。 */
-export function priceUnitSuffix(priceUnit: string | undefined, mode?: string | null): string {
+export function priceUnitSuffix(
+  priceUnit: string | undefined,
+  mode?: string | null,
+  priceUnitEN?: string | null,
+): string {
   if (mode === 'per_call') return isZhLang() ? '/张' : '/image'
-  return priceUnit ? `/${priceUnit}` : '/M'
+  // 英文站取 price_unit_en：单位是后端下发的中文枚举（M/张/秒/万字符），
+  // 直接渲染会在英文页上打出「$0.1176 /秒」（shared/modelgo_prd#857 腿 D）。
+  // 为空时仍回落中文单位——漏配一个单位不该把价格整格吞掉。
+  const unit = (!isZhLang() && priceUnitEN?.trim()) || priceUnit
+  return unit ? `/${unit}` : '/M'
+}
+
+/** 档位行的计价单位：与 priceUnitSuffix 同口径，英文站优先 unit_en。 */
+export function priceTierUnit(tier: Pick<CatalogPriceTier, 'unit' | 'unit_en'>): string {
+  return (!isZhLang() && tier.unit_en?.trim()) || tier.unit
 }
 
 const CARD_PRICE_TIER_LIMIT = 4
@@ -64,8 +77,9 @@ export function mediaPrimaryPrice(
   pricing: { mode?: string; per_call_price?: string; input_per_1m?: string; output_per_1m?: string } | undefined,
   priceUnit: string | undefined,
   tiers: CatalogPriceTier[] | undefined | null,
-): { amount: string | undefined; unit: string; unitName: string } {
-  const suffix = priceUnitSuffix(priceUnit, pricing?.mode)
+  priceUnitEN?: string | null,
+): { amount: string | undefined; unit: string; unitName: string; originalAmount?: string } {
+  const suffix = priceUnitSuffix(priceUnit, pricing?.mode, priceUnitEN)
   if (pricing?.mode === 'per_call') {
     // per_call 的每张价镜像在 input_per_1m（#851 契约），unitName 从后缀剥出
     // （zh 张 / en image，priceUnitSuffix 已本地化）。
@@ -83,16 +97,26 @@ export function mediaPrimaryPrice(
     (max, tier) => (parseFloat(tier.price) > parseFloat(max?.price ?? '0') ? tier : max),
     undefined,
   )
+  const unitName = (!isZhLang() && priceUnitEN?.trim()) || priceUnit || 'M'
   if (top) {
-    return { amount: top.price, unit: `/${top.unit}`, unitName: top.unit }
+    // originalAmount 必须跟主价同源：doubao-seedance-2.0-mini 主价取最高档
+    // 20.24（折前 23），而 promotion.original_output_per_1m 是 token 侧的 14，
+    // 14 < 20.24 会被 strikeOriginalPrice 的守卫判成无效划线直接吞掉
+    // （shared/modelgo_prd#863 ④）。
+    return {
+      amount: top.price,
+      unit: `/${priceTierUnit(top)}`,
+      unitName: priceTierUnit(top),
+      originalAmount: top.original_price,
+    }
   }
   if (parseFloat(pricing?.output_per_1m ?? '') > 0) {
-    return { amount: pricing?.output_per_1m, unit: suffix, unitName: priceUnit || 'M' }
+    return { amount: pricing?.output_per_1m, unit: suffix, unitName }
   }
   if (parseFloat(pricing?.input_per_1m ?? '') > 0) {
-    return { amount: pricing?.input_per_1m, unit: suffix, unitName: priceUnit || 'M' }
+    return { amount: pricing?.input_per_1m, unit: suffix, unitName }
   }
-  return { amount: undefined, unit: suffix, unitName: priceUnit || 'M' }
+  return { amount: undefined, unit: suffix, unitName }
 }
 
 /** 纯媒体模型（文本输入/输出都没有正价）才用 price_tiers 替换卡片四格；
@@ -164,6 +188,21 @@ export function pricingRuleLabel(rule: CatalogPricingRule, isZh: boolean): strin
 }
 
 /**
+ * 次级分档条件文案（prd#864）：同一上下文区间被输出长度等条件拆成多行时，
+ * 每行的区分文案（如「输出 <200」）。与主 label 同口径：后端 sub_label 优先、
+ * 英文回落中文，**不要前端自己拼**；无次级条件返回 null（渲染成「—」由调用方定）。
+ */
+export function pricingRuleSubLabel(rule: CatalogPricingRule, isZh: boolean): string | null {
+  const label = isZh ? rule.sub_label : (rule.sub_label_en || rule.sub_label)
+  return label || null
+}
+
+/** 组内任一行带次级条件 → 梯度表补「条件」列；否则不加列，维持原三列布局。 */
+export function pricingRulesHaveSub(rules: CatalogPricingRule[]): boolean {
+  return rules.some((r) => !!(r.sub_label || r.sub_label_en))
+}
+
+/**
  * 梯度表单元格价格。金额格式与规格条同口径（货币符号 + trimPriceZeros + /unit）；
  * mode=multiplier（倍率）没有绝对价时展示 ×倍率；两者都缺回落「—」（未配价 ≠ 免费，
  * 限免口径只认 promotion.free，不从阶梯价推断）。
@@ -179,6 +218,25 @@ export function pricingRulePriceText(
   }
   if (rule.mode === 'multiplier' && rule.rate) return `×${trimPriceZeros(rule.rate)}`
   return '—'
+}
+
+/**
+ * 梯度表单元格的划线折前价（prd#860 方案 2：每档折后为主、折前划线并列）。
+ * 与摘要行同一守卫（strikeOriginalPrice / #747 口径）：原价缺失或 ≤ 现价
+ * 不划线 —— 数据不对时宁可不划，不渲染「原价 ≤ 现价」的自相矛盾划线。
+ * 返回格式化好的价格文本（¥2/M），「原价/was」前缀由渲染层的 i18n 模板加。
+ */
+export function pricingRuleStrikeText(
+  rule: CatalogPricingRule,
+  kind: 'input' | 'output' | 'cache_read',
+  symbol: string,
+): string | null {
+  const original = kind === 'input' ? rule.original_input_per_1m
+    : kind === 'output' ? rule.original_output_per_1m : rule.original_cache_read_per_1m
+  const current = kind === 'input' ? rule.input_per_1m
+    : kind === 'output' ? rule.output_per_1m : rule.cache_read_per_1m
+  if (strikeOriginalPrice(original, current) == null) return null
+  return `${symbol}${trimPriceZeros(original!)}/${rule.unit || 'M'}`
 }
 
 /**
@@ -271,16 +329,85 @@ export function firstPositivePrice(
   return undefined
 }
 
-/** 协议标签文案照原型：带「兼容」后缀，明确这是入站协议兼容性而非厂商归属。 */
+/**
+ * 协议标签文案 —— **本地兜底**，不是真源。
+ *
+ * 真源已迁移到 modelgo-model-gateway `pkg/publicprotocols` 的静态注册表，经
+ * controller/web-api 透传，运行时通过 usePublicProtocolsStore（GET
+ * /catalog/public-protocols）拉取；这里的两张表只在该接口还没上线、请求未完成或
+ * 失败时兜底，文案需要跟后端注册表的措辞对齐。
+ *
+ * 2026-08-26 命名规范改版：由「协议族」文案（OpenAI 兼容/Anthropic 兼容）换成
+ * 「厂商 + 能力」的英文专有名词命名（OpenAI Chat Completions、Google Gemini
+ * 等），闭集同时从 7 值扩到 12 值（openai_chat 改名 openai_chat_completions，
+ * openai_audio 拆成 openai_speech/openai_transcriptions，新增 openai_rerank 与
+ * google_gemini/google_imagen/google_video 三个原生透传条目——仅信息展示，不参与
+ * defaultPublicProtocols 的自动派生，需运营手动打标）。厂商+能力类值中英文同名，
+ * 只有 other 保留中英双语。
+ * 旧 3 值（openai/anthropic/other，过渡期未重新打标的模型仍会下发）维持原文案。
+ */
 export const PROTOCOL_LABEL_ZH: Record<string, string> = {
-  openai: 'OpenAI 兼容', anthropic: 'Anthropic 兼容', other: '其他协议',
+  openai: 'OpenAI 兼容', anthropic: 'Anthropic 兼容', other: '其他（异步任务类，如图像/音视频）',
+  openai_chat_completions: 'OpenAI Chat Completions',
+  openai_responses: 'OpenAI Responses',
+  openai_embeddings: 'OpenAI Embeddings',
+  openai_rerank: 'OpenAI Rerank',
+  openai_images: 'OpenAI Images',
+  openai_speech: 'OpenAI Speech',
+  openai_transcriptions: 'OpenAI Transcriptions',
+  anthropic_messages: 'Anthropic Messages',
+  google_gemini: 'Google Gemini',
+  google_imagen: 'Google Imagen',
+  google_video: 'Google Video',
 }
 export const PROTOCOL_LABEL_EN: Record<string, string> = {
   openai: 'OpenAI compatible', anthropic: 'Anthropic compatible', other: 'Other',
+  openai_chat_completions: 'OpenAI Chat Completions',
+  openai_responses: 'OpenAI Responses',
+  openai_embeddings: 'OpenAI Embeddings',
+  openai_rerank: 'OpenAI Rerank',
+  openai_images: 'OpenAI Images',
+  openai_speech: 'OpenAI Speech',
+  openai_transcriptions: 'OpenAI Transcriptions',
+  anthropic_messages: 'Anthropic Messages',
+  google_gemini: 'Google Gemini',
+  google_imagen: 'Google Imagen',
+  google_video: 'Google Video',
 }
 
-export function protocolLabel(protocol: string, isZh: boolean): string {
-  return (isZh ? PROTOCOL_LABEL_ZH : PROTOCOL_LABEL_EN)[protocol] ?? protocol
+/**
+ * labelMap 缺省时退回本地兜底表；传入时优先用它（调用方一般传
+ * mergeProtocolLabels(PROTOCOL_LABEL_ZH/EN, usePublicProtocolsStore 的 items, ...)
+ * 算出的合并结果，让展示文案跟着 /catalog/public-protocols 的最新下发走）。
+ */
+export function protocolLabel(protocol: string, isZh: boolean, labelMap?: Record<string, string>): string {
+  const map = labelMap ?? (isZh ? PROTOCOL_LABEL_ZH : PROTOCOL_LABEL_EN)
+  return map[protocol] ?? protocol
+}
+
+/**
+ * 用 /catalog/public-protocols 下发的目录覆盖本地兜底表。只覆盖 base 里已声明的
+ * code——未知/尚未收录的远端 code 不会凭空长出新条目，避免和 sortProtocols /
+ * 卡片 CSS（.mg-proto.is-<code>）等按固定值集合工作的逻辑对不上。items 为
+ * null/空（接口未完成、失败、或依赖的后端仓库还没合并）时原样返回 base，即「不
+ * 拿到新数据就完全维持现状」，这是本次改造要的非阻塞降级行为。
+ */
+export function mergeProtocolLabels<T extends string>(
+  base: Record<T, string>,
+  items: Pick<PublicProtocolLabelItem, 'code' | 'label' | 'label_en'>[] | null | undefined,
+  field: 'label' | 'label_en',
+): Record<T, string> {
+  if (!items?.length) return base
+  let merged: Record<T, string> | null = null
+  for (const item of items) {
+    const code = item.code as T
+    const value = item[field]
+    if (code in base && value && base[code] !== value) {
+      if (!merged) merged = { ...base }
+      merged[code] = value
+    }
+  }
+  return merged ?? base
 }
 
 /**
@@ -290,7 +417,13 @@ export function protocolLabel(protocol: string, isZh: boolean): string {
  * 未知值排最后且保持相对稳定（sort 在 V8 里是稳定排序）。
  * 源头治理单：qa/ai-quality-platform#685（管理后台提交侧校验归一，OpenAI 恒在前）。
  */
-const PROTOCOL_ORDER = ['openai', 'anthropic', 'other', 'native']
+const PROTOCOL_ORDER = [
+  'openai_chat_completions', 'openai_responses', 'openai_embeddings', 'openai_rerank',
+  'openai_images', 'openai_speech', 'openai_transcriptions',
+  'anthropic_messages',
+  'google_gemini', 'google_imagen', 'google_video',
+  'openai', 'anthropic', 'other', 'native',
+]
 export function sortProtocols<T extends string>(protocols: readonly T[]): T[] {
   const rank = (p: string) => {
     const i = PROTOCOL_ORDER.indexOf(p)

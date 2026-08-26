@@ -93,11 +93,11 @@
 }
 .mg-side-switch.is-on { background: var(--brand-base); }
 .mg-side-switch.is-on > span { transform: translateX(17px); }
-/* 列表行的计数右对齐（原型口径） */
-.mg-side-row-count { margin-left: auto; font-style: normal; font-size: 12px; color: var(--mg-text-4); }
-.mg-side-row.is-active .mg-side-row-count { color: var(--plaza-row-active-fg); }
 .mg-side-group { padding: 4px 0; border-bottom: 1px solid var(--mg-border); }
 .mg-side-group:last-child { border-bottom: none; }
+/* 组头一行：折叠触发按钮 + 本组独立清空按钮（#872 需求点 7） */
+.mg-side-head-row { display: flex; align-items: center; gap: 4px; }
+.mg-side-head-row > .mg-side-head { flex: 1; min-width: 0; }
 .mg-side-head {
   display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 2px;
   /* 行高对齐 tokens 紧凑控件档（设计 2026-08-10 拍板 32/40/48；fallback 供包升级到 0.6.5 前使用） */
@@ -106,6 +106,18 @@
 }
 .mg-side-head > svg:first-child { color: var(--brand-base); }
 .mg-side-head-chevron { margin-left: auto; color: var(--mg-text-4); transition: transform 0.2s ease; }
+.mg-side-clear {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; flex-shrink: 0; border-radius: var(--radius-full);
+  color: var(--mg-text-4); cursor: pointer;
+  transition: color var(--mg-duration-fast) ease, background var(--mg-duration-fast) ease;
+}
+.mg-side-clear:hover { color: var(--brand-base); background: var(--plaza-row-hover-bg); }
+/* 折叠箭头独立成钮（清空按钮固定在它左边）；点击行为与标题一致 */
+.mg-side-head-toggle {
+  display: inline-flex; align-items: center; flex-shrink: 0;
+  padding: 6px 2px; min-height: var(--mg-control-height-sm, 32px); cursor: pointer;
+}
 .mg-side-list { display: flex; flex-direction: column; gap: 2px; margin-top: 2px; }
 /* 2026-08 视觉改版稿：行改胶囊（radius-full），高度收矮一档 */
 .mg-side-row {
@@ -118,8 +130,51 @@
    （浅色档 oklab 低比例混透明叠白底发黄，走查退回过）。 */
 .mg-side-row:hover { background: var(--plaza-row-hover-bg); color: var(--mg-text-1); }
 .mg-side-row.is-active { background: var(--plaza-row-active-bg); color: var(--plaza-row-active-fg); font-weight: 700; }
+/* 行左侧小图标（输入类型模态图标 / 厂商字标，#872 需求点 3/5） */
+.mg-side-row-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0; color: var(--mg-text-3);
+}
+.mg-side-row.is-active .mg-side-row-icon { color: var(--plaza-row-active-fg); }
+/* 行右侧选中勾（#872 需求点 2，替代旧计数） */
+.mg-side-row > .truncate { min-width: 0; }
+.mg-side-row-check { margin-left: auto; flex-shrink: 0; color: var(--plaza-row-active-fg); }
 .mg-side-more { display: inline-flex; align-items: center; gap: 3px; padding: 6px 4px; font-size: 12px; font-weight: 600; color: var(--mg-text-3); cursor: pointer; }
 .mg-side-more:hover { color: var(--brand-base); }
+
+/* 上下文长度分档滑杆（#872 需求点 8，原型 marketplace-context-range）。
+   自绘刻度点 + 原生 range 透明轨道叠在上面，档位标签排最下一行。 */
+.mg-side-ctx-range { position: relative; padding: 8px 6px 4px; }
+.mg-side-ctx-track {
+  position: absolute; top: 16px; left: 13px; right: 13px; height: 3px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-radius: var(--radius-full); background: var(--mg-fill-1);
+  pointer-events: none;
+}
+.mg-side-ctx-track > span {
+  width: 7px; height: 7px; border-radius: var(--radius-full);
+  background: var(--mg-border);
+}
+.mg-side-ctx-track > span.is-passed { background: var(--plaza-row-active-fg); }
+.mg-side-ctx-range input[type='range'] {
+  position: relative; display: block; width: 100%; height: 20px; margin: 0;
+  appearance: none; -webkit-appearance: none; background: transparent; cursor: pointer;
+}
+.mg-side-ctx-range input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 15px; height: 15px;
+  border-radius: var(--radius-full); background: var(--plaza-row-active-fg);
+  border: 2.5px solid #fff; box-shadow: var(--mg-shadow-sm);
+}
+.mg-side-ctx-range input[type='range']::-moz-range-thumb {
+  width: 15px; height: 15px;
+  border-radius: var(--radius-full); background: var(--plaza-row-active-fg);
+  border: 2.5px solid #fff; box-shadow: var(--mg-shadow-sm);
+}
+.mg-side-ctx-labels {
+  display: flex; justify-content: space-between; margin-top: 2px;
+  font-size: 10.5px; color: var(--mg-text-4);
+}
+.mg-side-ctx-labels > span.is-active { color: var(--plaza-row-active-fg); font-weight: 700; }
 
 /* 能力标签下拉多选（对齐原型 marketplace-tag-select）：<details> 收起态是已选 chip 行，
    展开态在下方浮出剩余选项菜单——原生 details/summary 天然点外自动收起。 */
@@ -147,7 +202,9 @@
   position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 20;
   display: grid; gap: 2px; max-height: 280px; overflow-y: auto; padding: 6px;
   border: 1px solid var(--mg-border); border-radius: var(--radius-md);
-  background: var(--mg-bg-0); box-shadow: var(--mg-card-shadow);
+  /* 悬浮菜单用 Dropdown 语义层 --mg-bg-2（不透明，与排序下拉同层级）——
+     --mg-bg-0 已并入玻璃是半透明面，浮在列表上会透出底下的筛选行文字 */
+  background: var(--mg-bg-2); box-shadow: var(--mg-shadow-lg, var(--mg-card-shadow));
 }
 .mg-side-tag-menu-empty { padding: 6px 8px; font-size: 12px; color: var(--mg-text-4); }
 .mg-side-tag-option {

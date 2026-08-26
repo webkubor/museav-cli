@@ -112,7 +112,7 @@ import { marketLockedByDomain } from '@/lib/market-domain'
 import { applyBrandTheme, applyTheme, getSavedBrandTheme, getSavedTheme, readThemeFromUrl, saveTheme } from '@/lib/theme'
 import { getPlatformConfig } from '@/services/platform'
 import { useLangStore } from '@/store/use-brand-store'
-import { AppUpdatePrompt } from '@/components/app-update/AppUpdatePrompt'
+import { usePublicProtocolsStore } from '@/store/use-public-protocols-store'
 
 import { Toaster } from 'sonner'
 
@@ -203,6 +203,13 @@ export default function App() {
   // sonner 不吃 CSS 变量，主题得走 prop；用响应式 hook 让运行时切主题的 toast 也跟上
   const activeTheme = useActiveTheme()
 
+  // 协议标签目录：fetch-once-on-app-load，非阻塞——不接 onReady/platformReady，
+  // 拿不到就让消费方（CatalogSidebar/model-format/api-code-samples）一直用本地
+  // 兜底文案，不影响首屏（该接口依赖的三个后端仓库尚未合并到 test 前必然如此）。
+  useEffect(() => {
+    usePublicProtocolsStore.getState().fetchPublicProtocols()
+  }, [])
+
   useEffect(() => {
     // 从文档站跳转过来时 URL 带 ?theme=dark|light：优先采用并持久化，实现跨站主题同步。
     // 账号就绪后 DashboardHeader 会回写到用户偏好 key（见 mg:theme_from_url），避免被 getUserTheme 覆盖。
@@ -241,7 +248,6 @@ export default function App() {
           },
         }}
       />
-      <AppUpdatePrompt />
       <BrowserRouter>
         {NavLogger && <Suspense fallback={null}><NavLogger /></Suspense>}
         <PlatformLoader onReady={() => setPlatformReady(true)} />

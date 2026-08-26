@@ -124,7 +124,8 @@
     },
     "filtersButton": "Filters",
     "search": {
-      "placeholder": "Search model, API ID, provider or keyword…"
+      "placeholder": "Search model, API ID, provider or keyword…",
+      "clear": "Clear search"
     },
     "sort": {
       "default": "Recommended",
@@ -161,7 +162,11 @@
       "new": "New",
       "limitedFree": "Free",
       "modalityEmbedding": "Embedding",
-      "modalityFile": "File"
+      "modalityFile": "File",
+      "inputType": "Input types",
+      "any": "Any",
+      "contextMinAria": "Minimum context length",
+      "clearGroup": "Clear {{group}} filters"
     },
     "card": {
       "free": "Free",
@@ -208,6 +213,7 @@
       "ruleDimContext": "Context length",
       "ruleDimPeak": "Peak hours",
       "ruleRange": "Context range",
+      "ruleCondition": "Condition",
       "ruleTimeSlot": "Time slot",
       "ruleTimezone": "Timezone",
       "byInterface": "Per API contract",
@@ -230,6 +236,10 @@
       "entry": "Model Discovery",
       "placeholder": "Analysis modules are being wired up.",
       "backToDiscovery": "Back to Discovery"
+    },
+    "outputModality": {
+      "label": "Output modality",
+      "all": "All"
     }
   }
 }

@@ -22,13 +22,17 @@ import { OverflowTip } from '@/components/ui/OverflowTip'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
 import {
   currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, vendorFromModelId, detailSummary, modelVendorLabel,
-  priceTierLabel, mediaPrimaryPrice, firstPositivePrice, strikeOriginalPrice,
-  pricingRuleGroups, pricingRuleLabel, pricingRulePriceText, withPriceFrom, sortProtocols,
+  priceTierLabel, priceTierUnit, mediaPrimaryPrice, firstPositivePrice, strikeOriginalPrice,
+  pricingRuleGroups, pricingRuleLabel, pricingRulePriceText, pricingRuleStrikeText,
+  pricingRuleSubLabel, pricingRulesHaveSub, withPriceFrom, sortProtocols,
+  PROTOCOL_LABEL_ZH, PROTOCOL_LABEL_EN, mergeProtocolLabels,
 } from '../model-format'
+import { usePublicProtocolsStore } from '@/store/use-public-protocols-store'
 import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 // 任务/类别推导与广场卡片共用一份（lib/login-intent.ts 已有同向引用的先例）；
 // 媒体判定与「可体验任务」格都以模态推导为准，不读已废弃的 experience_types。
-import { experienceTaskLabel, modelExperienceTasks, resolveModelCategory } from '@/pages/models/model-experience-data'
+import { modelExperienceTasks, resolveModelCategory } from '@/pages/models/model-experience-data'
+import { ExperienceTaskTags } from './ExperienceTaskTags'
 
 interface ModelDetailPanelProps {
   detail: CatalogModelDetail
@@ -69,7 +73,9 @@ function Metric({
         <OverflowTip text={value || '—'} className="mg-metric-value-main" />
         {unit && <i className="mg-metric-unit">{unit}</i>}
         {valueTag && <i className="mg-metric-ttl">{valueTag}</i>}
-        {/* 划线原价：跟在折扣后价格后面，装饰性，不是真实扣费价 */}
+        {/* 划线原价：跟在折扣后价格后面，装饰性，不是真实扣费价。
+            裸划线对齐原型（App.tsx <s>¥2/M</s>），2026-08-26 产品拍板回退
+            #860 加的「原价/was」前缀 */}
         {strike && <s className="mg-metric-strike">{strike}</s>}
       </span>
       {subValue && (
@@ -85,6 +91,12 @@ function Metric({
 export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions }: ModelDetailPanelProps) {
   const { t, i18n } = useTranslation()
   const isZh = i18n.language.startsWith('zh')
+  const publicProtocolItems = usePublicProtocolsStore((s) => s.items)
+  const protocolLabelMap = mergeProtocolLabels(
+    isZh ? PROTOCOL_LABEL_ZH : PROTOCOL_LABEL_EN,
+    publicProtocolItems,
+    isZh ? 'label' : 'label_en',
+  )
   // provider（对外厂商名）优先；详情接口两者都不下发时用 model_id 前缀兜底（见 model-format）
   const vendor = modelVendorLabel(detail, '') || vendorHint || vendorFromModelId(detail.model_id)
 
@@ -156,17 +168,16 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
   const category = resolveModelCategory(detail)
   const isMediaModel = category !== 'dialogue'
   const experienceTasks = modelExperienceTasks(detail)
-  const tasksLabel = experienceTasks.length > 0
-    ? [...new Set(experienceTasks.map(experienceTaskLabel))].join(' / ')
-    : t('modelsCatalog.button.comingSoon')
-  const primaryRaw = mediaPrimaryPrice(detail.pricing, detail.price_unit, priceTiers)
+  const primaryRaw = mediaPrimaryPrice(detail.pricing, detail.price_unit, priceTiers, detail.price_unit_en)
   const primary = withPriceFrom(priceText(primaryRaw.amount, symbol, isFree ? freeLabel : '', primaryRaw.unit, isFree), hasGradient)
   // firstPositivePrice 而非 ??：per_call 模型 original_output 恒 "0"，会把镜像在
   // original_input 的折前价截住（seedream「限时71折」无划线的前端侧成因）
   // 末位候选 per_call_price：促销期它维持折前原价（折后现价在 input_per_1m），
   // original_* 缺发时靠它兜底；仅促销卡参与，守卫会拦掉 ≤ 现价的取值
+  // 首位候选与卡片同口径：主价那一档自己的折前价优先（prd#863 ④）。
   const strikePrimaryVal = strikeOriginalPrice(
     firstPositivePrice(
+      primaryRaw.originalAmount,
       promo?.original_output_per_1m, promo?.original_input_per_1m, promo?.original_price,
       promo ? detail.pricing?.per_call_price : undefined,
     ),
@@ -244,7 +255,7 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
           <div className="mg-detail-tags">
             {detail.modalities.map((m) => <ModalityBadge key={m} modality={m} />)}
             {sortProtocols(detail.protocols ?? []).map((p) => (
-              <span key={p} className={`mg-proto is-${p}`}>{protocolLabel(p, isZh)}</span>
+              <span key={p} className={`mg-proto is-${p}`}>{protocolLabel(p, isZh, protocolLabelMap)}</span>
             ))}
             {capabilities.map((c) => (
               <span key={c} className="mg-mcard-tag">{c}</span>
@@ -269,7 +280,11 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
             />
             <Metric label={t('modelsCatalog.detail.ruleUnit')} value={billingUnitText} />
             <Metric label={t('modelsCatalog.detail.mainSpec')} value={mainSpecText} />
-            <Metric label={t('modelsCatalog.card.experienceTasks')} value={tasksLabel} />
+            {/* 可体验任务改独立标签展示（#872 需求点 10） */}
+            <div className="mg-metric">
+              <span className="mg-metric-label">{t('modelsCatalog.card.experienceTasks')}</span>
+              <ExperienceTaskTags tasks={experienceTasks} />
+            </div>
           </>
         ) : (
           <>
@@ -345,61 +360,95 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {priceTiers.map((tier, idx) => (
-                      <TableRow key={`${tier.bucket}-${tier.label}-${idx}`}>
-                        <TableCell>{priceTierLabel(tier, isZh)}</TableCell>
-                        <TableCell>{tier.unit}</TableCell>
-                        <TableCell>{`${symbol}${trimPriceZeros(tier.price)}/${tier.unit}`}</TableCell>
-                      </TableRow>
-                    ))}
+                    {priceTiers.map((tier, idx) => {
+                      // 矩阵促销逐档打折，划线也得逐档给（prd#863）：original_price
+                      // 只在这一档真被促销改过时才下发，守卫仍拦 ≤ 现价的取值。
+                      const tierUnit = priceTierUnit(tier)
+                      const tierStrike = strikeOriginalPrice(tier.original_price, tier.price, isFree)
+                      return (
+                        <TableRow key={`${tier.bucket}-${tier.label}-${idx}`}>
+                          <TableCell>{priceTierLabel(tier, isZh)}</TableCell>
+                          <TableCell>{tierUnit}</TableCell>
+                          <TableCell>
+                            {`${symbol}${trimPriceZeros(tier.price)}/${tierUnit}`}
+                            {/* 与梯度表/摘要行同口径：裸划线对齐原型，带单位与 5px 间距
+                                （mg-metric-strike），角色靠划线+灰字区分 */}
+                            {tierStrike != null && (
+                              <s className="mg-metric-strike">
+                                {`${symbol}${trimPriceZeros(String(tierStrike))}/${tierUnit}`}
+                              </s>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
                   </TableBody>
                 </Table>
               </div>
             )}
-            {ruleGroups.map(({ dimension, rules }) => (
-              <div key={dimension}>
-                <h4 className="mg-text-label text-mg-text-3 mb-2">
-                  {/* 未知维度降级用通用表头，区间列直接吃后端 label（prd#864 A3） */}
-                  {t(dimension === 'context_length'
-                    ? 'modelsCatalog.detail.ruleDimContext'
-                    : dimension === 'peak_time'
-                      ? 'modelsCatalog.detail.ruleDimPeak'
-                      : 'modelsCatalog.detail.ruleDimOther')}
-                </h4>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>
-                        {t(dimension === 'context_length'
-                          ? 'modelsCatalog.detail.ruleRange'
-                          : dimension === 'peak_time'
-                            ? 'modelsCatalog.detail.ruleTimeSlot'
-                            : 'modelsCatalog.detail.ruleRangeOther')}
-                      </TableHead>
-                      {dimension === 'peak_time' && (
-                        <TableHead>{t('modelsCatalog.detail.ruleTimezone')}</TableHead>
-                      )}
-                      <TableHead>{t('models.detail.pricingInput')}</TableHead>
-                      <TableHead>{t('models.detail.pricingOutput')}</TableHead>
-                      <TableHead>{t('models.detail.pricingCacheRead')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {rules.map((rule, idx) => (
-                      <TableRow key={`${dimension}-${idx}`}>
-                        <TableCell>{pricingRuleLabel(rule, isZh)}</TableCell>
-                        {dimension === 'peak_time' && (
-                          <TableCell>{rule.timezone || '—'}</TableCell>
+            {ruleGroups.map(({ dimension, rules }) => {
+              // 同一区间被输出长度等次级条件拆成多行时补「条件」列区分
+              //（prd#864：后端 sub_label 已下发，缺列会读成两行同名脏数据）
+              const hasSub = pricingRulesHaveSub(rules)
+              return (
+                <div key={dimension}>
+                  <h4 className="mg-text-label text-mg-text-3 mb-2">
+                    {/* 未知维度降级用通用表头，区间列直接吃后端 label（prd#864 A3） */}
+                    {t(dimension === 'context_length'
+                      ? 'modelsCatalog.detail.ruleDimContext'
+                      : dimension === 'peak_time'
+                        ? 'modelsCatalog.detail.ruleDimPeak'
+                        : 'modelsCatalog.detail.ruleDimOther')}
+                  </h4>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>
+                          {t(dimension === 'context_length'
+                            ? 'modelsCatalog.detail.ruleRange'
+                            : dimension === 'peak_time'
+                              ? 'modelsCatalog.detail.ruleTimeSlot'
+                              : 'modelsCatalog.detail.ruleRangeOther')}
+                        </TableHead>
+                        {hasSub && (
+                          <TableHead>{t('modelsCatalog.detail.ruleCondition')}</TableHead>
                         )}
-                        <TableCell>{pricingRulePriceText(rule, 'input', symbol)}</TableCell>
-                        <TableCell>{pricingRulePriceText(rule, 'output', symbol)}</TableCell>
-                        <TableCell>{pricingRulePriceText(rule, 'cache_read', symbol)}</TableCell>
+                        {dimension === 'peak_time' && (
+                          <TableHead>{t('modelsCatalog.detail.ruleTimezone')}</TableHead>
+                        )}
+                        <TableHead>{t('models.detail.pricingInput')}</TableHead>
+                        <TableHead>{t('models.detail.pricingOutput')}</TableHead>
+                        <TableHead>{t('models.detail.pricingCacheRead')}</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            ))}
+                    </TableHeader>
+                    <TableBody>
+                      {rules.map((rule, idx) => (
+                        <TableRow key={`${dimension}-${idx}`}>
+                          <TableCell>{pricingRuleLabel(rule, isZh)}</TableCell>
+                          {hasSub && (
+                            <TableCell>{pricingRuleSubLabel(rule, isZh) ?? '—'}</TableCell>
+                          )}
+                          {dimension === 'peak_time' && (
+                            <TableCell>{rule.timezone || '—'}</TableCell>
+                          )}
+                          {/* 促销期每档折后为主、折前划线并列（prd#860 方案 2，#867 字段）；
+                              与摘要行同一守卫，原价缺失或 ≤ 现价不划 */}
+                          {(['input', 'output', 'cache_read'] as const).map((kind) => {
+                            const strike = pricingRuleStrikeText(rule, kind, symbol)
+                            return (
+                              <TableCell key={kind}>
+                                {pricingRulePriceText(rule, kind, symbol)}
+                                {strike && <s className="mg-metric-strike">{strike}</s>}
+                              </TableCell>
+                            )
+                          })}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )
+            })}
             {ruleGroups.length > 0 && (
               // prd#864 A4：0–32K 档还存在输出长度子档（后端投影暂只保留最低价），
               // 脚注兜住「把起始档当唯一价」的误读

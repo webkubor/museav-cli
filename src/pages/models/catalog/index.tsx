@@ -6,10 +6,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useQuery, useQueries, keepPreviousData } from '@tanstack/react-query'
-import { LuSearch, LuChevronDown, LuCheck, LuSlidersHorizontal, LuLayers, LuZap, LuBuilding2, LuShieldCheck, LuChartLine } from 'react-icons/lu'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
+import {
+  LuSearch, LuChevronDown, LuCheck, LuSlidersHorizontal, LuLayers, LuZap, LuBuilding2, LuShieldCheck,
+  LuChartLine, LuColumns2, LuType, LuImage, LuVideo, LuAudioLines, LuDatabase, LuX,
+} from 'react-icons/lu'
+import type { IconType } from 'react-icons'
 import { Button } from '@/components/ui/Button'
-import { listModels, listModelTags, listModelFacets, listFeatured } from '@/services/catalog'
+import { listModels, listModelTags, listFeatured } from '@/services/catalog'
 import { useAuthStore } from '@/store/auth'
 import { toLoginWithRedirect } from '@/lib/redirect'
 import { trackEvent, trackPageView } from '@/lib/track'
@@ -17,14 +21,30 @@ import { resolveModelCategory } from '../model-experience-data'
 import { CatalogCard } from './CatalogCard'
 import { CatalogFeatured } from './CatalogFeatured'
 import { CatalogSidebar } from './CatalogSidebar'
-import { GROUP_PARAM_KEY, type FilterGroupId } from './modelCatalogFilterLogic'
+import {
+  OUTPUT_MODALITY_CODES,
+  parseCatalogFilters,
+  matchesCatalogFilters,
+  matchesCatalogFiltersExceptOutput,
+  outputModalitiesOf,
+} from './modelCatalogFilterLogic'
 import { ModelsCompareModal } from '../components/ModelsCompareModal'
 import { queryLengthBucket, diffFilterChange, buildFilterSummary } from './catalog-tracking'
 import type { CatalogModelItem } from '@/types'
 import './catalog.css'
 
 type SortKey = 'default' | 'newest' | 'cheapest'
-// 上下文阈值改由服务端 facets 下发，前端不再硬编码（原 CTX_THRESHOLDS 已删除）。
+
+/** 输出模态分类栏图标（原型 marketplaceOutputModalityOptions 同款隐喻） */
+const OUTPUT_TAB_ICON: Record<string, IconType> = {
+  all: LuColumns2,
+  text: LuType,
+  image: LuImage,
+  video: LuVideo,
+  audio: LuAudioLines,
+  embedding: LuDatabase,
+  rerank: LuSlidersHorizontal,
+}
 
 
 export default function ModelsCatalogPage() {
@@ -55,6 +75,7 @@ export default function ModelsCatalogPage() {
   const [compareInitialIds, setCompareInitialIds] = useState<string[]>([])
   const [compareCurrentModelId, setCompareCurrentModelId] = useState<string | undefined>(undefined)
   const sortRef = useRef<HTMLDivElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
   const gridRef = useRef<HTMLDivElement>(null)
   const revealedCardsRef = useRef(new WeakSet<Element>())
 
@@ -64,36 +85,19 @@ export default function ModelsCatalogPage() {
     cheapest: t('modelsCatalog.sort.cheapest'),
   }
 
-  // 原型的第一组筛选是「模型厂商」(vendor)，不是模型系列(family)。
-  const selectedVendor = selected.find((k) => k.startsWith('vendor:'))?.split(':')[1]
-  const selectedModality = selected.find((k) => k.startsWith('modality:'))?.split(':')[1] as
-    | 'text' | 'image' | 'audio' | 'video' | 'embedding' | 'rerank' | 'transcription' | undefined
-  const selectedTags = selected.filter((k) => k.startsWith('tag:')).map((k) => k.split(':')[1])
-  const selectedCtx = selected.find((k) => k.startsWith('ctx:'))?.split(':')[1]
-  const selectedPrice = selected.find((k) => k.startsWith('price:'))?.split(':')[1]
-
-  const selectedProtocol = selected.find((k) => k.startsWith('protocol:'))?.split(':')[1] as
-    | 'openai' | 'anthropic' | 'other' | undefined
-  const promoOnly = selected.includes('promo:1')
+  /** `dim:value` 编码的筛选状态（多选维度会有同前缀多项），解析口径见 parseCatalogFilters */
+  const filterState = useMemo(() => parseCatalogFilters(selected), [selected])
 
   /**
-   * 筛选交给服务端。此前是 page_size:100 一次拉全量再本地 filter —— 随模型数
-   * 增长必然退化，且计数无法反映真实结果集。
-   * 上下文阈值不再由前端硬编码：把用户选中的桶原样作为 context_min 传下去，
-   * 桶的取值来自 facets 接口（服务端定义）。
+   * 只有搜索与排序仍走服务端（推荐排序的口径是服务端定义的，前端不重算）；
+   * 维度筛选改为前端本地执行 —— 多选厂商/协议与输入类型筛选超出了后端单值参数
+   * 契约（#872，见 modelCatalogFilterLogic.ts 头注），列表本就一次拉全。
    */
   const listParams = useMemo(() => ({
     page_size: 100,
-    provider: selectedVendor || undefined,
-    modality: selectedModality || undefined,
     q: search.trim() || undefined,
-    protocol: selectedProtocol,
-    capability_tag: selectedTags.length ? selectedTags : undefined,
-    context_min: selectedCtx ? Number(selectedCtx) : undefined,
-    price: (selectedPrice as 'free' | 'paid' | undefined) || undefined,
-    promo: promoOnly || undefined,
     sort: sort === 'default' ? undefined : sort,
-  }), [selectedVendor, selectedModality, search, selectedProtocol, selectedTags, selectedCtx, selectedPrice, promoOnly, sort])
+  }), [search, sort])
 
   const modelsQuery = useQuery({
     queryKey: ['catalog-models', listParams],
@@ -103,47 +107,6 @@ export default function ModelsCatalogPage() {
     // 整页切回 loading 骨架屏再切回列表，视觉上就是"闪一下"。切筛选时结果集
     // 不会突变，保留旧数据直到新数据到位更符合直觉。
     placeholderData: keepPreviousData,
-  })
-
-  /**
-   * 侧栏计数。与列表并发发起、共用同一份 listParams —— 两者若发送不同筛选，
-   * 计数描述的就是与旁边列表不同的结果集。
-   */
-  const facetsQuery = useQuery({
-    queryKey: ['catalog-model-facets', listParams],
-    queryFn: () => listModelFacets(listParams),
-    staleTime: 5 * 60_000,
-    placeholderData: keepPreviousData,
-  })
-  const facets = facetsQuery.data
-
-  /**
-   * 各组「全部」的计数（shared/modelgo_prd#330）。口径与取舍见 CatalogSidebar 的
-   * GROUP_PARAM_KEY 注释：只有**有选中项**的维度才补发一次「剔除本维度条件」的 facets，
-   * 没选中的维度剔除等于没剔除，沿用 facets.total 即可（React Query 会把两者去重成同一
-   * 份缓存，不会多打一枪）。
-   */
-  const activeGroups = useMemo(
-    () => (Object.keys(GROUP_PARAM_KEY) as FilterGroupId[]).filter(
-      (g) => listParams[GROUP_PARAM_KEY[g]] !== undefined,
-    ),
-    [listParams],
-  )
-  const groupTotalQueries = useQueries({
-    queries: activeGroups.map((g) => {
-      const params = { ...listParams, [GROUP_PARAM_KEY[g]]: undefined } as typeof listParams
-      return {
-        queryKey: ['catalog-model-facets', params],
-        queryFn: () => listModelFacets(params),
-        staleTime: 5 * 60_000,
-        placeholderData: keepPreviousData,
-      }
-    }),
-  })
-  const groupTotals: Partial<Record<FilterGroupId, number>> = {}
-  activeGroups.forEach((g, i) => {
-    const groupTotal = groupTotalQueries[i]?.data?.total
-    if (typeof groupTotal === 'number') groupTotals[g] = groupTotal
   })
 
   /**
@@ -181,15 +144,39 @@ export default function ModelsCatalogPage() {
   }, [])
 
   /**
-   * 搜索、能力标签、上下文、价格、协议、折扣与 recommended/newest/cheapest 排序
-   * 全部由服务端执行（见 listParams），这里不再重复过滤 —— 重复过滤会让侧栏计数
-   * 与实际列表对不上。
+   * 维度筛选本地执行（#872）：组内 OR、组间 AND，排序沿用服务端返回顺序。
+   * 拆成「除输出模态外」与「输出模态」两步 —— 输出模态分类栏的计数要描述
+   * 「其余条件都生效、仅本维度不设限」的结果集（标准 faceted search），
+   * 直接对最终结果集计数会让未选中的分类恒为 0。
    *
    * qa#291 二轮反馈：「热门」排序已删除——原型 App.tsx 只有 推荐排序/最新发布
    * 两个选项，没有热门；服务端热度排序也确实没上线，需求方确认可以直接删掉，
    * 不必等后端就绪再"原地替换"（之前的决策）。
    */
-  const visibleModels = allModels
+  const modelsBeforeOutput = useMemo(
+    () => allModels.filter((m) => matchesCatalogFiltersExceptOutput(m, filterState)),
+    [allModels, filterState],
+  )
+  const visibleModels = useMemo(
+    () => modelsBeforeOutput.filter((m) => matchesCatalogFilters(m, filterState)),
+    [modelsBeforeOutput, filterState],
+  )
+
+  /** 输出模态分类栏计数（#872 需求点 9）：数量为 0 时前端隐藏数字（渲染处判断） */
+  const outputCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: modelsBeforeOutput.length }
+    for (const code of OUTPUT_MODALITY_CODES) {
+      counts[code] = modelsBeforeOutput.filter((m) => outputModalitiesOf(m).includes(code)).length
+    }
+    return counts
+  }, [modelsBeforeOutput])
+
+  const outputActive = filterState.outputModality ?? 'all'
+  const pickOutputModality = (code: string) =>
+    setSelected((prev) => [
+      ...prev.filter((k) => !k.startsWith('modality:')),
+      ...(code === 'all' ? [] : [`modality:${code}`]),
+    ])
 
   /**
    * 卡片进入视口前的轻量过渡。
@@ -233,7 +220,7 @@ export default function ModelsCatalogPage() {
     trackEvent('marketplace_view', {
       auth_state: isAuthenticated ? 'authenticated' : 'anonymous',
       entry_source: (location.state as { entrySource?: string } | null)?.entrySource ?? 'direct',
-      catalog_count: facets?.total ?? allModels.length,
+      catalog_count: allModels.length,
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modelsQuery.isLoading, modelsQuery.isError])
@@ -394,14 +381,15 @@ export default function ModelsCatalogPage() {
           2026-08 视觉改版稿：搜索/排序不再全宽独立一行，收进右列与筛选侧栏
           顶部平行对齐（侧栏顶 = 搜索框顶）。 */}
       <div className="mg-plaza-layout">
-        <div className={`models-sticky mg-side-card ${filtersOpen ? 'block' : 'hidden lg:block'}`}>
+        {/* 筛选栏不吸顶（需求方 2026-08-26 口径）：往下滚动浏览模型时侧栏随页面滚走，
+            左列留空；lg:self-start 防止 grid 列拉伸把卡片撑满整列高度 */}
+        <div className={`mg-side-card lg:self-start ${filtersOpen ? 'block' : 'hidden lg:block'}`}>
           <CatalogSidebar
             tags={tags}
+            models={allModels}
             selected={selected}
             setSelected={setSelected}
             isZh={isZh}
-            facets={facets}
-            groupTotals={groupTotals}
           />
         </div>
 
@@ -411,12 +399,26 @@ export default function ModelsCatalogPage() {
             <div className="catalog-search-wrap relative flex-1">
               <LuSearch size={16} className="catalog-search-icon absolute left-4 top-1/2 -translate-y-1/2" />
               <input
+                ref={searchInputRef}
                 type="text"
                 placeholder={t('modelsCatalog.search.placeholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="mg-search-input"
               />
+              {/* 有输入内容时显示清空按钮（#872 需求点 11，原型 marketplace-search-clear）：
+                  清空后焦点留在搜索框，方便继续输入 */}
+              {search && (
+                <button
+                  type="button"
+                  className="mg-search-clear"
+                  title={t('modelsCatalog.search.clear')}
+                  aria-label={t('modelsCatalog.search.clear')}
+                  onClick={() => { setSearch(''); searchInputRef.current?.focus() }}
+                >
+                  <LuX size={14} />
+                </button>
+              )}
             </div>
             <div className="relative" ref={sortRef}>
               <button type="button" onClick={() => setSortOpen((v) => !v)} className="mg-sort-btn">
@@ -441,6 +443,30 @@ export default function ModelsCatalogPage() {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* 输出模态分类栏（#872 需求点 9）：搜索栏下方，与侧栏各维度组合筛选；
+              分类按钮显示当前其余条件下的模型数量，数量为 0 时隐藏数字。 */}
+          <div className="mg-output-tabs" role="tablist" aria-label={t('modelsCatalog.outputModality.label')}>
+            {(['all', ...OUTPUT_MODALITY_CODES] as const).map((code) => {
+              const Icon = OUTPUT_TAB_ICON[code]
+              const active = outputActive === code
+              const count = outputCounts[code] ?? 0
+              return (
+                <button
+                  key={code}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  className={active ? 'is-active' : ''}
+                  onClick={() => pickOutputModality(code)}
+                >
+                  <Icon size={14} strokeWidth={1.8} aria-hidden />
+                  <span>{code === 'all' ? t('modelsCatalog.outputModality.all') : t(`modelsCatalog.modality.${code}`)}</span>
+                  {count > 0 && <i>{count}</i>}
+                </button>
+              )
+            })}
           </div>
 
           {/* 列表状态 */}
@@ -473,7 +499,10 @@ export default function ModelsCatalogPage() {
                   canCompare={model.compare_enabled === true}
                   onCompare={(e) => { e.stopPropagation(); openCompare(model.id) }}
                   onPickProtocol={(p) =>
-                    setSelected((prev) => [...prev.filter((k) => !k.startsWith('protocol:')), `protocol:${p}`])
+                    // 协议已是多选维度（#872）：反查筛选做「加选」，已选中则不重复加
+                    setSelected((prev) =>
+                      prev.includes(`protocol:${p}`) ? prev : [...prev, `protocol:${p}`],
+                    )
                   }
                   onPickCapability={(tag) =>
                     setSelected((prev) =>

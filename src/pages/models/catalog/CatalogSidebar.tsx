@@ -1,114 +1,179 @@
 /**
- * 左侧筛选栏（对齐 PRD 原型 marketplaceFilterGroups）。
+ * 左侧筛选栏（对齐 PRD 原型 marketplaceFilterGroups，2026-08 改版 shared/modelgo_prd#872）。
  *
- * 分组顺序与命名严格照原型：折扣开关(顶部) → 模型厂商 → 模型类型 → API 协议 →
- * 能力标签 → 上下文长度 → 价格。
+ * 分组顺序照原型：折扣开关(顶部) → 输入类型 → 模型厂商 → API 协议 →
+ * 上下文长度(滑杆) → 能力标签 → 价格。
  *
- * ⚠️ 第一组是**模型厂商(vendor)**，不是模型系列(family) —— 两者是不同维度：
- * vendor 是原厂商（openai / anthropic / deepseek），family 是模型族代号
- * （glm / seed / claude）。原型筛的是厂商，所以这里改用 facets.vendors 驱动，
- * 不再用 model-families 字典。
+ * 与旧版的差异（#872 需求点 1/2/5/6/7/8）：
+ * - 各组不再有「全部」行，默认不选即不限；
+ * - 选项行右侧是勾选标记，不再显示计数（facets 计数链路已下线，见
+ *   modelCatalogFilterLogic.ts 头注）；
+ * - 输入类型/厂商/协议多选（组内 OR）；
+ * - 每组标题右侧有独立清空按钮，只清本组；
+ * - 上下文长度改 8 档滑杆（任意→1M）；
+ * - 厂商行带品牌字标（@model-go/icons，经 <ModelIcon> 渲染，DESIGN.md 铁律）。
  *
- * 所有筛选由服务端执行；每项计数来自 facets，且每个维度的计数已排除该维度自身的
- * 条件 —— 否则选中一个选项会让同组其它选项全变 0、侧栏成为死路。
+ * ⚠️ 厂商维度是**厂商(vendor)**不是模型系列(family)；选项从当前列表数据聚合
+ * （小写归一去重 —— 后端同一品牌会混发 `minimax`/`MiniMax` 两种大小写）。
  */
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LuChevronDown, LuX } from 'react-icons/lu'
-import type { CatalogModelTag, CatalogFacets, CatalogFacetBucket } from '@/types'
-import type { FilterGroupId } from './modelCatalogFilterLogic'
+import {
+  LuChevronDown, LuX, LuCheck, LuRotateCcw,
+  LuType, LuImage, LuAudioLines, LuVideo, LuFileText,
+} from 'react-icons/lu'
+import type { IconType } from 'react-icons'
+import { ModelIcon } from '@/features/models/components/ModelIcon'
+import type { CatalogModelItem, CatalogModelTag } from '@/types'
+import {
+  INPUT_TYPE_CODES,
+  CONTEXT_SLIDER_STOPS,
+  modelVendorCode,
+} from './modelCatalogFilterLogic'
+import { usePublicProtocolsStore } from '@/store/use-public-protocols-store'
+import { mergeProtocolLabels } from '@/features/models/model-format'
 
 const VENDOR_PREVIEW = 6
 
-/** 厂商展示名。后端下发小写标识，原型展示品牌写法。 */
+/** 厂商展示名。后端下发标识大小写不一，原型展示品牌写法。 */
 const VENDOR_LABEL_ZH: Record<string, string> = {
   openai: 'OpenAI', anthropic: 'Anthropic', deepseek: 'DeepSeek', moonshot: 'Moonshot',
-  zhipu: 'Z.ai', minimax: 'MiniMax', qwen: 'Qwen', volcengine: '火山方舟',
-  mistralai: 'Mistral AI', google: 'Google', meta: 'Meta', bytedance: 'ByteDance',
-  xai: 'xAI', baidu: '百度', tencent: '腾讯', hunyuan: '混元',
+  moonshotai: 'MoonshotAI', zhipu: 'Z.ai', minimax: 'MiniMax', qwen: 'Qwen',
+  volcengine: '火山方舟', mistralai: 'Mistral AI', google: 'Google', meta: 'Meta',
+  bytedance: 'ByteDance', xai: 'xAI', baidu: '百度', tencent: '腾讯', hunyuan: '混元',
 }
 const VENDOR_LABEL_EN: Record<string, string> = {
   openai: 'OpenAI', anthropic: 'Anthropic', deepseek: 'DeepSeek', moonshot: 'Moonshot',
-  zhipu: 'Z.ai', minimax: 'MiniMax', qwen: 'Qwen', volcengine: 'Volcengine',
-  mistralai: 'Mistral AI', google: 'Google', meta: 'Meta', bytedance: 'ByteDance',
-  xai: 'xAI', baidu: 'Baidu', tencent: 'Tencent', hunyuan: 'Hunyuan',
+  moonshotai: 'MoonshotAI', zhipu: 'Z.ai', minimax: 'MiniMax', qwen: 'Qwen',
+  volcengine: 'Volcengine', mistralai: 'Mistral AI', google: 'Google', meta: 'Meta',
+  bytedance: 'ByteDance', xai: 'xAI', baidu: 'Baidu', tencent: 'Tencent', hunyuan: 'Hunyuan',
 }
-function vendorLabel(code: string, isZh: boolean): string {
+function vendorLabel(code: string, fallback: string, isZh: boolean): string {
   const labels = isZh ? VENDOR_LABEL_ZH : VENDOR_LABEL_EN
-  return labels[code.toLowerCase()] || code.charAt(0).toUpperCase() + code.slice(1)
+  const raw = fallback || code
+  // 未收录品牌写法时兜底首字母大写（后端有 `kling` 这类全小写标识）
+  return labels[code] || raw.charAt(0).toUpperCase() + raw.slice(1)
 }
 
-// 模型类型的桶由服务端 facets 下发，取值是 gateway_models.output_modality
-//（text/image/audio/video/embedding/rerank/transcription）。未收录的码回落显示原码。
-const PROTOCOL_LABEL: Record<string, string> = { openai: 'OpenAI', anthropic: 'Anthropic' }
+/**
+ * API 协议筛选项：固定顺序展示端点粒度 12 值（2026-08-26 由 7 值扩容而来，
+ * 见 gateway_models.public_protocols/modelgo-model-gateway pkg/publicprotocols）。
+ * 静态列表而非从 facets 动态派生——理由同 vendor/modality 之外的固定分组：筛选项
+ * 本身是产品口径而非数据驱动，顺序固定成 Chat 优先、Google 原生透传 / 其他兜底在
+ * 后，跟卡片/详情标签排序（model-format.ts PROTOCOL_ORDER）保持一致体感。
+ *
+ * 下面两张表是**本地兜底**，不是真源——真源是 modelgo-model-gateway
+ * `pkg/publicprotocols` 注册表，经 /catalog/public-protocols 运行时拉取
+ * （usePublicProtocolsStore），拿到数据后用 mergeProtocolLabels 覆盖同名 code；
+ * 接口未上线/未返回时保留这份兜底文案，与 model-format.ts 的 PROTOCOL_LABEL_ZH/EN
+ * 用同一套措辞（厂商+能力英文专名，中英同名；只有 other 保留双语）。
+ */
+const PROTOCOL_FILTER_ORDER = [
+  'openai_chat_completions', 'openai_responses', 'openai_embeddings', 'openai_rerank',
+  'openai_images', 'openai_speech', 'openai_transcriptions',
+  'anthropic_messages',
+  'google_gemini', 'google_imagen', 'google_video',
+  'other',
+] as const
+const PROTOCOL_LABEL_ZH: Record<string, string> = {
+  openai_chat_completions: 'OpenAI Chat Completions',
+  openai_responses: 'OpenAI Responses',
+  openai_embeddings: 'OpenAI Embeddings',
+  openai_rerank: 'OpenAI Rerank',
+  openai_images: 'OpenAI Images',
+  openai_speech: 'OpenAI Speech',
+  openai_transcriptions: 'OpenAI Transcriptions',
+  anthropic_messages: 'Anthropic Messages',
+  google_gemini: 'Google Gemini',
+  google_imagen: 'Google Imagen',
+  google_video: 'Google Video',
+  other: '其他（异步任务类，如图像/音视频）',
+}
+const PROTOCOL_LABEL_EN: Record<string, string> = {
+  openai_chat_completions: 'OpenAI Chat Completions',
+  openai_responses: 'OpenAI Responses',
+  openai_embeddings: 'OpenAI Embeddings',
+  openai_rerank: 'OpenAI Rerank',
+  openai_images: 'OpenAI Images',
+  openai_speech: 'OpenAI Speech',
+  openai_transcriptions: 'OpenAI Transcriptions',
+  anthropic_messages: 'Anthropic Messages',
+  google_gemini: 'Google Gemini',
+  google_imagen: 'Google Imagen',
+  google_video: 'Google Video',
+  other: 'Other',
+}
 
-/** token 数 → 展示标签（1048576 → ≥1M）。阈值由服务端 facets 下发。
- *  qa#288 二轮反馈：原型 App.tsx:3942-3944 是"≥ 128K"（大于等于，带空格），
- *  不是">128K"（严格大于）——语义也对应筛选真实行为 context_min 是含边界的下限。 */
-function contextBucketLabel(tokens: string): string {
-  const n = Number(tokens)
-  if (!Number.isFinite(n) || n <= 0) return tokens
-  if (n >= 1_000_000) return `≥ ${Math.round(n / 1_048_576)}M`
-  return `≥ ${Math.round(n / 1000)}K`
+/** 输入类型小图标（原型 catalogModalityIcons + 文件 FileText） */
+const INPUT_TYPE_ICON: Record<string, IconType> = {
+  text: LuType, image: LuImage, audio: LuAudioLines, video: LuVideo, file: LuFileText,
 }
 
 interface Props {
   tags: CatalogModelTag[]
+  /** 当前列表数据（q/sort 之后、维度筛选之前），用于聚合厂商选项与折扣计数 */
+  models: CatalogModelItem[]
   selected: string[]
   setSelected: React.Dispatch<React.SetStateAction<string[]>>
   isZh: boolean
-  facets?: CatalogFacets
-  /** 各组「全部」的计数（已排除本组自身条件）；缺项回落 facets.total。见 GROUP_PARAM_KEY。 */
-  groupTotals?: Partial<Record<FilterGroupId, number>>
 }
 
-export function CatalogSidebar({ tags, selected, setSelected, isZh, facets, groupTotals }: Props) {
+export function CatalogSidebar({ tags, models, selected, setSelected, isZh }: Props) {
   const { t } = useTranslation()
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [showAllVendors, setShowAllVendors] = useState(false)
 
-  const pickOne = (dim: string, code: string | null) =>
-    setSelected((prev) => [...prev.filter((k) => !k.startsWith(`${dim}:`)), ...(code ? [`${dim}:${code}`] : [])])
+  // 协议筛选项文案：/catalog/public-protocols 拿到数据前后都直接渲染，不为它加
+  // loading 态——items 为 null 时 mergeProtocolLabels 原样返回下面这份本地兜底表。
+  const publicProtocolItems = usePublicProtocolsStore((s) => s.items)
+  const protocolLabelMap = useMemo(
+    () => mergeProtocolLabels(
+      isZh ? PROTOCOL_LABEL_ZH : PROTOCOL_LABEL_EN,
+      publicProtocolItems,
+      isZh ? 'label' : 'label_en',
+    ),
+    [isZh, publicProtocolItems],
+  )
+
   const toggle = (key: string) =>
     setSelected((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
+  /** 单选维度：点已选项取消，点新项替换 */
+  const pickOne = (dim: string, code: string | null) =>
+    setSelected((prev) => [...prev.filter((k) => !k.startsWith(`${dim}:`)), ...(code ? [`${dim}:${code}`] : [])])
+  /** 清空某维度全部选中项（#872 需求点 7：只清当前类别） */
+  const clearDim = (dim: string) =>
+    setSelected((prev) => prev.filter((k) => !k.startsWith(`${dim}:`)))
 
-  const vendorActive = selected.find((k) => k.startsWith('vendor:'))?.split(':')[1]
-  const modalityActive = selected.find((k) => k.startsWith('modality:'))?.split(':')[1]
-  const protocolActive = selected.find((k) => k.startsWith('protocol:'))?.split(':')[1]
-  const ctxActive = selected.find((k) => k.startsWith('ctx:'))?.split(':')[1]
-  const priceActive = selected.find((k) => k.startsWith('price:'))?.split(':')[1]
+  const activeOf = (dim: string) =>
+    selected.filter((k) => k.startsWith(`${dim}:`)).map((k) => k.slice(dim.length + 1))
+
+  const inputActive = activeOf('input')
+  const vendorActive = activeOf('vendor')
+  const protocolActive = activeOf('protocol')
+  const ctxActive = activeOf('ctx')[0]
+  const priceActive = activeOf('price')[0]
   const promoActive = selected.includes('promo:1')
 
-  const countOf = (buckets: CatalogFacetBucket[] | undefined, value: string) =>
-    buckets?.find((b) => b.value === value)?.count
-
-  /**
-   * 厂商桶防御性去重。
-   *
-   * 后端 catalog/model-facets 在聚合 vendors 桶时可能因 vendor identifier 大小写
-   * /拼写不一致（同一品牌出现 `qwen` 与 `Qwen` 等）下发多个桶（qa#<TBD>）。
-   * vendor 维度是单值字段，桶之间互斥计数（标准 faceted search），合并 count 安全。
-   * 同步把 v.value 归一成小写，让选中态比较也对大小写不敏感（旧 URL 里残留
-   * `vendor:Qwen` 也能命中合并后的 `vendor:qwen`，不会高亮错位）。
-   * 后端 facets 修好去重后可移除该兜底。
-   */
+  /** 厂商选项：小写归一去重，保留一条原始 provider 文案做展示兜底与图标解析 */
   const vendors = useMemo(() => {
-    const raw = facets?.vendors ?? []
-    const map = new Map<string, CatalogFacetBucket>()
-    for (const v of raw) {
-      const key = v.value.toLowerCase()
-      const existing = map.get(key)
-      if (existing) existing.count += v.count
-      else map.set(key, { value: key, count: v.count })
+    const map = new Map<string, string>()
+    for (const m of models) {
+      const code = modelVendorCode(m)
+      if (code && !map.has(code)) map.set(code, m.provider || m.vendor || code)
     }
-    return Array.from(map.values())
-  }, [facets?.vendors])
-  const shownVendors = showAllVendors ? vendors : vendors.slice(0, VENDOR_PREVIEW)
-  /** 大小写不敏感的选中值（用于 active 行高亮 & 取消选中判断） */
-  const vendorActiveLower = vendorActive?.toLowerCase()
-  const total = facets?.total
-  /** 某组「全部」的计数：优先用已排除本组自身条件的 groupTotals；该组没有选中项时二者本就相等。 */
-  const allCount = (group: FilterGroupId) => groupTotals?.[group] ?? total
+    return Array.from(map.entries())
+      .map(([code, raw]) => ({ code, raw, label: vendorLabel(code, raw, isZh) }))
+      .sort((a, b) => a.label.localeCompare(b.label))
+  }, [models, isZh])
+
+  /** 收起态下已选厂商藏在折叠区时保持展开（原型 selectedHidden 口径） */
+  const selectedHiddenVendor = vendors
+    .slice(VENDOR_PREVIEW)
+    .some((v) => vendorActive.includes(v.code))
+  const vendorsExpanded = showAllVendors || selectedHiddenVendor
+  const shownVendors = vendorsExpanded ? vendors : vendors.slice(0, VENDOR_PREVIEW)
+
+  const promoCount = useMemo(() => models.filter((m) => Boolean(m.promotion)).length, [models])
 
   const toggleCollapse = (key: string) =>
     setCollapsed((prev) => {
@@ -123,7 +188,7 @@ export function CatalogSidebar({ tags, selected, setSelected, isZh, facets, grou
       {/* 折扣开关置顶（原型口径），用 switch 而非 chip */}
       <div className="mg-side-discount">
         <span>
-          {t('modelsCatalog.sidebar.offers')} <i>({facets?.promo_count ?? 0})</i>
+          {t('modelsCatalog.sidebar.offers')} <i>({promoCount})</i>
         </span>
         <button
           type="button"
@@ -137,60 +202,109 @@ export function CatalogSidebar({ tags, selected, setSelected, isZh, facets, grou
         </button>
       </div>
 
-      <Group id="vendor" title={t('modelsCatalog.sidebar.provider')} collapsed={collapsed} onToggle={toggleCollapse}>
+      <Group
+        id="input"
+        title={t('modelsCatalog.sidebar.inputType')}
+        collapsed={collapsed}
+        onToggle={toggleCollapse}
+        hasSelection={inputActive.length > 0}
+        onClear={() => clearDim('input')}
+      >
         <div className="mg-side-list">
-          <Row active={!vendorActive} label={t('modelsCatalog.sidebar.all')} count={allCount('vendor')} onClick={() => pickOne('vendor', null)} />
-          {/* 原型的厂商行是纯文本，不带品牌图标 */}
+          {INPUT_TYPE_CODES.map((code) => {
+            const Icon = INPUT_TYPE_ICON[code]
+            return (
+              <Row
+                key={code}
+                active={inputActive.includes(code)}
+                label={t(`modelsCatalog.modality.${code}`)}
+                icon={<Icon size={14} aria-hidden />}
+                onClick={() => toggle(`input:${code}`)}
+              />
+            )
+          })}
+        </div>
+      </Group>
+
+      <Group
+        id="vendor"
+        title={t('modelsCatalog.sidebar.provider')}
+        collapsed={collapsed}
+        onToggle={toggleCollapse}
+        hasSelection={vendorActive.length > 0}
+        onClear={() => clearDim('vendor')}
+      >
+        <div className="mg-side-list">
           {shownVendors.map((v) => (
             <Row
-              key={v.value}
-              active={vendorActiveLower === v.value}
-              label={vendorLabel(v.value, isZh)}
-              count={v.count}
-              onClick={() => pickOne('vendor', vendorActiveLower === v.value ? null : v.value)}
+              key={v.code}
+              active={vendorActive.includes(v.code)}
+              label={v.label}
+              icon={(
+                <ModelIcon
+                  model={{ vendor: v.raw, provider: v.raw, display_name: v.label }}
+                  variant="dense"
+                  rounded="rounded-full"
+                  className="mg-side-vendor-icon"
+                />
+              )}
+              onClick={() => toggle(`vendor:${v.code}`)}
             />
           ))}
-          {vendors.length > VENDOR_PREVIEW && (
+          {vendors.length > VENDOR_PREVIEW && !selectedHiddenVendor && (
             <button type="button" className="mg-side-more" onClick={() => setShowAllVendors((x) => !x)}>
-              {showAllVendors ? t('modelsCatalog.sidebar.less') : t('modelsCatalog.sidebar.more')}
-              <LuChevronDown size={13} className={showAllVendors ? 'rotate-180' : ''} />
+              {vendorsExpanded ? t('modelsCatalog.sidebar.less') : t('modelsCatalog.sidebar.more')}
+              <LuChevronDown size={13} className={vendorsExpanded ? 'rotate-180' : ''} />
             </button>
           )}
         </div>
       </Group>
 
-      <Group id="modality" title={t('modelsCatalog.sidebar.modality')} collapsed={collapsed} onToggle={toggleCollapse}>
+      <Group
+        id="protocol"
+        title={t('modelsCatalog.sidebar.apiProtocol')}
+        collapsed={collapsed}
+        onToggle={toggleCollapse}
+        hasSelection={protocolActive.length > 0}
+        onClear={() => clearDim('protocol')}
+      >
         <div className="mg-side-list">
-          <Row active={!modalityActive} label={t('modelsCatalog.sidebar.all')} count={allCount('modality')} onClick={() => pickOne('modality', null)} />
-          {(facets?.modalities ?? []).map((m) => (
+          {PROTOCOL_FILTER_ORDER.map((p) => (
             <Row
-              key={m.value}
-              active={modalityActive === m.value}
-              label={t(`modelsCatalog.modality.${m.value}`, { defaultValue: m.value })}
-              count={m.count}
-              onClick={() => pickOne('modality', modalityActive === m.value ? null : m.value)}
+              key={p}
+              active={protocolActive.includes(p)}
+              label={protocolLabelMap[p]}
+              onClick={() => toggle(`protocol:${p}`)}
             />
           ))}
         </div>
       </Group>
 
-      <Group id="protocol" title={t('modelsCatalog.sidebar.apiProtocol')} collapsed={collapsed} onToggle={toggleCollapse}>
-        <div className="mg-side-list">
-          <Row active={!protocolActive} label={t('modelsCatalog.sidebar.all')} count={allCount('protocol')} onClick={() => pickOne('protocol', null)} />
-          {(['openai', 'anthropic', 'other'] as const).map((p) => (
-            <Row
-              key={p}
-              active={protocolActive === p}
-              label={p === 'other' ? t('modelsCatalog.sidebar.otherProtocol') : PROTOCOL_LABEL[p]}
-              count={countOf(facets?.protocols, p)}
-              onClick={() => pickOne('protocol', protocolActive === p ? null : p)}
-            />
-          ))}
-        </div>
+      <Group
+        id="ctx"
+        title={t('modelsCatalog.sidebar.context')}
+        collapsed={collapsed}
+        onToggle={toggleCollapse}
+        hasSelection={Boolean(ctxActive) && ctxActive !== 'all'}
+        onClear={() => clearDim('ctx')}
+      >
+        <ContextRange
+          value={ctxActive}
+          anyLabel={t('modelsCatalog.sidebar.any')}
+          ariaLabel={t('modelsCatalog.sidebar.contextMinAria')}
+          onChange={(code) => pickOne('ctx', code === 'all' ? null : code)}
+        />
       </Group>
 
       {tags.length > 0 && (
-        <Group id="capability" title={t('modelsCatalog.sidebar.capabilities')} collapsed={collapsed} onToggle={toggleCollapse}>
+        <Group
+          id="tag"
+          title={t('modelsCatalog.sidebar.capabilities')}
+          collapsed={collapsed}
+          onToggle={toggleCollapse}
+          hasSelection={selected.some((k) => k.startsWith('tag:'))}
+          onClear={() => clearDim('tag')}
+        >
           <TagDropdown
             tags={tags}
             selected={selected}
@@ -202,30 +316,20 @@ export function CatalogSidebar({ tags, selected, setSelected, isZh, facets, grou
         </Group>
       )}
 
-      <Group id="ctx" title={t('modelsCatalog.sidebar.context')} collapsed={collapsed} onToggle={toggleCollapse}>
+      <Group
+        id="price"
+        title={t('modelsCatalog.sidebar.pricing')}
+        collapsed={collapsed}
+        onToggle={toggleCollapse}
+        hasSelection={Boolean(priceActive)}
+        onClear={() => clearDim('price')}
+      >
         <div className="mg-side-list">
-          <Row active={!ctxActive} label={t('modelsCatalog.sidebar.all')} count={allCount('ctx')} onClick={() => pickOne('ctx', null)} />
-          {(facets?.contexts ?? []).map((b) => (
-            <Row
-              key={b.value}
-              active={ctxActive === b.value}
-              label={contextBucketLabel(b.value)}
-              count={b.count}
-              onClick={() => pickOne('ctx', ctxActive === b.value ? null : b.value)}
-            />
-          ))}
-        </div>
-      </Group>
-
-      <Group id="price" title={t('modelsCatalog.sidebar.pricing')} collapsed={collapsed} onToggle={toggleCollapse}>
-        <div className="mg-side-list">
-          <Row active={!priceActive} label={t('modelsCatalog.sidebar.all')} count={allCount('price')} onClick={() => pickOne('price', null)} />
           {(['free', 'paid'] as const).map((c) => (
             <Row
               key={c}
               active={priceActive === c}
               label={t(`modelsCatalog.sidebar.${c}`)}
-              count={countOf(facets?.prices, c)}
               onClick={() => pickOne('price', priceActive === c ? null : c)}
             />
           ))}
@@ -235,29 +339,91 @@ export function CatalogSidebar({ tags, selected, setSelected, isZh, facets, grou
   )
 }
 
-/** 竖向列表行：名称在左、计数右对齐（原型口径）。 */
+/** 竖向列表行：图标 + 名称在左，选中勾在右（#872 需求点 2，原型 marketplace-filter-item-check）。 */
 function Row({
-  active, label, count, onClick,
-}: { active: boolean; label: string; count?: number; onClick: () => void }) {
+  active, label, icon, onClick,
+}: { active: boolean; label: string; icon?: React.ReactNode; onClick: () => void }) {
   return (
     <button type="button" className={`mg-side-row ${active ? 'is-active' : ''}`} onClick={onClick}>
+      {icon && <span className="mg-side-row-icon" aria-hidden>{icon}</span>}
       <span className="truncate">{label}</span>
-      {count !== undefined && <i className="mg-side-row-count">{count}</i>}
+      {active && <LuCheck size={14} strokeWidth={2.25} className="mg-side-row-check" aria-hidden />}
     </button>
   )
 }
 
 function Group({
-  id, title, collapsed, onToggle, children,
-}: { id: string; title: string; collapsed: Set<string>; onToggle: (k: string) => void; children: React.ReactNode }) {
+  id, title, collapsed, onToggle, hasSelection, onClear, children,
+}: {
+  id: string
+  title: string
+  collapsed: Set<string>
+  onToggle: (k: string) => void
+  hasSelection?: boolean
+  onClear?: () => void
+  children: React.ReactNode
+}) {
+  const { t } = useTranslation()
   const isCollapsed = collapsed.has(id)
   return (
     <div className="mg-side-group">
-      <button type="button" className="mg-side-head" onClick={() => onToggle(id)} aria-expanded={!isCollapsed}>
-        <span>{title}</span>
-        <LuChevronDown size={15} className={`mg-side-head-chevron ${isCollapsed ? '-rotate-90' : ''}`} />
-      </button>
+      {/* 组头顺序：标题(撑满) → 清空 → 折叠箭头 —— 清空按钮固定在下拉图标左手边
+          （需求方 2026-08-26 口径）。箭头单独成钮只为排版，与标题同为折叠开关，
+          键盘路径走标题按钮（箭头 tabIndex=-1 不重复进焦点链）。 */}
+      <div className="mg-side-head-row">
+        <button type="button" className="mg-side-head" onClick={() => onToggle(id)} aria-expanded={!isCollapsed}>
+          <span>{title}</span>
+        </button>
+        {hasSelection && onClear && (
+          <button
+            type="button"
+            className="mg-side-clear"
+            title={t('modelsCatalog.sidebar.clearGroup', { group: title })}
+            aria-label={t('modelsCatalog.sidebar.clearGroup', { group: title })}
+            onClick={onClear}
+          >
+            <LuRotateCcw size={12} strokeWidth={1.9} aria-hidden />
+          </button>
+        )}
+        <button type="button" className="mg-side-head-toggle" tabIndex={-1} aria-hidden onClick={() => onToggle(id)}>
+          <LuChevronDown size={15} className={`mg-side-head-chevron ${isCollapsed ? '-rotate-90' : ''}`} />
+        </button>
+      </div>
       {!isCollapsed && children}
+    </div>
+  )
+}
+
+/**
+ * 上下文长度分档滑杆（#872 需求点 8，原型 marketplace-context-range）。
+ * 原生 range 按档位下标取值，档位见 CONTEXT_SLIDER_STOPS；语义是「不低于该档」。
+ */
+function ContextRange({
+  value, anyLabel, ariaLabel, onChange,
+}: { value?: string; anyLabel: string; ariaLabel: string; onChange: (code: string) => void }) {
+  const stops = CONTEXT_SLIDER_STOPS
+  const selectedIndex = Math.max(0, stops.findIndex((s) => s.code === (value ?? 'all')))
+  const labelOf = (index: number) => (index === 0 ? anyLabel : stops[index].label)
+  return (
+    <div className="mg-side-ctx-range">
+      <div className="mg-side-ctx-track" aria-hidden>
+        {stops.map((s, i) => <span key={s.code} className={i <= selectedIndex ? 'is-passed' : ''} />)}
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={stops.length - 1}
+        step={1}
+        value={selectedIndex}
+        aria-label={ariaLabel}
+        aria-valuetext={labelOf(selectedIndex)}
+        onChange={(e) => onChange(stops[Number(e.target.value)].code)}
+      />
+      <div className="mg-side-ctx-labels" aria-hidden>
+        {stops.map((s, i) => (
+          <span key={s.code} className={i === selectedIndex ? 'is-active' : ''}>{labelOf(i)}</span>
+        ))}
+      </div>
     </div>
   )
 }

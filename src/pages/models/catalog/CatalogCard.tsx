@@ -34,8 +34,11 @@ import {
   MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, cardSummary, modelVendorLabel,
   strikeOriginalPrice, sortProtocols,
   priceTiersForCard, mediaPrimaryPrice, firstPositivePrice, hasPricingGradient, withPriceFrom,
+  PROTOCOL_LABEL_ZH, PROTOCOL_LABEL_EN, mergeProtocolLabels,
 } from '@/features/models/model-format'
-import { experienceTaskLabel, modelExperienceTasks, resolveModelCategory } from '../model-experience-data'
+import { ExperienceTaskTags } from '@/features/models/components/ExperienceTaskTags'
+import { usePublicProtocolsStore } from '@/store/use-public-protocols-store'
+import { modelExperienceTasks, resolveModelCategory } from '../model-experience-data'
 import type { CatalogModelItem } from '@/types'
 
 const MODALITY_ICON: Record<string, IconType> = { image: LuImage, audio: LuMic, video: LuVideo }
@@ -85,6 +88,12 @@ export function CatalogCard({
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
+  const publicProtocolItems = usePublicProtocolsStore((s) => s.items)
+  const protocolLabelMap = mergeProtocolLabels(
+    isZh ? PROTOCOL_LABEL_ZH : PROTOCOL_LABEL_EN,
+    publicProtocolItems,
+    isZh ? 'label' : 'label_en',
+  )
 
   const detailHref = `/models/${model.slug || model.id}`
   const symbol = currencySymbol(model.pricing?.currency, isZh)
@@ -135,15 +144,19 @@ export function CatalogCard({
   // 「视频模型展示的是主价格，不需要展示那么细致」。完整档位在详情「价格梯度」表。
   const category = resolveModelCategory(model)
   const isMediaCard = category !== 'dialogue'
-  const primaryRaw = mediaPrimaryPrice(model.pricing, model.price_unit, cardTiers)
+  const primaryRaw = mediaPrimaryPrice(model.pricing, model.price_unit, cardTiers, model.price_unit_en)
   const primary = withPriceFrom(priceText(primaryRaw.amount, symbol, isFree ? freeLabel : '—', primaryRaw.unit, isFree), hasGradient)
   // 主价的划线原价：原型 originalOutputPrice ?? originalInputPrice（主价本身也是 output 优先）
   // firstPositivePrice 而非 ??：per_call 模型 original_output 恒 "0"，会把镜像在
   // original_input 的折前价截住（seedream「限时71折」无划线的前端侧成因）
   // 末位候选 per_call_price：促销期它维持折前原价（折后现价在 input_per_1m），
   // original_* 缺发时靠它兜底；仅促销卡参与，守卫会拦掉 ≤ 现价的取值
+  // 首位候选是主价自己那一档的折前价（primaryRaw.originalAmount）：主价来自档位
+  // 矩阵时，promotion 的 token 侧原价跟它不是一回事，seedance-2.0-mini 上
+  // 「20.24 的主价 + 14 的原价」直接被守卫判成无效划线（prd#863 ④）。
   const strikePrimaryVal = strikeOriginalPrice(
     firstPositivePrice(
+      primaryRaw.originalAmount,
       promo?.original_output_per_1m, promo?.original_input_per_1m, promo?.original_price,
       promo ? model.pricing?.per_call_price : undefined,
     ),
@@ -170,12 +183,9 @@ export function CatalogCard({
   const summary = cardSummary(model, provider ?? '', isZh)
   // PRD §模型广场 AC-13「暂未开放」：模型本身可浏览详情/API，但没配置任何可体验任务时
   // 「去体验」按钮禁用并说明原因（原型 App.tsx:4619-4620/5076-5081 逐字对齐）。
-  // 任务列表同时供媒体卡「可体验任务」格展示（对话向任务共用「对话」标签，去重）。
+  // 任务列表同时供媒体卡「可体验任务」格展示（独立标签，#872 需求点 10）。
   const experienceTasks = modelExperienceTasks(model)
   const hasExperience = experienceTasks.length > 0
-  const tasksLabel = hasExperience
-    ? [...new Set(experienceTasks.map(experienceTaskLabel))].join(' / ')
-    : t('modelsCatalog.button.comingSoon')
 
   return (
     <article
@@ -255,11 +265,11 @@ export function CatalogCard({
               key={p}
               type="button"
               className={`mg-proto is-${p}`}
-              title={t('modelsCatalog.sidebar.filterTitle', { label: protocolLabel(p, isZh) })}
+              title={t('modelsCatalog.sidebar.filterTitle', { label: protocolLabel(p, isZh, protocolLabelMap) })}
               onClick={(e) => { e.stopPropagation(); onPickProtocol?.(p) }}
               disabled={!onPickProtocol}
             >
-              {protocolLabel(p, isZh)}
+              {protocolLabel(p, isZh, protocolLabelMap)}
             </button>
           ))}
         </div>
@@ -302,7 +312,11 @@ export function CatalogCard({
               free={isFree}
             />
             <Metric label={t('modelsCatalog.card.billingUnit')} value={billingUnit} />
-            <Metric label={t('modelsCatalog.card.experienceTasks')} value={tasksLabel} />
+            {/* 可体验任务改独立标签展示（#872 需求点 10），不再复用 Metric 的省略文本值 */}
+            <div className="mg-metric">
+              <span className="mg-metric-label">{t('modelsCatalog.card.experienceTasks')}</span>
+              <ExperienceTaskTags tasks={experienceTasks} max={3} />
+            </div>
           </>
         ) : (
           <>
@@ -388,11 +402,19 @@ function Metric({
     <div className={cn('mg-metric', primary && 'is-primary')}>
       <span className="mg-metric-label">{label}</span>
       <span className={`mg-metric-value ${free ? 'is-free' : ''}`}>
-        {/* 可体验任务这类长值超出省略，悬停冒气泡显全文（没截断不冒） */}
-        <OverflowTip text={value} />
+        {/* 可体验任务这类长值超出省略，悬停冒气泡显全文（没截断不冒）。
+            有划线原价时主价格禁止收缩：宽度不够先裁装饰性的原价段，
+            不能反过来把用户最需要读的折后价裁成「¥…」（prd#860 QA 复验） */}
+        <OverflowTip text={value} className={strike ? 'shrink-0' : undefined} />
         {unit && <small className="mg-metric-unit">{unit}</small>}
-        {/* 划线原价内联在现价右侧（原型口径）；仅有促销时渲染，是装饰而非真实价格 */}
-        {strike && <s className="mg-metric-strike">{strike}</s>}
+        {/* 划线原价内联在现价右侧（原型口径 <s>¥2/M</s>，裸划线无前缀）；
+            仅有促销时渲染，是装饰而非真实价格。
+            窄栅格下该段先省略，悬停冒气泡显全文 */}
+        {strike && (
+          <s className="mg-metric-strike">
+            <OverflowTip text={strike} />
+          </s>
+        )}
       </span>
     </div>
   )

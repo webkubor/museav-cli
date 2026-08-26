@@ -88,7 +88,7 @@ export function CompareModals({ ctx }: { ctx: ModelsCompareContext }) {
           onClose={() => ctx.setApiIndex(null)}
           modelName={prettyModelName(columns[apiIndex].model.display_name, columns[apiIndex].model.model_id)}
           modelId={columns[apiIndex].model.model_id}
-          supportedProtocols={columns[apiIndex].model.protocols?.length ? (columns[apiIndex].model.protocols as never) : ['openai']}
+          supportedProtocols={columns[apiIndex].model.protocols?.length ? (columns[apiIndex].model.protocols as never) : ['openai_chat_completions']}
           onAction={(action, protocol, language) => trackEvent('playground_api_modal_action', { action, protocol, language, model_id: columns[apiIndex].model.model_id })}
         />
       )}

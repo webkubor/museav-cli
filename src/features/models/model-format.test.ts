@@ -10,8 +10,9 @@ import { afterAll, describe, expect, it } from 'vitest'
 import i18n from '@/i18n'
 import {
   firstPositivePrice,
-  catalogCardReplacesGridWithTiers, mediaPrimaryPrice, priceTierLabel, priceTiersForCard, priceUnitSuffix, strikeOriginalPrice,
-  pricingRuleGroups, hasPricingGradient, pricingRuleLabel, pricingRulePriceText, withPriceFrom,
+  catalogCardReplacesGridWithTiers, mediaPrimaryPrice, priceTierLabel, priceTierUnit, priceTiersForCard, priceUnitSuffix, strikeOriginalPrice,
+  pricingRuleGroups, hasPricingGradient, pricingRuleLabel, pricingRulePriceText,
+  pricingRuleStrikeText, pricingRuleSubLabel, pricingRulesHaveSub, withPriceFrom,
   autoSummary, cardSummary, detailSummary, sortProtocols,
 } from './model-format'
 
@@ -251,6 +252,47 @@ describe('pricing_rules — 上下文分档 / 峰时价（#800）', () => {
     expect(pricingRulePriceText({ dimension: 'context_length', input_per_1m: '2', unit: 'M' }, 'output', '¥')).toBe('—')
   })
 
+  it('次级分档（#864）：sub_label 中英各走各的、英文回落中文，无 sub 返回 null', () => {
+    const withSub = {
+      dimension: 'context_length', label: '0–32K', min: 0, max: 31999,
+      sub_dimension: 'output_length', sub_label: '输出 <200', sub_label_en: 'output <200',
+      input_per_1m: '2', output_per_1m: '8',
+    }
+    expect(pricingRuleSubLabel(withSub, true)).toBe('输出 <200')
+    expect(pricingRuleSubLabel(withSub, false)).toBe('output <200')
+    expect(pricingRuleSubLabel({ ...withSub, sub_label_en: undefined }, false)).toBe('输出 <200')
+    expect(pricingRuleSubLabel(rules[1], true)).toBeNull()
+  })
+
+  it('次级分档（#864）：组内任一行带 sub_label 才补「条件」列，纯主档组不加列', () => {
+    const withSub = {
+      dimension: 'context_length', label: '0–32K',
+      sub_label: '输出 ≥200', input_per_1m: '3', output_per_1m: '14',
+    }
+    expect(pricingRulesHaveSub([...rules, withSub])).toBe(true)
+    expect(pricingRulesHaveSub(rules)).toBe(false)
+    // sub_label 缺但 sub_label_en 在（后端只发英文的脏数据）也算有
+    expect(pricingRulesHaveSub([{ dimension: 'context_length', sub_label_en: 'output <200' }])).toBe(true)
+  })
+
+  it('梯度表划线折前价（#860 方案 2 / #867 字段）：原价>现价才划，缺失/等值/脏值不划', () => {
+    const discounted = {
+      dimension: 'context_length', label: '0–256K',
+      input_per_1m: '1.6', output_per_1m: '6.4', cache_read_per_1m: '0.32',
+      original_input_per_1m: '2', original_output_per_1m: '8', original_cache_read_per_1m: '0.4',
+      unit: 'M',
+    }
+    expect(pricingRuleStrikeText(discounted, 'input', '¥')).toBe('¥2/M')
+    expect(pricingRuleStrikeText(discounted, 'output', '¥')).toBe('¥8/M')
+    expect(pricingRuleStrikeText(discounted, 'cache_read', '¥')).toBe('¥0.4/M')
+    // 无促销档没有 original_* → 不划（存量模型维持现状）
+    expect(pricingRuleStrikeText(rules[1], 'input', '¥')).toBeNull()
+    // 原价 = 现价（5.0-pro 那类脏数据）→ #747 守卫拦下
+    expect(pricingRuleStrikeText({ ...discounted, original_input_per_1m: '1.6' }, 'input', '¥')).toBeNull()
+    // 原价 < 现价（通道错配回归，#863 的 2.0-mini 形态）→ 同样不划
+    expect(pricingRuleStrikeText({ ...discounted, original_output_per_1m: '5' }, 'output', '¥')).toBeNull()
+  })
+
   it('mode=multiplier 无绝对价 → 展示 ×倍率', () => {
     expect(pricingRulePriceText({ dimension: 'peak_time', mode: 'multiplier', rate: '1.50' }, 'input', '¥')).toBe('×1.5')
   })
@@ -329,5 +371,54 @@ describe('sortProtocols — 协议展示统一顺序（QA：模型广场端点�
 
   it('空数组原样返回', () => {
     expect(sortProtocols([])).toEqual([])
+  })
+})
+
+describe('媒体主价与划线原价同源（shared/modelgo_prd#863 ④）', () => {
+  const tiers = [
+    { label: '文生视频', price: '20.24', original_price: '23', unit: 'M', bucket: 'output' },
+    { label: '图生视频', price: '20.24', original_price: '23', unit: 'M', bucket: 'output' },
+    { label: '视频生视频', price: '12.32', original_price: '14', unit: 'M', bucket: 'output' },
+  ]
+
+  it('主价取最高档时，折前价也取同一档', () => {
+    const got = mediaPrimaryPrice({ output_per_1m: '12.32' }, 'M', tiers)
+    expect(got.amount).toBe('20.24')
+    expect(got.originalAmount).toBe('23')
+  })
+
+  it('同源的原价能通过划线守卫，token 侧的 14 则不能', () => {
+    const got = mediaPrimaryPrice({ output_per_1m: '12.32' }, 'M', tiers)
+    expect(strikeOriginalPrice(got.originalAmount, got.amount)).toBe(23)
+    // 这是修复前的取值：promotion.original_output_per_1m
+    expect(strikeOriginalPrice('14', got.amount)).toBeNull()
+  })
+
+  it('没有促销时不伪造划线', () => {
+    const plain = tiers.map((t) => ({ label: t.label, price: t.price, unit: t.unit, bucket: t.bucket }))
+    const got = mediaPrimaryPrice({ output_per_1m: '12.32' }, 'M', plain)
+    expect(got.originalAmount).toBeUndefined()
+  })
+})
+
+describe('英文站计价单位（shared/modelgo_prd#857 腿 D）', () => {
+  it('中文站保持中文单位', async () => {
+    await i18n.changeLanguage('zh')
+    expect(priceUnitSuffix('秒', undefined, 's')).toBe('/秒')
+    expect(priceTierUnit({ unit: '秒', unit_en: 's' })).toBe('秒')
+  })
+
+  it('英文站取 price_unit_en / unit_en', async () => {
+    await i18n.changeLanguage('en')
+    try {
+      expect(priceUnitSuffix('秒', undefined, 's')).toBe('/s')
+      expect(priceTierUnit({ unit: '秒', unit_en: 's' })).toBe('s')
+      // 漏配英文单位时回落中文，而不是把价格整格吞掉
+      expect(priceUnitSuffix('秒', undefined, undefined)).toBe('/秒')
+      expect(priceTierUnit({ unit: '秒' })).toBe('秒')
+      expect(mediaPrimaryPrice({ output_per_1m: '1' }, '秒', [], 's').unitName).toBe('s')
+    } finally {
+      await i18n.changeLanguage('zh')
+    }
   })
 })

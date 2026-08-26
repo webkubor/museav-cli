@@ -1,4 +1,4 @@
-import type { CatalogModelTag, QueryParams } from '@/types'
+import type { CatalogModelTag, PublicProtocol, QueryParams } from '@/types'
 
 /** 模型列表查询参数 */
 export interface CatalogModelListParams extends QueryParams {
@@ -33,8 +33,9 @@ export interface CatalogModelListParams extends QueryParams {
   page_size?: number
 
   // ─── 模型广场服务端筛选 ───
-  /** 公开协议；双协议模型在任一值下都命中 */
-  protocol?: 'openai' | 'anthropic' | 'other'
+  /** 公开协议；双协议模型在任一值下都命中。2026-08 起为端点粒度 7 值，过渡期内
+   *  也接受未迁移模型仍在用的旧 3 值（openai/anthropic/other） */
+  protocol?: PublicProtocol
   /** 按适配的编程客户端筛选；coding_tools 为空的模型（QA 夹具/内部模型）永不命中（qa#583） */
   coding_tool?: 'claude-code' | 'codex'
   /**

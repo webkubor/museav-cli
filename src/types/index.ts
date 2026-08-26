@@ -126,6 +126,7 @@ export type {
 } from './logs'
 
 export type {
+  PublicProtocol,
   ModelPricing,
   CatalogModelItem,
   CatalogPriceTier,
@@ -139,6 +140,7 @@ export type {
   ModelVariant,
   CatalogModelDetail,
   CatalogModelTag,
+  PublicProtocolLabelItem,
   CatalogProviderItem,
   PlanFeatures,
   PlanCTA,

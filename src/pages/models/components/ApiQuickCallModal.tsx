@@ -27,7 +27,8 @@ import {
   type ApiProtocol,
   type ApiCodeLanguage,
 } from '../api-code-samples'
-import { sortProtocols } from '@/features/models/model-format'
+import { sortProtocols, mergeProtocolLabels } from '@/features/models/model-format'
+import { usePublicProtocolsStore } from '@/store/use-public-protocols-store'
 import '../styles/api-quick-call-modal.css'
 
 export type { ApiProtocol, ApiCodeLanguage }
@@ -61,10 +62,15 @@ export function ApiQuickCallModal({
 }: ApiQuickCallModalProps) {
   const { t, i18n } = useTranslation()
   const isZh = i18n.language.startsWith('zh')
-  const protocolLabel = isZh ? PROTOCOL_LABEL : PROTOCOL_LABEL_EN
+  const publicProtocolItems = usePublicProtocolsStore((s) => s.items)
+  const protocolLabel = mergeProtocolLabels(
+    isZh ? PROTOCOL_LABEL : PROTOCOL_LABEL_EN,
+    publicProtocolItems,
+    isZh ? 'label' : 'label_en',
+  )
   const protocols = useMemo(
     // sortProtocols：协议 Tab 顺序统一 openai → anthropic → other/native（QA：端点兼容顺序不一致）
-    () => (supportedProtocols.length > 0 ? sortProtocols(supportedProtocols) : (['openai'] as ApiProtocol[])),
+    () => (supportedProtocols.length > 0 ? sortProtocols(supportedProtocols) : (['openai_chat_completions'] as ApiProtocol[])),
     [supportedProtocols]
   )
   const [protocol, setProtocol] = useState<ApiProtocol>(protocols[0])

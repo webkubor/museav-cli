@@ -1,5 +1,32 @@
 import type { Money } from './account'
 
+/**
+ * 模型级公开协议。2026-08 由粗粒度 3 值（openai/anthropic/other）升级为端点粒度 7 值，
+ * 后于 2026-08-26 按「厂商 + 能力」命名规范扩容为 12 值（openai_chat 改名
+ * openai_chat_completions，openai_audio 拆成 openai_speech/openai_transcriptions，
+ * 新增 openai_rerank 与 google_gemini/google_imagen/google_video 三个原生透传条目，
+ * 见 controller/observer/web-api/gateway 同批切换）。google_* 三值仅信息展示（对应
+ * /native/gemini|vertex/* 原生透传，不区分具体 Gemini/Imagen/Veo 路由），需运营手动
+ * 打标，不参与后端自动派生。过渡期内未重新打标的模型仍可能下发更旧的
+ * openai/anthropic/other 三值——这是渐进迁移的预期状态，不是 bug，前端展示/筛选都要
+ * 兼容多套取值。
+ */
+export type PublicProtocol =
+  | 'openai_chat_completions'
+  | 'openai_responses'
+  | 'openai_embeddings'
+  | 'openai_rerank'
+  | 'openai_images'
+  | 'openai_speech'
+  | 'openai_transcriptions'
+  | 'anthropic_messages'
+  | 'google_gemini'
+  | 'google_imagen'
+  | 'google_video'
+  | 'openai'
+  | 'anthropic'
+  | 'other'
+
 export interface ModelPricing {
   input_per_1m: string
   output_per_1m: string
@@ -43,7 +70,7 @@ export interface CatalogModelItem {
   input_modalities?: string[]
   output_modalities?: string[]
   /** 模型级公开协议 */
-  protocols?: ('openai' | 'anthropic' | 'other')[]
+  protocols?: PublicProtocol[]
   /** 适配的编程客户端；恒下发（可能为空数组），不会是 null（qa#583） */
   coding_tools?: ('claude-code' | 'codex')[]
   /** @deprecated 后端将删除（2026-07-31 口径变更）：可体验任务一律由 input/output_modalities
@@ -70,6 +97,8 @@ export interface CatalogModelItem {
   cache_write_1h_per_1m?: string
   /** 计价单位：缺省为每 1M token；张 / 秒 / 万字符等用于媒体模型 */
   price_unit?: string
+  /** 英文站的计价单位（「秒」→「s」）；为空时回落 price_unit。 */
+  price_unit_en?: string
   /** 媒体模型的文本 Token 分项价，作为主价格下的次行展示 */
   text_input_price?: string
   text_output_price?: string
@@ -98,11 +127,19 @@ export interface CatalogPriceTier {
   label_en?: string
   price: string
   unit: string
+  /** 英文站的计价单位（「秒」→「s」）；为空时回落 unit。 */
+  unit_en?: string
   bucket: string
+  /**
+   * 本档的折前价，**仅**在促销真的改动了这一档价格时下发。矩阵促销作用于每一档，
+   * 单靠 promotion.original_price 撑不起「价格梯度」表的逐行划线
+   * （shared/modelgo_prd#863）。与 promotion.original_* 同口径：只是划线装饰。
+   */
+  original_price?: string
 }
 
 /** 阶梯价规则（#800 契约）。dimension 目前两种：context_length（上下文分档）/
- *  peak_time（峰值时段）；未知维度前端不渲染，等契约扩展后再加。 */
+ *  peak_time（峰值时段）；未知维度降级渲染（prd#864 A3）。 */
 export interface CatalogPricingRule {
   dimension: 'context_length' | 'peak_time' | string
   /** 区间展示文案，优先用（不要前端自己拼区间） */
@@ -112,10 +149,21 @@ export interface CatalogPricingRule {
   /** 上下文 token 上下界；最高档可能只有 min（「以上」） */
   min?: number
   max?: number
-  /** 每 1M token 单价，十进制字符串 */
+  /** 次级分档（prd#864）：同一区间内再按输出长度等条件拆行，
+   *  sub_label 是该行的条件文案（如「输出 <200」），缺省即无次级条件 */
+  sub_dimension?: string
+  sub_label?: string
+  sub_label_en?: string
+  sub_min?: number
+  sub_max?: number
+  /** 每 1M token 单价，十进制字符串；促销期为折后价（#867 后端算好，前端只渲染） */
   input_per_1m?: string
   output_per_1m?: string
   cache_read_per_1m?: string
+  /** 促销期逐档折前原价（#867/#860）：仅划线装饰，缺失或 ≤ 现价时不划 */
+  original_input_per_1m?: string
+  original_output_per_1m?: string
+  original_cache_read_per_1m?: string
   /** 峰值时段（dimension=peak_time） */
   start_time?: string
   end_time?: string
@@ -237,6 +285,21 @@ export interface CatalogModelTag {
   sort_order: number
   created_at: string
   updated_at: string
+}
+
+/**
+ * 协议标签目录项（GET /catalog/public-protocols，公开、无需鉴权）。
+ * 展示文案的真源现在是 modelgo-model-gateway `pkg/publicprotocols` 的静态注册表，
+ * 经 controller（10min TTL 缓存 + 降级回源）→ web-api 逐层透传下发；前端不再手写
+ * 协议 label 映射，只在这个接口不可用（未上线/未合并/请求失败）时回落本地兜底文案
+ * （见 model-format.ts PROTOCOL_LABEL_ZH/EN、api-code-samples.ts PROTOCOL_LABEL/_EN）。
+ * endpoint 对 code='other' 缺省（该协议不对应单一具体端点）。
+ */
+export interface PublicProtocolLabelItem {
+  code: string
+  label: string
+  label_en: string
+  endpoint?: string
 }
 
 export interface CatalogProviderItem {

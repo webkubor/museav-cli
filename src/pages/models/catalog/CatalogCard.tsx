@@ -388,7 +388,6 @@ export function CatalogCard({
 function Metric({
   label, value, unit, free, strike, primary,
 }: { label: string; value: string; unit?: string; free?: boolean; strike?: string; primary?: boolean }) {
-  const { t } = useTranslation()
   return (
     <div className={cn('mg-metric', primary && 'is-primary')}>
       <span className="mg-metric-label">{label}</span>
@@ -398,12 +397,12 @@ function Metric({
             不能反过来把用户最需要读的折后价裁成「¥…」（prd#860 QA 复验） */}
         <OverflowTip text={value} className={strike ? 'shrink-0' : undefined} />
         {unit && <small className="mg-metric-unit">{unit}</small>}
-        {/* 划线原价内联在现价右侧（原型口径）；仅有促销时渲染，是装饰而非真实价格。
-            带「原价」前缀与详情规格条同口径（prd#860 排版歧义）；
+        {/* 划线原价内联在现价右侧（原型口径 <s>¥2/M</s>，裸划线无前缀）；
+            仅有促销时渲染，是装饰而非真实价格。
             窄栅格下该段先省略，悬停冒气泡显全文 */}
         {strike && (
           <s className="mg-metric-strike">
-            <OverflowTip text={t('modelsCatalog.card.strikeOriginal', { price: strike })} />
+            <OverflowTip text={strike} />
           </s>
         )}
       </span>

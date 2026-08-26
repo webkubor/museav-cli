@@ -165,7 +165,6 @@
     },
     "card": {
       "free": "免费",
-      "strikeOriginal": "原价 {{price}}",
       "copyApiId": "复制 API ID",
       "try": "立即体验",
       "apiDocs": "API 请求",

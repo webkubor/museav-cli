@@ -24,4 +24,31 @@ describe('referralCodeFromSearchParams', () => {
   it('returns an empty string when no referral parameter is present', () => {
     expect(referralCodeFromSearchParams(new URLSearchParams('email=a%40b.com'))).toBe('')
   })
+
+  // qa#675：根路径 /?aff=X 被 RequireAuth 折进 /login?redirect=%2F%3Faff%3DX
+  it('recovers aff embedded in the redirect param produced by RequireAuth', () => {
+    const params = new URLSearchParams('redirect=' + encodeURIComponent('/?aff=JYA59BTN'))
+
+    expect(referralCodeFromSearchParams(params)).toBe('JYA59BTN')
+  })
+
+  it('recovers legacy ref embedded in the redirect param', () => {
+    const params = new URLSearchParams('redirect=' + encodeURIComponent('/dashboard?ref=OLD-REF'))
+
+    expect(referralCodeFromSearchParams(params)).toBe('OLD-REF')
+  })
+
+  it('prefers a direct aff over one embedded in redirect', () => {
+    const params = new URLSearchParams(
+      'aff=DIRECT&redirect=' + encodeURIComponent('/?aff=EMBEDDED'),
+    )
+
+    expect(referralCodeFromSearchParams(params)).toBe('DIRECT')
+  })
+
+  it('returns an empty string when redirect carries no referral parameter', () => {
+    const params = new URLSearchParams('redirect=' + encodeURIComponent('/dashboard'))
+
+    expect(referralCodeFromSearchParams(params)).toBe('')
+  })
 })

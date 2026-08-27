@@ -101,6 +101,16 @@
 
 /* API 协议标签：中性描边；协议类型不是选中态，不使用品牌色。 */
 .mg-mcard-protocols { display: flex; flex-wrap: wrap; gap: 5px; }
+/* fit 模式（卡片）：**永远单行**。组件按容器实际宽度 + 上限 2 算能露几个，超出收成「+N」，
+   但极窄档下连 1 个都放不下 —— 卡片宽随断点在 268~440px 之间跳，268px 时
+   OpenAI Chat Completions 单个就 148px，配上「+1」27px 已接近顶满。
+   此时让可见标签自己省略，而不是把「+N」挤到第二行（那就又把卡片信息节奏撑散了）。
+   容器不会被内容撑宽：.mg-tile 卡片本身是定宽网格项。
+   详情页协议区不加 is-fit（宽度富余，全量平铺换行无妨）。 */
+.mg-mcard-protocols.is-fit { flex-wrap: nowrap; overflow: hidden; }
+/* 按钮默认允许折行，单行模式下必须钉死 nowrap，否则窄档会变成两行高而不是省略 */
+.mg-mcard-protocols.is-fit > .mg-proto { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mg-mcard-protocols.is-fit > .mg-proto-more { flex: none; }
 .mg-proto {
   padding: 1px 7px; border-radius: var(--radius-sm);
   border: 1px solid var(--mg-border); background: transparent;
@@ -109,6 +119,10 @@
 }
 .mg-proto:not(:disabled) { cursor: pointer; }
 .mg-proto:not(:disabled):hover { color: var(--mg-text-1); }
+/* 「+N」折叠计数标签：外观复用 .mg-proto，但它是 <span>（永不 :disabled，会吃到上面
+   那条 cursor: pointer），所以这里同权重覆盖成 help 光标 + 补键盘聚焦态。 */
+.mg-proto.mg-proto-more { cursor: help; }
+.mg-proto.mg-proto-more:focus-visible { color: var(--mg-text-1); }
 .mg-mcard-tags { display: flex; flex-wrap: wrap; gap: 5px; }
 .mg-mcard-tag {
   display: inline-flex; align-items: center; gap: 3px;
@@ -122,8 +136,11 @@
 /* 「可体验任务」独立标签（#872 需求点 10，原型 marketplace-task-tags）：
    卡片与详情规格条共用，替代旧的斜杠拼接文本。 */
 .mg-task-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+/* .mg-task-tip-item 是「+N」气泡里的同款标签：气泡 portal 挂 body、够不到
+   .mg-task-tags 的后代选择器，所以并进同一个声明块共用色值，而不是另抄一份。 */
 .mg-task-tags > em,
-.mg-task-tags-more {
+.mg-task-tags-more,
+.mg-task-tip-item {
   font-style: normal; padding: 1px 7px; border-radius: var(--radius-sm);
   background: var(--mg-fill-0); font-size: 11px; line-height: 1.6;
   color: var(--mg-text-2); white-space: nowrap;
@@ -136,6 +153,15 @@
 .mg-task-tags.is-fit { flex-wrap: nowrap; overflow: hidden; }
 .mg-task-tags.is-fit > em { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .mg-task-tags.is-fit > .mg-task-tags-more { flex: none; }
+/* 「+N」气泡内部：把折叠掉的项按 tag 逐个排，而不是逗号串成一段话。
+   这里只管布局，**配色不在这儿定**——每项直接挂它来源那一行的 class
+   （协议给 .mg-proto、任务给 .mg-task-tip-item），色值与卡片/详情天然同一份，
+   不会像 2026-08-27 第一版那样自己调一套：当时给了 --mg-fill-0 + --mg-text-2，
+   而这两个 token 都是品牌色调出来的（fill-0 = 3.5% 品牌蓝），衬在气泡白底上直接泛蓝，
+   与卡片上灰描边的协议标签明显两个颜色。 */
+.mg-tag-tip { display: flex; flex-wrap: wrap; gap: 4px; }
+.mg-tag-tip > * { white-space: nowrap; }
+
 /* 「+N」折叠计数标签：悬停/聚焦冒气泡列出其余任务（组件内 portal 渲染） */
 .mg-task-tags-more { cursor: help; color: var(--mg-text-3); }
 .mg-task-tags-more:hover, .mg-task-tags-more:focus-visible { color: var(--mg-text-1); }

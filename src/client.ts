@@ -432,6 +432,47 @@ export class StudioClient {
     return r.row
   }
 
+  /** 贴图素材清单（租户级资产，服务端已按调用者权限过滤）。PNG 装饰图，叠加在海报/封面上 */
+  async stickers(): Promise<any[]> {
+    const r = await this.request('stickers')
+    return Array.isArray(r) ? r : []
+  }
+
+  /** 上传贴图素材（不压缩——透明 PNG 压缩会破坏透明通道） */
+  async createSticker(filePath: string, name: string): Promise<any> {
+    const blob = new Blob([new Uint8Array(readFileSync(filePath))])
+    const fd = new FormData()
+    fd.append('file', blob, basename(filePath))
+    fd.append('name', name)
+    return this.request('stickers', { method: 'POST', body: fd })
+  }
+
+  /** 删除贴图素材 */
+  async deleteSticker(id: string): Promise<void> {
+    await this.request(`stickers?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+  }
+
+  /** 版式模板清单（租户级资产）：封面底图 + 固定描述（{城市}{明星} 占位符） */
+  async posterTemplates(): Promise<any[]> {
+    const r = await this.request('poster-templates')
+    return Array.isArray(r) ? r : []
+  }
+
+  /** 上传版式模板（不压缩，保留封面底图原样） */
+  async createPosterTemplate(filePath: string, name: string, prompt: string): Promise<any> {
+    const blob = new Blob([new Uint8Array(readFileSync(filePath))])
+    const fd = new FormData()
+    fd.append('file', blob, basename(filePath))
+    fd.append('name', name)
+    fd.append('prompt', prompt)
+    return this.request('poster-templates', { method: 'POST', body: fd })
+  }
+
+  /** 删除版式模板 */
+  async deletePosterTemplate(id: string): Promise<void> {
+    await this.request(`poster-templates?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+  }
+
   /** 提交出图任务，立即返回 jobId */
   async generate(opts: GenerateOptions): Promise<{ jobId: string; trace_id?: string }> {
     // prompt / skill_slug / template_id 三选一：都传时服务端按 prompt > template_id > skill_slug

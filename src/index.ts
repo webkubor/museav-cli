@@ -28,6 +28,8 @@ import { jobs } from './commands/jobs.js'
 import { whoami } from './commands/whoami.js'
 import { products } from './commands/products.js'
 import { assets } from './commands/assets.js'
+import { stickers, createSticker } from './commands/stickers.js'
+import { posterTemplates, createPosterTemplate } from './commands/poster-templates.js'
 import { speak, transcribeCmd } from './commands/speak.js'
 
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8')) as { name: string; version: string }
@@ -344,6 +346,29 @@ templatesCmd
   .option('--fields <json>', '占位符字段说明，JSON 数组，如 \'[{"key":"artist","label":"艺人名"}]\'；不传则自动从 --prompt 里的 {key} 提取')
   .option('--type <type>', '模板类型：image（图片，默认） / article（文字）')
   .action(withClient((client: StudioClient, opts: any) => createTemplate(client, opts)))
+
+const stickersCmd = program
+  .command('stickers')
+  .description('查贴图素材库（租户级资产：PNG 装饰图，叠加在海报/封面上）')
+  .action(withClient((client: StudioClient) => stickers(client)))
+
+stickersCmd
+  .command('add <file>')
+  .description('上传贴图素材（PNG 透明装饰图，不压缩保留透明通道）')
+  .requiredOption('--name <名称>', '贴图名称')
+  .action(withClient((client: StudioClient, file: string, opts: any) => createSticker(client, file, opts)))
+
+const posterTemplatesCmd = program
+  .command('poster-templates')
+  .description('查版式模板库（租户级资产：封面底图 + 固定描述，选版式把城市/明星名填进底图）')
+  .action(withClient((client: StudioClient) => posterTemplates(client)))
+
+posterTemplatesCmd
+  .command('add <file>')
+  .description('保存版式模板（封面底图 + 描述，描述里用 {城市} {明星} 占位）')
+  .requiredOption('--name <名称>', '版式名称')
+  .requiredOption('--prompt <描述>', '版式固定描述，{城市} {明星} 会自动替换')
+  .action(withClient((client: StudioClient, file: string, opts: any) => createPosterTemplate(client, file, opts)))
 
 program
   .command('products')

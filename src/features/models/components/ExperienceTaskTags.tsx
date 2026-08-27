@@ -47,7 +47,7 @@ export function ExperienceTaskTags({
   return (
     <span className={fit ? 'mg-task-tags is-fit' : 'mg-task-tags'} ref={ref}>
       {visible.map((label) => <em key={label}>{label}</em>)}
-      {hidden.length > 0 && <TagOverflowChip hidden={hidden} className="mg-task-tags-more" />}
+      {hidden.length > 0 && <TagOverflowChip hidden={hidden} className="mg-task-tags-more" itemClassName="mg-task-tip-item" />}
     </span>
   )
 }

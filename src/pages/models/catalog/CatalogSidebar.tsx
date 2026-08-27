@@ -33,7 +33,8 @@ import {
 import { usePublicProtocolsStore } from '@/store/use-public-protocols-store'
 import { mergeProtocolLabels } from '@/features/models/model-format'
 
-const VENDOR_PREVIEW = 6
+/** 侧栏多选项默认展示条数（厂商、API 协议共用） */
+const FILTER_PREVIEW = 6
 
 /** 厂商展示名。后端下发标识大小写不一，原型展示品牌写法。 */
 const VENDOR_LABEL_ZH: Record<string, string> = {
@@ -183,6 +184,7 @@ export function CatalogSidebar({ tags, models, selected, setSelected, isZh }: Pr
   const { t } = useTranslation()
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [showAllVendors, setShowAllVendors] = useState(false)
+  const [showAllProtocols, setShowAllProtocols] = useState(false)
 
   // 协议筛选项文案：/catalog/public-protocols 拿到数据前后都直接渲染，不为它加
   // loading 态——items 为 null 时 mergeProtocolLabels 原样返回下面这份本地兜底表。
@@ -229,10 +231,17 @@ export function CatalogSidebar({ tags, models, selected, setSelected, isZh }: Pr
 
   /** 收起态下已选厂商藏在折叠区时保持展开（原型 selectedHidden 口径） */
   const selectedHiddenVendor = vendors
-    .slice(VENDOR_PREVIEW)
+    .slice(FILTER_PREVIEW)
     .some((v) => vendorActive.includes(v.code))
   const vendorsExpanded = showAllVendors || selectedHiddenVendor
-  const shownVendors = vendorsExpanded ? vendors : vendors.slice(0, VENDOR_PREVIEW)
+  const shownVendors = vendorsExpanded ? vendors : vendors.slice(0, FILTER_PREVIEW)
+
+  const protocols = PROTOCOL_FILTER_ORDER
+  const selectedHiddenProtocol = protocols
+    .slice(FILTER_PREVIEW)
+    .some((p) => protocolActive.includes(p))
+  const protocolsExpanded = showAllProtocols || selectedHiddenProtocol
+  const shownProtocols = protocolsExpanded ? protocols : protocols.slice(0, FILTER_PREVIEW)
 
   const promoCount = useMemo(() => models.filter((m) => Boolean(m.promotion)).length, [models])
 
@@ -312,7 +321,7 @@ export function CatalogSidebar({ tags, models, selected, setSelected, isZh }: Pr
               onClick={() => toggle(`vendor:${v.code}`)}
             />
           ))}
-          {vendors.length > VENDOR_PREVIEW && !selectedHiddenVendor && (
+          {vendors.length > FILTER_PREVIEW && !selectedHiddenVendor && (
             <button type="button" className="mg-side-more" onClick={() => setShowAllVendors((x) => !x)}>
               {vendorsExpanded ? t('modelsCatalog.sidebar.less') : t('modelsCatalog.sidebar.more')}
               <LuChevronDown size={13} className={vendorsExpanded ? 'rotate-180' : ''} />
@@ -330,7 +339,7 @@ export function CatalogSidebar({ tags, models, selected, setSelected, isZh }: Pr
         onClear={() => clearDim('protocol')}
       >
         <div className="mg-side-list">
-          {PROTOCOL_FILTER_ORDER.map((p) => (
+          {shownProtocols.map((p) => (
             <Row
               key={p}
               active={protocolActive.includes(p)}
@@ -338,6 +347,12 @@ export function CatalogSidebar({ tags, models, selected, setSelected, isZh }: Pr
               onClick={() => toggle(`protocol:${p}`)}
             />
           ))}
+          {protocols.length > FILTER_PREVIEW && !selectedHiddenProtocol && (
+            <button type="button" className="mg-side-more" onClick={() => setShowAllProtocols((x) => !x)}>
+              {protocolsExpanded ? t('modelsCatalog.sidebar.less') : t('modelsCatalog.sidebar.more')}
+              <LuChevronDown size={13} className={protocolsExpanded ? 'rotate-180' : ''} />
+            </button>
+          )}
         </div>
       </Group>
 

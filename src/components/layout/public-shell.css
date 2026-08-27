@@ -60,13 +60,15 @@ body:has(.mg-public-shell) {
 }
 
 .mg-decor-star {
-  --mg-star-opacity: 0.34;
-  --mg-star-rotate: 0deg;
-  --mg-star-scale: 1;
-  --mg-star-x: 14px;
-  --mg-star-y: -16px;
-  --mg-star-x2: -10px;
-  --mg-star-y2: 12px;
+  /* 默认档下沉进 modelgo-design-tokens 0.14.0（qa#688），此处只引用不再存字面值；
+     DecorStarField 逐星 inline style 覆盖同名局部变量的机制不变。 */
+  --mg-star-opacity: var(--mg-decor-star-opacity);
+  --mg-star-rotate: var(--mg-decor-star-rotate);
+  --mg-star-scale: var(--mg-decor-star-scale);
+  --mg-star-x: var(--mg-decor-star-x);
+  --mg-star-y: var(--mg-decor-star-y);
+  --mg-star-x2: var(--mg-decor-star-x2);
+  --mg-star-y2: var(--mg-decor-star-y2);
   position: absolute;
   display: block;
   width: 20px;

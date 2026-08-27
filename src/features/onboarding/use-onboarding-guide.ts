@@ -10,7 +10,7 @@
  * 让侧栏入口和模型广场悬浮入口共用同一份状态与回调。
  */
 
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMarket } from '@/hooks/useMarket'
 import { useTenantRole, type TenantRole } from '@/hooks/use-tenant-role'
@@ -22,13 +22,15 @@ import {
   reportOnboardingStep,
   useOnboardingStore,
 } from '@/store/use-onboarding-store'
-import { trackEvent } from '@/lib/track'
+import { trackEvent, type TrackTopFields } from '@/lib/track'
+import { useTrackContext } from '@/hooks/use-track-context'
 import {
   canAccessOnboardingGuide,
   type OnboardingRole,
   type OnboardingSite,
   type OnboardingStepKey,
 } from './onboarding-guide-domain'
+import { buildOnboardingGuideProps, type OnboardingTrackProps } from './onboarding-track'
 
 /** 后端角色码 → 领域层角色。未知角色按 member 处理（fail-closed，不给入口）。 */
 function toOnboardingRole(role: TenantRole | undefined): OnboardingRole | null {
@@ -51,6 +53,8 @@ export function useOnboardingGuide() {
   const activeWorkspaceId = useAuthStore((s) => s.activeWorkspaceId)
   const { role, isEnterprise } = useTenantRole()
   const openConnectModal = useConnectModalStore((s) => s.open)
+  // 房内公共属性收集器：page / tenant_id / tenant_type / role / workspace_id（与 overview_* 家族同源）
+  const trackCtx = useTrackContext()
 
   const guides = useOnboardingStore((s) => s.guides)
   const open = useOnboardingStore((s) => s.open)
@@ -67,11 +71,35 @@ export function useOnboardingGuide() {
     activeTenantId && onboardingRole && canAccessOnboardingGuide(tenantKind, onboardingRole),
   )
 
+  /**
+   * 埋点统一出口。两件事容易做错，所以收成一个函数：
+   *   1. 公共属性（规格 §13.1）必须每条都带 —— trackCtx + guide 快照。
+   *   2. source / result / error_code 是**顶层契约字段**（#423 / SDK TrackEventOptions）：
+   *      服务端 IngestEvent 按固定列落库，塞进 props 会被脱敏白名单丢掉 = 丢数据，
+   *      所以走 trackEvent 的第三个参数，不进第二个。
+   *
+   * trackCtx 每次渲染都是新对象，直接进 useCallback 依赖会让所有回调跟着变；
+   * 这里用 ref 兜住，emit 保持稳定引用。ref 只在 effect 里写（react-hooks/refs）。
+   */
+  const trackPropsRef = useRef<OnboardingTrackProps>({})
+  useEffect(() => {
+    trackPropsRef.current = guide
+      ? { ...trackCtx, ...buildOnboardingGuideProps(guide, role) }
+      : { ...trackCtx }
+  })
+
+  const emit = useCallback(
+    (event: string, extra?: OnboardingTrackProps, top?: TrackTopFields) => {
+      trackEvent(event, { ...trackPropsRef.current, ...extra }, top)
+    },
+    [],
+  )
+
   // 取得资格：租户第一次进控制台时建状态并快照奖励金额（规格 §6.1）
   useEffect(() => {
     if (!activeTenantId || !hasAccess) return
-    ensureGuide({ tenantId: activeTenantId, tenantKind, site: toOnboardingSite(market) })
-  }, [activeTenantId, hasAccess, tenantKind, market, ensureGuide])
+    ensureGuide({ tenantId: activeTenantId, tenantKind, site: toOnboardingSite(market), role })
+  }, [activeTenantId, hasAccess, tenantKind, market, role, ensureGuide])
 
   // 自动展开一次（规格 §5.4）：偏好按 user+tenant+guideVersion，Owner 关掉不影响 Admin。
   // 已领取的租户不再打扰。
@@ -81,8 +109,8 @@ export function useOnboardingGuide() {
     if (hasSeenOnboardingAutoOpen(account.account_id, activeTenantId)) return
     markOnboardingAutoOpenSeen(account.account_id, activeTenantId)
     setOpen(true)
-    trackEvent('onboarding_guide_viewed', { source: 'auto' })
-  }, [hasAccess, guide, activeTenantId, account, setOpen])
+    emit('onboarding_guide_viewed', undefined, { source: 'auto' })
+  }, [hasAccess, guide, activeTenantId, account, setOpen, emit])
 
   /**
    * 业务页在真实成功节点调这个上报，不要绑在普通点击上（规格 §16.2）。
@@ -99,7 +127,7 @@ export function useOnboardingGuide() {
   /** 气泡里五个 CTA 的落点。第 4 步复用顶栏那个弹窗，不另开一套（规格 §7.3）。 */
   const handleStepAction = useCallback(
     (stepKey: OnboardingStepKey) => {
-      trackEvent('onboarding_step_cta_clicked', { step_key: stepKey })
+      emit('onboarding_step_cta_clicked', { step_key: stepKey })
       setOpen(false)
       if (stepKey === 'marketplace') {
         navigate('/models')
@@ -120,26 +148,38 @@ export function useOnboardingGuide() {
       }
       navigate('/logs')
     },
-    [navigate, setOpen, activeWorkspaceId, openConnectModal],
+    [navigate, setOpen, activeWorkspaceId, openConnectModal, emit],
   )
 
   const handleClaim = useCallback(() => {
     if (!activeTenantId) return
-    trackEvent('onboarding_reward_claim_submitted', {})
+    emit('onboarding_reward_claim_submitted')
     const receipt = claimReward(activeTenantId)
-    trackEvent('onboarding_reward_claim_result', {
-      result: receipt ? 'success' : 'already_claimed',
-    })
-  }, [activeTenantId, claimReward])
+    /**
+     * 规格 §13.1 要 result=success|failed|already_claimed 三态，但顶层 result 列的枚举
+     * 只有 success|fail|cancel（SDK TrackEventOptions）。两个契约都要满足：
+     *   · 顶层 result/error_code 按 SDK 枚举落库，指标口径与其他模块一致
+     *   · 规格那个更细的三态放业务属性 claim_result，§13.2「重复领取请求率」照样算得出
+     * 领取按钮只在 claimable 时可点，所以拿不到回执实际就是重复领取（双击 / 两个标签页）。
+     */
+    emit(
+      'onboarding_reward_claim_result',
+      { claim_result: receipt ? 'success' : 'already_claimed' },
+      receipt ? { result: 'success' } : { result: 'fail', error_code: 'already_claimed' },
+    )
+  }, [activeTenantId, claimReward, emit])
 
   const handleOpenChange = useCallback(
     (next: boolean) => {
       setOpen(next)
-      trackEvent(next ? 'onboarding_guide_viewed' : 'onboarding_guide_closed', {
-        ...(next ? { source: 'manual' } : {}),
-      })
+      // 关闭事件规格没定 source；只有 viewed 分 auto|manual
+      emit(
+        next ? 'onboarding_guide_viewed' : 'onboarding_guide_closed',
+        undefined,
+        next ? { source: 'manual' } : undefined,
+      )
     },
-    [setOpen],
+    [setOpen, emit],
   )
 
   return {

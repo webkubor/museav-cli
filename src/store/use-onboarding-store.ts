@@ -27,6 +27,7 @@ import {
   type OnboardingStepKey,
   type OnboardingTenantKind,
 } from '@/features/onboarding/onboarding-guide-domain'
+import { buildOnboardingGuideProps } from '@/features/onboarding/onboarding-track'
 
 /** 领取成功后交给弹框和账单页的回执（2026-08-13 规格：recordRef 是跨页面定位标识）。 */
 export interface OnboardingRewardReceipt {
@@ -37,6 +38,16 @@ export interface OnboardingRewardReceipt {
 interface OnboardingState {
   /** 按租户分桶的任务状态 */
   guides: Record<string, OnboardingGuideState>
+  /**
+   * 埋点用的角色，按租户分桶。**不持久化、不进 guide** —— guide 是 1:1 移植的领域
+   * 对象，塞展示/埋点字段进去会污染它，而且角色是会变的（Admin 被降权），不该跟着
+   * 任务进度一起落 localStorage。
+   *
+   * 存在这儿是因为命令式上报路径（reportOnboardingStep ← experience-run.ts）拿不到
+   * React 上下文，而 role 的真源 useTenantRole 是 hook，auth store 的 TenantBrief
+   * 又不带 role。由 hook 在 ensureGuide 时灌进来。
+   */
+  trackRoles: Record<string, string>
   /** 气泡开合（瞬时 UI 状态，不持久化） */
   open: boolean
   /** 本次领取的回执；非 null 时成功弹框可见 */
@@ -51,6 +62,8 @@ interface OnboardingActions {
     tenantId: string
     tenantKind: OnboardingTenantKind
     site: OnboardingSite
+    /** 仅用于埋点公共属性（规格 §13.1）；权限判定在调用方 hook 里已经做过 */
+    role?: string
   }) => void
   /** 完成一步；重复上报静默忽略（领域层保证引用不变） */
   completeStep: (input: {
@@ -101,12 +114,19 @@ function mockRecordRef(tenantId: string): string {
 
 export const useOnboardingStore = create<OnboardingState & OnboardingActions>()((set, get) => ({
   guides: {},
+  trackRoles: {},
   open: false,
   rewardReceipt: null,
   billingHighlightRecordRef: null,
 
-  ensureGuide: ({ tenantId, tenantKind, site }) => {
-    if (get().guides[tenantId]) return
+  ensureGuide: ({ tenantId, tenantKind, site, role }) => {
+    // guide 已建时仍要刷 role：角色查询比 ensureGuide 晚回是常态，早退会让埋点永远缺 role
+    if (get().guides[tenantId]) {
+      if (role && get().trackRoles[tenantId] !== role) {
+        set((s) => ({ trackRoles: { ...s.trackRoles, [tenantId]: role } }))
+      }
+      return
+    }
     const guide =
       readGuide(tenantId) ??
       createOnboardingGuideState({
@@ -116,7 +136,10 @@ export const useOnboardingStore = create<OnboardingState & OnboardingActions>()(
         eligibleAt: new Date().toISOString(),
       })
     writeGuide(guide)
-    set((s) => ({ guides: { ...s.guides, [tenantId]: guide } }))
+    set((s) => ({
+      guides: { ...s.guides, [tenantId]: guide },
+      trackRoles: role ? { ...s.trackRoles, [tenantId]: role } : s.trackRoles,
+    }))
   },
 
   completeStep: ({ tenantId, stepKey, evidenceType, evidenceId, completedBy }) => {
@@ -200,8 +223,14 @@ export function reportOnboardingStep(
     completedBy: account?.email ?? account?.account_id ?? 'unknown',
   })
   // 只在真的推进了才埋点：重复上报（用户第二次成功体验）不该再记一次完成
-  if (useOnboardingStore.getState().guides[activeTenantId] !== before) {
-    trackEvent('onboarding_step_completed', { step_key: stepKey, evidence_type: evidenceType })
+  const after = useOnboardingStore.getState().guides[activeTenantId]
+  if (after !== before) {
+    // 用 after 而非 before 建公共属性：completed_steps 要含这一步，否则第 5 步永远上报 4
+    trackEvent('onboarding_step_completed', {
+      ...buildOnboardingGuideProps(after, store.trackRoles[activeTenantId]),
+      step_key: stepKey,
+      evidence_type: evidenceType,
+    })
   }
 }
 

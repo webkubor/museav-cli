@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.8.0 (2026-08-27)
+
+### 新增：贴图素材 + 版式模板命令（租户级资产，给封面/海报工具用）
+
+两个新命令，底层调中台 `/api/stickers` 和 `/api/poster-templates`，账户 Key / 租户 Key 均可（落到本租户）。
+
+- `museav stickers`：列出本租户贴图素材（PNG 透明装饰图）
+- `museav stickers add <file> --name <名称>`：上传贴图（不压缩，保留透明通道）
+- `museav poster-templates`：列出版式模板（封面底图 + 固定描述）
+- `museav poster-templates add <file> --name <名称> --prompt <描述>`：保存版式（`{城市}` `{明星}` 占位符会被替换）
+
+背景：好易美（hym）的闲鱼封面工具此前版式存学员本机桌面、贴图只在后台本地，无法共享。
+现在贴图素材 + 版式模板收归中台，CLI 一条命令加载/保存，学员间共享。
+
 ## 2.7.0 (2026-08-27)
 
 ### 修复：`remove-bg` 抠不出主体（三个静默 bug）

@@ -61,6 +61,8 @@ describe('ExperienceTaskTags', () => {
       i18n.t('modelsExperience.taskLabel.image_to_video'),
       i18n.t('modelsExperience.taskLabel.video_to_video'),
     ])
+    // 挂 .mg-task-tip-item：与 .mg-task-tags > em 并在同一个声明块里，色值不会分叉
+    expect([...tip.children].every((c) => c.classList.contains('mg-task-tip-item'))).toBe(true)
   })
 
   it('不传 max 不折叠（详情页口径）', () => {

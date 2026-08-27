@@ -2,6 +2,9 @@
  * 小标签行折叠后的「+N」计数标签：悬停/键盘聚焦冒气泡列出被折叠的项。
  * 可体验任务与 API 协议共用（外观由调用方给 className 决定，行为一致）。
  *
+ * 每项的配色不在这里定，由调用方给来源那一行的 class（协议 .mg-proto、任务
+ * .mg-task-tip-item）——气泡是另一层表面，但标签得和卡片/详情里是同一个颜色。
+ *
  * 气泡里也按 tag 逐个排（不是逗号串成一段话）：这一行本来就是标签，串成
  * 「OpenAI Responses, OpenAI Images, OpenAI Image Edits, Anthropic Messages」两行文字
  * 时既看不出边界、也和触发它的标签行对不上（需求方 2026-08-27 反馈观感差）。
@@ -15,7 +18,16 @@ import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 
-export function TagOverflowChip({ hidden, className }: { hidden: string[]; className: string }) {
+export function TagOverflowChip({
+  hidden,
+  className,
+  itemClassName,
+}: {
+  hidden: string[]
+  className: string
+  /** 气泡内每项的 class。给来源那一行的同一个 class，配色才与卡片/详情一致。 */
+  itemClassName: string
+}) {
   const { t } = useTranslation()
   const ref = useRef<HTMLSpanElement>(null)
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
@@ -47,7 +59,7 @@ export function TagOverflowChip({ hidden, className }: { hidden: string[]; class
           style={{ left: pos.x, top: pos.y }}
           className="mg-tag-tip pointer-events-none fixed z-[var(--mg-z-tooltip)] w-max max-w-[300px] -translate-x-1/2 -translate-y-full rounded-[var(--mg-tooltip-radius)] border border-mg-border bg-mg-bg-3 px-[var(--mg-tooltip-pad-x)] py-[var(--mg-tooltip-pad-y)] text-left mg-text-caption font-medium leading-snug text-mg-text-2 shadow-lg"
         >
-          {hidden.map((label) => <span key={label}>{label}</span>)}
+          {hidden.map((label) => <span key={label} className={itemClassName}>{label}</span>)}
         </span>,
         document.body,
       )}

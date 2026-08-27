@@ -141,8 +141,10 @@ describe('CardProtocolTags', () => {
       expect(more.textContent).toBe('+2')
       fireEvent.mouseEnter(more)
       const tip = screen.getByRole('tooltip')
-      // 每个折叠项一个独立 tag 元素（几何与标签行同一套，样式见 .mg-tag-tip > span）
+      // 每个折叠项一个独立 tag 元素，且挂的是 .mg-proto —— 与卡片/详情里的协议标签同一个
+      // class，配色天然一致（第一版在气泡里自己调了 --mg-fill-0 + --mg-text-2，泛蓝、对不上）
       expect([...tip.children].map((c) => c.textContent)).toEqual(['OpenAI Video', 'Content Generation'])
+      expect([...tip.children].every((c) => c.classList.contains('mg-proto'))).toBe(true)
       // 读屏要的是一句连读，所以 aria-label 保留分隔符
       expect(more.getAttribute('aria-label'))
         .toBe(['OpenAI Video', 'Content Generation'].join(i18n.t('modelsExperience.listSeparator')))

@@ -63,7 +63,10 @@ export function CardProtocolTags({
           {label}
         </button>
       ))}
-      {hidden.length > 0 && <TagOverflowChip hidden={hidden} className="mg-proto mg-proto-more" />}
+      {/* 气泡内每项挂 .mg-proto —— 与卡片/详情里的协议标签是同一个 class，颜色不会走样 */}
+      {hidden.length > 0 && (
+        <TagOverflowChip hidden={hidden} className="mg-proto mg-proto-more" itemClassName="mg-proto" />
+      )}
     </div>
   )
 }

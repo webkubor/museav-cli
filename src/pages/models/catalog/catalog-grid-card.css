@@ -136,8 +136,11 @@
 /* 「可体验任务」独立标签（#872 需求点 10，原型 marketplace-task-tags）：
    卡片与详情规格条共用，替代旧的斜杠拼接文本。 */
 .mg-task-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+/* .mg-task-tip-item 是「+N」气泡里的同款标签：气泡 portal 挂 body、够不到
+   .mg-task-tags 的后代选择器，所以并进同一个声明块共用色值，而不是另抄一份。 */
 .mg-task-tags > em,
-.mg-task-tags-more {
+.mg-task-tags-more,
+.mg-task-tip-item {
   font-style: normal; padding: 1px 7px; border-radius: var(--radius-sm);
   background: var(--mg-fill-0); font-size: 11px; line-height: 1.6;
   color: var(--mg-text-2); white-space: nowrap;
@@ -151,16 +154,13 @@
 .mg-task-tags.is-fit > em { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .mg-task-tags.is-fit > .mg-task-tags-more { flex: none; }
 /* 「+N」气泡内部：把折叠掉的项按 tag 逐个排，而不是逗号串成一段话。
-   几何与两处标签行保持同一套（11px / 1px 7px / --radius-sm），气泡本身是
-   portal 挂在 body 上的，所以这里不能靠 .mg-task-tags / .mg-mcard-protocols 的后代选择器。
-   描边 + 淡填充一起给：深色档 --mg-fill-0 只有 2.5% 白，在 --mg-surface-3(#3b3b44)
-   的气泡底上单靠填充分不出边界，得靠 --mg-border 这条 hairline 兜住。 */
+   这里只管布局，**配色不在这儿定**——每项直接挂它来源那一行的 class
+   （协议给 .mg-proto、任务给 .mg-task-tip-item），色值与卡片/详情天然同一份，
+   不会像 2026-08-27 第一版那样自己调一套：当时给了 --mg-fill-0 + --mg-text-2，
+   而这两个 token 都是品牌色调出来的（fill-0 = 3.5% 品牌蓝），衬在气泡白底上直接泛蓝，
+   与卡片上灰描边的协议标签明显两个颜色。 */
 .mg-tag-tip { display: flex; flex-wrap: wrap; gap: 4px; }
-.mg-tag-tip > span {
-  padding: 1px 7px; border-radius: var(--radius-sm);
-  border: 1px solid var(--mg-border); background: var(--mg-fill-0);
-  font-size: 11px; line-height: 1.6; color: var(--mg-text-2); white-space: nowrap;
-}
+.mg-tag-tip > * { white-space: nowrap; }
 
 /* 「+N」折叠计数标签：悬停/聚焦冒气泡列出其余任务（组件内 portal 渲染） */
 .mg-task-tags-more { cursor: help; color: var(--mg-text-3); }

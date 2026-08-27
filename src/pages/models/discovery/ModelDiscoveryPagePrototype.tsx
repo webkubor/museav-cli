@@ -1,3 +1,24 @@
+/**
+ * 模型发现页 —— 移植自 PRD 原型 modelgo_prd/src/ModelDiscoveryPage.tsx。
+ *
+ * ── 同步规则（2026-08-27 起）────────────────────────────────────
+ * 早先需求方要求本页 UI 与交互 1:1 复刻原型，该例外已作废。现在按常规分工：
+ *   · UI / 布局 / 排版 / 图标 → 控制台现状（图标走 ModelIcon，见下方 DiscoveryModelIcon）
+ *   · 指标口径 / 文案 / 交互逻辑 / 数据结构 → PRD 原型
+ * 所以再同步时**不要整文件重新移植**，只把 PRD 的配置与文案逐处搬过来。
+ * 做法：在 modelgo_prd 里 `git diff <上次基线>..HEAD -- src/ModelDiscoveryPage.tsx`
+ * 生成 patch，改掉路径后 `git apply --reject`；含图标的 hunk 会被 reject，手工改。
+ *
+ * ── 同步基线 ──────────────────────────────────────────────────
+ * 已同步到 PRD commit 73cbb28（2026-08-26）。该批把不可靠的速度指标全部撤下：
+ * 文本/Agent 的速度统一为「输出 TPS」，图像/视频/音频改用「API 价格 + 使用量」，
+ * 多维分析去掉冗余的横纵轴下拉。依据 modelgo_prd/docs/superpowers/plans/
+ * 2026-08-26-discovery-without-speed-metrics.md。
+ *
+ * 验收：把 modelgo_prd/scripts/assert-model-discovery.mjs 的三个路径常量改到本仓
+ * 后可直接跑。其中 2 条会失败且属预期 —— 断言写死了原型的 providerMarks 首字母
+ * 色表与 lucide 图标名，而本仓走 ModelIcon 与 react-icons/lu，功能等价。
+ */
 import {
   LuArrowUpRight,
   LuChartColumn,
@@ -134,45 +155,45 @@ const rankingMetricOptions: Array<{ key: RankingMetric; label: string; specialty
 
 const taskMetricProfiles: Record<ModalityKey, Record<string, TaskMetricProfile>> = {
   agent: {
-    Agent: { qualityLabel: "Agentic Index", qualityBasis: "工具调用、规划与端到端任务完成能力", qualityUnit: "Index", valueLabel: "Agentic Index / 单次任务成本", valueUnit: "Index / USD", speedLabel: "任务执行吞吐", speedUnit: "步骤 / 分钟", latencyLabel: "首个工具调用时延 P50", latencyUnit: "ms", usageLabel: "近 7 日 Agent 任务量", usageUnit: "成功任务" },
+    Agent: { qualityLabel: "Agentic Index", qualityBasis: "工具调用、规划与端到端任务完成能力", qualityUnit: "Index", valueLabel: "Agentic Index / 单次任务成本", valueUnit: "Index / USD", speedLabel: "输出 TPS", speedUnit: "Tokens / 秒", latencyLabel: "首个工具调用时延 P50", latencyUnit: "ms", usageLabel: "近 7 日 Agent 任务量", usageUnit: "成功任务" },
   },
   text: {
-    文本对话: { qualityLabel: "Intelligence Index", qualityBasis: "通用知识、推理与问题求解能力", qualityUnit: "Index", valueLabel: "Intelligence Index / 单次任务成本", valueUnit: "Index / USD", speedLabel: "中位输出速度", speedUnit: "Tokens / 秒", latencyLabel: "TTFT P50", latencyUnit: "ms", usageLabel: "近 7 日调用 Tokens", usageUnit: "Tokens" },
-    代码生成: { qualityLabel: "Coding Index", qualityBasis: "代码生成、修复与工程任务能力", qualityUnit: "Index", valueLabel: "Coding Index / 单次任务成本", valueUnit: "Index / USD", speedLabel: "中位输出速度", speedUnit: "Tokens / 秒", latencyLabel: "TTFT P50", latencyUnit: "ms", usageLabel: "近 7 日代码调用 Tokens", usageUnit: "Tokens" },
+    文本对话: { qualityLabel: "Intelligence Index", qualityBasis: "通用知识、推理与问题求解能力", qualityUnit: "Index", valueLabel: "Intelligence Index / 单次任务成本", valueUnit: "Index / USD", speedLabel: "输出 TPS", speedUnit: "Tokens / 秒", latencyLabel: "TTFT P50", latencyUnit: "ms", usageLabel: "近 7 日调用 Tokens", usageUnit: "Tokens" },
+    代码生成: { qualityLabel: "Coding Index", qualityBasis: "代码生成、修复与工程任务能力", qualityUnit: "Index", valueLabel: "Coding Index / 单次任务成本", valueUnit: "Index / USD", speedLabel: "输出 TPS", speedUnit: "Tokens / 秒", latencyLabel: "TTFT P50", latencyUnit: "ms", usageLabel: "近 7 日代码调用 Tokens", usageUnit: "Tokens" },
   },
   image: {
-    文生图: { qualityLabel: "Elo 评分", qualityBasis: "提示词遵循与生成质量", qualityUnit: "Elo", valueLabel: "Elo 评分 / 每 1K 张标准图像价格", valueUnit: "Elo / ($/1K 张)", speedLabel: "首图生成耗时", speedUnit: "秒 / 张", latencyLabel: "标准单图完成时长 P50", latencyUnit: "秒", usageLabel: "近 7 日文生图任务量", usageUnit: "成功任务" },
-    图片编辑: { qualityLabel: "Elo 评分", qualityBasis: "编辑遵循与视觉一致性", qualityUnit: "Elo", valueLabel: "Elo 评分 / 每 1K 张标准图像价格", valueUnit: "Elo / ($/1K 张)", speedLabel: "首图生成耗时", speedUnit: "秒 / 张", latencyLabel: "标准单图完成时长 P50", latencyUnit: "秒", usageLabel: "近 7 日图片编辑任务量", usageUnit: "成功任务" },
+    文生图: { qualityLabel: "Elo 评分", qualityBasis: "提示词遵循与生成质量", qualityUnit: "Elo", valueLabel: "Elo 评分 / 每 1K 张标准图像价格", valueUnit: "Elo / ($/1K 张)", speedLabel: "API 价格", speedUnit: "USD / 1K 张", latencyLabel: "近 7 日使用量", latencyUnit: "成功任务", usageLabel: "近 7 日文生图任务量", usageUnit: "成功任务" },
+    图片编辑: { qualityLabel: "Elo 评分", qualityBasis: "编辑遵循与视觉一致性", qualityUnit: "Elo", valueLabel: "Elo 评分 / 每 1K 张标准图像价格", valueUnit: "Elo / ($/1K 张)", speedLabel: "API 价格", speedUnit: "USD / 1K 张", latencyLabel: "近 7 日使用量", latencyUnit: "成功任务", usageLabel: "近 7 日图片编辑任务量", usageUnit: "成功任务" },
   },
   video: {
-    文生视频: { qualityLabel: "Elo 评分", qualityBasis: "Artificial Analysis 文生视频偏好评测", qualityUnit: "Elo", valueLabel: "Elo 评分 / API 每分钟价格", valueUnit: "Elo / ($/min)", speedLabel: "视频生成时间", speedUnit: "秒 / 5 秒视频", latencyLabel: "标准视频任务完成时长 P50", latencyUnit: "秒", usageLabel: "近 7 日文生视频任务量", usageUnit: "成功任务" },
-    图生视频: { qualityLabel: "Elo 评分", qualityBasis: "Artificial Analysis 图生视频偏好评测", qualityUnit: "Elo", valueLabel: "Elo 评分 / API 每分钟价格", valueUnit: "Elo / ($/min)", speedLabel: "视频生成时间", speedUnit: "秒 / 5 秒视频", latencyLabel: "标准视频任务完成时长 P50", latencyUnit: "秒", usageLabel: "近 7 日图生视频任务量", usageUnit: "成功任务" },
+    文生视频: { qualityLabel: "Elo 评分", qualityBasis: "Artificial Analysis 文生视频偏好评测", qualityUnit: "Elo", valueLabel: "Elo 评分 / API 每分钟价格", valueUnit: "Elo / ($/min)", speedLabel: "API 价格", speedUnit: "USD / 分钟", latencyLabel: "近 7 日使用量", latencyUnit: "成功任务", usageLabel: "近 7 日文生视频任务量", usageUnit: "成功任务" },
+    图生视频: { qualityLabel: "Elo 评分", qualityBasis: "Artificial Analysis 图生视频偏好评测", qualityUnit: "Elo", valueLabel: "Elo 评分 / API 每分钟价格", valueUnit: "Elo / ($/min)", speedLabel: "API 价格", speedUnit: "USD / 分钟", latencyLabel: "近 7 日使用量", latencyUnit: "成功任务", usageLabel: "近 7 日图生视频任务量", usageUnit: "成功任务" },
   },
   audio: {
-    "语音合成（TTS）": { qualityLabel: "语音质量 Elo", qualityBasis: "语音质量与偏好评测", qualityUnit: "Elo", valueLabel: "语音质量 Elo / API 价格", valueUnit: "Elo / USD", speedLabel: "语音合成速度", speedUnit: "字符 / 秒", latencyLabel: "首音频响应时延 P50", latencyUnit: "ms", usageLabel: "近 7 日语音合成量", usageUnit: "字符" },
-    "语音识别（STT）": { qualityLabel: "AA-WER", qualityBasis: "词错误率，数值越低识别越准确", qualityUnit: "%", valueLabel: "AA-WER / API 价格", valueUnit: "% / USD", speedLabel: "转写速度", speedUnit: "Speed Factor", latencyLabel: "首段转写响应时延 P50", latencyUnit: "ms", usageLabel: "近 7 日识别音频量", usageUnit: "音频分钟", qualityLowerIsBetter: true },
+    "语音合成（TTS）": { qualityLabel: "语音质量 Elo", qualityBasis: "语音质量与偏好评测", qualityUnit: "Elo", valueLabel: "语音质量 Elo / API 价格", valueUnit: "Elo / USD", speedLabel: "API 价格", speedUnit: "USD / 1M 字符", latencyLabel: "近 7 日使用量", latencyUnit: "字符", usageLabel: "近 7 日语音合成量", usageUnit: "字符" },
+    "语音识别（STT）": { qualityLabel: "AA-WER", qualityBasis: "词错误率，数值越低识别越准确", qualityUnit: "%", valueLabel: "AA-WER / API 价格", valueUnit: "% / USD", speedLabel: "API 价格", speedUnit: "USD / 1K 分钟", latencyLabel: "近 7 日使用量", latencyUnit: "音频分钟", usageLabel: "近 7 日识别音频量", usageUnit: "音频分钟", qualityLowerIsBetter: true },
   },
 };
 
 const summaryTooltipCopy: Record<ModalityKey, Record<string, string[]>> = {
   agent: {
-    Agent: ["工具调用与任务完成能力的 Agentic Index", "开放权重模型中 Agentic Index 最高", "Agentic Index ÷ 单次任务成本", "单位时间内完成的 Agent 任务步骤数", "近 7 日 ModelGo 成功 Agent 任务数"],
+    Agent: ["工具调用与任务完成能力的 Agentic Index", "开放权重模型中 Agentic Index 最高", "Agentic Index ÷ 单次任务成本", "每秒输出 Token 数", "近 7 日 ModelGo 成功 Agent 任务数"],
   },
   text: {
-    文本对话: ["通用知识与推理能力的 Intelligence Index", "开放权重模型中 Intelligence Index 最高", "Intelligence Index ÷ 单次任务成本", "模型的中位输出速度", "近 7 日 ModelGo 调用 Token 数"],
-    代码生成: ["代码生成与修复能力的 Coding Index", "开放权重模型中 Coding Index 最高", "Coding Index ÷ 单次任务成本", "代码任务的中位输出速度", "近 7 日 ModelGo 代码调用 Token 数"],
+    文本对话: ["通用知识与推理能力的 Intelligence Index", "开放权重模型中 Intelligence Index 最高", "Intelligence Index ÷ 单次任务成本", "每秒输出 Token 数", "近 7 日 ModelGo 调用 Token 数"],
+    代码生成: ["代码生成与修复能力的 Coding Index", "开放权重模型中 Coding Index 最高", "Coding Index ÷ 单次任务成本", "每秒输出 Token 数", "近 7 日 ModelGo 代码调用 Token 数"],
   },
   image: {
-    文生图: ["文生图偏好评测的 Elo 评分", "开放权重文生图模型中 Elo 最高", "Elo ÷ 每 1K 张图像价格", "生成首张标准图像所需时间", "近 7 日 ModelGo 文生图成功任务数"],
-    图片编辑: ["图片编辑偏好评测的 Elo 评分", "开放权重编辑模型中 Elo 最高", "编辑 Elo ÷ 每 1K 张图像价格", "返回首张编辑结果所需时间", "近 7 日 ModelGo 图片编辑成功任务数"],
+    文生图: ["文生图偏好评测的 Elo 评分", "开放权重文生图模型中 Elo 最高", "Elo ÷ 每 1K 张图像价格", "每 1K 张标准图像的公开 API 价格", "近 7 日 ModelGo 文生图成功任务数"],
+    图片编辑: ["图片编辑偏好评测的 Elo 评分", "开放权重编辑模型中 Elo 最高", "编辑 Elo ÷ 每 1K 张图像价格", "每 1K 张标准图像的公开 API 价格", "近 7 日 ModelGo 图片编辑成功任务数"],
   },
   video: {
-    文生视频: ["文生视频偏好评测的 Elo 评分", "开放权重文生视频模型中 Elo 最高", "Elo ÷ 每分钟视频价格", "生成 5 秒标准视频所需时间", "近 7 日 ModelGo 文生视频成功任务数"],
-    图生视频: ["图生视频偏好评测的 Elo 评分", "开放权重图生视频模型中 Elo 最高", "Elo ÷ 每分钟视频价格", "由图片生成 5 秒视频所需时间", "近 7 日 ModelGo 图生视频成功任务数"],
+    文生视频: ["文生视频偏好评测的 Elo 评分", "开放权重文生视频模型中 Elo 最高", "Elo ÷ 每分钟视频价格", "每分钟生成视频的公开 API 价格", "近 7 日 ModelGo 文生视频成功任务数"],
+    图生视频: ["图生视频偏好评测的 Elo 评分", "开放权重图生视频模型中 Elo 最高", "Elo ÷ 每分钟视频价格", "每分钟生成视频的公开 API 价格", "近 7 日 ModelGo 图生视频成功任务数"],
   },
   audio: {
-    "语音合成（TTS）": ["语音自然度与偏好的 Elo 评分", "语音质量 Elo ÷ 每 1M 字符价格", "每秒可合成的文本字符数", "每 1M 字符的公开 API 价格", "近 7 日 ModelGo 合成字符数"],
-    "语音识别（STT）": ["统一测试集上的词错误率，越低越好", "相对于音频时长的处理倍率", "每 1,000 分钟音频的公开价格", "近 7 日 ModelGo 转写音频分钟数"],
+    "语音合成（TTS）": ["语音自然度与偏好的 Elo 评分", "语音质量 Elo ÷ 每 1M 字符价格", "每 1M 字符的公开 API 价格", "近 7 日 ModelGo 合成字符数"],
+    "语音识别（STT）": ["统一测试集上的词错误率，越低越好", "每 1,000 分钟音频的公开价格", "近 7 日 ModelGo 转写音频分钟数"],
   },
 };
 
@@ -222,66 +243,67 @@ const openTextModels = new Set(["DeepSeek V4 Flash", "Qwen Max", "Llama 4 Maveri
 const sourceConstrainedAnalysisProfiles: Partial<Record<ModalityKey, Record<string, AnalysisAxisProfile>>> = {
   image: {
     文生图: {
-      yMetrics: ["Elo 评分", "首图生成耗时"],
+      yMetrics: ["Elo 评分", "API 价格"],
       xMetrics: [
-        { label: "API 价格", unit: "USD / 1K 张", source: "price", lowerIsBetter: true, presetLabel: "质量 × 价格" },
-        { label: "首图生成耗时", unit: "秒 / 张", source: "performance", lowerIsBetter: true, presetLabel: "质量 × 首图生成耗时" },
+        { label: "API 价格", unit: "USD / 1K 张", source: "price", lowerIsBetter: true, presetLabel: "质量 × API 价格" },
+        { label: "近 7 日使用量", unit: "成功任务", source: "usage", lowerIsBetter: false, presetLabel: "质量 × 使用量" },
       ],
       presets: [
         { label: "质量 × API 价格", y: 0, x: 0 },
-        { label: "质量 × 首图生成耗时", y: 0, x: 1 },
-        { label: "首图生成耗时 × API 价格", y: 1, x: 0 },
+        { label: "质量 × 使用量", y: 0, x: 1 },
+        { label: "API 价格 × 使用量", y: 1, x: 1 },
       ],
     },
     图片编辑: {
-      yMetrics: ["Elo 评分", "首图生成耗时"],
+      yMetrics: ["Elo 评分", "API 价格"],
       xMetrics: [
-        { label: "API 价格", unit: "USD / 1K 张", source: "price", lowerIsBetter: true, presetLabel: "质量 × 价格" },
-        { label: "首图生成耗时", unit: "秒 / 张", source: "performance", lowerIsBetter: true, presetLabel: "质量 × 首图生成耗时" },
+        { label: "API 价格", unit: "USD / 1K 张", source: "price", lowerIsBetter: true, presetLabel: "质量 × API 价格" },
+        { label: "近 7 日使用量", unit: "成功任务", source: "usage", lowerIsBetter: false, presetLabel: "质量 × 使用量" },
       ],
       presets: [
         { label: "质量 × API 价格", y: 0, x: 0 },
-        { label: "质量 × 首图生成耗时", y: 0, x: 1 },
-        { label: "首图生成耗时 × API 价格", y: 1, x: 0 },
+        { label: "质量 × 使用量", y: 0, x: 1 },
+        { label: "API 价格 × 使用量", y: 1, x: 1 },
       ],
     },
   },
   video: {
     文生视频: {
-      yMetrics: ["Elo 评分", "视频生成时间"],
+      yMetrics: ["Elo 评分", "API 价格"],
       xMetrics: [
-        { label: "API 价格", unit: "USD / 分钟", source: "price", lowerIsBetter: true, presetLabel: "质量 × 价格" },
-        { label: "视频生成时间", unit: "秒 / 5 秒视频", source: "performance", lowerIsBetter: true, presetLabel: "质量 × 视频生成时间" },
+        { label: "API 价格", unit: "USD / 分钟", source: "price", lowerIsBetter: true, presetLabel: "质量 × API 价格" },
+        { label: "近 7 日使用量", unit: "成功任务", source: "usage", lowerIsBetter: false, presetLabel: "质量 × 使用量" },
       ],
       presets: [
         { label: "质量 × API 价格", y: 0, x: 0 },
-        { label: "质量 × 视频生成时间", y: 0, x: 1 },
-        { label: "视频生成时间 × API 价格", y: 1, x: 0 },
+        { label: "质量 × 使用量", y: 0, x: 1 },
+        { label: "API 价格 × 使用量", y: 1, x: 1 },
       ],
     },
     图生视频: {
-      yMetrics: ["Elo 评分", "视频生成时间"],
+      yMetrics: ["Elo 评分", "API 价格"],
       xMetrics: [
-        { label: "API 价格", unit: "USD / 分钟", source: "price", lowerIsBetter: true, presetLabel: "质量 × 价格" },
-        { label: "视频生成时间", unit: "秒 / 5 秒视频", source: "performance", lowerIsBetter: true, presetLabel: "质量 × 视频生成时间" },
+        { label: "API 价格", unit: "USD / 分钟", source: "price", lowerIsBetter: true, presetLabel: "质量 × API 价格" },
+        { label: "近 7 日使用量", unit: "成功任务", source: "usage", lowerIsBetter: false, presetLabel: "质量 × 使用量" },
       ],
       presets: [
         { label: "质量 × API 价格", y: 0, x: 0 },
-        { label: "质量 × 视频生成时间", y: 0, x: 1 },
-        { label: "视频生成时间 × API 价格", y: 1, x: 0 },
+        { label: "质量 × 使用量", y: 0, x: 1 },
+        { label: "API 价格 × 使用量", y: 1, x: 1 },
       ],
     },
   },
   audio: {
     "语音合成（TTS）": {
-      yMetrics: ["Elo 评分"],
+      yMetrics: ["语音质量 Elo", "API 价格"],
       xMetrics: [
-        { label: "API 价格", unit: "USD / 1M 字符", source: "price", lowerIsBetter: true, presetLabel: "质量 × 价格" },
-        { label: "语音合成速度", unit: "字符 / 秒", source: "performance", lowerIsBetter: false, presetLabel: "质量 × 合成速度" },
+        { label: "API 价格", unit: "USD / 1M 字符", source: "price", lowerIsBetter: true, presetLabel: "质量 × API 价格" },
+        { label: "近 7 日使用量", unit: "字符", source: "usage", lowerIsBetter: false, presetLabel: "质量 × 使用量" },
       ],
       presets: [
         { label: "质量 × API 价格", y: 0, x: 0 },
-        { label: "质量 × 语音合成速度", y: 0, x: 1 },
+        { label: "质量 × 使用量", y: 0, x: 1 },
+        { label: "API 价格 × 使用量", y: 1, x: 1 },
       ],
     },
   },
@@ -296,14 +318,14 @@ const discoveryConfigs: Record<Exclude<ModalityKey, "agent">, DiscoveryConfig> =
       { label: "评分最高", model: "Claude Opus 5", value: "63.1", unit: "Index" },
       { label: "开源模型评分最高", model: "DeepSeek V4 Flash", value: "55.9", unit: "Index" },
       { label: "性价比最高", model: "DeepSeek V4 Flash", value: "223.6", unit: "Index / USD" },
-      { label: "速度最快", model: "GLM 5.2", value: "245", unit: "Tokens / 秒" },
+      { label: "输出 TPS 最高", model: "GLM 5.2", value: "245", unit: "Tokens / 秒" },
       { label: "近 7 日 ModelGo 使用量最高", model: "GLM 5.2", value: "8.2B", unit: "Tokens" },
     ],
     yMetrics: ["Intelligence Index", "Coding Index", "Agentic Index"],
-    xMetrics: ["输入价格", "输出价格", "输出速度", "首 Token 延迟", "近 7 日使用量"],
+    xMetrics: ["输入价格", "输出价格", "输出 TPS", "首 Token 延迟", "近 7 日使用量"],
     presets: [
       { label: "质量 × 价格", y: 0, x: 0 },
-      { label: "质量 × 速度", y: 0, x: 2 },
+      { label: "质量 × 输出 TPS", y: 0, x: 2 },
       { label: "质量 × 延迟", y: 0, x: 3 },
       { label: "上下文 × 价格", y: 6, x: 0 },
       { label: "质量 × 使用量", y: 0, x: 4 },
@@ -322,7 +344,7 @@ const discoveryConfigs: Record<Exclude<ModalityKey, "agent">, DiscoveryConfig> =
     ],
     specialties: [
       { title: "性价比领先", description: "主指标 / 单次任务成本", rows: [{ model: "DeepSeek V4 Flash", value: "223.6" }, { model: "GLM 5.2", value: "210.4" }, { model: "Kimi K2.6", value: "156.6" }, { model: "Qwen Max", value: "135.2" }, { model: "GPT-5.5", value: "77.1" }] },
-      { title: "输出速度领先", description: "中位输出速度", rows: [{ model: "GLM 5.2", value: "245 tok/s" }, { model: "DeepSeek V4 Flash", value: "230 tok/s" }, { model: "Qwen Max", value: "216 tok/s" }, { model: "Claude Opus 5", value: "188 tok/s" }, { model: "GPT-5.5", value: "182 tok/s" }] },
+      { title: "输出 TPS", description: "每秒输出 Token 数", rows: [{ model: "GLM 5.2", value: "245 tok/s" }, { model: "DeepSeek V4 Flash", value: "230 tok/s" }, { model: "Qwen Max", value: "216 tok/s" }, { model: "Claude Opus 5", value: "188 tok/s" }, { model: "GPT-5.5", value: "182 tok/s" }] },
       { title: "首 Token 时延领先", description: "首 Token 响应时延", rows: [{ model: "GLM 5.2", value: "210 ms" }, { model: "DeepSeek V4 Flash", value: "230 ms" }, { model: "GPT-5.5", value: "260 ms" }, { model: "Qwen Max", value: "280 ms" }, { model: "Claude Opus 5", value: "310 ms" }] },
       { title: "近 7 日热度", description: "ModelGo 调用 Tokens", rows: [{ model: "GLM 5.2", value: "8.2B" }, { model: "GPT-5.5", value: "6.4B" }, { model: "DeepSeek V4 Flash", value: "5.6B" }, { model: "Qwen Max", value: "3.9B" }, { model: "Kimi K2.6", value: "2.8B" }] },
     ],
@@ -335,15 +357,15 @@ const discoveryConfigs: Record<Exclude<ModalityKey, "agent">, DiscoveryConfig> =
       { label: "Elo 评分最高", model: "Imagen Ultra", value: "1286", unit: "Elo" },
       { label: "开源模型 Elo 最高", model: "Qwen Image", value: "1236", unit: "Elo" },
       { label: "性价比最高", model: "Seedream 4.5", value: "31.5", unit: "Elo / ($/1K 张)" },
-      { label: "首图生成耗时最短", model: "FLUX.2 Pro", value: "3.9", unit: "秒 / 张" },
+      { label: "API 价格最低", model: "Hunyuan Image 3.0", value: "30", unit: "$/1K 张" },
       { label: "近 7 日 ModelGo 使用量最高", model: "GPT Image 2", value: "1.8M", unit: "成功任务" },
     ],
     yMetrics: ["Elo 评分"],
-    xMetrics: ["标准单图价格", "生成耗时", "近 7 日使用量"],
+    xMetrics: ["标准单图价格", "近 7 日使用量"],
     presets: [
       { label: "质量 × 价格", y: 0, x: 0 },
-      { label: "质量 × 速度", y: 0, x: 1 },
-      { label: "质量 × 使用量", y: 0, x: 2 },
+      { label: "质量 × 使用量", y: 0, x: 1 },
+      { label: "API 价格 × 使用量", y: 1, x: 1 },
     ],
     models: [
       { name: "Imagen Ultra", provider: "Google", supported: false, score: "1286", performance: "8.4 秒", price: "$80/1K 张", usage: "—", samples: "14,820" },
@@ -359,8 +381,7 @@ const discoveryConfigs: Record<Exclude<ModalityKey, "agent">, DiscoveryConfig> =
     ],
     specialties: [
       { title: "性价比领先", description: "Elo 评分 / 标准单图价格", rows: [{ model: "Seedream 4.5", value: "31.5" }, { model: "Qwen Image", value: "29.7" }, { model: "GPT Image 2", value: "18.2" }, { model: "FLUX.2 Pro", value: "17.6" }, { model: "Imagen Ultra", value: "15.4" }] },
-      { title: "生成速度领先", description: "标准尺寸生成耗时", rows: [{ model: "FLUX.2 Pro", value: "3.9 秒" }, { model: "Seedream 4.5", value: "4.6 秒" }, { model: "Qwen Image", value: "5.1 秒" }, { model: "GPT Image 2", value: "6.8 秒" }, { model: "Imagen Ultra", value: "8.4 秒" }] },
-      { title: "首图时延领先", description: "首张图像响应时延", rows: [{ model: "FLUX.2 Pro", value: "2.1 秒" }, { model: "Seedream 4.5", value: "2.4 秒" }, { model: "Qwen Image", value: "2.7 秒" }, { model: "GPT Image 2", value: "3.2 秒" }, { model: "Imagen Ultra", value: "3.8 秒" }] },
+      { title: "API 价格", description: "每 1K 张标准图像价格", rows: [{ model: "Hunyuan Image 3.0", value: "$30" }, { model: "Kolors 2", value: "$30" }, { model: "Seedream 4.5", value: "$40" }, { model: "Qwen Image", value: "$42" }, { model: "Recraft V4", value: "$50" }] },
       { title: "近 7 日热度", description: "ModelGo 成功任务量", rows: [{ model: "GPT Image 2", value: "1.8M" }, { model: "Seedream 4.5", value: "1.2M" }, { model: "Qwen Image", value: "640K" }, { model: "FLUX.2 Pro", value: "520K" }, { model: "Imagen Ultra", value: "410K" }] },
     ],
   },
@@ -372,12 +393,12 @@ const discoveryConfigs: Record<Exclude<ModalityKey, "agent">, DiscoveryConfig> =
       { label: "Elo 评分最高", model: "Veo 3.1", value: "1228", unit: "Elo" },
       { label: "开源模型 Elo 最高", model: "Wan 2.2", value: "1154", unit: "Elo" },
       { label: "性价比最高", model: "Kling Turbo", value: "2995", unit: "Elo / ($/min)" },
-      { label: "视频生成时间最短", model: "Seedance 2.0", value: "42", unit: "秒 / 5 秒视频" },
+      { label: "API 价格最低", model: "Kling Turbo", value: "0.04", unit: "$/min" },
       { label: "近 7 日 ModelGo 使用量最高", model: "Veo 3.1", value: "286K", unit: "成功任务" },
     ],
     yMetrics: ["Elo 评分", "文生视频能力", "图生视频能力", "运动一致性"],
-    xMetrics: ["每分钟价格", "生成耗时", "近 7 日使用量"],
-    presets: [{ label: "质量 × 价格", y: 0, x: 0 }, { label: "质量 × 速度", y: 0, x: 1 }, { label: "质量 × 使用量", y: 0, x: 2 }, { label: "任务能力 × 价格", y: 1, x: 0 }],
+    xMetrics: ["每分钟价格", "近 7 日使用量"],
+    presets: [{ label: "质量 × 价格", y: 0, x: 0 }, { label: "质量 × 使用量", y: 0, x: 1 }, { label: "API 价格 × 使用量", y: 1, x: 1 }],
     models: [
       { id: "veo-3.1-generate-preview", name: "Veo 3.1", provider: "Google", supported: true, score: "1228", performance: "68 秒", price: "$0.15/分钟", usage: "286K", samples: "11,873" },
       { name: "Runway Gen-5", provider: "Runway", supported: false, score: "1196", performance: "55 秒", price: "$0.18/分钟", usage: "—", samples: "9,420" },
@@ -392,8 +413,7 @@ const discoveryConfigs: Record<Exclude<ModalityKey, "agent">, DiscoveryConfig> =
     ],
     specialties: [
       { title: "性价比领先", description: "Elo 评分 / 每分钟价格", rows: [{ model: "Kling Turbo", value: "2995" }, { model: "Wan 2.2", value: "2417" }, { model: "Seedance 2.0", value: "1784" }, { model: "Veo 3.1", value: "1522" }, { model: "Runway Gen-5", value: "1210" }] },
-      { title: "生成速度领先", description: "标准时长生成耗时", rows: [{ model: "Seedance 2.0", value: "42 秒" }, { model: "Kling Turbo", value: "49 秒" }, { model: "Runway Gen-5", value: "55 秒" }, { model: "Wan 2.2", value: "61 秒" }, { model: "Veo 3.1", value: "68 秒" }] },
-      { title: "启动时延领先", description: "任务启动响应时延", rows: [{ model: "Seedance 2.0", value: "1.8 秒" }, { model: "Kling Turbo", value: "2.1 秒" }, { model: "Wan 2.2", value: "2.8 秒" }, { model: "Runway Gen-5", value: "3.2 秒" }, { model: "Veo 3.1", value: "3.6 秒" }] },
+      { title: "API 价格", description: "每分钟生成视频价格", rows: [{ model: "Kling Turbo", value: "$0.04" }, { model: "Wan 2.2", value: "$0.06" }, { model: "PixVerse V5.5", value: "$0.06" }, { model: "Hailuo 2.3", value: "$0.07" }, { model: "Kling 3.0", value: "$0.08" }] },
       { title: "近 7 日热度", description: "ModelGo 成功任务量", rows: [{ model: "Veo 3.1", value: "286K" }, { model: "Seedance 2.0", value: "241K" }, { model: "Wan 2.2", value: "198K" }, { model: "Kling Turbo", value: "173K" }, { model: "Runway Gen-5", value: "112K" }] },
     ],
   },
@@ -405,12 +425,12 @@ const discoveryConfigs: Record<Exclude<ModalityKey, "agent">, DiscoveryConfig> =
       { label: "评分最高", model: "Speech 2.8 HD", value: "1240", unit: "Elo" },
       { label: "开源模型评分最高", model: "CosyVoice 2", value: "1199", unit: "Elo" },
       { label: "性价比最高", model: "CosyVoice 2", value: "149", unit: "Elo / USD" },
-      { label: "速度最快", model: "GPT Audio Mini", value: "0.42", unit: "秒首音频" },
+      { label: "API 价格最低", model: "Kokoro 82M", value: "3", unit: "$/M 字符" },
       { label: "近 7 日 ModelGo 使用量最高", model: "Speech 2.8 HD", value: "3.6M", unit: "请求" },
     ],
     yMetrics: ["Elo 评分", "自然度 / 准确率", "稳定性"],
-    xMetrics: ["公开价格", "处理速度 / 延迟", "近 7 日使用量"],
-    presets: [{ label: "质量 × 价格", y: 0, x: 0 }, { label: "质量 × 速度", y: 0, x: 1 }, { label: "质量 × 使用量", y: 0, x: 2 }, { label: "专项指标 × 价格", y: 2, x: 0 }],
+    xMetrics: ["公开价格", "近 7 日使用量"],
+    presets: [{ label: "质量 × 价格", y: 0, x: 0 }, { label: "质量 × 使用量", y: 0, x: 1 }, { label: "API 价格 × 使用量", y: 1, x: 1 }],
     models: [
       { id: "MiniMax-speech-2.8-hd", name: "Speech 2.8 HD", provider: "MiniMax", supported: true, score: "1240", performance: "0.58 秒", price: "$8/M 字符", usage: "3.6M", samples: "2,290", voices: "8" },
       { name: "Eleven Multilingual V3", provider: "ElevenLabs", supported: false, score: "1221", performance: "0.64 秒", price: "$12/M 字符", usage: "—", samples: "1,791", voices: "8" },
@@ -425,8 +445,7 @@ const discoveryConfigs: Record<Exclude<ModalityKey, "agent">, DiscoveryConfig> =
     ],
     specialties: [
       { title: "性价比领先", description: "任务得分 / 公开价格", rows: [{ model: "CosyVoice 2", value: "149" }, { model: "Kokoro 82M", value: "138" }, { model: "GPT Audio Mini", value: "121" }, { model: "Speech 2.8 HD", value: "116" }, { model: "Eleven Multilingual V3", value: "102" }] },
-      { title: "处理速度领先", description: "实时处理倍率", rows: [{ model: "SenseVoice Small", value: "58 ×" }, { model: "Whisper Large V3", value: "45 ×" }, { model: "GPT Audio Mini", value: "32 ×" }, { model: "CosyVoice 2", value: "28 ×" }, { model: "Speech 2.8 HD", value: "24 ×" }] },
-      { title: "首音频时延领先", description: "首音频响应时延", rows: [{ model: "GPT Audio Mini", value: "0.42 秒" }, { model: "Azure Speech", value: "0.46 秒" }, { model: "SenseVoice Small", value: "0.47 秒" }, { model: "CosyVoice 2", value: "0.49 秒" }, { model: "Kokoro 82M", value: "0.51 秒" }] },
+      { title: "API 价格", description: "每 1M 字符的公开 API 价格", rows: [{ model: "Kokoro 82M", value: "$3" }, { model: "SenseVoice Small", value: "$3" }, { model: "CosyVoice 2", value: "$4" }, { model: "Whisper Large V3", value: "$5" }, { model: "GPT Audio Mini", value: "$6" }] },
       { title: "近 7 日热度", description: "ModelGo 请求量", rows: [{ model: "Speech 2.8 HD", value: "3.6M" }, { model: "CosyVoice 2", value: "2.1M" }, { model: "GPT Audio Mini", value: "1.9M" }, { model: "Kokoro 82M", value: "1.4M" }, { model: "Eleven Multilingual V3", value: "980K" }] },
     ],
   },
@@ -437,7 +456,6 @@ const audioTaskConfigs: Record<string, Pick<DiscoveryConfig, "summary" | "models
     summary: [
       { label: "语音质量最高", model: "Inworld TTS 1.5 Max", value: "1240", unit: "Elo" },
       { label: "性价比最高", model: "CosyVoice 2", value: "299.8", unit: "Elo / USD" },
-      { label: "合成速度最快", model: "Gemini 3.1 Flash TTS", value: "86.4", unit: "字符 / 秒" },
       { label: "API 价格最低", model: "CosyVoice 2", value: "$4", unit: "/ 1M 字符" },
       { label: "近 7 日 ModelGo 使用量最高", model: "Speech 2.8 HD", value: "3.6M", unit: "字符" },
     ],
@@ -455,7 +473,6 @@ const audioTaskConfigs: Record<string, Pick<DiscoveryConfig, "summary" | "models
     ],
     specialties: [
       { title: "性价比", description: "语音质量 Elo / API 价格", rows: [{ model: "CosyVoice 2", value: "299.8" }, { model: "Speech 2.8 HD", value: "149.5" }, { model: "Inworld TTS 1.5 Max", value: "124.0" }, { model: "Simba 3.2", value: "122.7" }, { model: "Eleven Multilingual V3", value: "99.3" }, { model: "Gemini 3.1 Flash TTS", value: "66.1" }, { model: "Qwen Audio 3.0 TTS Plus", value: "44.5" }, { model: "Sonic 3.5", value: "24.6" }, { model: "Luna TTS", value: "15.1" }, { model: "StepAudio 2.5 TTS", value: "14.1" }] },
-      { title: "语音合成速度", description: "每秒生成的文本字符数", rows: [{ model: "Gemini 3.1 Flash TTS", value: "86.4 字符/秒" }, { model: "Sonic 3.5", value: "82.5 字符/秒" }, { model: "Simba 3.2", value: "74.6 字符/秒" }, { model: "Inworld TTS 1.5 Max", value: "72.8 字符/秒" }, { model: "Qwen Audio 3.0 TTS Plus", value: "68.2 字符/秒" }, { model: "CosyVoice 2", value: "65.1 字符/秒" }, { model: "Luna TTS", value: "61.8 字符/秒" }, { model: "Eleven Multilingual V3", value: "59.7 字符/秒" }, { model: "StepAudio 2.5 TTS", value: "57.9 字符/秒" }, { model: "Speech 2.8 HD", value: "54.3 字符/秒" }] },
       { title: "API 价格", description: "每 1M 字符的公开 API 价格", rows: [{ model: "CosyVoice 2", value: "$4" }, { model: "Speech 2.8 HD", value: "$8" }, { model: "Inworld TTS 1.5 Max", value: "$10" }, { model: "Simba 3.2", value: "$10" }, { model: "Eleven Multilingual V3", value: "$12" }, { model: "Gemini 3.1 Flash TTS", value: "$18.3" }, { model: "Qwen Audio 3.0 TTS Plus", value: "$27.6" }, { model: "Sonic 3.5", value: "$49" }, { model: "Luna TTS", value: "$80" }, { model: "StepAudio 2.5 TTS", value: "$85" }] },
       { title: "近 7 日使用量", description: "ModelGo 语音合成字符量", rows: [{ model: "Speech 2.8 HD", value: "3.6M" }, { model: "CosyVoice 2", value: "2.1M" }, { model: "Gemini 3.1 Flash TTS", value: "1.8M" }, { model: "Inworld TTS 1.5 Max", value: "1.5M" }, { model: "Eleven Multilingual V3", value: "1.2M" }, { model: "Simba 3.2", value: "980K" }, { model: "Qwen Audio 3.0 TTS Plus", value: "860K" }, { model: "Sonic 3.5", value: "720K" }, { model: "Luna TTS", value: "610K" }, { model: "StepAudio 2.5 TTS", value: "540K" }] },
     ],
@@ -463,7 +480,6 @@ const audioTaskConfigs: Record<string, Pick<DiscoveryConfig, "summary" | "models
   "语音识别（STT）": {
     summary: [
       { label: "识别错误率最低", model: "Scribe v2", value: "2.2", unit: "% AA-WER" },
-      { label: "转写速度最快", model: "Parakeet TDT 0.6B V3", value: "899.3", unit: "Speed Factor" },
       { label: "API 价格最低", model: "Modulate STT VFast", value: "$0.42", unit: "/ 1K 分钟" },
       { label: "近 7 日 ModelGo 使用量最高", model: "Whisper Large V3 Turbo", value: "480K", unit: "音频分钟" },
     ],
@@ -480,8 +496,6 @@ const audioTaskConfigs: Record<string, Pick<DiscoveryConfig, "summary" | "models
       { id: "whisper-large-v3-turbo", name: "Whisper Large V3 Turbo", provider: "Groq", supported: true, score: "4.6%", performance: "114.6 ×", price: "$0.67/1K 分钟", usage: "480K" },
     ],
     specialties: [
-      { title: "识别准确率", description: "AA-WER，词错误率越低越好", rows: [{ model: "Scribe v2", value: "2.2%" }, { model: "MAI Transcribe 1.5", value: "2.4%" }, { model: "Smallest AI Pulse Pro", value: "2.4%" }, { model: "Voxtral Small", value: "2.8%" }, { model: "GPT Transcribe", value: "3.3%" }, { model: "Grok Speech to Text", value: "4.0%" }, { model: "Modulate STT VFast", value: "4.2%" }, { model: "Parakeet TDT 0.6B V3", value: "4.5%" }, { model: "Whisper Large V3 Turbo", value: "4.6%" }, { model: "Nova-3", value: "5.2%" }] },
-      { title: "转写速度", description: "Speed Factor，数值越高转写越快", rows: [{ model: "Parakeet TDT 0.6B V3", value: "899.3 ×" }, { model: "Nova-3", value: "522.0 ×" }, { model: "Smallest AI Pulse Pro", value: "260.9 ×" }, { model: "Grok Speech to Text", value: "230.4 ×" }, { model: "MAI Transcribe 1.5", value: "183.1 ×" }, { model: "Whisper Large V3 Turbo", value: "114.6 ×" }, { model: "Voxtral Small", value: "66.7 ×" }, { model: "Modulate STT VFast", value: "63.8 ×" }, { model: "Scribe v2", value: "60.2 ×" }, { model: "GPT Transcribe", value: "41.5 ×" }] },
       { title: "API 价格", description: "每 1,000 分钟音频转写价格", rows: [{ model: "Modulate STT VFast", value: "$0.42" }, { model: "Whisper Large V3 Turbo", value: "$0.67" }, { model: "Parakeet TDT 0.6B V3", value: "$1.50" }, { model: "Grok Speech to Text", value: "$1.67" }, { model: "Scribe v2", value: "$3.67" }, { model: "Voxtral Small", value: "$4.00" }, { model: "Smallest AI Pulse Pro", value: "$4.00" }, { model: "Nova-3", value: "$4.30" }, { model: "GPT Transcribe", value: "$4.50" }, { model: "MAI Transcribe 1.5", value: "$6.00" }] },
       { title: "近 7 日使用量", description: "ModelGo 识别音频分钟数", rows: [{ model: "Whisper Large V3 Turbo", value: "480K" }, { model: "GPT Transcribe", value: "330K" }, { model: "Nova-3", value: "290K" }, { model: "Voxtral Small", value: "260K" }, { model: "Scribe v2", value: "220K" }, { model: "Smallest AI Pulse Pro", value: "190K" }, { model: "Grok Speech to Text", value: "170K" }, { model: "MAI Transcribe 1.5", value: "150K" }, { model: "Parakeet TDT 0.6B V3", value: "120K" }, { model: "Modulate STT VFast", value: "90K" }] },
     ],
@@ -897,7 +911,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   const analysisPresetPrefix = modality === "image" ? "Elo" : "质量";
   const defaultAnalysisXMetrics: AnalysisAxisProfile["xMetrics"] = [
     { label: analysisCostLabel, unit: isTextAgent ? "USD / Task" : "USD", source: "price", lowerIsBetter: true, presetLabel: `${analysisPresetPrefix} × 成本` },
-    { label: taskProfile.speedLabel, unit: taskProfile.speedUnit, source: "speed", lowerIsBetter: false, presetLabel: `${analysisPresetPrefix} × 速度` },
+    { label: taskProfile.speedLabel, unit: taskProfile.speedUnit, source: "speed", lowerIsBetter: false, presetLabel: `${analysisPresetPrefix} × 输出 TPS` },
     { label: taskProfile.latencyLabel, unit: taskProfile.latencyUnit, source: "latency", lowerIsBetter: true, presetLabel: `${analysisPresetPrefix} × 时延` },
     { label: taskProfile.usageLabel, unit: taskProfile.usageUnit, source: "usage", lowerIsBetter: false, presetLabel: `${analysisPresetPrefix} × 使用量` },
   ];
@@ -922,18 +936,18 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       rows: [...taskModels].sort((first, second) => metricValue(second.score) - metricValue(first.score)).map((model) => ({ model: model.name, value: model.score })),
     },
     {
+      title: "性价比",
+      description: "质量 Elo / API 价格",
+      source: "Artificial Analysis",
+      lowerIsBetter: false,
+      rows: completeSpecialtyRows(specialties[0], taskModels),
+    },
+    {
       title: "API 价格",
       description: "每 1K 张标准图像价格（$/1k images）",
       source: "Artificial Analysis",
       lowerIsBetter: true,
       rows: [...taskModels].sort((first, second) => plainMetricValue(first.price) - plainMetricValue(second.price)).map((model) => ({ model: model.name, value: `$${plainMetricValue(model.price)}` })),
-    },
-    {
-      title: "首图生成耗时",
-      description: "从任务提交到首张结果图生成的时长",
-      source: "Artificial Analysis",
-      lowerIsBetter: true,
-      rows: [...taskModels].sort((first, second) => metricValue(first.performance) - metricValue(second.performance)).map((model) => ({ model: model.name, value: model.performance })),
     },
     {
       title: "近 7 日使用量",
@@ -952,18 +966,18 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       rows: [...taskModels].sort((first, second) => metricValue(second.score) - metricValue(first.score)).map((model) => ({ model: model.name, value: model.score })),
     },
     {
+      title: "性价比",
+      description: "质量 Elo / API 价格",
+      source: "Artificial Analysis",
+      lowerIsBetter: false,
+      rows: completeSpecialtyRows(specialties[0], taskModels),
+    },
+    {
       title: "API 价格",
       description: "每分钟生成视频价格（$/min）",
       source: "Artificial Analysis",
       lowerIsBetter: true,
       rows: [...taskModels].sort((first, second) => plainMetricValue(first.price) - plainMetricValue(second.price)).map((model) => ({ model: model.name, value: `$${plainMetricValue(model.price)}` })),
-    },
-    {
-      title: "视频生成时间",
-      description: "生成一段 720p、5 秒视频的端到端时长",
-      source: "Artificial Analysis",
-      lowerIsBetter: true,
-      rows: [...taskModels].sort((first, second) => metricValue(first.performance) - metricValue(second.performance)).map((model) => ({ model: model.name, value: model.performance })),
     },
     {
       title: "近 7 日使用量",
@@ -991,8 +1005,8 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
         .map((model) => ({ model: model.name, value: formatTaskCost(taskCostProfileFor(task, model).total) })),
     },
     {
-      title: "输出速度",
-      description: "中位输出速度（Tokens/秒）",
+      title: "输出 TPS",
+      description: "每秒输出 Token 数（Tokens/秒）",
       source: "Artificial Analysis",
       lowerIsBetter: false,
       rows: [...taskModels].sort((first, second) => metricValue(second.performance) - metricValue(first.performance)).map((model) => ({ model: model.name, value: model.performance })),
@@ -1005,11 +1019,6 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       rows: [...taskModels].sort((first, second) => metricValue(second.usage) - metricValue(first.usage)).map((model) => ({ model: model.name, value: model.usage })),
     },
   ];
-  const ttsSpecialtyRankings = specialties.slice(1).map((item, index) => ({
-    ...item,
-    source: index === 2 ? "ModelGo" : "Artificial Analysis",
-    lowerIsBetter: index === 1,
-  }));
   const audioBenchmarkRankings = task === "语音合成（TTS）"
     ? [
       {
@@ -1019,14 +1028,14 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
         lowerIsBetter: false,
         rows: [...taskModels].sort((first, second) => metricValue(second.score) - metricValue(first.score)).map((model) => ({ model: model.name, value: model.score })),
       },
-      ttsSpecialtyRankings[1],
-      ttsSpecialtyRankings[0],
-      ttsSpecialtyRankings[2],
+      { ...specialties[0], source: "Artificial Analysis", lowerIsBetter: false },
+      { ...specialties[1], source: "Artificial Analysis", lowerIsBetter: true },
+      { ...specialties[2], source: "ModelGo", lowerIsBetter: false },
     ]
     : specialties.map((item, index) => ({
       ...item,
       source: index === specialties.length - 1 ? "ModelGo" : "Artificial Analysis",
-      lowerIsBetter: task === "语音识别（STT）" && (index === 0 || index === 2),
+      lowerIsBetter: task === "语音识别（STT）" && index === 0,
     }));
   const rankingCards = modality === "image"
     ? imageBenchmarkRankings
@@ -1036,19 +1045,21 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
         ? audioBenchmarkRankings
         : textBenchmarkRankings;
   const providers = [...new Set(leaderboardModels.map((model) => model.provider))];
-  const availableRankingMetricOptions = modality !== "audio"
+  const availableRankingMetricOptions = isTextAgent
     ? rankingMetricOptions
-    : task === "语音合成（TTS）"
-      ? [{ key: "overall", label: "语音质量" }, { key: "value", label: "性价比", specialtyIndex: 0 }, { key: "usage", label: "使用量", specialtyIndex: 3 }] satisfies typeof rankingMetricOptions
-      : task === "语音识别（STT）"
-        ? [{ key: "overall", label: "识别准确率" }, { key: "price", label: "API 价格", specialtyIndex: 2 }, { key: "usage", label: "使用量", specialtyIndex: 3 }] satisfies typeof rankingMetricOptions
-        : [{ key: "overall", label: "Elo 评分" }, { key: "usage", label: "使用量", specialtyIndex: 2 }] satisfies typeof rankingMetricOptions;
+    : modality === "audio" && task === "语音识别（STT）"
+      ? [{ key: "overall", label: "识别准确率" }, { key: "price", label: "API 价格", specialtyIndex: 0 }, { key: "usage", label: "使用量", specialtyIndex: 1 }] satisfies typeof rankingMetricOptions
+      : [{ key: "overall", label: modality === "audio" ? "语音质量" : "Elo 评分" }, { key: "value", label: "性价比", specialtyIndex: 0 }, { key: "price", label: "API 价格", specialtyIndex: 1 }, { key: "usage", label: "使用量", specialtyIndex: 2 }] satisfies typeof rankingMetricOptions;
   const selectedRankingOption = availableRankingMetricOptions.find((option) => option.key === rankingMetric) ?? availableRankingMetricOptions[0];
   const selectedSpecialty = selectedRankingOption.specialtyIndex === undefined ? undefined : specialties[selectedRankingOption.specialtyIndex];
   const selectedMetricRows = selectedSpecialty ? completeSpecialtyRows(selectedSpecialty, taskModels) : [];
   const selectedMetricValues = new Map(selectedMetricRows.map((row) => [row.model, row.value]));
   const selectedMetricOrder = new Map(selectedMetricRows.map((row, index) => [row.model, index]));
-  const specialtyDescriptions = [taskProfile.valueLabel, taskProfile.speedLabel, taskProfile.latencyLabel, taskProfile.usageLabel];
+  const specialtyDescriptions = isTextAgent
+    ? [taskProfile.valueLabel, taskProfile.speedLabel, taskProfile.latencyLabel, taskProfile.usageLabel]
+    : modality === "audio" && task === "语音识别（STT）"
+      ? ["公开 API 价格", taskProfile.usageLabel]
+      : [taskProfile.valueLabel, "公开 API 价格", taskProfile.usageLabel];
   const selectedMetricHeader = rankingMetric === "value"
     ? isTextAgent
       ? `${taskProfile.qualityLabel} / 单次任务成本`
@@ -1062,7 +1073,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   const qualityLeader = taskModels[0];
   const openQualityLeader = taskModels.find((model) => openTextModels.has(model.name));
   const valueLeader = textValueRows[0];
-  const summaryCards = (audioTaskConfig?.summary ?? config.summary).map((item, index) => modality === "audio" ? item : ({
+  const summaryCards = (audioTaskConfig?.summary ?? config.summary).map((item, index) => !isTextAgent ? item : ({
       ...item,
       ...(isTextAgent && index === 0 && qualityLeader ? { model: qualityLeader.name, value: qualityLeader.score } : {}),
       ...(isTextAgent && index === 1 && openQualityLeader ? { model: openQualityLeader.name, value: openQualityLeader.score } : {}),
@@ -1154,8 +1165,8 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
     : ["公开价格", "发布时间", "ModelGo 使用量"];
   const chartModels = visibleModels.filter((model) => selectedModelNames.includes(model.name));
   const filteredModelOptions = visibleModels.filter((model) => model.name.toLowerCase().includes(modelFilterSearch.trim().toLowerCase()));
-  const speedValueMap = new Map(completeSpecialtyRows(specialties[1], taskModels).map((row) => [row.model, metricValue(row.value)]));
-  const latencyValueMap = new Map(completeSpecialtyRows(specialties[2], taskModels).map((row) => [row.model, metricValue(row.value)]));
+  const speedValueMap = new Map(specialties[1] ? completeSpecialtyRows(specialties[1], taskModels).map((row) => [row.model, metricValue(row.value)]) : []);
+  const latencyValueMap = new Map(specialties[2] ? completeSpecialtyRows(specialties[2], taskModels).map((row) => [row.model, metricValue(row.value)]) : []);
   const activeXAxis = analysisXMetrics[xMetric] ?? analysisXMetrics[0];
   const chartData = chartModels.map((model, index) => {
     const xValue = activeXAxis.source === "price"
@@ -1171,7 +1182,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
             : activeXAxis.source === "voices"
               ? plainMetricValue(model.voices)
               : metricValue(model.usage);
-    const baseScore = (modality === "image" || modality === "video") && yMetric === 1 ? metricValue(model.performance) : metricValue(model.score);
+    const baseScore = constrainedAnalysisProfile && yMetric === 1 ? plainMetricValue(model.price) : metricValue(model.score);
     const scoreJitter = baseScore > 100 ? ((index % 3) - 1) * 4 : ((index % 3) - 1) * 0.35;
     const yValue = constrainedAnalysisProfile ? baseScore : baseScore * (1 - yMetric * 0.018) + scoreJitter;
     return { model, xValue, yValue };
@@ -1182,7 +1193,9 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   const xLowerIsBetter = activeXAxis.lowerIsBetter;
   const xUnit = activeXAxis.unit;
   const activeYAxisLabel = analysisYMetrics[yMetric];
-  const yUnit = modality === "image" && yMetric === 1 ? "秒 / 张" : modality === "video" && yMetric === 1 ? "秒 / 5 秒视频" : taskProfile.qualityUnit;
+  const yUnit = constrainedAnalysisProfile && yMetric === 1
+    ? constrainedAnalysisProfile.xMetrics.find((metric) => metric.source === "price")?.unit ?? taskProfile.valueUnit
+    : taskProfile.qualityUnit;
   const trendModels = chartModels.filter((model) => isModelConnected(model) && model.usage !== "—");
   const trendSeries = trendModels.map((model, modelIndex) => {
     const base = Math.max(metricValue(model.usage), 1_000);
@@ -1346,7 +1359,8 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
           <div className="model-discovery-analysis-tools">
             <div className="model-discovery-presets">{analysisPresets.map((preset, index) => <button className={preset.y === yMetric && preset.x === xMetric ? "active" : ""} key={preset.label} onClick={() => applyPreset(index)} type="button">{preset.label}</button>)}</div>
             <div className="model-discovery-selects">
-              {modality === "image" || modality === "video" || modality === "audio" ? <><span className="model-discovery-fixed-axis">纵轴<strong>{activeYAxisLabel}</strong></span><span className="model-discovery-fixed-axis">横轴<strong>{activeXAxis.label}</strong></span></> : <><label>纵轴<select aria-label="纵轴指标" value={yMetric} onChange={(event) => setYMetric(Number(event.target.value))}>{analysisYMetrics.map((item, index) => <option key={item} value={index}>{item}</option>)}</select><LuChevronDown size={12} /></label><label>横轴<select aria-label="横轴指标" value={xMetric} onChange={(event) => setXMetric(Number(event.target.value))}>{analysisXMetrics.map((item, index) => <option key={item.label} value={index}>{item.label}</option>)}</select><LuChevronDown size={12} /></label></>}
+              <span className="model-discovery-fixed-axis">纵轴<strong>{activeYAxisLabel}</strong></span>
+              <span className="model-discovery-fixed-axis">横轴<strong>{activeXAxis.label}</strong></span>
               <button className={pareto ? "active" : ""} onClick={() => setPareto((current) => !current)} type="button"><LuSlidersHorizontal size={12} />优选区</button>
             </div>
           </div>

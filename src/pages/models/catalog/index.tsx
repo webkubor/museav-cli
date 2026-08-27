@@ -64,7 +64,7 @@ export default function ModelsCatalogPage() {
   const [sort, setSort] = useState<SortKey>(() => (searchParams.get('sort') as SortKey) || 'default')
 
   // 新手指南：本页既是第 1 步的完成证据，也是悬浮入口的宿主
-  const { reportStep: reportOnboardingStep } = useOnboardingGuide()
+  const { guide: onboardingGuide, reportStep: reportOnboardingStep } = useOnboardingGuide()
 
   useEffect(() => {
     const next = new URLSearchParams()
@@ -227,11 +227,33 @@ export default function ModelsCatalogPage() {
       entry_source: (location.state as { entrySource?: string } | null)?.entrySource ?? 'direct',
       catalog_count: allModels.length,
     })
-    // 新手指南第 1 步「浏览模型广场」：证据是**登录态下**目录真正展示出来这件事，
-    // 不是点了入口（规格 §7 表：认证后的页面访问业务事件）。匿名访客不计。
-    if (isAuthenticated) reportOnboardingStep('marketplace', 'page_visit', 'marketplace')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modelsQuery.isLoading, modelsQuery.isError])
+
+  /**
+   * 新手指南第 1 步「浏览模型广场」：证据是**登录态下**目录真正展示出来这件事，
+   * 不是点了入口（规格 §7 表：认证后的页面访问业务事件）。匿名访客不计。
+   *
+   * ⚠️ 必须独立成一个 effect，不能挂在上面 marketplace_view 里 —— 那个有
+   * viewTrackedRef 单次闩锁，而本页是**公开页**，模型列表常常比 GET /tenants 先到；
+   * 租户信息没回来时 guide 还没建，store 的 `if (!guides[tenantId]) return` 会把这
+   * 一步静默丢掉，闩锁却已经翻了，于是这次访问永远补不回来。用户看到的症状就是
+   * 「点了『去浏览』没反应、一直 0/5」。
+   *
+   * 所以这里等 onboardingGuide 就绪再报，并且不加闩锁：领域层对重复完成同一步是
+   * 幂等的（返回原引用），guide 因为其他步骤推进而变化时重跑一次也只是空转。
+   */
+  useEffect(() => {
+    if (!isAuthenticated || !onboardingGuide) return
+    if (modelsQuery.isLoading || modelsQuery.isError) return
+    reportOnboardingStep('marketplace', 'page_visit', 'marketplace')
+  }, [
+    isAuthenticated,
+    onboardingGuide,
+    modelsQuery.isLoading,
+    modelsQuery.isError,
+    reportOnboardingStep,
+  ])
 
   /** marketplace_empty_shown：只在「从有结果变为无结果」时报一次，避免同一空态重复上报 */
   const wasEmptyRef = useRef(false)

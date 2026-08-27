@@ -25,7 +25,6 @@ export type PublicProtocol =
   | 'anthropic_messages'
   | 'openai_video'
   | 'content_generation'
-  | 'mcp'
   | 'gemini_generate_content'
   | 'gemini_predict'
   | 'gemini_predict_long_running'

@@ -16,6 +16,7 @@ import { usePermissions } from '@/hooks/use-permissions'
 import { isDomestic } from '@/lib/market'
 import { PERMS } from '@/config/permissions'
 import { AlipayIcon, WechatIcon } from '@/constants/brand-icons'
+import { useOnboardingStore } from '@/store/use-onboarding-store'
 import { trackEvent } from '@/lib/track'
 import { listIncomeRecords } from '@/services/billing'
 import type { IncomeRecord, IncomeRecordType, IncomeRecordStatus, IncomeBalanceBucket } from '@/services/billing'
@@ -115,6 +116,27 @@ export function BillingLedgerPanel({
   const [timeFilter, setTimeFilter] = useState<TimeFilterKey>('all')
   const pager = useCursorPager()
 
+  // 新手奖励领取后从成功弹框点「查看赠金」进来：定位并高亮那条「新手任务奖励」入账记录
+  // （新手指南规格 2026-08-13 §交互流程 4-5）
+  const highlightRecordRef = useOnboardingStore((st) => st.billingHighlightRecordRef)
+  const clearHighlight = useOnboardingStore((st) => st.clearBillingHighlight)
+  const highlightRowRef = useRef<HTMLTableRowElement | null>(null)
+
+  // 复位筛选与分页，确保目标记录在第一页可见（新手指南规格 2026-08-13：「查看赠金」
+  // 会重置账单入账筛选和分页）。用户可能本来就停在账单页上领取的，此时不会重新挂载，
+  // 只能由这个外部信号一次性推一把——highlightRecordRef 从 null 变成有值时触发一次，
+  // 用完即被下面的 effect 清成 null，不会反复。
+  useEffect(() => {
+    if (!highlightRecordRef) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 外部 store 信号驱动的一次性复位，同本仓 logs/index.tsx 的 request_id 自动展开
+    setLedgerTab('transactions')
+    setType('all')
+    setTimeFilter('all')
+    onBucketFilterChange('all')
+    pager.reset()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightRecordRef])
+
   // bucketFilter 由父级（可能来自 BalanceCard 点桶，也可能来自下面的筛选 Select）驱动；
   // 无论来源，变化时都要重置分页 + 上报，跳过首渲染避免误报。
   const bucketMountedRef = useRef(false)
@@ -141,6 +163,24 @@ export function BillingLedgerPanel({
 
   const items = data?.items ?? []
   const hasMore = Boolean(data?.has_more && data?.next_cursor)
+
+  /**
+   * 数据到位后滚到目标行，2.2s 后清掉高亮标记（动画时长同 billing.css）。
+   * 目标记录不在返回里就直接清掉：用户照常停在账单管理，不弹错误
+   * （规格 2026-08-13 §可访问性与异常处理「若目标记录未找到，仍进入账单管理，不阻断」）。
+   * ⚠️ 本轮奖励是前端 Mock，服务端没有这条流水，所以现在走的正是这条「未找到」分支——
+   * 后端 /onboarding/reward/claim 落地后才会真高亮。
+   */
+  useEffect(() => {
+    if (!highlightRecordRef || isFetching) return
+    const found = items.some((rec) => rec.record_ref === highlightRecordRef)
+    if (found) {
+      highlightRowRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    }
+    const timer = setTimeout(clearHighlight, found ? 2200 : 0)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightRecordRef, isFetching, data])
 
   // §11.2 billing_income_filter_change：type/time 两维度共用这个上报点；bucket 维度的上报
   // 已改由上面那个 effect 统一处理（无论触发源是这里的 Select 还是 BalanceCard 点桶）。
@@ -281,7 +321,11 @@ export function BillingLedgerPanel({
               </TableHeader>
               <TableBody>
                 {items.map((rec) => (
-                  <TableRow key={rec.id}>
+                  <TableRow
+                    key={rec.id}
+                    ref={rec.record_ref === highlightRecordRef ? highlightRowRef : undefined}
+                    className={rec.record_ref === highlightRecordRef ? 'billing-transaction-highlight' : undefined}
+                  >
                     <TableCell className="font-mono text-xs text-mg-text-2 max-w-[160px]">
                       <div className="flex items-center gap-1 min-w-0">
                         <span className="truncate">{rec.record_ref}</span>

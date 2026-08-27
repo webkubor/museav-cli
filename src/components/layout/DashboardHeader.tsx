@@ -24,6 +24,7 @@ import { trackEvent } from '@/lib/track'
 import { useTrackContext } from '@/hooks/use-track-context'
 import { toast } from 'sonner'
 import { ConnectModal } from '@/pages/api-keys/ConnectModal'
+import { useConnectModalStore } from '@/store/use-connect-modal-store'
 import { Modal } from '@/components/ui/Modal'
 import {
   buildSyncedNav,
@@ -114,7 +115,11 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
   const [orgModalVisible, setOrgModalVisible] = useState(false)
   const [newOrgName, setNewOrgName] = useState('')
 
-  const [connectModalVisible, setConnectModalVisible] = useState(false)
+  // 开关提到 store：新手指南第 4 步「去接入」要打开的就是这一个弹窗（规格 §7.3
+  // 「不建设两套配置界面」），而气泡在侧栏、跟顶栏不在同一棵树里。
+  const connectModalVisible = useConnectModalStore((s) => s.isOpen)
+  const openConnectModal = useConnectModalStore((s) => s.open)
+  const closeConnectModal = useConnectModalStore((s) => s.close)
 
   const { data: tenantsData } = useQuery({
     queryKey: ['tenants'],
@@ -257,7 +262,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
   }
 
   function handleCreateApiKeyFromConnect() {
-    setConnectModalVisible(false)
+    closeConnectModal()
     navigate(activeWorkspaceId ? `/workspace/${activeWorkspaceId}/api-keys` : '/dashboard')
   }
 
@@ -367,7 +372,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
         {isAuthenticated && (
           <button
             type="button"
-            onClick={() => setConnectModalVisible(true)}
+            onClick={openConnectModal}
             title={t('header.quickAccess')}
             className="inline-flex items-center gap-1.5 rounded-full border border-brand-base/20 bg-brand-base/[0.06] px-2.5 py-1.5 text-xs font-bold text-brand-base transition-all duration-200 hover:border-brand-base/35 hover:bg-brand-base/[0.1] hover:shadow-sm active:scale-[0.97] md:px-3"
           >
@@ -448,7 +453,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
 
       <ConnectModal
         open={connectModalVisible}
-        onClose={() => setConnectModalVisible(false)}
+        onClose={closeConnectModal}
         openAIBaseUrl={gatewayEndpoints[0]?.baseUrl ?? ''}
         anthropicBaseUrl={gatewayEndpoints[1]?.baseUrl ?? gatewayEndpoints[0]?.baseUrl ?? ''}
         createdKeyText=""

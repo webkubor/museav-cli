@@ -24,6 +24,7 @@ import {
   LuBuilding2,
 } from 'react-icons/lu'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
+import { OnboardingRewardDialog } from '@/features/onboarding/OnboardingGuideEntry'
 import { useTranslation } from 'react-i18next'
 import { DashboardHeader } from './DashboardHeader'
 import { DashboardSidebar } from './DashboardSidebar'
@@ -344,6 +345,9 @@ export function DashboardLayout() {
           </div>
         </main>
       </div>
+
+      {/* 新手奖励领取成功弹框：全局挂一次（领取入口在侧栏气泡里，跟随路由挂会被卸载） */}
+      <OnboardingRewardDialog />
     </div>
   )
 }

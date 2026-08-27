@@ -29,6 +29,8 @@ import {
   outputModalitiesOf,
 } from './modelCatalogFilterLogic'
 import { ModelsCompareModal } from '../components/ModelsCompareModal'
+import { OnboardingGuideFloatingEntry } from '@/features/onboarding/OnboardingGuideEntry'
+import { useOnboardingGuide } from '@/features/onboarding/use-onboarding-guide'
 import { queryLengthBucket, diffFilterChange, buildFilterSummary } from './catalog-tracking'
 import type { CatalogModelItem } from '@/types'
 import './catalog.css'
@@ -60,6 +62,9 @@ export default function ModelsCatalogPage() {
   const [search, setSearch] = useState(() => searchParams.get('q') ?? '')
   const [selected, setSelected] = useState<string[]>(() => searchParams.get('f')?.split(',').filter(Boolean) ?? [])
   const [sort, setSort] = useState<SortKey>(() => (searchParams.get('sort') as SortKey) || 'default')
+
+  // 新手指南：本页既是第 1 步的完成证据，也是悬浮入口的宿主
+  const { reportStep: reportOnboardingStep } = useOnboardingGuide()
 
   useEffect(() => {
     const next = new URLSearchParams()
@@ -222,6 +227,9 @@ export default function ModelsCatalogPage() {
       entry_source: (location.state as { entrySource?: string } | null)?.entrySource ?? 'direct',
       catalog_count: allModels.length,
     })
+    // 新手指南第 1 步「浏览模型广场」：证据是**登录态下**目录真正展示出来这件事，
+    // 不是点了入口（规格 §7 表：认证后的页面访问业务事件）。匿名访客不计。
+    if (isAuthenticated) reportOnboardingStep('marketplace', 'page_visit', 'marketplace')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modelsQuery.isLoading, modelsQuery.isError])
 
@@ -519,6 +527,9 @@ export default function ModelsCatalogPage() {
           )}
         </div>
       </div>
+
+      {/* 新手指南悬浮入口（规格 §5.1）：只在模型广场出现，与侧栏入口共享同一份租户进度 */}
+      <OnboardingGuideFloatingEntry />
 
       <ModelsCompareModal
         isOpen={isCompareOpen}

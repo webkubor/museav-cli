@@ -91,6 +91,13 @@ export const storageKeys = {
   csConversationId: () => buildKey('cs_cid', 'app'),
   csTriggerPos:     () => buildKey('cs_pos', 'app'),
 
+  // ── 新手指南（market 隔离：国内 ¥10 / 海外 $5 是两套奖励快照，不能互串） ──
+  // 任务进度按租户共享（企业 Owner/Admin 同看一份，规格 §6.2）；
+  // 自动展开偏好按 user+tenant+guideVersion（规格 §5.4：Owner 关了不影响 Admin 首次自动展开）。
+  onboardingGuide:    (tenantId: string)                 => buildKey(`onboarding_guide:${tenantId}`, 'market'),
+  onboardingAutoOpen: (userId: string, tenantId: string) => buildKey(`onboarding_auto_open:${userId}:${tenantId}`, 'market'),
+  onboardingMockLog:  (tenantId: string)                 => buildKey(`onboarding_mock_log:${tenantId}`, 'market'),
+
   // ── 设备指纹（app 全局，跨市场唯一标识） ─────────────────────────────────
   deviceId:         () => buildKey('device_id', 'app'),
 } as const

@@ -3,7 +3,19 @@
    相邻卡片露边：绝对定位 + 按 --slide-offset 水平位移，非激活项 scale/opacity
    弱化，|offset|>1 隐藏。背景图直接铺满 banner；无图时只保留中性兜底。 */
 .mg-featured { display: grid; gap: 10px; margin-bottom: 18px; }
-.mg-featured-track { position: relative; height: 204px; overflow: hidden; }
+/* 轨道高度是**内容预算**，不是随手定的数字：slide 绝对定位撑不出高度，只能写死。
+   最坏一屏（带徽章）左列这笔账：
+     徽章 21 + 标题 33 + 供应商/价格 19 + 简介 2 行 40 + 操作按钮 34   = 147
+     四个 grid row-gap 6px                                          =  24
+     p 的 margin-top 2 + actions 的 margin-top 8（在 gap 之外另算）    =  10
+                                                                    ─────
+                                                                      181
+   加 slide 上下 padding 22×2 + 1px 边框×2 = 227，取 228 留 1px 余量。
+   （原值 204 从一开始就不够：带徽章 + 两行简介需要 181，而 204 只给到 158。）
+   ⚠️ 改这里任何一行的字号/行高/间距/margin，都要把上面这笔账重算 —— 算少了不会报错，
+   会被 .mg-featured-slide 的 overflow:hidden 悄悄吃掉（详见 .mg-featured-copy p）。
+   自查一句：`copy.scrollHeight <= copy.offsetHeight` 必须成立。 */
+.mg-featured-track { position: relative; height: 228px; overflow: hidden; }
 
 /* 2026-08 视觉改版稿：banner 从「深色底 + 反白文案」翻成「浅色玻璃卡 + 正常文字色」。
    底色/文字全走 token（bg-0-rgb 深色档自动翻转），两市场四态不需要各写一套。 */
@@ -74,10 +86,30 @@
    继承 slide 的 stretch 后按钮整体被居中，位置对不上原型的「上文案下按钮」。 */
 .mg-featured-copy { position: relative; z-index: 2; display: grid; gap: 6px; justify-items: start; min-width: 0; }
 .mg-featured-badges { display: flex; gap: 6px; }
-.mg-featured-copy strong { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; color: var(--mg-text-1); }
+/* 标题锁一行：轨道高度是按「标题占一行」算的预算（见 .mg-featured-track），标题一旦
+   折行就多出 33px，又会从简介那一行扣回去 —— 换个触发条件、同一个 bug。
+   窄屏才会真的截断：桌面端列宽 390px，线上最长的
+   「DeepSeek V4 Flash Vision Exp」量出来 315px，够放；而 375px 视口下列宽只有 193px，
+   这个名字会折成两行、整卡溢出 31px（线上国内站首屏这张就是它）。
+   截断也比压掉简介好：模型全名在下方卡片与详情页都有；JSX 那边用 OverflowTip 渲染
+   这个 strong，真截断时悬停显全名。省略号留在这里而不是只靠组件带的 utility ——
+   组件负责气泡，剪裁是布局硬约束，换掉组件也不能把它带走。 */
+.mg-featured-copy strong {
+  font-size: 22px; font-weight: 700; letter-spacing: -0.01em; color: var(--mg-text-1);
+  max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .mg-featured-meta { font-size: 12.5px; color: var(--mg-text-2); }
+/* 简介固定占满两行，不能是 auto —— .mg-featured-copy 是被拉伸到 slide 固定高度的
+   grid，空间不够时 auto 行会压到 min-content，而 `-webkit-box` + overflow:hidden 的
+   min-content 约等于 0，于是**这一段是唯一能被压的那一行**：带徽章的卡多出 21+6px，
+   全从这里扣，简介被从 40px 压到 18px，第二行连省略号都来不及出现就被切掉（线上
+   「支持图文输入的轻量视觉模型…适合截图问答与大批」正是这个形状）。
+   写死 height 而不是 min-height：align-content 是 stretch，min-height 只挡下限，
+   富余空间照样会把这一行撑到 2.1 行，反过来把按钮挤出卡片。
+   40px = 2 × (12.5px × 1.6)，与下面的 font-size/line-height 是一笔账。 */
 .mg-featured-copy p {
   margin: 2px 0 0; max-width: 52ch; font-size: 12.5px; line-height: 1.6;
+  height: 40px;
   color: var(--mg-text-3);
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }

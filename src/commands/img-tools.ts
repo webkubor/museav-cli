@@ -82,7 +82,8 @@ export interface RemoveBgOpts {
 
 export async function removeBgCmd(input: string, opts: RemoveBgOpts): Promise<void> {
   if (!(await fileExists(input))) throw new Error(`文件不存在: ${input}`)
-  const modelKey = (opts.model || 'isnet') as BgModelKey
+  // 默认 birefnet：实测对毛发、白色主体、低对比度背景的召回远好于 isnet/u2net
+  const modelKey = (opts.model || 'birefnet') as BgModelKey
   if (!(modelKey in BG_MODELS)) throw new Error(`--model 只支持 ${Object.keys(BG_MODELS).join(' / ')}`)
 
   const start = Date.now()

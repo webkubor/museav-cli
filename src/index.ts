@@ -185,9 +185,9 @@ program
 
 program
   .command('remove-bg <file>')
-  .description('本地抠图去背景（ISNet/U2Net + onnxruntime，免登录）：输出带 alpha 的 PNG。首次使用自动下载模型（~170MB，缓存 ~/.museav-models）')
+  .description('本地抠图去背景（BiRefNet/ISNet/U2Net + onnxruntime，免登录）：输出带 alpha 的 PNG。首次使用自动下载模型（缓存 ~/.museav-models）')
   .option('--out <path>', '输出路径（默认 <名>-nobg.png）')
-  .option('--model <name>', 'isnet（默认，质量优先）/ u2net')
+  .option('--model <name>', 'birefnet（默认，细节最好，~214MB）/ isnet / u2net')
   .option('--overwrite', '允许覆盖已存在的输出文件')
   .action(asyncRun((input: string, opts: any) => removeBgCmd(input, opts)))
 

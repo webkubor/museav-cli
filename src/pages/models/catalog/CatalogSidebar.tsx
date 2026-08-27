@@ -33,8 +33,11 @@ import {
 import { usePublicProtocolsStore } from '@/store/use-public-protocols-store'
 import { mergeProtocolLabels } from '@/features/models/model-format'
 
-/** 侧栏多选项默认展示条数（厂商、API 协议共用） */
+/** 厂商筛选默认展示条数 */
 const FILTER_PREVIEW = 6
+/** API 协议默认展示条数。与厂商刻意不同档：协议闭集 39 项（跟网关枚举扩容），
+ *  按需求方口径收起态只露 5 项。改这个数不影响厂商，两者已解耦。 */
+const PROTOCOL_PREVIEW = 5
 
 /** 厂商展示名。后端下发标识大小写不一，原型展示品牌写法。 */
 const VENDOR_LABEL_ZH: Record<string, string> = {
@@ -238,10 +241,10 @@ export function CatalogSidebar({ tags, models, selected, setSelected, isZh }: Pr
 
   const protocols = PROTOCOL_FILTER_ORDER
   const selectedHiddenProtocol = protocols
-    .slice(FILTER_PREVIEW)
+    .slice(PROTOCOL_PREVIEW)
     .some((p) => protocolActive.includes(p))
   const protocolsExpanded = showAllProtocols || selectedHiddenProtocol
-  const shownProtocols = protocolsExpanded ? protocols : protocols.slice(0, FILTER_PREVIEW)
+  const shownProtocols = protocolsExpanded ? protocols : protocols.slice(0, PROTOCOL_PREVIEW)
 
   const promoCount = useMemo(() => models.filter((m) => Boolean(m.promotion)).length, [models])
 
@@ -347,7 +350,7 @@ export function CatalogSidebar({ tags, models, selected, setSelected, isZh }: Pr
               onClick={() => toggle(`protocol:${p}`)}
             />
           ))}
-          {protocols.length > FILTER_PREVIEW && !selectedHiddenProtocol && (
+          {protocols.length > PROTOCOL_PREVIEW && !selectedHiddenProtocol && (
             <button type="button" className="mg-side-more" onClick={() => setShowAllProtocols((x) => !x)}>
               {protocolsExpanded ? t('modelsCatalog.sidebar.less') : t('modelsCatalog.sidebar.more')}
               <LuChevronDown size={13} className={protocolsExpanded ? 'rotate-180' : ''} />

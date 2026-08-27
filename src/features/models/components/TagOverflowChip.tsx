@@ -2,6 +2,11 @@
  * 小标签行折叠后的「+N」计数标签：悬停/键盘聚焦冒气泡列出被折叠的项。
  * 可体验任务与 API 协议共用（外观由调用方给 className 决定，行为一致）。
  *
+ * 气泡里也按 tag 逐个排（不是逗号串成一段话）：这一行本来就是标签，串成
+ * 「OpenAI Responses, OpenAI Images, OpenAI Image Edits, Anthropic Messages」两行文字
+ * 时既看不出边界、也和触发它的标签行对不上（需求方 2026-08-27 反馈观感差）。
+ * aria-label 仍保留分隔符串好的整句 —— 读屏要的是一句连读，不是四个孤立词。
+ *
  * 气泡走 portal 挂 body，与 OverflowTip 同一套 token 与理由 —— 标签嵌在 .mg-tile
  * 卡片里，卡片有 overflow 剪裁 + hover transform（transform 会劫持 fixed 的包含块），
  * absolute/fixed 内联都会被剪掉。
@@ -40,9 +45,9 @@ export function TagOverflowChip({ hidden, className }: { hidden: string[]; class
         <span
           role="tooltip"
           style={{ left: pos.x, top: pos.y }}
-          className="pointer-events-none fixed z-[var(--mg-z-tooltip)] w-max max-w-[300px] -translate-x-1/2 -translate-y-full whitespace-normal rounded-[var(--mg-tooltip-radius)] border border-mg-border bg-mg-bg-3 px-[var(--mg-tooltip-pad-x)] py-[var(--mg-tooltip-pad-y)] text-left mg-text-caption font-medium leading-snug text-mg-text-2 shadow-lg"
+          className="mg-tag-tip pointer-events-none fixed z-[var(--mg-z-tooltip)] w-max max-w-[300px] -translate-x-1/2 -translate-y-full rounded-[var(--mg-tooltip-radius)] border border-mg-border bg-mg-bg-3 px-[var(--mg-tooltip-pad-x)] py-[var(--mg-tooltip-pad-y)] text-left mg-text-caption font-medium leading-snug text-mg-text-2 shadow-lg"
         >
-          {text}
+          {hidden.map((label) => <span key={label}>{label}</span>)}
         </span>,
         document.body,
       )}

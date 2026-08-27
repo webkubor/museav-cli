@@ -51,6 +51,18 @@ describe('ExperienceTaskTags', () => {
     expect(screen.queryByRole('tooltip')).toBeNull()
   })
 
+  it('折叠多项时气泡里逐个排 tag（观感 + 与标签行对得上）', () => {
+    const { container } = render(<ExperienceTaskTags tasks={videoTasks} max={1} />)
+    const more = container.querySelector('.mg-task-tags-more')!
+    expect(more.textContent).toBe('+2')
+    fireEvent.mouseEnter(more)
+    const tip = screen.getByRole('tooltip')
+    expect([...tip.children].map((c) => c.textContent)).toEqual([
+      i18n.t('modelsExperience.taskLabel.image_to_video'),
+      i18n.t('modelsExperience.taskLabel.video_to_video'),
+    ])
+  })
+
   it('不传 max 不折叠（详情页口径）', () => {
     const { container } = render(<ExperienceTaskTags tasks={videoTasks} />)
     expect(container.querySelectorAll('.mg-task-tags > em')).toHaveLength(3)

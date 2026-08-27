@@ -132,6 +132,25 @@ describe('CardProtocolTags', () => {
     }
   })
 
+  it('气泡里按 tag 逐个排，不是逗号串成一段话；aria-label 仍是串好的整句', () => {
+    const four = ['openai_chat_completions', 'anthropic_messages', 'openai_video', 'content_generation']
+    const restore = stubClientWidth(() => 10000)
+    try {
+      const { container } = render(<CardProtocolTags protocols={four} isZh />)
+      const more = container.querySelector('.mg-proto-more')!
+      expect(more.textContent).toBe('+2')
+      fireEvent.mouseEnter(more)
+      const tip = screen.getByRole('tooltip')
+      // 每个折叠项一个独立 tag 元素（几何与标签行同一套，样式见 .mg-tag-tip > span）
+      expect([...tip.children].map((c) => c.textContent)).toEqual(['OpenAI Video', 'Content Generation'])
+      // 读屏要的是一句连读，所以 aria-label 保留分隔符
+      expect(more.getAttribute('aria-label'))
+        .toBe(['OpenAI Video', 'Content Generation'].join(i18n.t('modelsExperience.listSeparator')))
+    } finally {
+      restore()
+    }
+  })
+
   it('labelMap 覆盖展示文案（跟随 /catalog/public-protocols 下发）', () => {
     const { container } = render(
       <CardProtocolTags protocols={['openai_video']} isZh labelMap={{ openai_video: '视频生成接口' }} />,

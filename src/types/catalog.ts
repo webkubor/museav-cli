@@ -1,31 +1,58 @@
 import type { Money } from './account'
 
 /**
- * 模型级公开协议。2026-08 由粗粒度 3 值（openai/anthropic/other）升级为端点粒度 7 值，
- * 后于 2026-08-26 按「厂商 + 能力」命名规范扩容为 12 值（openai_chat 改名
- * openai_chat_completions，openai_audio 拆成 openai_speech/openai_transcriptions，
- * 新增 openai_rerank 与 google_gemini/google_imagen/google_video 三个原生透传条目，
- * 见 controller/observer/web-api/gateway 同批切换）。google_* 三值仅信息展示（对应
- * /native/gemini|vertex/* 原生透传，不区分具体 Gemini/Imagen/Veo 路由），需运营手动
- * 打标，不参与后端自动派生。过渡期内未重新打标的模型仍可能下发更旧的
- * openai/anthropic/other 三值——这是渐进迁移的预期状态，不是 bug，前端展示/筛选都要
- * 兼容多套取值。
+ * 模型级公开协议。闭集由 modelgo-model-gateway 的 pkg/publicprotocols 拥有，按网关
+ * **实际入站面**定义：每个入站 wire surface 一个值（openai_chat_completions /
+ * openai_images / openai_images_edits / openai_video / content_generation / mcp …），
+ * 原生透传家族则按厂商操作细分（gemini_* / ark_* / kling_* / hailuo_* / vidu_*）。
+ * 前端运行时从 /catalog/public-protocols 取标签，不硬编码。
+ *
+ * 过渡期内未重新打标的模型仍可能下发更旧的 openai/anthropic 两值——这是渐进迁移的
+ * 预期状态，不是 bug，展示与筛选都要兼容。
  */
 export type PublicProtocol =
   | 'openai_chat_completions'
   | 'openai_responses'
+  | 'openai_completions'
   | 'openai_embeddings'
+  | 'openai_embeddings_multimodal'
   | 'openai_rerank'
   | 'openai_images'
+  | 'openai_images_edits'
   | 'openai_speech'
   | 'openai_transcriptions'
+  | 'openai_translations'
   | 'anthropic_messages'
-  | 'google_gemini'
-  | 'google_imagen'
-  | 'google_video'
+  | 'openai_video'
+  | 'content_generation'
+  | 'gemini_generate_content'
+  | 'gemini_predict'
+  | 'gemini_predict_long_running'
+  | 'gemini_files'
+  | 'ark_batch_chat_completions'
+  | 'ark_context_create'
+  | 'ark_context_chat_completions'
+  | 'ark_tokenization'
+  | 'kling_text2video'
+  | 'kling_image2video'
+  | 'kling_multi_image2video'
+  | 'kling_omni_video'
+  | 'kling_video_extend'
+  | 'kling_motion_control'
+  | 'kling_avatar_image2video'
+  | 'kling_multi_elements'
+  | 'kling_advanced_lip_sync'
+  | 'kling_text_to_audio'
+  | 'kling_video_to_audio'
+  | 'kling_tts'
+  | 'hailuo_video_generation'
+  | 'vidu_text2video'
+  | 'vidu_img2video'
+  | 'vidu_start_end2video'
+  | 'vidu_reference2video'
+  | 'other'
   | 'openai'
   | 'anthropic'
-  | 'other'
 
 export interface ModelPricing {
   input_per_1m: string

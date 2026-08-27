@@ -33,7 +33,11 @@ import {
 import { usePublicProtocolsStore } from '@/store/use-public-protocols-store'
 import { mergeProtocolLabels } from '@/features/models/model-format'
 
-const VENDOR_PREVIEW = 6
+/** 厂商筛选默认展示条数 */
+const FILTER_PREVIEW = 6
+/** API 协议默认展示条数。与厂商刻意不同档：协议闭集 39 项（跟网关枚举扩容），
+ *  按需求方口径收起态只露 5 项。改这个数不影响厂商，两者已解耦。 */
+const PROTOCOL_PREVIEW = 5
 
 /** 厂商展示名。后端下发标识大小写不一，原型展示品牌写法。 */
 const VENDOR_LABEL_ZH: Record<string, string> = {
@@ -69,38 +73,99 @@ function vendorLabel(code: string, fallback: string, isZh: boolean): string {
  * 用同一套措辞（厂商+能力英文专名，中英同名；只有 other 保留双语）。
  */
 const PROTOCOL_FILTER_ORDER = [
-  'openai_chat_completions', 'openai_responses', 'openai_embeddings', 'openai_rerank',
-  'openai_images', 'openai_speech', 'openai_transcriptions',
-  'anthropic_messages',
-  'google_gemini', 'google_imagen', 'google_video',
-  'other',
+  'openai_chat_completions', 'openai_responses', 'openai_completions', 'openai_embeddings',
+  'openai_embeddings_multimodal', 'openai_rerank', 'openai_images', 'openai_images_edits',
+  'openai_speech', 'openai_transcriptions', 'openai_translations', 'anthropic_messages',
+  'openai_video', 'content_generation', 'gemini_generate_content',
+  'gemini_predict', 'gemini_predict_long_running', 'gemini_files', 'ark_batch_chat_completions',
+  'ark_context_create', 'ark_context_chat_completions', 'ark_tokenization', 'kling_text2video',
+  'kling_image2video', 'kling_multi_image2video', 'kling_omni_video', 'kling_video_extend',
+  'kling_motion_control', 'kling_avatar_image2video', 'kling_multi_elements', 'kling_advanced_lip_sync',
+  'kling_text_to_audio', 'kling_video_to_audio', 'kling_tts', 'hailuo_video_generation',
+  'vidu_text2video', 'vidu_img2video', 'vidu_start_end2video', 'vidu_reference2video',
 ] as const
 const PROTOCOL_LABEL_ZH: Record<string, string> = {
   openai_chat_completions: 'OpenAI Chat Completions',
   openai_responses: 'OpenAI Responses',
+  openai_completions: 'OpenAI Completions',
   openai_embeddings: 'OpenAI Embeddings',
+  openai_embeddings_multimodal: 'OpenAI Multimodal Embeddings',
   openai_rerank: 'OpenAI Rerank',
   openai_images: 'OpenAI Images',
+  openai_images_edits: 'OpenAI Image Edits',
   openai_speech: 'OpenAI Speech',
   openai_transcriptions: 'OpenAI Transcriptions',
+  openai_translations: 'OpenAI Translations',
   anthropic_messages: 'Anthropic Messages',
-  google_gemini: 'Google Gemini',
-  google_imagen: 'Google Imagen',
-  google_video: 'Google Video',
+  openai_video: 'OpenAI Video',
+  content_generation: 'Content Generation',
+  gemini_generate_content: 'Gemini Generate Content',
+  gemini_predict: 'Gemini Predict',
+  gemini_predict_long_running: 'Gemini Predict Long Running',
+  gemini_files: 'Gemini Files',
+  ark_batch_chat_completions: 'Ark Batch Chat Completions',
+  ark_context_create: 'Ark Context Create',
+  ark_context_chat_completions: 'Ark Context Chat Completions',
+  ark_tokenization: 'Ark Tokenization',
+  kling_text2video: 'Kling Text to Video',
+  kling_image2video: 'Kling Image to Video',
+  kling_multi_image2video: 'Kling Multi-Image to Video',
+  kling_omni_video: 'Kling Omni Video',
+  kling_video_extend: 'Kling Video Extend',
+  kling_motion_control: 'Kling Motion Control',
+  kling_avatar_image2video: 'Kling Avatar Image to Video',
+  kling_multi_elements: 'Kling Multi Elements',
+  kling_advanced_lip_sync: 'Kling Advanced Lip Sync',
+  kling_text_to_audio: 'Kling Text to Audio',
+  kling_video_to_audio: 'Kling Video to Audio',
+  kling_tts: 'Kling TTS',
+  hailuo_video_generation: 'Hailuo Video Generation',
+  vidu_text2video: 'Vidu Text to Video',
+  vidu_img2video: 'Vidu Image to Video',
+  vidu_start_end2video: 'Vidu Start-End Frame to Video',
+  vidu_reference2video: 'Vidu Reference to Video',
   other: '其他（异步任务类，如图像/音视频）',
 }
 const PROTOCOL_LABEL_EN: Record<string, string> = {
   openai_chat_completions: 'OpenAI Chat Completions',
   openai_responses: 'OpenAI Responses',
+  openai_completions: 'OpenAI Completions',
   openai_embeddings: 'OpenAI Embeddings',
+  openai_embeddings_multimodal: 'OpenAI Multimodal Embeddings',
   openai_rerank: 'OpenAI Rerank',
   openai_images: 'OpenAI Images',
+  openai_images_edits: 'OpenAI Image Edits',
   openai_speech: 'OpenAI Speech',
   openai_transcriptions: 'OpenAI Transcriptions',
+  openai_translations: 'OpenAI Translations',
   anthropic_messages: 'Anthropic Messages',
-  google_gemini: 'Google Gemini',
-  google_imagen: 'Google Imagen',
-  google_video: 'Google Video',
+  openai_video: 'OpenAI Video',
+  content_generation: 'Content Generation',
+  gemini_generate_content: 'Gemini Generate Content',
+  gemini_predict: 'Gemini Predict',
+  gemini_predict_long_running: 'Gemini Predict Long Running',
+  gemini_files: 'Gemini Files',
+  ark_batch_chat_completions: 'Ark Batch Chat Completions',
+  ark_context_create: 'Ark Context Create',
+  ark_context_chat_completions: 'Ark Context Chat Completions',
+  ark_tokenization: 'Ark Tokenization',
+  kling_text2video: 'Kling Text to Video',
+  kling_image2video: 'Kling Image to Video',
+  kling_multi_image2video: 'Kling Multi-Image to Video',
+  kling_omni_video: 'Kling Omni Video',
+  kling_video_extend: 'Kling Video Extend',
+  kling_motion_control: 'Kling Motion Control',
+  kling_avatar_image2video: 'Kling Avatar Image to Video',
+  kling_multi_elements: 'Kling Multi Elements',
+  kling_advanced_lip_sync: 'Kling Advanced Lip Sync',
+  kling_text_to_audio: 'Kling Text to Audio',
+  kling_video_to_audio: 'Kling Video to Audio',
+  kling_tts: 'Kling TTS',
+  hailuo_video_generation: 'Hailuo Video Generation',
+  vidu_text2video: 'Vidu Text to Video',
+  vidu_img2video: 'Vidu Image to Video',
+  vidu_start_end2video: 'Vidu Start-End Frame to Video',
+  vidu_reference2video: 'Vidu Reference to Video',
   other: 'Other',
 }
 
@@ -122,6 +187,7 @@ export function CatalogSidebar({ tags, models, selected, setSelected, isZh }: Pr
   const { t } = useTranslation()
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [showAllVendors, setShowAllVendors] = useState(false)
+  const [showAllProtocols, setShowAllProtocols] = useState(false)
 
   // 协议筛选项文案：/catalog/public-protocols 拿到数据前后都直接渲染，不为它加
   // loading 态——items 为 null 时 mergeProtocolLabels 原样返回下面这份本地兜底表。
@@ -168,10 +234,17 @@ export function CatalogSidebar({ tags, models, selected, setSelected, isZh }: Pr
 
   /** 收起态下已选厂商藏在折叠区时保持展开（原型 selectedHidden 口径） */
   const selectedHiddenVendor = vendors
-    .slice(VENDOR_PREVIEW)
+    .slice(FILTER_PREVIEW)
     .some((v) => vendorActive.includes(v.code))
   const vendorsExpanded = showAllVendors || selectedHiddenVendor
-  const shownVendors = vendorsExpanded ? vendors : vendors.slice(0, VENDOR_PREVIEW)
+  const shownVendors = vendorsExpanded ? vendors : vendors.slice(0, FILTER_PREVIEW)
+
+  const protocols = PROTOCOL_FILTER_ORDER
+  const selectedHiddenProtocol = protocols
+    .slice(PROTOCOL_PREVIEW)
+    .some((p) => protocolActive.includes(p))
+  const protocolsExpanded = showAllProtocols || selectedHiddenProtocol
+  const shownProtocols = protocolsExpanded ? protocols : protocols.slice(0, PROTOCOL_PREVIEW)
 
   const promoCount = useMemo(() => models.filter((m) => Boolean(m.promotion)).length, [models])
 
@@ -251,7 +324,7 @@ export function CatalogSidebar({ tags, models, selected, setSelected, isZh }: Pr
               onClick={() => toggle(`vendor:${v.code}`)}
             />
           ))}
-          {vendors.length > VENDOR_PREVIEW && !selectedHiddenVendor && (
+          {vendors.length > FILTER_PREVIEW && !selectedHiddenVendor && (
             <button type="button" className="mg-side-more" onClick={() => setShowAllVendors((x) => !x)}>
               {vendorsExpanded ? t('modelsCatalog.sidebar.less') : t('modelsCatalog.sidebar.more')}
               <LuChevronDown size={13} className={vendorsExpanded ? 'rotate-180' : ''} />
@@ -269,7 +342,7 @@ export function CatalogSidebar({ tags, models, selected, setSelected, isZh }: Pr
         onClear={() => clearDim('protocol')}
       >
         <div className="mg-side-list">
-          {PROTOCOL_FILTER_ORDER.map((p) => (
+          {shownProtocols.map((p) => (
             <Row
               key={p}
               active={protocolActive.includes(p)}
@@ -277,6 +350,12 @@ export function CatalogSidebar({ tags, models, selected, setSelected, isZh }: Pr
               onClick={() => toggle(`protocol:${p}`)}
             />
           ))}
+          {protocols.length > PROTOCOL_PREVIEW && !selectedHiddenProtocol && (
+            <button type="button" className="mg-side-more" onClick={() => setShowAllProtocols((x) => !x)}>
+              {protocolsExpanded ? t('modelsCatalog.sidebar.less') : t('modelsCatalog.sidebar.more')}
+              <LuChevronDown size={13} className={protocolsExpanded ? 'rotate-180' : ''} />
+            </button>
+          )}
         </div>
       </Group>
 

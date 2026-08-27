@@ -19,6 +19,7 @@ import { currencySymbol, isZhLang } from '@/features/models/model-format'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { prettyModelName, trimPriceZeros } from '@/lib/utils'
+import { OverflowTip } from '@/components/ui/OverflowTip'
 import { useAuthStore } from '@/store/auth'
 import { trackEvent } from '@/lib/track'
 import type { CatalogFeaturedSlide } from '@/types'
@@ -175,7 +176,10 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
                     <em className="mg-badge is-discount">{discountLabel}</em>
                   ) : null}
                 </div>
-                <strong>{prettyModelName(slide.name, slide.model_id, slide.vendor)}</strong>
+                {/* 标题固定单行（换行会顶掉简介，见 css 里的高度预算）——
+                    线上有 `DeepSeek V4 Flash Vision Exp` 这类长名，窄屏必截断，
+                    所以和简介一样挂气泡：模型名是主标识，截断了得能看全。 */}
+                <OverflowTip as="strong" text={prettyModelName(slide.name, slide.model_id, slide.vendor)} />
                 <span className="mg-featured-meta">
                   {slide.vendor}
                   {/* 未配价（零价且无限免标记）不拼「· 输入 ¥0/M / 输出 ¥0/M」，价格段整个省去
@@ -189,7 +193,10 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
                         })
                       : null}
                 </span>
-                {pitch && <p>{pitch}</p>}
+                {/* 简介固定两行（高度预算见 catalog-featured.css），英文文案常超两行 ——
+                    截断时悬停冒气泡显全文，没截断不冒。必须让 OverflowTip 渲染 <p> 本身：
+                    剪裁发生在 p 上，套一层量内层永远判定「没截断」。 */}
+                {pitch && <OverflowTip as="p" text={pitch} multiline />}
 
                 {/* 2026-08 视觉改版稿：操作按钮在左列文案下方，不再右侧独立一列
                     （右侧留给背景图的插画主体） */}

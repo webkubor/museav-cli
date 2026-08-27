@@ -23,14 +23,6 @@ import { deriveLogStatus, isModelNotStarted } from './guardrail'
 import { TokenUsageCell } from '@/features/logs/TokenUsageCell'
 import { buildStatusMap } from './status-map'
 
-/** 延迟阈值着色：>3s 警告色，>6s 危险色，其余默认。让慢请求一眼可见。 */
-function durationTone(ms: number | null | undefined): string {
-  if (!ms || ms <= 0) return 'text-mg-text-2'
-  if (ms >= 6000) return 'text-mg-danger'
-  if (ms >= 3000) return 'text-mg-warning'
-  return 'text-mg-text-2'
-}
-
 function formatMaybeDuration(ms: number | null | undefined) {
   if (!ms || ms <= 0) return '-'
   return formatDuration(ms)
@@ -223,7 +215,7 @@ export function LogsTable({
                   </div>
                 ) : (
                   <div className="min-w-0 cursor-help" title={t('logs.table.latencyTooltip')}>
-                    <strong className={cn('block font-mono font-bold tabular-nums', row.speed.first_token_ms > 0 ? durationTone(row.speed.first_token_ms) : 'text-mg-text-3')}>
+                    <strong className="block font-mono font-bold tabular-nums text-mg-text-2">
                       {t('logs.table.firstTokenLatency', { value: row.speed.first_token_ms > 0 ? formatDuration(row.speed.first_token_ms) : '—' })}
                     </strong>
                     <span className="block font-mono tabular-nums mg-text-caption text-mg-text-3">

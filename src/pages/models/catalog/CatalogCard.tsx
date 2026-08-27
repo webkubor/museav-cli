@@ -312,10 +312,12 @@ export function CatalogCard({
               free={isFree}
             />
             <Metric label={t('modelsCatalog.card.billingUnit')} value={billingUnit} />
-            {/* 可体验任务改独立标签展示（#872 需求点 10），不再复用 Metric 的省略文本值 */}
+            {/* 可体验任务改独立标签展示（#872 需求点 10），不再复用 Metric 的省略文本值。
+                fit 而非 max=N：任务列宽随断点在 121~209px 之间跳、中英标签宽度差近一倍，
+                写死条数必在某个语言×断点组合下换行，把等高卡片的贴底规格区撑高。 */}
             <div className="mg-metric">
               <span className="mg-metric-label">{t('modelsCatalog.card.experienceTasks')}</span>
-              <ExperienceTaskTags tasks={experienceTasks} max={3} />
+              <ExperienceTaskTags tasks={experienceTasks} fit />
             </div>
           </>
         ) : (

@@ -24,7 +24,12 @@
 .onboarding-guide-anchor {
   --text: var(--mg-text-1);
   --text-soft: var(--mg-text-2);
-  --muted: var(--mg-text-3);
+  /* ⚠️ --muted 接 --mg-text-2，不是 text-3。按色值原型的 --muted:#667085(102,112,133)
+     几乎正好等于控制台 --mg-text-2(95,110,132)，而 text-3(124,139,160) 整体淡一档：
+     实测支撑文案会从原型的 4.7:1 掉到 3.2~3.5:1，低于 WCAG AA 的 4.5:1。
+     原型的四级文字（text/text-soft/muted/text-tertiary）在控制台三级刻度上会有合并，
+     text-soft 与 muted 同落 text-2 是可接受的层级损失，压对比度不可接受。 */
+  --muted: var(--mg-text-2);
   /* ⚠️ --panel 不能接 --mg-bg-0：它在深色档是 color-mix(#fff 7%, transparent)
      ——玻璃色，用在贴 body 的浮层上会直接透出底下内容。--mg-bg-1 两档都不透明
      （浅 #ffffff / 深 #18181c）。--panel-soft 相应下沉到 fill 档做弱区分。 */
@@ -166,7 +171,12 @@
 .onboarding-guide-popover {
   --text: var(--mg-text-1);
   --text-soft: var(--mg-text-2);
-  --muted: var(--mg-text-3);
+  /* ⚠️ --muted 接 --mg-text-2，不是 text-3。按色值原型的 --muted:#667085(102,112,133)
+     几乎正好等于控制台 --mg-text-2(95,110,132)，而 text-3(124,139,160) 整体淡一档：
+     实测支撑文案会从原型的 4.7:1 掉到 3.2~3.5:1，低于 WCAG AA 的 4.5:1。
+     原型的四级文字（text/text-soft/muted/text-tertiary）在控制台三级刻度上会有合并，
+     text-soft 与 muted 同落 text-2 是可接受的层级损失，压对比度不可接受。 */
+  --muted: var(--mg-text-2);
   /* ⚠️ --panel 不能接 --mg-bg-0：它在深色档是 color-mix(#fff 7%, transparent)
      ——玻璃色，用在贴 body 的浮层上会直接透出底下内容。--mg-bg-1 两档都不透明
      （浅 #ffffff / 深 #18181c）。--panel-soft 相应下沉到 fill 档做弱区分。 */
@@ -175,7 +185,12 @@
   --line: var(--mg-border);
   --accent: var(--brand-base);
   --accent-soft: var(--mg-fill-1);
-  --success: var(--mg-success);
+  /* ⚠️ 接 --mg-success-text（文字档）而不是 --mg-success（填充档）。控制台把两者分开：
+     --mg-success 浅色是 rgb(16,185,129)，压在白气泡上只有 2.5:1，「已完成」标签和
+     完成勾都读不清；--mg-success-text 是 rgb(6,86,65)，8.7:1。
+     原型的 --success:#11845b 本身就是深绿（白底 4.7:1）、且 marker 与文字共用它，
+     所以接文字档才是 1:1 复刻。 */
+  --success: var(--mg-success-text);
 
   background: var(--panel);
   border: 1px solid var(--line);
@@ -363,6 +378,11 @@
 }
 
 .onboarding-guide-reward strong {
+  /* ⚠️ color 必须显式给。原型里这行靠继承容器的文字色，但控制台的气泡是
+     createPortal 到 document.body 的，那里继承到的是 body 默认黑 —— 深色档下
+     「6. 领取新手奖励」会变成纯黑压在 #18181c 上，等于看不见。
+     同文件另两处 strong（步骤标题 / 弹框金额）本来就各自声明了 color。 */
+  color: var(--text);
   font-size: 12px;
 }
 
@@ -404,9 +424,13 @@
 }
 
 .onboarding-guide-claim:disabled {
-  background: var(--mg-fill-1);
-  border-color: var(--mg-fill-1);
-  color: var(--mg-text-4);
+  /* 原型的禁用态是「浅灰底 + 中灰字」（实测 rgb(230,233,239) / rgb(146,154,170)，
+     约 2.3:1）。别用 fill-1 + text-4：那组在浅色档是 6% 品牌染色的近白底配最淡文字，
+     实测只有 1.3:1，「领取 ¥10」几乎读不出来。fill-2 + text-3 才对上原型的意图
+     （浅色 ≈ rgb(232,236,246) / rgb(124,139,160)，约 2.9:1；深色档也够读）。 */
+  background: var(--mg-fill-2);
+  border-color: var(--mg-border);
+  color: var(--mg-text-3);
   cursor: not-allowed;
 }
 
@@ -414,7 +438,12 @@
 .onboarding-reward-success-overlay {
   --text: var(--mg-text-1);
   --text-soft: var(--mg-text-2);
-  --muted: var(--mg-text-3);
+  /* ⚠️ --muted 接 --mg-text-2，不是 text-3。按色值原型的 --muted:#667085(102,112,133)
+     几乎正好等于控制台 --mg-text-2(95,110,132)，而 text-3(124,139,160) 整体淡一档：
+     实测支撑文案会从原型的 4.7:1 掉到 3.2~3.5:1，低于 WCAG AA 的 4.5:1。
+     原型的四级文字（text/text-soft/muted/text-tertiary）在控制台三级刻度上会有合并，
+     text-soft 与 muted 同落 text-2 是可接受的层级损失，压对比度不可接受。 */
+  --muted: var(--mg-text-2);
   --panel: var(--mg-bg-1);
   --line: var(--mg-border);
   --line-strong: var(--mg-border);

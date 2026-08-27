@@ -150,6 +150,18 @@
 .mg-task-tags.is-fit { flex-wrap: nowrap; overflow: hidden; }
 .mg-task-tags.is-fit > em { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .mg-task-tags.is-fit > .mg-task-tags-more { flex: none; }
+/* 「+N」气泡内部：把折叠掉的项按 tag 逐个排，而不是逗号串成一段话。
+   几何与两处标签行保持同一套（11px / 1px 7px / --radius-sm），气泡本身是
+   portal 挂在 body 上的，所以这里不能靠 .mg-task-tags / .mg-mcard-protocols 的后代选择器。
+   描边 + 淡填充一起给：深色档 --mg-fill-0 只有 2.5% 白，在 --mg-surface-3(#3b3b44)
+   的气泡底上单靠填充分不出边界，得靠 --mg-border 这条 hairline 兜住。 */
+.mg-tag-tip { display: flex; flex-wrap: wrap; gap: 4px; }
+.mg-tag-tip > span {
+  padding: 1px 7px; border-radius: var(--radius-sm);
+  border: 1px solid var(--mg-border); background: var(--mg-fill-0);
+  font-size: 11px; line-height: 1.6; color: var(--mg-text-2); white-space: nowrap;
+}
+
 /* 「+N」折叠计数标签：悬停/聚焦冒气泡列出其余任务（组件内 portal 渲染） */
 .mg-task-tags-more { cursor: help; color: var(--mg-text-3); }
 .mg-task-tags-more:hover, .mg-task-tags-more:focus-visible { color: var(--mg-text-1); }

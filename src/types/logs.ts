@@ -82,6 +82,8 @@ export interface CallLogItem {
     cache_write_tokens: number
   }
   usage_type: string
+  /** 模型是否具备缓存能力（需求方#885）：true 才展示缓存卡；false/缺失一律隐藏（不许前端硬编码模型名单）。web-api/observer 透传中，见后端单。 */
+  cache_supported?: boolean
   speed: { tps: number; first_token_ms: number }
   cost: Money
   billing_status: string

@@ -83,7 +83,11 @@ const ApiAccessPanel = forwardRef<HTMLDivElement, ApiAccessPanelProps>(function 
             <TabsList variant="pills">
               {safeProtocols.map((p) => (
                 <TabsTrigger key={p} value={p} variant="pills">
-                  {protocolLabel[p]}
+                  {/* `?? p`：本地兜底表与远端目录都没收录时退回原始 code。渲染
+                      undefined 会让这个 pills Tab 塌成一个只剩 padding 的纯色块——
+                      2026-08-28 线上 content_generation 就是这个形状。显示 code 不好看，
+                      但比空块可诊断（PROTOCOL_TO_API 已让这种情况在编译期暴露，这里是兜底）。 */}
+                  {protocolLabel[p] ?? p}
                 </TabsTrigger>
               ))}
             </TabsList>

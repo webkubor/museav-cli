@@ -69,6 +69,9 @@ type ModelLogRow = {
     cache_write_tokens?: number
   }
   usage_type?: string
+  /** 需求方#885：行级缓存命中率与缓存能力标识（observer→web-api 透传中；web-api DTO 未透传前恒缺失） */
+  cache_hit_rate?: number | null
+  cache_supported?: boolean
   speed?: { tps?: number; first_token_ms?: number }
   cost?: Money
   error?: string | null
@@ -220,6 +223,8 @@ function toCallLogItem(row: ModelLogRow): CallLogItem {
       cache_write_tokens: numberOrZero(row.usage?.cache_write_tokens),
     },
     usage_type: row.usage_type || 'token',
+    // 需求方#885：缓存能力标识只透传、不兜底——后端缺失时保持 undefined，UI 按「隐藏缓存卡」降级
+    cache_supported: row.cache_supported,
     speed: {
       tps:
         numberOrZero(row.speed?.tps) || (durationMs > 0 ? outputTokens / (durationMs / 1000) : 0),

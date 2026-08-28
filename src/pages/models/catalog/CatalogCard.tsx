@@ -31,13 +31,14 @@ import { OverflowTip } from '@/components/ui/OverflowTip'
 import { Button } from '@/components/ui/Button'
 import { cn, formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
 import {
-  MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, cardSummary, modelVendorLabel,
-  strikeOriginalPrice, sortProtocols,
+  MODALITY_CODES, currencySymbol, priceUnitSuffix, priceText, pickCapabilities, cardSummary, modelVendorLabel,
+  strikeOriginalPrice,
   priceTiersForCard, mediaPrimaryPrice, firstPositivePrice, hasPricingGradient, withPriceFrom,
   PROTOCOL_LABEL_ZH, PROTOCOL_LABEL_EN, mergeProtocolLabels,
 } from '@/features/models/model-format'
 import { ExperienceTaskTags } from '@/features/models/components/ExperienceTaskTags'
 import { ModalityMark } from '@/features/models/components/ModalityMark'
+import { CardProtocolTags } from './CardProtocolTags'
 import { usePublicProtocolsStore } from '@/store/use-public-protocols-store'
 import { modelExperienceTasks, resolveModelCategory } from '../model-experience-data'
 import type { CatalogModelItem } from '@/types'
@@ -248,23 +249,13 @@ export function CatalogCard({
         </div>
       )}
 
-      {/* API 协议：可点击反查筛选 */}
-      {(model.protocols ?? []).length > 0 && (
-        <div className="mg-mcard-protocols" aria-label={t('modelsCatalog.sidebar.apiProtocolAria')}>
-          {sortProtocols(model.protocols ?? []).map((p) => (
-            <button
-              key={p}
-              type="button"
-              className={`mg-proto is-${p}`}
-              title={t('modelsCatalog.sidebar.filterTitle', { label: protocolLabel(p, isZh, protocolLabelMap) })}
-              onClick={(e) => { e.stopPropagation(); onPickProtocol?.(p) }}
-              disabled={!onPickProtocol}
-            >
-              {protocolLabel(p, isZh, protocolLabelMap)}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* API 协议：单行 + 「+N」折叠，可见标签点击反查筛选 */}
+      <CardProtocolTags
+        protocols={model.protocols ?? []}
+        isZh={isZh}
+        labelMap={protocolLabelMap}
+        onPick={onPickProtocol}
+      />
 
       {/* 能力标签：可点击反查筛选 */}
       {capabilities.length > 0 && (

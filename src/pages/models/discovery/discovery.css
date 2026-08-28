@@ -149,63 +149,6 @@
   text-wrap: pretty;
 }
 
-.model-discovery-page .model-discovery-view-all {
-  align-items: center;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--discovery-control-radius);
-  color: var(--text);
-  cursor: pointer;
-  display: inline-flex;
-  flex: 0 0 auto;
-  font-family: inherit;
-  font-size: 11.5px;
-  font-weight: 560;
-  gap: 6px;
-  margin-top: 3px;
-  min-height: 32px;
-  padding: 6px 11px;
-  transition: background var(--discovery-dur-swift) ease, border-color var(--discovery-dur-swift) ease, color var(--discovery-dur-swift) ease, transform var(--discovery-dur-snap) ease;
-}
-
-.model-discovery-page .model-discovery-view-all:hover {
-  background: color-mix(in srgb, var(--accent) 5%, var(--panel));
-  border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
-  color: var(--accent);
-}
-
-.model-discovery-page .model-discovery-view-all:active {
-  transform: translateY(1px);
-}
-
-.model-discovery-scope {
-  background: color-mix(in srgb, var(--line) 46%, transparent);
-  border-radius: var(--discovery-radius-xl);
-  display: flex;
-  flex: none;
-  gap: 2px;
-  margin-left: auto;
-  padding: 2px;
-}
-
-.model-discovery-scope button {
-  background: transparent;
-  border: 0;
-  border-radius: var(--discovery-radius-md);
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 11.5px;
-  line-height: 1.2;
-  padding: 6px 10px;
-}
-
-.model-discovery-scope button.active {
-  background: var(--panel);
-  box-shadow: var(--discovery-shadow-chip);
-  color: var(--accent);
-  font-weight: 650;
-}
-
 .model-discovery-meta {
   align-items: center;
   color: var(--text-tertiary);
@@ -223,29 +166,6 @@
   padding: 4px 8px;
 }
 
-.model-discovery-modalities {
-  border-bottom: 1px solid var(--line);
-  display: flex;
-  gap: 30px;
-  margin-top: 22px;
-}
-
-.model-discovery-modalities button {
-  background: transparent;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 14px;
-  padding: 10px 2px 12px;
-}
-
-.model-discovery-modalities button.active {
-  border-bottom-color: var(--accent);
-  color: var(--accent);
-  font-weight: 700;
-}
-
 .model-discovery-taskbar {
   align-items: center;
   display: flex;
@@ -254,7 +174,6 @@
   margin: 12px 0 14px;
 }
 
-.model-discovery-tasks,
 .model-discovery-presets,
 .model-discovery-selects,
 .model-discovery-table-tools,
@@ -265,7 +184,6 @@
   gap: 6px;
 }
 
-.model-discovery-tasks button,
 .model-discovery-presets button {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -278,7 +196,6 @@
   transition: background var(--discovery-dur-ease) ease, border-color var(--discovery-dur-ease) ease, color var(--discovery-dur-ease) ease;
 }
 
-.model-discovery-tasks button.active,
 .model-discovery-presets button.active {
   background: color-mix(in srgb, var(--accent) 10%, var(--panel));
   border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
@@ -679,7 +596,7 @@
 .model-discovery-page .runtime-range-switch {
   align-items: center;
   /* 原型这里取 --surface-muted 并回退到写死的 #f3f5f9：控制台没有这个 token，
-     直接搬就会永远吃那个浅灰、深色模式下瞎掉。按本页 .model-discovery-scope
+     直接搬就会永远吃那个浅灰、深色模式下瞎掉。按范围控件（Tabs variant="pills"）
      同款「muted 底」表达桥接。
      （变量名刻意不写成 var(...) 形式：check-css-tokens 会把注释里的举例当成
       真引用，报「引用了未声明的变量」。） */

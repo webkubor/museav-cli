@@ -37,6 +37,8 @@ import {
 } from 'react-icons/lu'
 import { useMemo, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { ModelIcon } from '@/features/models/components/ModelIcon'
+import { Button } from '@/components/ui/Button'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 
 type ModalityKey = "agent" | "text" | "image" | "video" | "audio";
 type RankingMetric = "overall" | "value" | "price" | "usage";
@@ -1281,23 +1283,38 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
           </div>
           <p>聚合业界评测、专业分析与 ModelGo 平台数据，帮助团队完成模型选型。</p>
         </div>
-        <button className="model-discovery-view-all" onClick={onViewAllModels} type="button">返回模型广场<LuArrowUpRight size={13} /></button>
+        <Button onClick={onViewAllModels} size="sm" type="button" variant="outline">
+          返回模型广场<LuArrowUpRight size={13} />
+        </Button>
       </header>
 
-      <nav className="model-discovery-modalities" aria-label="模型模态">
-        {modalityOptions.map((option) => (
-          <button className={modality === option.key ? "active" : ""} key={option.key} onClick={() => switchModality(option.key)} type="button">{option.label}</button>
-        ))}
-      </nav>
+      {/* 一级模态导航：Agent 最左且默认，见 plans/2026-08-24-v1.0.6-model-discovery-ui-flow §3.2 模块 2。
+          只做导航，内容由下方各模块按 modality 自行渲染，故不使用 TabsContent。 */}
+      <Tabs onValueChange={(value) => switchModality(value as ModalityKey)} value={modality}>
+        <TabsList aria-label="模型模态" variant="underline">
+          {modalityOptions.map((option) => (
+            <TabsTrigger key={option.key} value={option.key} variant="underline">{option.label}</TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       <div className="model-discovery-taskbar">
-        {modality !== "agent" && <div className="model-discovery-tasks">
-          {config.tasks.map((item) => <button className={task === item ? "active" : ""} key={item} onClick={() => switchTask(item)} type="button">{item}</button>)}
-        </div>}
-        <div className="model-discovery-scope" aria-label="模型范围">
-          <button className={scope === "all" ? "active" : ""} onClick={() => setScope("all")} type="button">全部行业模型</button>
-          <button className={scope === "supported" ? "active" : ""} onClick={() => setScope("supported")} type="button">仅看已接入</button>
-        </div>
+        {/* Agent 无二级任务（§3.2 模块可见性） */}
+        {modality !== "agent" && (
+          <Tabs onValueChange={switchTask} value={task}>
+            <TabsList aria-label="任务类型" variant="underline">
+              {config.tasks.map((item) => <TabsTrigger key={item} value={item} variant="underline">{item}</TabsTrigger>)}
+            </TabsList>
+          </Tabs>
+        )}
+        {/* 范围走紧凑 segmented control（§3.2 模块 3）。ml-auto 承接原 .model-discovery-scope
+            的 margin-left:auto —— 它必须贴住 taskbar 右端，不能跟着任务 Tab 靠左。 */}
+        <Tabs className="ml-auto" onValueChange={(value) => setScope(value as typeof scope)} value={scope}>
+          <TabsList aria-label="模型范围" variant="pills">
+            <TabsTrigger value="all" variant="pills">全部行业模型</TabsTrigger>
+            <TabsTrigger value="supported" variant="pills">仅看已接入</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       <section className="model-discovery-overview">

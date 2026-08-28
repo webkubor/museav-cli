@@ -13,15 +13,18 @@ import { sortProtocols } from '@/features/models/model-format'
 import type { PublicProtocol } from '@/types'
 
 /**
- * 本模块内部协议标识。2026-08-26 随 gateway_models.public_protocols 按「厂商 +
- * 能力」命名规范扩容为 12 值：openai_chat 改名 openai_chat_completions，
- * openai_audio 拆成 openai_speech（TTS）/openai_transcriptions（STT，multipart
- * 而非 JSON body），新增 openai_rerank；openai/anthropic 是过渡期未重新打标模型仍
- * 会下发的旧值（原样保留，代码示例与各自的端点粒度同名值等价：openai≈
- * openai_chat_completions，anthropic≈anthropic_messages）。native 是本模块内部值，
- * 对应远端 'other' 以及三个 Google 原生透传值 google_gemini/google_imagen/
- * google_video（原生协议各家请求形状不同，本模块不伪造 OpenAI/Anthropic 风格的
- * 示例，统一走 native 的通用兜底，见 mapApiProtocols），不直接来自后端。
+ * 本模块内部协议标识 —— 「本模块能生成可复制示例」的那些协议，是 PublicProtocol
+ * 的真子集，两者的对应关系由 PROTOCOL_TO_API 穷尽声明。
+ *
+ * 收录标准：平台自有、路径固定、请求体形状确定的端点。
+ * - OpenAI/Anthropic 兼容端点（openai_chat_completions 起的 13 个）；
+ * - content_generation：平台统一的异步内容生成任务入口（创建任务 → 轮询），
+ *   视频/图像里走托管异步链路的模型打这个标（接入文档 models/video/async-tasks）；
+ * - openai/anthropic：过渡期未重新打标模型仍会下发的旧值，示例与各自的端点粒度
+ *   同名值等价（openai≈openai_chat_completions，anthropic≈anthropic_messages）；
+ * - native：本模块内部值，不来自后端。各家原生透传（gemini_* / ark_* / kling_* /
+ *   hailuo_* / vidu_*）与旧 'other' 都折到这里——它们的请求体各家互不相同，本模块
+ *   不为它们伪造 OpenAI 风格示例（PRD §4.2「非目标」），给的是平台托管异步入口。
  */
 export type ApiProtocol =
   | 'openai_chat_completions'
@@ -37,6 +40,7 @@ export type ApiProtocol =
   | 'openai_translations'
   | 'anthropic_messages'
   | 'openai_video'
+  | 'content_generation'
   | 'openai'
   | 'anthropic'
   | 'native'
@@ -66,6 +70,8 @@ export const PROTOCOL_LABEL: Record<ApiProtocol, string> = {
   openai_speech: 'OpenAI Speech',
   openai_transcriptions: 'OpenAI Transcriptions',
   anthropic_messages: 'Anthropic Messages',
+  // 与后端目录、model-format.ts 的 PROTOCOL_LABEL_ZH 同口径（中英同名专名）
+  content_generation: 'Content Generation',
   // 原生协议不展示推理供应商名称
   native: '原生 API',
 }
@@ -86,12 +92,22 @@ export const PROTOCOL_LABEL_EN: Record<ApiProtocol, string> = {
   openai_speech: 'OpenAI Speech',
   openai_transcriptions: 'OpenAI Transcriptions',
   anthropic_messages: 'Anthropic Messages',
+  content_generation: 'Content Generation',
   native: 'Native API',
 }
 
 /** 是否是 Anthropic 家族协议（旧 anthropic 值与新 anthropic_messages 端点等价）。 */
 function isAnthropicProtocol(protocol: ApiProtocol): boolean {
   return protocol === 'anthropic' || protocol === 'anthropic_messages'
+}
+
+/**
+ * 平台托管链路（异步内容生成任务 / 各家原生透传兜底）：示例是裸 curl / fetch /
+ * requests，不经过任何厂商 SDK。语言 Tab 因此不能挂「(OpenAI)」后缀——挂了会让人
+ * 以为可以拿 openai SDK 直连这个端点。
+ */
+function isPlatformLane(protocol: ApiProtocol): boolean {
+  return protocol === 'content_generation' || protocol === 'native'
 }
 
 const LANGUAGE_LABEL: Record<ApiCodeLanguage, string> = {
@@ -135,37 +151,105 @@ export function languagesForProtocol(protocol: ApiProtocol): ApiCodeLanguage[] {
 
 /** Tab 展示文案：Python/Node.js 在 openai/anthropic 家族协议下要带协议后缀区分 SDK 风格 */
 export function languageLabel(protocol: ApiProtocol, language: ApiCodeLanguage): string {
-  if (language === 'python') return isAnthropicProtocol(protocol) ? 'Python (Anthropic)' : 'Python (OpenAI)'
-  if (language === 'nodejs') return 'Node.js (OpenAI)'
+  if (language === 'python') {
+    if (isAnthropicProtocol(protocol)) return 'Python (Anthropic)'
+    return isPlatformLane(protocol) ? 'Python' : 'Python (OpenAI)'
+  }
+  if (language === 'nodejs') return isPlatformLane(protocol) ? 'Node.js' : 'Node.js (OpenAI)'
   if (language === 'typescript') return 'TypeScript (fetch)'
   return LANGUAGE_LABEL[language]
 }
 
 /**
- * CatalogModelItem/Detail 的 protocols 用 'other' 与三个 Google 原生透传值，本模块
- * 内部统一映射到 'native'——避免各处各写一份，也避免为原生协议伪造 OpenAI/
- * Anthropic 风格的示例（PRD §4.2）。2026-08-26 起需要重映射的是 'other' 与
- * google_gemini/google_imagen/google_video 四个值；其余端点粒度值（
- * openai_chat_completions 起）与旧 openai/anthropic 值一样，原样映射到自身。
+ * 后端 public_protocols → 本模块协议标识的**穷尽映射**。
+ *
+ * ⚠️ 为什么必须是一张全量表，而不是「原生透传类走正则、其余原样透传」：原样透传
+ * 在后端枚举扩容时**不报错**。2026-08-26 网关把 public_protocols 扩到 42 值时，
+ * model-format.ts 的两张标签表跟上了、本模块没跟上，`content_generation` 于是既
+ * 拿不到文案也拿不到端点——线上表现是详情页「API 接入」的协议 Tab 塌成一个只剩
+ * padding 的纯色块（国内 8 个 / 国外 17 个视频模型全中，2026-08-28 两站实测）。
+ * 改成 Record<PublicProtocol, ApiProtocol> 之后，PublicProtocol 每新增一个值，
+ * `tsc -b` 会当场顶出这里缺的那条，逼着新值表态，不再靠人记得。
+ *
+ * 表态只有两种：映射到同名值（在 ENDPOINT_PATH 里有实测过的真实路径），或者折成
+ * native（请求体形状各家互不相同，不伪造 OpenAI 风格示例，PRD §4.2「非目标」）。
  */
+const PROTOCOL_TO_API: Record<PublicProtocol, ApiProtocol> = {
+  // ── 平台自有端点：路径固定、请求体形状确定，示例可复制即用 ──
+  openai_chat_completions: 'openai_chat_completions',
+  openai_responses: 'openai_responses',
+  openai_completions: 'openai_completions',
+  openai_embeddings: 'openai_embeddings',
+  openai_embeddings_multimodal: 'openai_embeddings_multimodal',
+  openai_rerank: 'openai_rerank',
+  openai_images: 'openai_images',
+  openai_images_edits: 'openai_images_edits',
+  openai_speech: 'openai_speech',
+  openai_transcriptions: 'openai_transcriptions',
+  openai_translations: 'openai_translations',
+  anthropic_messages: 'anthropic_messages',
+  openai_video: 'openai_video',
+  content_generation: 'content_generation',
+  // ── 过渡期旧值：语义等于各自的端点粒度同名值 ──
+  openai: 'openai',
+  anthropic: 'anthropic',
+  // ── 各家原生透传 + 旧 'other'：折成 native ──
+  gemini_generate_content: 'native',
+  gemini_predict: 'native',
+  gemini_predict_long_running: 'native',
+  gemini_files: 'native',
+  ark_batch_chat_completions: 'native',
+  ark_context_create: 'native',
+  ark_context_chat_completions: 'native',
+  ark_tokenization: 'native',
+  kling_text2video: 'native',
+  kling_image2video: 'native',
+  kling_multi_image2video: 'native',
+  kling_omni_video: 'native',
+  kling_video_extend: 'native',
+  kling_motion_control: 'native',
+  kling_avatar_image2video: 'native',
+  kling_multi_elements: 'native',
+  kling_advanced_lip_sync: 'native',
+  kling_text_to_audio: 'native',
+  kling_video_to_audio: 'native',
+  kling_tts: 'native',
+  hailuo_video_generation: 'native',
+  vidu_text2video: 'native',
+  vidu_img2video: 'native',
+  vidu_start_end2video: 'native',
+  vidu_reference2video: 'native',
+  other: 'native',
+}
+
 export function mapApiProtocols(protocols: PublicProtocol[] | undefined): ApiProtocol[] {
-  // 原生透传类（gemini_* / ark_* / kling_* / hailuo_* / vidu_*）与 other 一律走
-  // native 兜底：各家原生请求体形状互不相同，本模块不为它们伪造 OpenAI 风格示例。
-  const isNativeOnly = (p: string) =>
-    p === 'other' ||
-    /^(gemini|ark|kling|hailuo|vidu)_/.test(p)
-  // 顺序统一 sortProtocols（QA：端点兼容顺序不一致），协议 Tab 顺序不再跟后端数组走
-  return sortProtocols((protocols ?? []).map((p): ApiProtocol => (isNativeOnly(p) ? 'native' : (p as ApiProtocol))))
+  // `?? 'native'` 兜的是**运行时**比 PublicProtocol 新的值（后端先发、前端还没跟）。
+  // 绝不原样透传未知值：透传的下场就是 ENDPOINT_PATH[未知] 的 undefined 拼进 URL，
+  // 加上没有文案的空 Tab。折成 native 至少给出平台托管入口这条能用的路。
+  const mapped = (protocols ?? []).map((p): ApiProtocol => PROTOCOL_TO_API[p] ?? 'native')
+  // 去重：多个原生透传值（如 kling_text2video + kling_image2video）会折到同一个
+  // native，不去重就是两个一模一样的 Tab + React 重复 key 告警。
+  // 顺序统一 sortProtocols（QA：端点兼容顺序不一致），协议 Tab 顺序不跟后端数组走。
+  return sortProtocols([...new Set(mapped)])
 }
 
 /**
- * 端点粒度协议 → 路径表（PRD 端点表，2026-08-26 随厂商+能力命名升级）。openai/
- * anthropic 两个旧值分别复用 openai_chat_completions/anthropic_messages 的端点——
- * 过渡期未重新打标的模型语义就是「Chat Completions」「Messages」，与新值等价。
- * native 单独在调用处处理（不进这张表），'other' 与 google_* 三值不会进到这里
- * （mapApiProtocols 已重映射为 native）。
+ * 协议 → 网关真实路径。openai/anthropic 两个旧值分别复用 openai_chat_completions/
+ * anthropic_messages 的端点——过渡期未重新打标的模型语义就是「Chat Completions」
+ * 「Messages」，与新值等价。native 也进这张表（不再在调用处特判），值取平台托管
+ * 的异步任务入口。
+ *
+ * 真源 = /catalog/public-protocols 下发的 endpoint 字段 + 接入文档
+ * （modelgo-doc-web `content/<market>/<lang>/models/`）。2026-08-28 对 api.modelgo.ai /
+ * api.modelgo.com 逐条 POST 探活校准（**401 = 路由存在且需鉴权，404 = 没这条路由**），
+ * 改掉两条网关上根本不存在的路径：
+ * - anthropic 家族 `/messages` → `/v1/messages`。旧值两个网关都实测 404，线上
+ *   792 个 Anthropic 协议模型的 cURL / fetch 示例复制过去全是 404；Python
+ *   (Anthropic) Tab 走 SDK 的 base_url 自己拼 /v1/messages，一直是对的，不受影响。
+ * - native `/v1/native/generate` → `/v1/content_generation/tasks`（接入文档「通用
+ *   异步内容生成任务」，平台统一的创建任务 → 轮询入口）。旧值同样实测 404。
  */
-const ENDPOINT_PATH: Record<Exclude<ApiProtocol, 'native'>, string> = {
+const ENDPOINT_PATH: Record<ApiProtocol, string> = {
   openai: '/v1/chat/completions',
   openai_chat_completions: '/v1/chat/completions',
   openai_responses: '/v1/responses',
@@ -179,8 +263,10 @@ const ENDPOINT_PATH: Record<Exclude<ApiProtocol, 'native'>, string> = {
   openai_transcriptions: '/v1/audio/transcriptions',
   openai_translations: '/v1/audio/translations',
   openai_video: '/v1/video/generations',
-  anthropic: '/messages',
-  anthropic_messages: '/messages',
+  anthropic: '/v1/messages',
+  anthropic_messages: '/v1/messages',
+  content_generation: '/v1/content_generation/tasks',
+  native: '/v1/content_generation/tasks',
 }
 
 function bodyKeysFor(protocol: ApiProtocol, modelId: string): string {
@@ -204,6 +290,12 @@ function bodyKeysFor(protocol: ApiProtocol, modelId: string): string {
       return `{"model":"${modelId}","prompt":"A cute corgi wearing sunglasses","n":1,"size":"1024x1024"}`
     case 'openai_speech':
       return `{"model":"${modelId}","input":"Hello, welcome to ModelGo.","voice":"alloy"}`
+    // 平台统一异步任务入口：创建任务只要 model + 通用生成字段（不是 chat messages），
+    // 结果靠 GET /v1/content_generation/tasks/{task_id} 轮询（接入文档
+    // models/video/async-tasks「通用异步内容生成任务」）。
+    case 'content_generation':
+    case 'native':
+      return `{"model":"${modelId}","prompt":"a neon city cat"}`
     default:
       return `{"model":"${modelId}","messages":[{"role":"user","content":"Hello"}]}`
   }
@@ -211,11 +303,13 @@ function bodyKeysFor(protocol: ApiProtocol, modelId: string): string {
 
 /** 固定代码示例模板：不读取当前草稿、附件和模型参数，只做格式展示 */
 export function buildCodeSample(protocol: ApiProtocol, language: ApiCodeLanguage, modelId: string): string {
-  // 网关真实 base：OpenAI 兼容协议带 /v1，Anthropic 兼容协议不带 /v1（见 modelgo-env-urls 记忆）
+  // base 只到域名，`/v1` 一律由 ENDPOINT_PATH 携带（Anthropic 家族也是 /v1/messages，
+  // 2026-08-28 双网关探活确认）；Python (Anthropic) 示例例外——SDK 的 base_url 要的
+  // 就是不带 /v1 的裸域名，它自己拼 /v1/messages。
   // 域名按当前市场取（国内 api.modelgo.com / 国际 api.modelgo.ai），不写死——
   // 写死会让国际站的示例代码给出国内网关地址，复制即用不了（需求方 shared/modelgo_prd#376）
   const base = `https://${getGatewayDomain()}`
-  const endpoint = protocol === 'native' ? `${base}/v1/native/generate` : `${base}${ENDPOINT_PATH[protocol]}`
+  const endpoint = `${base}${ENDPOINT_PATH[protocol]}`
   const bodyKeys = bodyKeysFor(protocol, modelId)
   // openai_speech（TTS）响应是二进制音频，不是 JSON——示例落盘成文件而不是打印 JSON。
   // openai_transcriptions（STT）请求本身是 multipart/form-data（上传音频文件），不是

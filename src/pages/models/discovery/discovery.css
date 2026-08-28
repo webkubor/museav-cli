@@ -223,10 +223,6 @@
   position: relative;
 }
 
-.model-discovery-table-scroll {
-  overflow-x: auto;
-}
-
 .model-discovery-card-head {
   align-items: flex-start;
   display: flex;
@@ -264,7 +260,7 @@
 }
 
 .model-discovery-rank-head > span:last-child,
-.model-discovery-table-head .metric-primary {
+.model-discovery-table thead .metric-primary {
   align-items: center;
   display: flex;
   gap: 6px;
@@ -293,19 +289,18 @@
 }
 
 .model-discovery-rank-row.model-discovery-row-clickable,
-.model-discovery-table-row.model-discovery-row-clickable {
+.model-discovery-table .model-discovery-row-clickable {
   cursor: pointer;
   transition: background-color var(--discovery-dur-quick) ease, box-shadow var(--discovery-dur-quick) ease;
 }
 
-.model-discovery-rank-row:hover,
-.model-discovery-table-row:hover {
+.model-discovery-rank-row:hover {
   background: color-mix(in srgb, var(--accent) 6%, var(--panel));
   box-shadow: inset 3px 0 0 color-mix(in srgb, var(--accent) 72%, transparent);
 }
 
 .model-discovery-rank-row.model-discovery-row-clickable:focus-visible,
-.model-discovery-table-row.model-discovery-row-clickable:focus-visible {
+.model-discovery-table .model-discovery-row-clickable:focus-visible {
   background: color-mix(in srgb, var(--accent) 7%, var(--panel));
   box-shadow: inset 3px 0 0 var(--accent), inset 0 0 0 2px color-mix(in srgb, var(--accent) 28%, transparent);
   outline: none;
@@ -329,7 +324,7 @@
 }
 
 .model-discovery-rank-row em,
-.model-discovery-table-row em {
+.model-discovery-table em {
   border-radius: var(--mg-radius-pill);
   font-size: 10px;
   font-style: normal;
@@ -339,13 +334,13 @@
 }
 
 .model-discovery-rank-row em.supported,
-.model-discovery-table-row em.supported {
+.model-discovery-table em.supported {
   background: color-mix(in srgb, var(--accent) 10%, var(--panel));
   color: var(--accent);
 }
 
 .model-discovery-rank-row em.pending,
-.model-discovery-table-row em.pending {
+.model-discovery-table em.pending {
   background: color-mix(in srgb, var(--line) 55%, var(--panel));
   color: var(--text-tertiary);
 }
@@ -1883,127 +1878,30 @@
   transform: translateY(1px);
 }
 
-.model-discovery-table-head .metric-primary {
+.model-discovery-table thead .metric-primary {
   color: var(--accent);
   font-weight: 680;
 }
 
-.model-discovery-table-row .metric-primary {
+.model-discovery-table tbody .metric-primary {
   color: var(--accent);
   font-weight: 730;
 }
 
-.model-discovery-table-head,
-.model-discovery-table-row {
-  align-items: center;
-  display: grid;
-  gap: 8px;
-  grid-template-columns: 42px minmax(160px, 1.35fr) minmax(82px, 0.72fr) repeat(4, minmax(80px, 0.72fr)) 92px;
-  padding: 11px 14px;
-}
-
-.model-discovery-table-head {
-  background: color-mix(in srgb, var(--line) 23%, transparent);
-  color: var(--text-tertiary);
-  font-size: 10.5px;
-}
-
-.model-discovery-table-row {
-  border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
-  font-size: 11px;
-}
-
-.model-discovery-table-row > span,
-.model-discovery-table-row > b {
+.model-discovery-table tbody td {
   font-variant-numeric: tabular-nums;
 }
 
-.model-discovery-table-row > strong {
+.model-discovery-table tbody strong {
   display: grid;
   font-size: 12px;
   gap: 2px;
 }
 
-.model-discovery-table-row > strong small {
+.model-discovery-table tbody strong small {
   color: var(--text-tertiary);
   font-size: 10px;
   font-weight: 500;
-}
-
-.model-discovery-table-row > button {
-  align-items: center;
-  background: color-mix(in srgb, var(--accent) 9%, var(--panel));
-  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
-  border-radius: var(--discovery-radius-md);
-  color: var(--accent);
-  cursor: pointer;
-  display: inline-flex;
-  font-size: 10.5px;
-  gap: 4px;
-  justify-content: center;
-  justify-self: end;
-  padding: 6px 8px;
-}
-
-.model-discovery-table-row > button:disabled {
-  background: transparent;
-  border-color: var(--line);
-  color: var(--text-tertiary);
-  cursor: not-allowed;
-}
-
-.model-discovery-table-pagination {
-  align-items: center;
-  border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
-  display: flex;
-  justify-content: space-between;
-  min-height: 48px;
-  padding: 8px 14px;
-}
-
-.model-discovery-table-pagination > span {
-  color: var(--text-tertiary);
-  font-size: 10.5px;
-}
-
-.model-discovery-table-pagination > div {
-  align-items: center;
-  display: flex;
-  gap: 4px;
-}
-
-.model-discovery-table-pagination button {
-  align-items: center;
-  background: var(--panel);
-  border: 1px solid transparent;
-  border-radius: var(--mg-radius-xs);
-  color: var(--text-secondary);
-  cursor: pointer;
-  display: inline-flex;
-  font-family: inherit;
-  font-size: 10.5px;
-  font-weight: 600;
-  height: 28px;
-  justify-content: center;
-  min-width: 28px;
-  padding: 0 7px;
-}
-
-.model-discovery-table-pagination button:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--accent) 6%, var(--panel));
-  color: var(--accent);
-}
-
-.model-discovery-table-pagination button.active {
-  background: color-mix(in srgb, var(--accent) 10%, var(--panel));
-  border-color: color-mix(in srgb, var(--accent) 32%, var(--line));
-  color: var(--accent);
-}
-
-.model-discovery-table-pagination button:disabled {
-  color: var(--text-tertiary);
-  cursor: not-allowed;
-  opacity: 0.45;
 }
 
 @media (max-width: 1120px) {
@@ -2029,12 +1927,9 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .model-discovery-table-scroll {
-    overflow-x: auto;
-  }
-
-  .model-discovery-table-head,
-  .model-discovery-table-row {
+  /* Table 组件外层自带 overflow-auto；这里只保证内容不被压缩，
+     从而在窄屏走横向滚动（plan §6：表格保留横向滚动容器）。 */
+  .model-discovery-table {
     min-width: 980px;
   }
 }

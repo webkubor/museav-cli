@@ -25,8 +25,6 @@ import {
   LuCheck,
   LuCheckCheck,
   LuChevronDown,
-  LuChevronLeft,
-  LuChevronRight,
   LuListFilter,
   LuRotateCcw,
   LuSearch,
@@ -39,6 +37,8 @@ import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { Button } from '@/components/ui/Button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import { InfoTip } from '@/components/ui/InfoTip'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
+import { Pagination } from '@/components/ui/Pagination'
 
 type ModalityKey = "agent" | "text" | "image" | "video" | "audio";
 type RankingMetric = "overall" | "value" | "price" | "usage";
@@ -1132,7 +1132,8 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
     onOpenModel(model.id);
   }
 
-  function handleModelRowKeyDown(event: KeyboardEvent<HTMLDivElement>, model: DiscoveryModel) {
+  // Top 5 卡的行是 div、完整榜单的行是 tr（Table 组件），故取二者共同的 HTMLElement
+  function handleModelRowKeyDown(event: KeyboardEvent<HTMLElement>, model: DiscoveryModel) {
     if (event.target !== event.currentTarget || (event.key !== "Enter" && event.key !== " ")) return;
     event.preventDefault();
     openModelDetail(model);
@@ -1448,22 +1449,61 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
               <label><select aria-label="接入状态" value={tableAccess} onChange={(event) => setTableAccess(event.target.value as "all" | "supported" | "pending")}><option value="all">全部接入状态</option><option value="supported">已接入</option><option value="pending">暂未接入</option></select><LuChevronDown size={12} /></label>
             </div>
           </div>
-          <div className="model-discovery-table-scroll">
-            <div className="model-discovery-table-head"><span>排名</span><span>模型</span><span>状态</span><span className="metric-primary">{selectedMetricHeader}<em className="model-discovery-source-tag">{selectedMetricSource}</em></span>{supportingMetricHeaders.map((header) => <span key={header}>{header}</span>)}<span /></div>
-            {tableModels.map((model, index) => {
-              const supportingValues = supportingMetrics(model);
-              const hasDetail = canOpenModelDetail(model);
-              return <div aria-label={hasDetail ? modelDetailAriaLabel(model) : undefined} className={`model-discovery-table-row ${hasDetail ? "model-discovery-row-clickable" : ""}`} key={model.name} onClick={hasDetail ? () => openModelDetail(model) : undefined} onKeyDown={hasDetail ? (event) => handleModelRowKeyDown(event, model) : undefined} role={hasDetail ? "link" : undefined} tabIndex={hasDetail ? 0 : undefined}><span>{(safeTablePage - 1) * tablePageSize + index + 1}</span><strong>{model.name}<small>{model.provider}</small></strong><em className={isModelConnected(model) ? "supported" : "pending"}>{modelAccessLabel(model)}</em><b className="metric-primary">{selectedMetricValue(model)}</b>{supportingValues.map((value, valueIndex) => <span key={`${model.name}-${valueIndex}`}>{value}</span>)}{hasDetail ? <button onClick={(event) => { event.stopPropagation(); openModelDetail(model); }} type="button">查看详情<LuArrowUpRight size={12} /></button> : <button disabled type="button">待支持</button>}</div>;
-            })}
-          </div>
-          <nav aria-label="完整指标榜单分页" className="model-discovery-table-pagination">
-            <span>共 {filteredTableModels.length} 个模型</span>
-            <div>
-              <button aria-label="上一页" disabled={safeTablePage === 1} onClick={() => setTablePage((current) => Math.max(1, current - 1))} type="button"><LuChevronLeft size={13} /></button>
-              {Array.from({ length: tablePageCount }, (_, index) => index + 1).map((page) => <button aria-current={page === safeTablePage ? "page" : undefined} className={page === safeTablePage ? "active" : ""} key={page} onClick={() => setTablePage(page)} type="button">{page}</button>)}
-              <button aria-label="下一页" disabled={safeTablePage === tablePageCount} onClick={() => setTablePage((current) => Math.min(tablePageCount, current + 1))} type="button"><LuChevronRight size={13} /></button>
-            </div>
-          </nav>
+          {/* 语义表格（plan §3.2 模块 7：走现有 Table + Pagination，不手写表格体系）。
+              Table 自带 overflow-auto 包装，故不再套 .model-discovery-table-scroll。 */}
+          <Table className="model-discovery-table">
+            <TableHeader>
+              <TableRow>
+                <TableHead align="center">排名</TableHead>
+                <TableHead align="left">模型</TableHead>
+                <TableHead align="center">状态</TableHead>
+                <TableHead align="right">
+                  {selectedMetricHeader}<em className="model-discovery-source-tag">{selectedMetricSource}</em>
+                </TableHead>
+                {supportingMetricHeaders.map((header) => <TableHead align="right" key={header}>{header}</TableHead>)}
+                <TableHead align="right"><span className="sr-only">操作</span></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {tableModels.map((model, index) => {
+                const supportingValues = supportingMetrics(model);
+                const hasDetail = canOpenModelDetail(model);
+                return (
+                  <TableRow
+                    aria-label={hasDetail ? modelDetailAriaLabel(model) : undefined}
+                    className={hasDetail ? "model-discovery-row-clickable" : undefined}
+                    key={model.name}
+                    onClick={hasDetail ? () => openModelDetail(model) : undefined}
+                    onKeyDown={hasDetail ? (event) => handleModelRowKeyDown(event, model) : undefined}
+                    role={hasDetail ? "link" : undefined}
+                    tabIndex={hasDetail ? 0 : undefined}
+                  >
+                    <TableCell align="center">{(safeTablePage - 1) * tablePageSize + index + 1}</TableCell>
+                    <TableCell align="left"><strong>{model.name}<small>{model.provider}</small></strong></TableCell>
+                    <TableCell align="center">
+                      <em className={isModelConnected(model) ? "supported" : "pending"}>{modelAccessLabel(model)}</em>
+                    </TableCell>
+                    <TableCell align="right"><b className="metric-primary">{selectedMetricValue(model)}</b></TableCell>
+                    {supportingValues.map((value, valueIndex) => (
+                      <TableCell align="right" key={`${model.name}-${valueIndex}`}>{value}</TableCell>
+                    ))}
+                    <TableCell align="right">
+                      {hasDetail
+                        ? <Button onClick={(event) => { event.stopPropagation(); openModelDetail(model); }} size="sm" type="button" variant="ghost">查看详情<LuArrowUpRight size={12} /></Button>
+                        : <Button disabled size="sm" type="button" variant="ghost">待支持</Button>}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+          <Pagination
+            mode="page"
+            onPageChange={setTablePage}
+            page={safeTablePage}
+            pageSize={tablePageSize}
+            total={filteredTableModels.length}
+          />
         </div>
       </section>
 

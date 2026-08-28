@@ -102,11 +102,12 @@
 | | 抠图去背景（输出透明 PNG） | `remove-bg` |
 | | **放大清晰度**（2M → 10M+ 级） | `upscale` |
 | | 去水印 | `remove-watermark` |
+| | **一组图 → 竖版短视频**（带标题/文案/配乐） | `slideshow` |
 | **语音**（直连小米 MiMo，需 `MIMO_API_KEY`） | 文字转语音 / 音色设计 / 音色克隆 | `speak` |
 | | 语音转文字 | `transcribe` |
 | **素材与统计** | 上传素材 / 查任务 / 查余额 / 查模型 / 查身份 | `upload` / `jobs` / `balance` / `models` / `whoami` |
 
-> 本地工具（`compress` / `remove-bg` / `upscale` / `remove-watermark`）**不用登录、不花一分钱**，装了就能用；其余命令需要一个凭证（个人 `login` 或租户 apiKey）。
+> 本地工具（`compress` / `remove-bg` / `upscale` / `remove-watermark` / `slideshow`）**不用登录、不花一分钱**，装了就能用；其余命令需要一个凭证（个人 `login` 或租户 apiKey）。
 >
 > 语音（`speak` / `transcribe`）是第三种情况：**不走中台身份**，直连小米 MiMo，只认 `MIMO_API_KEY` 环境变量。
 > 中台的出音链路还没接完，这批能力目前内部用，没有那把 key 的人（包括租户）用不了。
@@ -440,6 +441,36 @@ museav remove-watermark photo.jpg --mask mask.png      # 复杂画面手工掩�
 - 依赖红线：本地**绝不自动拉起开源大模型**——这些工具是轻量 CNN/传统算法，用完即释放内存。reverse 的本地路已翻回显式 `--local`（需自备 Ollama），默认走中台 API。
 - 二进制与模型缓存：`~/.museav-bin/upscayl`（引擎）、`~/.museav-models/`（模型），Windows 对应 `%USERPROFILE%` 下同名目录；删除即彻底清理。
 
+### 图集转竖版短视频 `slideshow`（免登录）
+
+一组图 + 每张的文案 + 一段配乐 → 一条能直接发朋友圈 / 视频号 / 小红书的竖版视频。
+排版走 sharp + SVG（中文用系统字体），合成走 ffmpeg，**需要本机装了 ffmpeg**（`brew install ffmpeg`）。
+
+```bash
+# 最简：一个目录里的图，按文件名排序串成视频
+museav slideshow ./图片目录 --out 成片.mp4
+
+# 完整：标题 + 逐张文案 + 配乐
+museav slideshow ./表情图 \
+  --title "莓啾日常" --subtitle "莓啾 · 微信表情包" \
+  --caption "需要被安慰的时候" --caption "催外卖 / 催开饭" \
+  --footer "微信搜「莓啾日常」添加整套" \
+  --music bgm.mp3 --sec 2.2 --out 推广视频.mp4
+
+# 文案多的时候写文件里，每行一条
+museav slideshow ./图片目录 --captions 文案.txt --title "作品集"
+```
+
+默认 1080×1920 / 30fps / H.264+AAC，每张停 2.5 秒；`--size` 换尺寸、`--theme dark` 换深色底。
+
+三个不写出来就会踩的点，已经在实现里处理掉了：
+
+- **小图会被显式放大**。240×240 的贴纸直接贴到 1080 宽的画布上只占两成宽，画面空得离谱。
+  贴纸类图片还会先裁掉四周透明留白再放大（`--no-trim` 关掉），否则放大的是留白不是主体。
+- **配乐不会中途硬切断**。配乐通常比视频长几倍，直接 `-shortest` 会在句子中间断掉；
+  这里裁到视频时长并做首尾淡入淡出。
+- **末页不会一闪而过**。ffmpeg 的 concat demuxer 会忽略最后一项的 duration，实现里把末页多列了一次。
+
 ### 项目（工作区）与项目素材库 `projects`
 
 层级：**平台 → 账户 → 工作区**。一个账户最多 5 个项目，每个项目挂自己的素材库——「人像库的项目出模特图、产品库的项目出电商图」，业务隔离互不污染：
@@ -564,6 +595,7 @@ console.log(r.sculpt.light)  // 光影分析
 | `remove-bg <file>` | 本地抠图去背景（免登录，输出带 alpha 的 PNG） | 产物路径 |
 | `upscale <file>` | 本地超分放大，2M 图变 10M+（免登录，Real-ESRGAN GPU，`--scale 2/3/4`） | 产物路径 |
 | `remove-watermark <file>` | 本地去水印（免登录，自动定位 + LaMa 修复，`--mask` 手工兜底） | 产物路径 |
+| `slideshow <图片或目录...>` | 图集转竖版短视频（免登录，带标题/逐张文案/配乐，需 ffmpeg） | 产物路径 |
 | `projects` | 工作区（项目）列表：一账户多项目，各带自己的素材库 | 项目 id 列表 |
 | `projects assets --project` | 项目素材库：ls / add / rm（垫图母版，人像库/产品库各管各的） | `id<TAB>url` 行 |
 | `models` | 可用模型 | 模型名列表 |

@@ -16,6 +16,7 @@ import { printWelcome } from './commands/welcome.js'
 import { gen } from './commands/gen.js'
 import { reverse } from './commands/reverse.js'
 import { compressCmd, removeBgCmd, upscaleCmd, removeWatermarkCmd } from './commands/img-tools.js'
+import { slideshowCmd } from './commands/slideshow.js'
 import { projects, createProject, listAssets, addAsset, removeAsset, resolveWorkspace } from './commands/projects.js'
 import { imageToTemplate } from './commands/image-to-template.js'
 import { upload } from './commands/upload.js'
@@ -209,6 +210,23 @@ program
   .option('--mask <file>', '手工掩码图（白色=要去除的区域），跳过自动定位')
   .option('--overwrite', '允许覆盖已存在的输出文件')
   .action(asyncRun((input: string, opts: any) => removeWatermarkCmd(input, opts)))
+
+program
+  .command('slideshow <图片或目录...>')
+  .description('本地图集转竖版短视频（sharp + ffmpeg，免登录）：默认 1080×1920 / 30fps / H.264，可加标题、逐张文案与配乐。需要本机有 ffmpeg')
+  .option('--out <path>', '输出 mp4（默认当前目录 slideshow.mp4）')
+  .option('--title <text>', '顶部主标题（大字）')
+  .option('--subtitle <text>', '顶部副标题（小字）')
+  .option('--caption <text>', '单页文案，可重复传，按顺序对应每张图', (v: string, acc: string[]) => [...acc, v], [] as string[])
+  .option('--captions <file>', '文案文件（每行一条，按顺序对应每张图），与 --caption 二选一')
+  .option('--footer <text>', '底部引导语')
+  .option('--music <file>', '配乐音频。自动裁到视频长度并加首尾淡入淡出（不会中途硬切断）')
+  .option('--sec <n>', '每张停留秒数，默认 2.5')
+  .option('--size <WxH>', '画面尺寸，默认 1080x1920')
+  .option('--art <px>', '主图渲染边长，默认画面宽的 48%')
+  .option('--theme <name>', 'light（默认）/ dark')
+  .option('--no-trim', '不裁主图四周的透明留白（默认会裁，贴纸类图片不裁会显得很小）')
+  .action(asyncRun((paths: string[], opts: any) => slideshowCmd(paths, opts)))
 
 // 工作区（项目）与项目素材库：平台 → 账户 → 工作区三层归属，素材挂工作区
 const projectsCmd = program

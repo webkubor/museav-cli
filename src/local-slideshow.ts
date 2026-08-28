@@ -116,17 +116,35 @@ function resolveText(layer: Layer, content: PageContent): string {
   return typeof v === 'string' ? v : ''
 }
 
+/** 渲染步骤：一段矢量图层（SVG）或一个图片图层。**顺序就是 DSL 里 layers 的顺序。** */
+type Step =
+  | { kind: 'svg'; svg: string }
+  | { kind: 'image'; layer: Layer; box: [number, number, number, number] }
+
 /**
- * 把一页渲染成 SVG（不含图片 —— 图片走 sharp composite，SVG 里嵌 base64 会让文件爆大）。
- * 返回 SVG 字符串 + 需要 composite 的图片层。
+ * 把一页拆成有序的渲染步骤。
+ *
+ * 关键点：**不能把图片层统一提到最后 composite**。sharp 的 composite 一律贴在底图之上，
+ * 那样所有图片就永远压在所有矢量层上面，DSL 里的图层顺序当场失效 ——
+ * 「图片铺满 + 文字压在上面」这种版式会渲染成文字被图片盖住（实测踩到）。
+ * 所以这里把连续的矢量层攒成一段 SVG，遇到图片层就断开，按原顺序逐段叠。
+ *
+ * 图片不嵌进 SVG 是另一回事：base64 内联会让 SVG 爆大且慢，走 composite 更划算。
  */
 function buildPage(layout: Layout, content: PageContent, scale: number, onWarn?: (m: string) => void) {
   const W = Math.round(layout.canvas.w * scale)
   const H = Math.round(layout.canvas.h * scale)
   const s = (n: number) => n * scale
-  const parts: string[] = [`<rect width="${W}" height="${H}" fill="${layout.canvas.bg ?? '#ffffff'}"/>`]
-  const images: { layer: Layer; box: [number, number, number, number] }[] = []
+  const steps: Step[] = []
+  let parts: string[] = []
   const unknown = new Set<string>()
+
+  // 攒够的矢量层收成一段 SVG（透明底 —— 背景色由 base 图承担，否则后一段会盖掉前一段）
+  const flush = () => {
+    if (!parts.length) return
+    steps.push({ kind: 'svg', svg: `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">${parts.join('')}</svg>` })
+    parts = []
+  }
 
   for (const layer of layout.layers) {
     const op = layer.opacity !== undefined ? ` opacity="${layer.opacity}"` : ''
@@ -152,17 +170,19 @@ function buildPage(layout: Layout, content: PageContent, scale: number, onWarn?:
       )
     } else if ((layer.type === 'slot' || layer.type === 'image') && layer.box) {
       const [x, y, w, h] = layer.box
-      images.push({ layer, box: [s(x), s(y), s(w), s(h)] })
+      flush() // 断开：此前的矢量层要落在这张图**下面**
+      steps.push({ kind: 'image', layer, box: [s(x), s(y), s(w), s(h)] })
     } else {
       // 不认识的层类型：跳过，不中断。老 CLI 碰上新层类型该少画一层，不是出不了片。
       unknown.add(String(layer.type))
     }
   }
+  flush()
 
   if (unknown.size && onWarn) {
     onWarn(`模板里有本版本不认识的图层类型（${[...unknown].join(', ')}），已跳过。升级试试：npm i -g museav-cli`)
   }
-  return { svg: `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">${parts.join('')}</svg>`, W, H, images }
+  return { steps, W, H }
 }
 
 function run(cmd: string, args: string[]): Promise<{ code: number; err: string }> {
@@ -211,10 +231,16 @@ export async function makeSlideshow(opts: SlideshowOpts): Promise<{ out: string;
         footer: opts.footer,
         image: opts.images[i],
       }
-      const { svg, images } = buildPage(layout, content, scale, warn)
+      const { steps, W, H } = buildPage(layout, content, scale, warn)
       const composites: { input: Buffer; top: number; left: number }[] = []
 
-      for (const { layer, box } of images) {
+      for (const step of steps) {
+        // 矢量段按原顺序插进来，图片压在它之前的段之上、之后的段之下
+        if (step.kind === 'svg') {
+          composites.push({ input: Buffer.from(step.svg), top: 0, left: 0 })
+          continue
+        }
+        const { layer, box } = step
         const [bx, by, bw, bh] = box
         let src: string | null = null
 
@@ -259,8 +285,15 @@ export async function makeSlideshow(opts: SlideshowOpts): Promise<{ out: string;
         })
       }
 
+      // 底图只负责画布背景色，所有内容（含第一段矢量层）都按顺序 composite 上去
       const page = join(work, `p${String(i).padStart(3, '0')}.png`)
-      await sharp(Buffer.from(svg)).composite(composites).png().toFile(page)
+      const bg = layout.canvas.bg ?? '#ffffff'
+      await sharp({
+        create: { width: W, height: H, channels: 4, background: bg === 'transparent' ? { r: 0, g: 0, b: 0, alpha: 0 } : bg },
+      })
+        .composite(composites)
+        .png()
+        .toFile(page)
       pages.push(page)
     }
 

@@ -150,9 +150,9 @@
         "fallbackTriggered": "Fallback triggered",
         "fallbackNotTriggered": "Not triggered",
         "cache": "Cache",
-        "cacheHit": "Hit",
-        "cacheMiss": "Miss",
-        "cacheRead": "Read {{count}} tokens"
+        "cacheHitRate": "{{rate}}% hit rate",
+        "cacheHitHint": "Hit · read {{count}} tokens",
+        "cacheMissHint": "Miss"
       },
       "timing": {
         "firstToken": "First token latency",

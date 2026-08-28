@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
 import { AlipayIcon, StripeIcon, WechatIcon } from './brand-icons'
 
-export const RECHARGE_PAYMENT_CHANNEL_KEYS = ['alipay', 'wechat', 'stripe'] as const
+export const RECHARGE_PAYMENT_CHANNEL_KEYS = ['alipay', 'wechat', 'stripe', 'stripe_wechat', 'stripe_alipay'] as const
 export type RechargePaymentChannel = (typeof RECHARGE_PAYMENT_CHANNEL_KEYS)[number]
 
-export const RECHARGE_CHANNEL_KEYS = ['alipay', 'wechat', 'stripe', 'manual'] as const
+export const RECHARGE_CHANNEL_KEYS = ['alipay', 'wechat', 'stripe', 'manual', 'stripe_wechat', 'stripe_alipay'] as const
 export type RechargeChannelKey = (typeof RECHARGE_CHANNEL_KEYS)[number]
 
 export const RECHARGE_SOURCE_KEYS = ['admin_credit', 'admin_adjust', 'reward_balance'] as const
@@ -21,6 +21,11 @@ export const RECHARGE_PAYMENT_CHANNELS: RechargePaymentChannelOption[] = [
   { value: 'alipay', labelKey: 'billing.paymentMethod.alipay', cnLabel: '支付宝', icon: <AlipayIcon /> },
   { value: 'wechat', labelKey: 'billing.paymentMethod.wechat', cnLabel: '微信支付', icon: <WechatIcon /> },
   { value: 'stripe', labelKey: 'billing.paymentMethod.stripe', cnLabel: 'Stripe', icon: <StripeIcon /> },
+  // Intl WeChat/Alipay via Stripe (prd#899): shown by wallet name + icon; the
+  // Stripe clearing is invisible to the user (WeChat -> our QR cashier, Alipay ->
+  // direct redirect).
+  { value: 'stripe_wechat', labelKey: 'billing.paymentMethod.stripe_wechat', cnLabel: '微信支付', icon: <WechatIcon /> },
+  { value: 'stripe_alipay', labelKey: 'billing.paymentMethod.stripe_alipay', cnLabel: '支付宝', icon: <AlipayIcon /> },
 ]
 
 export const RECHARGE_CHANNEL_CN_LABELS: Record<RechargeChannelKey, string> = {
@@ -28,6 +33,8 @@ export const RECHARGE_CHANNEL_CN_LABELS: Record<RechargeChannelKey, string> = {
   wechat: '微信',
   stripe: 'Stripe',
   manual: '管理员充值',
+  stripe_wechat: '微信支付',
+  stripe_alipay: '支付宝',
 }
 
 export const RECHARGE_SOURCE_CN_LABELS: Record<RechargeSourceKey, string> = {

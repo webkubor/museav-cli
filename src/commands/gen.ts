@@ -109,6 +109,14 @@ export async function gen(client: StudioClient, opts: {
       throw new Error(`视频生成失败: ${result.error || '未知原因'}`)
     }
     process.stderr.write(`✅ 视频完成\n`)
+    // 模型出的是**无声、无字幕的素材**，不是能直接发的成品。这一行是为了让人在拿到
+    // URL 的那一刻就知道下一步去哪 —— 而不是以为「出完了」，或者反过来以为
+    // museav 该管配音烧字幕（那是 reel-kit 的活，两边边界见 AGENTS.md）。
+    // 只在视频模式提示，且走 stderr 不污染 stdout。
+    process.stderr.write(
+      `   这是无声无字幕的素材。要装配成能发的成品（配文案/配乐/配音）：\n` +
+      `   reel make --assets <图目录> --caps 文案.txt   → github.com/webkubor/reel-kit\n`,
+    )
     console.log(result.cdn_url)
     return
   }

@@ -1,5 +1,20 @@
 # Changelog
 
+## 3.0.1 (2026-08-28)
+
+### 把 reel-kit 的推荐位做实
+
+3.0.0 只是下线了 slideshow，但没告诉人「那该用什么」——README 里只有一句藏在引用块里的
+说明，agent 读的 AGENTS.md 里一个字都没提。补三处：
+
+- **README** 加独立小节「🎬 要出成品视频？用 reel-kit」，带命令示例与分工对照表
+- **AGENTS.md** 加 "Scope: this tool makes *assets*, not finished videos" ——
+  agent 被要求「做个视频」时，第一眼就能看到该去哪
+- **`gen --video` 出片后提示一行**：模型出的是无声无字幕素材，不是成品。
+  这不是广告，是防止两种误解——以为「出完了」，或以为 museav 该管配音烧字幕
+
+典型链路写清楚了：`museav gen` 出图 → `museav remove-bg` 抠图 → `reel make` 出片。
+
 ## 3.0.0 (2026-08-28)
 
 ### 破坏性变更：`slideshow` / `slideshow-layouts` 下线，出片改用 reel-kit

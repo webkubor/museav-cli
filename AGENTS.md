@@ -6,6 +6,24 @@ This CLI is designed to be used directly by coding agents (Claude Code, Codex, e
 
 A command-line client for the "studio" image-generation platform (`https://manager.museav.top`). It generates images from a prompt, reverse-engineers a prompt from an existing image, and lists your own generation history. All output is designed for machine consumption: **stdout carries only the final result** (a URL, a prompt string, or JSON); progress and human-readable info goes to stderr.
 
+## Scope: this tool makes *assets*, not finished videos
+
+Know the boundary before you pick a tool:
+
+| You need | Use |
+|---|---|
+| An image, or a raw video clip from a model | `museav gen` (add `--video`) |
+| Cut out a background / upscale / de-watermark / compress | `museav remove-bg` / `upscale` / `remove-watermark` / `compress` |
+| **A finished vertical short video** (images + per-shot captions + BGM/voiceover, templated) | **[reel-kit](https://github.com/webkubor/reel-kit)** — `reel make` |
+
+`museav gen --video` gives you a **silent, caption-less clip** — that's raw material, not
+something you post. Assembling material into a publishable short is reel-kit's job: its
+layouts are HTML/CSS templates, it does voiceover, and **shot length follows the narration**.
+
+> `museav slideshow` existed in 2.9–2.10 and was **retired in 3.0.0** — it duplicated
+> reel-kit. The command still exists as a stub that prints migration instructions.
+> Don't try to bring it back; use reel-kit.
+
 ## Auth: pick one identity, not both
 
 - **You're acting as an individual user** (a person's own account): `museav login` — opens a device-authorization flow (prints a code + URL, polls until the user approves in a browser). Token cached in `~/.museav.json`, valid 7 days.

@@ -108,11 +108,37 @@
 
 > 本地工具（`compress` / `remove-bg` / `upscale` / `remove-watermark`）**不用登录、不花一分钱**，装了就能用；其余命令需要一个凭证（个人 `login` 或租户 apiKey）。
 >
-> **出成品视频不在这里** —— 图集转竖版短视频、配音、烧字幕走 [reel-kit](https://github.com/webkubor/reel-kit)（`reel` 命令）。
-> museav 管的是**素材**（抠图/超分/去水印/AI 生成），reel-kit 管**成品合成**。曾经有过 `museav slideshow`，3.0.0 已下线，见 CHANGELOG。
->
 > 语音（`speak` / `transcribe`）是第三种情况：**不走中台身份**，直连小米 MiMo，只认 `MIMO_API_KEY` 环境变量。
 > 中台的出音链路还没接完，这批能力目前内部用，没有那把 key 的人（包括租户）用不了。
+
+### 🎬 要出成品视频？用 [reel-kit](https://github.com/webkubor/reel-kit)
+
+museav 出的是**素材**：`gen --video` 给你的是一段**无声、无字幕的片子**，
+那是原料，不是能直接发的成品。把素材装配成能发的竖版短片是
+**[reel-kit](https://github.com/webkubor/reel-kit)** 的活：
+
+```bash
+reel make --template sticker-promo \
+  --assets ./图片目录 --caps 文案.txt \
+  --title "标题" --bgm 儿童轻快 --out 成片.mp4
+```
+
+- 版式是 `templates/*.html`，**改 CSS 就是改版式**，丢一个 HTML 进去就是一个新模板
+- 支持配音，且**镜头时长跟着念白走**（念快的不干等，念慢的不被切）
+- 配音默认走本地 TTS，批量出片不花钱
+
+两边的分工是明确的，reel-kit 也在它的 README 里写了同一条边界：
+
+| 你要的 | 用谁 |
+|---|---|
+| 一张图 / 一段模型出的原始片子 | `museav gen`（加 `--video`） |
+| 抠图 / 超分 / 去水印 / 压缩 | `museav remove-bg` / `upscale` / `remove-watermark` / `compress` |
+| **一支能直接发的竖版短片** | **`reel make`** |
+
+典型链路：`museav gen` 出图 → `museav remove-bg` 抠图 → `reel make` 出片。
+
+> `museav slideshow` 在 2.9~2.10 存在过，**3.0.0 已下线** —— 它和 reel-kit 重复了。
+> 命令还在但只会打印迁移说明。详见 [CHANGELOG](./CHANGELOG.md)。
 
 ---
 
@@ -443,26 +469,15 @@ museav remove-watermark photo.jpg --mask mask.png      # 复杂画面手工掩�
 - 依赖红线：本地**绝不自动拉起开源大模型**——这些工具是轻量 CNN/传统算法，用完即释放内存。reverse 的本地路已翻回显式 `--local`（需自备 Ollama），默认走中台 API。
 - 二进制与模型缓存：`~/.museav-bin/upscayl`（引擎）、`~/.museav-models/`（模型），Windows 对应 `%USERPROFILE%` 下同名目录；删除即彻底清理。
 
-### 出成品视频请用 reel-kit（不在本 CLI）
+### 出成品视频：走 reel-kit
 
-图集转竖版短视频、配音、烧字幕这些**成品合成**能力在
-[reel-kit](https://github.com/webkubor/reel-kit)（`reel` 命令），不在 museav：
+不在本 CLI，见上面 [🎬 要出成品视频](#-要出成品视频用-reel-kit)。常用三条：
 
 ```bash
-reel make --template sticker-promo \
-  --assets ./图片目录 --caps 文案.txt \
-  --title "标题" --bgm 儿童轻快 --out 成片.mp4
-
-reel templates    # 看版式（模板是 templates/*.html，丢一个进去就是新版式）
-reel bgm          # 看配乐库（带授权信息）
+reel make --template sticker-promo --assets ./图 --caps 文案.txt --out 成片.mp4
+reel templates    # 看版式
+reel bgm          # 看配乐库（带授权）
 ```
-
-2.9.0 曾在 museav 做过一个 `slideshow`，当天就发现 reel-kit 早已做了同一件事而且更好
-（HTML/CSS 排版能换行、支持配音且镜头时长由念白决定、本地 TTS 零成本），
-**3.0.0 已下线**，命令留了存根打印迁移说明。
-
-职责边界：**museav 管素材**（`remove-bg` 抠图、`upscale` 超分、`gen` 出图出视频素材），
-**reel-kit 管成品合成**。同一件事没必要两套实现。
 
 
 ### 项目（工作区）与项目素材库 `projects`

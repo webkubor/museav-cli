@@ -801,6 +801,21 @@ export class StudioClient {
   async balance(): Promise<Balance> {
     return this.request('balance')
   }
+
+  /** 提交反馈（bug / 需求）。服务端按凭证归人：账户 Key 归账户，网页 JWT 归本人。 */
+  async submitFeedback(input: { type: 'bug' | '需求'; content: string; images?: string[] }): Promise<{ ok: boolean }> {
+    return this.request('feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: input.type, content: input.content, images: input.images || [] }),
+    })
+  }
+
+  /** 拉我的反馈记录（个人账户 Key / JWT 看自己的，按时间倒序） */
+  async listFeedback(): Promise<Array<{ id: string; type: string; content: string; status?: string; reply?: string; created_at: string }>> {
+    const r = await this.request('feedback')
+    return Array.isArray(r) ? r : []
+  }
 }
 
 function sleep(ms: number): Promise<void> {

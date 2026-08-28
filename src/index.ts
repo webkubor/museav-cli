@@ -27,6 +27,7 @@ import { videoTemplates, createVideoTemplate } from './commands/video-templates.
 import { balance } from './commands/balance.js'
 import { jobs } from './commands/jobs.js'
 import { whoami } from './commands/whoami.js'
+import { feedback } from './commands/feedback.js'
 import { products } from './commands/products.js'
 import { assets } from './commands/assets.js'
 import { stickers, createSticker } from './commands/stickers.js'
@@ -429,6 +430,13 @@ program
   .command('whoami')
   .description('查当前登录账户 + 租户归属（仅个人 login 可用，apiKey 调用会报错）')
   .action(withClient((client: StudioClient) => whoami(client)))
+
+program
+  .command('feedback [content]')
+  .description('提 bug / 需求（不带内容则交互式输入）；--list 看我的反馈记录。个人账户可提，租户 apiKey 会被服务端拒')
+  .option('--type <type>', '反馈类型：bug / 需求（默认 bug）')
+  .option('--list', '列出我的反馈记录')
+  .action(withLazyClient((getClient: () => StudioClient, content: string | undefined, opts: any) => feedback(getClient, content || '', opts)))
 
 program
   .command('config')

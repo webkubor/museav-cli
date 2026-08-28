@@ -452,6 +452,31 @@ export class StudioClient {
     await this.request(`stickers?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
   }
 
+  /** 排版模板清单（图集视频用）：平台共享 + 本租户 + 本人私有，服务端按身份过滤 */
+  async slideshowLayouts(): Promise<any[]> {
+    const r = await this.request('slideshow-layouts')
+    return Array.isArray(r) ? r : []
+  }
+
+  /** 按 slug 取单个排版模板（CLI 的 --layout 走这条） */
+  async slideshowLayout(slug: string): Promise<any> {
+    return this.request(`slideshow-layouts?slug=${encodeURIComponent(slug)}`)
+  }
+
+  /** 新建排版模板。layout 的结构校验在服务端做，这里不预校验——
+   *  两侧都校验的话，老 CLI 会把新写的合法模板判为非法。 */
+  async createSlideshowLayout(input: {
+    name: string; slug: string; layout: unknown
+    description?: string; category?: string; sample_url?: string
+  }): Promise<any> {
+    const r = await this.request('slideshow-layouts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    })
+    return r.layout ?? r
+  }
+
   /** 版式模板清单（租户级资产）：封面底图 + 固定描述（{城市}{明星} 占位符） */
   async posterTemplates(): Promise<any[]> {
     const r = await this.request('poster-templates')

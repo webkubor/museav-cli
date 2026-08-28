@@ -16,7 +16,7 @@ import { printWelcome } from './commands/welcome.js'
 import { gen } from './commands/gen.js'
 import { reverse } from './commands/reverse.js'
 import { compressCmd, removeBgCmd, upscaleCmd, removeWatermarkCmd } from './commands/img-tools.js'
-import { slideshowCmd } from './commands/slideshow.js'
+import { slideshowCmd, slideshowLayoutsCmd, createSlideshowLayoutCmd } from './commands/slideshow.js'
 import { projects, createProject, listAssets, addAsset, removeAsset, resolveWorkspace } from './commands/projects.js'
 import { imageToTemplate } from './commands/image-to-template.js'
 import { upload } from './commands/upload.js'
@@ -221,12 +221,26 @@ program
   .option('--captions <file>', '文案文件（每行一条，按顺序对应每张图），与 --caption 二选一')
   .option('--footer <text>', '底部引导语')
   .option('--music <file>', '配乐音频。自动裁到视频长度并加首尾淡入淡出（不会中途硬切断）')
-  .option('--sec <n>', '每张停留秒数，默认 2.5')
-  .option('--size <WxH>', '画面尺寸，默认 1080x1920')
-  .option('--art <px>', '主图渲染边长，默认画面宽的 48%')
-  .option('--theme <name>', 'light（默认）/ dark')
-  .option('--no-trim', '不裁主图四周的透明留白（默认会裁，贴纸类图片不裁会显得很小）')
+  .option('--sec <n>', '每张停留秒数，默认取模板的（内置模板 2.5）')
+  .option('--size <WxH>', '画面尺寸，默认取模板画布（内置模板 1080x1920）；与模板不同则整体等比缩放')
+  .option('--theme <name>', 'light（默认）/ dark。只影响内置版式，给了 --layout 就以模板为准')
+  .option('--layout <slug>', '排版模板 slug：内置的直接用，其余去中台拉（需登录）。清单见 museav slideshow-layouts')
+  .option('--layout-file <path>', '直接用本地 JSON 排版模板（调模板时用，免登录）')
   .action(asyncRun((paths: string[], opts: any) => slideshowCmd(paths, opts)))
+
+const slideshowLayoutsCommand = program
+  .command('slideshow-layouts')
+  .description('查排版模板：内置版式（免登录）+ 中台模板（平台共享 / 本租户 / 本人私有）。配合 slideshow --layout 使用')
+  .action(asyncRun(() => slideshowLayoutsCmd()))
+
+slideshowLayoutsCommand
+  .command('create <layout.json>')
+  .description('从 JSON 文件新建排版模板——归属由身份自动决定：租户 Key 建的归本租户，个人账号建的仅本人可见。结构校验在服务端做')
+  .requiredOption('--name <名称>', '模板中文名')
+  .requiredOption('--slug <slug>', '对外调用标识（小写字母/数字/连字符，全局唯一）')
+  .option('--description <text>', '模板说明')
+  .option('--category <name>', '分类，默认「其他」')
+  .action(asyncRun((file: string, opts: any) => createSlideshowLayoutCmd(file, opts)))
 
 // 工作区（项目）与项目素材库：平台 → 账户 → 工作区三层归属，素材挂工作区
 const projectsCmd = program

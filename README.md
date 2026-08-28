@@ -463,6 +463,37 @@ museav slideshow ./图片目录 --captions 文案.txt --title "作品集"
 
 默认 1080×1920 / 30fps / H.264+AAC，每张停 2.5 秒；`--size` 换尺寸、`--theme dark` 换深色底。
 
+#### 排版模板：版面不写死在代码里
+
+版面由一份**图层 DSL** 描述，模板库在中台，改版式不用等 CLI 发新版：
+
+```bash
+museav slideshow-layouts                       # 看有哪些版式（内置 + 中台）
+museav slideshow ./图 --layout <slug>           # 用中台模板
+museav slideshow ./图 --layout-file my.json     # 用本地 JSON（调模板时用，免登录）
+museav slideshow-layouts create my.json --name 我的版式 --slug my-style
+```
+
+DSL 支持 `rect` / `ellipse` / `text` / `slot` / `image` 五种图层。`text` 和 `slot` 用 `bind`
+绑定内容（`title` / `subtitle` / `caption` / `footer` / `image`），所以同一个模板能套任意一套素材；
+`image` 层可以写 `sticker://<id>` 引用中台贴图库里的透明装饰图。
+
+```json
+{
+  "canvas": { "w": 1080, "h": 1920, "bg": "#ffffff" },
+  "layers": [
+    { "type": "ellipse", "cx": 190, "cy": -131, "rx": 510, "ry": 430, "fill": "#ffd6e2" },
+    { "type": "text", "bind": "title", "x": 540, "y": 394, "size": 84, "align": "center", "maxWidth": 0.86 },
+    { "type": "slot", "bind": "image", "box": [281, 660, 518, 701], "fit": "contain", "trim": true }
+  ]
+}
+```
+
+> **不给 `--layout` 就完全不碰网络**，用内置版式出片。免登录是这个命令的立身之本，接了模板库也没丢。
+>
+> 模板结构的真源与校验都在中台。CLI 是消费方，遇到不认识的图层类型**跳过该层并提示升级**，
+> 不报错中断 —— 老 CLI 碰上新层类型该少画一层，不是彻底出不了片。
+
 三个不写出来就会踩的点，已经在实现里处理掉了：
 
 - **小图会被显式放大**。240×240 的贴纸直接贴到 1080 宽的画布上只占两成宽，画面空得离谱。
@@ -596,6 +627,8 @@ console.log(r.sculpt.light)  // 光影分析
 | `upscale <file>` | 本地超分放大，2M 图变 10M+（免登录，Real-ESRGAN GPU，`--scale 2/3/4`） | 产物路径 |
 | `remove-watermark <file>` | 本地去水印（免登录，自动定位 + LaMa 修复，`--mask` 手工兜底） | 产物路径 |
 | `slideshow <图片或目录...>` | 图集转竖版短视频（免登录，带标题/逐张文案/配乐，需 ffmpeg） | 产物路径 |
+| `slideshow-layouts` | 查排版模板：内置版式（免登录）+ 中台模板（平台/租户/私有） | slug 列表 |
+| `slideshow-layouts create <json>` | 从 JSON 新建排版模板（结构校验在服务端做） | 新模板 id |
 | `projects` | 工作区（项目）列表：一账户多项目，各带自己的素材库 | 项目 id 列表 |
 | `projects assets --project` | 项目素材库：ls / add / rm（垫图母版，人像库/产品库各管各的） | `id<TAB>url` 行 |
 | `models` | 可用模型 | 模型名列表 |

@@ -311,9 +311,16 @@ export function CatalogSidebar({ tags, models, selected, setSelected, isZh }: Pr
               label={v.label}
               icon={(
                 <ModelIcon
-                  // logo_url 必须带上：只喂厂商名的话解析只剩一级，会和卡片渲染出
-                  // 不同的 logo（xAI/Grok、Z.ai/Zhipu），口径见 catalogVendorOptions
-                  model={{ logo_url: v.logo, vendor: v.raw, provider: v.raw, display_name: v.label }}
+                  // 常态：带上 logo_url，让侧栏与卡片显示同一个 logo（xAI/Grok、
+                  // Z.ai/Zhipu 靠它对齐，口径见 catalogVendorOptions）。
+                  // ownIcon 的行例外：那几行让位后会和另一行撞成同一个图标，
+                  // 改走 resolve="vendor" 用厂商自己的条目（见 CatalogVendorOption.ownIcon）。
+                  model={
+                    v.ownIcon
+                      ? { vendor: v.raw, provider: v.raw, display_name: v.label }
+                      : { logo_url: v.logo, vendor: v.raw, provider: v.raw, display_name: v.label }
+                  }
+                  resolve={v.ownIcon ? 'vendor' : 'model'}
                   variant="dense"
                   rounded="rounded-full"
                   className="mg-side-vendor-icon"

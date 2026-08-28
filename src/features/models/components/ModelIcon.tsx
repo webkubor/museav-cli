@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { iconSvgFor } from '@model-go/icons'
+import { iconSvgFor, iconSvg, vendorEntryOf, preferredVariant } from '@model-go/icons'
 import { cn, getFallbackAvatarText } from '@/lib/utils'
 import { modelIconVendor } from './model-icon-vendor'
 
@@ -50,6 +50,18 @@ interface ModelIconProps {
   rounded?: string
   /** 附加 className（边框、背景、外边距等） */
   className?: string
+  /**
+   * 解析口径。默认 `model` —— 走包的 `iconSvgFor`，**跟随让位**：`data/brands.json`
+   * 的 `iconFrom` 让公司条目把图标让给旗下模型族（Alibaba→Qwen、Google→Gemini、
+   * Anthropic→Claude 等 10 条）。模型卡片必须走这条，而且它就是 #791 的修复本身：
+   * 线上有 vendor=alibaba 且 logo_url 为空的模型（通义千问 embedding 系列），
+   * 靠让位才拿到千问图标，包里有回归测试锁着。
+   *
+   * `vendor` 口径**不让位**，取厂商归属条目自己的图标。只给「按厂商筛选」这类
+   * 维度本身就是公司的场景用 —— 那里让位会让 Alibaba 和 Qwen 两个并列筛选项
+   * 长成同一个图标，用户分不出差在哪（qa#699 走查）。
+   */
+  resolve?: 'model' | 'vendor'
 }
 
 /**
@@ -65,7 +77,13 @@ interface ModelIconProps {
  * 各缺对方的条目），运营能选到控制台渲染不出的图标，就会静默掉到名字推断 ——
  * 通义千问的 text-embedding-v4 因此渲染出 OpenAI 图标（需求方 #791）。
  */
-export function ModelIcon({ model, variant = 'bar', rounded = 'rounded-md', className }: ModelIconProps) {
+export function ModelIcon({
+  model,
+  variant = 'bar',
+  rounded = 'rounded-md',
+  className,
+  resolve = 'model',
+}: ModelIconProps) {
   const [imgError, setImgError] = useState(false)
   // logo_url 变化时在渲染期重置加载失败标记（react.dev: adjusting state when a prop changes）
   const [prevLogoUrl, setPrevLogoUrl] = useState(model.logo_url)
@@ -97,11 +115,25 @@ export function ModelIcon({ model, variant = 'bar', rounded = 'rounded-md', clas
     )
   }
 
-  const hit = iconSvgFor({
-    icon: isImageUrl ? null : logo,
-    vendor,
-    name: model.display_name,
-  })
+  // 厂商口径：只认 vendor 归属条目，不看 logo_url、不推名字、不跟随让位。
+  // 认不出时返回 null，自然落到下面的首字母块（与 model 口径同一套兜底）。
+  const vendorHit = (() => {
+    if (resolve !== 'vendor') return null
+    const entry = vendorEntryOf(vendor)
+    if (!entry) return null
+    const svg = iconSvg(entry.slug, preferredVariant(entry))
+    return svg ? { svg } : null
+  })()
+
+  const hit =
+    vendorHit ??
+    (resolve === 'vendor'
+      ? null
+      : iconSvgFor({
+          icon: isImageUrl ? null : logo,
+          vendor,
+          name: model.display_name,
+        }))
 
   if (hit) {
     return (

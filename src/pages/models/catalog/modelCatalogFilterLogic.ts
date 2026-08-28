@@ -12,6 +12,7 @@
  * 后端补齐多值参数后可回迁服务端，见工单 #872。
  */
 
+import { brandByVendor, vendorEntryOf } from '@model-go/icons'
 import type { CatalogModelItem } from '@/types'
 
 /** 输入类型选项（原型 marketplaceFilterGroups「输入类型」）。
@@ -97,6 +98,18 @@ export interface CatalogVendorOption {
   raw: string
   /** 该组的代表图标（后端 logo_url，是图标名不是 URL）；全组都没填时 undefined */
   logo?: string
+  /**
+   * 本行改用「厂商归属条目自己的图标」，不跟随 iconFrom 让位。
+   *
+   * 只在**会和另一行撞图**时置 true。典型是 Alibaba：它让位给 Qwen，而 Qwen
+   * 本身也是一个并列的厂商筛选项（后端 provider 字段两种值都在发），让位后两行
+   * 长成同一个 Qwen 图标，用户分不出差在哪（qa#699 走查）。
+   *
+   * 反过来 Google 让位给 Gemini、Anthropic 让位给 Claude —— Gemini/Claude 都不是
+   * 独立筛选项，不撞，就保持让位（与 zenmux 供应商栏一致，他们也是 Google 显示
+   * Gemini、Anthropic 显示 Claude）。所以这里刻意**不是**「一律用公司图标」。
+   */
+  ownIcon?: boolean
 }
 
 /**
@@ -127,7 +140,7 @@ export function catalogVendorOptions(models: CatalogModelItem[]): CatalogVendorO
     const logo = (model.logo_url ?? '').trim()
     if (logo) group.tally.set(logo, (group.tally.get(logo) ?? 0) + 1)
   }
-  return Array.from(groups, ([code, group]) => {
+  const options = Array.from(groups, ([code, group]) => {
     let logo: string | undefined
     let best = 0
     for (const [name, count] of group.tally) {
@@ -136,7 +149,33 @@ export function catalogVendorOptions(models: CatalogModelItem[]): CatalogVendorO
         best = count
       }
     }
-    return { code, raw: group.raw, logo }
+    return { code, raw: group.raw, logo } as CatalogVendorOption
+  })
+  return markCollidingVendors(options)
+}
+
+/**
+ * 标记「让位后会和另一行撞图」的厂商，让它们改用自己的图标（见 ownIcon 注释）。
+ *
+ * 判据全部来自当前这批筛选项，不写死品牌名单：先算每行让位后落到哪个条目，
+ * 同一个条目被多行占用时，**让位来的那些**改用自己的归属条目。没让位的那行
+ * （条目本人，如 Qwen）保持不动 —— 它本来就该是那个图标。
+ */
+function markCollidingVendors(options: CatalogVendorOption[]): CatalogVendorOption[] {
+  const resolvedOf = new Map<string, string>()
+  for (const o of options) {
+    const slug = brandByVendor(o.raw)?.slug
+    if (slug) resolvedOf.set(o.code, slug)
+  }
+  const used = new Map<string, number>()
+  for (const slug of resolvedOf.values()) used.set(slug, (used.get(slug) ?? 0) + 1)
+
+  return options.map((o) => {
+    const resolved = resolvedOf.get(o.code)
+    if (!resolved || (used.get(resolved) ?? 0) < 2) return o
+    const own = vendorEntryOf(o.raw)?.slug
+    // 只有「让位过来的」才改；条目本人（own === resolved）保持原样
+    return own && own !== resolved ? { ...o, ownIcon: true } : o
   })
 }
 

@@ -136,7 +136,8 @@ export function ApiQuickCallModal({
           <TabsList variant="pills">
             {protocols.map((p) => (
               <TabsTrigger key={p} value={p} variant="pills">
-                {protocolLabel[p]}
+                {/* `?? p` 兜底同 ApiAccessPanel：没收录的 code 显示原文，不渲染空块 */}
+                {protocolLabel[p] ?? p}
               </TabsTrigger>
             ))}
           </TabsList>

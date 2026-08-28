@@ -207,7 +207,9 @@
     "paymentMethod": {
       "alipay": "Alipay",
       "wechat": "WeChat Pay",
-      "stripe": "Stripe"
+      "stripe": "Stripe",
+      "stripe_wechat": "WeChat Pay",
+      "stripe_alipay": "Alipay"
     },
     "referral": {
       "title": "Referral Program",

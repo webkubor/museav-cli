@@ -28,7 +28,7 @@ import type { CatalogModelItem, CatalogModelTag } from '@/types'
 import {
   INPUT_TYPE_CODES,
   CONTEXT_SLIDER_STOPS,
-  modelVendorCode,
+  catalogVendorOptions,
 } from './modelCatalogFilterLogic'
 import { usePublicProtocolsStore } from '@/store/use-public-protocols-store'
 import { mergeProtocolLabels } from '@/features/models/model-format'
@@ -220,17 +220,13 @@ export function CatalogSidebar({ tags, models, selected, setSelected, isZh }: Pr
   const priceActive = activeOf('price')[0]
   const promoActive = selected.includes('promo:1')
 
-  /** 厂商选项：小写归一去重，保留一条原始 provider 文案做展示兜底与图标解析 */
-  const vendors = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const m of models) {
-      const code = modelVendorCode(m)
-      if (code && !map.has(code)) map.set(code, m.provider || m.vendor || code)
-    }
-    return Array.from(map.entries())
-      .map(([code, raw]) => ({ code, raw, label: vendorLabel(code, raw, isZh) }))
-      .sort((a, b) => a.label.localeCompare(b.label))
-  }, [models, isZh])
+  /** 厂商选项：聚合与代表图标在 catalogVendorOptions（纯逻辑+单测），这里只补 i18n 文案与排序 */
+  const vendors = useMemo(
+    () => catalogVendorOptions(models)
+      .map((v) => ({ ...v, label: vendorLabel(v.code, v.raw, isZh) }))
+      .sort((a, b) => a.label.localeCompare(b.label)),
+    [models, isZh],
+  )
 
   /** 收起态下已选厂商藏在折叠区时保持展开（原型 selectedHidden 口径） */
   const selectedHiddenVendor = vendors
@@ -315,7 +311,9 @@ export function CatalogSidebar({ tags, models, selected, setSelected, isZh }: Pr
               label={v.label}
               icon={(
                 <ModelIcon
-                  model={{ vendor: v.raw, provider: v.raw, display_name: v.label }}
+                  // logo_url 必须带上：只喂厂商名的话解析只剩一级，会和卡片渲染出
+                  // 不同的 logo（xAI/Grok、Z.ai/Zhipu），口径见 catalogVendorOptions
+                  model={{ logo_url: v.logo, vendor: v.raw, provider: v.raw, display_name: v.label }}
                   variant="dense"
                   rounded="rounded-full"
                   className="mg-side-vendor-icon"

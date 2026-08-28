@@ -11,6 +11,7 @@ import {
   matchesCatalogFiltersExceptOutput,
   matchesOutputModality,
   modelVendorCode,
+  catalogVendorOptions,
   CONTEXT_SLIDER_STOPS,
 } from './modelCatalogFilterLogic'
 
@@ -150,5 +151,48 @@ describe('modelVendorCode', () => {
   it('provider 优先、vendor 兜底、小写归一', () => {
     expect(modelVendorCode(model({ provider: 'MoonshotAI', vendor: 'internal-x' }))).toBe('moonshotai')
     expect(modelVendorCode(model({ provider: undefined, vendor: 'Kling' }))).toBe('kling')
+  })
+})
+
+describe('catalogVendorOptions', () => {
+  it('小写归一去重，raw 取组内首个原文（后端 xAI/xai 混发按一组算）', () => {
+    const opts = catalogVendorOptions([
+      model({ provider: 'xAI', logo_url: 'Grok' }),
+      model({ provider: 'xai', logo_url: 'Grok' }),
+      model({ provider: 'OpenAI', logo_url: 'OpenAI' }),
+    ])
+    expect(opts.map((o) => o.code)).toEqual(['xai', 'openai'])
+    expect(opts[0].raw).toBe('xAI')
+  })
+
+  it('代表图标取组内多数票，不是组内第一个（线上 Z.ai 组 1 个 ZAI + 6 个 Zhipu）', () => {
+    const [zai] = catalogVendorOptions([
+      model({ provider: 'Z.ai', logo_url: 'ZAI' }),
+      ...Array.from({ length: 6 }, () => model({ provider: 'Z.ai', logo_url: 'Zhipu' })),
+    ])
+    expect(zai.logo).toBe('Zhipu')
+  })
+
+  it('平票取先出现的，与 raw 的首个胜出口径一致', () => {
+    const [g] = catalogVendorOptions([
+      model({ provider: 'Google', logo_url: 'Gemini' }),
+      model({ provider: 'Google', logo_url: 'Google' }),
+    ])
+    expect(g.logo).toBe('Gemini')
+  })
+
+  it('空 logo_url 不计票；全组都没填时 logo 为 undefined（ModelIcon 退回厂商名解析）', () => {
+    const [a, b] = catalogVendorOptions([
+      model({ provider: 'ByteDance', logo_url: '' }),
+      model({ provider: 'ByteDance', logo_url: '   ' }),
+      model({ provider: 'ByteDance', logo_url: 'Doubao' }),
+      model({ provider: 'Alibaba', logo_url: '' }),
+    ])
+    expect(a.logo).toBe('Doubao')
+    expect(b.logo).toBeUndefined()
+  })
+
+  it('厂商为空的模型不产生筛选项', () => {
+    expect(catalogVendorOptions([model({ provider: '', vendor: '', logo_url: 'OpenAI' })])).toEqual([])
   })
 })

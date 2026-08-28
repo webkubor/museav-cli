@@ -27,7 +27,6 @@ import {
   LuChevronDown,
   LuChevronLeft,
   LuChevronRight,
-  LuInfo,
   LuListFilter,
   LuRotateCcw,
   LuSearch,
@@ -39,6 +38,7 @@ import { useMemo, useState, type CSSProperties, type KeyboardEvent } from "react
 import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { Button } from '@/components/ui/Button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs'
+import { InfoTip } from '@/components/ui/InfoTip'
 
 type ModalityKey = "agent" | "text" | "image" | "video" | "audio";
 type RankingMetric = "overall" | "value" | "price" | "usage";
@@ -1318,7 +1318,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       </div>
 
       <section className="model-discovery-overview">
-        <article className="model-discovery-rank-card">
+        <article className="mg-tile model-discovery-rank-card">
           <div className="model-discovery-card-head"><div><h2>{task} Top 5</h2><span>{taskProfile.qualityBasis}</span></div></div>
           <div className="model-discovery-rank-head"><span>#</span><span>模型</span><span>接入状态</span><span>{taskProfile.qualityLabel}<em className="model-discovery-source-tag">{metricSource}</em></span></div>
           {visibleModels.slice(0, 5).map((model, index) => {
@@ -1329,8 +1329,8 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
         </article>
         <div className={`model-discovery-summary-grid cards-${summaryCards.length}`}>
           {summaryCards.map((item, index) => (
-            <article className={`model-discovery-summary-card ${summaryCards.length % 2 === 1 && index === summaryCards.length - 1 ? "wide" : ""}`} key={item.label}>
-              <span>{item.label}<button aria-label={`${item.label}说明`} className="model-discovery-info-trigger" type="button"><LuInfo size={12} /><span role="tooltip">{item.tooltip}</span></button></span>
+            <article className={`mg-tile model-discovery-summary-card ${summaryCards.length % 2 === 1 && index === summaryCards.length - 1 ? "wide" : ""}`} key={item.label}>
+              <span>{item.label}<InfoTip align="end" className="ml-auto" text={item.tooltip} /></span>
               <div className="model-discovery-summary-content">
                 <div className="model-discovery-summary-model">
                   <DiscoveryModelIcon model={item.model} provider={item.provider} />

@@ -210,8 +210,6 @@
   grid-template-columns: minmax(0, 1.55fr) minmax(350px, 0.85fr);
 }
 
-.model-discovery-rank-card,
-.model-discovery-summary-card,
 .model-discovery-analysis-card,
 .model-discovery-specialties article,
 .model-discovery-table-card,
@@ -221,9 +219,13 @@
   border: 1px solid var(--line);
 }
 
-.model-discovery-rank-card,
 .model-discovery-analysis-card {
   border-radius: var(--discovery-card-radius);
+  overflow: hidden;
+}
+
+/* rank-card 改用 .mg-tile（自带 --mg-tile-radius / 边框 / 表面），这里只补它需要的裁剪 */
+.model-discovery-rank-card {
   overflow: hidden;
 }
 
@@ -427,7 +429,6 @@
 }
 
 .model-discovery-summary-card {
-  border-radius: var(--discovery-card-radius);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -446,69 +447,6 @@
   font-size: 11px;
   gap: 5px;
   justify-content: flex-start;
-}
-
-.model-discovery-summary-card > span > .model-discovery-info-trigger { margin-left: auto; }
-
-.model-discovery-info-trigger {
-  align-items: center;
-  background: transparent;
-  border: 0;
-  color: inherit;
-  cursor: help;
-  display: inline-flex;
-  font: inherit;
-  justify-content: center;
-  padding: 0;
-  position: relative;
-}
-
-.model-discovery-info-trigger > span {
-  background: #172033;
-  border-radius: var(--mg-radius-xs);
-  box-shadow: var(--discovery-shadow-tooltip);
-  color: var(--discovery-on-dark);
-  font-size: 10.5px;
-  font-weight: 500;
-  line-height: 1.45;
-  opacity: 0;
-  padding: 7px 9px;
-  pointer-events: none;
-  position: absolute;
-  right: 0;
-  text-align: left;
-  bottom: calc(100% + 8px);
-  top: auto;
-  transform: translateY(3px);
-  transition: opacity var(--discovery-dur-swift) ease, transform var(--discovery-dur-swift) ease;
-  visibility: hidden;
-  white-space: normal;
-  width: max-content;
-  max-width: 220px;
-  z-index: 4;
-}
-
-.model-discovery-info-trigger > span::after {
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 5px solid #172033;
-  content: "";
-  position: absolute;
-  right: 3px;
-  top: 100%;
-}
-
-.model-discovery-info-trigger:hover > span,
-.model-discovery-info-trigger:focus-visible > span {
-  opacity: 1;
-  transform: translateY(0);
-  visibility: visible;
-}
-
-.model-discovery-info-trigger:focus-visible {
-  border-radius: var(--discovery-radius-2xs);
-  outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
-  outline-offset: 2px;
 }
 
 .model-discovery-summary-content {

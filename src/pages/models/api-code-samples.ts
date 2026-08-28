@@ -26,12 +26,17 @@ import type { PublicProtocol } from '@/types'
 export type ApiProtocol =
   | 'openai_chat_completions'
   | 'openai_responses'
+  | 'openai_completions'
   | 'openai_embeddings'
+  | 'openai_embeddings_multimodal'
   | 'openai_rerank'
   | 'openai_images'
+  | 'openai_images_edits'
   | 'openai_speech'
   | 'openai_transcriptions'
+  | 'openai_translations'
   | 'anthropic_messages'
+  | 'openai_video'
   | 'openai'
   | 'anthropic'
   | 'native'
@@ -46,6 +51,11 @@ export type ApiCodeLanguage = 'curl' | 'nodejs' | 'python' | 'typescript' | 'cla
  * 目录里，恒用本地文案）不参与覆盖。
  */
 export const PROTOCOL_LABEL: Record<ApiProtocol, string> = {
+  openai_completions: 'OpenAI Completions',
+  openai_embeddings_multimodal: 'OpenAI Multimodal Embeddings',
+  openai_images_edits: 'OpenAI Image Edits',
+  openai_translations: 'OpenAI Translations',
+  openai_video: 'OpenAI Video',
   openai: 'OpenAI',
   anthropic: 'Anthropic',
   openai_chat_completions: 'OpenAI Chat Completions',
@@ -61,6 +71,11 @@ export const PROTOCOL_LABEL: Record<ApiProtocol, string> = {
 }
 
 export const PROTOCOL_LABEL_EN: Record<ApiProtocol, string> = {
+  openai_completions: 'OpenAI Completions',
+  openai_embeddings_multimodal: 'OpenAI Multimodal Embeddings',
+  openai_images_edits: 'OpenAI Image Edits',
+  openai_translations: 'OpenAI Translations',
+  openai_video: 'OpenAI Video',
   openai: 'OpenAI',
   anthropic: 'Anthropic',
   openai_chat_completions: 'OpenAI Chat Completions',
@@ -102,10 +117,14 @@ export function languagesForProtocol(protocol: ApiProtocol): ApiCodeLanguage[] {
     case 'openai':
     case 'openai_chat_completions':
     case 'openai_responses':
+    case 'openai_completions':
     case 'openai_embeddings':
+    case 'openai_embeddings_multimodal':
     case 'openai_rerank':
     case 'openai_images':
+    case 'openai_images_edits':
     case 'openai_speech':
+    case 'openai_video':
       return ['curl', 'python', 'nodejs', 'typescript']
     // openai_transcriptions 是 multipart/form-data 请求（-F 文件字段），跟其余
     // openai 家族的 JSON body 形状不同，不提供假装是 JSON fetch 的 TypeScript 示例。
@@ -130,9 +149,13 @@ export function languageLabel(protocol: ApiProtocol, language: ApiCodeLanguage):
  * openai_chat_completions 起）与旧 openai/anthropic 值一样，原样映射到自身。
  */
 export function mapApiProtocols(protocols: PublicProtocol[] | undefined): ApiProtocol[] {
-  const NATIVE_ONLY = new Set(['other', 'google_gemini', 'google_imagen', 'google_video'])
+  // 原生透传类（gemini_* / ark_* / kling_* / hailuo_* / vidu_*）与 other 一律走
+  // native 兜底：各家原生请求体形状互不相同，本模块不为它们伪造 OpenAI 风格示例。
+  const isNativeOnly = (p: string) =>
+    p === 'other' ||
+    /^(gemini|ark|kling|hailuo|vidu)_/.test(p)
   // 顺序统一 sortProtocols（QA：端点兼容顺序不一致），协议 Tab 顺序不再跟后端数组走
-  return sortProtocols((protocols ?? []).map((p): ApiProtocol => (NATIVE_ONLY.has(p) ? 'native' : (p as ApiProtocol))))
+  return sortProtocols((protocols ?? []).map((p): ApiProtocol => (isNativeOnly(p) ? 'native' : (p as ApiProtocol))))
 }
 
 /**
@@ -146,11 +169,16 @@ const ENDPOINT_PATH: Record<Exclude<ApiProtocol, 'native'>, string> = {
   openai: '/v1/chat/completions',
   openai_chat_completions: '/v1/chat/completions',
   openai_responses: '/v1/responses',
+  openai_completions: '/v1/completions',
   openai_embeddings: '/v1/embeddings',
+  openai_embeddings_multimodal: '/v1/embeddings/multimodal',
   openai_rerank: '/v1/rerank',
   openai_images: '/v1/images/generations',
+  openai_images_edits: '/v1/images/edits',
   openai_speech: '/v1/audio/speech',
   openai_transcriptions: '/v1/audio/transcriptions',
+  openai_translations: '/v1/audio/translations',
+  openai_video: '/v1/video/generations',
   anthropic: '/messages',
   anthropic_messages: '/messages',
 }
@@ -164,6 +192,12 @@ function bodyKeysFor(protocol: ApiProtocol, modelId: string): string {
       return `{"model":"${modelId}","input":"Hello"}`
     case 'openai_embeddings':
       return `{"model":"${modelId}","input":"Hello, world!"}`
+    case 'openai_completions':
+      return `{"model":"${modelId}","prompt":"Hello"}`
+    case 'openai_embeddings_multimodal':
+      return `{"model":"${modelId}","input":[{"type":"text","text":"Hello, world!"}]}`
+    case 'openai_video':
+      return `{"model":"${modelId}","prompt":"a neon city cat"}`
     case 'openai_rerank':
       return `{"model":"${modelId}","query":"What is ModelGo?","documents":["ModelGo is a model gateway.","The weather is nice today."]}`
     case 'openai_images':

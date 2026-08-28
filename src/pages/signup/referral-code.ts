@@ -1,5 +1,18 @@
 export function referralCodeFromSearchParams(searchParams: URLSearchParams) {
-  return searchParams.get('aff') ?? searchParams.get('ref') ?? ''
+  const direct = searchParams.get('aff') ?? searchParams.get('ref')
+  if (direct) return direct
+  // qa#675：根路径 /?aff=X 命中 RequireAuth 会被折进 /login?redirect=%2F%3Faff%3DX，
+  // 码只存在于 redirect 的内嵌 query 里——不解这一层，根路径推荐链接 100% 丢码。
+  const redirect = searchParams.get('redirect')
+  if (redirect) {
+    try {
+      const inner = new URL(redirect, 'https://placeholder.invalid').searchParams
+      return inner.get('aff') ?? inner.get('ref') ?? ''
+    } catch {
+      return ''
+    }
+  }
+  return ''
 }
 
 /**

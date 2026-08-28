@@ -128,6 +128,14 @@
   background: var(--mg-fill-0); font-size: 11px; line-height: 1.6;
   color: var(--mg-text-2); white-space: nowrap;
 }
+/* fit 模式（卡片）：**永远单行**。组件按容器实际宽度算能放几个，但极窄档下连 1 个都放不下
+   —— 任务列宽随网格列数在 121~209px 之间跳，121px 时英文标签 92px + 「+N」28px 已经 124px。
+   此时让可见标签自己省略，而不是把「+N」挤到第二行（那就又把等高卡片的贴底规格区撑高了）。
+   容器不会被内容撑宽：.mg-mcard-specs 的列是 minmax(0, 1fr)，min 为 0。
+   详情页不加 is-fit（宽度富余，全量平铺换行也无妨）。 */
+.mg-task-tags.is-fit { flex-wrap: nowrap; overflow: hidden; }
+.mg-task-tags.is-fit > em { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.mg-task-tags.is-fit > .mg-task-tags-more { flex: none; }
 /* 「+N」折叠计数标签：悬停/聚焦冒气泡列出其余任务（组件内 portal 渲染） */
 .mg-task-tags-more { cursor: help; color: var(--mg-text-3); }
 .mg-task-tags-more:hover, .mg-task-tags-more:focus-visible { color: var(--mg-text-1); }

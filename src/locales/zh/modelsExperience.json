@@ -54,6 +54,12 @@
     "attachmentUploading": "附件上传中…",
     "estimatedSpend": "本次预估费用",
     "listSeparator": "、",
+    "modelCard": {
+      "inputType": "输入类型",
+      "outputType": "输出类型",
+      "maxOutput": "最大输出",
+      "tokens": "Tokens"
+    },
     "copyReply": "复制回复内容",
     "notBilled": "计费：未计费",
     "retryAfterAdjust": "调整后重试",

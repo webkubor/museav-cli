@@ -54,6 +54,12 @@
     "attachmentUploading": "Uploading attachment…",
     "estimatedSpend": "Estimated cost",
     "listSeparator": ", ",
+    "modelCard": {
+      "inputType": "Input Type",
+      "outputType": "Output Type",
+      "maxOutput": "Max Output",
+      "tokens": "Tokens"
+    },
     "copyReply": "Copy reply",
     "notBilled": "Billing: not charged",
     "retryAfterAdjust": "Adjust and retry",

@@ -166,16 +166,6 @@
       "pending": "待选择",
       "apply": "确定应用"
     },
-    "appUpdate": {
-      "title": "新版本已发布",
-      "updating": "更新中…",
-      "updateNow": "立即更新",
-      "desc": "我们发布了新版本，带来了功能改进与问题修复。为确保正常使用，请更新后继续。",
-      "currentVersion": "当前版本",
-      "latestVersion": "最新版本",
-      "viewChangelog": "查看更新日志",
-      "reloadWarning": "更新会重新加载页面，请留意未保存的填写内容。"
-    },
     "customerService": {
       "thinking": "思考中…",
       "todayAt": "今天 {{time}}",

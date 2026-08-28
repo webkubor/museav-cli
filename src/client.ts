@@ -452,30 +452,11 @@ export class StudioClient {
     await this.request(`stickers?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
   }
 
-  /** 排版模板清单（图集视频用）：平台共享 + 本租户 + 本人私有，服务端按身份过滤 */
-  async slideshowLayouts(): Promise<any[]> {
-    const r = await this.request('slideshow-layouts')
-    return Array.isArray(r) ? r : []
-  }
-
-  /** 按 slug 取单个排版模板（CLI 的 --layout 走这条） */
-  async slideshowLayout(slug: string): Promise<any> {
-    return this.request(`slideshow-layouts?slug=${encodeURIComponent(slug)}`)
-  }
-
-  /** 新建排版模板。layout 的结构校验在服务端做，这里不预校验——
-   *  两侧都校验的话，老 CLI 会把新写的合法模板判为非法。 */
-  async createSlideshowLayout(input: {
-    name: string; slug: string; layout: unknown
-    description?: string; category?: string; sample_url?: string
-  }): Promise<any> {
-    const r = await this.request('slideshow-layouts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input),
-    })
-    return r.layout ?? r
-  }
+  // slideshowLayouts / slideshowLayout / createSlideshowLayout 已随 slideshow 命令下线（3.0.0）。
+  // 中台的 /api/slideshow-layouts 与 slideshow_layouts 表仍在（没删表，那是不可逆操作），
+  // 但当前没有消费者 —— 出片走 reel-kit，它的版式是本地 HTML 模板。
+  // 若将来要给 reel-kit 做「模板跨机器共享」，那张表可以改存 HTML 模板复用，
+  // 到时再按需要的形状重写客户端方法，而不是留一份没人调的死代码在公开导出里。
 
   /** 版式模板清单（租户级资产）：封面底图 + 固定描述（{城市}{明星} 占位符） */
   async posterTemplates(): Promise<any[]> {

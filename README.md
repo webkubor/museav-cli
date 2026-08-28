@@ -102,12 +102,14 @@
 | | 抠图去背景（输出透明 PNG） | `remove-bg` |
 | | **放大清晰度**（2M → 10M+ 级） | `upscale` |
 | | 去水印 | `remove-watermark` |
-| | **一组图 → 竖版短视频**（带标题/文案/配乐） | `slideshow` |
 | **语音**（直连小米 MiMo，需 `MIMO_API_KEY`） | 文字转语音 / 音色设计 / 音色克隆 | `speak` |
 | | 语音转文字 | `transcribe` |
 | **素材与统计** | 上传素材 / 查任务 / 查余额 / 查模型 / 查身份 | `upload` / `jobs` / `balance` / `models` / `whoami` |
 
-> 本地工具（`compress` / `remove-bg` / `upscale` / `remove-watermark` / `slideshow`）**不用登录、不花一分钱**，装了就能用；其余命令需要一个凭证（个人 `login` 或租户 apiKey）。
+> 本地工具（`compress` / `remove-bg` / `upscale` / `remove-watermark`）**不用登录、不花一分钱**，装了就能用；其余命令需要一个凭证（个人 `login` 或租户 apiKey）。
+>
+> **出成品视频不在这里** —— 图集转竖版短视频、配音、烧字幕走 [reel-kit](https://github.com/webkubor/reel-kit)（`reel` 命令）。
+> museav 管的是**素材**（抠图/超分/去水印/AI 生成），reel-kit 管**成品合成**。曾经有过 `museav slideshow`，3.0.0 已下线，见 CHANGELOG。
 >
 > 语音（`speak` / `transcribe`）是第三种情况：**不走中台身份**，直连小米 MiMo，只认 `MIMO_API_KEY` 环境变量。
 > 中台的出音链路还没接完，这批能力目前内部用，没有那把 key 的人（包括租户）用不了。
@@ -441,66 +443,27 @@ museav remove-watermark photo.jpg --mask mask.png      # 复杂画面手工掩�
 - 依赖红线：本地**绝不自动拉起开源大模型**——这些工具是轻量 CNN/传统算法，用完即释放内存。reverse 的本地路已翻回显式 `--local`（需自备 Ollama），默认走中台 API。
 - 二进制与模型缓存：`~/.museav-bin/upscayl`（引擎）、`~/.museav-models/`（模型），Windows 对应 `%USERPROFILE%` 下同名目录；删除即彻底清理。
 
-### 图集转竖版短视频 `slideshow`（免登录）
+### 出成品视频请用 reel-kit（不在本 CLI）
 
-一组图 + 每张的文案 + 一段配乐 → 一条能直接发朋友圈 / 视频号 / 小红书的竖版视频。
-排版走 sharp + SVG（中文用系统字体），合成走 ffmpeg，**需要本机装了 ffmpeg**（`brew install ffmpeg`）。
-
-```bash
-# 最简：一个目录里的图，按文件名排序串成视频
-museav slideshow ./图片目录 --out 成片.mp4
-
-# 完整：标题 + 逐张文案 + 配乐
-museav slideshow ./表情图 \
-  --title "莓啾日常" --subtitle "莓啾 · 微信表情包" \
-  --caption "需要被安慰的时候" --caption "催外卖 / 催开饭" \
-  --footer "微信搜「莓啾日常」添加整套" \
-  --music bgm.mp3 --sec 2.2 --out 推广视频.mp4
-
-# 文案多的时候写文件里，每行一条
-museav slideshow ./图片目录 --captions 文案.txt --title "作品集"
-```
-
-默认 1080×1920 / 30fps / H.264+AAC，每张停 2.5 秒；`--size` 换尺寸、`--theme dark` 换深色底。
-
-#### 排版模板：版面不写死在代码里
-
-版面由一份**图层 DSL** 描述，模板库在中台，改版式不用等 CLI 发新版：
+图集转竖版短视频、配音、烧字幕这些**成品合成**能力在
+[reel-kit](https://github.com/webkubor/reel-kit)（`reel` 命令），不在 museav：
 
 ```bash
-museav slideshow-layouts                       # 看有哪些版式（内置 + 中台）
-museav slideshow ./图 --layout <slug>           # 用中台模板
-museav slideshow ./图 --layout-file my.json     # 用本地 JSON（调模板时用，免登录）
-museav slideshow-layouts create my.json --name 我的版式 --slug my-style
+reel make --template sticker-promo \
+  --assets ./图片目录 --caps 文案.txt \
+  --title "标题" --bgm 儿童轻快 --out 成片.mp4
+
+reel templates    # 看版式（模板是 templates/*.html，丢一个进去就是新版式）
+reel bgm          # 看配乐库（带授权信息）
 ```
 
-DSL 支持 `rect` / `ellipse` / `text` / `slot` / `image` 五种图层。`text` 和 `slot` 用 `bind`
-绑定内容（`title` / `subtitle` / `caption` / `footer` / `image`），所以同一个模板能套任意一套素材；
-`image` 层可以写 `sticker://<id>` 引用中台贴图库里的透明装饰图。
+2.9.0 曾在 museav 做过一个 `slideshow`，当天就发现 reel-kit 早已做了同一件事而且更好
+（HTML/CSS 排版能换行、支持配音且镜头时长由念白决定、本地 TTS 零成本），
+**3.0.0 已下线**，命令留了存根打印迁移说明。
 
-```json
-{
-  "canvas": { "w": 1080, "h": 1920, "bg": "#ffffff" },
-  "layers": [
-    { "type": "ellipse", "cx": 190, "cy": -131, "rx": 510, "ry": 430, "fill": "#ffd6e2" },
-    { "type": "text", "bind": "title", "x": 540, "y": 394, "size": 84, "align": "center", "maxWidth": 0.86 },
-    { "type": "slot", "bind": "image", "box": [281, 660, 518, 701], "fit": "contain", "trim": true }
-  ]
-}
-```
+职责边界：**museav 管素材**（`remove-bg` 抠图、`upscale` 超分、`gen` 出图出视频素材），
+**reel-kit 管成品合成**。同一件事没必要两套实现。
 
-> **不给 `--layout` 就完全不碰网络**，用内置版式出片。免登录是这个命令的立身之本，接了模板库也没丢。
->
-> 模板结构的真源与校验都在中台。CLI 是消费方，遇到不认识的图层类型**跳过该层并提示升级**，
-> 不报错中断 —— 老 CLI 碰上新层类型该少画一层，不是彻底出不了片。
-
-三个不写出来就会踩的点，已经在实现里处理掉了：
-
-- **小图会被显式放大**。240×240 的贴纸直接贴到 1080 宽的画布上只占两成宽，画面空得离谱。
-  贴纸类图片还会先裁掉四周透明留白再放大（`--no-trim` 关掉），否则放大的是留白不是主体。
-- **配乐不会中途硬切断**。配乐通常比视频长几倍，直接 `-shortest` 会在句子中间断掉；
-  这里裁到视频时长并做首尾淡入淡出。
-- **末页不会一闪而过**。ffmpeg 的 concat demuxer 会忽略最后一项的 duration，实现里把末页多列了一次。
 
 ### 项目（工作区）与项目素材库 `projects`
 
@@ -626,9 +589,7 @@ console.log(r.sculpt.light)  // 光影分析
 | `remove-bg <file>` | 本地抠图去背景（免登录，输出带 alpha 的 PNG） | 产物路径 |
 | `upscale <file>` | 本地超分放大，2M 图变 10M+（免登录，Real-ESRGAN GPU，`--scale 2/3/4`） | 产物路径 |
 | `remove-watermark <file>` | 本地去水印（免登录，自动定位 + LaMa 修复，`--mask` 手工兜底） | 产物路径 |
-| `slideshow <图片或目录...>` | 图集转竖版短视频（免登录，带标题/逐张文案/配乐，需 ffmpeg） | 产物路径 |
-| `slideshow-layouts` | 查排版模板：内置版式（免登录）+ 中台模板（平台/租户/私有） | slug 列表 |
-| `slideshow-layouts create <json>` | 从 JSON 新建排版模板（结构校验在服务端做） | 新模板 id |
+| `slideshow` / `slideshow-layouts` | **已下线（3.0.0）**，出片走 reel-kit；跑一下会打印迁移说明 | 迁移指引 |
 | `projects` | 工作区（项目）列表：一账户多项目，各带自己的素材库 | 项目 id 列表 |
 | `projects assets --project` | 项目素材库：ls / add / rm（垫图母版，人像库/产品库各管各的） | `id<TAB>url` 行 |
 | `models` | 可用模型 | 模型名列表 |

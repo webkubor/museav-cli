@@ -1,5 +1,50 @@
 # Changelog
 
+## 3.0.0 (2026-08-28)
+
+### 破坏性变更：`slideshow` / `slideshow-layouts` 下线，出片改用 reel-kit
+
+2.9.0 在这里做了「图集转竖版短视频」。**当天就发现
+[reel-kit](https://github.com/webkubor/reel-kit) 早已做了同一件事，而且更好**：
+
+| | reel-kit | museav slideshow（已下线） |
+|---|---|---|
+| 排版 | HTML/CSS —— 文字换行、阴影、渐变都免费 | SVG，**不支持文字换行** |
+| 加版式 | 往 `templates/` 丢一个 HTML | 手写图层 DSL |
+| 配音 | 有，且**镜头时长由念白长度决定** | 无 |
+| TTS 成本 | 本地 voxcraft，一次性模型、之后免费 | — |
+
+所以能力收敛到 reel-kit 一处：
+
+```bash
+reel make --template sticker-promo \
+  --assets ./图片目录 --caps 文案.txt \
+  --title "标题" --bgm 儿童轻快 --out 成片.mp4
+```
+
+装：`cd <reel-kit 检出> && pnpm install && npm link`（需 ffmpeg + Chrome）。
+找不到检出位置就 `cs repo reel-kit`。
+
+**命令留了存根**而不是直接删：已发布过 2.9~2.10，脚本里可能写着 `museav slideshow`，
+直接删只会得到一句 `unknown command`。现在跑它会打印迁移说明并以退出码 1 结束，
+老参数（`--title` / `--layout` 等）也不会导致解析报错。下个大版本移除存根。
+
+一并移除：`src/local-slideshow.ts`、`src/slideshow-presets.ts`、`src/commands/slideshow.ts`，
+以及 `StudioClient` 上的 `slideshowLayouts` / `slideshowLayout` / `createSlideshowLayout`
+（`client.ts` 是包的公开导出，留没人调的方法会让人以为还能用）。
+
+中台的 `/api/slideshow-layouts` 与 `slideshow_layouts` 表**没有删**（删表不可逆），
+但当前没有消费者。若将来要给 reel-kit 做「模板跨机器共享」，那张表可以改存 HTML 模板复用。
+
+### museav 的边界因此更清楚了
+
+**museav 管素材**：`remove-bg` 抠图、`upscale` 超分、`remove-watermark` 去水印、
+`compress` 压缩、`gen` 生成图/视频素材。
+**reel-kit 管成品合成**：套版式、配文案、配乐、配音、烧字幕。
+
+reel-kit 那边早就明写了这条边界（「本工具不做抠图 —— 那是 museav remove-bg 的职责，
+在这里重做一遍只会变成第二套实现」），是这边越了界。教训：动手前先 `cs repo <关键词>` 搜一遍。
+
 ## 2.10.2 (2026-08-28)
 
 ### 修复：排版模板的图层顺序失效，图片会盖住它下面该有的文字

@@ -16,7 +16,6 @@ import { printWelcome } from './commands/welcome.js'
 import { gen } from './commands/gen.js'
 import { reverse } from './commands/reverse.js'
 import { compressCmd, removeBgCmd, upscaleCmd, removeWatermarkCmd } from './commands/img-tools.js'
-import { slideshowCmd, slideshowLayoutsCmd, createSlideshowLayoutCmd } from './commands/slideshow.js'
 import { projects, createProject, listAssets, addAsset, removeAsset, resolveWorkspace } from './commands/projects.js'
 import { imageToTemplate } from './commands/image-to-template.js'
 import { upload } from './commands/upload.js'
@@ -212,36 +211,45 @@ program
   .option('--overwrite', '允许覆盖已存在的输出文件')
   .action(asyncRun((input: string, opts: any) => removeWatermarkCmd(input, opts)))
 
-program
-  .command('slideshow <图片或目录...>')
-  .description('本地图集转竖版短视频（sharp + ffmpeg，免登录）：默认 1080×1920 / 30fps / H.264，可加标题、逐张文案与配乐。需要本机有 ffmpeg')
-  .option('--out <path>', '输出 mp4（默认当前目录 slideshow.mp4）')
-  .option('--title <text>', '顶部主标题（大字）')
-  .option('--subtitle <text>', '顶部副标题（小字）')
-  .option('--caption <text>', '单页文案，可重复传，按顺序对应每张图', (v: string, acc: string[]) => [...acc, v], [] as string[])
-  .option('--captions <file>', '文案文件（每行一条，按顺序对应每张图），与 --caption 二选一')
-  .option('--footer <text>', '底部引导语')
-  .option('--music <file>', '配乐音频。自动裁到视频长度并加首尾淡入淡出（不会中途硬切断）')
-  .option('--sec <n>', '每张停留秒数，默认取模板的（内置模板 2.5）')
-  .option('--size <WxH>', '画面尺寸，默认取模板画布（内置模板 1080x1920）；与模板不同则整体等比缩放')
-  .option('--theme <name>', 'light（默认）/ dark。只影响内置版式，给了 --layout 就以模板为准')
-  .option('--layout <slug>', '排版模板 slug：内置的直接用，其余去中台拉（需登录）。清单见 museav slideshow-layouts')
-  .option('--layout-file <path>', '直接用本地 JSON 排版模板（调模板时用，免登录）')
-  .action(asyncRun((paths: string[], opts: any) => slideshowCmd(paths, opts)))
+/**
+ * slideshow / slideshow-layouts —— 已下线（3.0.0），转向 reel-kit。
+ *
+ * 2.9.0 在这里做了「图集转竖版短视频」，当天就发现 reel-kit
+ * （github.com/webkubor/reel-kit）早已做了同一件事，而且更好：
+ * 版式走 HTML/CSS（文字能换行、能做阴影渐变，这里的 SVG 方案做不到）、
+ * 支持配音且镜头时长由念白长度决定、默认本地 TTS 零成本、
+ * 加版式只需往 templates/ 丢一个 HTML。
+ *
+ * 所以能力收敛到 reel-kit 一处，这边下线。**留存根而不是直接删命令**：
+ * 已发布过 2.9~2.10，脚本里可能写着 museav slideshow，
+ * 直接删会得到一句 "unknown command" 而不知道该去哪 —— 存根负责把人送到对岸。
+ * 下个大版本再移除。
+ *
+ * museav 的边界因此回到：素材处理（compress/remove-bg/upscale/remove-watermark）
+ * + AI 生成（gen）+ 中台资产。成品合成不在这里。
+ */
+const RETIRED_HINT = (cmd: string) => (
+  `museav ${cmd} 已下线（3.0.0），出片能力收敛到 reel-kit：\n\n` +
+  `  reel make --template sticker-promo \\\n` +
+  `    --assets ./图片目录 --caps 文案.txt \\\n` +
+  `    --title "标题" --bgm 儿童轻快 --out 成片.mp4\n\n` +
+  `装： cd <reel-kit 检出目录> && pnpm install && npm link   （需 ffmpeg + Chrome）\n` +
+  `找： cs repo reel-kit\n` +
+  `看版式： reel templates    看配乐： reel bgm\n\n` +
+  `为什么换：reel-kit 的版式走 HTML/CSS（文字能换行、能做阴影渐变），\n` +
+  `还支持配音且镜头时长由念白决定，本地 TTS 零成本。同一件事没必要两套实现。`
+)
 
-const slideshowLayoutsCommand = program
-  .command('slideshow-layouts')
-  .description('查排版模板：内置版式（免登录）+ 中台模板（平台共享 / 本租户 / 本人私有）。配合 slideshow --layout 使用')
-  .action(asyncRun(() => slideshowLayoutsCmd()))
-
-slideshowLayoutsCommand
-  .command('create <layout.json>')
-  .description('从 JSON 文件新建排版模板——归属由身份自动决定：租户 Key 建的归本租户，个人账号建的仅本人可见。结构校验在服务端做')
-  .requiredOption('--name <名称>', '模板中文名')
-  .requiredOption('--slug <slug>', '对外调用标识（小写字母/数字/连字符，全局唯一）')
-  .option('--description <text>', '模板说明')
-  .option('--category <name>', '分类，默认「其他」')
-  .action(asyncRun((file: string, opts: any) => createSlideshowLayoutCmd(file, opts)))
+for (const [name, args] of [['slideshow', ' [图片或目录...]'], ['slideshow-layouts', '']] as const) {
+  program
+    .command(`${name}${args}`)
+    .description(`（已下线，改用 reel-kit 的 reel make —— 跑一下看迁移说明）`)
+    .allowUnknownOption() // 老命令行里带着 --title/--layout 等参数，也要能跑到提示这一步
+    .action(() => {
+      process.stderr.write(`\n${RETIRED_HINT(name)}\n`)
+      process.exit(1)
+    })
+}
 
 // 工作区（项目）与项目素材库：平台 → 账户 → 工作区三层归属，素材挂工作区
 const projectsCmd = program

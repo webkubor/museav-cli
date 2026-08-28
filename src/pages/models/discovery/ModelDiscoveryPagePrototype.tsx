@@ -794,7 +794,7 @@ function AgentPopularityLeaderboard() {
         {agentPopularityPeriods.map((option) => <button aria-checked={period === option.key} className={period === option.key ? "active" : ""} key={option.key} onClick={() => setPeriod(option.key)} role="radio" type="button">{option.label}</button>)}
       </div>
     </div>
-    <div className="model-discovery-agent-popularity-card">
+    <div className="mg-tile model-discovery-agent-popularity-card">
       <div className="model-discovery-agent-popularity-grid" id="agent-popularity-list" role="list">
         {agentColumns.map((column, columnIndex) => <div className="model-discovery-agent-popularity-column" key={columnIndex} role="presentation">
           {column.map((agent) => <div className="model-discovery-agent-popularity-row" key={agent.id} role="listitem">
@@ -1349,7 +1349,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
           const rows = completeSpecialtyRows(item, visibleModels);
           const values = rows.map((row) => metricValue(row.value));
           const maximum = Math.max(...values, 1);
-          return <article key={item.title}>
+          return <article className="mg-tile" key={item.title}>
             <header><div><h3>{item.title}</h3><p>{item.description}<em className="model-discovery-source-tag">{item.source}</em></p></div><span>Top {rows.length}</span></header>
             <div className="model-discovery-specialty-chart">
               {rows.map((row, index) => {
@@ -1372,7 +1372,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
 
       {(modality !== "audio" || task === "语音合成（TTS）") && <section className="model-discovery-section">
         <div className="model-discovery-section-head"><div><h2>模型能力多维分析</h2></div></div>
-        <div className="model-discovery-analysis-card">
+        <div className="mg-tile model-discovery-analysis-card">
           <div className="model-discovery-analysis-tools">
             <div className="model-discovery-presets">{analysisPresets.map((preset, index) => <button className={preset.y === yMetric && preset.x === xMetric ? "active" : ""} key={preset.label} onClick={() => applyPreset(index)} type="button">{preset.label}</button>)}</div>
             <div className="model-discovery-selects">
@@ -1406,7 +1406,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
               </div>
             </div>
             <aside className="model-discovery-analysis-aside">
-              <div className="model-discovery-model-filter">
+              <div className="mg-tile model-discovery-model-filter">
                 <h3><LuListFilter size={14} />模型筛选</h3><p>选择需要在图表中对比的模型。</p>
                 <button aria-expanded={modelFilterOpen} className="model-discovery-model-filter-trigger" onClick={() => setModelFilterOpen((current) => !current)} type="button"><span>{chartModels.length} / {visibleModels.length} 个模型</span><LuChevronDown size={14} /></button>
                 {modelFilterOpen && <div className="model-discovery-model-filter-popover">
@@ -1418,7 +1418,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                   <footer><button onClick={() => setSelectedModelNames([])} type="button"><LuX size={13} />清空</button><button onClick={() => setSelectedModelNames(visibleModels.map((model) => model.name))} type="button"><LuCheckCheck size={13} />全选</button><button onClick={() => setSelectedModelNames(visibleModels.slice(0, 7).map((model) => model.name))} type="button"><LuRotateCcw size={13} />恢复默认</button></footer>
                 </div>}
               </div>
-              <div className="model-discovery-trend"><h3><LuTrendingUp size={14} />近 7 日 ModelGo 使用趋势</h3><p>按增长率从高到低排列</p>
+              <div className="mg-tile model-discovery-trend"><h3><LuTrendingUp size={14} />近 7 日 ModelGo 使用趋势</h3><p>按增长率从高到低排列</p>
                 {trendSeries.length > 0 ? <><div className="model-discovery-trend-chart"><div className="model-discovery-trend-axis"><span>+{trendGrowthMaximum}%</span><span>+{trendGrowthMidpoint}%</span><span>0%</span></div><div className="model-discovery-trend-plot" style={{ "--trend-count": trendSeries.length } as CSSProperties}>{trendSeries.map((series) => <button aria-label={`${series.model.name}，近 7 日增长 ${series.growth}%，${trendUsageLabel} ${series.usage}`} className="model-discovery-trend-column" key={series.model.name} style={{ "--trend-color": series.color, "--trend-height": `${Math.max(12, series.growth / trendGrowthMaximum * 100)}%` } as CSSProperties} type="button"><span className="model-discovery-trend-tooltip" role="tooltip"><strong>{series.model.name}</strong><em>{trendUsageLabel}</em><b>{series.usage}</b></span><i><b>+{series.growth}%</b></i><span title={series.model.name}>{series.model.name}</span></button>)}</div></div><div className="model-discovery-trend-legend">{trendSeries.map((series) => <span key={series.model.name}><i style={{ "--trend-color": series.color } as CSSProperties} /><strong>{series.model.name}</strong><b>+{series.growth}%</b></span>)}</div></> : <div className="model-discovery-trend-empty">选择已接入模型后查看趋势</div>}
               </div>
             </aside>
@@ -1428,7 +1428,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
 
       <section className="model-discovery-section" id="model-discovery-full-ranking">
         <div className="model-discovery-section-head"><div><h2>完整指标榜单</h2></div></div>
-        <div className="model-discovery-table-card">
+        <div className="mg-tile model-discovery-table-card">
           <div className="model-discovery-table-tools">
             <div className="model-discovery-table-primary-filter">
               <label><LuChartColumn size={14} /><span>指标类型</span><select aria-label="指标类型" value={selectedRankingOption.key} onChange={(event) => setRankingMetric(event.target.value as RankingMetric)}>{availableRankingMetricOptions.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}</select><LuChevronDown size={12} /></label>

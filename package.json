@@ -1,6 +1,6 @@
 {
   "name": "museav-cli",
-  "version": "3.0.2",
+  "version": "3.0.3",
   "description": "MUSE AV 出图中台官方 CLI —— 命令行调中台 API 出图、出视频、读图逆向、图生模板",
   "type": "module",
   "bin": {

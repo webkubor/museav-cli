@@ -174,6 +174,7 @@ program
   .option('--duration <sec>', '视频时长（秒，仅 --video；由模型与上游支持范围决定）', (v) => Number(v))
   .option('--image <file>', '图生视频首帧图（仅 --video，自动上传）')
   .option('--project <id|名>', '归档进该工作区（museav projects 查；账户身份才生效）')
+  .option('--batch <file>', '批量出图：文件每行一条（\'#\' 注释与空行跳过，\'-\' 读 stdin），走 /api/generate-batch 中台排队消化；配合 --skill/--template 时每行是业务描述，否则是完整提示词；其余选项作为公共参数')
   .action(withClient((client: StudioClient, opts: any) => gen(client, opts)))
 
 program

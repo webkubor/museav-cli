@@ -514,6 +514,40 @@ export class StudioClient {
     return r
   }
 
+  /**
+   * 批量提交出图（POST /api/generate-batch）。
+   * items 每项与 generate 的请求体同构；defaults 是公共字段（skill/ratio 等），项内覆盖。
+   * 服务端逐项走与单张同一套流程；撞频控/积分不足时后续项 skipped 并带 retry_after_sec，
+   * 客户端睡够后只补提交 skipped 的部分即可（jobId 已拿到的不要重发）。
+   */
+  async generateBatch(
+    items: Array<Record<string, unknown>>,
+    defaults?: Record<string, unknown>,
+  ): Promise<{
+    ok: boolean
+    accepted: number
+    submitted: number
+    results: Array<{
+      ok: boolean
+      jobId?: string
+      trace_id?: string
+      status?: number
+      error?: string
+      skipped?: boolean
+      reason?: string
+      retry_after_sec?: number
+    }>
+    retry_after_sec?: number
+  }> {
+    const body: Record<string, unknown> = { items }
+    if (defaults) body.defaults = defaults
+    return this.request('generate-batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  }
+
   // ── 工作区（项目）与项目素材库 ──
   // 平台 → 账户 → 工作区三层归属；素材挂工作区，换业务换工作区，互不污染。
 

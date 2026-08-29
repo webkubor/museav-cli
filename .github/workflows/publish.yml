@@ -41,6 +41,20 @@ jobs:
           fi
           echo "版本一致：$PKG"
 
+      # 防空介绍（2026-08-29 教训）：发布卡片的内容取 CHANGELOG.md 顶部一节，
+      # npm version patch 不会写 CHANGELOG——不校验的话，卡片会带着上一个版本的旧介绍
+      # 发给所有租户群（3.0.2 就是这么把 3.0.1 的 reel-kit 内容发出去的）。
+      - name: 校验 CHANGELOG 顶部版本与发版一致
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          TOP=$(awk '/^## /{print $2; exit}' CHANGELOG.md)
+          PKG=$(node -p "require('./package.json').version")
+          if [ "$TOP" != "$PKG" ]; then
+            echo "::error::CHANGELOG.md 顶部是 $TOP，与要发的 $PKG 不一致。发版前先写好本版本的更新说明（npm version 不会自动写）。"
+            exit 1
+          fi
+          echo "CHANGELOG 顶部版本一致：$TOP"
+
       - name: 冒烟测试（命令能起、版本对得上）
         run: |
           node dist/index.js --version

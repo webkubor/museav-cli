@@ -41,6 +41,7 @@ import {
   REDACTION_PLACEHOLDER,
   type DerivedLogStatus,
 } from './guardrail'
+import { cacheHitRateLabel, cacheTokenState } from './cache'
 import type { SSEReassembled } from './reassemble-sse'
 
 export type PayloadKind = 'request' | 'response'
@@ -69,13 +70,17 @@ function tokenFlow(row: CallLogItem) {
   return `${formatNumber(row.usage.input_tokens)} -> ${formatNumber(row.usage.output_tokens)}`
 }
 
-/** 缓存命中率（需求方#885）：口径与用量页一致 cache_read / (input + cache_read + cache_write)。
- *  不读后端行级 cache_hit_rate（web-api DTO 尚未透传、取值语义未落 api-docs），
- *  自算保证与卡片上展示的 token 数永远自洽；分母为 0 时按 0% 处理。 */
-function cacheHitRate(row: CallLogItem) {
-  const { input_tokens, cache_read_tokens, cache_write_tokens } = row.usage
-  const denom = input_tokens + cache_read_tokens + cache_write_tokens
-  return denom > 0 ? (cache_read_tokens / denom) * 100 : 0
+/**
+ * 缓存卡 hint（需求方#885）：value 位让给命中率后，把原型 value 的「命中/未命中」
+ * 语义降级到 hint，后半段保留 PRD 原型 getLogDiagnosticMetrics 的读/写/未读取三态。
+ */
+function cacheHintText(row: CallLogItem, t: (key: string, opts?: Record<string, unknown>) => string) {
+  const { key, count } = cacheTokenState(row)
+  const state = t(key === 'read' ? 'logs.detail.diagnostics.cacheHit' : 'logs.detail.diagnostics.cacheMiss')
+  const tokens = key === 'none'
+    ? t('logs.detail.diagnostics.cacheNone')
+    : t(`logs.detail.diagnostics.cache${key === 'read' ? 'Read' : 'Write'}`, { count: formatNumber(count) })
+  return `${state} · ${tokens}`
 }
 
 /** TPM：后端无独立字段，按总 Token / 时长换算（Token/min），与 TPS 同理。 */
@@ -178,11 +183,13 @@ export function LogDetailSheet({
                 <DiagnosticCard icon={<LuReceiptText />} label={t('logs.detail.diagnostics.cost')} value={<Money amount={Number(row.cost.amount) > 0 ? row.cost.amount : null} currency={row.cost.currency} />} hint={row.billing_status ? row.billing_status.charAt(0).toUpperCase() + row.billing_status.slice(1) : t('logs.detail.diagnostics.billingStatusMissing')} tone="warning" />
                 <DiagnosticCard icon={<LuDatabase />} label="Tokens" value={tokenFlow(row)} hint={t('logs.detail.diagnostics.tokenFlowHint')} tone="success" />
                 <DiagnosticCard icon={<LuGitFork />} label="Fallback" value={t('logs.detail.diagnostics.fallbackCount', { count: row.fallback_count })} hint={row.fallback_count > 0 ? t('logs.detail.diagnostics.fallbackTriggered') : t('logs.detail.diagnostics.fallbackNotTriggered')} tone={row.fallback_count > 0 ? 'warning' : 'brand'} />
-                {/* 缓存卡只对具备缓存能力的模型渲染（需求方#885）：cache_supported 为 false/缺失
-                    （多模态/出图/语音，或后端标识未透传）一律隐藏——不给出图调用显「未命中 · 0 tokens」的噪音。
+                {/* 缓存卡对无缓存能力的模型隐藏（需求方#885）：只有后端明确回 cache_supported=false
+                    （多模态/出图/语音）才隐藏；字段缺失时照常展示——web-api DTO 至今未透传该字段
+                    （test swagger logs.Row 实测无此属性），按 `cache_supported &&` 渲染会让这张卡
+                    对所有模型消失，连本该有命中率的文本模型也看不到，等于需求做了个反效果。
                     展示时 5 张卡在 2 列下第 5 张会孤行留半空——让「缓存」占满整行，分布均匀；隐藏时恰好 2×2。 */}
-                {row.cache_supported && (
-                  <DiagnosticCard className="sm:col-span-2" icon={<LuGauge />} label={t('logs.detail.diagnostics.cache')} value={t('logs.detail.diagnostics.cacheHitRate', { rate: cacheHitRate(row).toFixed(1) })} hint={row.usage.cache_read_tokens > 0 ? t('logs.detail.diagnostics.cacheHitHint', { count: formatNumber(row.usage.cache_read_tokens) }) : t('logs.detail.diagnostics.cacheMissHint')} tone={row.usage.cache_read_tokens > 0 ? 'success' : 'brand'} />
+                {row.cache_supported !== false && (
+                  <DiagnosticCard className="sm:col-span-2" icon={<LuGauge />} label={t('logs.detail.diagnostics.cache')} value={cacheHitRateLabel(row)} hint={cacheHintText(row, t)} tone={row.usage.cache_read_tokens > 0 ? 'success' : 'brand'} />
                 )}
               </>
             )}

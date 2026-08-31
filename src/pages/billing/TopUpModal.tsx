@@ -14,7 +14,7 @@ import {
   RECHARGE_PAYMENT_CHANNELS,
   type RechargePaymentChannel,
 } from '@/constants/recharge-channels'
-import { AlipayIcon, WechatIcon, StripeIcon } from '@/constants/brand-icons'
+import { BRAND_COLORS } from '@/constants/brand-colors'
 import { amountBand } from './billing-tracking'
 
 const WECHAT_PAYEE_NAME = '杭州词元共生科技有限公司'
@@ -174,8 +174,13 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
               type="number"
               min="1"
               step="0.01"
-              value={customMode ? amount : ''}
-              onFocus={() => setCustomMode(true)}
+              // 需求方#903 复验⑤：输入框始终回填当前金额，点预设面额后能看见选了多少
+              // （PRD 原型 modelgo_prd/src/App.tsx 的充值弹窗就是 value={amount} 直绑）。
+              // customMode 退化成**纯埋点口径**——只标记「这个数是用户自己敲的」，不再控制显隐；
+              // 此前 value={customMode ? amount : ''} 让点了 ¥500 之后输入框空白，用户以为没选上。
+              value={amount}
+              // 不在 onFocus 里置 customMode：光点一下输入框不算改金额，否则预设选中态会平白丢掉、
+              // 埋点也会把 preset 误报成 custom。真正敲了字才在 onChange 里翻牌。
               onChange={(e) => {
                 // qa#282：金额最多两位小数（法币最小单位是分），禁止 0.001 这类超精度输入
                 const sanitized = e.target.value.match(/^\d*\.?\d{0,2}/)?.[0] ?? e.target.value
@@ -194,13 +199,10 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
           <div className="billing-recharge-channels grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             {CHANNELS.map((c) => {
               const active = effectiveChannel === c.value
-              const brandColor: Record<string, string> = { alipay: '#1677FF', wechat: '#07C160', stripe: '#635BFF' }
-              const color = brandColor[c.value]
-              const channelIcon: Record<string, React.ReactNode> = {
-                alipay: <AlipayIcon size={22} />,
-                wechat: <WechatIcon size={22} />,
-                stripe: <StripeIcon size={22} />,
-              }
+              // 品牌色/图标只认 option 自带的 brand/Icon（constants/recharge-channels 是真源），
+              // 这里不再按 value 自建映射表——新增渠道时忘了同步就是需求方#903 的黑框黑字
+              const color = BRAND_COLORS[c.brand]
+              const ChannelIcon = c.Icon
               return (
                 <button
                   key={c.value}
@@ -209,7 +211,9 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
                   className={cn(
                     "rounded-md border py-2.5 px-3 cursor-pointer",
                     active
-                      ? "shadow-sm"
+                      // token 兜底：万一品牌色缺失，选中态也仍是品牌绿边框 + 正文色，
+                      // 不会因为 border/文字落到 currentColor 而在暗色主题下变黑
+                      ? "shadow-sm border-brand-base text-mg-text-1"
                       : "border-mg-border text-mg-text-3 hover:border-mg-text-3/30"
                   )}
                   style={active && color ? {
@@ -218,7 +222,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
                   } : undefined}
                 >
                   <span className="flex items-center justify-center gap-2">
-                    {channelIcon[c.value] ?? c.icon}
+                    <ChannelIcon size={22} />
                     <span className={cn("text-[13px] font-bold", active ? "" : "text-mg-text-2")} style={active && color ? { color } : undefined}>{t(c.labelKey)}</span>
                   </span>
                 </button>

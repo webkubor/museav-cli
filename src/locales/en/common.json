@@ -76,7 +76,9 @@
     "workspaceGuard": {
       "title": "Workspace not found",
       "desc": "This workspace may have been deleted, or it does not belong to the current organization.",
-      "action": "Go to workspaces"
+      "action": "Go to workspaces",
+      "emptyTitle": "Select a workspace first",
+      "emptyDesc": "This page scopes data by workspace. Pick one from the sidebar to continue."
     },
     "pagination": {
       "prev": "Prev",

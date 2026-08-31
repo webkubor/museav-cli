@@ -11,10 +11,13 @@ import {
 import { cn } from "@/lib/utils"
 
 // 尺寸标准：sm=纯确认框(短提示+按钮)｜md=默认,内容型表单/公告｜lg=复杂多区
+// 像素值的唯一真源是 design-tokens 的 --mg-dialog-width-*（0.13.0 起提供，见 qa#611③ 改判）：
+// 本仓原先硬编码 400/520/720，与包里三档同值但两处维护 —— 改引 token 后值只在包里维护一处，
+// 本次替换像素值不变（实测 400/520/720 原样解析），是消除 split-brain，不是调宽度。
 const SIZE_MAP = {
-  sm: "sm:max-w-[400px]",
-  md: "sm:max-w-[520px]",
-  lg: "sm:max-w-[720px]",
+  sm: "sm:max-w-[var(--mg-dialog-width-sm)]",
+  md: "sm:max-w-[var(--mg-dialog-width-md)]",
+  lg: "sm:max-w-[var(--mg-dialog-width-lg)]",
 }
 
 interface ModalProps {

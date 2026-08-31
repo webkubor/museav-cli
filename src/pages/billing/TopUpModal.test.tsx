@@ -136,4 +136,23 @@ describe('TopUpModal', () => {
     })
     expect(screen.queryByText('WX202606100002')).not.toBeInTheDocument()
   })
+
+  // 需求方#903 复验⑤：点预设面额后自定义金额框必须回填该值，用户才看得见选了多少。
+  // 曾经是 value={customMode ? amount : ''}，点 ¥500 后框里空白，看着像没选上。
+  it('mirrors the picked preset into the custom amount input', async () => {
+    renderModal()
+    const input = screen.getByPlaceholderText('自定义金额') as HTMLInputElement
+
+    expect(input.value).toBe('100') // 初始默认面额也要显示，不是空白
+
+    fireEvent.click(screen.getByRole('button', { name: '¥500' }))
+    expect(input.value).toBe('500')
+    // 预设仍是「预设」——光回填不该把口径翻成 custom，提交按钮跟着面额走
+    expect(screen.getByRole('button', { name: '前往支付 ¥500' })).toBeInTheDocument()
+
+    // 手动改数才切到自定义
+    fireEvent.change(input, { target: { value: '888' } })
+    expect(input.value).toBe('888')
+    expect(screen.getByRole('button', { name: '前往支付 ¥888' })).toBeInTheDocument()
+  })
 })

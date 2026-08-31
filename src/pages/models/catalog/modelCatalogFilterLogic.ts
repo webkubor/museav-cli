@@ -12,6 +12,7 @@
  * 后端补齐多值参数后可回迁服务端，见工单 #872。
  */
 
+import { brandByVendor, vendorEntryOf } from '@model-go/icons'
 import type { CatalogModelItem } from '@/types'
 
 /** 输入类型选项（原型 marketplaceFilterGroups「输入类型」）。
@@ -87,6 +88,95 @@ export function parseCatalogFilters(selected: string[]): CatalogFilterState {
 /** 厂商归一（provider 优先，vendor 兜底；后端两种大小写混发，见 CatalogSidebar 去重注释） */
 export function modelVendorCode(model: CatalogModelItem): string {
   return (model.provider || model.vendor || '').toLowerCase()
+}
+
+/** 侧栏「模型厂商」的一个筛选项。 */
+export interface CatalogVendorOption {
+  /** 小写归一后的厂商 code，筛选 key `vendor:<code>` 用 */
+  code: string
+  /** 组内首个模型的原始 provider 文案，做展示兜底与图标解析入参 */
+  raw: string
+  /** 该组的代表图标（后端 logo_url，是图标名不是 URL）；全组都没填时 undefined */
+  logo?: string
+  /**
+   * 本行改用「厂商归属条目自己的图标」，不跟随 iconFrom 让位。
+   *
+   * 只在**会和另一行撞图**时置 true。典型是 Alibaba：它让位给 Qwen，而 Qwen
+   * 本身也是一个并列的厂商筛选项（后端 provider 字段两种值都在发），让位后两行
+   * 长成同一个 Qwen 图标，用户分不出差在哪（qa#699 走查）。
+   *
+   * 反过来 Google 让位给 Gemini、Anthropic 让位给 Claude —— Gemini/Claude 都不是
+   * 独立筛选项，不撞，就保持让位（与 zenmux 供应商栏一致，他们也是 Google 显示
+   * Gemini、Anthropic 显示 Claude）。所以这里刻意**不是**「一律用公司图标」。
+   */
+  ownIcon?: boolean
+}
+
+/**
+ * 聚合侧栏厂商筛选项：小写归一去重，并给每组挑一个代表图标。
+ *
+ * **为什么侧栏要自己挑图标**：卡片逐个模型渲染，直接吃自己的 `logo_url`；侧栏一行
+ * 代表一整组，组内可能混着不同图标（线上实测 Z.ai 组 6 个 Zhipu + 1 个 ZAI、
+ * Google 组 12 个 Gemini + 2 个 Google）。不传 logo 就只剩「厂商名」一级解析，于是
+ * 侧栏 xAI 渲染 X 标志、卡片 Grok 渲染脸标志 —— 同一厂商左右两个 logo（改动前
+ * 线上 102 个模型有 16 个对不上）。
+ *
+ * 取**多数**而不是「组内第一个」：Z.ai 组排第一的恰好是少数派 ZAI，取第一个会选错。
+ * 平票取先出现的（Map 保持插入序），与 raw 的「首个胜出」口径一致。全组都没填
+ * `logo_url` 时返回 undefined，ModelIcon 自然退回厂商名解析，与改动前一致。
+ *
+ * 返回首次出现顺序，排序/文案留给调用方（需要 i18n 的 label）。
+ */
+export function catalogVendorOptions(models: CatalogModelItem[]): CatalogVendorOption[] {
+  const groups = new Map<string, { raw: string; tally: Map<string, number> }>()
+  for (const model of models) {
+    const code = modelVendorCode(model)
+    if (!code) continue
+    let group = groups.get(code)
+    if (!group) {
+      group = { raw: model.provider || model.vendor || code, tally: new Map() }
+      groups.set(code, group)
+    }
+    const logo = (model.logo_url ?? '').trim()
+    if (logo) group.tally.set(logo, (group.tally.get(logo) ?? 0) + 1)
+  }
+  const options = Array.from(groups, ([code, group]) => {
+    let logo: string | undefined
+    let best = 0
+    for (const [name, count] of group.tally) {
+      if (count > best) {
+        logo = name
+        best = count
+      }
+    }
+    return { code, raw: group.raw, logo } as CatalogVendorOption
+  })
+  return markCollidingVendors(options)
+}
+
+/**
+ * 标记「让位后会和另一行撞图」的厂商，让它们改用自己的图标（见 ownIcon 注释）。
+ *
+ * 判据全部来自当前这批筛选项，不写死品牌名单：先算每行让位后落到哪个条目，
+ * 同一个条目被多行占用时，**让位来的那些**改用自己的归属条目。没让位的那行
+ * （条目本人，如 Qwen）保持不动 —— 它本来就该是那个图标。
+ */
+function markCollidingVendors(options: CatalogVendorOption[]): CatalogVendorOption[] {
+  const resolvedOf = new Map<string, string>()
+  for (const o of options) {
+    const slug = brandByVendor(o.raw)?.slug
+    if (slug) resolvedOf.set(o.code, slug)
+  }
+  const used = new Map<string, number>()
+  for (const slug of resolvedOf.values()) used.set(slug, (used.get(slug) ?? 0) + 1)
+
+  return options.map((o) => {
+    const resolved = resolvedOf.get(o.code)
+    if (!resolved || (used.get(resolved) ?? 0) < 2) return o
+    const own = vendorEntryOf(o.raw)?.slug
+    // 只有「让位过来的」才改；条目本人（own === resolved）保持原样
+    return own && own !== resolved ? { ...o, ownIcon: true } : o
+  })
 }
 
 /** 输入模态。老数据没拆 input/output 时回退合并 modalities（与卡片模态流同口径）。 */

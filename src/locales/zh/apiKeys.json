@@ -331,8 +331,8 @@
       "clear": "清空筛选"
     },
     "emptyWorkspace": {
-      "title": "当前工作空间还没有 API Key",
-      "desc": "创建第一个 API Key，即可获取运行凭证接入模型调用"
+      "title": "暂无可管理的 API Key",
+      "desc": "创建第一个 API Key，即可开始调用模型。"
     },
     "emptySelfScope": {
       "title": "你名下暂无 API Key",

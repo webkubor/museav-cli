@@ -349,8 +349,8 @@
       "clear": "Clear filters"
     },
     "emptyWorkspace": {
-      "title": "This workspace has no API keys yet",
-      "desc": "Create the first API key to get a runtime credential for model calls"
+      "title": "No API keys to manage yet",
+      "desc": "Create your first API key to start calling models."
     },
     "emptySelfScope": {
       "title": "You have no API keys yet",

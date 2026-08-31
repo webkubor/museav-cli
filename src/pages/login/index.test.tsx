@@ -104,4 +104,49 @@ describe('LoginPage', () => {
       expect(mockedCheckLoginEmail).toHaveBeenCalledWith('user@modelgo.com')
     })
   })
+
+  // qa#675：本文件把 useMarket 固定成 'global'，所以渲染的正是当初丢码的那条分支
+  // （EmailLoginPage）。根路径 /?aff=X 会被 RequireAuth 折成 /login?redirect=%2F%3Faff%3DX，
+  // 码只藏在 redirect 的内嵌 query 里。
+  it('persists the referral code hidden in the redirect param (qa#675)', () => {
+    sessionStorage.clear()
+
+    render(
+      <MemoryRouter initialEntries={['/login?redirect=%2F%3Faff%3DINTLCODE']}>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    expect(sessionStorage.getItem('mg_referral_code')).toBe('INTLCODE')
+  })
+
+  it('also takes the referral code straight off the query (qa#675)', () => {
+    sessionStorage.clear()
+
+    render(
+      <MemoryRouter initialEntries={['/login?ref=DIRECTCODE']}>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    expect(sessionStorage.getItem('mg_referral_code')).toBe('DIRECTCODE')
+  })
+
+  it('leaves the stored code untouched when no code is present (qa#675)', () => {
+    sessionStorage.clear()
+
+    render(
+      <MemoryRouter initialEntries={['/login']}>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    expect(sessionStorage.getItem('mg_referral_code')).toBeNull()
+  })
 })

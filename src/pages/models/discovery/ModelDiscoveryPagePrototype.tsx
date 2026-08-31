@@ -1489,8 +1489,14 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                     ))}
                     <TableCell align="right">
                       {hasDetail
-                        ? <Button onClick={(event) => { event.stopPropagation(); openModelDetail(model); }} size="sm" type="button" variant="ghost">查看详情<LuArrowUpRight size={12} /></Button>
-                        : <Button disabled size="sm" type="button" variant="ghost">待支持</Button>}
+                        /* 这里用原生 button 而不是控制台 Button 组件，与本文件其余 14 处一致：
+                           Button 带着控制台的整套规格（h-[var(--mg-control-h-sm)]=36px、
+                           modern-btn-* 用 !important 锁死中性色），而原型这颗是 27px 高的品牌蓝小
+                           按钮（redesign.css:15645）——套组件就得靠层层 !important 对抗才能扳回来，
+                           本页又是 1:1 例外。plan §3.2 要求的是表格体系走 Table + Pagination，
+                           没有要求行内按钮换组件。样式见 discovery.css .model-discovery-detail-btn。 */
+                        ? <button className="model-discovery-detail-btn" onClick={(event) => { event.stopPropagation(); openModelDetail(model); }} type="button">查看详情<LuArrowUpRight size={12} /></button>
+                        : <button className="model-discovery-detail-btn" disabled type="button">待支持</button>}
                     </TableCell>
                   </TableRow>
                 );

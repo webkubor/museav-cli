@@ -223,6 +223,67 @@
   position: relative;
 }
 
+/* ── 与原型 1:1 的表格外观校准 ──────────────────────────────────────────────
+   本页是「1:1 复刻原型」的显式例外（见 discovery/index.tsx 顶部说明），而完整指标
+   榜单按铁律换成了控制台的 Table 组件，于是带进来三处原型没有的外观。这里在本页
+   作用域内校回去。
+
+   ⚠️ 只写在 .model-discovery-table 内，绝不动全局 Table 或 .mg-text-label ——
+   那两个是所有表格页共用的，改了就是拿一页的 1:1 要求去污染全站。
+
+   原型对照 modelgo_prd/src/redesign.css:15608 `.model-discovery-table-head/-row`。 */
+.model-discovery-table {
+  /* 原型的表头与行都是 padding: 11px 14px；控制台默认值更宽，实测每行高 13px，
+     整张榜单累积把页面撑高 300+px */
+  --mg-table-cell-px: 14px;
+  --mg-table-cell-py: 11px;
+  --mg-table-head-h: auto;
+}
+
+.model-discovery-table thead th {
+  /* TableHead 默认挂 .mg-text-label（styles/components.css），那条带
+     text-transform: uppercase，会把 Agentic Index / Artificial Analysis 顶成
+     AGENTIC INDEX / ARTIFICIAL ANALYSIS —— 原型是原样大小写。中文表头看不出来，
+     只有英文列被大写，同一行里反而不齐。 */
+  text-transform: none;
+  font-size: 10.5px;
+}
+
+.model-discovery-table tbody td {
+  /* TableCell 挂 .mg-text-body（14px / 24px 行高），原型
+     .model-discovery-table-row 是 11px。字号和行高都要压回去 ——
+     只改字号的话，24px 的行高仍会把行撑到原型的 1.2 倍。 */
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+/* 「查看详情 / 待支持」——照搬原型 redesign.css:15645
+   `.model-discovery-table-row > button`。用原生 button 承接（理由见 tsx 里的注释）。 */
+.model-discovery-detail-btn {
+  align-items: center;
+  background: color-mix(in srgb, var(--accent) 9%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
+  border-radius: var(--discovery-radius-md); /* 原型 7px */
+  color: var(--accent);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 10.5px;
+  gap: 4px;
+  justify-content: center;
+  justify-self: end;
+  /* 必须显式给：按钮会继承 TableCell 的 .mg-text-body 行高（24px），
+     6+6+24=36px 把整行顶到 69px；原型那颗继承的是 11px 字号的 normal 行高。 */
+  line-height: 1.25;
+  padding: 6px 8px;
+}
+
+.model-discovery-detail-btn:disabled {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+}
+
 .model-discovery-card-head {
   align-items: flex-start;
   display: flex;

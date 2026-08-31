@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { AlipayIcon, StripeIcon, WechatIcon } from './brand-icons'
+import type { BrandKey } from './brand-colors'
 
 export const RECHARGE_PAYMENT_CHANNEL_KEYS = ['alipay', 'wechat', 'stripe', 'stripe_wechat', 'stripe_alipay'] as const
 export type RechargePaymentChannel = (typeof RECHARGE_PAYMENT_CHANNEL_KEYS)[number]
@@ -14,18 +15,26 @@ export interface RechargePaymentChannelOption {
   value: RechargePaymentChannel
   labelKey: string
   cnLabel: string
-  icon: ReactNode
+  /** 渠道图标组件，尺寸由使用处决定（弹窗 22、行内 18） */
+  Icon: (props: { size?: number }) => ReactNode
+  /**
+   * 该渠道用哪个钱包品牌的视觉资产（主色）。选中态的边框/文字/浅底一律由它推出，
+   * 消费方不得再按 value 自建颜色表——需求方#903 就是漏了这一步：国际站新增的
+   * stripe_wechat/stripe_alipay 在 TopUpModal 本地色表里查不到 key，选中态既没边框色也没
+   * 文字色，暗色主题下双双落到 currentColor 变成黑框黑字。
+   */
+  brand: BrandKey
 }
 
 export const RECHARGE_PAYMENT_CHANNELS: RechargePaymentChannelOption[] = [
-  { value: 'alipay', labelKey: 'billing.paymentMethod.alipay', cnLabel: '支付宝', icon: <AlipayIcon /> },
-  { value: 'wechat', labelKey: 'billing.paymentMethod.wechat', cnLabel: '微信支付', icon: <WechatIcon /> },
-  { value: 'stripe', labelKey: 'billing.paymentMethod.stripe', cnLabel: 'Stripe', icon: <StripeIcon /> },
+  { value: 'alipay', labelKey: 'billing.paymentMethod.alipay', cnLabel: '支付宝', Icon: AlipayIcon, brand: 'alipay' },
+  { value: 'wechat', labelKey: 'billing.paymentMethod.wechat', cnLabel: '微信支付', Icon: WechatIcon, brand: 'wechat' },
+  { value: 'stripe', labelKey: 'billing.paymentMethod.stripe', cnLabel: 'Stripe', Icon: StripeIcon, brand: 'stripe' },
   // Intl WeChat/Alipay via Stripe (prd#899): shown by wallet name + icon; the
   // Stripe clearing is invisible to the user (WeChat -> our QR cashier, Alipay ->
-  // direct redirect).
-  { value: 'stripe_wechat', labelKey: 'billing.paymentMethod.stripe_wechat', cnLabel: '微信支付', icon: <WechatIcon /> },
-  { value: 'stripe_alipay', labelKey: 'billing.paymentMethod.stripe_alipay', cnLabel: '支付宝', icon: <AlipayIcon /> },
+  // direct redirect). 视觉上就是微信/支付宝，Icon/brand 都跟着钱包走、不跟清算通道走。
+  { value: 'stripe_wechat', labelKey: 'billing.paymentMethod.stripe_wechat', cnLabel: '微信支付', Icon: WechatIcon, brand: 'wechat' },
+  { value: 'stripe_alipay', labelKey: 'billing.paymentMethod.stripe_alipay', cnLabel: '支付宝', Icon: AlipayIcon, brand: 'alipay' },
 ]
 
 export const RECHARGE_CHANNEL_CN_LABELS: Record<RechargeChannelKey, string> = {

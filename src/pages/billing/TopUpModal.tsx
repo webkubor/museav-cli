@@ -98,7 +98,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
         queryClient.invalidateQueries({ queryKey: ['balance', tenantId] })
         queryClient.invalidateQueries({ queryKey: ['billing', 'recharges', tenantId] })
 
-        const redirectURL = effectiveChannel === 'wechat' && data.payment.qr_code_url
+        const redirectURL = (effectiveChannel === 'wechat' || effectiveChannel === 'stripe_wechat') && data.payment.qr_code_url
           ? buildWechatCashierURL({
               qrCodeUrl: data.payment.qr_code_url,
               orderNo: data.order_no,

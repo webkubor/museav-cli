@@ -16,7 +16,7 @@ export interface BillingMoneyStatsResponse {
 export interface CreateRechargeRequest {
   amount: string
   currency: string
-  channel: 'alipay' | 'wechat' | 'stripe'
+  channel: 'alipay' | 'wechat' | 'stripe' | 'stripe_wechat' | 'stripe_alipay'
   return_url?: string
   promo_code?: string
 }

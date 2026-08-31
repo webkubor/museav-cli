@@ -150,9 +150,11 @@
         "fallbackTriggered": "已触发回退",
         "fallbackNotTriggered": "未触发",
         "cache": "缓存",
-        "cacheHitRate": "命中率 {{rate}}%",
-        "cacheHitHint": "命中 · 读 {{count}} Token",
-        "cacheMissHint": "未命中"
+        "cacheHit": "命中",
+        "cacheMiss": "未命中",
+        "cacheRead": "读 {{count}} Token",
+        "cacheWrite": "写 {{count}} Token",
+        "cacheNone": "未读取缓存"
       },
       "timing": {
         "firstToken": "首 Token 耗时",

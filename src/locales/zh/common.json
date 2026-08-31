@@ -76,7 +76,9 @@
     "workspaceGuard": {
       "title": "空间不存在或无权访问",
       "desc": "该工作空间可能已被删除，或不属于当前组织。",
-      "action": "去空间管理"
+      "action": "去空间管理",
+      "emptyTitle": "请先选择工作空间",
+      "emptyDesc": "该页面按工作空间划分数据，请在侧边栏选择一个工作空间后查看。"
     },
     "pagination": {
       "prev": "上一页",

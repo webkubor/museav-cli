@@ -18,8 +18,8 @@ importers:
         specifier: ^5.8.0
         version: 5.8.0(@lobehub/ui@5.15.1)(@types/react@19.2.15)(antd@6.4.3(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@model-go/icons':
-        specifier: 2.2.0
-        version: 2.2.0
+        specifier: 3.0.0
+        version: 3.0.0
       '@model-go/track':
         specifier: ^0.3.0
         version: 0.3.0(react@19.2.6)
@@ -719,8 +719,8 @@ packages:
   '@mermaid-js/parser@1.2.1':
     resolution: {integrity: sha512-n12NohV3mrUyUL2o93IgG/ifeW9FTyeJn3zDxkhwa8MJ9Fxg3HQMlA3RiGmD/3UnJvheztkjjQAjA2T4LmUcpw==}
 
-  '@model-go/icons@2.2.0':
-    resolution: {integrity: sha512-Chzn9HfwpkHsT35BlYM9cV9YCmhCnE0Qmx1Ur6kUAnFH3EBGn5GaNNI8e8Gtwdhbc4RfWxArGzhW2oFoN4yrsA==}
+  '@model-go/icons@3.0.0':
+    resolution: {integrity: sha512-/yGSinMAgPqCbpRENi9GpxQNXP0vuQZT9rAjKt1FSSFvPIZmJnrzAp3jK7FItyFPF1n5oweEoOfzz2zzBBgbaA==}
     engines: {bun: '>=1.2', node: '>=20'}
 
   '@model-go/track@0.3.0':
@@ -5660,7 +5660,7 @@ snapshots:
     dependencies:
       '@chevrotain/types': 11.1.2
 
-  '@model-go/icons@2.2.0': {}
+  '@model-go/icons@3.0.0': {}
 
   '@model-go/track@0.3.0(react@19.2.6)':
     optionalDependencies:

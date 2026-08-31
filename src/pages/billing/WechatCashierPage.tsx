@@ -8,6 +8,8 @@ import { useCopy } from '@/hooks/use-copy'
 import { appToast } from '@/lib/app-toast'
 import { trackEvent } from '@/lib/track'
 import { getRecharge } from '@/services/billing'
+import { useSite } from '@/hooks/use-platform-config'
+import { wechatPayeeName } from '@/constants/recharge-channels'
 
 /**
  * 独立收银台配色/形态系统（"Digital Payment Core"，用户提供的设计规范）。
@@ -91,13 +93,16 @@ export default function WechatCashierPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { copy, copied } = useCopy()
+  const site = useSite()
 
   const qrCodeUrl = searchParams.get('qr')?.trim() ?? ''
   const orderNo = searchParams.get('order')?.trim() ?? ''
   const tenant = searchParams.get('tenant')?.trim() ?? ''
   const amount = searchParams.get('amount')?.trim() ?? ''
   const currency = searchParams.get('currency')?.trim() || 'CNY'
-  const payee = searchParams.get('payee')?.trim() || t('billing.wechatCashier.defaultPayee')
+  // 收款主体是随站点变化的法律实体名（国际站 Modelgo AI / 国内站境内公司），不走 i18n；
+  // 正常由 TopUpModal 经 payee 参数带入，缺参时按站点兜底，绝不落回国内主体。
+  const payee = searchParams.get('payee')?.trim() || wechatPayeeName(site)
   const returnTo = useMemo(() => safeReturnTo(searchParams.get('return_to')), [searchParams])
   const { symbol: amountSymbol, value: amountValue } = useMemo(() => amountParts(amount, currency), [amount, currency])
 

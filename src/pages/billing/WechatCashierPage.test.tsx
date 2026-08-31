@@ -10,6 +10,10 @@ vi.mock('@/services/billing', () => ({
   getRecharge: vi.fn(),
 }))
 
+vi.mock('@/hooks/use-platform-config', () => ({
+  useSite: () => 'global',
+}))
+
 vi.mock('react-i18next', () => ({
   // 依赖图里 @/i18n 模块级调用 initReactI18next（缺了整个测试文件加载失败）
   initReactI18next: { type: '3rdParty', init: () => {} },

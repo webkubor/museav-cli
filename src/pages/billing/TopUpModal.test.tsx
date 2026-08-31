@@ -8,6 +8,7 @@ import type { RechargeCreated } from '@/types'
 const createRecharge = vi.fn<(tenantId: string, body: unknown) => Promise<RechargeCreated>>()
 const toastSuccess = vi.fn()
 const toastError = vi.fn()
+const useSiteMock = vi.hoisted(() => vi.fn<() => string | null>(() => 'china'))
 
 vi.mock('@/services/billing', () => ({
   createRecharge: (tenantId: string, body: unknown) => createRecharge(tenantId, body),
@@ -16,6 +17,7 @@ vi.mock('@/services/billing', () => ({
 vi.mock('@/hooks/use-platform-config', () => ({
   useCurrency: () => ({ currency: 'CNY', symbol: '¥' }),
   useEnabledChannels: () => ['wechat'],
+  useSite: () => useSiteMock(),
 }))
 
 vi.mock('@/hooks/use-permissions', () => ({
@@ -74,10 +76,25 @@ describe('TopUpModal', () => {
     })
     toastSuccess.mockClear()
     toastError.mockClear()
+    useSiteMock.mockReturnValue('china')
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
+  })
+
+  it('shows the international entity name (Modelgo AI) as WeChat payee on the global site', async () => {
+    useSiteMock.mockReturnValue('global')
+    const paymentWindow = { close: vi.fn(), closed: false, location: { href: '' } } as unknown as Window
+    vi.spyOn(window, 'open').mockReturnValue(paymentWindow)
+
+    renderModal()
+    fireEvent.click(screen.getByRole('button', { name: '前往支付 ¥100' }))
+
+    await waitFor(() => {
+      expect(paymentWindow.location.href).toContain('/billing/wechat-cashier')
+    })
+    expect(new URL(paymentWindow.location.href).searchParams.get('payee')).toBe('Modelgo AI')
   })
 
   it('opens the first-party WeChat cashier for QR code responses', async () => {

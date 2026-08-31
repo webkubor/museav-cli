@@ -5,6 +5,17 @@ import type { BrandKey } from './brand-colors'
 export const RECHARGE_PAYMENT_CHANNEL_KEYS = ['alipay', 'wechat', 'stripe', 'stripe_wechat', 'stripe_alipay'] as const
 export type RechargePaymentChannel = (typeof RECHARGE_PAYMENT_CHANNEL_KEYS)[number]
 
+/**
+ * WeChat 收银台展示的收款主体，是随站点变化的法律实体名，不是可翻译文案：
+ * 国内站是境内公司，国际站(global，走 Stripe 新加坡实体)展示品牌名 Modelgo AI。
+ * useSite() 返回 'china' | 'global'（platform_config）。
+ */
+export const WECHAT_PAYEE_CN = '杭州词元共生科技有限公司'
+export const WECHAT_PAYEE_INTL = 'Modelgo AI'
+export function wechatPayeeName(site: string | null | undefined): string {
+  return site === 'global' ? WECHAT_PAYEE_INTL : WECHAT_PAYEE_CN
+}
+
 export const RECHARGE_CHANNEL_KEYS = ['alipay', 'wechat', 'stripe', 'manual', 'stripe_wechat', 'stripe_alipay'] as const
 export type RechargeChannelKey = (typeof RECHARGE_CHANNEL_KEYS)[number]
 

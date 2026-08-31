@@ -174,8 +174,13 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
               type="number"
               min="1"
               step="0.01"
-              value={customMode ? amount : ''}
-              onFocus={() => setCustomMode(true)}
+              // 需求方#903 复验⑤：输入框始终回填当前金额，点预设面额后能看见选了多少
+              // （PRD 原型 modelgo_prd/src/App.tsx 的充值弹窗就是 value={amount} 直绑）。
+              // customMode 退化成**纯埋点口径**——只标记「这个数是用户自己敲的」，不再控制显隐；
+              // 此前 value={customMode ? amount : ''} 让点了 ¥500 之后输入框空白，用户以为没选上。
+              value={amount}
+              // 不在 onFocus 里置 customMode：光点一下输入框不算改金额，否则预设选中态会平白丢掉、
+              // 埋点也会把 preset 误报成 custom。真正敲了字才在 onChange 里翻牌。
               onChange={(e) => {
                 // qa#282：金额最多两位小数（法币最小单位是分），禁止 0.001 这类超精度输入
                 const sanitized = e.target.value.match(/^\d*\.?\d{0,2}/)?.[0] ?? e.target.value

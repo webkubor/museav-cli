@@ -9,6 +9,12 @@
 .models-experience-page.models-playground-page {
   height: 100%;
   min-height: 0;
+  /* DashboardLayout 给体验路由的内容包装层是行向 flex（cd80043e 起），本页作为
+     flex 子项宽度不再是 block 的「撑满父级」而是「按内容收缩」——对话模型靠
+     composer 下三张示例 Prompt 卡片恰好撑满属于巧合，视频/图像模型没有那排卡片，
+     整个工作台塌缩到内容宽（~730px），右侧大片空白。显式吃满主轴剩余空间。 */
+  flex: 1 1 0%;
+  min-width: 0;
 }
 
 .models-experience-page .models-experience-page-header {

@@ -30,6 +30,16 @@
     "errorUpstreamAuth": "该模型服务暂时不可用，请稍后重试",
     "errorUpstreamGeneric": "模型调用异常，请更换模型或稍后重试",
     "freeQuota": "免费额度",
+    "rateLimit": {
+      "windowMinute": "分钟",
+      "windowHour": "小时",
+      "windowDay": "天",
+      "windowSeconds": "{{count}} 秒",
+      "both": "每{{window}}最多 {{requests}} 次调用，或 {{tokens}} Token",
+      "requests": "每{{window}}最多 {{requests}} 次调用",
+      "tokens": "每{{window}}最多 {{tokens}} Token",
+      "wait": "达到任一上限后，请耐心等待，额度恢复后即可继续使用。"
+    },
     "limitedFree": "限时免费",
     "perM": "每M",
     "balanceInsufficientTitle": "余额不足，仅可体验免费模型",

@@ -33,6 +33,7 @@ import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/util
 // 媒体判定与「可体验任务」格都以模态推导为准，不读已废弃的 experience_types。
 import { modelExperienceTasks, resolveModelCategory } from '@/pages/models/model-experience-data'
 import { ExperienceTaskTags } from './ExperienceTaskTags'
+import { FreeModelRateLimit } from './FreeModelRateLimit'
 
 interface ModelDetailPanelProps {
   detail: CatalogModelDetail
@@ -264,6 +265,8 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
         </div>
         {actions && <div className="mg-detail-hero-actions">{actions}</div>}
       </section>
+
+      <FreeModelRateLimit model={detail} className="mt-4" />
 
       {/* 规格条：对话模型横向 6 格（原型 App.tsx:5622-5626）；媒体模型
           主价格/计价单位/主要规格/可体验任务 四格（原型 App.tsx:5637-5642，

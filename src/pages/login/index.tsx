@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -27,6 +27,7 @@ import { useAuthStore } from '@/store/auth'
 import { throttleMessage } from '@/lib/auth/server-throttle'
 import { getRedirectTarget } from '@/lib/redirect'
 import { navigateAfterLogin } from '@/lib/login-intent'
+import { resolveReferralCode } from '@/pages/signup/referral-code'
 import { storageKeys } from '@/lib/storage'
 import { trackEvent } from '@/lib/track'
 
@@ -80,6 +81,20 @@ function clearRememberedLogin() {
  */
 export default function LoginPage() {
   const market = useMarket()
+  const [searchParams] = useSearchParams()
+
+  // qa#675：推荐码的解析与持久化必须放在 market 分流**之前**。
+  // 根路径 /?aff=X 命中 RequireAuth 会被折成 /login?redirect=%2F%3Faff%3DX，码只藏在
+  // redirect 的内嵌 query 里；resolveReferralCode 会把这层解开并落 sessionStorage。
+  // 此前只有 PhoneAuth 与 /signup 调它 —— 国内走 PhoneAuth 所以是好的，海外走
+  // EmailLoginPage 没人解，国际站根路径推荐链接 100% 丢码（2026-08-31 在
+  // console.modelgo.ai 实测：国内站 mg_referral_code=CN1，国际站 null）。
+  // 放这里而不是放进 EmailLoginPage：任何未登录入口最终都落到 /login，一处覆盖两条分支，
+  // 也不必等将来新增第三种登录方式时再补一次。
+  useEffect(() => {
+    resolveReferralCode(searchParams)
+  }, [searchParams])
+
   // 写活：国内是否提供邮箱登录入口，跟随平台配置（enabled_login_methods 含 password）。
   const emailAuthEnabled = useEmailAuthEnabled()
   // 国内默认手机号入口，底部「邮箱登录」快捷入口切到邮箱表单；切换为本地态，不改路由。

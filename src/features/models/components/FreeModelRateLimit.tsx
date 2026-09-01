@@ -2,7 +2,7 @@ import { LuInfo } from 'react-icons/lu'
 import { useTranslation } from 'react-i18next'
 import type { CatalogModelItem } from '@/types'
 
-type RateLimitModel = Pick<CatalogModelItem, 'free' | 'rate_limit'>
+type RateLimitModel = Pick<CatalogModelItem, 'free' | 'promotion' | 'rate_limit'>
 
 function validLimit(value: number | undefined): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value > 0
@@ -25,8 +25,10 @@ export function FreeModelRateLimit({ model, className = '' }: { model: RateLimit
   const requestLimit = rateLimit?.request_limit
   const tokenLimit = rateLimit?.token_limit
   const windowSeconds = rateLimit?.window_seconds
+  // 目录接口的限时免费模型由 promotion.free 标记；兼容 catalog.free 的直接标记。
+  const isFree = Boolean(model.free || model.promotion?.free)
 
-  if (!model.free || !validLimit(windowSeconds) || (!validLimit(requestLimit) && !validLimit(tokenLimit))) {
+  if (!isFree || !validLimit(windowSeconds) || (!validLimit(requestLimit) && !validLimit(tokenLimit))) {
     return null
   }
 

@@ -26,4 +26,14 @@ describe('FreeModelRateLimit', () => {
     rerender(<FreeModelRateLimit model={{ free: true }} />)
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
+
+  it('recognizes a promotion-marked free model when a rate-limit rule is present', () => {
+    render(
+      <FreeModelRateLimit
+        model={{ free: false, promotion: { free: true }, rate_limit: { request_limit: 5, window_seconds: 60 } }}
+      />,
+    )
+
+    expect(screen.getByRole('status')).toHaveTextContent('免费额度 每分钟最多 5 次调用')
+  })
 })

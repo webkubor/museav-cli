@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { DateRangePicker, type DateRangeValue } from '@/components/ui/DateRangePicker'
@@ -264,7 +264,15 @@ export default function LogsPage() {
   // Request ID 精确检索：识别为完整 ID → 走 request_id 参数（精确），否则走模糊 q
   const isRequestIdSearch = isLikelyRequestId(debouncedSearch)
 
-  const { from, to } = useMemo(() => rangeToDates(timeRange), [timeRange])
+  // 时间窗随「刷新」滚动（需求方#930）：预设区间的 to=当前时刻，只按 timeRange 记忆的话
+  // 挂载后就冻结，点「刷新」每次都发同一个时间窗，新产生的日志永远落在窗外。
+  // 刷新 bump tick 重算 from/to，queryKey 变化后自动重拉列表与 Summary。
+  const [refreshTick, setRefreshTick] = useState(0)
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshTick 是刻意的重算触发器
+  const { from, to } = useMemo(() => rangeToDates(timeRange), [timeRange, refreshTick])
+  function refreshSyncLogs() {
+    setRefreshTick((t) => t + 1)
+  }
   const backendStatus = resolveBackendStatus(statusFilter)
   // 「护栏命中」跨多个 backend status，统一走 guardrail=hit（按 guardrail_decision 判定，
   // 含仅记录、脱敏后继续、脱敏后下游失败的异常记录）。状态选「护栏命中」时优先此维度。
@@ -277,7 +285,7 @@ export default function LogsPage() {
   const effectiveAccountId =
     view === 'mine' ? currentAccountId || undefined : memberFilter === 'all' ? undefined : memberFilter
 
-  const { data, isFetching, isLoading, isError, error, refetch } = useQuery({
+  const { data, isFetching, isLoading, isError, error } = useQuery({
     queryKey: [
       'logs',
       activeTenantId,
@@ -291,7 +299,9 @@ export default function LogsPage() {
       memberFilter,
       debouncedSearch,
       isRequestIdSearch,
-      timeRange,
+      from,
+      to,
+      refreshTick,
       page,
       currentCursor,
       pageSize,
@@ -314,6 +324,8 @@ export default function LogsPage() {
       }),
     enabled: Boolean(activeTenantId) && recordType === 'sync',
     staleTime: 10_000,
+    // 刷新经 queryKey 变化触发（见 refreshSyncLogs），保留上一份数据避免列表闪骨架屏
+    placeholderData: keepPreviousData,
     refetchOnWindowFocus: false,
     retry: false, // 40301/无权限不重试，直接走兼容态
     meta: { forbiddenHandled: true }, // 40301 由本页 ForbiddenState 承接，不弹全局 toast
@@ -550,7 +562,7 @@ export default function LogsPage() {
             />
             {/* 刷新按钮：同步/异步两种记录类型统一放页头、统一样式（#46）。异步的自动刷新计时在面板内静默进行。 */}
             {recordType === 'sync' ? (
-              <Button variant="outline" disabled={isLoading || isFetching} onClick={() => refetch()}>
+              <Button variant="outline" disabled={isLoading || isFetching} onClick={refreshSyncLogs}>
                 <LuRefreshCw className={`mr-1.5 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
                 {t('logs.refresh')}
               </Button>
@@ -677,6 +689,7 @@ export default function LogsPage() {
 
         {/* Summary 指标条（需求方#668）：筛选器下方、已选筛选标签上方，与列表完全同参数口径 */}
         <SyncLogsSummary
+          refreshKey={refreshTick}
           params={{
             workspace_id: effectiveWorkspaceId,
             account_id: effectiveAccountId,
@@ -701,7 +714,7 @@ export default function LogsPage() {
             title={t('logs.error.loadTitle')}
             description={t('logs.error.loadDesc')}
             action={
-              <Button variant="outline" size="sm" onClick={() => refetch()}>
+              <Button variant="outline" size="sm" onClick={refreshSyncLogs}>
                 <LuRefreshCw className={`mr-1.5 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
                 {t('logs.error.retry')}
               </Button>

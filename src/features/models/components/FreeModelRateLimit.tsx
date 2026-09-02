@@ -16,8 +16,15 @@ function windowLabel(windowSeconds: number, t: (key: string, options?: Record<st
 }
 
 /**
- * 免费模型限频提示（shared/modelgo_prd#914）。免费标记和全部数值均由目录接口提供；
- * 规则缺失或不完整时宁可不展示，避免把模型的普通定价/促销误报成免费额度。
+ * 免费模型限频提示（shared/modelgo_prd#914）。免费标记和全部数值均由目录接口提供。
+ *
+ * **规则缺失时降级为不含数值的提示，而不是整块不展示。**
+ * 早先的做法是拿不到 rate_limit 就 `return null`，只防住了「展示错误数值」这一半
+ * 风险；另一半更严重——限流是后端强制执行的，用户看不到任何提示就会毫无预警被拦。
+ * 2026-09-02 实测：国内目录有 rate_limit、海外全是 null，导致该特性在海外站发布后
+ * 页面上一个字都没有。没提示比提示得不够精确更糟。
+ *
+ * 分寸：**不编造数值**（缺什么就不说什么），但**保留提示以说明约束存在**。
  */
 export function FreeModelRateLimit({ model, className = '' }: { model: RateLimitModel; className?: string }) {
   const { t } = useTranslation()
@@ -28,20 +35,29 @@ export function FreeModelRateLimit({ model, className = '' }: { model: RateLimit
   // 目录接口的限时免费模型由 promotion.free 标记；兼容 catalog.free 的直接标记。
   const isFree = Boolean(model.free || model.promotion?.free)
 
-  if (!isFree || !validLimit(windowSeconds) || (!validLimit(requestLimit) && !validLimit(tokenLimit))) {
-    return null
-  }
+  // 只有「压根不是免费模型」才整块不渲染
+  if (!isFree) return null
 
-  const limitsKey = validLimit(requestLimit) && validLimit(tokenLimit)
-    ? 'both'
-    : validLimit(requestLimit)
-      ? 'requests'
-      : 'tokens'
-  const limits = t(`modelsExperience.rateLimit.${limitsKey}`, {
-    window: windowLabel(windowSeconds, t),
-    requests: requestLimit?.toLocaleString(),
-    tokens: tokenLimit?.toLocaleString(),
-  })
+  const hasFullRule = validLimit(windowSeconds) && (validLimit(requestLimit) || validLimit(tokenLimit))
+  const limits = hasFullRule
+    ? t(
+        `modelsExperience.rateLimit.${
+          validLimit(requestLimit) && validLimit(tokenLimit)
+            ? 'both'
+            : validLimit(requestLimit)
+              ? 'requests'
+              : 'tokens'
+        }`,
+        {
+          window: windowLabel(windowSeconds, t),
+          requests: requestLimit?.toLocaleString(),
+          tokens: tokenLimit?.toLocaleString(),
+        },
+      )
+    : t('modelsExperience.rateLimit.unknown')
+  const waitText = hasFullRule
+    ? t('modelsExperience.rateLimit.wait')
+    : t('modelsExperience.rateLimit.waitUnknown')
 
   return (
     <p
@@ -51,7 +67,9 @@ export function FreeModelRateLimit({ model, className = '' }: { model: RateLimit
       <LuInfo size={14} className="mt-0.5 shrink-0 text-mg-warning" />
       <span>
         <strong className="font-semibold text-mg-warning">{t('modelsExperience.freeQuota')}</strong>
-        {' '}{limits}；{t('modelsExperience.rateLimit.wait')}
+        {/* 分隔符跟着语言走：中文全角「；」、英文半角「; 」。硬编码全角分号会让
+            英文文案变成 "rate limits apply；Once a limit..." */}
+        {' '}{limits}{t('modelsExperience.rateLimit.separator')}{waitText}
       </span>
     </p>
   )

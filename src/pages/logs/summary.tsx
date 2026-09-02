@@ -71,13 +71,14 @@ export function SummaryTiles({ tiles, loading }: { tiles: SummaryTile[]; loading
 }
 
 /** 同步调用 Summary：六项指标跟随全部筛选；拉取失败静默显 —，不打断列表主流程 */
-export function SyncLogsSummary({ params }: { params: LogStatsParams }) {
+export function SyncLogsSummary({ params, refreshKey }: { params: LogStatsParams; refreshKey?: number }) {
   const { t } = useTranslation()
   const { symbol } = useCurrency()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
 
   const { data, isLoading } = useQuery({
-    queryKey: ['logs-summary', activeTenantId, params],
+    // refreshKey：页头「刷新」的计数器（需求方#930），保证 Summary 与列表同口径一起重拉
+    queryKey: ['logs-summary', activeTenantId, params, refreshKey],
     queryFn: () => getLogsSummary(params),
     enabled: Boolean(activeTenantId),
     staleTime: 10_000,

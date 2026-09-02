@@ -658,6 +658,12 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   const [providerFilterOpen, setProviderFilterOpen] = useState(false);
   const [tableAccess, setTableAccess] = useState<"all" | "supported" | "pending">("all");
   const [tablePage, setTablePage] = useState(1);
+  /**
+   * 图表联动：柱图与散点图画的是同一批模型，hover 任一处时另一处的同名模型跟着
+   * 高亮。这是两张图之间唯一的关联线索——没有它，用户看不出「散点右上角那个点」
+   * 就是「柱图第一根」。
+   */
+  const [hoveredModel, setHoveredModel] = useState<string | null>(null);
 
   /**
    * 接口已按该类型的主指标排好序（rankings 的 direction 决定升降序，STT 的 WER
@@ -1198,7 +1204,8 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                 // 从当前榜单里找回完整模型对象后接上跳详情，跳不了的就不给可点的样子。
                 const barModel = visibleModels.find((model) => model.name === row.model);
                 const barClickable = Boolean(barModel && canOpenModelDetail(barModel));
-                return <div aria-label={`第 ${index + 1} 名，${row.model}，${row.value}${barClickable ? "，点击查看详情" : ""}`} className={`model-discovery-specialty-column ${barClickable ? "clickable" : ""}`} key={row.model} onClick={barClickable ? () => openModelDetail(barModel!) : undefined} onKeyDown={barClickable ? (event) => handleModelRowKeyDown(event, barModel!) : undefined} role={barClickable ? "link" : undefined} style={{ "--bar-height": `${barHeight}%` } as CSSProperties} tabIndex={0}>
+                const barLinked = hoveredModel === row.model;
+                return <div aria-label={`第 ${index + 1} 名，${row.model}，${row.value}${barClickable ? "，点击查看详情" : ""}`} className={`model-discovery-specialty-column ${barClickable ? "clickable" : ""} ${barLinked ? "linked" : ""}`} key={row.model} onClick={barClickable ? () => openModelDetail(barModel!) : undefined} onFocus={() => setHoveredModel(row.model)} onKeyDown={barClickable ? (event) => handleModelRowKeyDown(event, barModel!) : undefined} onMouseEnter={() => setHoveredModel(row.model)} onMouseLeave={() => setHoveredModel(null)} role={barClickable ? "link" : undefined} style={{ "--bar-height": `${barHeight}%`, "--bar-index": index } as CSSProperties} tabIndex={0}>
                 <div className="model-discovery-specialty-plot">
                   <div className="model-discovery-specialty-tooltip" role="tooltip"><strong><DiscoveryModelIcon model={row.model} provider={row.provider} />{row.model}</strong><span>第 {index + 1} 名 · {item.description}</span><b>{row.value}</b></div>
                   {/* 柱内只放数字：单位已写在副标题（如「（USD / Task）」），
@@ -1244,7 +1251,8 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                   const left = chartPosition(xValue, xTicks);
                   const bottom = chartPosition(yValue, yTicks);
                   const pointClickable = canOpenModelDetail(model);
-                  return <button aria-label={`${model.name}，${activeYAxisLabel} ${formatYAxisTick(yValue)}，${activeXAxis.label} ${formatXAxisTick(xValue)}${pointClickable ? "，点击查看详情" : ""}`} className={`model-discovery-scatter-point ${isModelConnected(model) ? "supported" : "pending"} ${pointClickable ? "clickable" : ""} ${left > 72 ? "label-left" : ""} ${index % 2 === 0 ? "label-up" : "label-down"}`} key={model.name} onClick={pointClickable ? () => openModelDetail(model) : undefined} style={{ "--point-left": `${left}%`, "--point-bottom": `${bottom}%`, "--point-color": providerMarkColors[model.provider] ?? "#5472b8" } as CSSProperties} type="button">
+                  const pointLinked = hoveredModel === model.name;
+                  return <button aria-label={`${model.name}，${activeYAxisLabel} ${formatYAxisTick(yValue)}，${activeXAxis.label} ${formatXAxisTick(xValue)}${pointClickable ? "，点击查看详情" : ""}`} className={`model-discovery-scatter-point ${isModelConnected(model) ? "supported" : "pending"} ${pointClickable ? "clickable" : ""} ${pointLinked ? "linked" : ""} ${left > 72 ? "label-left" : ""} ${index % 2 === 0 ? "label-up" : "label-down"}`} key={model.name} onClick={pointClickable ? () => openModelDetail(model) : undefined} onFocus={() => setHoveredModel(model.name)} onMouseEnter={() => setHoveredModel(model.name)} onMouseLeave={() => setHoveredModel(null)} style={{ "--point-left": `${left}%`, "--point-bottom": `${bottom}%`, "--point-index": index, "--point-color": providerMarkColors[model.provider] ?? "#5472b8" } as CSSProperties} type="button">
                     <i />
                     <span className="model-discovery-point-label">{model.name}</span>
                     <span className="model-discovery-point-tooltip" role="tooltip"><strong>{model.name}</strong><em>{activeYAxisLabel}：{formatYAxisTick(yValue)} {yUnit}</em><em>{activeXAxis.label}：{formatXAxisTick(xValue)} {xUnit}</em></span>

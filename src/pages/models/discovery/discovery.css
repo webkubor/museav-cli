@@ -77,15 +77,32 @@
   /* 柱状图底部的收窄圆角，原型定的 1px */
   --discovery-radius-hairline: 1px;
 
-  /* ── 原型专属动效时长 ────────────────────────────────────────
-     控制台刻度只有 instant .1s / fast .15s / base .25s / slow .4s，
-     原型用了 120/140/160/180ms 与 .16s/.2s 这些中间值。1:1 要求不改值，
-     故声明成命名变量。150ms 直接复用 --mg-duration-fast（同值）。 */
-  --discovery-dur-snap: 120ms;
-  --discovery-dur-quick: 140ms;
-  --discovery-dur-swift: 160ms;
-  --discovery-dur-smooth: 180ms;
-  --discovery-dur-ease: 0.2s;
+  /* ── 动效时长：三档 ──────────────────────────────────────────
+     原型散着用了 120/140/160/180/200ms 五个中间值，cs ui 实测全页 11 种时长
+     未收敛（参照站 7 种）。收敛成三档，语义分明：
+
+       instant 100ms — hover / 跟手反馈。参照站的主力档就是 0.1s，
+                       快到几乎无感，是「跟手」而不是「动画」
+       base    180ms — 状态切换、展开收起、重排
+       enter   420ms — 数据到达后的入场，唯一允许被看见的动画
+
+     旧变量名保留并映射到新档位，避免散落各处的引用点逐个改。 */
+  --discovery-dur-instant: 100ms;
+  --discovery-dur-base: 180ms;
+  --discovery-dur-enter: 420ms;
+
+  --discovery-dur-snap: var(--discovery-dur-instant);
+  --discovery-dur-quick: var(--discovery-dur-instant);
+  --discovery-dur-swift: var(--discovery-dur-instant);
+  --discovery-dur-smooth: var(--discovery-dur-base);
+  --discovery-dur-ease: var(--discovery-dur-base);
+
+  /* ── 补一层最弱文字灰阶 ──────────────────────────────────────
+     cs ui 实测本页文字灰阶只有 6 层（参照站 16 层），主次压不出来。本页原本只用
+     mg-text-1/2/3 三档，图表里的「坐标刻度」「来源标注」这类元信息和真正的数据
+     共用 text-3，重复出现时形成噪声。补一档比 text-3 更弱的，专给它们用。
+     只新增这一档——把 text-1/2/3 换个名字重新声明没有增加任何层次。 */
+  --discovery-text-faint: color-mix(in srgb, var(--mg-text-3) 62%, transparent);
 
   /* ── 原型专属阴影 ────────────────────────────────────────────
      控制台的 --mg-shadow-* 是另一套投影语言（更大扩散、带品牌染色），
@@ -246,7 +263,7 @@
      AGENTIC INDEX / ARTIFICIAL ANALYSIS —— 原型是原样大小写。中文表头看不出来，
      只有英文列被大写，同一行里反而不齐。 */
   text-transform: none;
-  font-size: 10.5px;
+  font-size: 10px;
 }
 
 .model-discovery-table tbody td {
@@ -267,7 +284,7 @@
   color: var(--accent);
   cursor: pointer;
   display: inline-flex;
-  font-size: 10.5px;
+  font-size: 10px;
   gap: 4px;
   justify-content: center;
   justify-self: end;
@@ -317,7 +334,7 @@
 .model-discovery-rank-head {
   background: color-mix(in srgb, var(--line) 24%, transparent);
   color: var(--text-tertiary);
-  font-size: 10.5px;
+  font-size: 10px;
 }
 
 .model-discovery-rank-head > span:last-child,
@@ -335,7 +352,7 @@
   color: var(--text-tertiary);
   display: inline-flex;
   flex: none;
-  font-size: 8px;
+  font-size: 9px;
   font-style: normal;
   font-weight: 560;
   height: 17px;
@@ -346,7 +363,7 @@
 
 .model-discovery-rank-row {
   border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
-  font-size: 11.5px;
+  font-size: 11px;
 }
 
 .model-discovery-rank-row.model-discovery-row-clickable,
@@ -374,7 +391,7 @@
 
 .model-discovery-rank-row strong {
   display: grid;
-  font-size: 12.5px;
+  font-size: 12px;
   gap: 2px;
 }
 
@@ -470,6 +487,8 @@
   grid-auto-rows: minmax(0, 1fr);
   grid-template-columns: 1fr 1fr;
   min-height: 100%;
+  /* grid 项默认 min-width:auto，长内容会顶破分配宽度而不是收缩 */
+  min-width: 0;
 }
 
 .model-discovery-summary-card {
@@ -477,6 +496,7 @@
   flex-direction: column;
   gap: 8px;
   min-height: 0;
+  min-width: 0;
   padding: 14px 16px;
 }
 
@@ -561,7 +581,7 @@
 
 .model-discovery-section-head > span {
   color: var(--text-tertiary);
-  font-size: 10.5px;
+  font-size: 10px;
 }
 
 .model-discovery-agent-popularity-head {
@@ -669,7 +689,7 @@
 }
 
 .model-discovery-agent-popularity-copy strong {
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.3;
 }
 
@@ -804,7 +824,7 @@
   align-items: center;
   color: var(--muted);
   display: inline-flex;
-  font-size: 9.5px;
+  font-size: 9px;
   font-style: normal;
   gap: 5px;
 }
@@ -849,8 +869,9 @@
   width: 1px;
 }
 
+/* 轴刻度降到最弱层：它是参考坐标而不是内容，跟数值同灰度会抢注意力 */
 .model-discovery-gridline span {
-  color: var(--text-tertiary);
+  color: var(--discovery-text-faint);
   font-size: 9px;
   font-style: normal;
   font-variant-numeric: tabular-nums;
@@ -929,6 +950,11 @@
   padding: 0;
   position: absolute;
   transform: translate(-50%, 50%);
+  /* 切换 X 轴指标时点位会整体重排。位置由 --point-left/--point-bottom 驱动，
+     给 left/bottom 加过渡即可平滑滑到新坐标——比先消失再淡入更能让人跟住
+     「同一个模型换了个维度看」。 */
+  transition: left var(--discovery-dur-base) var(--mg-ease-decelerate),
+    bottom var(--discovery-dur-base) var(--mg-ease-decelerate);
   width: 14px;
   z-index: 4;
 }
@@ -960,7 +986,7 @@
    aria-label 里，静态看图靠图例的厂商配色区分即可。 */
 .model-discovery-point-label {
   color: var(--text-soft);
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 590;
   left: 17px;
   line-height: 1.2;
@@ -1009,7 +1035,7 @@
   z-index: 10;
 }
 
-.model-discovery-point-tooltip strong { font-size: 10.5px; }
+.model-discovery-point-tooltip strong { font-size: 10px; }
 .model-discovery-point-tooltip em { color: rgba(255, 255, 255, 0.72); font-size: 9px; font-style: normal; }
 
 .model-discovery-scatter-point:hover .model-discovery-point-tooltip,
@@ -1050,7 +1076,7 @@
 .model-discovery-trend h3 {
   align-items: center;
   display: flex;
-  font-size: 13px;
+  font-size: 12px;
   gap: 6px;
   margin: 0;
 }
@@ -1058,7 +1084,7 @@
 .model-discovery-model-filter p,
 .model-discovery-trend p {
   color: var(--text-tertiary);
-  font-size: 10.5px;
+  font-size: 10px;
   line-height: 1.5;
   margin: 4px 0 9px;
 }
@@ -1153,7 +1179,7 @@
 }
 
 .model-discovery-model-filter-list > button strong {
-  font-size: 10.5px;
+  font-size: 10px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1161,7 +1187,7 @@
 
 .model-discovery-model-filter-list > button small {
   color: var(--text-tertiary);
-  font-size: 8.5px;
+  font-size: 9px;
 }
 
 .model-discovery-model-filter-list > button > svg {
@@ -1192,7 +1218,7 @@
   color: var(--text-soft);
   cursor: pointer;
   display: inline-flex;
-  font-size: 9.5px;
+  font-size: 9px;
   gap: 5px;
   justify-content: center;
   min-height: 29px;
@@ -1213,7 +1239,7 @@
 .model-discovery-trend-axis {
   color: var(--text-tertiary);
   display: grid;
-  font-size: 7.5px;
+  font-size: 9px;
   grid-template-rows: auto 1fr auto 1fr auto;
   padding-bottom: 24px;
   text-align: right;
@@ -1266,7 +1292,7 @@
 
 .model-discovery-trend-column > i b {
   color: var(--discovery-on-dark);
-  font-size: 7.5px;
+  font-size: 9px;
   font-style: normal;
   font-variant-numeric: tabular-nums;
   line-height: 1;
@@ -1275,7 +1301,7 @@
 .model-discovery-trend-column > span:not(.model-discovery-trend-tooltip) {
   align-self: center;
   color: var(--text-soft);
-  font-size: 7.5px;
+  font-size: 9px;
   max-width: 100%;
   overflow: hidden;
   text-align: center;
@@ -1314,12 +1340,12 @@
 
 .model-discovery-trend-tooltip em {
   color: var(--text-tertiary);
-  font-size: 8.5px;
+  font-size: 9px;
   font-style: normal;
 }
 
 .model-discovery-trend-tooltip b {
-  font-size: 13px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1417,7 +1443,7 @@
   align-items: center;
   color: var(--text-tertiary);
   display: flex;
-  font-size: 10.5px;
+  font-size: 10px;
   gap: 6px;
   margin: 4px 0 0;
 }
@@ -1467,6 +1493,29 @@
   cursor: pointer;
 }
 
+/* ── 图表联动 ────────────────────────────────────────────────
+   柱图与散点图画的是同一批模型。hover 任一处，另一处的同名模型跟着亮起来 ——
+   这是两张图之间唯一的关联线索，没有它用户看不出散点右上角那个点就是柱图第一根。
+   被联动的一侧只做「提亮 + 微放大」，不改变位置，避免看起来像数据变了。 */
+.model-discovery-specialty-column.linked .model-discovery-specialty-bar {
+  filter: saturate(1.15);
+  opacity: 1;
+  transform: translateY(-3px);
+}
+
+.model-discovery-scatter-point.linked {
+  z-index: 8;
+}
+
+.model-discovery-scatter-point.linked > i {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--point-color) 22%, transparent);
+  transform: scale(1.45);
+}
+
+.model-discovery-scatter-point.linked .model-discovery-point-label {
+  opacity: 1;
+}
+
 .model-discovery-specialty-column:focus-visible {
   border-radius: var(--discovery-radius-md);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--specialty-color) 45%, transparent);
@@ -1490,7 +1539,11 @@
   height: var(--bar-height);
   min-height: 36px;
   opacity: 0.9;
-  transition: filter var(--discovery-dur-swift) ease, opacity var(--discovery-dur-swift) ease, transform var(--discovery-dur-swift) ease;
+  /* height 也进过渡：换榜单/换 tab 时柱子伸缩到新高度，不是瞬间跳变 */
+  transition: filter var(--discovery-dur-instant) var(--mg-ease-standard),
+    height var(--discovery-dur-base) var(--mg-ease-decelerate),
+    opacity var(--discovery-dur-instant) var(--mg-ease-standard),
+    transform var(--discovery-dur-instant) var(--mg-ease-standard);
   width: min(34px, 76%);
 }
 
@@ -1535,6 +1588,49 @@
   --logo-box: 18px;
 }
 
+/* ── 图表入场 ────────────────────────────────────────────────
+   数据是异步到达的，直接「啪」地出现在页面上没有任何来处感。柱子从底部逐根
+   生长、散点淡入缩放，把「数据刚到」这件事表达出来。
+   stagger 30ms × 序号，十根柱子共 300ms 铺完，不拖沓。
+   backwards 保证延迟期间保持起始态，不会先闪一下完整柱子再回到 0。 */
+@keyframes discovery-bar-grow {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes discovery-point-in {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+
+.model-discovery-specialty-bar {
+  animation: discovery-bar-grow var(--discovery-dur-enter) var(--mg-ease-decelerate) backwards;
+  animation-delay: calc(var(--bar-index, 0) * 30ms);
+}
+
+.model-discovery-scatter-point {
+  animation: discovery-point-in var(--discovery-dur-enter) var(--mg-ease-decelerate) backwards;
+  animation-delay: calc(var(--point-index, 0) * 30ms);
+}
+
+.model-discovery-scatter-point > i {
+  transition: box-shadow var(--discovery-dur-instant) var(--mg-ease-standard),
+    transform var(--discovery-dur-instant) var(--mg-ease-standard);
+}
+
+/* 关掉动效偏好时不播入场，只保留最终态 */
+@media (prefers-reduced-motion: reduce) {
+  .model-discovery-specialty-bar,
+  .model-discovery-scatter-point {
+    animation: none;
+    transition: none;
+  }
+}
+
 /* 只剩热门 Agent 排行用它（按 PRD 显示应用名首字符，Agent 应用不是模型，
    图标库里没有它们） */
 .model-discovery-model-mark {
@@ -1544,7 +1640,7 @@
   color: var(--discovery-on-dark);
   display: inline-flex;
   flex: 0 0 auto;
-  font-size: 8px;
+  font-size: 9px;
   font-style: normal;
   font-weight: 780;
   height: 18px;
@@ -1588,14 +1684,14 @@
 .model-discovery-specialty-tooltip strong {
   align-items: center;
   display: flex;
-  font-size: 11.5px;
+  font-size: 11px;
   gap: 6px;
   white-space: nowrap;
 }
 
 .model-discovery-specialty-tooltip span {
   color: var(--text-tertiary);
-  font-size: 9.5px;
+  font-size: 9px;
   line-height: 1.35;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1625,7 +1721,7 @@
 
 .model-discovery-cost-breakdown dt,
 .model-discovery-cost-breakdown dd {
-  font-size: 9.5px;
+  font-size: 9px;
   line-height: 1.25;
   margin: 0;
 }
@@ -1714,7 +1810,7 @@
 
 .model-discovery-table-primary-filter select {
   color: var(--accent);
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 680;
   min-width: 72px;
 }
@@ -1834,14 +1930,14 @@
 
 .model-discovery-provider-filter-popover > header strong {
   color: var(--text);
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 680;
 }
 
 .model-discovery-provider-filter-popover > header span,
 .model-discovery-provider-filter-popover > footer > span {
   color: var(--text-tertiary);
-  font-size: 9.5px;
+  font-size: 9px;
 }
 
 .model-discovery-provider-filter-popover > header button {
@@ -1877,7 +1973,7 @@
   cursor: pointer;
   display: flex;
   font-family: inherit;
-  font-size: 10.5px;
+  font-size: 10px;
   gap: 6px;
   min-height: 30px;
   min-width: 0;

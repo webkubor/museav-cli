@@ -16,9 +16,11 @@ import {
   formatPrice,
   formatScore,
   isLanguageType,
+  rankBarWidth,
   toPrototypeModel,
   toSummaryCards,
 } from './discovery-data'
+import type { PrototypeModel } from './discovery-data'
 import type { DiscoveryOverview, DiscoveryRankingItem } from '@/types'
 
 const ALL_TASKS: Array<[string, string]> = [
@@ -181,5 +183,34 @@ describe('总览卡', () => {
     expect(text).not.toContain('API 价格最低')
     expect(image).toContain('API 价格最低')
     expect(image).not.toContain('输出速度最快')
+  })
+})
+
+describe('Top 5 进度条宽度', () => {
+  const make = (name: string, score: number | null): PrototypeModel =>
+    toPrototypeModel(card({ model_name: name, primary_score: score }), 'TEXT_CHAT')
+
+  it('按真实分值比例，不按名次', () => {
+    const models = [make('A', 100), make('B', 50), make('C', 25)]
+    expect(rankBarWidth(models[0], models)).toBe(100)
+    expect(rankBarWidth(models[1], models)).toBe(50)
+    expect(rankBarWidth(models[2], models)).toBe(25)
+  })
+
+  it('全部同分时不画条 —— 没有差距就不显示差距（STT 那一堆 0 的情形）', () => {
+    const models = [make('A', 0), make('B', 0), make('C', 0)]
+    expect(models.every((m) => rankBarWidth(m, models, true) === 0)).toBe(true)
+  })
+
+  it('越低越好的指标，值越小条越长', () => {
+    const models = [make('A', 2), make('B', 4), make('C', 8)]
+    expect(rankBarWidth(models[0], models, true)).toBe(100)
+    expect(rankBarWidth(models[1], models, true)).toBe(50)
+    expect(rankBarWidth(models[2], models, true)).toBe(25)
+  })
+
+  it('无分值的模型不画条', () => {
+    const models = [make('A', 100), make('B', null)]
+    expect(rankBarWidth(models[1], models)).toBe(0)
   })
 })

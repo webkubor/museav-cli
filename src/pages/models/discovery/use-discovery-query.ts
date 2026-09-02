@@ -5,8 +5,14 @@
  */
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { getDiscoveryOverview, listDiscoveryRankings } from '@/services/model-discovery'
+import {
+  getDiscoveryOverview,
+  getDiscoveryUsageTrends,
+  joinSourceModelIds,
+  listDiscoveryRankings,
+} from '@/services/model-discovery'
 import { DISCOVERY_PRIMARY_METRIC } from '@/constants/model-discovery'
+import type { DiscoveryUsageTrends } from '@/types'
 import {
   discoveryTypeFor,
   toPrototypeModel,
@@ -70,4 +76,32 @@ export function useDiscoveryQuery(modality: ModalityKey, task: string): Discover
     isLoading: rankings.isLoading || overview.isLoading,
     isError: rankings.isError || overview.isError,
   }
+}
+
+
+/**
+ * 选中模型的近 7 日用量趋势。
+ *
+ * 原型这里是编的：一组固定的 7 天系数乘当前用量，所有模型曲线形状一模一样，
+ * 增长率也是由此算出来的假值。真实序列走 usage-trends 接口。
+ *
+ * 注意序列里每个点是「该快照日回看 7 天」的**滚动**用量，不是当日增量；
+ * `growth_rate` 在序列不足两点或起点为 0 时为 null（此时不显示增长率）。
+ */
+export function useDiscoveryTrends(
+  modality: ModalityKey,
+  task: string,
+  sourceModelIds: readonly string[],
+): { data: DiscoveryUsageTrends | undefined; isLoading: boolean } {
+  const type = discoveryTypeFor(modality, task)
+  const ids = joinSourceModelIds([...sourceModelIds].sort())
+
+  const query = useQuery({
+    queryKey: ['discovery-usage-trends', type, ids],
+    queryFn: () => getDiscoveryUsageTrends({ type: type!, source_model_ids: ids }),
+    enabled: Boolean(type && ids),
+    staleTime: STALE_TIME,
+  })
+
+  return { data: query.data, isLoading: query.isLoading }
 }

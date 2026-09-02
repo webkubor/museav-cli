@@ -82,6 +82,8 @@ export function formatPrice(value: number | null, type: DiscoveryType): string {
 /** 原型的 DiscoveryModel 形状（与 ModelDiscoveryPagePrototype 内的类型一致）。 */
 export interface PrototypeModel {
   id?: string
+  /** 接口入参用的唯一标识，usage-trends / analysis 都要它。 */
+  sourceModelId: string
   name: string
   provider: string
   supported: boolean
@@ -116,6 +118,7 @@ export function toPrototypeModel(item: DiscoveryRankingItem, type: DiscoveryType
   return {
     // 只有已接入的模型能跳详情；modelgo_id 为空时也不给 id，避免点出 404
     id: supported && item.modelgo_id ? item.modelgo_id : undefined,
+    sourceModelId: item.source_model_id,
     name: item.model_name,
     provider: item.creator_name ?? '',
     supported,
@@ -285,6 +288,35 @@ function highlightUnit(key: HighlightKey, type: DiscoveryType): string {
   if (key === 'highest_usage') return USAGE_UNIT_LABEL[type]
   if (key === 'highest_value') return isLanguageType(type) ? 'Index / USD' : 'Elo / USD'
   return isLanguageType(type) ? 'Index' : type === 'STT' ? '%' : 'Elo'
+}
+
+/**
+ * Top 5 进度条的宽度，按真实分值算。
+ *
+ * 原型这里写的是 `94 - index * 7%` —— 按**名次**递减，跟分值毫无关系。在分值本来
+ * 就递减的 tab 上凑巧看不出来，但 STT 的前 5 名全是 0%（第三方 WER 精度太粗，
+ * 真实值被压成 0），进度条却仍一根比一根短，等于用视觉编造出并不存在的差距。
+ *
+ * 现在的口径：条长 = 该模型相对最优值的比例。越高越好的指标取 `value / max`，
+ * 越低越好的（STT 的 WER）取 `min / value`。**全部同值时返回 0（不画条）** ——
+ * 没有差距就不该显示出差距。
+ */
+export function rankBarWidth(
+  model: PrototypeModel,
+  models: readonly PrototypeModel[],
+  ascending = false,
+): number {
+  const values = models.map((item) => item.raw.score).filter((value): value is number => value !== null)
+  const own = model.raw.score
+  if (own === null || values.length === 0) return 0
+
+  const max = Math.max(...values)
+  const min = Math.min(...values)
+  // 全部同分（STT 的一堆 0 就是这种）：没有差距可表达，不画条
+  if (max === min) return 0
+
+  const ratio = ascending ? (own === 0 ? 1 : min / own) : own / max
+  return Math.max(0, Math.min(100, ratio * 100))
 }
 
 /** 用量单位的中文展示名。 */

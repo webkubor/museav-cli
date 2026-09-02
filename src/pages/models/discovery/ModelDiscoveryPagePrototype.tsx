@@ -39,8 +39,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import { InfoTip } from '@/components/ui/InfoTip'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
 import { Pagination } from '@/components/ui/Pagination'
-import { useDiscoveryQuery } from './use-discovery-query'
-import { specialtyRows } from './discovery-data'
+import { useDiscoveryQuery, useDiscoveryTrends } from './use-discovery-query'
+import { rankBarWidth, specialtyRows } from './discovery-data'
 
 type ModalityKey = "agent" | "text" | "image" | "video" | "audio";
 type RankingMetric = "overall" | "value" | "price" | "usage";
@@ -212,6 +212,11 @@ const taskMetricSources: Record<ModalityKey, Record<string, string>> = {
  * 成本的五项拆解（输出/推理/缓存写入/缓存命中/输入）接口不提供，原型是按固定
  * 比例从总额切出来的假明细，已随之删除（缺口见 qa#709）。
  */
+/** 增长率带符号展示。真实数据里存在负增长，不能像原型那样把 + 写死。 */
+function formatGrowth(growth: number) {
+  return `${growth > 0 ? "+" : ""}${growth}%`;
+}
+
 function taskCostFor(model: DiscoveryModel): number {
   return plainMetricValue(model.price);
 }
@@ -973,19 +978,31 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   const yUnit = constrainedAnalysisProfile && yMetric === 1
     ? constrainedAnalysisProfile.xMetrics.find((metric) => metric.source === "price")?.unit ?? taskProfile.valueUnit
     : taskProfile.qualityUnit;
+  /**
+   * 近 7 日使用趋势走 usage-trends 接口。
+   *
+   * 原型这里是编的：一组固定的 7 天系数（0.68→1）乘当前用量，再按模型序号微调，
+   * 所有模型的曲线形状一模一样，增长率也是由这组假值算出来的。
+   *
+   * 接口的 growth_rate 是小数（0.5 = +50%），且**可能为 null** —— 序列不足两个点
+   * （系统刚上线只有一天快照），或起点用量为 0，都算不出增长率。这类模型不进
+   * 趋势图，而不是当成 0% 画一根空柱。
+   */
   const trendModels = chartModels.filter((model) => isModelConnected(model) && model.usage !== "—");
-  const trendSeries = trendModels.map((model, modelIndex) => {
-    const base = Math.max(metricValue(model.usage), 1_000);
-    const factors = [0.68, 0.74, 0.72, 0.81, 0.86, 0.92, 1];
-    const values = factors.map((factor, dayIndex) => base * factor * (1 + modelIndex * 0.015 - dayIndex * modelIndex * 0.002));
-    return {
-      model,
-      color: providerMarkColors[model.provider] ?? "#5472b8",
-      values,
-      growth: Math.round((values[6] / values[0] - 1) * 100),
-      usage: model.usage,
-    };
-  }).sort((left, right) => right.growth - left.growth);
+  const { data: trendData } = useDiscoveryTrends(modality, task, trendModels.map((model) => model.sourceModelId));
+  const trendSeries = trendModels
+    .map((model) => {
+      const remote = trendData?.models.find((item) => item.source_model_id === model.sourceModelId);
+      if (!remote || remote.growth_rate === null) return undefined;
+      return {
+        model,
+        color: providerMarkColors[model.provider] ?? "#5472b8",
+        growth: Math.round(remote.growth_rate * 100),
+        usage: model.usage,
+      };
+    })
+    .filter((series): series is NonNullable<typeof series> => series !== undefined)
+    .sort((left, right) => right.growth - left.growth);
   const trendGrowthMaximum = Math.max(1, ...trendSeries.map((series) => series.growth));
   const trendGrowthMidpoint = Math.ceil(trendGrowthMaximum / 2);
   const trendUsageLabel = modality === "text" ? "近 7 日 Token 用量" : taskProfile.usageLabel;
@@ -1100,7 +1117,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
           )}
           {visibleModels.slice(0, 5).map((model, index) => {
             const hasDetail = canOpenModelDetail(model);
-            return <div aria-label={hasDetail ? modelDetailAriaLabel(model) : undefined} className={`model-discovery-rank-row ${hasDetail ? "model-discovery-row-clickable" : ""}`} key={model.name} onClick={hasDetail ? () => openModelDetail(model) : undefined} onKeyDown={hasDetail ? (event) => handleModelRowKeyDown(event, model) : undefined} role={hasDetail ? "link" : undefined} tabIndex={hasDetail ? 0 : undefined}><span>{index + 1}</span><strong>{model.name}<small>{model.provider}</small></strong><em className={isModelConnected(model) ? "supported" : "pending"}>{modelAccessLabel(model)}</em><div><i style={{ width: `${94 - index * 7}%` }} /><b>{model.score}</b></div></div>;
+            return <div aria-label={hasDetail ? modelDetailAriaLabel(model) : undefined} className={`model-discovery-rank-row ${hasDetail ? "model-discovery-row-clickable" : ""}`} key={model.name} onClick={hasDetail ? () => openModelDetail(model) : undefined} onKeyDown={hasDetail ? (event) => handleModelRowKeyDown(event, model) : undefined} role={hasDetail ? "link" : undefined} tabIndex={hasDetail ? 0 : undefined}><span>{index + 1}</span><strong>{model.name}<small>{model.provider}</small></strong><em className={isModelConnected(model) ? "supported" : "pending"}>{modelAccessLabel(model)}</em><div><i style={{ width: `${rankBarWidth(model, visibleModels.slice(0, 5), scoreAscending)}%` }} /><b>{model.score}</b></div></div>;
           })}
           <div className="model-discovery-rank-more"><button onClick={viewFullRanking} type="button">查看更多<LuChevronDown size={13} /></button></div>
         </article>
@@ -1194,7 +1211,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                 </div>}
               </div>
               <div className="mg-tile model-discovery-trend"><h3><LuTrendingUp size={14} />近 7 日 ModelGo 使用趋势</h3><p>按增长率从高到低排列</p>
-                {trendSeries.length > 0 ? <><div className="model-discovery-trend-chart"><div className="model-discovery-trend-axis"><span>+{trendGrowthMaximum}%</span><span>+{trendGrowthMidpoint}%</span><span>0%</span></div><div className="model-discovery-trend-plot" style={{ "--trend-count": trendSeries.length } as CSSProperties}>{trendSeries.map((series) => <button aria-label={`${series.model.name}，近 7 日增长 ${series.growth}%，${trendUsageLabel} ${series.usage}`} className="model-discovery-trend-column" key={series.model.name} style={{ "--trend-color": series.color, "--trend-height": `${Math.max(12, series.growth / trendGrowthMaximum * 100)}%` } as CSSProperties} type="button"><span className="model-discovery-trend-tooltip" role="tooltip"><strong>{series.model.name}</strong><em>{trendUsageLabel}</em><b>{series.usage}</b></span><i><b>+{series.growth}%</b></i><span title={series.model.name}>{series.model.name}</span></button>)}</div></div><div className="model-discovery-trend-legend">{trendSeries.map((series) => <span key={series.model.name}><i style={{ "--trend-color": series.color } as CSSProperties} /><strong>{series.model.name}</strong><b>+{series.growth}%</b></span>)}</div></> : <div className="model-discovery-trend-empty">选择已接入模型后查看趋势</div>}
+                {trendSeries.length > 0 ? <><div className="model-discovery-trend-chart"><div className="model-discovery-trend-axis"><span>{formatGrowth(trendGrowthMaximum)}</span><span>{formatGrowth(trendGrowthMidpoint)}</span><span>0%</span></div><div className="model-discovery-trend-plot" style={{ "--trend-count": trendSeries.length } as CSSProperties}>{trendSeries.map((series) => <button aria-label={`${series.model.name}，近 7 日${formatGrowth(series.growth)}，${trendUsageLabel} ${series.usage}`} className="model-discovery-trend-column" key={series.model.name} style={{ "--trend-color": series.color, "--trend-height": `${Math.max(12, Math.max(0, series.growth) / trendGrowthMaximum * 100)}%` } as CSSProperties} type="button"><span className="model-discovery-trend-tooltip" role="tooltip"><strong>{series.model.name}</strong><em>{trendUsageLabel}</em><b>{series.usage}</b></span><i><b>{formatGrowth(series.growth)}</b></i><span title={series.model.name}>{series.model.name}</span></button>)}</div></div><div className="model-discovery-trend-legend">{trendSeries.map((series) => <span key={series.model.name}><i style={{ "--trend-color": series.color } as CSSProperties} /><strong>{series.model.name}</strong><b>{formatGrowth(series.growth)}</b></span>)}</div></> : <div className="model-discovery-trend-empty">{trendModels.length === 0 ? "选择已接入模型后查看趋势" : "所选模型暂无足够的历史快照，无法计算增长率"}</div>}
               </div>
             </aside>
           </div>

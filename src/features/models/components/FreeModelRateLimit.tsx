@@ -67,7 +67,9 @@ export function FreeModelRateLimit({ model, className = '' }: { model: RateLimit
       <LuInfo size={14} className="mt-0.5 shrink-0 text-mg-warning" />
       <span>
         <strong className="font-semibold text-mg-warning">{t('modelsExperience.freeQuota')}</strong>
-        {' '}{limits}；{waitText}
+        {/* 分隔符跟着语言走：中文全角「；」、英文半角「; 」。硬编码全角分号会让
+            英文文案变成 "rate limits apply；Once a limit..." */}
+        {' '}{limits}{t('modelsExperience.rateLimit.separator')}{waitText}
       </span>
     </p>
   )

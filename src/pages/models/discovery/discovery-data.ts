@@ -176,7 +176,7 @@ export function specialtyRows(
   title: string,
   models: readonly PrototypeModel[],
   options: { limit?: number; scoreAscending?: boolean } = {},
-): Array<{ model: string; value: string; provider: string; short: string; ratio: number; numeric: number }> {
+): Array<{ model: string; value: string; provider: string; short: string; numeric: number }> {
   const { limit = 10, scoreAscending = false } = options
   const spec = specialtyFieldFor(title, scoreAscending)
   if (!spec) return []
@@ -188,10 +188,6 @@ export function specialtyRows(
       return spec.ascending ? a - b : b - a
     })
     .slice(0, limit)
-
-  const values = picked.map((model) => model.raw[spec.field]!)
-  const max = Math.max(...values, 0)
-  const min = Math.min(...values, max)
 
   return picked.map((model) => {
     const raw = model.raw[spec.field]!
@@ -215,15 +211,38 @@ export function specialtyRows(
       // 单位已经写在图表副标题里（如「（USD / Task）」），柱子上重复一遍纯属噪声。
       short: compactBarLabel(value),
       // 图表用的原始数值。手写图表只需要格式化字符串，交给 Recharts 后要的是数值本身，
-      // 由它自己算 domain 与柱长——不再需要前端手写归一化。
+      // 柱高由它按 Y 轴 domain 算（min-max 归一化的口径搬到了 discovery-charts 的
+      // specialtyBarDomain），这里不再逐行算 ratio。
       numeric: raw,
-      // 柱高比例：**min-max 归一化**，不是 value/max。
-      // 真实数据的值域常常很窄（综合评分 61.3→57.1 只差 7%），按 value/max 算出来
-      // 十根柱子肉眼等高，图表等于没有信息量。归一化后同一张图内的排序差异能看出来；
-      // 每根柱子上都标着真实数值，不会因此误读绝对量。
-      ratio: max === min ? 1 : (raw - min) / (max - min),
     }
   })
+}
+
+/**
+ * 柱高的值域。
+ *
+ * **min-max 归一化**，不是 value/max：真实数据的值域常常很窄（综合评分
+ * 61.3→57.1 只差 7%），按 value/max 算出来十根柱子肉眼等高，图表等于没有信息量。
+ * 归一化后同一张图内的排序差异能看出来；每根柱子上都标着真实数值，不会误读绝对量。
+ *
+ * 原先这是数据层逐行算好的 `ratio` 字段 + CSS `--bar-height`。交给 Recharts 后
+ * 只需给 Y 轴一个下界：柱高 = (v - lo) / (max - lo)，令最小值落在 FLOOR 处
+ * 即得 lo = (min - FLOOR × max) / (1 - FLOOR)。
+ *
+ * **下界不允许为负**：值域本来就宽的指标（使用量 2.4M vs 50K）算出来的 lo 是负数，
+ * 而 Recharts 的柱底恒取「domain 里离 0 最近的点」，负下界会被它拉回 0，
+ * 算出来的柱高对不上。夹到 0 之后两种情形各自成立：值域窄 → 抬下界拉开差距；
+ * 值域宽 → 真实零基线（本来也不需要拉开）。最矮的柱由 Bar 的 minPointSize 保底可见。
+ */
+const BAR_FLOOR = 0.28
+export function specialtyBarDomain(values: readonly number[]): [number, number] {
+  const finite = values.filter(Number.isFinite)
+  if (finite.length === 0) return [0, 1]
+  const max = Math.max(...finite)
+  const min = Math.min(...finite)
+  // 全部同值：没有差距可表达，给满格（与原先 ratio 恒为 1 一致）
+  if (max === min) return [0, max > 0 ? max : 1]
+  return [Math.max(0, (min - BAR_FLOOR * max) / (1 - BAR_FLOOR)), max]
 }
 
 /** 柱内标签：剥掉货币符号、单位与后缀，只留数字（含小数点与千分位）。 */

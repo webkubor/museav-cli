@@ -74,9 +74,6 @@
   --discovery-advantage-text: #35794a;
   --discovery-growth-text: #25845e;
 
-  /* 柱状图底部的收窄圆角，原型定的 1px */
-  --discovery-radius-hairline: 1px;
-
   /* ── 动效时长：三档 ──────────────────────────────────────────
      原型散着用了 120/140/160/180/200ms 五个中间值，cs ui 实测全页 11 种时长
      未收敛（参照站 7 种）。收敛成三档，语义分明：
@@ -84,7 +81,9 @@
        instant 100ms — hover / 跟手反馈。参照站的主力档就是 0.1s，
                        快到几乎无感，是「跟手」而不是「动画」
        base    180ms — 状态切换、展开收起、重排
-       enter   420ms — 数据到达后的入场，唯一允许被看见的动画
+       enter   420ms — 数据到达后的入场，唯一允许被看见的动画。三张图改走 Recharts 后
+                       入场由它的 animationDuration 驱动，值在 discovery-charts.tsx 的
+                       ENTER_DURATION，档位真源仍是这一行
 
      旧变量名保留并映射到新档位，避免散落各处的引用点逐个改。 */
   --discovery-dur-instant: 100ms;
@@ -94,7 +93,6 @@
   --discovery-dur-snap: var(--discovery-dur-instant);
   --discovery-dur-quick: var(--discovery-dur-instant);
   --discovery-dur-swift: var(--discovery-dur-instant);
-  --discovery-dur-smooth: var(--discovery-dur-base);
   --discovery-dur-ease: var(--discovery-dur-base);
 
   /* ── 补一层最弱文字灰阶 ──────────────────────────────────────
@@ -111,9 +109,7 @@
   /* 分段控件选中态的贴边投影，比 chip 更近更浅（原型 runtime-range-switch） */
   --discovery-shadow-segment: 0 1px 3px rgba(24, 34, 48, 0.12);
   --discovery-shadow-tooltip: 0 8px 20px rgba(35, 52, 84, 0.16);
-  --discovery-shadow-tooltip-lg: 0 10px 24px rgba(32, 48, 75, 0.18);
   --discovery-shadow-popover: 0 16px 32px rgba(34, 53, 82, 0.16);
-  --discovery-shadow-raised: 0 10px 24px rgba(28, 45, 76, 0.15);
   --discovery-shadow-float: 0 10px 26px rgba(25, 43, 75, 0.16);
   /* 双层：大扩散 + 近距贴边，原型用在模型筛选 popover */
   --discovery-shadow-overlay: 0 16px 36px rgba(43, 63, 98, 0.16), 0 2px 8px rgba(43, 63, 98, 0.06);
@@ -841,217 +837,122 @@
   margin-left: auto;
 }
 
+/* Recharts 的 ResponsiveContainer 直接量这个容器的宽度，所以它只留外边距，
+   不再设 height / position —— 高度由图表组件给，坐标由 scale 算。 */
 .model-discovery-scatter-plot {
-  height: 286px;
-  margin: 8px 28px 35px 54px;
-  position: relative;
+  margin-top: 6px;
+  min-width: 0;
 }
 
-.model-discovery-gridline {
-  background: color-mix(in srgb, var(--line) 72%, transparent);
-  display: block;
-  pointer-events: none;
-  position: absolute;
-  z-index: 1;
-}
-
-.model-discovery-gridline.horizontal {
-  bottom: var(--grid-position);
-  height: 1px;
-  left: 0;
-  right: 0;
-}
-
-.model-discovery-gridline.vertical {
-  bottom: 0;
-  left: var(--grid-position);
-  top: 0;
-  width: 1px;
-}
-
-/* 轴刻度降到最弱层：它是参考坐标而不是内容，跟数值同灰度会抢注意力 */
-.model-discovery-gridline span {
-  color: var(--discovery-text-faint);
-  font-size: 9px;
-  font-style: normal;
-  font-variant-numeric: tabular-nums;
-  position: absolute;
-  white-space: nowrap;
-}
-
-.model-discovery-gridline.horizontal span {
-  right: calc(100% + 8px);
-  top: 0;
-  transform: translateY(-50%);
-}
-
-.model-discovery-gridline.vertical span {
-  left: 0;
-  top: calc(100% + 8px);
-  transform: translateX(-50%);
-}
-
+/* 轴标题（Recharts <Label> 渲染成 SVG text，故用 fill 而不是 color） */
 .model-discovery-axis-title {
-  align-items: center;
-  color: var(--text-soft);
-  display: inline-flex;
+  fill: var(--text-soft);
   font-size: 10px;
-  gap: 6px;
   font-weight: 620;
-  position: absolute;
-  white-space: nowrap;
-  z-index: 2;
 }
 
-.model-discovery-axis-title.y-axis {
-  left: -49px;
-  top: 50%;
-  transform: rotate(-90deg) translate(-50%, 0);
-  transform-origin: left top;
+/* 优选区：ReferenceArea 渲染成一层 <g>，底色画在里面那条 path 上（recharts 画的是
+   path 不是 rect，选择器写 rect 会静默不生效）。CSS 声明优先于 SVG 的
+   presentation attribute，所以能盖掉 recharts 的默认灰。 */
+.model-discovery-advantage-zone .recharts-reference-area-rect {
+  fill: color-mix(in srgb, #71c785 16%, transparent);
+  stroke: color-mix(in srgb, #52a96a 22%, transparent);
 }
 
-.model-discovery-axis-title.x-axis {
-  bottom: -36px;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.model-discovery-advantage-zone {
-  background: color-mix(in srgb, #71c785 16%, transparent);
-  border: 1px solid color-mix(in srgb, #52a96a 22%, transparent);
-  height: 44%;
-  pointer-events: none;
-  position: absolute;
-  top: 0;
-  width: 48%;
-  z-index: 0;
-}
-
-.model-discovery-advantage-zone.left { left: 0; }
-.model-discovery-advantage-zone.right { right: 0; }
-
-.model-discovery-advantage-zone span {
-  color: var(--discovery-advantage-text);
+.model-discovery-advantage-label {
+  fill: var(--discovery-advantage-text);
   font-size: 9px;
   font-weight: 650;
-  left: 9px;
-  position: absolute;
-  top: 7px;
+}
+
+/* 散点：一个 <g> 承载交互（可点 / 联动 / 键盘），里面的 circle 只管画。 */
+.model-discovery-point-hit {
+  outline: 0;
+}
+
+.model-discovery-point-hit.clickable {
+  cursor: pointer;
 }
 
 .model-discovery-scatter-point {
-  background: transparent;
-  border: 0;
-  bottom: var(--point-bottom);
-  cursor: pointer;
-  height: 14px;
-  left: var(--point-left);
-  outline: 0;
-  padding: 0;
-  position: absolute;
-  transform: translate(-50%, 50%);
-  /* 切换 X 轴指标时点位会整体重排。位置由 --point-left/--point-bottom 驱动，
-     给 left/bottom 加过渡即可平滑滑到新坐标——比先消失再淡入更能让人跟住
-     「同一个模型换了个维度看」。 */
-  transition: left var(--discovery-dur-base) var(--mg-ease-decelerate),
-    bottom var(--discovery-dur-base) var(--mg-ease-decelerate);
-  width: 14px;
-  z-index: 4;
+  fill: var(--point-color);
+  stroke: var(--panel);
+  stroke-width: 2px;
+  transition: r var(--discovery-dur-instant) var(--mg-ease-standard),
+    stroke-width var(--discovery-dur-instant) var(--mg-ease-standard);
 }
 
-.model-discovery-scatter-point > i {
-  background: var(--point-color);
-  border: 2px solid var(--panel);
-  border-radius: var(--discovery-radius-circle);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--point-color) 74%, var(--line));
-  display: block;
-  height: 12px;
-  transition: box-shadow var(--discovery-dur-smooth) ease, transform var(--discovery-dur-smooth) ease;
-  width: 12px;
+/* 未接入的画空心：与图例「实心：已接入 · 空心：暂未接入」对应 */
+.model-discovery-scatter-point.pending {
+  fill: var(--panel);
+  stroke: var(--point-color);
 }
 
-.model-discovery-scatter-point.pending > i {
-  background: var(--panel);
-  border-color: var(--point-color);
+.model-discovery-point-hit:hover .model-discovery-scatter-point,
+.model-discovery-point-hit:focus-visible .model-discovery-scatter-point {
+  r: 8;
 }
 
-.model-discovery-scatter-point:hover > i,
-.model-discovery-scatter-point:focus-visible > i {
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--point-color) 18%, transparent);
-  transform: scale(1.18);
+/* ── 图表联动 ────────────────────────────────────────────────
+   柱图与散点图画的是同一批模型。hover 任一处，另一处的同名模型跟着亮起来 ——
+   这是两张图之间唯一的关联线索，没有它用户看不出散点右上角那个点就是柱图第一根。
+   被联动的一侧只做「提亮 + 微放大」，不改变位置，避免看起来像数据变了。 */
+.model-discovery-point-hit.linked .model-discovery-scatter-point {
+  r: 9;
+  stroke: var(--point-color);
+  stroke-opacity: 0.35;
+  stroke-width: 6px;
 }
 
-/* 点标签默认淡出、hover/focus 才实体：散点常常挤在同一区域（性价比高的模型天然
-   聚在一角），7 个点的标签就已经互相叠住、还压在点上。完整信息在 tooltip 与
-   aria-label 里，静态看图靠图例的厂商配色区分即可。 */
-.model-discovery-point-label {
-  color: var(--text-soft);
-  font-size: 9px;
-  font-weight: 590;
-  left: 17px;
-  line-height: 1.2;
-  max-width: 112px;
-  opacity: 0;
-  overflow: hidden;
-  pointer-events: none;
-  position: absolute;
-  text-overflow: ellipsis;
-  top: -1px;
-  transition: opacity var(--discovery-dur-swift) ease;
-  white-space: nowrap;
+.model-discovery-point-hit:focus-visible .model-discovery-scatter-point {
+  stroke: var(--accent);
+  stroke-width: 3px;
 }
 
-.model-discovery-scatter-point:hover .model-discovery-point-label,
-.model-discovery-scatter-point:focus-visible .model-discovery-point-label {
-  opacity: 1;
-}
-
-.model-discovery-scatter-point.label-left .model-discovery-point-label {
-  left: auto;
-  right: 17px;
-  text-align: right;
-}
-
-.model-discovery-scatter-point.label-up .model-discovery-point-label { top: -11px; }
-.model-discovery-scatter-point.label-down .model-discovery-point-label { top: 8px; }
-
-.model-discovery-point-tooltip {
-  background: var(--text);
-  border-radius: var(--discovery-radius-md);
-  box-shadow: var(--discovery-shadow-tooltip-lg);
-  color: var(--discovery-on-dark);
-  display: grid;
-  gap: 3px;
-  left: 50%;
-  min-width: 190px;
-  opacity: 0;
-  padding: 8px 10px;
-  pointer-events: none;
-  position: absolute;
-  top: 20px;
-  transform: translate(-50%, -3px);
-  transition: opacity var(--discovery-dur-swift) ease, transform var(--discovery-dur-swift) ease;
-  visibility: hidden;
-  z-index: 10;
-}
-
-.model-discovery-point-tooltip strong { font-size: 10px; }
-.model-discovery-point-tooltip em { color: rgba(255, 255, 255, 0.72); font-size: 9px; font-style: normal; }
-
-.model-discovery-scatter-point:hover .model-discovery-point-tooltip,
-.model-discovery-scatter-point:focus-visible .model-discovery-point-tooltip {
-  opacity: 1;
-  transform: translate(-50%, 0);
-  visibility: visible;
-}
-
-.model-discovery-chart-empty {
+/* 图表容器内的空态（选不到模型 / 该指标无数据） */
+.model-discovery-chart-empty-block {
+  align-items: center;
   color: var(--text-tertiary);
+  display: flex;
   font-size: 11px;
-  left: 50%;
-  position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  justify-content: center;
+  min-height: 160px;
+}
+
+/* ── 图表 tooltip ───────────────────────────────────────────
+   三张图共用一份：Recharts 的 <Tooltip content> 渲染进图表容器，位置由它自己算，
+   不再需要原先那三套 `top: clamp(...)` / `nth-child` 的手工避让规则。 */
+.model-discovery-chart-tooltip {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--mg-radius-sm);
+  box-shadow: var(--discovery-shadow-float);
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 9px 11px;
+}
+
+.model-discovery-chart-tooltip strong {
+  align-items: center;
+  color: var(--text);
+  display: flex;
+  font-size: 11px;
+  gap: 6px;
+}
+
+.model-discovery-chart-tooltip span,
+.model-discovery-chart-tooltip em {
+  color: var(--text-tertiary);
+  font-size: 9px;
+  font-style: normal;
+  line-height: 1.35;
+}
+
+.model-discovery-chart-tooltip > b {
+  color: var(--text);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
 }
 
 .model-discovery-analysis-aside {
@@ -1228,132 +1129,27 @@
   grid-column: 1 / -1;
 }
 
+/* Recharts 容器：高度由图表组件给，这里只留外边距 */
 .model-discovery-trend-chart {
-  display: grid;
-  gap: 6px;
-  grid-template-columns: 25px minmax(0, 1fr);
-  height: 142px;
   margin-top: 9px;
-}
-
-.model-discovery-trend-axis {
-  color: var(--text-tertiary);
-  display: grid;
-  font-size: 9px;
-  grid-template-rows: auto 1fr auto 1fr auto;
-  padding-bottom: 24px;
-  text-align: right;
-}
-
-.model-discovery-trend-axis span:nth-child(1) { grid-row: 1; }
-.model-discovery-trend-axis span:nth-child(2) { grid-row: 3; }
-.model-discovery-trend-axis span:nth-child(3) { grid-row: 5; }
-
-.model-discovery-trend-plot {
-  align-items: end;
-  background-image: linear-gradient(to bottom, var(--line) 1px, transparent 1px), linear-gradient(to bottom, transparent calc(50% - 1px), var(--line) 50%, transparent calc(50% + 1px));
-  border-bottom: 1px solid var(--line);
-  display: grid;
-  gap: 4px;
-  grid-template-columns: repeat(var(--trend-count), minmax(0, 1fr));
   min-width: 0;
-  padding: 0 2px;
 }
 
-.model-discovery-trend-column {
-  align-items: center;
-  align-self: stretch;
-  background: transparent;
-  border: 0;
-  color: var(--text);
-  cursor: default;
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) 24px;
-  min-width: 0;
-  padding: 0;
-  position: relative;
-}
-
-.model-discovery-trend-column > i {
-  align-items: flex-start;
-  align-self: end;
-  background: var(--trend-color);
-  border-radius: var(--discovery-radius-2xs) var(--discovery-radius-2xs) var(--discovery-radius-hairline) var(--discovery-radius-hairline);
-  display: flex;
-  height: var(--trend-height);
-  justify-content: center;
-  max-width: 26px;
-  min-height: 18px;
+.model-discovery-trend-bar {
+  fill: var(--trend-color);
   opacity: 0.88;
-  padding-top: 4px;
-  transition: filter var(--mg-duration-fast) ease, opacity var(--mg-duration-fast) ease, transform var(--mg-duration-fast) ease;
-  width: 68%;
+  rx: var(--discovery-radius-2xs);
 }
 
-.model-discovery-trend-column > i b {
-  color: var(--discovery-on-dark);
+.model-discovery-trend-label {
+  fill: var(--text-soft);
   font-size: 9px;
-  font-style: normal;
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-}
-
-.model-discovery-trend-column > span:not(.model-discovery-trend-tooltip) {
-  align-self: center;
-  color: var(--text-soft);
-  font-size: 9px;
-  max-width: 100%;
-  overflow: hidden;
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.model-discovery-trend-column:hover > i,
-.model-discovery-trend-column:focus-visible > i {
-  filter: saturate(1.08);
-  opacity: 1;
-  transform: translateY(-2px);
-}
-
-.model-discovery-trend-tooltip {
-  background: var(--panel);
-  border: 1px solid color-mix(in srgb, var(--trend-color) 38%, var(--line));
-  border-radius: var(--discovery-radius-md);
-  box-shadow: var(--discovery-shadow-raised);
-  display: grid;
-  gap: 3px;
-  left: 50%;
-  min-width: 146px;
-  opacity: 0;
-  padding: 8px 9px;
-  pointer-events: none;
-  position: absolute;
-  top: 4px;
-  transform: translate(-50%, -4px);
-  transition: opacity var(--discovery-dur-quick) ease, transform var(--discovery-dur-quick) ease;
-  visibility: hidden;
-  z-index: 4;
-}
-
-.model-discovery-trend-tooltip strong { font-size: 10px; }
-
-.model-discovery-trend-tooltip em {
-  color: var(--text-tertiary);
-  font-size: 9px;
-  font-style: normal;
-}
-
-.model-discovery-trend-tooltip b {
-  font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 
-.model-discovery-trend-column:hover .model-discovery-trend-tooltip,
-.model-discovery-trend-column:focus-visible .model-discovery-trend-tooltip {
-  opacity: 1;
-  transform: translate(-50%, 0);
-  visibility: visible;
+/* 零线：增长率有正有负，分界线画出来才看得出方向 */
+.model-discovery-trend-zero line {
+  stroke: var(--line);
 }
 
 .model-discovery-trend-legend {
@@ -1448,187 +1244,65 @@
   margin: 4px 0 0;
 }
 
+/* Recharts 容器：柱子的排布、栅格线、轴刻度都交给图表本身，
+   这里只留外边距与 min-width:0（后者让 ResponsiveContainer 在窄屏能收缩，
+   不再把卡片撑宽导致整页横向滚动）。 */
 .model-discovery-specialty-chart {
-  align-items: start;
-  display: grid;
-  gap: 7px;
-  grid-template-columns: repeat(10, minmax(0, 1fr));
   margin-top: 13px;
   min-width: 0;
-  position: relative;
 }
 
-.model-discovery-specialty-chart::before {
-  background: repeating-linear-gradient(
-    to bottom,
-    transparent 0,
-    transparent 44px,
-    color-mix(in srgb, var(--line) 72%, transparent) 44px,
-    color-mix(in srgb, var(--line) 72%, transparent) 45px
-  );
-  content: "";
-  height: 179px;
-  inset: 0 0 auto;
-  pointer-events: none;
-  position: absolute;
-}
-
-.model-discovery-specialty-column {
-  display: grid;
-  gap: 7px;
-  min-width: 0;
+/* 柱子的交互层：一个 <g> 承载可点 / 联动 / 键盘，里面的 rect 只管画。
+   用自定义 shape 而不是 recharts 默认 Rectangle，就是为了保住这层语义。 */
+.model-discovery-bar-hit {
   outline: 0;
-  position: relative;
-  z-index: 1;
-}
-
-.model-discovery-specialty-column:hover,
-.model-discovery-specialty-column:focus-within {
-  z-index: 12;
 }
 
 /* 能跳详情的才给可点的样子；跳不了的保持默认光标，避免「看着能点、点了没反应」 */
-.model-discovery-specialty-column.clickable,
-.model-discovery-scatter-point.clickable {
+.model-discovery-bar-hit.clickable {
   cursor: pointer;
 }
 
-/* ── 图表联动 ────────────────────────────────────────────────
-   柱图与散点图画的是同一批模型。hover 任一处，另一处的同名模型跟着亮起来 ——
-   这是两张图之间唯一的关联线索，没有它用户看不出散点右上角那个点就是柱图第一根。
-   被联动的一侧只做「提亮 + 微放大」，不改变位置，避免看起来像数据变了。 */
-.model-discovery-specialty-column.linked .model-discovery-specialty-bar {
-  filter: saturate(1.15);
-  opacity: 1;
-  transform: translateY(-3px);
-}
-
-.model-discovery-scatter-point.linked {
-  z-index: 8;
-}
-
-.model-discovery-scatter-point.linked > i {
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--point-color) 22%, transparent);
-  transform: scale(1.45);
-}
-
-.model-discovery-scatter-point.linked .model-discovery-point-label {
-  opacity: 1;
-}
-
-.model-discovery-specialty-column:focus-visible {
-  border-radius: var(--discovery-radius-md);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--specialty-color) 45%, transparent);
-}
-
-.model-discovery-specialty-plot {
-  align-items: flex-end;
-  border-bottom: 1px solid color-mix(in srgb, var(--line) 85%, transparent);
-  display: flex;
-  height: 180px;
-  justify-content: center;
-  position: relative;
-}
-
 .model-discovery-specialty-bar {
-  align-items: center;
-  background: var(--specialty-color);
-  border-radius: var(--discovery-radius-xs) var(--discovery-radius-xs) var(--discovery-radius-hairline) var(--discovery-radius-hairline);
-  display: flex;
-  justify-content: center;
-  height: var(--bar-height);
-  min-height: 36px;
+  fill: var(--specialty-color);
   opacity: 0.9;
-  /* height 也进过渡：换榜单/换 tab 时柱子伸缩到新高度，不是瞬间跳变 */
-  transition: filter var(--discovery-dur-instant) var(--mg-ease-standard),
-    height var(--discovery-dur-base) var(--mg-ease-decelerate),
-    opacity var(--discovery-dur-instant) var(--mg-ease-standard),
-    transform var(--discovery-dur-instant) var(--mg-ease-standard);
-  width: min(34px, 76%);
+  rx: var(--discovery-radius-xs);
+  transition: opacity var(--discovery-dur-instant) var(--mg-ease-standard);
 }
 
-.model-discovery-specialty-bar > b {
-  color: var(--discovery-on-dark);
+.model-discovery-bar-hit:hover .model-discovery-specialty-bar,
+.model-discovery-bar-hit.linked .model-discovery-specialty-bar {
+  opacity: 1;
+}
+
+.model-discovery-bar-hit:focus-visible .model-discovery-specialty-bar {
+  stroke: var(--specialty-color);
+  stroke-opacity: 0.45;
+  stroke-width: 3px;
+}
+
+/* 柱内数值标签（recharts <LabelList> 渲染成 SVG text） */
+.model-discovery-bar-label {
+  fill: var(--discovery-on-dark);
   font-size: 9px;
   font-variant-numeric: tabular-nums;
-  font-style: normal;
-  line-height: 1.1;
-  text-align: center;
 }
 
-.model-discovery-specialty-column:hover .model-discovery-specialty-bar,
-.model-discovery-specialty-column:focus-visible .model-discovery-specialty-bar {
-  filter: saturate(1.08);
-  opacity: 1;
-  transform: translateY(-2px);
-}
-
-.model-discovery-specialty-label {
+/* X 轴刻度里的厂牌图标：装在 <foreignObject> 里，所以仍是普通 HTML 盒子。
+   语义档位最小是 dense=18px，与原先轴标签一致。 */
+.model-discovery-axis-icon {
   align-items: center;
   display: flex;
-  gap: 4px;
+  height: 18px;
   justify-content: center;
-  min-width: 0;
-  text-align: center;
+  width: 18px;
 }
 
-
-/* 模型 / 厂牌标识走 ModelIcon（见 ModelDiscoveryPagePrototype 里 DiscoveryModelIcon
-   的说明）。它的语义档位最小是 dense=18px，而原型在这两处用了 20px 与 13px ——
-   摘要卡的标识略大、柱图标签下的更小。档位像素的真源在 design-tokens，为两个
-   一次性尺寸去改跨仓 token 不划算，所以在本页作用域内重设 --logo-box：仍然走
-   组件自己的变量通道，不在调用点写 width/height。 */
+/* 摘要卡的标识略大：档位像素的真源在 design-tokens，为一个一次性尺寸去改跨仓
+   token 不划算，所以在本页作用域内重设 --logo-box —— 仍然走组件自己的变量通道，
+   不在调用点写 width/height。 */
 .model-discovery-summary-model .mg-logo {
   --logo-box: 20px;
-}
-
-/* 轴标签只剩图标，尺寸提到 18px（原 13px 是为了给旁边的文字让位，文字去掉后
-   13px 显得过小、辨识不出厂牌）。 */
-.model-discovery-specialty-label .mg-logo {
-  --logo-box: 18px;
-}
-
-/* ── 图表入场 ────────────────────────────────────────────────
-   数据是异步到达的，直接「啪」地出现在页面上没有任何来处感。柱子从底部逐根
-   生长、散点淡入缩放，把「数据刚到」这件事表达出来。
-   stagger 30ms × 序号，十根柱子共 300ms 铺完，不拖沓。
-   backwards 保证延迟期间保持起始态，不会先闪一下完整柱子再回到 0。 */
-@keyframes discovery-bar-grow {
-  from {
-    height: 0;
-    opacity: 0;
-  }
-}
-
-@keyframes discovery-point-in {
-  from {
-    opacity: 0;
-    transform: scale(0.4);
-  }
-}
-
-.model-discovery-specialty-bar {
-  animation: discovery-bar-grow var(--discovery-dur-enter) var(--mg-ease-decelerate) backwards;
-  animation-delay: calc(var(--bar-index, 0) * 30ms);
-}
-
-.model-discovery-scatter-point {
-  animation: discovery-point-in var(--discovery-dur-enter) var(--mg-ease-decelerate) backwards;
-  animation-delay: calc(var(--point-index, 0) * 30ms);
-}
-
-.model-discovery-scatter-point > i {
-  transition: box-shadow var(--discovery-dur-instant) var(--mg-ease-standard),
-    transform var(--discovery-dur-instant) var(--mg-ease-standard);
-}
-
-/* 关掉动效偏好时不播入场，只保留最终态 */
-@media (prefers-reduced-motion: reduce) {
-  .model-discovery-specialty-bar,
-  .model-discovery-scatter-point {
-    animation: none;
-    transition: none;
-  }
 }
 
 /* 只剩热门 Agent 排行用它（按 PRD 显示应用名首字符，Agent 应用不是模型，
@@ -1646,122 +1320,6 @@
   height: 18px;
   justify-content: center;
   width: 18px;
-}
-
-.model-discovery-specialty-label strong {
-  display: block;
-  font-size: 9px;
-  font-weight: 680;
-  line-height: 1.25;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.model-discovery-specialty-tooltip {
-  background: #fff;
-  border: 1px solid color-mix(in srgb, var(--specialty-color) 42%, var(--line));
-  border-radius: var(--mg-radius-sm);
-  bottom: auto;
-  box-shadow: var(--discovery-shadow-float);
-  display: grid;
-  gap: 5px;
-  left: 50%;
-  min-width: 0;
-  opacity: 0;
-  padding: 10px 11px;
-  pointer-events: none;
-  position: absolute;
-  top: clamp(8px, calc(100% - var(--bar-height) - 78px), 92px);
-  transform: translate(-50%, -5px);
-  transition: opacity var(--discovery-dur-quick) ease, transform var(--discovery-dur-quick) ease;
-  visibility: hidden;
-  width: 210px;
-  z-index: 20;
-}
-
-.model-discovery-specialty-tooltip strong {
-  align-items: center;
-  display: flex;
-  font-size: 11px;
-  gap: 6px;
-  white-space: nowrap;
-}
-
-.model-discovery-specialty-tooltip span {
-  color: var(--text-tertiary);
-  font-size: 9px;
-  line-height: 1.35;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.model-discovery-specialty-tooltip > b {
-  color: var(--text);
-  font-size: 17px;
-  font-variant-numeric: tabular-nums;
-}
-
-.model-discovery-cost-breakdown {
-  border-top: 1px solid var(--line);
-  display: grid;
-  gap: 4px;
-  margin: 2px 0 0;
-  padding: 7px 0 0;
-}
-
-.model-discovery-cost-breakdown > div {
-  align-items: center;
-  display: flex;
-  gap: 12px;
-  justify-content: space-between;
-}
-
-.model-discovery-cost-breakdown dt,
-.model-discovery-cost-breakdown dd {
-  font-size: 9px;
-  line-height: 1.25;
-  margin: 0;
-}
-
-.model-discovery-cost-breakdown dt {
-  color: var(--text-tertiary);
-}
-
-.model-discovery-cost-breakdown dd {
-  color: var(--text-soft);
-  font-variant-numeric: tabular-nums;
-  font-weight: 740;
-}
-
-.model-discovery-specialty-column:hover .model-discovery-specialty-tooltip,
-.model-discovery-specialty-column:focus-visible .model-discovery-specialty-tooltip {
-  opacity: 1;
-  transform: translate(-50%, 0);
-  visibility: visible;
-}
-
-.model-discovery-specialty-column:nth-child(-n+2) .model-discovery-specialty-tooltip {
-  left: 0;
-  transform: translate(0, -5px);
-}
-
-.model-discovery-specialty-column:nth-child(-n+2):hover .model-discovery-specialty-tooltip,
-.model-discovery-specialty-column:nth-child(-n+2):focus-visible .model-discovery-specialty-tooltip {
-  transform: translate(0, 0);
-}
-
-.model-discovery-specialty-column:nth-last-child(-n+2) .model-discovery-specialty-tooltip {
-  left: auto;
-  right: 0;
-  transform: translate(0, -5px);
-}
-
-.model-discovery-specialty-column:nth-last-child(-n+2):hover .model-discovery-specialty-tooltip,
-.model-discovery-specialty-column:nth-last-child(-n+2):focus-visible .model-discovery-specialty-tooltip {
-  transform: translate(0, 0);
 }
 
 .model-discovery-table-tools {
@@ -2197,44 +1755,10 @@
     min-width: 0;
   }
 
-  /* 窄屏下 10 根柱挤在 ~330px 里，每列只剩 ~28px —— 13px 的厂牌图标之后
-     只够放一个字符，模型名被 ellipsis 砍成「O G / A C / G G …」，图表等于
-     不可读。原型没给这块窄屏规则，这里沿用它对完整榜单用的同一手法：
-     容器横向滚动 + 内容保底宽度，不压缩内容、也不减柱数。
-     64px 是写死值：13px 图标 + 4px gap 之后给文字留 ~45px，配合下面放开的
-     两行换行，"GPT-5.5" / "Grok 4.5" 一行显示完，"Claude Opus 5" 折两行，
-     都不再出现 ellipsis。先按视觉效果定值，接真实数据后再回看。 */
-  .model-discovery-specialty-chart {
-    grid-template-columns: repeat(10, minmax(64px, 1fr));
-    overflow-x: auto;
-    /* 网格线是 ::before 的绝对定位层，在滚动容器里只会铺满可视宽度、
-       滚过去右侧就没线了。改成画在容器自身的背景上并跟随内容滚动
-       （background-attachment: local），线就能铺满整个 580px 的内容宽。 */
-    background-attachment: local;
-    background-image: repeating-linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent 44px,
-      color-mix(in srgb, var(--line) 72%, transparent) 44px,
-      color-mix(in srgb, var(--line) 72%, transparent) 45px
-    );
-    background-repeat: no-repeat;
-    background-size: 100% 179px;
-  }
-
-  .model-discovery-specialty-chart::before {
-    content: none;
-  }
-
-  /* 桌面是单行 + ellipsis（空间够）。窄屏放开两行：宁可标签区高 11px，
-     也不要把 "Claude Opus 5" 截成 "Claud…"。三行以上仍然截断兜底。 */
-  .model-discovery-specialty-label strong {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    white-space: normal;
-    word-break: break-word;
-  }
+  /* 窄屏不再需要横向滚动兜底：Recharts 按容器实际宽度排布 10 根柱，
+     轴上只有 18px 的厂牌图标（不是会被 ellipsis 砍断的模型名），
+     390px 下每列约 33px 仍放得开。原先那套「容器横向滚动 + 64px 保底列宽 +
+     背景网格线跟随滚动」的手工方案随之删除。 */
 
   .model-discovery-selects {
     justify-content: flex-start;

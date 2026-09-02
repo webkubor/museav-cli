@@ -33,7 +33,6 @@ import {
   LuX,
 } from 'react-icons/lu'
 import { useMemo, useState, type CSSProperties, type KeyboardEvent } from "react";
-import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { Button } from '@/components/ui/Button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import { InfoTip } from '@/components/ui/InfoTip'
@@ -47,6 +46,14 @@ import {
   useDiscoveryTrends,
 } from './use-discovery-query'
 import { rankBarWidth, specialtyRows } from './discovery-data'
+import {
+  AnalysisScatterChart,
+  DiscoveryModelIcon,
+  SpecialtyBarChart,
+  TrendBarChart,
+  type AnalysisScatterPoint,
+  type TrendChartPoint,
+} from './discovery-charts'
 
 type ModalityKey = "agent" | "text" | "image" | "video" | "audio";
 type RankingMetric = "overall" | "value" | "price" | "usage";
@@ -525,13 +532,6 @@ function createAxisTicks(values: number[]) {
   return ticks;
 }
 
-function chartPosition(value: number, ticks: number[]) {
-  const minimum = ticks[0];
-  const maximum = ticks[ticks.length - 1];
-  if (maximum === minimum) return 50;
-  return Math.max(0, Math.min(100, (value - minimum) / (maximum - minimum) * 100));
-}
-
 function compactTokenUsage(value: number) {
   const units = [
     { minimum: 1_000_000_000_000, suffix: "T" },
@@ -573,23 +573,6 @@ const providerMarkColors: Record<string, string> = {
   "Smallest.ai": "#24776f", Mistral: "#ec6a4c", Deepgram: "#6c55ce", "Together AI": "#111827", Modulate: "#59708d", Groq: "#e45a45",
   Mureka: "#c5598f", "Producer.ai": "#7555c7", "Stability.ai": "#34766e", Udio: "#305fc8",
 };
-
-/**
- * 模型 / 厂牌标识 —— 走控制台统一的 `ModelIcon`（`@model-go/icons` 是 vendor
- * 别名索引与厂牌主色的唯一真源，与运营后台共用同一份）。
- *
- * 原型自带 `providerMarks`（42 条首字母）+ `providerMarkColors`（42 条硬编码色）
- * 两张表，那正是 ModelIcon 注释里记的那起事故的翻版：控制台与运营后台各写一份
- * vendor 映射，条目对不上，通义千问的 embedding 模型因此渲染出 OpenAI 图标。
- * 所以图标这块不做 1:1 —— 原型用首字母是因为它没有图标库，不是设计意图；
- * UI flow 文档 §3.1 也明确「模型/厂商身份用 ModelIcon」。
- *
- * 唯一例外是热门 Agent 排行：那里按 PRD 显示应用名首字符（Agent 应用不是模型，
- * 图标库里没有它们），继续用 .model-discovery-model-mark。
- */
-function DiscoveryModelIcon({ model, provider, className }: { model: string; provider: string; className?: string }) {
-  return <ModelIcon className={className} model={{ display_name: model, provider }} rounded="rounded-sm" variant="dense" />;
-}
 
 function AgentPopularityLeaderboard() {
   const [period, setPeriod] = useState<AgentPopularityPeriod>("day");
@@ -643,6 +626,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
     summaryCards: apiSummaryCards,
     total: apiTotal,
     snapshotDate,
+    dataType: discoveryDataType,
     isLoading: discoveryLoading,
   } = useDiscoveryQuery(modality, task);
   const configuredModels = apiModels;
@@ -688,8 +672,14 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
    * 散点图默认选中前 7 个模型。不能放在 useState 初值里——那时接口数据还没到；
    * 也不用 effect（本仓 eslint 禁 set-state-in-effect），走「渲染期按上一次值调整
    * 状态」，与下方 tablePage 归位同一套写法。
+   *
+   * ⚠️ 判据必须是**数据实际对应的类型**（接口响应里的 type），不能用当前选中的
+   * `modality|task`。查询开了 placeholderData 保留旧数据，切 tab 的那一帧入参已经
+   * 变了、models 却还是上一个类型的：拿入参做判据会在旧数据上就把重置执行掉并把
+   * key 记成新值，等真数据到达时条件已不成立，于是散点图停在「上一个 tab 的模型名」
+   * 上，在新候选里一个也匹配不到，图表空掉。
    */
-  const selectionKey = `${modality}|${task}`;
+  const selectionKey = discoveryDataType ?? "";
   const [lastSelectionKey, setLastSelectionKey] = useState("");
   if (taskModels.length > 0 && lastSelectionKey !== selectionKey) {
     setLastSelectionKey(selectionKey);
@@ -1013,6 +1003,16 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       return point ? { model, xValue: point.x, yValue: point.y } : undefined;
     })
     .filter((point): point is NonNullable<typeof point> => point !== undefined);
+  /** Recharts 消费的散点数据：坐标 + 厂牌色 + 接入状态 + 能否跳详情。 */
+  const scatterPoints: AnalysisScatterPoint[] = chartData.map(({ model, xValue, yValue }) => ({
+    clickable: canOpenModelDetail(model),
+    color: providerMarkColors[model.provider] ?? "#5472b8",
+    connected: isModelConnected(model),
+    name: model.name,
+    provider: model.provider,
+    x: xValue,
+    y: yValue,
+  }));
   const xTicks = createAxisTicks(chartData.map((point) => point.xValue));
   const yTicks = createAxisTicks(chartData.map((point) => point.yValue));
   const chartProviders = [...new Set(chartModels.map((model) => model.provider))];
@@ -1049,9 +1049,16 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
     })
     .filter((series): series is NonNullable<typeof series> => series !== undefined)
     .sort((left, right) => right.growth - left.growth);
-  const trendGrowthMaximum = Math.max(1, ...trendSeries.map((series) => series.growth));
-  const trendGrowthMidpoint = Math.ceil(trendGrowthMaximum / 2);
   const trendUsageLabel = modality === "text" ? "近 7 日 Token 用量" : taskProfile.usageLabel;
+  /** Recharts 消费的趋势数据。增长率保留正负号，负增长由零线之下的柱子表达。 */
+  const trendPoints: TrendChartPoint[] = trendSeries.map((series) => ({
+    color: series.color,
+    growth: series.growth,
+    growthLabel: formatGrowth(series.growth),
+    name: series.model.name,
+    provider: series.model.provider,
+    usage: series.usage,
+  }));
 
   function toggleChartModel(modelName: string) {
     setSelectedModelNames((current) => current.includes(modelName) ? current.filter((name) => name !== modelName) : [...current, modelName]);
@@ -1192,34 +1199,25 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
         <div className="model-discovery-section-head"><div><h2>专项指标排行</h2></div></div>
         <div className="model-discovery-specialties">{rankingCards.map((item) => {
           const rows = specialtyRows(item.title, visibleModels, { scoreAscending });
+          // 柱子此前有 hover 效果和 tabIndex，却没有任何点击行为——看着可点其实是死的。
+          // 从当前榜单里找回完整模型对象后接上跳详情，跳不了的就不给可点的样子。
+          const barModelOf = (name: string) => visibleModels.find((model) => model.name === name);
           return <article className="mg-tile" key={item.title}>
             <header><div><h3>{item.title}</h3><p>{item.description}<em className="model-discovery-source-tag">{item.source}</em></p></div><span>Top {rows.length}</span></header>
-            <div className="model-discovery-specialty-chart">
-              {rows.map((row, index) => {
-                // 柱高走数据层的 min-max 归一化：真实数据值域常常很窄（综合评分
-                // 61.3→57.1 差 7%），按 value/max 算会让十根柱子肉眼等高。
-                // 下限 28% 保证最小值仍可见，不至于压成一条线。
-                const barHeight = 28 + row.ratio * 72;
-                // 柱子此前有 hover 效果和 tabIndex，却没有任何点击行为——看着可点其实是死的。
-                // 从当前榜单里找回完整模型对象后接上跳详情，跳不了的就不给可点的样子。
-                const barModel = visibleModels.find((model) => model.name === row.model);
-                const barClickable = Boolean(barModel && canOpenModelDetail(barModel));
-                const barLinked = hoveredModel === row.model;
-                return <div aria-label={`第 ${index + 1} 名，${row.model}，${row.value}${barClickable ? "，点击查看详情" : ""}`} className={`model-discovery-specialty-column ${barClickable ? "clickable" : ""} ${barLinked ? "linked" : ""}`} key={row.model} onClick={barClickable ? () => openModelDetail(barModel!) : undefined} onFocus={() => setHoveredModel(row.model)} onKeyDown={barClickable ? (event) => handleModelRowKeyDown(event, barModel!) : undefined} onMouseEnter={() => setHoveredModel(row.model)} onMouseLeave={() => setHoveredModel(null)} role={barClickable ? "link" : undefined} style={{ "--bar-height": `${barHeight}%`, "--bar-index": index } as CSSProperties} tabIndex={0}>
-                <div className="model-discovery-specialty-plot">
-                  <div className="model-discovery-specialty-tooltip" role="tooltip"><strong><DiscoveryModelIcon model={row.model} provider={row.provider} />{row.model}</strong><span>第 {index + 1} 名 · {item.description}</span><b>{row.value}</b></div>
-                  {/* 柱内只放数字：单位已写在副标题（如「（USD / Task）」），
-                      "$0.0656/次" 这种带单位的串在 34px 宽的柱子里必然换行截断。
-                      完整值在上方 tooltip 里给。 */}
-                  <i className="model-discovery-specialty-bar"><b>{row.short}</b></i>
-                </div>
-                {/* 轴标签只留厂牌图标：10 列每列约 34px，任何模型名都会截成
-                    「Claud...」——半截词比不显示更难读。完整名称走 title 与柱子
-                    上方的 tooltip。 */}
-                <div className="model-discovery-specialty-label" title={row.model}><DiscoveryModelIcon model={row.model} provider={row.provider} /></div>
-              </div>;
-              })}
-            </div>
+            <SpecialtyBarChart
+              description={item.description}
+              hoveredModel={hoveredModel}
+              isClickable={(name) => {
+                const model = barModelOf(name);
+                return Boolean(model && canOpenModelDetail(model));
+              }}
+              onHoverModel={setHoveredModel}
+              onOpenModel={(name) => {
+                const model = barModelOf(name);
+                if (model) openModelDetail(model);
+              }}
+              rows={rows}
+            />
           </article>;
         })}</div>
       </section>
@@ -1241,25 +1239,25 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                 {chartProviders.map((provider) => <span key={provider}><i style={{ "--legend-color": providerMarkColors[provider] ?? "#5472b8" } as CSSProperties} />{provider}</span>)}
                 <em>实心：已接入 · 空心：暂未接入</em>
               </div>
-              <div className="model-discovery-scatter-plot">
-                {pareto && <div className={`model-discovery-advantage-zone ${xLowerIsBetter ? "left" : "right"}`}><span>优选区</span></div>}
-                {yTicks.map((tick) => <i className="model-discovery-gridline horizontal" key={`y-${tick}`} style={{ "--grid-position": `${chartPosition(tick, yTicks)}%` } as CSSProperties}><span>{formatYAxisTick(tick)}</span></i>)}
-                {xTicks.map((tick) => <i className="model-discovery-gridline vertical" key={`x-${tick}`} style={{ "--grid-position": `${chartPosition(tick, xTicks)}%` } as CSSProperties}><span>{formatXAxisTick(tick)}</span></i>)}
-                <strong className="model-discovery-axis-title y-axis">{activeYAxisLabel}（{yUnit}）</strong>
-                <strong className="model-discovery-axis-title x-axis">{activeXAxis.label}（{xUnit}）</strong>
-                {chartData.map(({ model, xValue, yValue }, index) => {
-                  const left = chartPosition(xValue, xTicks);
-                  const bottom = chartPosition(yValue, yTicks);
-                  const pointClickable = canOpenModelDetail(model);
-                  const pointLinked = hoveredModel === model.name;
-                  return <button aria-label={`${model.name}，${activeYAxisLabel} ${formatYAxisTick(yValue)}，${activeXAxis.label} ${formatXAxisTick(xValue)}${pointClickable ? "，点击查看详情" : ""}`} className={`model-discovery-scatter-point ${isModelConnected(model) ? "supported" : "pending"} ${pointClickable ? "clickable" : ""} ${pointLinked ? "linked" : ""} ${left > 72 ? "label-left" : ""} ${index % 2 === 0 ? "label-up" : "label-down"}`} key={model.name} onClick={pointClickable ? () => openModelDetail(model) : undefined} onFocus={() => setHoveredModel(model.name)} onMouseEnter={() => setHoveredModel(model.name)} onMouseLeave={() => setHoveredModel(null)} style={{ "--point-left": `${left}%`, "--point-bottom": `${bottom}%`, "--point-index": index, "--point-color": providerMarkColors[model.provider] ?? "#5472b8" } as CSSProperties} type="button">
-                    <i />
-                    <span className="model-discovery-point-label">{model.name}</span>
-                    <span className="model-discovery-point-tooltip" role="tooltip"><strong>{model.name}</strong><em>{activeYAxisLabel}：{formatYAxisTick(yValue)} {yUnit}</em><em>{activeXAxis.label}：{formatXAxisTick(xValue)} {xUnit}</em></span>
-                  </button>;
-                })}
-                {chartData.length === 0 && <div className="model-discovery-chart-empty">请选择至少一个模型</div>}
-              </div>
+              <AnalysisScatterChart
+                formatX={formatXAxisTick}
+                formatY={formatYAxisTick}
+                hoveredModel={hoveredModel}
+                onHoverModel={setHoveredModel}
+                onOpenModel={(name) => {
+                  const model = chartModels.find((item) => item.name === name);
+                  if (model) openModelDetail(model);
+                }}
+                pareto={pareto}
+                points={scatterPoints}
+                xLabel={activeXAxis.label}
+                xLowerIsBetter={xLowerIsBetter}
+                xTicks={xTicks}
+                xUnit={xUnit}
+                yLabel={activeYAxisLabel}
+                yTicks={yTicks}
+                yUnit={yUnit}
+              />
             </div>
             <aside className="model-discovery-analysis-aside">
               <div className="mg-tile model-discovery-model-filter">
@@ -1275,7 +1273,9 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                 </div>}
               </div>
               <div className="mg-tile model-discovery-trend"><h3><LuTrendingUp size={14} />近 7 日 ModelGo 使用趋势</h3><p>按增长率从高到低排列</p>
-                {trendSeries.length > 0 ? <><div className="model-discovery-trend-chart"><div className="model-discovery-trend-axis"><span>{formatGrowth(trendGrowthMaximum)}</span><span>{formatGrowth(trendGrowthMidpoint)}</span><span>0%</span></div><div className="model-discovery-trend-plot" style={{ "--trend-count": trendSeries.length } as CSSProperties}>{trendSeries.map((series) => <button aria-label={`${series.model.name}，近 7 日${formatGrowth(series.growth)}，${trendUsageLabel} ${series.usage}`} className="model-discovery-trend-column" key={series.model.name} style={{ "--trend-color": series.color, "--trend-height": `${Math.max(12, Math.max(0, series.growth) / trendGrowthMaximum * 100)}%` } as CSSProperties} type="button"><span className="model-discovery-trend-tooltip" role="tooltip"><strong>{series.model.name}</strong><em>{trendUsageLabel}</em><b>{series.usage}</b></span><i><b>{formatGrowth(series.growth)}</b></i><span title={series.model.name}>{series.model.name}</span></button>)}</div></div><div className="model-discovery-trend-legend">{trendSeries.map((series) => <span key={series.model.name}><i style={{ "--trend-color": series.color } as CSSProperties} /><strong>{series.model.name}</strong><b>{formatGrowth(series.growth)}</b></span>)}</div></> : <div className="model-discovery-trend-empty">{trendModels.length === 0 ? "选择已接入模型后查看趋势" : "所选模型暂无足够的历史快照，无法计算增长率"}</div>}
+                {trendSeries.length > 0
+                  ? <><TrendBarChart points={trendPoints} usageLabel={trendUsageLabel} /><div className="model-discovery-trend-legend">{trendSeries.map((series) => <span key={series.model.name}><i style={{ "--trend-color": series.color } as CSSProperties} /><strong>{series.model.name}</strong><b>{formatGrowth(series.growth)}</b></span>)}</div></>
+                  : <div className="model-discovery-trend-empty">{trendModels.length === 0 ? "选择已接入模型后查看趋势" : "所选模型暂无足够的历史快照，无法计算增长率"}</div>}
               </div>
             </aside>
           </div>

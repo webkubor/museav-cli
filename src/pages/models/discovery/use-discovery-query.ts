@@ -49,6 +49,14 @@ export interface DiscoveryQueryResult {
   total: number
   /** 数据截止日期，页面需展示「数据截至 X」。 */
   snapshotDate: string
+  /**
+   * **当前 models 实际对应的业务类型**，取自接口响应而不是入参。
+   *
+   * 切 tab 时入参的 type 立刻变，但 placeholderData 会让 models 暂时停留在上一个
+   * type 的数据上。任何「数据换了就重置」的逻辑都必须盯这个字段，盯入参会在旧数据
+   * 上就把重置做掉，等真数据到达时反而不再触发。
+   */
+  dataType: DiscoveryType | undefined
   isLoading: boolean
   isError: boolean
 }
@@ -84,6 +92,7 @@ export function useDiscoveryQuery(modality: ModalityKey, task: string): Discover
     summaryCards: type ? toSummaryCards(overview.data, type) : [],
     total: rankings.data?.total ?? 0,
     snapshotDate: rankings.data?.snapshot_date ?? overview.data?.snapshot_date ?? '',
+    dataType: rankings.data?.type,
     isLoading: rankings.isLoading || overview.isLoading,
     isError: rankings.isError || overview.isError,
   }

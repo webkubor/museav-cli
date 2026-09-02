@@ -17,6 +17,7 @@ import {
   formatScore,
   isLanguageType,
   rankBarWidth,
+  specialtyBarDomain,
   specialtyRows,
   toPrototypeModel,
   toSummaryCards,
@@ -221,17 +222,26 @@ describe('专项榜柱图', () => {
     toPrototypeModel(card({ model_name: name, primary_score: score }), 'TEXT_CHAT')
 
   it('柱高用 min-max 归一化，窄值域也能拉开', () => {
-    // 真实数据：61.3 / 59.8 / 57.1，按 value/max 算是 100%/97.6%/93.1%，肉眼等高
+    // 真实数据：61.3 / 59.8 / 57.1，按 value/max 算是 100%/97.6%/93.1%，肉眼等高。
+    // 归一化后最高的占满、最低的留 28% 底线、中间的落在两者之间。
     const rows = specialtyRows('综合评分', [make('A', 61.3), make('B', 59.8), make('C', 57.1)])
-    expect(rows[0].ratio).toBe(1)
-    expect(rows[2].ratio).toBe(0)
-    expect(rows[1].ratio).toBeGreaterThan(0.3)
-    expect(rows[1].ratio).toBeLessThan(0.7)
+    const [lower, upper] = specialtyBarDomain(rows.map((row) => row.numeric))
+    const height = (value: number) => (value - lower) / (upper - lower)
+    expect(height(rows[0].numeric)).toBeCloseTo(1)
+    expect(height(rows[2].numeric)).toBeCloseTo(0.28)
+    expect(height(rows[1].numeric)).toBeGreaterThan(0.5)
+    expect(height(rows[1].numeric)).toBeLessThan(0.8)
   })
 
-  it('全部同值时比例给 1，不出现除零', () => {
+  it('全部同值时给满格，不出现除零', () => {
     const rows = specialtyRows('综合评分', [make('A', 50), make('B', 50)])
-    expect(rows.every((r) => r.ratio === 1)).toBe(true)
+    const [lower, upper] = specialtyBarDomain(rows.map((row) => row.numeric))
+    expect(lower).toBe(0)
+    expect(upper).toBe(50)
+  })
+
+  it('没有任何数据时给一个安全值域，不返回 NaN/Infinity', () => {
+    expect(specialtyBarDomain([])).toEqual([0, 1])
   })
 
   it('柱内短标签只留数字，单位与货币符号去掉', () => {

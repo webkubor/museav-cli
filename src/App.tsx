@@ -229,8 +229,13 @@ export default function App() {
 
   return (
     <Providers>
+      {/* 提示顶部居中，不能放 top-right —— 右上角被 header 占着（导航 + 头像 + 租户名/用户名，
+          实测 console.test 在 1728px 宽下它们从 x=1106 一直排到 1703），而 toast 宽 360、
+          贴右边缘，必然整个压在上面。用户反馈原话：「右上角提示会遮住 PayLinker，
+          新建一个 key 就能看到」。居中后横跨 684~1044，与导航起点 1106 不重叠；
+          窄屏有 min(360, 100vw-32) 兜底，也不会顶到边。 */}
       <Toaster
-        position="top-right"
+        position="top-center"
         closeButton
         theme={activeTheme}
         toastOptions={{

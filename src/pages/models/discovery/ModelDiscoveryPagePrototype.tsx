@@ -39,11 +39,14 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import { InfoTip } from '@/components/ui/InfoTip'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
 import { Pagination } from '@/components/ui/Pagination'
+import { useDiscoveryQuery } from './use-discovery-query'
+import { specialtyRows } from './discovery-data'
 
 type ModalityKey = "agent" | "text" | "image" | "video" | "audio";
 type RankingMetric = "overall" | "value" | "price" | "usage";
 type AgentPopularityPeriod = "day" | "week" | "month";
-type AnalysisMetricSource = "price" | "performance" | "speed" | "latency" | "usage" | "samples" | "voices";
+/** 散点 X 轴的取数来源。samples/voices/performance 随 PRD 73cbb28 撤下，已无配置引用。 */
+type AnalysisMetricSource = "price" | "speed" | "latency" | "usage";
 
 type AgentApplication = {
   id: string;
@@ -71,15 +74,6 @@ type TaskMetricProfile = {
   qualityLowerIsBetter?: boolean;
 };
 
-type TaskCostProfile = {
-  total: number;
-  answer: number;
-  reasoning: number;
-  cacheWrite: number;
-  cacheHit: number;
-  input: number;
-};
-
 type DiscoveryModel = {
   id?: string;
   name: string;
@@ -94,16 +88,18 @@ type DiscoveryModel = {
   release?: string;
 };
 
+/**
+ * 每种模态的展示配置。**只剩产品文案与轴配置** —— 模型列表、总览卡、专项榜的行数据
+ * 原先都写在这里，现已全部改走接口（见 use-discovery-query）。
+ */
 type DiscoveryConfig = {
   label: string;
   tasks: string[];
   scoreLabel: string;
-  summary: Array<{ label: string; model: string; value: string; unit: string }>;
   yMetrics: string[];
   xMetrics: string[];
   presets: Array<{ label: string; y: number; x: number }>;
-  models: DiscoveryModel[];
-  specialties: Array<{ title: string; description: string; rows: Array<{ model: string; value: string }> }>;
+  specialties: Array<{ title: string; description: string }>;
 };
 
 const domesticModelProviders = new Set([
@@ -207,40 +203,22 @@ const taskMetricSources: Record<ModalityKey, Record<string, string>> = {
   audio: { "语音合成（TTS）": "Artificial Analysis", "语音识别（STT）": "Artificial Analysis" },
 };
 
-const textTaskScores: Record<string, Record<string, string>> = {
-  文本对话: { "Claude Opus 5": "63.1", "GPT-5.5": "61.7", "GLM 5.2": "58.9", "Qwen Max": "56.8", "DeepSeek V4 Flash": "55.9", "Kimi K2.6": "54.8", "Gemini 3.1 Pro": "54.2", "Grok 4.5": "53.6", "Llama 4 Maverick": "51.9", "MiniMax M2.7": "50.8" },
-  代码生成: { "GPT-5.5": "78", "Claude Opus 5": "77", "DeepSeek V4 Flash": "73", "GLM 5.2": "71", "Qwen Max": "69", "Kimi K2.6": "63.8", "Gemini 3.1 Pro": "58.6", "Grok 4.5": "53.5", "Llama 4 Maverick": "48.3", "MiniMax M2.7": "43.1" },
-  Agent: { "GPT-5.5": "54", "Claude Opus 5": "53", "Gemini 3.1 Pro": "50", "DeepSeek V4 Flash": "48", "Kimi K2.6": "46", "GLM 5.2": "45", "Qwen Max": "44", "Grok 4.5": "43", "Llama 4 Maverick": "38", "MiniMax M2.7": "36" },
-};
-
-const textAgentTaskCostTotals: Record<string, Record<string, number>> = {
-  Agent: { "GPT-5.5": 1.45, "Claude Opus 5": 3.14, "Gemini 3.1 Pro": 0.68, "DeepSeek V4 Flash": 0.05, "Kimi K2.6": 0.94, "GLM 5.2": 0.39, "Qwen Max": 0.48, "Grok 4.5": 1.05, "Llama 4 Maverick": 0.06, "MiniMax M2.7": 0.22 },
-  文本对话: { "Claude Opus 5": 2.34, "GPT-5.5": 1.23, "GLM 5.2": 0.32, "Qwen Max": 0.34, "DeepSeek V4 Flash": 0.03, "Kimi K2.6": 0.84, "Gemini 3.1 Pro": 0.56, "Grok 4.5": 0.84, "Llama 4 Maverick": 0.05, "MiniMax M2.7": 0.16 },
-  代码生成: { "GPT-5.5": 1.45, "Claude Opus 5": 2.7, "DeepSeek V4 Flash": 0.04, "GLM 5.2": 0.38, "Qwen Max": 0.41, "Kimi K2.6": 0.92, "Gemini 3.1 Pro": 0.63, "Grok 4.5": 0.91, "Llama 4 Maverick": 0.06, "MiniMax M2.7": 0.19 },
-};
-
-function createTaskCostProfile(total: number): TaskCostProfile {
-  const input = Number((total * 0.13).toFixed(2));
-  const cacheHit = Number((total * 0.04).toFixed(2));
-  const cacheWrite = Number((total * 0.08).toFixed(2));
-  const reasoning = Number((total * 0.29).toFixed(2));
-  const answer = Number(Math.max(0, total - input - cacheHit - cacheWrite - reasoning).toFixed(2));
-  return { total, answer, reasoning, cacheWrite, cacheHit, input };
-}
-
-function taskCostProfileFor(task: string, model: DiscoveryModel): TaskCostProfile {
-  const configuredTotal = textAgentTaskCostTotals[task]?.[model.name];
-  if (configuredTotal !== undefined) return createTaskCostProfile(configuredTotal);
-  const nameSeed = [...model.name].reduce((sum, character) => sum + character.codePointAt(0)!, 0);
-  const baseline = task === "Agent" ? 0.18 : task === "代码生成" ? 0.12 : 0.08;
-  return createTaskCostProfile(Number((baseline + nameSeed % 72 / 100).toFixed(2)));
+/**
+ * 单次任务成本，取接口的 COST_PER_TASK（模型卡 price 字段里的数值）。
+ *
+ * 原先这里有两层 mock：写死的成本表，以及**用模型名的字符码编出一个成本**的兜底。
+ * 接真实数据后必须整体去掉——否则页面会展示编造的价格。
+ *
+ * 成本的五项拆解（输出/推理/缓存写入/缓存命中/输入）接口不提供，原型是按固定
+ * 比例从总额切出来的假明细，已随之删除（缺口见 qa#709）。
+ */
+function taskCostFor(model: DiscoveryModel): number {
+  return plainMetricValue(model.price);
 }
 
 function formatTaskCost(value: number) {
   return `$${value.toFixed(2)}`;
 }
-
-const openTextModels = new Set(["DeepSeek V4 Flash", "Qwen Max", "Llama 4 Maverick", "MiniMax M2.7"]);
 
 const sourceConstrainedAnalysisProfiles: Partial<Record<ModalityKey, Record<string, AnalysisAxisProfile>>> = {
   image: {
@@ -316,13 +294,6 @@ const discoveryConfigs: Record<Exclude<ModalityKey, "agent">, DiscoveryConfig> =
     label: "文本",
     tasks: ["文本对话", "代码生成"],
     scoreLabel: "Intelligence Index",
-    summary: [
-      { label: "评分最高", model: "Claude Opus 5", value: "63.1", unit: "Index" },
-      { label: "开源模型评分最高", model: "DeepSeek V4 Flash", value: "55.9", unit: "Index" },
-      { label: "性价比最高", model: "DeepSeek V4 Flash", value: "223.6", unit: "Index / USD" },
-      { label: "输出 TPS 最高", model: "GLM 5.2", value: "245", unit: "Tokens / 秒" },
-      { label: "近 7 日 ModelGo 使用量最高", model: "GLM 5.2", value: "8.2B", unit: "Tokens" },
-    ],
     yMetrics: ["Intelligence Index", "Coding Index", "Agentic Index"],
     xMetrics: ["输入价格", "输出价格", "输出 TPS", "首 Token 延迟", "近 7 日使用量"],
     presets: [
@@ -332,36 +303,17 @@ const discoveryConfigs: Record<Exclude<ModalityKey, "agent">, DiscoveryConfig> =
       { label: "上下文 × 价格", y: 6, x: 0 },
       { label: "质量 × 使用量", y: 0, x: 4 },
     ],
-    models: [
-      { name: "Claude Opus 5", provider: "Anthropic", supported: false, score: "63.1", performance: "188 tok/s", price: "$15/M", usage: "—" },
-      { id: "gpt-5.5", name: "GPT-5.5", provider: "OpenAI", supported: true, score: "61.7", performance: "182 tok/s", price: "$0.80/M", usage: "6.4B" },
-      { id: "glm-5.2", name: "GLM 5.2", provider: "Z.ai", supported: true, score: "58.9", performance: "245 tok/s", price: "$0.28/M", usage: "8.2B" },
-      { id: "qwen-max", name: "Qwen Max", provider: "Qwen", supported: true, score: "56.8", performance: "216 tok/s", price: "$0.42/M", usage: "3.9B" },
-      { id: "deepseek-v4-flash", name: "DeepSeek V4 Flash", provider: "DeepSeek", supported: true, score: "55.9", performance: "230 tok/s", price: "$0.25/M", usage: "5.6B" },
-      { id: "kimi-k2.6", name: "Kimi K2.6", provider: "Moonshot", supported: true, score: "54.8", performance: "171 tok/s", price: "$0.35/M", usage: "2.8B" },
-      { name: "Gemini 3.1 Pro", provider: "Google", supported: false, score: "54.2", performance: "164 tok/s", price: "$1.20/M", usage: "—" },
-      { name: "Grok 4.5", provider: "xAI", supported: false, score: "53.6", performance: "158 tok/s", price: "$2.10/M", usage: "—" },
-      { name: "Llama 4 Maverick", provider: "Meta", supported: false, score: "51.9", performance: "151 tok/s", price: "$0.31/M", usage: "—" },
-      { id: "minimax-m2.7", name: "MiniMax M2.7", provider: "MiniMax", supported: true, score: "50.8", performance: "147 tok/s", price: "$0.29/M", usage: "1.7B" },
-    ],
     specialties: [
-      { title: "性价比领先", description: "主指标 / 单次任务成本", rows: [{ model: "DeepSeek V4 Flash", value: "223.6" }, { model: "GLM 5.2", value: "210.4" }, { model: "Kimi K2.6", value: "156.6" }, { model: "Qwen Max", value: "135.2" }, { model: "GPT-5.5", value: "77.1" }] },
-      { title: "输出 TPS", description: "每秒输出 Token 数", rows: [{ model: "GLM 5.2", value: "245 tok/s" }, { model: "DeepSeek V4 Flash", value: "230 tok/s" }, { model: "Qwen Max", value: "216 tok/s" }, { model: "Claude Opus 5", value: "188 tok/s" }, { model: "GPT-5.5", value: "182 tok/s" }] },
-      { title: "首 Token 时延领先", description: "首 Token 响应时延", rows: [{ model: "GLM 5.2", value: "210 ms" }, { model: "DeepSeek V4 Flash", value: "230 ms" }, { model: "GPT-5.5", value: "260 ms" }, { model: "Qwen Max", value: "280 ms" }, { model: "Claude Opus 5", value: "310 ms" }] },
-      { title: "近 7 日热度", description: "ModelGo 调用 Tokens", rows: [{ model: "GLM 5.2", value: "8.2B" }, { model: "GPT-5.5", value: "6.4B" }, { model: "DeepSeek V4 Flash", value: "5.6B" }, { model: "Qwen Max", value: "3.9B" }, { model: "Kimi K2.6", value: "2.8B" }] },
+      { title: "性价比领先", description: "主指标 / 单次任务成本" },
+      { title: "输出 TPS", description: "每秒输出 Token 数" },
+      { title: "首 Token 时延领先", description: "首 Token 响应时延" },
+      { title: "近 7 日热度", description: "ModelGo 调用 Tokens" },
     ],
   },
   image: {
     label: "图像",
     tasks: ["文生图", "图片编辑"],
     scoreLabel: "Elo 评分",
-    summary: [
-      { label: "Elo 评分最高", model: "Imagen Ultra", value: "1286", unit: "Elo" },
-      { label: "开源模型 Elo 最高", model: "Qwen Image", value: "1236", unit: "Elo" },
-      { label: "性价比最高", model: "Seedream 4.5", value: "31.5", unit: "Elo / ($/1K 张)" },
-      { label: "API 价格最低", model: "Hunyuan Image 3.0", value: "30", unit: "$/1K 张" },
-      { label: "近 7 日 ModelGo 使用量最高", model: "GPT Image 2", value: "1.8M", unit: "成功任务" },
-    ],
     yMetrics: ["Elo 评分"],
     xMetrics: ["标准单图价格", "近 7 日使用量"],
     presets: [
@@ -369,137 +321,52 @@ const discoveryConfigs: Record<Exclude<ModalityKey, "agent">, DiscoveryConfig> =
       { label: "质量 × 使用量", y: 0, x: 1 },
       { label: "API 价格 × 使用量", y: 1, x: 1 },
     ],
-    models: [
-      { name: "Imagen Ultra", provider: "Google", supported: false, score: "1286", performance: "8.4 秒", price: "$80/1K 张", usage: "—", samples: "14,820" },
-      { id: "gpt-image-2", name: "GPT Image 2", provider: "OpenAI", supported: true, score: "1274", performance: "6.8 秒", price: "$70/1K 张", usage: "1.8M", samples: "21,205" },
-      { id: "doubao-seedream-4.5", name: "Seedream 4.5", provider: "Doubao", supported: true, score: "1261", performance: "4.6 秒", price: "$40/1K 张", usage: "1.2M", samples: "16,940" },
-      { name: "FLUX.2 Pro", provider: "Black Forest Labs", supported: false, score: "1249", performance: "3.9 秒", price: "$71/1K 张", usage: "—", samples: "13,260" },
-      { id: "qwen-image", name: "Qwen Image", provider: "Qwen", supported: true, score: "1236", performance: "5.1 秒", price: "$42/1K 张", usage: "640K", samples: "11,820" },
-      { name: "Midjourney V7", provider: "Midjourney", supported: false, score: "1224", performance: "7.8 秒", price: "$80/1K 张", usage: "—", samples: "19,450" },
-      { name: "Recraft V4", provider: "Recraft", supported: false, score: "1212", performance: "5.7 秒", price: "$50/1K 张", usage: "—", samples: "10,860" },
-      { name: "Ideogram 3.0", provider: "Ideogram", supported: false, score: "1204", performance: "6.1 秒", price: "$60/1K 张", usage: "—", samples: "9,870" },
-      { id: "hunyuan-image-3", name: "Hunyuan Image 3.0", provider: "Tencent", supported: true, score: "1191", performance: "5.4 秒", price: "$30/1K 张", usage: "380K", samples: "7,650" },
-      { id: "kolors-2", name: "Kolors 2", provider: "Kuaishou", supported: true, score: "1182", performance: "5.9 秒", price: "$30/1K 张", usage: "310K", samples: "6,940" },
-    ],
     specialties: [
-      { title: "性价比领先", description: "Elo 评分 / 标准单图价格", rows: [{ model: "Seedream 4.5", value: "31.5" }, { model: "Qwen Image", value: "29.7" }, { model: "GPT Image 2", value: "18.2" }, { model: "FLUX.2 Pro", value: "17.6" }, { model: "Imagen Ultra", value: "15.4" }] },
-      { title: "API 价格", description: "每 1K 张标准图像价格", rows: [{ model: "Hunyuan Image 3.0", value: "$30" }, { model: "Kolors 2", value: "$30" }, { model: "Seedream 4.5", value: "$40" }, { model: "Qwen Image", value: "$42" }, { model: "Recraft V4", value: "$50" }] },
-      { title: "近 7 日热度", description: "ModelGo 成功任务量", rows: [{ model: "GPT Image 2", value: "1.8M" }, { model: "Seedream 4.5", value: "1.2M" }, { model: "Qwen Image", value: "640K" }, { model: "FLUX.2 Pro", value: "520K" }, { model: "Imagen Ultra", value: "410K" }] },
+      { title: "性价比领先", description: "Elo 评分 / 标准单图价格" },
+      { title: "API 价格", description: "每 1K 张标准图像价格" },
+      { title: "近 7 日热度", description: "ModelGo 成功任务量" },
     ],
   },
   video: {
     label: "视频",
     tasks: ["文生视频", "图生视频"],
     scoreLabel: "Elo 评分",
-    summary: [
-      { label: "Elo 评分最高", model: "Veo 3.1", value: "1228", unit: "Elo" },
-      { label: "开源模型 Elo 最高", model: "Wan 2.2", value: "1154", unit: "Elo" },
-      { label: "性价比最高", model: "Kling Turbo", value: "2995", unit: "Elo / ($/min)" },
-      { label: "API 价格最低", model: "Kling Turbo", value: "0.04", unit: "$/min" },
-      { label: "近 7 日 ModelGo 使用量最高", model: "Veo 3.1", value: "286K", unit: "成功任务" },
-    ],
     yMetrics: ["Elo 评分", "文生视频能力", "图生视频能力", "运动一致性"],
     xMetrics: ["每分钟价格", "近 7 日使用量"],
     presets: [{ label: "质量 × 价格", y: 0, x: 0 }, { label: "质量 × 使用量", y: 0, x: 1 }, { label: "API 价格 × 使用量", y: 1, x: 1 }],
-    models: [
-      { id: "veo-3.1-generate-preview", name: "Veo 3.1", provider: "Google", supported: true, score: "1228", performance: "68 秒", price: "$0.15/分钟", usage: "286K", samples: "11,873" },
-      { name: "Runway Gen-5", provider: "Runway", supported: false, score: "1196", performance: "55 秒", price: "$0.18/分钟", usage: "—", samples: "9,420" },
-      { id: "doubao-seedance-2.0", name: "Seedance 2.0", provider: "Doubao", supported: true, score: "1184", performance: "42 秒", price: "$0.09/分钟", usage: "241K", samples: "18,546" },
-      { id: "Wan2.2-T2V-A14B", name: "Wan 2.2", provider: "Wan", supported: true, score: "1154", performance: "61 秒", price: "$0.06/分钟", usage: "198K", samples: "12,390" },
-      { id: "kling-3.0-omni", name: "Kling Turbo", provider: "Kling", supported: true, score: "1142", performance: "49 秒", price: "$0.04/分钟", usage: "173K", samples: "16,773" },
-      { name: "Sora 2", provider: "OpenAI", supported: false, score: "1133", performance: "72 秒", price: "$0.20/分钟", usage: "—", samples: "8,720" },
-      { id: "kling-3.0", name: "Kling 3.0", provider: "Kling", supported: true, score: "1124", performance: "58 秒", price: "$0.08/分钟", usage: "156K", samples: "14,060" },
-      { id: "hailuo-2.3", name: "Hailuo 2.3", provider: "MiniMax", supported: true, score: "1112", performance: "63 秒", price: "$0.07/分钟", usage: "139K", samples: "8,484" },
-      { name: "Luma Ray 3", provider: "Luma", supported: false, score: "1098", performance: "66 秒", price: "$0.12/分钟", usage: "—", samples: "6,730" },
-      { name: "PixVerse V5.5", provider: "PixVerse", supported: false, score: "1087", performance: "47 秒", price: "$0.06/分钟", usage: "—", samples: "4,928" },
-    ],
     specialties: [
-      { title: "性价比领先", description: "Elo 评分 / 每分钟价格", rows: [{ model: "Kling Turbo", value: "2995" }, { model: "Wan 2.2", value: "2417" }, { model: "Seedance 2.0", value: "1784" }, { model: "Veo 3.1", value: "1522" }, { model: "Runway Gen-5", value: "1210" }] },
-      { title: "API 价格", description: "每分钟生成视频价格", rows: [{ model: "Kling Turbo", value: "$0.04" }, { model: "Wan 2.2", value: "$0.06" }, { model: "PixVerse V5.5", value: "$0.06" }, { model: "Hailuo 2.3", value: "$0.07" }, { model: "Kling 3.0", value: "$0.08" }] },
-      { title: "近 7 日热度", description: "ModelGo 成功任务量", rows: [{ model: "Veo 3.1", value: "286K" }, { model: "Seedance 2.0", value: "241K" }, { model: "Wan 2.2", value: "198K" }, { model: "Kling Turbo", value: "173K" }, { model: "Runway Gen-5", value: "112K" }] },
+      { title: "性价比领先", description: "Elo 评分 / 每分钟价格" },
+      { title: "API 价格", description: "每分钟生成视频价格" },
+      { title: "近 7 日热度", description: "ModelGo 成功任务量" },
     ],
   },
   audio: {
     label: "音频",
     tasks: ["语音合成（TTS）", "语音识别（STT）"],
     scoreLabel: "Elo 评分",
-    summary: [
-      { label: "评分最高", model: "Speech 2.8 HD", value: "1240", unit: "Elo" },
-      { label: "开源模型评分最高", model: "CosyVoice 2", value: "1199", unit: "Elo" },
-      { label: "性价比最高", model: "CosyVoice 2", value: "149", unit: "Elo / USD" },
-      { label: "API 价格最低", model: "Kokoro 82M", value: "3", unit: "$/M 字符" },
-      { label: "近 7 日 ModelGo 使用量最高", model: "Speech 2.8 HD", value: "3.6M", unit: "请求" },
-    ],
     yMetrics: ["Elo 评分", "自然度 / 准确率", "稳定性"],
     xMetrics: ["公开价格", "近 7 日使用量"],
     presets: [{ label: "质量 × 价格", y: 0, x: 0 }, { label: "质量 × 使用量", y: 0, x: 1 }, { label: "API 价格 × 使用量", y: 1, x: 1 }],
-    models: [
-      { id: "MiniMax-speech-2.8-hd", name: "Speech 2.8 HD", provider: "MiniMax", supported: true, score: "1240", performance: "0.58 秒", price: "$8/M 字符", usage: "3.6M", samples: "2,290", voices: "8" },
-      { name: "Eleven Multilingual V3", provider: "ElevenLabs", supported: false, score: "1221", performance: "0.64 秒", price: "$12/M 字符", usage: "—", samples: "1,791", voices: "8" },
-      { id: "CosyVoice2-0.5B", name: "CosyVoice 2", provider: "FunAudioLLM", supported: true, score: "1199", performance: "0.49 秒", price: "$4/M 字符", usage: "2.1M", samples: "1,787", voices: "3" },
-      { id: "gpt-audio-mini", name: "GPT Audio Mini", provider: "OpenAI", supported: true, score: "1186", performance: "0.42 秒", price: "$6/M 字符", usage: "1.9M", samples: "3,152", voices: "7" },
-      { name: "Kokoro 82M", provider: "Hexgrad", supported: false, score: "1174", performance: "0.51 秒", price: "$3/M 字符", usage: "—", samples: "1,352", voices: "8" },
-      { name: "Gemini TTS", provider: "Google", supported: false, score: "1162", performance: "0.55 秒", price: "$7/M 字符", usage: "—", samples: "2,616", voices: "8" },
-      { name: "Azure Speech", provider: "Microsoft", supported: false, score: "1151", performance: "0.46 秒", price: "$9/M 字符", usage: "—", samples: "2,334", voices: "8" },
-      { id: "sensevoice-small", name: "SenseVoice Small", provider: "FunAudioLLM", supported: true, score: "1139", performance: "0.47 秒", price: "$3/M 字符", usage: "1.3M", samples: "1,810", voices: "6" },
-      { id: "whisper-large-v3", name: "Whisper Large V3", provider: "OpenAI", supported: true, score: "1128", performance: "0.53 秒", price: "$5/M 字符", usage: "1.1M", samples: "2,650", voices: "5" },
-      { name: "Suno V5", provider: "Suno", supported: false, score: "1116", performance: "0.69 秒", price: "$10/M 字符", usage: "—", samples: "1,420", voices: "4" },
-    ],
     specialties: [
-      { title: "性价比领先", description: "任务得分 / 公开价格", rows: [{ model: "CosyVoice 2", value: "149" }, { model: "Kokoro 82M", value: "138" }, { model: "GPT Audio Mini", value: "121" }, { model: "Speech 2.8 HD", value: "116" }, { model: "Eleven Multilingual V3", value: "102" }] },
-      { title: "API 价格", description: "每 1M 字符的公开 API 价格", rows: [{ model: "Kokoro 82M", value: "$3" }, { model: "SenseVoice Small", value: "$3" }, { model: "CosyVoice 2", value: "$4" }, { model: "Whisper Large V3", value: "$5" }, { model: "GPT Audio Mini", value: "$6" }] },
-      { title: "近 7 日热度", description: "ModelGo 请求量", rows: [{ model: "Speech 2.8 HD", value: "3.6M" }, { model: "CosyVoice 2", value: "2.1M" }, { model: "GPT Audio Mini", value: "1.9M" }, { model: "Kokoro 82M", value: "1.4M" }, { model: "Eleven Multilingual V3", value: "980K" }] },
+      { title: "性价比领先", description: "任务得分 / 公开价格" },
+      { title: "API 价格", description: "每 1M 字符的公开 API 价格" },
+      { title: "近 7 日热度", description: "ModelGo 请求量" },
     ],
   },
 };
 
-const audioTaskConfigs: Record<string, Pick<DiscoveryConfig, "summary" | "models" | "specialties">> = {
+const audioTaskConfigs: Record<string, Pick<DiscoveryConfig, "specialties">> = {
   "语音合成（TTS）": {
-    summary: [
-      { label: "语音质量最高", model: "Inworld TTS 1.5 Max", value: "1240", unit: "Elo" },
-      { label: "性价比最高", model: "CosyVoice 2", value: "299.8", unit: "Elo / USD" },
-      { label: "API 价格最低", model: "CosyVoice 2", value: "$4", unit: "/ 1M 字符" },
-      { label: "近 7 日 ModelGo 使用量最高", model: "Speech 2.8 HD", value: "3.6M", unit: "字符" },
-    ],
-    models: [
-      { name: "Inworld TTS 1.5 Max", provider: "Inworld", supported: false, score: "1240", performance: "72.8 字符/秒", price: "$10/1M 字符", usage: "—", samples: "1,330" },
-      { name: "Qwen Audio 3.0 TTS Plus", provider: "Alibaba", supported: false, score: "1229", performance: "68.2 字符/秒", price: "$27.6/1M 字符", usage: "—", samples: "1,781" },
-      { name: "Simba 3.2", provider: "SpeechifyAI", supported: false, score: "1227", performance: "74.6 字符/秒", price: "$10/1M 字符", usage: "—", samples: "1,791" },
-      { name: "Gemini 3.1 Flash TTS", provider: "Google", supported: false, score: "1210", performance: "86.4 字符/秒", price: "$18.3/1M 字符", usage: "—", samples: "3,152" },
-      { name: "Luna TTS", provider: "VUI Labs", supported: false, score: "1209", performance: "61.8 字符/秒", price: "$80/1M 字符", usage: "—", samples: "1,787" },
-      { name: "Sonic 3.5", provider: "Cartesia", supported: false, score: "1203", performance: "82.5 字符/秒", price: "$49/1M 字符", usage: "—", samples: "2,616" },
-      { name: "StepAudio 2.5 TTS", provider: "StepFun", supported: false, score: "1201", performance: "57.9 字符/秒", price: "$85/1M 字符", usage: "—", samples: "1,503" },
-      { id: "MiniMax-speech-2.8-hd", name: "Speech 2.8 HD", provider: "MiniMax", supported: true, score: "1196", performance: "54.3 字符/秒", price: "$8/1M 字符", usage: "3.6M", samples: "2,290" },
-      { id: "CosyVoice2-0.5B", name: "CosyVoice 2", provider: "FunAudioLLM", supported: true, score: "1199", performance: "65.1 字符/秒", price: "$4/1M 字符", usage: "2.1M", samples: "1,787" },
-      { name: "Eleven Multilingual V3", provider: "ElevenLabs", supported: false, score: "1191", performance: "59.7 字符/秒", price: "$12/1M 字符", usage: "—", samples: "2,334" },
-    ],
     specialties: [
-      { title: "性价比", description: "语音质量 Elo / API 价格", rows: [{ model: "CosyVoice 2", value: "299.8" }, { model: "Speech 2.8 HD", value: "149.5" }, { model: "Inworld TTS 1.5 Max", value: "124.0" }, { model: "Simba 3.2", value: "122.7" }, { model: "Eleven Multilingual V3", value: "99.3" }, { model: "Gemini 3.1 Flash TTS", value: "66.1" }, { model: "Qwen Audio 3.0 TTS Plus", value: "44.5" }, { model: "Sonic 3.5", value: "24.6" }, { model: "Luna TTS", value: "15.1" }, { model: "StepAudio 2.5 TTS", value: "14.1" }] },
-      { title: "API 价格", description: "每 1M 字符的公开 API 价格", rows: [{ model: "CosyVoice 2", value: "$4" }, { model: "Speech 2.8 HD", value: "$8" }, { model: "Inworld TTS 1.5 Max", value: "$10" }, { model: "Simba 3.2", value: "$10" }, { model: "Eleven Multilingual V3", value: "$12" }, { model: "Gemini 3.1 Flash TTS", value: "$18.3" }, { model: "Qwen Audio 3.0 TTS Plus", value: "$27.6" }, { model: "Sonic 3.5", value: "$49" }, { model: "Luna TTS", value: "$80" }, { model: "StepAudio 2.5 TTS", value: "$85" }] },
-      { title: "近 7 日使用量", description: "ModelGo 语音合成字符量", rows: [{ model: "Speech 2.8 HD", value: "3.6M" }, { model: "CosyVoice 2", value: "2.1M" }, { model: "Gemini 3.1 Flash TTS", value: "1.8M" }, { model: "Inworld TTS 1.5 Max", value: "1.5M" }, { model: "Eleven Multilingual V3", value: "1.2M" }, { model: "Simba 3.2", value: "980K" }, { model: "Qwen Audio 3.0 TTS Plus", value: "860K" }, { model: "Sonic 3.5", value: "720K" }, { model: "Luna TTS", value: "610K" }, { model: "StepAudio 2.5 TTS", value: "540K" }] },
+      { title: "性价比", description: "语音质量 Elo / API 价格" },
+      { title: "API 价格", description: "每 1M 字符的公开 API 价格" },
+      { title: "近 7 日使用量", description: "ModelGo 语音合成字符量" },
     ],
   },
   "语音识别（STT）": {
-    summary: [
-      { label: "识别错误率最低", model: "Scribe v2", value: "2.2", unit: "% AA-WER" },
-      { label: "API 价格最低", model: "Modulate STT VFast", value: "$0.42", unit: "/ 1K 分钟" },
-      { label: "近 7 日 ModelGo 使用量最高", model: "Whisper Large V3 Turbo", value: "480K", unit: "音频分钟" },
-    ],
-    models: [
-      { name: "Scribe v2", provider: "ElevenLabs", supported: false, score: "2.2%", performance: "60.2 ×", price: "$3.67/1K 分钟", usage: "—" },
-      { name: "MAI Transcribe 1.5", provider: "Microsoft", supported: false, score: "2.4%", performance: "183.1 ×", price: "$6/1K 分钟", usage: "—" },
-      { name: "Smallest AI Pulse Pro", provider: "Smallest.ai", supported: false, score: "2.4%", performance: "260.9 ×", price: "$4/1K 分钟", usage: "—" },
-      { id: "voxtral-small", name: "Voxtral Small", provider: "Mistral", supported: true, score: "2.8%", performance: "66.7 ×", price: "$4/1K 分钟", usage: "260K" },
-      { id: "gpt-transcribe", name: "GPT Transcribe", provider: "OpenAI", supported: true, score: "3.3%", performance: "41.5 ×", price: "$4.50/1K 分钟", usage: "330K" },
-      { name: "Grok Speech to Text", provider: "xAI", supported: false, score: "4.0%", performance: "230.4 ×", price: "$1.67/1K 分钟", usage: "—" },
-      { id: "nova-3", name: "Nova-3", provider: "Deepgram", supported: true, score: "5.2%", performance: "522.0 ×", price: "$4.30/1K 分钟", usage: "290K" },
-      { name: "Parakeet TDT 0.6B V3", provider: "Together AI", supported: false, score: "4.5%", performance: "899.3 ×", price: "$1.50/1K 分钟", usage: "—" },
-      { name: "Modulate STT VFast", provider: "Modulate", supported: false, score: "4.2%", performance: "63.8 ×", price: "$0.42/1K 分钟", usage: "—" },
-      { id: "whisper-large-v3-turbo", name: "Whisper Large V3 Turbo", provider: "Groq", supported: true, score: "4.6%", performance: "114.6 ×", price: "$0.67/1K 分钟", usage: "480K" },
-    ],
     specialties: [
-      { title: "API 价格", description: "每 1,000 分钟音频转写价格", rows: [{ model: "Modulate STT VFast", value: "$0.42" }, { model: "Whisper Large V3 Turbo", value: "$0.67" }, { model: "Parakeet TDT 0.6B V3", value: "$1.50" }, { model: "Grok Speech to Text", value: "$1.67" }, { model: "Scribe v2", value: "$3.67" }, { model: "Voxtral Small", value: "$4.00" }, { model: "Smallest AI Pulse Pro", value: "$4.00" }, { model: "Nova-3", value: "$4.30" }, { model: "GPT Transcribe", value: "$4.50" }, { model: "MAI Transcribe 1.5", value: "$6.00" }] },
-      { title: "近 7 日使用量", description: "ModelGo 识别音频分钟数", rows: [{ model: "Whisper Large V3 Turbo", value: "480K" }, { model: "GPT Transcribe", value: "330K" }, { model: "Nova-3", value: "290K" }, { model: "Voxtral Small", value: "260K" }, { model: "Scribe v2", value: "220K" }, { model: "Smallest AI Pulse Pro", value: "190K" }, { model: "Grok Speech to Text", value: "170K" }, { model: "MAI Transcribe 1.5", value: "150K" }, { model: "Parakeet TDT 0.6B V3", value: "120K" }, { model: "Modulate STT VFast", value: "90K" }] },
+      { title: "API 价格", description: "每 1,000 分钟音频转写价格" },
+      { title: "近 7 日使用量", description: "ModelGo 识别音频分钟数" },
     ],
   },
 };
@@ -518,6 +385,13 @@ const agentPopularityPeriods: Array<{ key: AgentPopularityPeriod; label: string 
   { key: "month", label: "本月" },
 ];
 
+/**
+ * ⚠️ 全页唯一还留着的 mock —— 「热门 Agent 排行」是**应用**维度（Hermes Agent、
+ * Claude Code…），而 v1.0.6 的六个接口返回的都是**模型**，没有任何应用维度数据。
+ *
+ * 已提 qa#709 请后端确认补接口还是把该模块下线。在此之前这份榜单是写死的，
+ * 不要把它当成真实数据引用，也不要照它的形状去接别的模块。
+ */
 const agentApplications: Record<AgentPopularityPeriod, AgentApplication[]> = {
   day: [
     { id: "hermes-agent", name: "Hermes Agent", description: "Hermes Agent is an open-source, self-improving AI agent by Nous Research that runs persistently with memory across sessions, and builds reusable skills from experience. It comes with 40+ built-in tools, including web search, browser automation, and vision, plus scheduled automations and subagents.", tokenUsage: 1_458_881_530_720 },
@@ -606,16 +480,6 @@ function plainMetricValue(value: string | undefined) {
   return Number.isFinite(amount) ? amount : 0;
 }
 
-function formatMetricValue(value: number, template: string) {
-  const suffix = template.replace(/^[\d.]+\s*/, "");
-  if (suffix === "B") return `${(value / 1_000_000_000).toFixed(1)}B`;
-  if (suffix === "M") return `${(value / 1_000_000).toFixed(1)}M`;
-  if (suffix === "K") return `${Math.round(value / 1_000)}K`;
-  if (suffix.includes("秒")) return `${value < 1 ? value.toFixed(2) : value.toFixed(1)} 秒`;
-  if (suffix) return `${Math.round(value)} ${suffix}`;
-  return Number.isInteger(value) ? `${value}` : value.toFixed(1);
-}
-
 function createAxisTicks(values: number[]) {
   const finiteValues = values.filter(Number.isFinite);
   if (finiteValues.length === 0) return [0, 0.25, 0.5, 0.75, 1];
@@ -667,81 +531,6 @@ function compactNumber(value: number) {
   if (value >= 100) return `${Math.round(value)}`;
   if (value >= 10) return value.toFixed(1).replace(/\.0$/, "");
   return value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
-}
-
-const leaderboardSupplementCatalog: Record<ModalityKey | "audio-stt", Array<[string, string]>> = {
-  agent: [
-    ["Claude Sonnet 4.8", "Anthropic"], ["GPT-5.4", "OpenAI"], ["Gemini 3.0 Flash", "Google"], ["Qwen3.5 Max", "Qwen"],
-    ["DeepSeek V3.2", "DeepSeek"], ["Kimi K3", "Moonshot"], ["GLM 4.7", "Z.ai"], ["MiniMax M2.5", "MiniMax"],
-    ["Llama 4 Scout", "Meta"], ["Grok 4.2", "xAI"], ["Qwen3 Coder", "Qwen"], ["Mistral Large 3", "Mistral"],
-    ["Ling 3.0", "Alibaba"], ["Doubao Seed 2.0", "Doubao"],
-  ],
-  text: [
-    ["Claude Sonnet 4.8", "Anthropic"], ["GPT-5.4", "OpenAI"], ["Gemini 3.0 Flash", "Google"], ["Qwen3.5 Max", "Qwen"],
-    ["DeepSeek V3.2", "DeepSeek"], ["Kimi K3", "Moonshot"], ["GLM 4.7", "Z.ai"], ["MiniMax M2.5", "MiniMax"],
-    ["Llama 4 Scout", "Meta"], ["Grok 4.2", "xAI"], ["Qwen3 Coder", "Qwen"], ["Mistral Large 3", "Mistral"],
-    ["Ling 3.0", "Alibaba"], ["Doubao Seed 2.0", "Doubao"],
-  ],
-  image: [
-    ["Nano Banana Pro", "Google"], ["GPT Image 1.5", "OpenAI"], ["Seedream 4.0", "Doubao"], ["FLUX.2 Max", "Black Forest Labs"],
-    ["Qwen Image Edit", "Qwen"], ["Midjourney V6.1", "Midjourney"], ["Recraft V3", "Recraft"], ["Ideogram 2.0", "Ideogram"],
-    ["Hunyuan Image 3.0", "Tencent"], ["Kolors 2", "Kuaishou"], ["Imagen 4 Fast", "Google"], ["FLUX.1 Kontext", "Black Forest Labs"],
-    ["SeedEdit 3.0", "Doubao"], ["Qwen Image Plus", "Qwen"],
-  ],
-  video: [
-    ["Veo 3.0 Fast", "Google"], ["Runway Gen-4.5", "Runway"], ["Seedance 1.5 Pro", "Doubao"], ["Wan 2.1", "Wan"],
-    ["Kling 2.6 Pro", "Kling"], ["Hailuo 2.3", "MiniMax"], ["PixVerse V5.5", "PixVerse"], ["Luma Ray 2", "Luma"],
-    ["Sora 2", "OpenAI"], ["Vidu Q2", "Tencent"], ["HunyuanVideo 1.5", "Tencent"], ["Kling 2.5 Turbo", "Kling"],
-    ["Wan 2.0 Flash", "Wan"], ["Seedance Lite", "Doubao"],
-  ],
-  audio: [
-    ["Realtime TTS 1.5", "Inworld"], ["Lightning V3.1 Pro", "Smallest.ai"], ["Cartesia Sonic 3", "Cartesia"], ["Eleven Flash v2.5", "ElevenLabs"],
-    ["Qwen TTS Turbo", "Alibaba"], ["StepAudio TTS Mini", "StepFun"], ["MiniMax Speech 2.6", "MiniMax"], ["CosyVoice 1.5", "FunAudioLLM"],
-    ["Gemini 2.5 Flash TTS", "Google"], ["Azure Neural Voice", "Microsoft"], ["OpenAI TTS 1", "OpenAI"], ["MeloTTS Large", "FunAudioLLM"],
-    ["SenseVoice TTS", "FunAudioLLM"], ["Qwen Voice 2", "Qwen"],
-  ],
-  "audio-stt": [
-    ["Whisper Large V3", "OpenAI"], ["Nova-2", "Deepgram"], ["Voxtral Mini", "Mistral"], ["SenseVoice Small", "FunAudioLLM"],
-    ["Paraformer V2", "Alibaba"], ["Qwen ASR Turbo", "Qwen"], ["Gemini 2.5 Flash ASR", "Google"], ["Azure Speech V4", "Microsoft"],
-    ["Assembly Universal 2", "AssemblyAI"], ["Moonshine V2", "Moonshot"], ["StepAudio ASR", "StepFun"], ["MiniMax Audio ASR", "MiniMax"],
-    ["Doubao ASR 2.0", "Doubao"], ["Tencent ASR Pro", "Tencent"],
-  ],
-};
-
-function leaderboardSupplementModels(modality: ModalityKey, task: string) {
-  const supplementCount = 14;
-  const catalogKey = modality === "audio" && task === "语音识别（STT）" ? "audio-stt" : modality;
-  return leaderboardSupplementCatalog[catalogKey].slice(0, supplementCount).map(([name, provider], index): DiscoveryModel => {
-    const domestic = domesticModelProviders.has(provider);
-    const supported = domestic && index % 5 !== 4;
-    const releaseMonth = `${2025 + Math.floor((index + 8) / 12)}-${String((index + 8) % 12 + 1).padStart(2, "0")}`;
-    if (modality === "image") return { id: supported ? `mock-image-${index + 1}` : undefined, name, provider, supported, score: `${1172 - index * 7}`, performance: `${7.9 + index * 0.42} 秒`, price: `$${36 + index * 5}/1K 张`, usage: index % 4 === 1 ? "—" : `${Math.max(120, 590 - index * 31)}K`, release: releaseMonth };
-    if (modality === "video") return { id: supported ? `mock-video-${index + 1}` : undefined, name, provider, supported, score: `${1129 - index * 8}`, performance: `${58 + index * 7} 秒`, price: `$${(0.22 + index * 0.035).toFixed(2)}/min`, usage: index % 4 === 2 ? "—" : `${Math.max(42, 210 - index * 12)}K`, release: releaseMonth };
-    if (modality === "audio" && task === "语音识别（STT）") return { id: supported ? `mock-stt-${index + 1}` : undefined, name, provider, supported, score: `${(5.6 + index * 0.35).toFixed(1)}%`, performance: `${Math.round(108 + index * 39)} ×`, price: `$${(0.8 + index * 0.37).toFixed(2)}/1K 分钟`, usage: index % 4 === 0 ? "—" : `${Math.max(80, 310 - index * 16)}K`, release: releaseMonth };
-    if (modality === "audio") return { id: supported ? `mock-tts-${index + 1}` : undefined, name, provider, supported, score: `${1184 - index * 5}`, performance: `${(53 - index * 1.4).toFixed(1)} 字符/秒`, price: `$${Math.round(9 + index * 4.5)}/1M 字符`, usage: index % 4 === 0 ? "—" : `${Math.max(0.3, 1.7 - index * 0.09).toFixed(1)}M`, release: releaseMonth };
-    const scoreBase = modality === "agent" ? 35 : task === "代码生成" ? 47 : 49;
-    const score = Math.max(20, scoreBase - index * 1.05);
-    return { id: supported ? `mock-${modality}-${index + 1}` : undefined, name, provider, supported, score: score.toFixed(1), performance: `${Math.max(72, 146 - index * 4)} tok/s`, price: `$${(0.34 + index * 0.11).toFixed(2)}/M`, usage: index % 5 === 2 ? "—" : `${Math.max(0.4, 2.4 - index * 0.12).toFixed(1)}B`, release: releaseMonth };
-  });
-}
-
-function completeSpecialtyRows(
-  item: DiscoveryConfig["specialties"][number],
-  models: DiscoveryModel[],
-) {
-  const existingNames = new Set(item.rows.map((row) => row.model));
-  const candidates = models.filter((model) => !existingNames.has(model.name));
-  const lastValue = metricValue(item.rows[item.rows.length - 1].value);
-  const lowerIsBetter = /(生成耗时|延迟|时延|成本)/.test(item.description);
-  const template = item.rows[item.rows.length - 1].value;
-  const additions = candidates.map((model, index) => {
-    const factor = lowerIsBetter ? 1 + (index + 1) * 0.09 : Math.max(0.18, 1 - (index + 1) * 0.075);
-    return { model: model.name, value: formatMetricValue(lastValue * factor, template) };
-  });
-  return [...item.rows, ...additions].slice(0, 10).map((row) => ({
-    ...row,
-    provider: models.find((model) => model.name === row.model)?.provider ?? row.model,
-  }));
 }
 
 /* 原型的 providerMarks（42 条厂牌首字母）已删除 —— 模型/厂牌标识改走 ModelIcon，
@@ -812,23 +601,6 @@ function AgentPopularityLeaderboard() {
   </section>;
 }
 
-const modelReleaseDates: Record<string, string> = {
-  "Claude Opus 5": "2026-07", "GPT-5.5": "2026-06", "GLM 5.2": "2026-07", "Qwen Max": "2026-05", "DeepSeek V4 Flash": "2026-07",
-  "Kimi K2.6": "2026-06", "Gemini 3.1 Pro": "2026-04", "Grok 4.5": "2026-05", "Llama 4 Maverick": "2026-03", "MiniMax M2.7": "2026-06",
-  "Imagen Ultra": "2026-05", "GPT Image 2": "2026-07", "Seedream 4.5": "2026-06", "FLUX.2 Pro": "2026-05", "Qwen Image": "2026-04",
-  "Midjourney V7": "2026-03", "Recraft V4": "2026-06", "Ideogram 3.0": "2026-02", "Hunyuan Image 3.0": "2026-05", "Kolors 2": "2026-04",
-  "Veo 3.1": "2026-06", "Runway Gen-5": "2026-05", "Seedance 2.0": "2026-03", "Wan 2.2": "2026-04", "Kling Turbo": "2026-06",
-  "Sora 2": "2026-05", "Kling 3.0": "2026-02", "Hailuo 2.3": "2026-04", "Luma Ray 3": "2026-03", "PixVerse V5.5": "2026-05",
-  "Speech 2.8 HD": "2026-06", "Eleven Multilingual V3": "2026-05", "CosyVoice 2": "2026-03", "GPT Audio Mini": "2026-04", "Kokoro 82M": "2025-12",
-  "Gemini TTS": "2026-04", "Azure Speech": "2026-02", "Whisper Large V3": "2025-11", "SenseVoice Small": "2026-01", "Suno V5": "2026-05",
-  "Inworld TTS 1.5 Max": "2026-01", "Qwen Audio 3.0 TTS Plus": "2026-07", "Simba 3.2": "2026-07", "Gemini 3.1 Flash TTS": "2026-04",
-  "Luna TTS": "2026-06", "Sonic 3.5": "2026-05", "StepAudio 2.5 TTS": "2026-06", "Scribe v2": "2026-07", "MAI Transcribe 1.5": "2026-06",
-  "Smallest AI Pulse Pro": "2026-05", "Voxtral Small": "2026-05", "GPT Transcribe": "2026-03", "Grok Speech to Text": "2026-06", "Nova-3": "2026-02",
-  "Parakeet TDT 0.6B V3": "2026-04", "Modulate STT VFast": "2026-03", "Whisper Large V3 Turbo": "2026-01", "Suno V5.5": "2026-07",
-  "Mureka V9": "2026-07", "Mureka V8": "2026-05", "Lyria 3 Pro": "2026-06", "Music 2.6": "2026-06", "Eleven Music v2": "2026-07",
-  "FUZZ-1.1 Pro": "2026-05", "Stable Audio 2.0": "2025-11", "Udio v1.5 Allegro": "2025-09",
-};
-
 function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (modelId: string) => void; onViewAllModels: () => void }) {
   const [modality, setModality] = useState<ModalityKey>("agent");
   const config = discoveryConfigFor(modality);
@@ -836,14 +608,28 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   const taskProfile = taskMetricProfiles[modality][task];
   const metricSource = taskMetricSources[modality][task];
   const audioTaskConfig = modality === "audio" ? audioTaskConfigs[task] : undefined;
-  const configuredModels = audioTaskConfig?.models ?? config.models;
+  /** STT 的主指标是 WER，越低越好；其余类型都是越高越好。 */
+  const scoreAscending = Boolean(taskProfile.qualityLowerIsBetter);
+  /**
+   * 模型列表与总览卡来自 observer 的每日快照（v1.0.6），不再用原型自带的 mock。
+   * `apiTotal` 是该指标下可排序的模型总数（随 metric 变化），页面上「共 N 个模型」
+   * 必须用它，不能用 apiModels.length —— 后者只是本次取回的前 100 条。
+   */
+  const {
+    models: apiModels,
+    summaryCards: apiSummaryCards,
+    total: apiTotal,
+    snapshotDate,
+    isLoading: discoveryLoading,
+  } = useDiscoveryQuery(modality, task);
+  const configuredModels = apiModels;
   const [scope, setScope] = useState<"all" | "supported">("all");
   const [yMetric, setYMetric] = useState(0);
   const [xMetric, setXMetric] = useState(0);
   const [pareto, setPareto] = useState(false);
   const [modelFilterOpen, setModelFilterOpen] = useState(false);
   const [modelFilterSearch, setModelFilterSearch] = useState("");
-  const [selectedModelNames, setSelectedModelNames] = useState<string[]>(() => agentDiscoveryConfig.models.slice(0, 7).map((model) => model.name));
+  const [selectedModelNames, setSelectedModelNames] = useState<string[]>([]);
   const [rankingMetric, setRankingMetric] = useState<RankingMetric>("overall");
   const [providerFilter, setProviderFilter] = useState<string[]>([]);
   const [providerFilterOpen, setProviderFilterOpen] = useState(false);
@@ -851,46 +637,20 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   const [tablePage, setTablePage] = useState(1);
 
   /**
-   * 依赖先提取成变量：原型直接把 `taskProfile.qualityLowerIsBetter` 写进依赖数组，
-   * React Compiler 无法对成员表达式保留 memoization（本仓 eslint 会报
-   * "Compilation Skipped: Existing memoization could not be preserved"）。
-   * 提出来行为不变，只是让编译器能正常优化。
+   * 接口已按该类型的主指标排好序（rankings 的 direction 决定升降序，STT 的 WER
+   * 越低越好也由服务端处理），前端不再重排——原先这里还会用写死的 textTaskScores
+   * 覆盖分数，接真实数据后那是拿假分盖真分，已一并删除。
    */
-  const qualityLowerIsBetter = taskProfile.qualityLowerIsBetter;
-  /**
-   * eslint-disable react-hooks/preserve-manual-memoization —— 说明为什么豁免：
-   *
-   * React Compiler 报 "Existing memoization could not be preserved"，即它无法在
-   * 保留这个手写 useMemo 的前提下做自己的优化。这是**优化层面的提示，不是正确性
-   * 问题**：依赖数组是完整的（configuredModels / modality / task /
-   * qualityLowerIsBetter 都在），textTaskScores 与 metricValue 是模块级常量不需入依赖。
-   *
-   * 不改成编译器偏好的写法，是因为本页要求与 PRD 原型 1:1，而改这里意味着重排
-   * 排序逻辑的组织方式 —— 为一条优化提示动 1:1 复刻的代码不划算。真要治，应该
-   * 整体评估这个文件是否交给 React Compiler 托管（去掉全部手写 memo），那是独立改动。
-   */
-  /* eslint-disable react-hooks/preserve-manual-memoization */
-  const taskModels = useMemo(() => {
-    const scores = modality === "text" || modality === "agent" ? textTaskScores[task] : undefined;
-    return configuredModels
-      .map((model) => {
-        if (scores?.[model.name]) return { ...model, score: scores[model.name] };
-        return model;
-      })
-      .sort((first, second) => qualityLowerIsBetter
-        ? metricValue(first.score) - metricValue(second.score)
-        : metricValue(second.score) - metricValue(first.score));
-  }, [configuredModels, modality, task, qualityLowerIsBetter]);
-  /* eslint-enable react-hooks/preserve-manual-memoization */
+  const taskModels = configuredModels;
   const visibleModels = useMemo(
     () => taskModels.filter((model) => scope === "all" || isModelConnected(model)),
     [scope, taskModels],
   );
-  const leaderboardModels = useMemo(() => {
-    const existingNames = new Set(taskModels.map((model) => model.name));
-    const supplements = leaderboardSupplementModels(modality, task).filter((model) => !existingNames.has(model.name));
-    return [...taskModels, ...supplements];
-  }, [modality, task, taskModels]);
+  /**
+   * 完整榜单就是接口返回的模型，不再往里掺"补充模型"——原先那批是按厂牌名编出来的
+   * 假条目，用来把 mock 的十来个模型撑成一张像样的榜。
+   */
+  const leaderboardModels = taskModels;
   /**
    * 筛选条件变化时页码回第 1 页。
    *
@@ -900,6 +660,18 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
    * 且少一轮渲染：effect 版会先用旧页码渲染一次再纠正。
    * 这是实现方式的调整，不改任何 UI 与交互。
    */
+  /**
+   * 散点图默认选中前 7 个模型。不能放在 useState 初值里——那时接口数据还没到；
+   * 也不用 effect（本仓 eslint 禁 set-state-in-effect），走「渲染期按上一次值调整
+   * 状态」，与下方 tablePage 归位同一套写法。
+   */
+  const selectionKey = `${modality}|${task}`;
+  const [lastSelectionKey, setLastSelectionKey] = useState("");
+  if (taskModels.length > 0 && lastSelectionKey !== selectionKey) {
+    setLastSelectionKey(selectionKey);
+    setSelectedModelNames(taskModels.slice(0, 7).map((model) => model.name));
+  }
+
   const tableFilterKey = `${modality}|${task}|${scope}|${rankingMetric}|${providerFilter.join(",")}|${tableAccess}`;
   const [lastTableFilterKey, setLastTableFilterKey] = useState(tableFilterKey);
   if (lastTableFilterKey !== tableFilterKey) {
@@ -908,7 +680,14 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   }
   const constrainedAnalysisProfile = sourceConstrainedAnalysisProfiles[modality]?.[task];
   const isTextAgent = modality === "text" || modality === "agent";
-  const analysisYMetrics = constrainedAnalysisProfile?.yMetrics ?? [taskProfile.qualityLabel, ...config.yMetrics.filter((metric) => metric !== taskProfile.qualityLabel)];
+  /**
+   * Y 轴可选项只保留**接口真的有数据**的那些。
+   *
+   * config.yMetrics 里还列着「Coding Index」「运动一致性」这类同类型下拿不到的指标，
+   * 原型靠对主指标做等比衰减伪造出它们的值。真实数据下不能这么干——一个 type 只有
+   * 一个主指标，所以非 constrained 档位就只给主指标一项。
+   */
+  const analysisYMetrics = constrainedAnalysisProfile?.yMetrics ?? [taskProfile.qualityLabel];
   const analysisCostLabel = taskProfile.valueLabel.split(" / ").at(-1) ?? "单次任务成本";
   const analysisPresetPrefix = modality === "image" ? "Elo" : "质量";
   const defaultAnalysisXMetrics: AnalysisAxisProfile["xMetrics"] = [
@@ -919,16 +698,19 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   ];
   const analysisXMetrics = constrainedAnalysisProfile?.xMetrics ?? defaultAnalysisXMetrics;
   const analysisPresets = constrainedAnalysisProfile?.presets ?? analysisXMetrics.map((metric, index) => ({ label: metric.presetLabel, y: 0, x: index }));
-  const textValueRows = isTextAgent
-    ? taskModels
-      .map((model) => ({ model: model.name, value: (metricValue(model.score) / Math.max(taskCostProfileFor(task, model).total, 0.01)).toFixed(1) }))
-      .sort((first, second) => metricValue(second.value) - metricValue(first.value))
-    : [];
-  const specialties = modality === "audio" && audioTaskConfig
+  /**
+   * 专项榜：标题与说明来自配置（产品文案），**行数据一律从接口的真实模型卡派生**。
+   * 原先配置里那 5 行写死的排名连同 completeSpecialtyRows 的补位算法一起删掉了。
+   */
+  const specialtyTemplates = modality === "audio" && audioTaskConfig
     ? audioTaskConfig.specialties
     : isTextAgent
-    ? [{ ...config.specialties[0], description: taskProfile.valueLabel, rows: textValueRows }, ...config.specialties.slice(1)]
+    ? [{ ...config.specialties[0], description: taskProfile.valueLabel }, ...config.specialties.slice(1)]
     : config.specialties;
+  const specialties = specialtyTemplates.map((item) => ({
+    ...item,
+    rows: specialtyRows(item.title, taskModels, { scoreAscending }),
+  }));
   const imageBenchmarkRankings = [
     {
       title: "质量 Elo 评分",
@@ -942,7 +724,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       description: "质量 Elo / API 价格",
       source: "Artificial Analysis",
       lowerIsBetter: false,
-      rows: completeSpecialtyRows(specialties[0], taskModels),
+      rows: specialtyRows("性价比", taskModels),
     },
     {
       title: "API 价格",
@@ -972,7 +754,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       description: "质量 Elo / API 价格",
       source: "Artificial Analysis",
       lowerIsBetter: false,
-      rows: completeSpecialtyRows(specialties[0], taskModels),
+      rows: specialtyRows("性价比", taskModels),
     },
     {
       title: "API 价格",
@@ -1003,8 +785,8 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       source: "Artificial Analysis",
       lowerIsBetter: true,
       rows: [...taskModels]
-        .sort((first, second) => taskCostProfileFor(task, first).total - taskCostProfileFor(task, second).total)
-        .map((model) => ({ model: model.name, value: formatTaskCost(taskCostProfileFor(task, model).total) })),
+        .sort((first, second) => taskCostFor(first) - taskCostFor(second))
+        .map((model) => ({ model: model.name, value: formatTaskCost(taskCostFor(model)) })),
     },
     {
       title: "输出 TPS",
@@ -1054,7 +836,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       : [{ key: "overall", label: modality === "audio" ? "语音质量" : "Elo 评分" }, { key: "value", label: "性价比", specialtyIndex: 0 }, { key: "price", label: "API 价格", specialtyIndex: 1 }, { key: "usage", label: "使用量", specialtyIndex: 2 }] satisfies typeof rankingMetricOptions;
   const selectedRankingOption = availableRankingMetricOptions.find((option) => option.key === rankingMetric) ?? availableRankingMetricOptions[0];
   const selectedSpecialty = selectedRankingOption.specialtyIndex === undefined ? undefined : specialties[selectedRankingOption.specialtyIndex];
-  const selectedMetricRows = selectedSpecialty ? completeSpecialtyRows(selectedSpecialty, taskModels) : [];
+  const selectedMetricRows = selectedSpecialty ? specialtyRows(selectedSpecialty.title, taskModels, { scoreAscending }) : [];
   const selectedMetricValues = new Map(selectedMetricRows.map((row) => [row.model, row.value]));
   const selectedMetricOrder = new Map(selectedMetricRows.map((row, index) => [row.model, index]));
   const specialtyDescriptions = isTextAgent
@@ -1072,22 +854,16 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       ? taskProfile.qualityLabel
       : specialtyDescriptions[selectedRankingOption.specialtyIndex];
   const selectedMetricSource = rankingMetric === "usage" ? "ModelGo" : metricSource;
-  const qualityLeader = taskModels[0];
-  const openQualityLeader = taskModels.find((model) => openTextModels.has(model.name));
-  const valueLeader = textValueRows[0];
-  const summaryCards = (audioTaskConfig?.summary ?? config.summary).map((item, index) => !isTextAgent ? item : ({
-      ...item,
-      ...(isTextAgent && index === 0 && qualityLeader ? { model: qualityLeader.name, value: qualityLeader.score } : {}),
-      ...(isTextAgent && index === 1 && openQualityLeader ? { model: openQualityLeader.name, value: openQualityLeader.score } : {}),
-      ...(isTextAgent && index === 2 && valueLeader ? { model: valueLeader.model, value: valueLeader.value } : {}),
-      label: index === 0 ? (isTextAgent ? "综合评分最高" : "Elo 评分最高") : item.label,
-      unit: [taskProfile.qualityUnit, taskProfile.qualityUnit, taskProfile.valueUnit, taskProfile.speedUnit, taskProfile.usageUnit][index],
-    })).map((item) => ({
-      ...item,
-      provider: taskModels.find((model) => model.name === item.model)?.provider
-        ?? config.models.find((model) => model.name === item.model)?.provider
-        ?? item.model,
-    })).map((item, index) => ({ ...item, tooltip: summaryTooltipCopy[modality][task]?.[index] ?? item.label }));
+  /**
+   * 总览卡直接用接口的 highlights（label / value / unit 都在数据层按业务类型算好），
+   * 不再从模型列表里自己挑「第一名」—— 接口的 highlight 是在全量模型上算的，
+   * 本地列表只有前 100 条，自己挑会挑错。这里只补两样接口没有的：
+   * 厂商名（用于卡片图标）与 tooltip 文案（产品口径，非数据）。
+   */
+  const summaryCards = apiSummaryCards.map((item, index) => ({
+    ...item,
+    tooltip: summaryTooltipCopy[modality][task]?.[index] ?? item.label,
+  }));
   const filteredTableModels = leaderboardModels.filter((model) => scope === "all" || isModelConnected(model))
     .filter((model) => providerFilter.length === 0 || providerFilter.includes(model.provider))
     .filter((model) => tableAccess === "all" || (tableAccess === "supported" ? isModelConnected(model) : !isModelConnected(model)))
@@ -1153,14 +929,14 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
     if (rankingMetric === "usage") return metricValue(model.usage);
     if (rankingMetric === "value") {
       const quality = metricValue(model.score);
-      const cost = isTextAgent ? taskCostProfileFor(task, model).total : plainMetricValue(model.price);
+      const cost = isTextAgent ? taskCostFor(model) : plainMetricValue(model.price);
       return taskProfile.qualityLowerIsBetter ? 1 / Math.max(quality * cost, 0.01) : quality / Math.max(cost, 0.01);
     }
     return metricValue(model.score);
   }
 
   function supportingMetrics(model: DiscoveryModel) {
-    return [isTextAgent ? formatTaskCost(taskCostProfileFor(task, model).total) : model.price, model.release ?? modelReleaseDates[model.name] ?? "—", model.usage];
+    return [isTextAgent ? formatTaskCost(taskCostFor(model)) : model.price, model.release ?? "—", model.usage];
   }
 
   const supportingMetricHeaders = isTextAgent
@@ -1168,26 +944,24 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
     : ["公开价格", "发布时间", "ModelGo 使用量"];
   const chartModels = visibleModels.filter((model) => selectedModelNames.includes(model.name));
   const filteredModelOptions = visibleModels.filter((model) => model.name.toLowerCase().includes(modelFilterSearch.trim().toLowerCase()));
-  const speedValueMap = new Map(specialties[1] ? completeSpecialtyRows(specialties[1], taskModels).map((row) => [row.model, metricValue(row.value)]) : []);
-  const latencyValueMap = new Map(specialties[2] ? completeSpecialtyRows(specialties[2], taskModels).map((row) => [row.model, metricValue(row.value)]) : []);
+  const speedValueMap = new Map(specialties[1] ? specialtyRows(specialties[1].title, taskModels, { scoreAscending }).map((row) => [row.model, metricValue(row.value)]) : []);
+  const latencyValueMap = new Map(specialties[2] ? specialtyRows(specialties[2].title, taskModels, { scoreAscending }).map((row) => [row.model, metricValue(row.value)]) : []);
   const activeXAxis = analysisXMetrics[xMetric] ?? analysisXMetrics[0];
-  const chartData = chartModels.map((model, index) => {
+  const chartData = chartModels.map((model) => {
     const xValue = activeXAxis.source === "price"
-      ? isTextAgent ? taskCostProfileFor(task, model).total : plainMetricValue(model.price)
-      : activeXAxis.source === "performance"
-        ? metricValue(model.performance)
+      ? isTextAgent ? taskCostFor(model) : plainMetricValue(model.price)
       : activeXAxis.source === "speed"
         ? speedValueMap.get(model.name) ?? metricValue(model.performance)
         : activeXAxis.source === "latency"
           ? latencyValueMap.get(model.name) ?? metricValue(model.performance)
-          : activeXAxis.source === "samples"
-            ? plainMetricValue(model.samples)
-            : activeXAxis.source === "voices"
-              ? plainMetricValue(model.voices)
-              : metricValue(model.usage);
-    const baseScore = constrainedAnalysisProfile && yMetric === 1 ? plainMetricValue(model.price) : metricValue(model.score);
-    const scoreJitter = baseScore > 100 ? ((index % 3) - 1) * 4 : ((index % 3) - 1) * 0.35;
-    const yValue = constrainedAnalysisProfile ? baseScore : baseScore * (1 - yMetric * 0.018) + scoreJitter;
+          : metricValue(model.usage);
+    // Y 轴取真实值：constrained 档位的第 2 项是 API 价格，其余一律是主指标分。
+    // 原型在这里加过 scoreJitter（人为抖动）和 (1 - yMetric*0.018) 的衰减，用来把
+    // mock 的十来个点摊开、并伪造出「切换 Y 指标」的效果——接真实数据后那会让图上
+    // 的坐标对不上榜单（61.3 显示成 60.9），已删除。
+    const yValue = constrainedAnalysisProfile && yMetric === 1
+      ? plainMetricValue(model.price)
+      : metricValue(model.score);
     return { model, xValue, yValue };
   });
   const xTicks = createAxisTicks(chartData.map((point) => point.xValue));
@@ -1236,14 +1010,12 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   function switchModality(next: ModalityKey) {
     const nextConfig = discoveryConfigFor(next);
     const nextTask = nextConfig.tasks[0];
-    const nextModels = next === "audio" ? audioTaskConfigs[nextTask].models : nextConfig.models;
     setModality(next);
     setTask(nextTask);
     setYMetric(0);
     setXMetric(0);
     setModelFilterOpen(false);
     setModelFilterSearch("");
-    setSelectedModelNames(nextModels.slice(0, 7).map((model) => model.name));
     setRankingMetric("overall");
     setProviderFilter([]);
     setProviderFilterOpen(false);
@@ -1255,7 +1027,6 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
     setYMetric(0);
     setXMetric(0);
     setRankingMetric("overall");
-    if (modality === "audio") setSelectedModelNames(audioTaskConfigs[nextTask].models.slice(0, 7).map((model) => model.name));
   }
 
   function viewFullRanking() {
@@ -1279,7 +1050,9 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
           <div className="model-discovery-title-row">
             <h1>模型发现</h1>
             <div className="model-discovery-meta">
-              <span>数据快照：2026-08-07</span>
+              {/* 每日 08:30 刷新一次，不是实时值；同步失败时接口继续返回上一次成功的
+                  快照，日期会停在旧值——所以这里必须展示接口回传的真实日期。 */}
+              <span>{snapshotDate ? `数据快照：${snapshotDate}` : "数据快照加载中"}</span>
             </div>
           </div>
           <p>聚合业界评测、专业分析与 ModelGo 平台数据，帮助团队完成模型选型。</p>
@@ -1320,8 +1093,11 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
 
       <section className="model-discovery-overview">
         <article className="mg-tile model-discovery-rank-card">
-          <div className="model-discovery-card-head"><div><h2>{task} Top 5</h2><span>{taskProfile.qualityBasis}</span></div></div>
+          <div className="model-discovery-card-head"><div><h2>{task} Top 5</h2><span>{taskProfile.qualityBasis}{apiTotal > 0 ? ` · 共 ${apiTotal} 个模型` : ""}</span></div></div>
           <div className="model-discovery-rank-head"><span>#</span><span>模型</span><span>接入状态</span><span>{taskProfile.qualityLabel}<em className="model-discovery-source-tag">{metricSource}</em></span></div>
+          {discoveryLoading && visibleModels.length === 0 && (
+            <div className="model-discovery-rank-row"><span /><strong>加载中…</strong></div>
+          )}
           {visibleModels.slice(0, 5).map((model, index) => {
             const hasDetail = canOpenModelDetail(model);
             return <div aria-label={hasDetail ? modelDetailAriaLabel(model) : undefined} className={`model-discovery-rank-row ${hasDetail ? "model-discovery-row-clickable" : ""}`} key={model.name} onClick={hasDetail ? () => openModelDetail(model) : undefined} onKeyDown={hasDetail ? (event) => handleModelRowKeyDown(event, model) : undefined} role={hasDetail ? "link" : undefined} tabIndex={hasDetail ? 0 : undefined}><span>{index + 1}</span><strong>{model.name}<small>{model.provider}</small></strong><em className={isModelConnected(model) ? "supported" : "pending"}>{modelAccessLabel(model)}</em><div><i style={{ width: `${94 - index * 7}%` }} /><b>{model.score}</b></div></div>;
@@ -1347,7 +1123,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       <section className="model-discovery-section">
         <div className="model-discovery-section-head"><div><h2>专项指标排行</h2></div></div>
         <div className="model-discovery-specialties">{rankingCards.map((item) => {
-          const rows = completeSpecialtyRows(item, visibleModels);
+          const rows = specialtyRows(item.title, visibleModels, { scoreAscending });
           const values = rows.map((row) => metricValue(row.value));
           const maximum = Math.max(...values, 1);
           return <article className="mg-tile" key={item.title}>
@@ -1356,11 +1132,9 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
               {rows.map((row, index) => {
                 const value = metricValue(row.value);
                 const barHeight = Math.max(18, value / maximum * 100);
-                const costModel = isTextAgent && item.title === "单次任务成本" ? taskModels.find((model) => model.name === row.model) : undefined;
-                const costProfile = costModel ? taskCostProfileFor(task, costModel) : undefined;
                 return <div aria-label={`第 ${index + 1} 名，${row.model}，${row.value}`} className="model-discovery-specialty-column" key={row.model} style={{ "--bar-height": `${barHeight}%` } as CSSProperties} tabIndex={0}>
                 <div className="model-discovery-specialty-plot">
-                  <div className="model-discovery-specialty-tooltip" role="tooltip"><strong><DiscoveryModelIcon model={row.model} provider={row.provider} />{row.model}</strong><span>第 {index + 1} 名 · {item.description}</span><b>{row.value}</b>{costProfile && <dl className="model-discovery-cost-breakdown"><div><dt>输出</dt><dd>{formatTaskCost(costProfile.answer)}</dd></div><div><dt>推理</dt><dd>{formatTaskCost(costProfile.reasoning)}</dd></div><div><dt>缓存写入</dt><dd>{formatTaskCost(costProfile.cacheWrite)}</dd></div><div><dt>缓存命中</dt><dd>{formatTaskCost(costProfile.cacheHit)}</dd></div><div><dt>输入</dt><dd>{formatTaskCost(costProfile.input)}</dd></div></dl>}</div>
+                  <div className="model-discovery-specialty-tooltip" role="tooltip"><strong><DiscoveryModelIcon model={row.model} provider={row.provider} />{row.model}</strong><span>第 {index + 1} 名 · {item.description}</span><b>{row.value}</b></div>
                   <i className="model-discovery-specialty-bar"><b>{row.value}</b></i>
                 </div>
                 <div className="model-discovery-specialty-label"><DiscoveryModelIcon model={row.model} provider={row.provider} /><strong title={row.model}>{row.model}</strong></div>
@@ -1490,7 +1264,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                     <TableCell align="right">
                       {hasDetail
                         /* 这里用原生 button 而不是控制台 Button 组件，与本文件其余 14 处一致：
-                           Button 带着控制台的整套规格（h-[var(--mg-control-h-sm)]=36px、
+                           Button 带着控制台的整套规格（高度锁在 --mg-control-h-sm=36px、
                            modern-btn-* 用 !important 锁死中性色），而原型这颗是 27px 高的品牌蓝小
                            按钮（redesign.css:15645）——套组件就得靠层层 !important 对抗才能扳回来，
                            本页又是 1:1 例外。plan §3.2 要求的是表格体系走 Table + Pagination，

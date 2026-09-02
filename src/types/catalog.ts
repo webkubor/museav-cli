@@ -86,6 +86,10 @@ export interface CatalogModelItem {
   in_region_routing?: boolean
   status: string
   logo_url: string
+  /** 服务端判定的免费模型标记；限频提示等免费额度能力只能按此字段判断。 */
+  free?: boolean
+  /** 免费模型的服务端限频规则；未配置时整个字段省略，前端不展示限频提示。 */
+  rate_limit?: CatalogModelRateLimit
 
   // ─── 模型广场字段 ───
   /** 稳定公开 URL 片段；缺省时回落 model_id */
@@ -147,6 +151,16 @@ export interface CatalogModelItem {
    * original_price 只是划线装饰，真实扣费是 pricing 里的正常价格。
    */
   promotion?: CatalogPromotion
+}
+
+/** 免费模型的限频规则（shared/modelgo_prd#914）。 */
+export interface CatalogModelRateLimit {
+  /** 窗口内最多请求数 */
+  request_limit?: number
+  /** 窗口内最多 Token 数 */
+  token_limit?: number
+  /** 限频窗口（秒） */
+  window_seconds?: number
 }
 
 export interface CatalogPriceTier {

@@ -18,9 +18,9 @@
       "service": "Service Key"
     },
     "keyTypeDesc": {
-      "personal": "Owned by you. Best for development and testing.",
-      "member": "Assigned to a specific workspace member.",
-      "service": "For applications and production workloads."
+      "personal": "For your own use, suitable for personal development, testing, and local debugging.",
+      "member": "For a designated member, created by an administrator who assigns the owner.",
+      "service": "For services or systems, suitable for production environments and automation."
     },
     "status": {
       "active": "Active",

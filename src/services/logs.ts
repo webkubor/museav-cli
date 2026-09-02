@@ -261,11 +261,24 @@ function toListQuery(params?: CallLogListParams) {
   }
 }
 
+// call_log_id 缺失时回退用 request_id（见 toCallLogItem），但 request_id 由客户端
+// X-Request-Id 传入、不保证同页唯一（gitlab#938：同一 request_id 两次真实调用撞
+// 上同一个 React key，协调时留下孤儿 DOM 行，换筛选条件后仍残留、穿透后续所有筛选）。
+// 在返回列表前兜底去重，保证同页内 call_log_id 互不相同，从根上不给重复 key 的机会。
+function dedupeCallLogIds(items: CallLogItem[]): CallLogItem[] {
+  const seen = new Map<string, number>()
+  return items.map((item) => {
+    const count = seen.get(item.call_log_id) ?? 0
+    seen.set(item.call_log_id, count + 1)
+    return count === 0 ? item : { ...item, call_log_id: `${item.call_log_id}:${count}` }
+  })
+}
+
 function toCursorPage(
   data: ModelLogListResponse,
   requestedLimit?: number
 ): CursorPage<CallLogItem> {
-  const items = (data.items ?? []).map(toCallLogItem)
+  const items = dedupeCallLogIds((data.items ?? []).map(toCallLogItem))
   const limit = requestedLimit || data.limit || items.length
   const last = data.items?.[data.items.length - 1]
   const hasMore = limit > 0 && items.length >= limit

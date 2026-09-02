@@ -385,3 +385,71 @@ describe('ReferralPage — commission log cursor pagination (#199)', () => {
     ).not.toBeInTheDocument()
   })
 })
+
+// ── (e) 返佣档位阶梯只认接口数据 — shared/modelgo_prd#932 ────────────────────
+// 之前写死「成长/核心/战略 10%/13%/15%」，与运营端实际配置（普通/核心/战略 3%/5%/6%）
+// 不一致，线上在向用户展示错误的返佣承诺。阶梯必须来自 overview，没有就不渲染。
+
+describe('ReferralPage — tier ladder from the API (#932)', () => {
+  const HARDCODED = ['成长伙伴', 'Growth Partner', '13%', '15%']
+
+  it('renders the full ladder from overview.tiers, ascending, marking the current tier', async () => {
+    getReferralOverview.mockResolvedValue({
+      ...OVERVIEW,
+      tier: { ...OVERVIEW.tier, name: '核心伙伴', rate: 5 },
+      tiers: [
+        { name: '战略伙伴', rate: 6, threshold: '200000.00' },
+        { name: '普通伙伴', rate: 3, threshold: '0.00' },
+        { name: '核心伙伴', rate: 5, threshold: '50000.00' },
+      ],
+    })
+    renderPage()
+    const ladder = await screen.findByTestId('referral-tier-ladder')
+    const rows = within(ladder).getAllByText(/伙伴$/).map((el) => el.textContent)
+    expect(rows).toEqual(['普通伙伴', '核心伙伴', '战略伙伴'])
+    expect(within(ladder).getByText('3%')).toBeInTheDocument()
+    expect(within(ladder).getByText('5%')).toBeInTheDocument()
+    expect(within(ladder).getByText('6%')).toBeInTheDocument()
+    // every tier carries a threshold line
+    expect(within(ladder).getAllByText('billing.referral.tierSpendThreshold')).toHaveLength(3)
+    // exactly one "current" marker, on the row of the tenant's tier
+    const current = within(ladder).getAllByText('billing.referral.tierCurrent')
+    expect(current).toHaveLength(1)
+    expect(current[0].closest('div')?.textContent).toContain('核心伙伴')
+    for (const s of HARDCODED) expect(within(ladder).queryByText(s)).not.toBeInTheDocument()
+  })
+
+  it('falls back to current + next tier from overview.tier when tiers is absent', async () => {
+    getReferralOverview.mockResolvedValue({
+      ...OVERVIEW,
+      tier: {
+        name: '普通伙伴',
+        rate: 3,
+        cumulativeSpend: '0',
+        nextThreshold: '50000',
+        nextTierName: '核心伙伴',
+        nextRate: 5,
+      },
+    })
+    renderPage()
+    const ladder = await screen.findByTestId('referral-tier-ladder')
+    const rows = within(ladder).getAllByText(/伙伴$/).map((el) => el.textContent)
+    expect(rows).toEqual(['普通伙伴', '核心伙伴'])
+    expect(within(ladder).getByText('3%')).toBeInTheDocument()
+    expect(within(ladder).getByText('5%')).toBeInTheDocument()
+    // backend does not expose the current tier's own threshold → only the next tier shows one
+    expect(within(ladder).getAllByText('billing.referral.tierSpendThreshold')).toHaveLength(1)
+    for (const s of HARDCODED) expect(within(ladder).queryByText(s)).not.toBeInTheDocument()
+  })
+
+  it('renders no ladder at all when the overview has no tier data', async () => {
+    getReferralOverview.mockResolvedValue({
+      ...OVERVIEW,
+      tier: { name: '', rate: 0, cumulativeSpend: '0', nextThreshold: '0', nextTierName: '', nextRate: 0 },
+    })
+    renderPage()
+    await screen.findByText('MG-TEST')
+    expect(screen.queryByTestId('referral-tier-ladder')).not.toBeInTheDocument()
+    for (const s of HARDCODED) expect(screen.queryByText(s)).not.toBeInTheDocument()
+  })
+})

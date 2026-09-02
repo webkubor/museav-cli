@@ -185,7 +185,48 @@
       "emptyReply": "Sorry, I received an empty response. Please try again.",
       "sendFailed": "Failed to send",
       "stopFailed": "Failed to stop the conversation",
-      "stopped": "Generation stopped."
+      "stopped": "Generation stopped.",
+      "feedback": {
+        "entry": "Report an issue",
+        "title": "Report an issue",
+        "subtitle": "Please give as much detail as you can. The current page context is recorded with your report.",
+        "required": "Required",
+        "optional": "Optional",
+        "issueTypeLabel": "Issue type",
+        "issueTypePlaceholder": "Select an issue type",
+        "issueTypes": {
+          "functionality": "Feature problem",
+          "apiCall": "API call problem",
+          "billing": "Billing problem",
+          "suggestion": "Product suggestion",
+          "other": "Other"
+        },
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "Describe what happened and what you expected",
+        "occurredAtLabel": "Time of occurrence",
+        "requestIdLabel": "Request ID",
+        "requestIdPlaceholder": "Links the report to your call logs. Optional",
+        "attachmentLabel": "Screenshot or attachment",
+        "attachmentPick": "Choose a file",
+        "attachmentClear": "Remove selected file",
+        "cancel": "Cancel",
+        "submit": "Submit",
+        "errors": {
+          "issueTypeRequired": "Please select an issue type",
+          "descriptionRequired": "Please describe the problem"
+        },
+        "receipt": {
+          "title": "Report submitted",
+          "ariaLabel": "Report {{id}} submitted",
+          "idLabel": "Report ID",
+          "etaLabel": "Response time",
+          "issueTypeLabel": "Issue type",
+          "summaryLabel": "Description"
+        },
+        "attachmentUploading": "Uploading...",
+        "attachmentFailed": "Attachment upload failed. Please try again.",
+        "submitFailed": "Submission failed. Please try again later."
+      }
     },
     "referralInviteCard": {
       "inviteLinkLabel": "My referral link",

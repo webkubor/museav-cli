@@ -8,13 +8,17 @@ import { stopConversation } from '@/services/agent'
 import { appToast } from '@/lib/app-toast'
 import { readSSE, extractHTTPError, isAbortError, patchMessageById } from 'ai-sse-kit'
 import { useStreamingController } from 'ai-sse-kit/react'
+import type { FeedbackReceipt } from './feedback'
 
 export interface Message {
   id: string
-  role: 'user' | 'agent'
+  /** system = 前端本地生成的系统卡片（如反馈回执），不经过 /agent/chat，也不参与上下文 */
+  role: 'user' | 'agent' | 'system'
   content: string
   timestamp: number
   isError?: boolean
+  /** 反馈提交回执（智能客服 PRD §7.5）；有值时该条消息渲染成回执卡片而非气泡 */
+  feedback?: FeedbackReceipt
 }
 
 export type ConnectionStatus = 'connecting' | 'online' | 'offline'
@@ -204,6 +208,18 @@ export function useCsChat(options?: CsChatOptions) {
     })
   }, [conversationId, isLoading, saveMessages, t, stream])
 
+  /**
+   * 把一条本地生成的消息追加进对话流并落盘（当前唯一用途：反馈提交回执，PRD §7.5）。
+   * 不触发任何请求，也不改 conversationId —— 回执是前端产物，不是助手回答。
+   */
+  const appendLocalMessage = useCallback((message: Message) => {
+    setMessages((prev) => {
+      const next = [...prev, message]
+      saveMessages(next)
+      return next
+    })
+  }, [saveMessages])
+
   const reconnect = useCallback(() => {
     setStatus('online')
   }, [])
@@ -223,6 +239,7 @@ export function useCsChat(options?: CsChatOptions) {
 
   return {
     messages,
+    appendLocalMessage,
     sendMessage,
     stopMessage,
     reconnect,

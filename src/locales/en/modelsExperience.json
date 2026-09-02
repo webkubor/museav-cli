@@ -38,7 +38,9 @@
       "both": "Up to {{requests}} calls or {{tokens}} tokens per {{window}}",
       "requests": "Up to {{requests}} calls per {{window}}",
       "tokens": "Up to {{tokens}} tokens per {{window}}",
-      "wait": "Once either limit is reached, please wait for the quota to reset before trying again."
+      "wait": "Once either limit is reached, please wait for the quota to reset before trying again.",
+      "unknown": "rate limits apply",
+      "waitUnknown": "Once a limit is reached, please wait for the quota to reset."
     },
     "limitedFree": "Free",
     "perM": "/M",

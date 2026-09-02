@@ -38,7 +38,9 @@
       "both": "每{{window}}最多 {{requests}} 次调用，或 {{tokens}} Token",
       "requests": "每{{window}}最多 {{requests}} 次调用",
       "tokens": "每{{window}}最多 {{tokens}} Token",
-      "wait": "达到任一上限后，请耐心等待，额度恢复后即可继续使用。"
+      "wait": "达到任一上限后，请耐心等待，额度恢复后即可继续使用。",
+      "unknown": "存在调用频率限制",
+      "waitUnknown": "达到上限后，请耐心等待，额度恢复后即可继续使用。"
     },
     "limitedFree": "限时免费",
     "perM": "每M",

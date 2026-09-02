@@ -236,6 +236,10 @@ export default function App() {
           窄屏有 min(360, 100vw-32) 兜底，也不会顶到边。 */}
       <Toaster
         position="top-center"
+        /* offset 必须给：header 高 60px，而 toast 默认贴视口顶部，会落在 header 的高度带里。
+           光改横向位置躲不开 —— 窗口一窄，导航往左挤、居中的 toast 也往左移，照样重叠
+           （实测 1440/1280/1100px 分别重叠 132/212/122px）。72 = header 60 + 12 间距。 */
+        offset="72px"
         closeButton
         theme={activeTheme}
         toastOptions={{

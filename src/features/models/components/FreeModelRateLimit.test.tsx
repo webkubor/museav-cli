@@ -57,3 +57,22 @@ describe('FreeModelRateLimit', () => {
     expect(screen.getByRole('status')).toHaveTextContent('免费额度 每分钟最多 5 次调用')
   })
 })
+
+/**
+ * 英文语境下不能用全角分号。原先分隔符硬编码成「；」，海外站会渲染出
+ * "rate limits apply；Once a limit is reached..."（2026-09-02 生产实测）。
+ */
+describe('FreeModelRateLimit（英文）', () => {
+  it('uses a half-width separator in English', async () => {
+    await i18n.changeLanguage('en')
+    // 切语言后要重新加载该语言的命名空间，否则 t() 吐回 key 本身
+    await loadLocaleNamespaces(['modelsExperience'])
+    render(<FreeModelRateLimit model={{ free: true }} />)
+    const text = screen.getByRole('status').textContent ?? ''
+    expect(text).not.toContain('；')
+    expect(text).toContain('; ')
+    expect(text).toContain('rate limits apply')
+    await i18n.changeLanguage('zh')
+    await loadLocaleNamespaces(['modelsExperience'])
+  })
+})

@@ -1207,9 +1207,14 @@
   padding: 16px 18px 15px;
 }
 
-.model-discovery-specialties article:nth-child(2) { --specialty-color: #2388a4; }
-.model-discovery-specialties article:nth-child(3) { --specialty-color: #7255c7; }
-.model-discovery-specialties article:nth-child(4) { --specialty-color: var(--discovery-growth-text); }
+/* 四张专项榜同色。
+   原先是蓝 / 青 / 紫 / 绿四个色系，但颜色在这里**不承载任何信息**——四张图是并列的
+   四个维度，靠标题区分就够了，四种大色块只是把注意力从数据本身拽走。
+   参照站的做法是强调色面积极小、层级交给灰阶，这里同理：柱子统一品牌色，
+   相邻两张用透明度轻微拉开，避免整片同色糊成一块。 */
+.model-discovery-specialties article:nth-child(even) {
+  --specialty-color: color-mix(in oklab, var(--accent) 82%, transparent);
+}
 
 .model-discovery-specialties article:last-child:nth-child(odd) {
   grid-column: 1 / -1;

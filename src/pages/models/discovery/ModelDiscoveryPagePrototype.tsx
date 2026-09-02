@@ -32,7 +32,9 @@ import {
   LuTrendingUp,
   LuX,
 } from 'react-icons/lu'
-import { useMemo, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useCallback, useMemo, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { brandColor } from '@model-go/icons'
+import { useActiveTheme } from '@/hooks/use-active-theme'
 import { Button } from '@/components/ui/Button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import { InfoTip } from '@/components/ui/InfoTip'
@@ -562,17 +564,27 @@ function compactNumber(value: number) {
    ⚠️ 它同样是硬编码的厂牌色，而 @model-go/icons 导出了 brandColor(vendor, theme)
    ——  库里那份还按深浅双轴分了档（深蓝深紫在深底压不住、亮黄亮青在浅底压不住）。
    图表配色换过去是下一步，属独立改动，不混在图标这一刀里。 */
-const providerMarkColors: Record<string, string> = {
-  Anthropic: "#b56b48", OpenAI: "#111827", DeepSeek: "#315ec8", "Z.ai": "#3968d7",
-  Qwen: "#6555ce", Moonshot: "#111827", Google: "#2b7de9", xAI: "#111827", Meta: "#2176d2",
-  MiniMax: "#e64770", Kling: "#111827", Wan: "#4d6bc7", Doubao: "#2f73de", Runway: "#7b5bc7",
-  "Black Forest Labs": "#374151", Midjourney: "#5d4fb6", Recraft: "#d35f45", Ideogram: "#1c8a72",
-  Tencent: "#2876d2", Kuaishou: "#f08a39", ElevenLabs: "#7d4fc2", FunAudioLLM: "#227f71",
-  Hexgrad: "#596579", Microsoft: "#2b75c9", Suno: "#9b4fbb", Luma: "#4d769e", PixVerse: "#c75c79",
-  Inworld: "#24776f", Alibaba: "#e66b2e", SpeechifyAI: "#524fbe", "VUI Labs": "#596579", Cartesia: "#25845e", StepFun: "#2388a4",
-  "Smallest.ai": "#24776f", Mistral: "#ec6a4c", Deepgram: "#6c55ce", "Together AI": "#111827", Modulate: "#59708d", Groq: "#e45a45",
-  Mureka: "#c5598f", "Producer.ai": "#7555c7", "Stability.ai": "#34766e", Udio: "#305fc8",
-};
+/**
+ * 图表用的厂牌主色，走私包 `@model-go/icons` 的 `brandColor(vendor, theme)`。
+ *
+ * 这里原本硬编码了 32 个厂牌色值。私包才是厂牌色的真源，而且它按**深浅双轴各配一个
+ * 生效值**（深蓝深紫在深底压不住、亮黄亮青在浅底压不住），硬编码那份只有一个值，
+ * 暗色主题下必然有一批压不住。
+ *
+ * ⚠️ **`brandColor` 返回 null 不是「查不到」，是「这个厂牌是单色标识」**——
+ * OpenAI、Z AI、Moonshot 这类 logo 本身就是黑白的，库刻意不给色值，让它跟随主题
+ * （原先硬编码表里给它们填的正是 #111827 近黑）。所以回落值必须是**跟随主题的中性色**，
+ * 不能回落到品牌色：那会让所有单色厂牌在图上变成同一片品牌蓝，还和图表主色撞色。
+ *
+ * 实测 TEXT_CHAT 的 59 家厂商里 24 家有专属品牌色，其余走中性色。
+ */
+function useProviderColor() {
+  const theme = useActiveTheme()
+  return useCallback(
+    (provider: string) => brandColor(provider, theme) ?? 'var(--mg-text-2)',
+    [theme],
+  )
+}
 
 function AgentPopularityLeaderboard() {
   const [period, setPeriod] = useState<AgentPopularityPeriod>("day");
@@ -648,6 +660,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
    * 就是「柱图第一根」。
    */
   const [hoveredModel, setHoveredModel] = useState<string | null>(null);
+  const providerColor = useProviderColor();
 
   /**
    * 接口已按该类型的主指标排好序（rankings 的 direction 决定升降序，STT 的 WER
@@ -1006,7 +1019,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   /** Recharts 消费的散点数据：坐标 + 厂牌色 + 接入状态 + 能否跳详情。 */
   const scatterPoints: AnalysisScatterPoint[] = chartData.map(({ model, xValue, yValue }) => ({
     clickable: canOpenModelDetail(model),
-    color: providerMarkColors[model.provider] ?? "#5472b8",
+    color: providerColor(model.provider),
     connected: isModelConnected(model),
     name: model.name,
     provider: model.provider,
@@ -1041,7 +1054,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       if (!remote || remote.growth_rate === null) return undefined;
       return {
         model,
-        color: providerMarkColors[model.provider] ?? "#5472b8",
+        color: providerColor(model.provider),
         growth: Math.round(remote.growth_rate * 100),
         // 用量取接口的当期值（本地模型对象来自 model-options，不带用量）
         usage: compactUsage(remote.current_usage),
@@ -1236,7 +1249,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
           <div className="model-discovery-analysis-grid">
             <div className={`model-discovery-scatter ${pareto ? "show-pareto" : ""}`}>
               <div className="model-discovery-scatter-legend">
-                {chartProviders.map((provider) => <span key={provider}><i style={{ "--legend-color": providerMarkColors[provider] ?? "#5472b8" } as CSSProperties} />{provider}</span>)}
+                {chartProviders.map((provider) => <span key={provider}><i style={{ "--legend-color": providerColor(provider) } as CSSProperties} />{provider}</span>)}
                 <em>实心：已接入 · 空心：暂未接入</em>
               </div>
               <AnalysisScatterChart

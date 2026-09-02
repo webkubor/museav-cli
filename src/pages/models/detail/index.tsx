@@ -277,7 +277,7 @@ export default function ModelDetailPage() {
               Benchmark → 相关模型。两块都是独立 .mg-tile.mg-detail-card，
               与现有详情的纵向节奏一致，不把详情改成一张长卡。 */}
           <RuntimeMetricsSection />
-          <BenchmarkSection />
+          <BenchmarkSection modelId={detail.model_id} />
 
           {related.length > 0 && (
             <section className="mg-tile mg-detail-card">

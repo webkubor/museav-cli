@@ -146,6 +146,11 @@ export default defineConfig(({ mode }) => {
         }
         return p
       })(),
+      // 模型发现 / 详情 Benchmark 六接口（v1.0.6）走 observer，路径前缀是
+      // `/internal/v1/model-discovery/` 而非 `/api/v1/`，命不中上面那条，故单列。
+      // 同样是相对路径 + proxy 的写法：observer 不返回 Access-Control-Allow-* 头，
+      // 前端请求一律写相对路径，写成绝对地址会绕过 proxy 被 CORS 拦。
+      '/internal/v1/model-discovery/': agentProxy('https://modelgo-observer.test.modelgo.com'),
     },
   },
   }

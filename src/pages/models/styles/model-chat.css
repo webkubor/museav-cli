@@ -19,6 +19,11 @@
   min-width: 0;
 }
 
+/* 免费模型限频提示与选择器/操作区同属一张体验卡，但独占下一行，避免长文案挤压模型名。 */
+.models-experience-modelbar.has-rate-limit {
+  flex-wrap: wrap;
+}
+
 .models-experience-modelbar-title {
   color: var(--mg-text-1);
   font-size: 17px;

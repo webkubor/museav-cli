@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { LuChevronDown, LuCode, LuSettings2, LuColumns2 } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
+import { FreeModelRateLimit } from '@/features/models/components/FreeModelRateLimit'
 import { modelVendorLabel } from '@/features/models/model-format'
 import { prettyModelName } from '@/lib/utils'
 import type { CatalogModelItem } from '@/types'
@@ -34,9 +35,10 @@ export function PlaygroundModelBar({
     : ''
   const vendor = selectedModel ? modelVendorLabel(selectedModel) : ''
   const taskLabel = experienceTaskLabel(task)
+  const hasRateLimit = Boolean(selectedModel?.free && selectedModel.rate_limit)
 
   return (
-    <div className="models-experience-modelbar">
+    <div className={`models-experience-modelbar ${hasRateLimit ? 'has-rate-limit' : ''}`}>
       <button
         type="button"
         className="models-experience-model-trigger"
@@ -101,6 +103,7 @@ export function PlaygroundModelBar({
           <LuColumns2 size={13} /> {t('modelsExperience.modelCompare')}
         </Button>
       </div>
+      {selectedModel && <FreeModelRateLimit model={selectedModel} className="basis-full order-1 -mt-1" />}
     </div>
   )
 }

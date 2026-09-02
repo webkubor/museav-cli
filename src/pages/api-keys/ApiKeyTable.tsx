@@ -130,7 +130,19 @@ export function ApiKeyTable({
               }
               colSpan={colSpan}
             />
-          ) : selfScopeOnly ? (
+          ) : /*
+               * 需求方#909：自领文案必须**同时**满足「只看得到自己的 Key」和「空间里确实有 Key」。
+               * 少了 hasKeys 这个条件，emptyWorkspace 那一支在真实数据下永远走不到 ——
+               * selfScopeOnly = !allKeys.some(是他人的)，空间零 Key 时 allKeys 是空数组，
+               * [].some() 恒为 false ⇒ selfScopeOnly 恒为 true ⇒ 一律被这支截胡。
+               * 反过来说 emptyWorkspace 要渲染就得「存在他人的 Key」，而那又意味着列表不为空，
+               * 两个条件互斥。QA 复验时用响应拦截强塞一条他人 Key 才逼出该分支（prd#909 复验正控）。
+               *
+               * 语义上也该这么分：「仅展示由你负责的 Key，如需新的 Key 请联系空间负责人」
+               * 这句只在**空间里有 Key、但都不归我管**时才成立；空间一个 Key 都没有时，
+               * 该说的是「暂无可管理的 API Key / 创建第一个 API Key，即可开始调用模型」。
+               */
+            selfScopeOnly && hasKeys ? (
             <EmptyState
               icon={<LuKeyRound />}
               title={t('apiKeys.emptySelfScope.title')}

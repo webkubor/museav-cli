@@ -30,6 +30,16 @@
     "errorUpstreamAuth": "This model's service is temporarily unavailable. Please try again later.",
     "errorUpstreamGeneric": "The model call failed. Please try another model or retry later.",
     "freeQuota": "Free quota",
+    "rateLimit": {
+      "windowMinute": "minute",
+      "windowHour": "hour",
+      "windowDay": "day",
+      "windowSeconds": "{{count}} seconds",
+      "both": "Up to {{requests}} calls or {{tokens}} tokens per {{window}}",
+      "requests": "Up to {{requests}} calls per {{window}}",
+      "tokens": "Up to {{tokens}} tokens per {{window}}",
+      "wait": "Once either limit is reached, please wait for the quota to reset before trying again."
+    },
     "limitedFree": "Free",
     "perM": "/M",
     "balanceInsufficientTitle": "Insufficient balance — free models only",

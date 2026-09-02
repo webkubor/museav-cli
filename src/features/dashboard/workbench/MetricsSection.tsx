@@ -125,9 +125,10 @@ export function MetricsSection({
       hoverBorderClass: lowBalance ? 'hover:border-[var(--mg-warning-border)]' : 'hover:border-brand-base/30',
       icon: <LuWalletCards size={16} />,
       iconLead: true,
-      // 低余额时：文字标签（颜色非唯一信息，§12.3）+ 充值入口（走全局充值弹窗）；否则显介绍副文案
+      // 低余额时保留文字标签（颜色非唯一信息，§12.3）；充值入口按需求方#913 常驻，
+      // 始终走全局充值弹窗，避免余额充足时失去明确入口。
       sub: lowBalance ? t('dashboard.workbench.metrics.balanceLow') : balanceSub,
-      action: lowBalance ? { label: t('dashboard.workbench.metrics.recharge'), onClick: openRecharge } : undefined,
+      action: { label: t('dashboard.workbench.metrics.recharge'), onClick: openRecharge },
       onClick: () => onMetricCardClick('balance'),
     }] : []),
   ]

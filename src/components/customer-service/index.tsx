@@ -11,6 +11,7 @@ import { useAuthStore } from '@/store/auth'
 import { useCustomerServiceStore } from '@/store/use-customer-service-store'
 import { formatChartDate, formatDate, formatShortTime } from '@/lib/format-date'
 import { useCsChat } from './use-cs-chat'
+import { AssistantOrb, type OrbState } from './AssistantOrb'
 import type { Message, ConnectionStatus } from './use-cs-chat'
 
 function formatCsTimestamp(timestamp: number, t: (key: string, options?: Record<string, unknown>) => string) {
@@ -25,6 +26,26 @@ function formatCsTimestamp(timestamp: number, t: (key: string, options?: Record<
   if (isToday) return t('common.customerService.todayAt', { time: timeStr })
   if (isYesterday) return t('common.customerService.yesterdayAt', { time: timeStr })
   return `${formatChartDate(dateIso)} ${timeStr}`
+}
+
+/**
+ * 连接状态 + 生成状态 → orb 的表情（智能客服 PRD §7.2 / §7.4 / §8）。
+ * 「正在生成回答」优先于「在线」——用户更需要知道助手在干活，而不是连接正常。
+ */
+function toOrbState(status: ConnectionStatus, isLoading: boolean): OrbState {
+  if (status === 'offline') return 'error'
+  if (status === 'connecting') return 'working'
+  return isLoading ? 'thinking' : 'idle'
+}
+
+/** orb 的无障碍文案（PRD §7.2：入口必须具备可访问名称） */
+const ORB_LABELS: Partial<Record<OrbState, string>> = {
+  idle: '智能助手，在线',
+  thinking: '智能助手正在思考',
+  working: '智能助手正在连接',
+  asking: '智能助手在等你回复',
+  done: '智能助手有新消息',
+  error: '智能助手连接异常',
 }
 
 function StatusDot({ status }: { status: ConnectionStatus }) {
@@ -117,7 +138,16 @@ export function CustomerService() {
     }
   }, [messages, isLoading])
 
-  if (!activeTenantId) return null
+  /*
+   * 不再因为「没有活跃租户」就整块不渲染。
+   *
+   * 智能客服 PRD v0.1 §2 把「未登录访客」列为正式角色（问支持哪些模型、如何接入、
+   * 如何计费），§6.1 写明「未登录用户可以进行平台知识咨询，若问题需要查询账户数据
+   * 才提示登录」，§7.2 要求官网、登录页和 Console 共用同一个右下角入口。
+   *
+   * 接口侧也支持：2026-09-02 实测未带任何凭据 POST /api/v1/agent/chat 返回 200 +
+   * code 0。租户相关的 X-Tenant-Id 头本来就只在 tenantId 有值时才带。
+   */
 
   function handleMouseDown(e: React.MouseEvent) {
     dragRef.current = { startX: e.clientX, startY: e.clientY, startPosX: pos.x, startPosY: pos.y }
@@ -140,6 +170,8 @@ export function CustomerService() {
     window.addEventListener('mousemove', onMouseMove)
     window.addEventListener('mouseup', onMouseUp)
   }
+
+  const orbState = toOrbState(status, isLoading)
 
   function handleTriggerClick() {
     if (isDragging.current) return
@@ -194,18 +226,7 @@ export function CustomerService() {
       >
         {isOpen
           ? <LuX className="text-mg-text-2" size={20} />
-          : (
-            <div style={{ position: 'relative' }}>
-              <img src={logoSrc} alt="CS" style={{ width: 28, height: 28, objectFit: 'contain' }} />
-              <span
-                className={cn(
-                  'absolute -right-0.5 -bottom-0.5 w-2.5 h-2.5 rounded-full border-2 border-mg-bg-2',
-                  status === 'online' ? 'bg-mg-success' : status === 'connecting' ? 'bg-mg-warning' : 'bg-mg-danger',
-                )}
-              />
-            </div>
-          )
-        }
+          : <AssistantOrb labels={ORB_LABELS} size={40} state={orbState} />}
       </div>
 
       {/* Chat window */}

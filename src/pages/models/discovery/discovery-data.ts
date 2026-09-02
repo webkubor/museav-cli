@@ -176,7 +176,7 @@ export function specialtyRows(
   title: string,
   models: readonly PrototypeModel[],
   options: { limit?: number; scoreAscending?: boolean } = {},
-): Array<{ model: string; value: string; provider: string; short: string; ratio: number }> {
+): Array<{ model: string; value: string; provider: string; short: string; ratio: number; numeric: number }> {
   const { limit = 10, scoreAscending = false } = options
   const spec = specialtyFieldFor(title, scoreAscending)
   if (!spec) return []
@@ -214,6 +214,9 @@ export function specialtyRows(
       // 柱内标签：去掉单位与前后缀，只留数字。"$0.0656/次" 在 34px 宽的柱子里放不下，
       // 单位已经写在图表副标题里（如「（USD / Task）」），柱子上重复一遍纯属噪声。
       short: compactBarLabel(value),
+      // 图表用的原始数值。手写图表只需要格式化字符串，交给 Recharts 后要的是数值本身，
+      // 由它自己算 domain 与柱长——不再需要前端手写归一化。
+      numeric: raw,
       // 柱高比例：**min-max 归一化**，不是 value/max。
       // 真实数据的值域常常很窄（综合评分 61.3→57.1 只差 7%），按 value/max 算出来
       // 十根柱子肉眼等高，图表等于没有信息量。归一化后同一张图内的排序差异能看出来；

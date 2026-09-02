@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense, lazy } from 'react'
 import { LuMenu, LuZap } from 'react-icons/lu'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -41,6 +41,11 @@ import { LanguageSwitcher } from './LanguageSwitcher'
 /**
  * 重构后的 DashboardHeader
  */
+/** 开发工具条只在 DEV 加载，生产构建整块不打进包（与原先在 App.tsx 的写法一致） */
+const DevToolbar = import.meta.env.DEV
+  ? lazy(() => import('@/components/dev-toolbar').then((m) => ({ default: m.DevToolbar })))
+  : null
+
 export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenuClick }) => {
   const navigate = useNavigate()
   const location = useLocation()
@@ -380,6 +385,10 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
             <span className="hidden md:inline">{t('header.quickAccess')}</span>
           </button>
         )}
+
+        {/* 开发工具条（仅 DEV）：主题 / 市场 / 语言切换 + 开发菜单。放在顶栏而不是
+            悬浮，避免和右下角的智能助手入口抢位置。 */}
+        {DevToolbar && <Suspense fallback={null}><DevToolbar /></Suspense>}
       </div>
 
       {/* 右侧：功能控制区 + 组织 Switcher + 用户头像 */}

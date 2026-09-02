@@ -39,7 +39,13 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import { InfoTip } from '@/components/ui/InfoTip'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
 import { Pagination } from '@/components/ui/Pagination'
-import { useDiscoveryQuery, useDiscoveryTrends } from './use-discovery-query'
+import {
+  useDiscoveryAnalysis,
+  useDiscoveryModelOptions,
+  useDiscoveryQuery,
+  useDiscoveryTable,
+  useDiscoveryTrends,
+} from './use-discovery-query'
 import { rankBarWidth, specialtyRows } from './discovery-data'
 
 type ModalityKey = "agent" | "text" | "image" | "video" | "audio";
@@ -119,11 +125,14 @@ const domesticModelProviders = new Set([
   "Z.ai",
 ]);
 
-function isDomesticModel(model: DiscoveryModel) {
+/** 只依赖 provider / supported，故对散点用的轻量模型对象同样适用。 */
+type AccessShape = Pick<DiscoveryModel, "provider" | "supported">;
+
+function isDomesticModel(model: AccessShape) {
   return domesticModelProviders.has(model.provider);
 }
 
-function isModelConnected(model: DiscoveryModel) {
+function isModelConnected(model: AccessShape) {
   return isDomesticModel(model) ? model.supported : true;
 }
 
@@ -212,6 +221,15 @@ const taskMetricSources: Record<ModalityKey, Record<string, string>> = {
  * 成本的五项拆解（输出/推理/缓存写入/缓存命中/输入）接口不提供，原型是按固定
  * 比例从总额切出来的假明细，已随之删除（缺口见 qa#709）。
  */
+/** 用量紧凑展示，与 discovery-data 的 compactAmount 同口径。 */
+function compactUsage(value: number | null) {
+  if (value === null) return "—";
+  if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}B`;
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${Math.round(value / 1_000)}K`;
+  return `${value}`;
+}
+
 /** 增长率带符号展示。真实数据里存在负增长，不能像原型那样把 + 写死。 */
 function formatGrowth(growth: number) {
   return `${growth > 0 ? "+" : ""}${growth}%`;
@@ -652,11 +670,6 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
     [scope, taskModels],
   );
   /**
-   * 完整榜单就是接口返回的模型，不再往里掺"补充模型"——原先那批是按厂牌名编出来的
-   * 假条目，用来把 mock 的十来个模型撑成一张像样的榜。
-   */
-  const leaderboardModels = taskModels;
-  /**
    * 筛选条件变化时页码回第 1 页。
    *
    * 原型用的是 useEffect + setTablePage(1)，但本仓 eslint 开了
@@ -833,7 +846,12 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       : modality === "audio"
         ? audioBenchmarkRankings
         : textBenchmarkRankings;
-  const providers = [...new Set(leaderboardModels.map((model) => model.provider))];
+  /**
+   * 模型选择器与厂商筛选的候选来自 model-options（该类型的**全部**模型，不分页）。
+   * 之前用的是榜单前 100 条，导致选择器只有 100 个模型、厂商下拉只有二十来家——
+   * 实测 TEXT_CHAT 全量是 631 个模型 / 59 家厂商。
+   */
+  const { options: allModelOptions, vendors: providers } = useDiscoveryModelOptions(modality, task);
   const availableRankingMetricOptions = isTextAgent
     ? rankingMetricOptions
     : modality === "audio" && task === "语音识别（STT）"
@@ -843,7 +861,6 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   const selectedSpecialty = selectedRankingOption.specialtyIndex === undefined ? undefined : specialties[selectedRankingOption.specialtyIndex];
   const selectedMetricRows = selectedSpecialty ? specialtyRows(selectedSpecialty.title, taskModels, { scoreAscending }) : [];
   const selectedMetricValues = new Map(selectedMetricRows.map((row) => [row.model, row.value]));
-  const selectedMetricOrder = new Map(selectedMetricRows.map((row, index) => [row.model, index]));
   const specialtyDescriptions = isTextAgent
     ? [taskProfile.valueLabel, taskProfile.speedLabel, taskProfile.latencyLabel, taskProfile.usageLabel]
     : modality === "audio" && task === "语音识别（STT）"
@@ -869,28 +886,28 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
     ...item,
     tooltip: summaryTooltipCopy[modality][task]?.[index] ?? item.label,
   }));
-  const filteredTableModels = leaderboardModels.filter((model) => scope === "all" || isModelConnected(model))
-    .filter((model) => providerFilter.length === 0 || providerFilter.includes(model.provider))
-    .filter((model) => tableAccess === "all" || (tableAccess === "supported" ? isModelConnected(model) : !isModelConnected(model)))
-    .sort((first, second) => {
-      if (rankingMetric === "overall") return taskProfile.qualityLowerIsBetter
-        ? metricValue(first.score) - metricValue(second.score)
-        : metricValue(second.score) - metricValue(first.score);
-      if (isTextAgent && rankingMetric === "value") return tableMetricNumber(second) - tableMetricNumber(first);
-      const firstOrder = selectedMetricOrder.get(first.name);
-      const secondOrder = selectedMetricOrder.get(second.name);
-      if (firstOrder !== undefined || secondOrder !== undefined) return (firstOrder ?? 999) - (secondOrder ?? 999);
-      const firstValue = tableMetricNumber(first);
-      const secondValue = tableMetricNumber(second);
-      return rankingMetric === "price" ? firstValue - secondValue : secondValue - firstValue;
-    });
+  /**
+   * 完整榜单走**服务端排序 + 服务端分页**：排序口径（综合/性价比/价格/使用量）
+   * 直接对应接口的 metric，接入状态映射到 integration_status，翻页交给 page。
+   *
+   * 原先是取回前 100 条后在前端排序分页——榜单标着「共 631 个模型」却只能翻 5 页，
+   * 排序也只在这 100 条内成立。
+   */
   const tablePageSize = 20;
-  const tablePageCount = Math.max(1, Math.ceil(filteredTableModels.length / tablePageSize));
+  const {
+    models: tableModels,
+    total: tableTotal,
+    isLoading: tableLoading,
+  } = useDiscoveryTable(modality, task, {
+    metric: rankingMetric,
+    page: tablePage,
+    pageSize: tablePageSize,
+    creators: providerFilter,
+    scope,
+    tableAccess,
+  });
+  const tablePageCount = Math.max(1, Math.ceil(tableTotal / tablePageSize));
   const safeTablePage = Math.min(tablePage, tablePageCount);
-  const tableModels = filteredTableModels.slice(
-    (safeTablePage - 1) * tablePageSize,
-    safeTablePage * tablePageSize,
-  );
 
   function canOpenModelDetail(model: DiscoveryModel) {
     const hasDestination = isDomesticModel(model) ? Boolean(model.id) : true;
@@ -947,28 +964,44 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   const supportingMetricHeaders = isTextAgent
     ? ["单次任务成本", "发布时间", "ModelGo 使用量"]
     : ["公开价格", "发布时间", "ModelGo 使用量"];
-  const chartModels = visibleModels.filter((model) => selectedModelNames.includes(model.name));
-  const filteredModelOptions = visibleModels.filter((model) => model.name.toLowerCase().includes(modelFilterSearch.trim().toLowerCase()));
-  const speedValueMap = new Map(specialties[1] ? specialtyRows(specialties[1].title, taskModels, { scoreAscending }).map((row) => [row.model, metricValue(row.value)]) : []);
-  const latencyValueMap = new Map(specialties[2] ? specialtyRows(specialties[2].title, taskModels, { scoreAscending }).map((row) => [row.model, metricValue(row.value)]) : []);
+  /**
+   * 散点用的轻量模型对象：名称 / 厂商 / 接入状态来自 model-options（全量），
+   * 坐标来自 analysis 接口。原先两者都取自榜单前 100 条，选择器一旦能选到第 100 名
+   * 开外的模型就既没有元信息也没有坐标。
+   */
+  const chartCandidates = allModelOptions.map((option) => ({
+    sourceModelId: option.source_model_id,
+    name: option.model_name,
+    provider: option.creator_name ?? "",
+    supported: option.integration_status === "MODELGO",
+  }));
+  const chartModels = chartCandidates.filter((model) => selectedModelNames.includes(model.name));
+  const filteredModelOptions = chartCandidates.filter((model) => model.name.toLowerCase().includes(modelFilterSearch.trim().toLowerCase()));
   const activeXAxis = analysisXMetrics[xMetric] ?? analysisXMetrics[0];
-  const chartData = chartModels.map((model) => {
-    const xValue = activeXAxis.source === "price"
-      ? isTextAgent ? taskCostFor(model) : plainMetricValue(model.price)
-      : activeXAxis.source === "speed"
-        ? speedValueMap.get(model.name) ?? metricValue(model.performance)
-        : activeXAxis.source === "latency"
-          ? latencyValueMap.get(model.name) ?? metricValue(model.performance)
-          : metricValue(model.usage);
-    // Y 轴取真实值：constrained 档位的第 2 项是 API 价格，其余一律是主指标分。
-    // 原型在这里加过 scoreJitter（人为抖动）和 (1 - yMetric*0.018) 的衰减，用来把
-    // mock 的十来个点摊开、并伪造出「切换 Y 指标」的效果——接真实数据后那会让图上
-    // 的坐标对不上榜单（61.3 显示成 60.9），已删除。
-    const yValue = constrainedAnalysisProfile && yMetric === 1
-      ? plainMetricValue(model.price)
-      : metricValue(model.score);
-    return { model, xValue, yValue };
-  });
+  /**
+   * 散点坐标走 analysis 接口。
+   *
+   * 原先是拿榜单前 100 条的模型卡自己算 x/y：值本身没错，但选择器能选到第 100 名
+   * 开外的模型时就没有坐标了。接口还会**排除任一坐标为空的模型**，所以点数可能
+   * 少于选中数——这是预期行为，不是丢数据。
+   *
+   * 原型在这里另加过 scoreJitter（人为抖动）和 (1 - yMetric*0.018) 的衰减，用来把
+   * mock 的十来个点摊开、并伪造出「切换 Y 指标」的效果，会让图上坐标对不上榜单
+   * （61.3 显示成 60.9），已删除。
+   */
+  const { points: analysisPoints } = useDiscoveryAnalysis(
+    modality,
+    task,
+    chartModels.map((model) => model.sourceModelId),
+    activeXAxis.source,
+    Boolean(constrainedAnalysisProfile) && yMetric === 1,
+  );
+  const chartData = chartModels
+    .map((model) => {
+      const point = analysisPoints.get(model.sourceModelId);
+      return point ? { model, xValue: point.x, yValue: point.y } : undefined;
+    })
+    .filter((point): point is NonNullable<typeof point> => point !== undefined);
   const xTicks = createAxisTicks(chartData.map((point) => point.xValue));
   const yTicks = createAxisTicks(chartData.map((point) => point.yValue));
   const chartProviders = [...new Set(chartModels.map((model) => model.provider))];
@@ -988,7 +1021,8 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
    * （系统刚上线只有一天快照），或起点用量为 0，都算不出增长率。这类模型不进
    * 趋势图，而不是当成 0% 画一根空柱。
    */
-  const trendModels = chartModels.filter((model) => isModelConnected(model) && model.usage !== "—");
+  // 用量筛选交给接口：没有快照数据的模型本就不会出现在 usage-trends 的返回里
+  const trendModels = chartModels.filter((model) => isModelConnected(model));
   const { data: trendData } = useDiscoveryTrends(modality, task, trendModels.map((model) => model.sourceModelId));
   const trendSeries = trendModels
     .map((model) => {
@@ -998,7 +1032,8 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
         model,
         color: providerMarkColors[model.provider] ?? "#5472b8",
         growth: Math.round(remote.growth_rate * 100),
-        usage: model.usage,
+        // 用量取接口的当期值（本地模型对象来自 model-options，不带用量）
+        usage: compactUsage(remote.current_usage),
       };
     })
     .filter((series): series is NonNullable<typeof series> => series !== undefined)
@@ -1200,7 +1235,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
             <aside className="model-discovery-analysis-aside">
               <div className="mg-tile model-discovery-model-filter">
                 <h3><LuListFilter size={14} />模型筛选</h3><p>选择需要在图表中对比的模型。</p>
-                <button aria-expanded={modelFilterOpen} className="model-discovery-model-filter-trigger" onClick={() => setModelFilterOpen((current) => !current)} type="button"><span>{chartModels.length} / {visibleModels.length} 个模型</span><LuChevronDown size={14} /></button>
+                <button aria-expanded={modelFilterOpen} className="model-discovery-model-filter-trigger" onClick={() => setModelFilterOpen((current) => !current)} type="button"><span>{chartModels.length} / {chartCandidates.length} 个模型</span><LuChevronDown size={14} /></button>
                 {modelFilterOpen && <div className="model-discovery-model-filter-popover">
                   <label><LuSearch size={14} /><input autoFocus placeholder="搜索模型" value={modelFilterSearch} onChange={(event) => setModelFilterSearch(event.target.value)} /></label>
                   <div className="model-discovery-model-filter-list">
@@ -1256,6 +1291,13 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
               </TableRow>
             </TableHeader>
             <TableBody>
+              {tableModels.length === 0 && (
+                <TableRow>
+                  <TableCell align="center" colSpan={8}>
+                    {tableLoading ? "加载中…" : "当前筛选条件下没有模型"}
+                  </TableCell>
+                </TableRow>
+              )}
               {tableModels.map((model, index) => {
                 const supportingValues = supportingMetrics(model);
                 const hasDetail = canOpenModelDetail(model);
@@ -1299,7 +1341,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
             onPageChange={setTablePage}
             page={safeTablePage}
             pageSize={tablePageSize}
-            total={filteredTableModels.length}
+            total={tableTotal}
           />
         </div>
       </section>

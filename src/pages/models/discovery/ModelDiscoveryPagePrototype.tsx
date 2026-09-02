@@ -141,7 +141,7 @@ function modelAccessLabel(model: DiscoveryModel) {
   return model.supported ? "ModelGo 已接入" : "暂未接入 ModelGo";
 }
 
-function modelGoAiModelUrl(model: DiscoveryModel) {
+function modelGoAiModelUrl(model: Pick<DiscoveryModel, "name">) {
   const query = new URLSearchParams({ search: model.name });
   return `https://console.modelgo.ai/models?${query.toString()}`;
 }
@@ -909,18 +909,21 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   const tablePageCount = Math.max(1, Math.ceil(tableTotal / tablePageSize));
   const safeTablePage = Math.min(tablePage, tablePageCount);
 
-  function canOpenModelDetail(model: DiscoveryModel) {
+  /** 跳详情只需要这四个字段，散点用的轻量模型对象同样适用。 */
+  type DetailShape = Pick<DiscoveryModel, "id" | "name" | "provider" | "supported">;
+
+  function canOpenModelDetail(model: DetailShape) {
     const hasDestination = isDomesticModel(model) ? Boolean(model.id) : true;
     return isModelConnected(model) && hasDestination;
   }
 
-  function modelDetailAriaLabel(model: DiscoveryModel) {
+  function modelDetailAriaLabel(model: DetailShape) {
     return isDomesticModel(model)
       ? `查看 ${model.name} 模型详情`
       : `在 ModelGo.ai 查看 ${model.name} 模型`;
   }
 
-  function openModelDetail(model: DiscoveryModel) {
+  function openModelDetail(model: DetailShape) {
     if (!canOpenModelDetail(model)) return;
     if (!isDomesticModel(model)) {
       window.open(modelGoAiModelUrl(model), "_blank", "noopener,noreferrer");
@@ -931,7 +934,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   }
 
   // Top 5 卡的行是 div、完整榜单的行是 tr（Table 组件），故取二者共同的 HTMLElement
-  function handleModelRowKeyDown(event: KeyboardEvent<HTMLElement>, model: DiscoveryModel) {
+  function handleModelRowKeyDown(event: KeyboardEvent<HTMLElement>, model: DetailShape) {
     if (event.target !== event.currentTarget || (event.key !== "Enter" && event.key !== " ")) return;
     event.preventDefault();
     openModelDetail(model);
@@ -970,6 +973,8 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
    * 开外的模型就既没有元信息也没有坐标。
    */
   const chartCandidates = allModelOptions.map((option) => ({
+    // 只有已接入且有 modelgo_id 的才给 id——canOpenModelDetail 据此判断能不能跳
+    id: option.integration_status === "MODELGO" && option.modelgo_id ? option.modelgo_id : undefined,
     sourceModelId: option.source_model_id,
     name: option.model_name,
     provider: option.creator_name ?? "",
@@ -1147,9 +1152,14 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
         <article className="mg-tile model-discovery-rank-card">
           <div className="model-discovery-card-head"><div><h2>{task} Top 5</h2><span>{taskProfile.qualityBasis}{apiTotal > 0 ? ` · 共 ${apiTotal} 个模型` : ""}</span></div></div>
           <div className="model-discovery-rank-head"><span>#</span><span>模型</span><span>接入状态</span><span>{taskProfile.qualityLabel}<em className="model-discovery-source-tag">{metricSource}</em></span></div>
-          {discoveryLoading && visibleModels.length === 0 && (
-            <div className="model-discovery-rank-row"><span /><strong>加载中…</strong></div>
-          )}
+          {discoveryLoading && visibleModels.length === 0 && [0, 1, 2, 3, 4].map((i) => (
+            <div className="model-discovery-rank-row" key={`skeleton-${i}`}>
+              <span className="animate-pulse bg-mg-fill-2 rounded-sm h-3 w-3" />
+              <strong className="animate-pulse bg-mg-fill-2 rounded-sm h-4 w-2/3" />
+              <em className="animate-pulse bg-mg-fill-2 rounded-full h-4 w-16" />
+              <div className="animate-pulse bg-mg-fill-2 rounded-sm h-3 w-full" />
+            </div>
+          ))}
           {visibleModels.slice(0, 5).map((model, index) => {
             const hasDetail = canOpenModelDetail(model);
             return <div aria-label={hasDetail ? modelDetailAriaLabel(model) : undefined} className={`model-discovery-rank-row ${hasDetail ? "model-discovery-row-clickable" : ""}`} key={model.name} onClick={hasDetail ? () => openModelDetail(model) : undefined} onKeyDown={hasDetail ? (event) => handleModelRowKeyDown(event, model) : undefined} role={hasDetail ? "link" : undefined} tabIndex={hasDetail ? 0 : undefined}><span>{index + 1}</span><strong>{model.name}<small>{model.provider}</small></strong><em className={isModelConnected(model) ? "supported" : "pending"}>{modelAccessLabel(model)}</em><div><i style={{ width: `${rankBarWidth(model, visibleModels.slice(0, 5), scoreAscending)}%` }} /><b>{model.score}</b></div></div>;
@@ -1176,20 +1186,30 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
         <div className="model-discovery-section-head"><div><h2>专项指标排行</h2></div></div>
         <div className="model-discovery-specialties">{rankingCards.map((item) => {
           const rows = specialtyRows(item.title, visibleModels, { scoreAscending });
-          const values = rows.map((row) => metricValue(row.value));
-          const maximum = Math.max(...values, 1);
           return <article className="mg-tile" key={item.title}>
             <header><div><h3>{item.title}</h3><p>{item.description}<em className="model-discovery-source-tag">{item.source}</em></p></div><span>Top {rows.length}</span></header>
             <div className="model-discovery-specialty-chart">
               {rows.map((row, index) => {
-                const value = metricValue(row.value);
-                const barHeight = Math.max(18, value / maximum * 100);
-                return <div aria-label={`第 ${index + 1} 名，${row.model}，${row.value}`} className="model-discovery-specialty-column" key={row.model} style={{ "--bar-height": `${barHeight}%` } as CSSProperties} tabIndex={0}>
+                // 柱高走数据层的 min-max 归一化：真实数据值域常常很窄（综合评分
+                // 61.3→57.1 差 7%），按 value/max 算会让十根柱子肉眼等高。
+                // 下限 28% 保证最小值仍可见，不至于压成一条线。
+                const barHeight = 28 + row.ratio * 72;
+                // 柱子此前有 hover 效果和 tabIndex，却没有任何点击行为——看着可点其实是死的。
+                // 从当前榜单里找回完整模型对象后接上跳详情，跳不了的就不给可点的样子。
+                const barModel = visibleModels.find((model) => model.name === row.model);
+                const barClickable = Boolean(barModel && canOpenModelDetail(barModel));
+                return <div aria-label={`第 ${index + 1} 名，${row.model}，${row.value}${barClickable ? "，点击查看详情" : ""}`} className={`model-discovery-specialty-column ${barClickable ? "clickable" : ""}`} key={row.model} onClick={barClickable ? () => openModelDetail(barModel!) : undefined} onKeyDown={barClickable ? (event) => handleModelRowKeyDown(event, barModel!) : undefined} role={barClickable ? "link" : undefined} style={{ "--bar-height": `${barHeight}%` } as CSSProperties} tabIndex={0}>
                 <div className="model-discovery-specialty-plot">
                   <div className="model-discovery-specialty-tooltip" role="tooltip"><strong><DiscoveryModelIcon model={row.model} provider={row.provider} />{row.model}</strong><span>第 {index + 1} 名 · {item.description}</span><b>{row.value}</b></div>
-                  <i className="model-discovery-specialty-bar"><b>{row.value}</b></i>
+                  {/* 柱内只放数字：单位已写在副标题（如「（USD / Task）」），
+                      "$0.0656/次" 这种带单位的串在 34px 宽的柱子里必然换行截断。
+                      完整值在上方 tooltip 里给。 */}
+                  <i className="model-discovery-specialty-bar"><b>{row.short}</b></i>
                 </div>
-                <div className="model-discovery-specialty-label"><DiscoveryModelIcon model={row.model} provider={row.provider} /><strong title={row.model}>{row.model}</strong></div>
+                {/* 轴标签只留厂牌图标：10 列每列约 34px，任何模型名都会截成
+                    「Claud...」——半截词比不显示更难读。完整名称走 title 与柱子
+                    上方的 tooltip。 */}
+                <div className="model-discovery-specialty-label" title={row.model}><DiscoveryModelIcon model={row.model} provider={row.provider} /></div>
               </div>;
               })}
             </div>
@@ -1223,7 +1243,8 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                 {chartData.map(({ model, xValue, yValue }, index) => {
                   const left = chartPosition(xValue, xTicks);
                   const bottom = chartPosition(yValue, yTicks);
-                  return <button aria-label={`${model.name}，${activeYAxisLabel} ${formatYAxisTick(yValue)}，${activeXAxis.label} ${formatXAxisTick(xValue)}`} className={`model-discovery-scatter-point ${isModelConnected(model) ? "supported" : "pending"} ${left > 72 ? "label-left" : ""} ${index % 2 === 0 ? "label-up" : "label-down"}`} key={model.name} style={{ "--point-left": `${left}%`, "--point-bottom": `${bottom}%`, "--point-color": providerMarkColors[model.provider] ?? "#5472b8" } as CSSProperties} type="button">
+                  const pointClickable = canOpenModelDetail(model);
+                  return <button aria-label={`${model.name}，${activeYAxisLabel} ${formatYAxisTick(yValue)}，${activeXAxis.label} ${formatXAxisTick(xValue)}${pointClickable ? "，点击查看详情" : ""}`} className={`model-discovery-scatter-point ${isModelConnected(model) ? "supported" : "pending"} ${pointClickable ? "clickable" : ""} ${left > 72 ? "label-left" : ""} ${index % 2 === 0 ? "label-up" : "label-down"}`} key={model.name} onClick={pointClickable ? () => openModelDetail(model) : undefined} style={{ "--point-left": `${left}%`, "--point-bottom": `${bottom}%`, "--point-color": providerMarkColors[model.provider] ?? "#5472b8" } as CSSProperties} type="button">
                     <i />
                     <span className="model-discovery-point-label">{model.name}</span>
                     <span className="model-discovery-point-tooltip" role="tooltip"><strong>{model.name}</strong><em>{activeYAxisLabel}：{formatYAxisTick(yValue)} {yUnit}</em><em>{activeXAxis.label}：{formatXAxisTick(xValue)} {xUnit}</em></span>
@@ -1291,11 +1312,16 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tableModels.length === 0 && (
-                <TableRow>
-                  <TableCell align="center" colSpan={8}>
-                    {tableLoading ? "加载中…" : "当前筛选条件下没有模型"}
+              {tableModels.length === 0 && tableLoading && Array.from({ length: 6 }, (_, i) => (
+                <TableRow key={`skeleton-${i}`}>
+                  <TableCell colSpan={8}>
+                    <div className="animate-pulse bg-mg-fill-2 rounded-sm h-5 w-full" />
                   </TableCell>
+                </TableRow>
+              ))}
+              {tableModels.length === 0 && !tableLoading && (
+                <TableRow>
+                  <TableCell align="center" colSpan={8}>当前筛选条件下没有模型</TableCell>
                 </TableRow>
               )}
               {tableModels.map((model, index) => {

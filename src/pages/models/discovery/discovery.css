@@ -955,6 +955,9 @@
   transform: scale(1.18);
 }
 
+/* 点标签默认淡出、hover/focus 才实体：散点常常挤在同一区域（性价比高的模型天然
+   聚在一角），7 个点的标签就已经互相叠住、还压在点上。完整信息在 tooltip 与
+   aria-label 里，静态看图靠图例的厂商配色区分即可。 */
 .model-discovery-point-label {
   color: var(--text-soft);
   font-size: 9.5px;
@@ -962,11 +965,19 @@
   left: 17px;
   line-height: 1.2;
   max-width: 112px;
+  opacity: 0;
   overflow: hidden;
+  pointer-events: none;
   position: absolute;
   text-overflow: ellipsis;
   top: -1px;
+  transition: opacity var(--discovery-dur-swift) ease;
   white-space: nowrap;
+}
+
+.model-discovery-scatter-point:hover .model-discovery-point-label,
+.model-discovery-scatter-point:focus-visible .model-discovery-point-label {
+  opacity: 1;
 }
 
 .model-discovery-scatter-point.label-left .model-discovery-point-label {
@@ -1450,6 +1461,12 @@
   z-index: 12;
 }
 
+/* 能跳详情的才给可点的样子；跳不了的保持默认光标，避免「看着能点、点了没反应」 */
+.model-discovery-specialty-column.clickable,
+.model-discovery-scatter-point.clickable {
+  cursor: pointer;
+}
+
 .model-discovery-specialty-column:focus-visible {
   border-radius: var(--discovery-radius-md);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--specialty-color) 45%, transparent);
@@ -1512,8 +1529,10 @@
   --logo-box: 20px;
 }
 
+/* 轴标签只剩图标，尺寸提到 18px（原 13px 是为了给旁边的文字让位，文字去掉后
+   13px 显得过小、辨识不出厂牌）。 */
 .model-discovery-specialty-label .mg-logo {
-  --logo-box: 13px;
+  --logo-box: 18px;
 }
 
 /* 只剩热门 Agent 排行用它（按 PRD 显示应用名首字符，Agent 应用不是模型，

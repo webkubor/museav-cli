@@ -17,6 +17,7 @@ import {
   formatScore,
   isLanguageType,
   rankBarWidth,
+  specialtyRows,
   toPrototypeModel,
   toSummaryCards,
 } from './discovery-data'
@@ -212,5 +213,39 @@ describe('Top 5 进度条宽度', () => {
   it('无分值的模型不画条', () => {
     const models = [make('A', 100), make('B', null)]
     expect(rankBarWidth(models[1], models)).toBe(0)
+  })
+})
+
+describe('专项榜柱图', () => {
+  const make = (name: string, score: number | null): PrototypeModel =>
+    toPrototypeModel(card({ model_name: name, primary_score: score }), 'TEXT_CHAT')
+
+  it('柱高用 min-max 归一化，窄值域也能拉开', () => {
+    // 真实数据：61.3 / 59.8 / 57.1，按 value/max 算是 100%/97.6%/93.1%，肉眼等高
+    const rows = specialtyRows('综合评分', [make('A', 61.3), make('B', 59.8), make('C', 57.1)])
+    expect(rows[0].ratio).toBe(1)
+    expect(rows[2].ratio).toBe(0)
+    expect(rows[1].ratio).toBeGreaterThan(0.3)
+    expect(rows[1].ratio).toBeLessThan(0.7)
+  })
+
+  it('全部同值时比例给 1，不出现除零', () => {
+    const rows = specialtyRows('综合评分', [make('A', 50), make('B', 50)])
+    expect(rows.every((r) => r.ratio === 1)).toBe(true)
+  })
+
+  it('柱内短标签只留数字，单位与货币符号去掉', () => {
+    const rows = specialtyRows('单次任务成本', [
+      toPrototypeModel(card({ model_name: 'A', cost_value: 0.0656 }), 'TEXT_CHAT'),
+    ])
+    expect(rows[0].value).toBe('$0.0656/次')
+    expect(rows[0].short).toBe('0.0656')
+  })
+
+  it('紧凑数量后缀保留（50K 不能被切成 50）', () => {
+    const rows = specialtyRows('近 7 日热度', [
+      toPrototypeModel(card({ model_name: 'A', usage_value: 50_000 }), 'TEXT_CHAT'),
+    ])
+    expect(rows[0].short).toBe('50K')
   })
 })

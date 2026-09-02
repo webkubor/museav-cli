@@ -28,6 +28,12 @@ import {
 const STALE_TIME = 5 * 60 * 1000
 
 /**
+ * 翻页、切指标、切 tab 都会换 queryKey，默认行为是先清空再填——表格与图表整块
+ * 闪一下白。保留上一次的数据直到新数据到达，视觉上只是内容替换。
+ */
+const keepPrevious = <T,>(previous: T | undefined) => previous
+
+/**
  * 一次取多少条模型。
  *
  * 接口上限是 100，而 TEXT_CHAT 当前有 631 个模型——**不拉全量**：榜单是 Top N、
@@ -56,6 +62,7 @@ export function useDiscoveryQuery(modality: ModalityKey, task: string): Discover
     queryFn: () => listDiscoveryRankings({ type: type!, metric: metric!, page_size: PAGE_SIZE }),
     enabled: Boolean(type && metric),
     staleTime: STALE_TIME,
+    placeholderData: keepPrevious,
   })
 
   const overview = useQuery({
@@ -63,6 +70,7 @@ export function useDiscoveryQuery(modality: ModalityKey, task: string): Discover
     queryFn: () => getDiscoveryOverview({ type: type! }),
     enabled: Boolean(type),
     staleTime: STALE_TIME,
+    placeholderData: keepPrevious,
   })
 
   // 必须 memo：这个数组是页面上十几个 useMemo 的依赖，每次渲染重建会让它们全部失效
@@ -104,6 +112,7 @@ export function useDiscoveryTrends(
     queryFn: () => getDiscoveryUsageTrends({ type: type!, source_model_ids: ids }),
     enabled: Boolean(type && ids),
     staleTime: STALE_TIME,
+    placeholderData: keepPrevious,
   })
 
   return { data: query.data, isLoading: query.isLoading }
@@ -185,6 +194,7 @@ export function useDiscoveryTable(
       }),
     enabled: enabled && options.creators.length <= 1,
     staleTime: STALE_TIME,
+    placeholderData: keepPrevious,
   })
 
   // 多选厂商：接口不支持多值，按厂商并发拉取后合并
@@ -315,6 +325,7 @@ export function useDiscoveryAnalysis(
       }),
     enabled: Boolean(type && xMetric && yMetric && ids),
     staleTime: STALE_TIME,
+    placeholderData: keepPrevious,
   })
 
   const points = useMemo(() => {

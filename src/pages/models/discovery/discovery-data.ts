@@ -176,11 +176,11 @@ export function specialtyRows(
   title: string,
   models: readonly PrototypeModel[],
   options: { limit?: number; scoreAscending?: boolean } = {},
-): Array<{ model: string; value: string; provider: string }> {
+): Array<{ model: string; value: string; provider: string; short: string; ratio: number }> {
   const { limit = 10, scoreAscending = false } = options
   const spec = specialtyFieldFor(title, scoreAscending)
   if (!spec) return []
-  return models
+  const picked = models
     .filter((model) => model.raw[spec.field] !== null)
     .sort((first, second) => {
       const a = first.raw[spec.field]!
@@ -188,22 +188,45 @@ export function specialtyRows(
       return spec.ascending ? a - b : b - a
     })
     .slice(0, limit)
-    .map((model) => ({
+
+  const values = picked.map((model) => model.raw[spec.field]!)
+  const max = Math.max(...values, 0)
+  const min = Math.min(...values, max)
+
+  return picked.map((model) => {
+    const raw = model.raw[spec.field]!
+    const value =
+      spec.field === 'valueScore'
+        ? model.valueScore
+        : spec.field === 'tps'
+          ? model.performance
+          : spec.field === 'latencyMs'
+            ? model.latency
+            : spec.field === 'usage'
+              ? model.usage
+              : spec.field === 'score'
+                ? model.score
+                : model.price
+    return {
       model: model.name,
-      value:
-        spec.field === 'valueScore'
-          ? model.valueScore
-          : spec.field === 'tps'
-            ? model.performance
-            : spec.field === 'latencyMs'
-              ? model.latency
-              : spec.field === 'usage'
-                ? model.usage
-                : spec.field === 'score'
-                  ? model.score
-                  : model.price,
+      value,
       provider: model.provider,
-    }))
+      // 柱内标签：去掉单位与前后缀，只留数字。"$0.0656/次" 在 34px 宽的柱子里放不下，
+      // 单位已经写在图表副标题里（如「（USD / Task）」），柱子上重复一遍纯属噪声。
+      short: compactBarLabel(value),
+      // 柱高比例：**min-max 归一化**，不是 value/max。
+      // 真实数据的值域常常很窄（综合评分 61.3→57.1 只差 7%），按 value/max 算出来
+      // 十根柱子肉眼等高，图表等于没有信息量。归一化后同一张图内的排序差异能看出来；
+      // 每根柱子上都标着真实数值，不会因此误读绝对量。
+      ratio: max === min ? 1 : (raw - min) / (max - min),
+    }
+  })
+}
+
+/** 柱内标签：剥掉货币符号、单位与后缀，只留数字（含小数点与千分位）。 */
+function compactBarLabel(value: string): string {
+  const matched = value.match(/[\d.,]+[BMKT]?/)
+  return matched ? matched[0] : value
 }
 
 /** 总览卡：接口的 highlights 六键 → 原型 summary 的 { label, model, value, unit }。 */

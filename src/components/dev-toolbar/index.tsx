@@ -88,7 +88,10 @@ export function DevToolbar() {
   }
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[var(--mg-z-devtool)] flex items-center gap-3 px-4 py-2 rounded-full bg-mg-bg-2 backdrop-blur border border-mg-border shadow-lg shadow-black/5 select-none">
+    /* 靠右下角、半透明：早先是 bottom-4 left-1/2 居中吸底，z-index 高于内容，
+       在测试环境做验收时正好盖住页面中部的图表（2026-09-02 模型发现页实测）。
+       hover 才恢复不透明，保证需要时仍好点。 */
+    <div className="fixed bottom-4 right-4 z-[var(--mg-z-devtool)] flex items-center gap-3 px-4 py-2 rounded-full bg-mg-bg-2 backdrop-blur border border-mg-border shadow-lg shadow-black/5 select-none opacity-45 transition-opacity hover:opacity-100 focus-within:opacity-100">
       <Seg
         value={theme}
         options={[

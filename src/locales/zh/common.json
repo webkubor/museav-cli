@@ -88,7 +88,8 @@
       "total": "共 {{count}} 条",
       "loadMore": "加载更多",
       "pageSizePrefix": "每页",
-      "pageSizeSuffix": "条"
+      "pageSizeSuffix": "条",
+      "navAria": "分页导航"
     },
     "changelog": "更新日志",
     "close": "关闭",

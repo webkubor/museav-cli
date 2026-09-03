@@ -1471,10 +1471,14 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
               })}
             </TableBody>
           </Table>
+          {/* 页码列表形态：PRD 原型的分页是「共 N 个模型 + ← 1 2 3 … →」，
+              可点页码而不是单个「X / Y」指示器（原型 .model-discovery-table-pagination）。
+              布局照原型、控件用 ui/Pagination 的 pageNumbers 模式（2026-09-03 为此加的一档）。 */}
           <Pagination
             mode="page"
             onPageChange={setTablePage}
             page={safeTablePage}
+            pageNumbers
             pageSize={tablePageSize}
             total={tableTotal}
           />

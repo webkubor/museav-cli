@@ -7,6 +7,7 @@
  * 文案走 common.pagination.* i18n，颜色用 Semi/mg token，按钮复用 Button。
  */
 import { useTranslation } from 'react-i18next'
+import { LuChevronLeft, LuChevronRight } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import Select from '@/components/ui/Select'
 
@@ -42,6 +43,12 @@ interface PageNumberPaginationProps {
   pageSize: number
   onPageChange: (page: number) => void
   loading?: boolean
+  /**
+   * 渲染可点页码（← 1 2 3 … 10 →）而不是「上一页 / X / Y / 下一页」。
+   * 用于 PRD 原型里就是页码列表的场景（模型发现的完整指标榜单）；
+   * 页数多时按 siblingCount=1 折叠，避免几十个按钮把工具条撑爆。
+   */
+  pageNumbers?: boolean
 }
 
 /** 追加加载：useInfiniteQuery 场景 */
@@ -62,6 +69,21 @@ const WRAP =
 const PAGE_BADGE =
   'mg-text-code text-mg-text-2 bg-mg-fill-0 border border-mg-border px-[var(--mg-control-pad-x-sm)] py-[var(--mg-space-1)] rounded-sm'
 
+/**
+ * 生成页码序列：首尾常驻、当前页两侧各留一个，缺口用 '…' 占位。
+ * 7 页以内全展开（原型的模型发现是 10 页 / 每页 20 条，折叠只在极端数据下触发）。
+ */
+function pageRange(current: number, totalPages: number): Array<number | '…'> {
+  if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1)
+  const around = [current - 1, current, current + 1].filter((p) => p > 1 && p < totalPages)
+  const out: Array<number | '…'> = [1]
+  if (around[0] !== undefined && around[0] > 2) out.push('…')
+  out.push(...around)
+  if (around.at(-1) !== undefined && (around.at(-1) as number) < totalPages - 1) out.push('…')
+  out.push(totalPages)
+  return out
+}
+
 export function Pagination(props: PaginationProps) {
   const { t } = useTranslation()
 
@@ -80,6 +102,50 @@ export function Pagination(props: PaginationProps) {
   if (props.mode === 'page') {
     const { page, total, pageSize, onPageChange, loading } = props
     const totalPages = Math.max(1, Math.ceil(total / pageSize))
+
+    // 页码列表形态（PRD 原型的分页长这样）：左「共 N 条」+ 右「← 页码… →」
+    if (props.pageNumbers) {
+      return (
+        <div className={WRAP}>
+          <span className="mg-text-caption text-mg-text-3">{t('common.pagination.total', { count: total })}</span>
+          <nav aria-label={t('common.pagination.navAria')} className="flex items-center gap-1">
+            <Button
+              aria-label={t('common.pagination.prev')}
+              disabled={loading || page <= 1}
+              icon={<LuChevronLeft size={13} />}
+              onClick={() => onPageChange(page - 1)}
+              size="xs"
+              variant="ghost"
+            />
+            {pageRange(page, totalPages).map((item, index) => (
+              item === '…'
+                ? <span className="mg-text-caption px-1 text-mg-text-3" key={`gap-${index}`}>…</span>
+                : <Button
+                    aria-current={item === page ? 'page' : undefined}
+                    aria-label={t('common.pagination.page', { page: item })}
+                    className="min-w-7 tracking-normal normal-case"
+                    disabled={loading}
+                    key={item}
+                    onClick={() => onPageChange(item)}
+                    size="xs"
+                    variant={item === page ? 'brand-outline' : 'ghost'}
+                  >
+                    {item}
+                  </Button>
+            ))}
+            <Button
+              aria-label={t('common.pagination.next')}
+              disabled={loading || page >= totalPages}
+              icon={<LuChevronRight size={13} />}
+              onClick={() => onPageChange(page + 1)}
+              size="xs"
+              variant="ghost"
+            />
+          </nav>
+        </div>
+      )
+    }
+
     return (
       <div className={WRAP}>
         <span className="mg-text-caption text-mg-text-3">{t('common.pagination.total', { count: total })}</span>

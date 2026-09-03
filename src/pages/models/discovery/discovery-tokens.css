@@ -34,9 +34,17 @@
  *
  * 作用域收在 .model-discovery-page 里：这些变量名（--text / --line / --accent）
  * 太通用，泄到全局会撞上其他页面。
+ *
+ * ⚠️ **走 Portal 的浮层要显式带 .model-discovery-scope**。Radix 的 Popover / Select
+ * content 会挂到 body 下，**不在** .model-discovery-page 里，于是这套变量全部取不到值。
+ * 失效方式很隐蔽：`color-mix(in srgb, var(--muted) 45%, var(--line))` 里只要有一个变量
+ * 没定义，整条声明就 invalid，属性回落到 initial —— 边框宽度归零、底色透明，元素照样
+ * 占位却看不见。2026-09-03 厂商筛选浮层里那个 15×15 的勾选框就是这么「消失」的
+ * （实测：--panel 与 --line 在浮层内都是空，勾选框 background rgba(0,0,0,0)、border 0px）。
  */
 
-.model-discovery-page {
+.model-discovery-page,
+.model-discovery-scope {
   /* 文字层级 */
   /* ⚠️ 控制台没有 --mg-text-0：index.css 只把 --mg-text-1..4 注册进 @theme。
      写 text-mg-text-0 或 --mg-text-0 都不会报错，只是颜色静默失效。

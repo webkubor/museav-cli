@@ -1365,7 +1365,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
             <div className="model-discovery-table-secondary-filters">
               <div className="model-discovery-provider-filter">
                 <Popover
-                  className="model-discovery-provider-filter-panel"
+                  className="model-discovery-provider-filter-panel model-discovery-scope"
                   position="bottom"
                   trigger={
                     <button className="model-discovery-provider-filter-trigger" title={providerFilter.length > 0 ? providerFilter.join("、") : "全部厂商"} type="button">

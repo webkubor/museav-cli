@@ -117,28 +117,48 @@ type DiscoveryConfig = {
   specialties: Array<{ title: string; description: string }>;
 };
 
-const domesticModelProviders = new Set([
-  "Alibaba",
-  "DeepSeek",
-  "Doubao",
-  "FunAudioLLM",
-  "Kling",
-  "Kuaishou",
-  "MiniMax",
-  "Moonshot",
-  "PixVerse",
-  "Qwen",
-  "StepFun",
-  "Tencent",
-  "Wan",
-  "Z.ai",
-]);
+/**
+ * 国产厂商名单，用来把「国产未接入」与「海外（ModelGo.ai 已接入）」分开——接口的
+ * integration_status 只有 MODELGO / MODELGO_AI 两态，分不出这一层。
+ * 比对前统一小写并去掉空格与标点：接口 creator_name 的写法与展示名不一致
+ * （"Z AI" vs "Z.ai"、"ByteDance Seed"、"KlingAI"），2026-09-03 test 环境实测
+ * GLM-5.3 / Kimi K3 这些 MODELGO 模型因此被标成「ModelGo.ai 已接入」并外链到 modelgo.ai。
+ */
+const domesticModelProviders = new Set(
+  [
+    "Alibaba",
+    "Alibaba-ATH",
+    "ByteDance",
+    "ByteDance Seed",
+    "DeepSeek",
+    "Doubao",
+    "FunAudioLLM",
+    "Kimi",
+    "Kling",
+    "KlingAI",
+    "Kuaishou",
+    "MiniMax",
+    "Moonshot",
+    "PixVerse",
+    "Qwen",
+    "StepFun",
+    "Tencent",
+    "Wan",
+    "Z AI",
+    "Z.ai",
+  ].map(normalizeProviderName),
+);
+
+function normalizeProviderName(name: string) {
+  return name.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
 
 /** 只依赖 provider / supported，故对散点用的轻量模型对象同样适用。 */
 type AccessShape = Pick<DiscoveryModel, "provider" | "supported">;
 
+/** integration_status 为 MODELGO（supported）的模型必然是本平台已接入的国产模型，不看名单。 */
 function isDomesticModel(model: AccessShape) {
-  return domesticModelProviders.has(model.provider);
+  return model.supported || domesticModelProviders.has(normalizeProviderName(model.provider));
 }
 
 function isModelConnected(model: AccessShape) {

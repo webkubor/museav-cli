@@ -105,6 +105,38 @@
   --discovery-shadow-popover: var(--mg-shadow-lg);
   --discovery-shadow-float: var(--mg-shadow-md);
   --discovery-shadow-overlay: var(--mg-shadow-lg);
+
+  /* 字阶四档。
+     本页原先有 10 种字号，其中 57 处挤在 9 / 10 / 11 / 12px —— 相邻档只差 1px，
+     肉眼分不出主次；更麻烦的是**表格正文用的是 11px**，比全局字阶最小档
+     (--mg-text-xs: 12px) 还小，等于整页正文都在体系之外（2026-09-03 需求方指出
+     「为啥字体都一样大，没有主次关系」）。
+
+     根因是 1:1 移植原型：原型是个高密度 dashboard，字号可以压到 9px；控制台不是。
+
+     档位值对齐 PRD 原型实测（2026-09-03 用 computed style 逐项量的），不自己另定：
+       micro   10    厂商名 / 状态标签 / 轴刻度 / 图例——配角
+       body    12    分值 / 表格正文 / 卡片副标题
+       block   16    区块标题（「专项指标排行」这类分节标签）
+       title   17    卡片标题（「Agent Top 5」）
+       subject 14    **行内主角**：Top 5 的模型名
+     再往上是页面 h1（36px）。
+
+     ⚠️ 三个反直觉但正确的地方，别再"纠正"回去：
+     ① block(16) < title(17)：分节标签本来就次于卡片主标题，原型是刻意的。
+     ② 真正拉开层级的是 subject 与 micro 的落差，不是标题分档。一度把模型名当正文
+        压到 12px、与厂商名只差 2px，整行糊成一团——需求方对比原型后指出「文字大小
+        和协调性都没有 PRD 做得好」。协调性来自主角显著，不来自把所有文字均匀归档。
+     ③ **subject 是 14 不是原型的 18**：原型的模型名是「GPT-5.5」「Kimi K2.6」这种
+        短假名，18px 撑得住；真实数据是「Claude Fable 5.1 (Adaptive Reasoning,
+        Max Effort, Default Fallback)」70 个字符，18px 会撑爆整列、还压过 17px 的
+        卡片标题。字号开不大的那部分层次，由 680 字重 + 主色补足——
+        **原型的数值是在原型的数据上调的，不能直接照搬到真实数据上。** */
+  --discovery-fs-micro: 10px;
+  --discovery-fs-body: var(--mg-text-xs);
+  --discovery-fs-block: 16px;
+  --discovery-fs-title: 17px;
+  --discovery-fs-subject: var(--mg-text-sm);
 }
 
 /* ===== Model discovery ===== */
@@ -131,13 +163,6 @@
   justify-content: space-between;
 }
 
-.model-discovery-title-row {
-  align-items: flex-end;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-}
-
 .model-discovery-head h1 {
   font-size: clamp(30px, 3vw, 36px);
   letter-spacing: -0.04em;
@@ -147,28 +172,37 @@
 
 .model-discovery-head p {
   color: var(--muted);
-  font-size: 14px;
+  /* 页面副标题走全局 sm 档，不进本页四档：它跟的是 h1，不参与卡片内部那套层级 */
+  font-size: var(--mg-text-sm);
   line-height: 1.55;
   margin: 7px 0 0;
   max-width: 680px;
   text-wrap: pretty;
 }
 
-.model-discovery-meta {
-  align-items: center;
+/* 数据快照：跟在副标题末尾，靠一个分隔点与正文断开。
+   原先是标题右侧一枚带边框的小胶囊——边框 + 底色让它在 36px 大标题旁边显得像补丁，
+   而它承载的只是"这份数据什么时候的"这一句元信息，不值一个独立控件的视觉分量。 */
+.model-discovery-snapshot {
   color: var(--text-tertiary);
-  display: flex;
-  flex-wrap: wrap;
-  font-size: 11px;
-  gap: 7px;
-  margin: 0;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-.model-discovery-meta span {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--mg-radius-xs);
-  padding: 4px 8px;
+.model-discovery-snapshot::before {
+  content: "·";
+  margin: 0 6px;
+}
+
+/* 模态 tab 与范围筛选同一行：左导航右筛选，控制台常见排布。
+   下边框由 tab 的 underline 变体自己画，这里不再补线，避免双线。 */
+.model-discovery-modality-bar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 14px 0 0;
 }
 
 .model-discovery-taskbar {
@@ -195,7 +229,7 @@
   border-radius: var(--discovery-control-radius);
   color: var(--muted);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--discovery-fs-body);
   min-height: 32px;
   padding: 6px 11px;
   transition: background var(--discovery-dur-ease) ease, border-color var(--discovery-dur-ease) ease, color var(--discovery-dur-ease) ease;
@@ -252,14 +286,14 @@
      AGENTIC INDEX / ARTIFICIAL ANALYSIS —— 原型是原样大小写。中文表头看不出来，
      只有英文列被大写，同一行里反而不齐。 */
   text-transform: none;
-  font-size: 10px;
+  font-size: var(--discovery-fs-micro);
 }
 
 .model-discovery-table tbody td {
   /* TableCell 挂 .mg-text-body（14px / 24px 行高），原型
      .model-discovery-table-row 是 11px。字号和行高都要压回去 ——
      只改字号的话，24px 的行高仍会把行撑到原型的 1.2 倍。 */
-  font-size: 11px;
+  font-size: var(--discovery-fs-body);
   line-height: 1.45;
 }
 
@@ -273,7 +307,7 @@
   color: var(--accent);
   cursor: pointer;
   display: inline-flex;
-  font-size: 10px;
+  font-size: var(--discovery-fs-micro);
   gap: 4px;
   justify-content: center;
   justify-self: end;
@@ -301,12 +335,12 @@
 .model-discovery-card-head span {
   color: var(--text-tertiary);
   display: block;
-  font-size: 11px;
+  font-size: var(--discovery-fs-body);
   margin-top: 5px;
 }
 
 .model-discovery-card-head h2 {
-  font-size: 17px;
+  font-size: var(--discovery-fs-title);
   letter-spacing: -0.02em;
   margin: 0;
 }
@@ -323,7 +357,7 @@
 .model-discovery-rank-head {
   background: color-mix(in srgb, var(--line) 24%, transparent);
   color: var(--text-tertiary);
-  font-size: 10px;
+  font-size: var(--discovery-fs-micro);
 }
 
 .model-discovery-rank-head > span:last-child,
@@ -341,7 +375,7 @@
   color: var(--text-tertiary);
   display: inline-flex;
   flex: none;
-  font-size: 9px;
+  font-size: var(--discovery-fs-micro);
   font-style: normal;
   font-weight: 560;
   height: 17px;
@@ -352,7 +386,7 @@
 
 .model-discovery-rank-row {
   border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
-  font-size: 11px;
+  font-size: var(--discovery-fs-body);
 }
 
 .model-discovery-rank-row.model-discovery-row-clickable,
@@ -380,20 +414,25 @@
 
 .model-discovery-rank-row strong {
   display: grid;
-  font-size: 12px;
+  /* 模型名是这一行的主角，走 subject 档；厂商名 micro，两者差 8px 才有主次
+     （原型实测 18 / 10，见文件头字阶注释） */
+  font-size: var(--discovery-fs-subject);
+  font-weight: 680;
   gap: 2px;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
 }
 
 .model-discovery-rank-row strong small {
   color: var(--text-tertiary);
-  font-size: 10px;
+  font-size: var(--discovery-fs-micro);
   font-weight: 500;
 }
 
 .model-discovery-rank-row em,
 .model-discovery-table em {
   border-radius: var(--mg-radius-pill);
-  font-size: 10px;
+  font-size: var(--discovery-fs-micro);
   font-style: normal;
   justify-self: start;
   padding: 3px 7px;
@@ -428,12 +467,32 @@
   height: 6px;
 }
 
+/* 条长由内联 style 的百分比给（rankBarWidth），入场用 scaleX 从左侧生长——
+   scaleX 不改变布局宽度，所以动画期间条尾不会把右边的数值挤动。
+   切 tab / 换指标时 React 复用同一批 DOM，动画不会重播；这里要的是首屏那一次
+   「排名条长出来」的读数引导，不是每次交互都动。 */
 .model-discovery-rank-row > div i {
+  animation: model-discovery-rank-grow var(--discovery-dur-enter) var(--mg-ease-decelerate) both;
   background: var(--accent);
   border-radius: var(--mg-radius-pill);
   grid-column: 1;
   grid-row: 1;
   height: 6px;
+  transform-origin: left center;
+  /* 条长本身也过渡：切换指标时从旧长度平滑到新长度，而不是瞬间跳 */
+  transition: width var(--discovery-dur-base) var(--mg-ease-standard);
+}
+
+@keyframes model-discovery-rank-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .model-discovery-rank-row > div i {
+    animation: none;
+    transition: none;
+  }
 }
 
 .model-discovery-rank-row > div b {
@@ -460,7 +519,7 @@
   cursor: pointer;
   display: inline-flex;
   font: inherit;
-  font-size: 11px;
+  font-size: var(--discovery-fs-body);
   gap: 4px;
   padding: 3px 0;
 }
@@ -497,7 +556,7 @@
   align-items: center;
   color: var(--muted);
   display: flex;
-  font-size: 11px;
+  font-size: var(--discovery-fs-body);
   gap: 5px;
   justify-content: flex-start;
 }
@@ -521,7 +580,7 @@
 
 
 .model-discovery-summary-model > strong {
-  font-size: 18px;
+  font-size: var(--discovery-fs-block);
   font-weight: 680;
   letter-spacing: -0.018em;
   line-height: 1.2;
@@ -538,7 +597,7 @@
 }
 
 .model-discovery-summary-value b {
-  font-size: 14px;
+  font-size: var(--discovery-fs-title);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.035em;
   line-height: 1.1;
@@ -546,7 +605,7 @@
 
 .model-discovery-summary-value small {
   color: var(--text-tertiary);
-  font-size: 10px;
+  font-size: var(--discovery-fs-micro);
 }
 
 .model-discovery-section {
@@ -563,14 +622,15 @@
 }
 
 .model-discovery-section-head h2 {
-  font-size: 16px;
+  /* 区块标题必须大于它内部的卡片标题。原先区块 16px / 卡片 17px，层级是反的。 */
+  font-size: var(--discovery-fs-block);
   letter-spacing: -0.015em;
   margin: 0;
 }
 
 .model-discovery-section-head > span {
   color: var(--text-tertiary);
-  font-size: 10px;
+  font-size: var(--discovery-fs-micro);
 }
 
 .model-discovery-agent-popularity-head {
@@ -606,7 +666,7 @@
   color: var(--muted);
   cursor: pointer;
   font: inherit;
-  font-size: 11px;
+  font-size: var(--discovery-fs-body);
   font-weight: 600;
   height: 24px;
   min-width: 34px;
@@ -656,16 +716,37 @@
 
 .model-discovery-agent-popularity-rank {
   color: var(--text-tertiary);
-  font-size: 12px;
+  font-size: var(--discovery-fs-body);
   font-variant-numeric: tabular-nums;
 }
 
-.model-discovery-agent-popularity-icon {
-  --model-mark-color: #334155;
+/* Agent 榜图标：库的 agentVisual() 命中就是一张官方 SVG，命不中才落首字母块。
+   两种形态共用同一个方槽尺寸，榜单左边缘才对得齐。 */
+.model-discovery-agent-icon {
+  align-items: center;
   border-radius: var(--mg-radius-sm);
-  font-size: 11px;
+  display: inline-flex;
+  flex: 0 0 auto;
   height: 34px;
+  justify-content: center;
+  overflow: hidden;
   width: 34px;
+}
+
+.model-discovery-agent-icon svg {
+  height: 22px;
+  width: 22px;
+}
+
+.model-discovery-agent-icon.is-initial {
+  /* 13px 是图标槽位里的那个字符，按 34px 方块的视觉配重定的，不属于文本层级，
+     所以不走本页字阶四档 */
+  background: var(--agent-mark-color);
+  color: var(--discovery-on-dark);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .model-discovery-agent-popularity-copy {
@@ -678,13 +759,13 @@
 }
 
 .model-discovery-agent-popularity-copy strong {
-  font-size: 12px;
+  font-size: var(--discovery-fs-body);
   line-height: 1.3;
 }
 
 .model-discovery-agent-popularity-copy span {
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--discovery-fs-body);
   line-height: 1.45;
   margin-top: 3px;
   overflow: hidden;
@@ -693,7 +774,7 @@
 }
 
 .model-discovery-agent-popularity-usage {
-  font-size: 12px;
+  font-size: var(--discovery-fs-body);
   font-variant-numeric: tabular-nums;
   text-align: right;
   white-space: nowrap;
@@ -701,7 +782,7 @@
 
 .model-discovery-agent-popularity-usage span {
   color: var(--text-tertiary);
-  font-size: 10px;
+  font-size: var(--discovery-fs-micro);
   font-weight: 500;
   margin-left: 4px;
 }
@@ -742,7 +823,7 @@
   border-radius: var(--discovery-control-radius);
   color: var(--muted);
   display: inline-flex;
-  font-size: 11px;
+  font-size: var(--discovery-fs-body);
   gap: 5px;
   min-height: 32px;
   padding: 0 9px;
@@ -763,7 +844,7 @@
   border: 0;
   color: var(--text);
   cursor: pointer;
-  font-size: 11px;
+  font-size: var(--discovery-fs-body);
   outline: none;
   padding-right: 13px;
 }
@@ -813,7 +894,7 @@
   align-items: center;
   color: var(--muted);
   display: inline-flex;
-  font-size: 9px;
+  font-size: var(--discovery-fs-micro);
   font-style: normal;
   gap: 5px;
 }
@@ -840,7 +921,7 @@
 /* 轴标题（Recharts <Label> 渲染成 SVG text，故用 fill 而不是 color） */
 .model-discovery-axis-title {
   fill: var(--text-soft);
-  font-size: 10px;
+  font-size: var(--discovery-fs-micro);
   font-weight: 620;
 }
 
@@ -854,7 +935,7 @@
 
 .model-discovery-advantage-label {
   fill: var(--discovery-advantage-text);
-  font-size: 9px;
+  font-size: var(--discovery-fs-micro);
   font-weight: 650;
 }
 
@@ -907,7 +988,7 @@
   align-items: center;
   color: var(--text-tertiary);
   display: flex;
-  font-size: 11px;
+  font-size: var(--discovery-fs-body);
   justify-content: center;
   min-height: 160px;
 }
@@ -930,21 +1011,21 @@
   align-items: center;
   color: var(--text);
   display: flex;
-  font-size: 11px;
+  font-size: var(--discovery-fs-body);
   gap: 6px;
 }
 
 .model-discovery-chart-tooltip span,
 .model-discovery-chart-tooltip em {
   color: var(--text-tertiary);
-  font-size: 9px;
+  font-size: var(--discovery-fs-micro);
   font-style: normal;
   line-height: 1.35;
 }
 
 .model-discovery-chart-tooltip > b {
   color: var(--text);
-  font-size: 15px;
+  font-size: var(--discovery-fs-title);
   font-variant-numeric: tabular-nums;
 }
 
@@ -970,7 +1051,7 @@
 .model-discovery-trend h3 {
   align-items: center;
   display: flex;
-  font-size: 12px;
+  font-size: var(--discovery-fs-body);
   gap: 6px;
   margin: 0;
 }
@@ -978,7 +1059,7 @@
 .model-discovery-model-filter p,
 .model-discovery-trend p {
   color: var(--text-tertiary);
-  font-size: 10px;
+  font-size: var(--discovery-fs-micro);
   line-height: 1.5;
   margin: 4px 0 9px;
 }
@@ -992,7 +1073,7 @@
   cursor: pointer;
   display: flex;
   font-family: inherit;
-  font-size: 11px;
+  font-size: var(--discovery-fs-body);
   font-weight: 620;
   justify-content: space-between;
   line-height: 1;
@@ -1035,7 +1116,7 @@
   background: transparent;
   border: 0;
   color: var(--text);
-  font-size: 11px;
+  font-size: var(--discovery-fs-body);
   min-height: 34px;
   outline: none;
   width: 100%;
@@ -1073,7 +1154,7 @@
 }
 
 .model-discovery-model-filter-list > button strong {
-  font-size: 10px;
+  font-size: var(--discovery-fs-micro);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1081,7 +1162,7 @@
 
 .model-discovery-model-filter-list > button small {
   color: var(--text-tertiary);
-  font-size: 9px;
+  font-size: var(--discovery-fs-micro);
 }
 
 .model-discovery-model-filter-list > button > svg {
@@ -1090,7 +1171,7 @@
 
 .model-discovery-model-filter-list > em {
   color: var(--text-tertiary);
-  font-size: 10px;
+  font-size: var(--discovery-fs-micro);
   font-style: normal;
   padding: 18px 8px;
   text-align: center;
@@ -1112,7 +1193,7 @@
   color: var(--text-soft);
   cursor: pointer;
   display: inline-flex;
-  font-size: 9px;
+  font-size: var(--discovery-fs-micro);
   gap: 5px;
   justify-content: center;
   min-height: 29px;
@@ -1136,7 +1217,7 @@
 
 .model-discovery-trend-label {
   fill: var(--text-soft);
-  font-size: 9px;
+  font-size: var(--discovery-fs-micro);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1155,7 +1236,7 @@
 .model-discovery-trend-legend > span {
   align-items: center;
   display: grid;
-  font-size: 9px;
+  font-size: var(--discovery-fs-micro);
   gap: 5px;
   grid-template-columns: 7px minmax(0, 1fr) auto;
 }
@@ -1168,7 +1249,7 @@
 }
 
 .model-discovery-trend-legend strong {
-  font-size: 9px;
+  font-size: var(--discovery-fs-micro);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1183,7 +1264,7 @@
   align-items: center;
   color: var(--text-tertiary);
   display: flex;
-  font-size: 10px;
+  font-size: var(--discovery-fs-micro);
   justify-content: center;
   min-height: 120px;
 }
@@ -1223,13 +1304,13 @@
   background: color-mix(in srgb, var(--accent) 9%, var(--panel));
   border-radius: var(--mg-radius-pill);
   color: var(--accent);
-  font-size: 10px;
+  font-size: var(--discovery-fs-micro);
   font-weight: 700;
   padding: 4px 7px;
 }
 
 .model-discovery-specialties h3 {
-  font-size: 14px;
+  font-size: var(--discovery-fs-title);
   margin: 0;
 }
 
@@ -1237,7 +1318,7 @@
   align-items: center;
   color: var(--text-tertiary);
   display: flex;
-  font-size: 10px;
+  font-size: var(--discovery-fs-micro);
   gap: 6px;
   margin: 4px 0 0;
 }
@@ -1282,7 +1363,7 @@
 /* 柱内数值标签（recharts <LabelList> 渲染成 SVG text） */
 .model-discovery-bar-label {
   fill: var(--discovery-on-dark);
-  font-size: 9px;
+  font-size: var(--discovery-fs-micro);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1305,20 +1386,6 @@
 
 /* 只剩热门 Agent 排行用它（按 PRD 显示应用名首字符，Agent 应用不是模型，
    图标库里没有它们） */
-.model-discovery-model-mark {
-  align-items: center;
-  background: var(--model-mark-color);
-  border-radius: var(--discovery-radius-xs);
-  color: var(--discovery-on-dark);
-  display: inline-flex;
-  flex: 0 0 auto;
-  font-size: 9px;
-  font-style: normal;
-  font-weight: 780;
-  height: 18px;
-  justify-content: center;
-  width: 18px;
-}
 
 .model-discovery-table-tools {
   border-bottom: 1px solid var(--line);
@@ -1338,7 +1405,7 @@
   border: 0;
   color: var(--text);
   cursor: pointer;
-  font-size: 11px;
+  font-size: var(--discovery-fs-body);
   outline: none;
   padding: 0 15px 0 0;
 }
@@ -1360,13 +1427,13 @@
 .model-discovery-table-primary-filter label > span {
   border-right: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--discovery-fs-micro);
   padding-right: 7px;
 }
 
 .model-discovery-table-primary-filter select {
   color: var(--accent);
-  font-size: 11px;
+  font-size: var(--discovery-fs-body);
   font-weight: 680;
   min-width: 72px;
 }
@@ -1389,7 +1456,7 @@
   cursor: pointer;
   display: flex;
   font-family: inherit;
-  font-size: 11px;
+  font-size: var(--discovery-fs-body);
   font-weight: 400;
   gap: 6px;
   height: 32px;
@@ -1420,7 +1487,7 @@
   color: var(--accent);
   display: inline-flex;
   flex: 0 0 auto;
-  font-size: 9px;
+  font-size: var(--discovery-fs-micro);
   font-style: normal;
   font-variant-numeric: tabular-nums;
   font-weight: 680;
@@ -1486,14 +1553,14 @@
 
 .model-discovery-provider-filter-popover > header strong {
   color: var(--text);
-  font-size: 11px;
+  font-size: var(--discovery-fs-body);
   font-weight: 680;
 }
 
 .model-discovery-provider-filter-popover > header span,
 .model-discovery-provider-filter-popover > footer > span {
   color: var(--text-tertiary);
-  font-size: 9px;
+  font-size: var(--discovery-fs-micro);
 }
 
 .model-discovery-provider-filter-popover > header button {
@@ -1502,7 +1569,7 @@
   color: var(--accent);
   cursor: pointer;
   font-family: inherit;
-  font-size: 10px;
+  font-size: var(--discovery-fs-micro);
   padding: 3px 1px;
 }
 
@@ -1529,7 +1596,7 @@
   cursor: pointer;
   display: flex;
   font-family: inherit;
-  font-size: 10px;
+  font-size: var(--discovery-fs-micro);
   gap: 6px;
   min-height: 30px;
   min-width: 0;
@@ -1595,7 +1662,7 @@
   color: var(--discovery-on-dark);
   cursor: pointer;
   font-family: inherit;
-  font-size: 10px;
+  font-size: var(--discovery-fs-micro);
   font-weight: 650;
   min-height: 26px;
   padding: 5px 12px;
@@ -1626,13 +1693,13 @@
 
 .model-discovery-table tbody strong {
   display: grid;
-  font-size: 12px;
+  font-size: var(--discovery-fs-body);
   gap: 2px;
 }
 
 .model-discovery-table tbody strong small {
   color: var(--text-tertiary);
-  font-size: 10px;
+  font-size: var(--discovery-fs-micro);
   font-weight: 500;
 }
 
@@ -1723,7 +1790,7 @@
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
-    font-size: 15px;
+    font-size: var(--discovery-fs-title);
     white-space: normal;
     word-break: break-word;
   }
@@ -1783,8 +1850,74 @@
     padding-inline: 12px;
   }
 
-  .model-discovery-agent-popularity-icon {
+  .model-discovery-agent-icon {
     height: 32px;
     width: 32px;
   }
+}
+
+/* 模型名单元格：图标 + （名称 / 厂商）两行。图标不参与压缩，名称一列可收缩，
+   否则长模型名会把图标挤成扁的（收缩链要求整条祖先都有 min-width: 0）。 */
+.model-discovery-rank-name,
+.model-discovery-cell-model {
+  /* 名称已单行截断（见下），不会换行，所以图标对「名称 + 厂商」这个两行块整体居中——
+     顶对齐会让图标只跟第一行齐、下半边空着，视觉上像挂歪了。 */
+  align-items: center;
+  display: flex !important;
+  gap: 10px;
+  min-width: 0;
+}
+
+.model-discovery-rank-name > span,
+.model-discovery-cell-model > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* 模型名单行截断，全名交给 title 悬浮看。
+   「Claude Fable 5.1 (Adaptive Reasoning, Max Effort, Default Fallback)」这类名字
+   在 160px 的列里必然换行，换行后行高不齐、图标错位，比截断难看得多。 */
+.model-discovery-rank-name > span > span,
+.model-discovery-cell-model > span > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-discovery-rank-name > span > small,
+.model-discovery-cell-model > span > small {
+  color: var(--text-tertiary);
+  font-size: var(--discovery-fs-micro);
+  font-weight: 500;
+}
+
+/* 表格筛选区的 Select：控制台 SelectTrigger 默认 w-full（表单里铺满一列），
+   放进筛选条要收成按内容宽，否则两个筛选器各撑几百像素、挤到换行。 */
+.model-discovery-select-trigger {
+  height: auto;
+  min-height: 32px;
+  width: auto;
+}
+
+/* 「指标类型 | 综合评价」：前缀是字段名、后面才是当前值，中间给一条分隔线，
+   否则两段中文直接连读成「指标类型综合评价」。 */
+.model-discovery-metric-label {
+  border-right: 1px solid var(--line);
+  color: var(--text-tertiary);
+  margin-right: 8px;
+  padding-right: 8px;
+  white-space: nowrap;
+}
+
+/* 长文本兜底：这几处渲染的是接口给的模型名 / 描述，长度由数据决定。
+   模型名实测可达 70 字符（「Claude Fable 5.1 (Adaptive Reasoning, Max Effort,
+   Default Fallback)」），不截断就会换行把行高撑乱。全名走 title 悬浮看。 */
+.model-discovery-model-filter-list > button > span > strong,
+.model-discovery-trend-legend strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

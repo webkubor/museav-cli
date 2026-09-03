@@ -31,6 +31,7 @@ import {
   YAxis,
 } from 'recharts'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
+import { agentFallback, agentVisual } from '@model-go/icons/agents'
 import { specialtyBarDomain } from './discovery-data'
 
 /**
@@ -44,10 +45,47 @@ import { specialtyBarDomain } from './discovery-data'
  * UI flow 文档 §3.1 也明确「模型/厂商身份用 ModelIcon」。
  *
  * 唯一例外是热门 Agent 排行：那里按 PRD 显示应用名首字符（Agent 应用不是模型，
- * 图标库里没有它们），继续用 .model-discovery-model-mark。
+ * 图标库里没有它们），走 agentVisual 的首字母兜底。
  */
 export function DiscoveryModelIcon({ model, provider, className }: { model: string; provider: string; className?: string }) {
   return <ModelIcon className={className} model={{ display_name: model, provider }} rounded="rounded-sm" variant="dense" />
+}
+
+/**
+ * 热门 Agent 榜的图标。
+ *
+ * 走 `@model-go/icons/agents` 的 `agentVisual()`——库里就有三级兜底：
+ * ① 131 个知名 agent 的本地 SVG（矢量、跟随主题）② favicon 覆盖长尾
+ * ③ 首字母块，颜色按名字哈希稳定取，不会随排序变化闪烁。
+ *
+ * 这里原先是 `agent.name.trim().charAt(0)` 裸截首字母——DESIGN.md 明令禁止的写法，
+ * 而且把库里现成的 131 个官方 logo 全绕过去了（2026-09-03）。
+ *
+ * favicon 一级暂时不启用：国内站取不到 `t0.gstatic.com`，要先有自建 img-proxy
+ * 才能开（库的文档写明「不换 base 就是一片空图」）。所以现在是 SVG 命中就用 SVG，
+ * 否则直接落到稳定色首字母块，跳过中间那级。
+ */
+export function DiscoveryAgentIcon({ id, name }: { id: string; name: string }) {
+  const visual = agentVisual({ id, name })
+  if (visual.kind === 'svg') {
+    return (
+      <i
+        aria-hidden="true"
+        className="model-discovery-agent-icon"
+        dangerouslySetInnerHTML={{ __html: visual.svg }}
+      />
+    )
+  }
+  const fallback = visual.kind === 'initial' ? visual : agentFallback(name)
+  return (
+    <i
+      aria-hidden="true"
+      className="model-discovery-agent-icon is-initial"
+      style={{ '--agent-mark-color': fallback.color } as React.CSSProperties}
+    >
+      {fallback.initial}
+    </i>
+  )
 }
 
 /** 入场动效时长，对应 discovery.css 的 `--discovery-dur-enter`（唯一允许被看见的动画）。 */

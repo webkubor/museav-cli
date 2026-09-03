@@ -1233,7 +1233,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
           // 从当前榜单里找回完整模型对象后接上跳详情，跳不了的就不给可点的样子。
           const barModelOf = (name: string) => visibleModels.find((model) => model.name === name);
           return <article className="mg-tile" key={item.title}>
-            <header><div><h3>{item.title}</h3><p>{item.description}<em className="model-discovery-source-tag">{item.source}</em></p></div><span>Top {rows.length}</span></header>
+            <header><div><h3>{item.title}</h3><p title={item.description}>{item.description}<em className="model-discovery-source-tag">{item.source}</em></p></div><span>Top {rows.length}</span></header>
             <SpecialtyBarChart
               description={item.description}
               hoveredModel={hoveredModel}
@@ -1296,7 +1296,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                 {modelFilterOpen && <div className="model-discovery-model-filter-popover">
                   <label><LuSearch size={14} /><input autoFocus placeholder="搜索模型" value={modelFilterSearch} onChange={(event) => setModelFilterSearch(event.target.value)} /></label>
                   <div className="model-discovery-model-filter-list">
-                    {filteredModelOptions.map((model) => <button className={selectedModelNames.includes(model.name) ? "selected" : ""} key={model.name} onClick={() => toggleChartModel(model.name)} type="button"><DiscoveryModelIcon model={model.name} provider={model.provider} /><span><strong>{model.name}</strong><small>{model.provider}</small></span>{selectedModelNames.includes(model.name) && <LuCheck size={14} />}</button>)}
+                    {filteredModelOptions.map((model) => <button className={selectedModelNames.includes(model.name) ? "selected" : ""} key={model.name} onClick={() => toggleChartModel(model.name)} type="button"><DiscoveryModelIcon model={model.name} provider={model.provider} /><span><strong title={model.name}>{model.name}</strong><small>{model.provider}</small></span>{selectedModelNames.includes(model.name) && <LuCheck size={14} />}</button>)}
                     {filteredModelOptions.length === 0 && <em>未找到匹配模型</em>}
                   </div>
                   <footer><button onClick={() => setSelectedModelNames([])} type="button"><LuX size={13} />清空</button><button onClick={() => setSelectedModelNames(visibleModels.map((model) => model.name))} type="button"><LuCheckCheck size={13} />全选</button><button onClick={() => setSelectedModelNames(visibleModels.slice(0, 7).map((model) => model.name))} type="button"><LuRotateCcw size={13} />恢复默认</button></footer>
@@ -1304,7 +1304,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
               </div>
               <div className="mg-tile model-discovery-trend"><h3><LuTrendingUp size={14} />近 7 日 ModelGo 使用趋势</h3><p>按增长率从高到低排列</p>
                 {trendSeries.length > 0
-                  ? <><TrendBarChart points={trendPoints} usageLabel={trendUsageLabel} /><div className="model-discovery-trend-legend">{trendSeries.map((series) => <span key={series.model.name}><i style={{ "--trend-color": series.color } as CSSProperties} /><strong>{series.model.name}</strong><b>{formatGrowth(series.growth)}</b></span>)}</div></>
+                  ? <><TrendBarChart points={trendPoints} usageLabel={trendUsageLabel} /><div className="model-discovery-trend-legend">{trendSeries.map((series) => <span key={series.model.name}><i style={{ "--trend-color": series.color } as CSSProperties} /><strong title={series.model.name}>{series.model.name}</strong><b>{formatGrowth(series.growth)}</b></span>)}</div></>
                   : <div className="model-discovery-trend-empty">{trendEmptyHint}</div>}
               </div>
             </aside>

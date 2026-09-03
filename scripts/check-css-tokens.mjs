@@ -21,6 +21,17 @@
  * CSS 里的 var() 失效方式完全相同，却曾整类漏检，导致 191d2dd 那批把硬编码类机械换成
  * var(...) 但变量未建的改动一路进了 test。同时挂进 vite.config 的 git.precommit 硬拦。
  *
+ * 2026-09-03 增加**裸字号检查**。起因：需求方对比 PRD 原型后指出模型发现页
+ * 「字体都一样大，没有主次关系」，追下去发现该页 66 处字号里 57 处挤在 9/10/11/12px，
+ * 而全局字阶最小档是 --mg-text-xs(12px)——整页正文都在体系之外。
+ *
+ * 再追一层：字阶 token 一直都有（--mg-text-hero/h1/h2/h3/body/sm/xs），但
+ * modelgo-design-tokens 的硬编码门禁只有 7 条规则（danger-hex / overlay / global-z /
+ * easing / transition-duration / radius-px / shadow），**没有一条管 font-size**。
+ * 圆角阴影动效从来没出过问题因为有门禁，字号处处违规因为没有——规则只在能被机器
+ * 执行的地方才真正存在。全仓存量 339 处（CSS 215 + Tailwind text-[..px] 124），
+ * 故走 warn 而非 block：存量不阻断提交，但新增行当场点名。
+ *
  * 用法：
  *   node scripts/check-css-tokens.mjs [baseRef]   # 默认：只查改动行（含 .css/.ts/.tsx）
  *   node scripts/check-css-tokens.mjs --full       # 扫全仓存量（较慢，手动跑）
@@ -29,6 +40,16 @@ import { execSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 
 const cwd = process.cwd()
+
+/** 裸字号：CSS 的 `font-size: 13px` 与 Tailwind 的 `text-[13px]`。字阶走 --mg-text-* 或页面级字阶变量。 */
+const RAW_FONT_SIZE_RE = /(?:font-size:\s*([0-9.]+)px|text-\[([0-9.]+)px\])/g
+/** 全局字阶档位，用于在提示里给出最接近的一档 */
+const TEXT_SCALE = [
+  ['--mg-text-xs', 12], ['--mg-text-sm', 14], ['--mg-text-body', 16],
+  ['--mg-text-h3', 20], ['--mg-text-h2', 28], ['--mg-text-h1', 44],
+]
+const nearestScale = (px) => TEXT_SCALE.reduce((best, cur) =>
+  Math.abs(cur[1] - px) < Math.abs(best[1] - px) ? cur : best)
 const sh = (cmd) => execSync(cmd, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
 const full = process.argv.includes('--full')
 
@@ -38,6 +59,8 @@ const tryDiffBase = () => {
   }
   return process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2] : 'origin/main'
 }
+/** 裸字号只警告不阻断：全仓 339 处存量，硬拦会瘫痪日常提交 */
+const fontWarns = []
 let diffBase = 'HEAD'
 if (!full) {
   const base = tryDiffBase()
@@ -140,8 +163,22 @@ if (full) {
           console.error(`✗ ${file}:${lineNo}  引用了未声明的变量 var(${name})`)
         }
       }
+      for (const m of text.matchAll(RAW_FONT_SIZE_RE)) {
+        const px = parseFloat(m[1] ?? m[2])
+        const [token, tokenPx] = nearestScale(px)
+        fontWarns.push(
+          `⚠ ${file}:${lineNo}  裸字号 ${px}px —— 走字阶 token（最近的一档是 ${token} = ${tokenPx}px），` +
+          `或页面级字阶变量。字号不成档位就没有主次关系。`
+        )
+      }
     }
   }
+}
+
+if (fontWarns.length) {
+  console.warn(`\n⚠️  ${fontWarns.length} 处新增裸字号（不阻断提交，但请收进字阶）：`)
+  for (const w of fontWarns.slice(0, 20)) console.warn('   ' + w)
+  if (fontWarns.length > 20) console.warn(`   …… 另 ${fontWarns.length - 20} 处`)
 }
 
 if (failed) {

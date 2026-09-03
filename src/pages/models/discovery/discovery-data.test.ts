@@ -192,11 +192,24 @@ describe('Top 5 进度条宽度', () => {
   const make = (name: string, score: number | null): PrototypeModel =>
     toPrototypeModel(card({ model_name: name, primary_score: score }), 'TEXT_CHAT')
 
-  it('按真实分值比例，不按名次', () => {
+  it('与柱图同一把尺：带地板的 min-max，不是 value/max，更不是名次', () => {
     const models = [make('A', 100), make('B', 50), make('C', 25)]
+    // 归一化后 1 / 0.333 / 0，再落到 [BAR_FLOOR, 1] = [0.28, 1]
     expect(rankBarWidth(models[0], models)).toBe(100)
-    expect(rankBarWidth(models[1], models)).toBe(50)
-    expect(rankBarWidth(models[2], models)).toBe(25)
+    expect(rankBarWidth(models[1], models)).toBe(52)
+    // 最短的一条保留地板长度，不缩成看不见的一个点
+    expect(rankBarWidth(models[2], models)).toBe(28)
+  })
+
+  it('窄值域也能拉开 —— 这正是换掉 value/max 的原因', () => {
+    // Agent Top 5 的真实分值。按 value/max 算是 100% / 97.6% / 95.8%，条长只差几个像素，
+    // 而同一批数据在下面的柱图里落差清晰——同一页两套算法给出两种结论（2026-09-03）。
+    const models = [make('A', 61.3), make('B', 59.8), make('C', 58.7)]
+    const widths = models.map((m) => rankBarWidth(m, models))
+    expect(widths[0]).toBe(100)
+    expect(widths[2]).toBe(28)
+    // 首尾拉开到 72 个百分点，肉眼能分辨
+    expect(widths[0] - widths[2]).toBe(72)
   })
 
   it('全部同分时不画条 —— 没有差距就不显示差距（STT 那一堆 0 的情形）', () => {
@@ -207,8 +220,8 @@ describe('Top 5 进度条宽度', () => {
   it('越低越好的指标，值越小条越长', () => {
     const models = [make('A', 2), make('B', 4), make('C', 8)]
     expect(rankBarWidth(models[0], models, true)).toBe(100)
-    expect(rankBarWidth(models[1], models, true)).toBe(50)
-    expect(rankBarWidth(models[2], models, true)).toBe(25)
+    expect(rankBarWidth(models[1], models, true)).toBe(76)
+    expect(rankBarWidth(models[2], models, true)).toBe(28)
   })
 
   it('无分值的模型不画条', () => {

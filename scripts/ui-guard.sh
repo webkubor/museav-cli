@@ -149,6 +149,59 @@ while IFS= read -r f; do
     printf '%s\n' "$hits" | sed 's/^/      /'
     warn=$((warn + 1))
   fi
+  # ── BLOCK 5：原生 <select>。它的下拉列表由**操作系统**渲染，我们的 CSS 一行都够不着：
+  #    macOS 上是一层半透明系统材质，底下的页面文字会透出来，深色主题也不跟随。
+  #    2026-09-03 模型发现页实测——需求方直接指出「居然还有系统弹窗」。
+  #    统一用 @/components/ui/Select（Radix）：受控、可主题化、与全站浮层同一套质感。
+  #    只认真正的 JSX：先剔掉注释行，否则"改用 Select 而不是原生 <select>"这类说明文字也被拦。
+  hits="$(printf '%s' "$added" | grep -vE '^[[:space:]]*[{]?(//|/\*|\*)' | grep -nE '<select[[:space:]>]' || true)"
+  if [ -n "$hits" ]; then
+    echo "✗ [原生 select] $f — 下拉列表由系统渲染、CSS 管不到（半透明、不跟随主题），改用 @/components/ui/Select（DESIGN.md · Components）"
+    printf '%s\n' "$hits" | sed 's/^/      /'
+    block=$((block + 1))
+  fi
+
+  # ── BLOCK 6：手写浮层。弹窗 / 下拉 / 气泡统一走 ui/ 下的 Popover、DropdownMenu、
+  #    Select、Dialog、Modal、Sheet、SideSheet、Tooltip——它们统一了磨砂玻璃质感、
+  #    z-index 层级、点击外部关闭、ESC 关闭与焦点管理。
+  #    自写的浮层每次都要重新踩一遍：背景透读、层级压不住、键盘出不去
+  #    （2026-09-03 需求方原话「每次浮窗都有问题，每次都要改」）。
+  #    判据：新增行里出现 popover/dropdown/modal 类命名 + position:absolute/fixed 定位，
+  #    且整个文件没有引用 ui/ 的任何浮层组件。
+  #    `-modal` 不能裸写：`modality-bar`（模态导航）会被它命中，加上后缀边界排除。
+  hits="$(printf '%s' "$added" | grep -vE '^[[:space:]]*[{]?(//|/\*|\*)' | grep -niE 'className=.[^"'"'"']*(popover|dropdown|-modal([^a-z]|$)|-dialog|flyout|tooltip)' || true)"
+  if [ -n "$hits" ] && ! printf '%s' "$content" | grep -qE "from ['\"]@/components/ui/(Popover|DropdownMenu|Select|Dialog|Modal|Sheet|SideSheet|Tooltip|Combobox|ConfirmModal)"; then
+    echo "⚠ [疑似手写浮层] $f — 弹窗/下拉/气泡走 @/components/ui 下的 Popover / DropdownMenu / Select / Dialog（统一玻璃质感 + 层级 + 外部点击与 ESC 关闭），别自己定位（DESIGN.md · Components）"
+    printf '%s\n' "$hits" | sed 's/^/      /'
+    warn=$((warn + 1))
+  fi
+
+  # ── WARN 7：手写 tab / 分段控件。走 @/components/ui/Tabs 的 underline（导航）或
+  #    pills（分段）变体——它管掉了 aria-selected / role=tablist、键盘左右切换、
+  #    选中态与下划线动画。手搓的每次都少一样，最常见的是键盘不可用。
+  hits="$(printf '%s' "$added" | grep -vE '^[[:space:]]*[{]?(//|/\*|\*)' | grep -niE 'className=.[^"'"'"']*(-tabs?([^a-z]|$)|tab-(list|item|bar)|segmented)' || true)"
+  if [ -n "$hits" ] && ! printf '%s' "$content" | grep -qE "from ['\"]@/components/ui/Tabs"; then
+    echo "⚠ [疑似手写 tab] $f — 导航/分段切换走 @/components/ui/Tabs（underline / pills 两个变体），它带 role=tablist + 键盘左右切换 + 选中态动画（DESIGN.md · Components）"
+    printf '%s\n' "$hits" | sed 's/^/      /'
+    warn=$((warn + 1))
+  fi
+
+  # ── WARN 8：接口文本直接渲染、既不截断也不给 title。
+  #    模型名、厂商名、描述这类长度由数据决定的字段，在固定宽度的列/卡片里必然溢出：
+  #    「Claude Fable 5.1 (Adaptive Reasoning, Max Effort, Default Fallback)」70 个字符。
+  #    要么单行截断 + title 悬浮看全名，要么 line-clamp，不能放任它换行把行高撑乱
+  #    （2026-09-03 需求方原话「很多文字加上很丑会换行」）。
+  #    判据：同一行里把 .name/.description 这类字段塞进标签，且整行没有 title=、
+  #    没有 truncate / line-clamp / OverflowTip。
+  #    正则要求 `>{x.name}<` 这种「作为子节点渲染」的形态，避免把 key={model.name}、
+  #    xLabel={axis.label} 这类 props 也算进来。
+  hits="$(printf '%s' "$added" | grep -vE '^[[:space:]]*[{]?(//|/\*|\*)' | grep -nE '>\{[a-zA-Z_.]*\.(name|display_name|description)\}<' | grep -vE 'title=|truncate|line-clamp|OverflowTip|text-ellipsis|sr-only' || true)"
+  if [ -n "$hits" ]; then
+    echo "⚠ [长文本无溢出兜底] $f — 名称/描述这类长度由数据决定的字段，需单行截断 + title（或 line-clamp / <OverflowTip>），否则真实数据下会换行撑乱行高（DESIGN.md · Typography）"
+    printf '%s\n' "$hits" | sed 's/^/      /'
+    warn=$((warn + 1))
+  fi
+
 done <<EOF
 $file_list
 EOF

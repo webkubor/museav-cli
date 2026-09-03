@@ -662,6 +662,15 @@ export function dualPriceText(model: CatalogModelItem): string {
 }
 
 /** 是否付费模型：只认服务端显式限免标记 + 价格字段，不做其它推断（§9.1：价格为 0 但未标 free 的仍按付费处理） */
+/**
+ * 余额拦截条文案用：只有明确标了免费角标的模型才走「免费模型」场景文案。
+ * 与 isPaidModel 的区别：未配价（无 pricing / price_tiers）的模型 isPaidModel 返回 false，
+ * 但它并不是免费模型，套「免费模型需先充值」文案会误导（shared/modelgo_prd#833 复验 INFO-3）。
+ */
+export function isFreeModel(model: CatalogModelItem): boolean {
+  return Boolean(model.promotion?.free)
+}
+
 export function isPaidModel(model: CatalogModelItem): boolean {
   if (model.promotion?.free) return false
   if ((model.price_tiers ?? []).some((tier) => parseFloat(tier.price) > 0)) return true

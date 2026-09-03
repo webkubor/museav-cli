@@ -12,7 +12,7 @@ import {
   attachmentLimitLabel,
   modelSupportsAttachment,
   ATTACHMENT_LIMITS,
-  isPaidModel,
+  isFreeModel,
 } from '../models/model-experience-data'
 import { ExperienceBalanceNotice } from '../models/ExperienceBalanceNotice'
 import { TaskFileDropZone } from '../models/components/TaskFileDropZone'
@@ -29,7 +29,7 @@ export function CompareSharedComposer({ ctx }: { ctx: ModelsCompareContext }) {
       {/* 需求方 #833（1.0.6）：余额为 0 时免费/付费模型一律锁定；全列免费才用免费模型场景文案 */}
       {ctx.syncInput && ctx.isBalanceZero && columns.length > 0 && (
         <ExperienceBalanceNotice
-          free={columns.every((c) => !isPaidModel(c.model))}
+          free={columns.every((c) => isFreeModel(c.model))}
           lockedModelCount={columns.length}
         />
       )}

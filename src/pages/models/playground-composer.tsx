@@ -9,7 +9,7 @@ import {
   attachmentLimitLabel,
   categoryPlaceholder,
   isOfflineModel,
-  isPaidModel,
+  isFreeModel,
   type ExperienceCategoryKey,
   type ExperienceTaskType,
 } from './model-experience-data'
@@ -84,7 +84,7 @@ export function PlaygroundComposer({
           均锁定发送，按场景引导充值（文案与充值入口见 ExperienceBalanceNotice） */}
       {isBlockedByBalance && (
         <ExperienceBalanceNotice
-          free={!!selectedModel && !isPaidModel(selectedModel)}
+          free={!!selectedModel && isFreeModel(selectedModel)}
           lockedModelCount={1}
         />
       )}

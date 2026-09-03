@@ -20,6 +20,19 @@ export interface ReferralStats {
   rewardBalance: string
 }
 
+/**
+ * 返佣档位阶梯中的一档（完整阶梯，来自运营端「返佣规则」配置）。
+ * 阶梯是运营可改的 DB 数据（名称/比例/门槛都不固定），前端不得写死任何一档。
+ */
+export interface ReferralTierRule {
+  /** 档位名，同时是档位的身份标识 */
+  name: string
+  /** 返佣比例（百分比，如 13 表示 13%） */
+  rate: number
+  /** 晋级门槛：累计邀请消费下界（金额字符串） */
+  threshold: string
+}
+
 export interface ReferralTier {
   /** 当前档位名 */
   name: string

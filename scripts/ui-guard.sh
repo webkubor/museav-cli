@@ -256,6 +256,20 @@ while IFS= read -r f; do
     warn=$((warn + 1))
   fi
 
+  # ── 规则：图标语义 vs 语义色 不一致（warn，观察期）───────────────────────
+  #   由来 2026-09-02：免费额度提示条用 LuInfo 配 mg-warning，需求方反馈「像
+  #   warning，有点吓人」。写代码时图标选对了（这是告知信息），颜色却走了另一套
+  #   推理（限频→限制→风险→warning），两个判断没交叉校验。本文件原有规则只查
+  #   形式违规，而 mg-warning 是合法 token、形式完全合规，所以拦不住语义错配。
+  #   先定 warn 不阻断：这类规则误报会让门禁失去公信力（LuCircleAlert 配
+  #   mg-danger 做失败提示是对的），观察一段确认无误报后再转 block。
+  hits="$(python3 "$(dirname "$0")/check-icon-color-semantics.py" "$f" 2>/dev/null || true)"
+  if [ -n "$hits" ]; then
+    echo "⚠ [图标与配色语义不一致] $f — 语义色的选择见 DESIGN.md · Semantic Colors"
+    printf '%s\n' "$hits" | sed 's/^/      /'
+    warn=$((warn + 1))
+  fi
+
 done <<EOF
 $file_list
 EOF

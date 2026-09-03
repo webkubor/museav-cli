@@ -20,7 +20,7 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import { getRequestErrorMessage } from '@/lib/request-error-message'
-import { uploadSupportAttachment } from '@/services/support'
+import { supportGateway } from './gateway'
 import {
   feedbackIssueTypes,
   type FeedbackDraft,
@@ -91,7 +91,7 @@ export function FeedbackForm({ draft, errors, onChange, onSubmit }: FeedbackForm
     setUploadError(null)
     setUploading(true)
     try {
-      const attachment = await uploadSupportAttachment(file)
+      const attachment = await supportGateway.uploadAttachment(file)
       onChange({ attachmentId: attachment.id, attachmentName: attachment.file_name || file.name })
     } catch (error) {
       if (fileRef.current) fileRef.current.value = ''

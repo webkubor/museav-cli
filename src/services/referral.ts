@@ -11,6 +11,7 @@ import type { CursorPage } from '@/types'
 import type {
   ReferralStats,
   ReferralTier,
+  ReferralTierRule,
   ReferralInvitee,
   ReferralCommissionRecord,
 } from '@/pages/referral/referral-data'
@@ -21,6 +22,11 @@ import type {
 export interface ReferralOverview {
   stats: ReferralStats
   tier: ReferralTier
+  /**
+   * 完整返佣档位阶梯（升序）。后端（web-api referral BFF）尚未下发该字段，
+   * 见 shared/modelgo_prd#932；缺省时页面只按 tier 的当前档 + 下一档渲染，绝不回退到写死常量。
+   */
+  tiers?: ReferralTierRule[]
   inviteLink: string
   inviteCode: string
 }

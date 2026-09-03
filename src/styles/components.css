@@ -750,11 +750,23 @@ body:not([theme-mode='dark']) header.mg-glass-bar-strong {
   filter: drop-shadow(0 0 8px currentColor) !important;
 }
 
-.mg-toast-success .mg-toast-icon { color: var(--mg-success-text, #10b981) !important; }
-[data-theme='dark'] .mg-toast-success .mg-toast-icon,
-[theme-mode='dark'] .mg-toast-success .mg-toast-icon,
-.dark .mg-toast-success .mg-toast-icon { color: #1DC39B !important; }
+/* Toast 图标色走 --mg-toast-*-icon（token 包里已指向 --mg-success-text 等，
+   按主题自动切）。合并时丢弃了本地那版 `var(--mg-success-text, #10b981)` 的写法：
+   裸 hex 兜底会被硬编码门禁拦，而且它另写的深色特例在 token 已按主题切的前提下是多余的。 */
+.mg-toast-success .mg-toast-icon { color: var(--mg-toast-success-icon) !important; }
+.mg-toast-warning .mg-toast-icon { color: var(--mg-toast-warning-icon) !important; }
+.mg-toast-error .mg-toast-icon { color: var(--mg-toast-error-icon) !important; }
+.mg-toast-info .mg-toast-icon { color: var(--mg-toast-info-icon) !important; }
 
-.mg-toast-info .mg-toast-icon { color: var(--mg-info-text, #3b82f6) !important; }
-.mg-toast-warning .mg-toast-icon { color: var(--mg-warning-text, #f59e0b) !important; }
-.mg-toast-error .mg-toast-icon { color: var(--mg-error-text, #f43f5e) !important; }
+/* ── 智能助手：回答生成中的三点动画 ────────────────────────────
+   旧实现把 @keyframes 写在组件里的内联 <style> 标签里，每次挂载都往
+   文档插一遍。挪到这里由样式表统一收口；每个点的 animation-delay 仍在
+   组件上按序号给（那是逐元素的编排值，不是设计 token）。 */
+.mg-cs-dot {
+  animation: mg-cs-dot-bounce 1.2s ease-in-out infinite;
+}
+
+@keyframes mg-cs-dot-bounce {
+  0%, 80%, 100% { transform: scale(1); opacity: 0.4; }
+  40% { transform: scale(1.4); opacity: 1; }
+}

@@ -56,69 +56,62 @@
      xs=6 / sm=8 / md=14 / lg=18 / pill=999）。1:1 复刻要求值不变，
      所以在本页作用域内声明成有名字的变量：视觉与原型一致，同时不留裸值。
      若将来放弃 1:1、改为对齐控制台刻度，只需改这几行。 */
-  --discovery-radius-2xs: 4px;
-  --discovery-radius-xs: 5px;
-  --discovery-radius-sm: 6px;
-  --discovery-radius-md: 7px;
-  --discovery-radius-lg: 8px;
-  --discovery-radius-xl: 9px;
-  --discovery-radius-2xl: 10px;
+  /* 圆角一律走全局的尺，页面不再自造第二套。
+     DESIGN.md：「所有视觉值收口到 tokens.css 一个源（圆角已物理单尺）」，
+     并明确禁止「在页面局部新建另一套 spacing/radius/font 变量」。
+
+     这里原本是 4/5/6/7/8/9/10px 七档，每档差 1px——从原型逐像素移植留下的产物。
+     1px 的差别肉眼分不出，却让页面有了七种「规格」，尺度失去节奏。全局的档位是
+     6 → 8 → 14 → 18 → 24，跳跃明确，靠过去后本页只落在 xs / sm 两档上，
+     视觉差异 1–2px。sm(6px) 与 lg(8px) 两个档位本来就无人使用，一并删除。 */
+  --discovery-radius-2xs: var(--mg-radius-xs);
+  --discovery-radius-xs: var(--mg-radius-xs);
+  --discovery-radius-md: var(--mg-radius-sm);
+  --discovery-radius-xl: var(--mg-radius-sm);
+  --discovery-radius-2xl: var(--mg-radius-sm);
+  /* 全局没有 50%——SVG 圆点与头像需要按自身尺寸取圆，保留 */
   --discovery-radius-circle: 50%;
 
   /* 深底（tooltip / 柱条内标签）上的文字，原型用纯白 */
   --discovery-on-dark: #fff;
 
-  /* 原型的两个绿：优选区标签、增长率数字。刻意不接 --mg-success ——
-     那是状态语义色（成功/在线），这两处是「更优 / 增长」的图表语义，
-     混用会让 design-tokens 之后改 success 时把图表也带偏。 */
+  /* 图表里的两个绿：优选区标签、增长率数字。
+     **按国际惯例：增长用绿**（2026-09-03 确认）。刻意不接这两个：
+     · --mg-success 是状态语义色（成功/在线），design-tokens 改它时会把图表带偏；
+     · --mg-trend-up/-down 按 market 切换（国内涨红跌绿、海外涨绿跌红），
+       而这里的「用量增长」不是股市涨跌，两个市场都该是绿。
+     所以保留本页私有值——这是有理由的私有 token，不要「为了消灭私有 token」去合并。 */
   --discovery-advantage-text: #35794a;
   --discovery-growth-text: #25845e;
 
-  /* ── 动效时长：三档 ──────────────────────────────────────────
-     原型散着用了 120/140/160/180/200ms 五个中间值，cs ui 实测全页 11 种时长
-     未收敛（参照站 7 种）。收敛成三档，语义分明：
-
-       instant 100ms — hover / 跟手反馈。参照站的主力档就是 0.1s，
-                       快到几乎无感，是「跟手」而不是「动画」
-       base    180ms — 状态切换、展开收起、重排
-       enter   420ms — 数据到达后的入场，唯一允许被看见的动画。三张图改走 Recharts 后
-                       入场由它的 animationDuration 驱动，值在 discovery-charts.tsx 的
-                       ENTER_DURATION，档位真源仍是这一行
-
-     旧变量名保留并映射到新档位，避免散落各处的引用点逐个改。 */
-  --discovery-dur-instant: 100ms;
-  --discovery-dur-base: 180ms;
-  --discovery-dur-enter: 420ms;
+  /* 动效时长走全局档位，不再自造。
+     tokens.css 已有 instant 0.1s / fast 0.15s / base 0.25s / slow 0.4s 四档，
+     本页原先另立了 instant 100ms / base 180ms / enter 420ms —— 其中 instant 与全局
+     同值，另外两档只差几十毫秒，属于重复造尺。
+     旧别名（snap/quick/swift/ease）保留并指向新档，避免散落各处的引用点逐个改。 */
+  --discovery-dur-instant: var(--mg-duration-instant);
+  --discovery-dur-base: var(--mg-duration-fast);
+  --discovery-dur-enter: var(--mg-duration-slow);
 
   --discovery-dur-snap: var(--discovery-dur-instant);
   --discovery-dur-quick: var(--discovery-dur-instant);
   --discovery-dur-swift: var(--discovery-dur-instant);
   --discovery-dur-ease: var(--discovery-dur-base);
 
-  /* ── 补一层最弱文字灰阶 ──────────────────────────────────────
-     cs ui 实测本页文字灰阶只有 6 层（参照站 16 层），主次压不出来。本页原本只用
-     mg-text-1/2/3 三档，图表里的「坐标刻度」「来源标注」这类元信息和真正的数据
-     共用 text-3，重复出现时形成噪声。补一档比 text-3 更弱的，专给它们用。
-     只新增这一档——把 text-1/2/3 换个名字重新声明没有增加任何层次。 */
-  --discovery-text-faint: color-mix(in srgb, var(--mg-text-3) 62%, transparent);
 
-  /* ── 原型专属阴影 ────────────────────────────────────────────
-     控制台的 --mg-shadow-* 是另一套投影语言（更大扩散、带品牌染色），
-     换上去卡片浮起感与原型明显不同。1:1 要求保留原值。 */
-  --discovery-shadow-chip: 0 3px 9px color-mix(in srgb, #31557f 12%, transparent);
-  /* 分段控件选中态的贴边投影，比 chip 更近更浅（原型 runtime-range-switch） */
-  --discovery-shadow-segment: 0 1px 3px rgba(24, 34, 48, 0.12);
-  --discovery-shadow-tooltip: 0 8px 20px rgba(35, 52, 84, 0.16);
-  --discovery-shadow-popover: 0 16px 32px rgba(34, 53, 82, 0.16);
-  --discovery-shadow-float: 0 10px 26px rgba(25, 43, 75, 0.16);
-  /* 双层：大扩散 + 近距贴边，原型用在模型筛选 popover */
-  --discovery-shadow-overlay: 0 16px 36px rgba(43, 63, 98, 0.16), 0 2px 8px rgba(43, 63, 98, 0.06);
+  /* 阴影走全局档位。原先这里自持 6 组字面值，其中 chip 与 tooltip 从未被引用。
+     全局的 --mg-shadow-{sm,md,lg} 是档位真源且按主题切，自持字面值在深色下压不住。 */
+  --discovery-shadow-segment: var(--mg-shadow-sm);
+  --discovery-shadow-popover: var(--mg-shadow-lg);
+  --discovery-shadow-float: var(--mg-shadow-md);
+  --discovery-shadow-overlay: var(--mg-shadow-lg);
 }
 
 /* ===== Model discovery ===== */
 
 .model-discovery-page {
-  --discovery-control-radius: 7px;
+  /* 控件圆角同样走全局档（原 7px，与 sm 差 1px） */
+  --discovery-control-radius: var(--mg-radius-sm);
   color: var(--text);
   margin: 0 auto;
   max-width: 1480px;

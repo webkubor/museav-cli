@@ -16,10 +16,18 @@
   padding: 26px 28px 48px;
 }
 
+/* 原生 button / select / input 默认用系统字体、不继承页面字体，所以这里要接回来。
+   ⚠️ 只能重置 font-family，**不能用 `font: inherit` 简写** —— 那会把 font-size /
+   font-weight / line-height 一起重置成继承值，而这条选择器的权重（类 + 元素）高于
+   控制台组件自带的 `.mg-text-body`（单类），结果把本页所有 Button / Select / Input
+   的字号击穿成继承来的 16px（2026-09-03 需求方在「完整指标榜单」的筛选条上发现：
+   两个 ui/Select 显示 16px，而显式写了 font-size 的自写筛选器是 12px，同一行三种脸。
+   实测本页 44 个控件里有 12 个被击穿）。字号交给各自的组件类与 --discovery-fs-* 档位。 */
 .model-discovery-page button,
 .model-discovery-page select,
 .model-discovery-page input {
-  font: inherit;
+  font-family: inherit;
+  letter-spacing: inherit;
 }
 
 .model-discovery-head {

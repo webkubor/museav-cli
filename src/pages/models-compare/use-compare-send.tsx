@@ -28,6 +28,7 @@ import {
   type ExperienceTaskType,
 } from '../models/model-experience-data'
 import { isAbortError } from 'ai-sse-kit'
+import { detectFreeModelGate, freeModelGateMessage } from '../models/free-model-gate'
 import { trackModelRun, buildDialogueMetrics, buildMediaMetrics, pollMediaTask } from '../models/experience-run'
 import type { DispatchAttachment } from './models-compare-utils'
 import type { CompareState } from './use-models-compare-state'
@@ -56,6 +57,7 @@ export function useCompareSend(state: CompareState) {
     patchAssistant,
     refreshHistorySessions,
     isBalanceZero,
+    setColumnFreeGate,
   } = state
 
   /** 单列发送——按该列模型的一级类别分叉（§6.2/§7.3/§7.9）：对话类走 SSE 流式，
@@ -65,6 +67,7 @@ export function useCompareSend(state: CompareState) {
     if (!columns) return
     const column = columns[idx]
     if (!column || column.streaming || !prompt) return
+    setColumnFreeGate(column.conversationId, null)
     const category = resolveModelCategory(column.model)
     if (category === 'dialogue') {
       await sendDialogueOne(idx, prompt, dispatchId, attachment)
@@ -123,8 +126,11 @@ export function useCompareSend(state: CompareState) {
     } catch (err) {
       if (isAbortError(err)) return
       const errorCode = (err as { data?: { code?: string } } | undefined)?.data?.code
+      const gate = detectFreeModelGate(err)
+      setColumnFreeGate(column.conversationId, gate)
       const display = resolveApiErrorDisplay(err)
-      patchAssistant(idx, { ...errorDisplayFields(display), error: `${t('modelsExperience.requestFailed')}${display.message}` })
+      const bubble = gate ? { message: freeModelGateMessage(gate), retryable: false } : display
+      patchAssistant(idx, { ...errorDisplayFields({ ...display, ...bubble }), error: `${t('modelsExperience.requestFailed')}${bubble.message}` })
       trackModelRun({ modelId: column.model.model_id, failed: true, totalMs: Date.now() - startedAt, errorCode })
     } finally {
       updateColumn(idx, { streaming: false })
@@ -192,8 +198,11 @@ export function useCompareSend(state: CompareState) {
         free: spend === 0,
       })
     } catch (err) {
+      const gate = detectFreeModelGate(err)
+      setColumnFreeGate(column.conversationId, gate)
       const display = resolveApiErrorDisplay(err)
-      patchAssistant(idx, { ...errorDisplayFields(display), error: `${t('modelsExperience.requestFailed')}${display.message}` })
+      const bubble = gate ? { message: freeModelGateMessage(gate), retryable: false } : display
+      patchAssistant(idx, { ...errorDisplayFields({ ...display, ...bubble }), error: `${t('modelsExperience.requestFailed')}${bubble.message}` })
       const errorCode = (err as { data?: { field_errors?: Array<{ code?: string }> } } | undefined)?.data?.field_errors?.[0]?.code
       trackModelRun({ modelId: column.model.model_id, failed: true, totalMs: Date.now() - startedAt, errorCode })
     } finally {

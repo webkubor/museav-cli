@@ -1180,10 +1180,10 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                 快照，日期会停在旧值——所以这里必须展示接口回传的真实日期。
                 挂在副标题末尾而不是标题旁：它是数据的时效说明，和副标题同属元信息，
                 贴在 44px 大标题右边只会像一块补丁。 */}
-            <em className="model-discovery-snapshot">{snapshotDate ? `数据快照 ${snapshotDate}` : "数据快照加载中"}</em>
+            <span className="model-discovery-snapshot">{snapshotDate ? `数据快照 ${snapshotDate}` : "数据快照加载中"}</span>
           </p>
         </div>
-        <Button onClick={onViewAllModels} size="sm" type="button" variant="outline">
+        <Button onClick={onViewAllModels} size="sm" type="button" variant="brand-outline">
           返回模型广场<LuArrowUpRight size={13} />
         </Button>
       </header>

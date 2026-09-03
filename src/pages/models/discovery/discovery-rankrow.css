@@ -52,21 +52,23 @@
 
 .model-discovery-source-tag {
   /* 跟在表头文字后面，需要自己撑开间距——它所在的 th 是普通行内流，
-     没有 flex gap 可用（表头去掉那条死的 flex 规则后暴露出来的，2026-09-03） */
+     没有 flex gap 可用（表头去掉那条死的 flex 规则后暴露出来的，2026-09-03）。
+     形状走 pill 与行内 access chip 一致：同表同形态，"Artificial Analysis" 与
+     "ModelGo.ai 已接入" 视觉信号统一（fix: 2026-09-03 P0-2 chip 不统一）。 */
   margin-left: 6px;
   align-items: center;
   background: color-mix(in srgb, var(--accent) 7%, var(--panel));
   border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--line));
-  border-radius: var(--discovery-radius-2xs);
+  border-radius: var(--mg-radius-pill);
   color: var(--text-tertiary);
   display: inline-flex;
   flex: none;
   font-size: var(--discovery-fs-micro);
   font-style: normal;
   font-weight: 560;
-  height: 17px;
+  justify-self: start;
   line-height: 1;
-  padding: 0 5px;
+  padding: 3px 7px;
   white-space: nowrap;
 }
 

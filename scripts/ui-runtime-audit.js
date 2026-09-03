@@ -108,6 +108,18 @@ function __uiAudit() {
       [...new Set(crowdedIn)].slice(0, 6))
   }
 
+  /* 页面级尺度失控：上面按容器判的是「同处一张卡片里分不清」，但还有一种情况是
+     跨容器各写各的、全页攒出十几档字号——单看每个容器都合理，整页却没有统一尺度。
+     判据借鉴 cs ui：档数多**且**不集中才算问题（档多但 90% 落在前四档，说明主力
+     清晰、其余是零星特例，可以接受）。 */
+  const totalText = scale.reduce((n, [, c]) => n + c, 0)
+  const top4 = [...scale].sort((a, b) => b[1] - a[1]).slice(0, 4).reduce((n, [, c]) => n + c, 0)
+  const concentration = totalText ? top4 / totalText : 1
+  if (scale.length > 8 && concentration < 0.85) {
+    add('P2', '字号尺度过多', `全页 ${scale.length} 档字号，前 4 档只覆盖 ${Math.round(concentration * 100)}% —— 没有统一尺度`,
+      [scale.map(([px, n]) => `${px}px×${n}`).join(' ')])
+  }
+
   /* ── 4. 浮层背景透读。玻璃/半透明浮层压不住底下的字 ── */
   const floats = [...document.querySelectorAll('*')].filter((el) => {
     const cs = getComputedStyle(el)

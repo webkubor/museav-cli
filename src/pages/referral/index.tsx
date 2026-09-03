@@ -31,16 +31,53 @@ import {
 } from '@/services/referral'
 
 import type { ReferralCommissionRecord, ReferralInvitee, ReferralStats } from './referral-data'
+import type { ReferralOverview } from '@/services/referral'
 
 // 金额展示统一走 @/lib/utils 的 formatMoney（全站单一口径，含亚分级 <¥0.0001 特例，#273）。
 
 type TabKey = 'invitees' | 'commissions'
 
-const REFERRAL_TIER_RULES = [
-  { nameKey: 'billing.referral.tiers.growth', threshold: 0, rate: 10 },
-  { nameKey: 'billing.referral.tiers.core', threshold: 50000, rate: 13 },
-  { nameKey: 'billing.referral.tiers.strategic', threshold: 200000, rate: 15 },
-] as const
+/** 档位阶梯卡的一行；threshold 缺省表示后端没给该档门槛（只有当前档会这样） */
+interface TierLadderRow {
+  name: string
+  rate: number
+  threshold?: string
+  current: boolean
+}
+
+/**
+ * 档位阶梯只认接口数据（#932）：档位名/比例/门槛是运营端可改的 DB 配置，
+ * 之前写死的「成长/核心/战略 10%/13%/15%」与生产实际配置不一致，等于向用户展示错误的返佣承诺。
+ * - 后端下发完整 tiers ⇒ 全量按升序渲染；
+ * - 未下发 ⇒ 退化为 tier 里的当前档 + 下一档（当前档门槛后端未给，留空）；
+ * - 连 tier 都没有 ⇒ 空数组，卡片不渲染。绝不回退到前端常量。
+ */
+function buildTierLadder(overview?: ReferralOverview): TierLadderRow[] {
+  const currentName = overview?.tier?.name ?? ''
+  const rules = (overview?.tiers ?? []).filter((r) => r?.name)
+  if (rules.length > 0) {
+    return [...rules]
+      .sort((a, b) => Number(a.threshold) - Number(b.threshold))
+      .map((r) => ({
+        name: r.name,
+        rate: Number(r.rate),
+        threshold: r.threshold,
+        current: r.name === currentName,
+      }))
+  }
+  const tier = overview?.tier
+  if (!tier?.name) return []
+  const rows: TierLadderRow[] = [{ name: tier.name, rate: Number(tier.rate), current: true }]
+  if (tier.nextTierName) {
+    rows.push({
+      name: tier.nextTierName,
+      rate: Number(tier.nextRate),
+      threshold: tier.nextThreshold,
+      current: false,
+    })
+  }
+  return rows
+}
 
 export default function ReferralPage() {
   const { t } = useTranslation()
@@ -60,6 +97,7 @@ export default function ReferralPage() {
     inviteRulesLink: t('billing.referral.inviteRulesLink'),
     tierTableLabel: t('billing.referral.tierTableLabel'),
     tierTableHint: t('billing.referral.tierTableHint'),
+    tierCurrent: t('billing.referral.tierCurrent'),
     rulesTitle: t('billing.referral.rulesTitle'),
     tabInvitees: t('billing.referral.tabInvitees'),
     tabCommissions: t('billing.referral.tabCommissions'),
@@ -157,6 +195,8 @@ export default function ReferralPage() {
     { key: 'commissions', label: text.tabCommissions },
   ]
 
+  const tierLadder = buildTierLadder(overview)
+
   const ruleItems = [
     t('billing.referral.ruleItem1'),
     t('billing.referral.ruleItem2'),
@@ -233,38 +273,46 @@ export default function ReferralPage() {
           />
         </FirstChargeLockGate>
 
-        {/* 档位阶梯卡 */}
-        <div className="relative overflow-hidden rounded-lg border border-mg-border bg-card-bg p-5 space-y-3">
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-brand-base/35 via-brand-base/10 to-transparent" />
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-bold text-mg-text-1">{text.tierTableLabel}</p>
-            <span className="text-xs text-mg-text-3">{text.tierTableHint}</span>
-          </div>
-          <div className="divide-y divide-mg-border/50">
-            {REFERRAL_TIER_RULES.map((tier) => {
-              return (
+        {/* 档位阶梯卡：数据全部来自接口（#932），没有数据就不渲染，不展示编造的档位 */}
+        {tierLadder.length > 0 && (
+          <div
+            data-testid="referral-tier-ladder"
+            className="relative overflow-hidden rounded-lg border border-mg-border bg-card-bg p-5 space-y-3"
+          >
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-brand-base/35 via-brand-base/10 to-transparent" />
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-bold text-mg-text-1">{text.tierTableLabel}</p>
+              <span className="text-xs text-mg-text-3">{text.tierTableHint}</span>
+            </div>
+            <div className="divide-y divide-mg-border/50">
+              {tierLadder.map((tier) => (
                 <div
-                  key={tier.nameKey}
+                  key={tier.name}
                   className="flex items-center justify-between py-2.5 px-3 -mx-3 rounded-lg transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-mg-text-2">
-                      {t(tier.nameKey)}
-                    </span>
+                    <span className="text-sm font-semibold text-mg-text-2">{tier.name}</span>
+                    {tier.current && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-bold border bg-[var(--mg-brand-selected-bg)] text-[var(--mg-brand-base)] border-[var(--mg-state-selected-border)]">
+                        {text.tierCurrent}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="text-xs text-mg-text-3">
-                      {t('billing.referral.tierSpendThreshold', { amount: `${symbol}${tier.threshold.toLocaleString()}` })}
-                    </span>
-                    <span className="text-sm font-bold tabular-nums text-mg-text-1">
-                      {tier.rate}%
-                    </span>
+                    {tier.threshold !== undefined && (
+                      <span className="text-xs text-mg-text-3">
+                        {t('billing.referral.tierSpendThreshold', {
+                          amount: `${symbol}${Number(tier.threshold).toLocaleString()}`,
+                        })}
+                      </span>
+                    )}
+                    <span className="text-sm font-bold tabular-nums text-mg-text-1">{tier.rate}%</span>
                   </div>
                 </div>
-              )
-            })}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* 分润规则 */}
@@ -348,6 +396,7 @@ interface TextCopy {
   inviteRulesLink: string
   tierTableLabel: string
   tierTableHint: string
+  tierCurrent: string
   rulesTitle: string
   tabInvitees: string
   tabCommissions: string

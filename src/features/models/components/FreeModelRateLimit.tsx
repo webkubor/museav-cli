@@ -62,11 +62,11 @@ export function FreeModelRateLimit({ model, className = '' }: { model: RateLimit
   return (
     <p
       role="status"
-      className={`flex items-start gap-1.5 rounded-md border border-mg-warning/20 bg-mg-warning/5 px-3 py-2 mg-text-caption leading-5 text-mg-text-2 ${className}`}
+      className={`flex items-start gap-1.5 rounded-md border border-mg-info/20 bg-mg-info/5 px-3 py-2 mg-text-caption leading-5 text-mg-text-2 ${className}`}
     >
-      <LuInfo size={14} className="mt-0.5 shrink-0 text-mg-warning" />
+      <LuInfo size={14} className="mt-0.5 shrink-0 text-mg-info" />
       <span>
-        <strong className="font-semibold text-mg-warning">{t('modelsExperience.freeQuota')}</strong>
+        <strong className="font-semibold text-mg-info">{t('modelsExperience.freeQuota')}</strong>
         {/* 分隔符跟着语言走：中文全角「；」、英文半角「; 」。硬编码全角分号会让
             英文文案变成 "rate limits apply；Once a limit..." */}
         {' '}{limits}{t('modelsExperience.rateLimit.separator')}{waitText}

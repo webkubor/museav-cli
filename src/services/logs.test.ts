@@ -42,6 +42,58 @@ describe('listCallLogs', () => {
   })
 })
 
+describe('listCallLogs 的 call_log_id 去重（gitlab#938）', () => {
+  beforeEach(() => {
+    getMock.mockReset()
+  })
+
+  // 根因：call_log_id 缺失时回退用 request_id，但 request_id 由客户端 X-Request-Id
+  // 传入、不保证同页唯一 —— 两次真实调用（trace_id 不同）撞同一个 request_id 时，
+  // 若不去重会产出重复的 call_log_id，成为列表 React key 后导致协调时留下孤儿 DOM 行，
+  // 换筛选条件后仍残留、穿透后续所有筛选（issue 复现的核心现象）。
+  it('后端未回 call_log_id 且 request_id 同页重复时，映射结果的 call_log_id 互不相同', async () => {
+    getMock.mockResolvedValue({
+      items: [
+        {
+          request_id: 'gw_pytest_dup',
+          trace_id: '3ba41e1833553decff5768159a2db62d',
+          started_at: '2026-09-02T06:42:05.000Z',
+          status: 'succeeded',
+        },
+        {
+          request_id: 'gw_pytest_dup',
+          trace_id: '40d3779d8916483b7cb1cefd6319dd6b',
+          started_at: '2026-09-02T06:42:06.000Z',
+          status: 'failed',
+        },
+      ],
+      limit: 15,
+    })
+
+    const result = await listCallLogs({ limit: 15 })
+
+    const ids = result.items.map((item) => item.call_log_id)
+    expect(new Set(ids).size).toBe(ids.length)
+    // request_id 本身不受影响，仍然如实反映后端字段（去重只作用于 UI key）。
+    expect(result.items[0].request_id).toBe('gw_pytest_dup')
+    expect(result.items[1].request_id).toBe('gw_pytest_dup')
+  })
+
+  it('call_log_id 由后端提供时原样使用，不做多余改写', async () => {
+    getMock.mockResolvedValue({
+      items: [
+        { call_log_id: 'row-1', request_id: 'gw_a', started_at: '2026-09-02T00:00:00.000Z' },
+        { call_log_id: 'row-2', request_id: 'gw_b', started_at: '2026-09-02T00:00:01.000Z' },
+      ],
+      limit: 15,
+    })
+
+    const result = await listCallLogs({ limit: 15 })
+
+    expect(result.items.map((item) => item.call_log_id)).toEqual(['row-1', 'row-2'])
+  })
+})
+
 describe('getLogsSummary', () => {
   beforeEach(() => {
     getMock.mockReset()

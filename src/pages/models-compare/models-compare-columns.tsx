@@ -151,8 +151,11 @@ function CompareColumnCard({ ctx, column, idx }: { ctx: ModelsCompareContext; co
         }
       />
 
-      {/* 需求方 #833（1.0.6）：余额为 0 时免费/付费模型一律锁定，按模型免费与否分场景文案 */}
-      {ctx.isBalanceZero && (
+      {/* 需求方 #833（1.0.6）：余额为 0 时免费/付费模型一律锁定，按该列模型是否免费选文案。
+          只在独立输入态渲染——同步输入态只有底部共享 composer 一条提示（原型 App.tsx:20219/20262
+          的 composer 归属：!synchronized 才归列，synchronized 归 playground-shared-composer），
+          否则 2 列 + 底部会叠出 3 条同文案提示。 */}
+      {!ctx.syncInput && ctx.isBalanceZero && (
         <ExperienceBalanceNotice free={!isPaidModel(column.model)} lockedModelCount={1} />
       )}
 

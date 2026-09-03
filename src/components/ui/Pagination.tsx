@@ -44,6 +44,11 @@ interface PageNumberPaginationProps {
   onPageChange: (page: number) => void
   loading?: boolean
   /**
+   * 覆写左侧计数文案。默认「共 N 条」；列表有明确量词时传完整文案，
+   * 例如模型发现的完整指标榜单在原型里是「共 N 个模型」。
+   */
+  totalLabel?: string
+  /**
    * 渲染可点页码（← 1 2 3 … 10 →）而不是「上一页 / X / Y / 下一页」。
    * 用于 PRD 原型里就是页码列表的场景（模型发现的完整指标榜单）；
    * 页数多时按 siblingCount=1 折叠，避免几十个按钮把工具条撑爆。
@@ -107,7 +112,7 @@ export function Pagination(props: PaginationProps) {
     if (props.pageNumbers) {
       return (
         <div className={WRAP}>
-          <span className="mg-text-caption text-mg-text-3">{t('common.pagination.total', { count: total })}</span>
+          <span className="mg-text-caption text-mg-text-3">{props.totalLabel ?? t('common.pagination.total', { count: total })}</span>
           <nav aria-label={t('common.pagination.navAria')} className="flex items-center gap-1">
             <Button
               aria-label={t('common.pagination.prev')}
@@ -148,7 +153,7 @@ export function Pagination(props: PaginationProps) {
 
     return (
       <div className={WRAP}>
-        <span className="mg-text-caption text-mg-text-3">{t('common.pagination.total', { count: total })}</span>
+        <span className="mg-text-caption text-mg-text-3">{props.totalLabel ?? t('common.pagination.total', { count: total })}</span>
         <div className="flex items-center gap-2">
           <Button
             size="sm"

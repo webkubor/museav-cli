@@ -653,13 +653,15 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   const scoreAscending = Boolean(taskProfile.qualityLowerIsBetter);
   /**
    * 模型列表与总览卡来自 observer 的每日快照（v1.0.6），不再用原型自带的 mock。
-   * `apiTotal` 是该指标下可排序的模型总数（随 metric 变化），页面上「共 N 个模型」
-   * 必须用它，不能用 apiModels.length —— 后者只是本次取回的前 100 条。
+   *
+   * 这里不再取 `total`：它此前用来给 Top 5 卡副标题拼「· 共 N 个模型」，而原型没有这个
+   * 字段、同一个总数在下方分页处已经出现一次，2026-09-03 按 PRD 去掉了那半句。
+   * 榜单分页的总数走 useDiscoveryTableQuery 的 `tableTotal`（那是按当前筛选条件的命中数，
+   * 与这里按 metric 的可排序总数不是同一个口径，别混用）。
    */
   const {
     models: apiModels,
     summaryCards: apiSummaryCards,
-    total: apiTotal,
     snapshotDate,
     dataType: discoveryDataType,
     isLoading: discoveryLoading,
@@ -1002,14 +1004,23 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
    * 坐标来自 analysis 接口。原先两者都取自榜单前 100 条，选择器一旦能选到第 100 名
    * 开外的模型就既没有元信息也没有坐标。
    */
-  const chartCandidates = allModelOptions.map((option) => ({
-    // 只有已接入且有 modelgo_id 的才给 id——canOpenModelDetail 据此判断能不能跳
-    id: option.integration_status === "MODELGO" && option.modelgo_id ? option.modelgo_id : undefined,
-    sourceModelId: option.source_model_id,
-    name: option.model_name,
-    provider: option.creator_name ?? "",
-    supported: option.integration_status === "MODELGO",
-  }));
+  const chartCandidates = useMemo(
+    () => allModelOptions
+      // 「仅看已接入」是页面级筛选，图表候选也要跟着收窄。原型里筛选器的数据源是
+      // 已过 scope 的 visibleModels；此前这里直接用 allModelOptions 全量，导致切到
+      // 「仅看已接入」后触发器仍显示 7 / 634、可选项里还混着没接入的模型
+      // （2026-09-03 需求方指出）。
+      .filter((option) => scope === "all" || option.integration_status === "MODELGO")
+      .map((option) => ({
+        // 只有已接入且有 modelgo_id 的才给 id——canOpenModelDetail 据此判断能不能跳
+        id: option.integration_status === "MODELGO" && option.modelgo_id ? option.modelgo_id : undefined,
+        sourceModelId: option.source_model_id,
+        name: option.model_name,
+        provider: option.creator_name ?? "",
+        supported: option.integration_status === "MODELGO",
+      })),
+    [allModelOptions, scope],
+  );
   const chartModels = chartCandidates.filter((model) => selectedModelNames.includes(model.name));
   const filteredModelOptions = chartCandidates.filter((model) => model.name.toLowerCase().includes(modelFilterSearch.trim().toLowerCase()));
   const activeXAxis = analysisXMetrics[xMetric] ?? analysisXMetrics[0];
@@ -1210,7 +1221,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
 
       <section className="model-discovery-overview">
         <article className="mg-tile model-discovery-rank-card">
-          <div className="model-discovery-card-head"><div><h2>{task} Top 5</h2><span>{taskProfile.qualityBasis}{apiTotal > 0 ? ` · 共 ${apiTotal} 个模型` : ""}</span></div></div>
+          <div className="model-discovery-card-head"><div><h2>{task} Top 5</h2><span>{taskProfile.qualityBasis}</span></div></div>
           <div className="model-discovery-rank-head"><span>#</span><span>模型</span><span>接入状态</span><span>{taskProfile.qualityLabel}<em className="model-discovery-source-tag">{metricSource}</em></span></div>
           {discoveryLoading && visibleModels.length === 0 && [0, 1, 2, 3, 4].map((i) => (
             <div className="model-discovery-rank-row" key={`skeleton-${i}`}>
@@ -1328,7 +1339,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                         {filteredModelOptions.map((model) => <button className={selectedModelNames.includes(model.name) ? "selected" : ""} key={model.name} onClick={() => toggleChartModel(model.name)} type="button"><DiscoveryModelIcon model={model.name} provider={model.provider} /><span><strong title={model.name}>{model.name}</strong><small>{model.provider}</small></span>{selectedModelNames.includes(model.name) && <LuCheck size={14} />}</button>)}
                         {filteredModelOptions.length === 0 && <em>未找到匹配模型</em>}
                       </div>
-                      <footer><button onClick={() => setSelectedModelNames([])} type="button"><LuX size={13} />清空</button><button onClick={() => setSelectedModelNames(visibleModels.map((model) => model.name))} type="button"><LuCheckCheck size={13} />全选</button><button onClick={() => setSelectedModelNames(visibleModels.slice(0, 7).map((model) => model.name))} type="button"><LuRotateCcw size={13} />恢复默认</button></footer>
+                      <footer><button onClick={() => setSelectedModelNames([])} type="button"><LuX size={13} />清空</button><button onClick={() => setSelectedModelNames(chartCandidates.map((model) => model.name))} type="button"><LuCheckCheck size={13} />全选</button><button onClick={() => setSelectedModelNames(visibleModels.slice(0, 7).map((model) => model.name))} type="button"><LuRotateCcw size={13} />恢复默认</button></footer>
                     </>
                   }
                 />
@@ -1481,6 +1492,8 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
             pageNumbers
             pageSize={tablePageSize}
             total={tableTotal}
+            // 原型的量词是「个模型」而不是通用的「条」
+            totalLabel={`共 ${tableTotal} 个模型`}
           />
         </div>
       </section>

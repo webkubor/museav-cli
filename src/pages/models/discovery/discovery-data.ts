@@ -255,10 +255,16 @@ export function specialtyBarDomain(values: readonly number[]): [number, number] 
   return [Math.max(0, (min - BAR_FLOOR * max) / (1 - BAR_FLOOR)), max]
 }
 
-/** 柱内标签：剥掉货币符号、单位与后缀，只留数字（含小数点与千分位）。 */
+/**
+ * 柱内标签：原样展示，**保留货币符号与单位**（原型实测是 `$0.05` / `245 tok/s`）。
+ *
+ * 此前这里用 `/[\d.,]+[BMKT]?/` 只取数字，理由写的是「单位已经写在图表副标题里」——
+ * 但那只对部分卡成立：`单次任务成本` 副标题有「（USD/Task）」、`输出 TPS` 有「（Tokens/秒）」，
+ * 而 `近 7 日热度` 的说明是「ModelGo 调用 Tokens」根本没有量纲。结果柱上只剩 `0.0116`
+ * 这种读不出单位的裸数字（2026-09-03 需求方指出）。
+ */
 function compactBarLabel(value: string): string {
-  const matched = value.match(/[\d.,]+[BMKT]?/)
-  return matched ? matched[0] : value
+  return value
 }
 
 /** 总览卡：接口的 highlights 六键 → 原型 summary 的 { label, model, value, unit }。 */
@@ -274,13 +280,45 @@ export interface PrototypeSummaryCard {
 
 type HighlightKey = keyof DiscoveryOverview['highlights']
 
-const HIGHLIGHT_LABEL: Record<HighlightKey, string> = {
-  highest_score: '综合评分最高',
-  highest_open_source_score: '开源模型评分最高',
-  highest_value: '性价比最高',
-  lowest_price: 'API 价格最低',
-  highest_output_tps: '输出速度最快',
-  highest_usage: '近 7 日 ModelGo 使用量最高',
+/**
+ * 总览卡文案与单位。
+ *
+ * ⚠️ **按 type 分歧，不能用单常量** —— 原型每个 task 的 summary 是各自写死的一组
+ * `{ label, unit }`，不是从统一模板推出来的。此前这里用一个 Record<HighlightKey, string>
+ * 供全部 9 种 type，后果是：
+ *   · STT 首卡写成「综合评分最高」，而它的指标是 AA-WER（**越低越好**）——
+ *     卡片语义与指标方向相反，是给用户看错信息（2026-09-03 需求方指出）
+ *   · 图像/视频的「Elo 评分最高」「开源模型 Elo 最高」被抹成「综合评分最高/开源模型评分最高」
+ *   · TTS 的「语音质量最高」被抹成「综合评分最高」
+ *   · 「输出 TPS 最高」被改写成「输出速度最快」
+ *
+ * 下面的值逐条照抄原型 `ModelDiscoveryPage.tsx` 各 task 的 summary 数组
+ * （STT 在 445 行、TTS 在 420 行、图像 320 行、视频 356 行、语言类 282 行）。
+ * 改这里之前先去那边核对，别按语感改。
+ */
+const MEDIA_ELO_TYPES: ReadonlySet<DiscoveryType> = new Set([
+  'TEXT_TO_IMAGE', 'IMAGE_EDITING', 'TEXT_TO_VIDEO', 'IMAGE_TO_VIDEO',
+])
+
+function highlightLabel(key: HighlightKey, type: DiscoveryType): string {
+  switch (key) {
+    case 'highest_score':
+      if (isLanguageType(type)) return '综合评分最高'
+      if (type === 'TTS') return '语音质量最高'
+      // AA-WER 越低越好，所以是「最低」；写成「最高」会把指标方向说反
+      if (type === 'STT') return '识别错误率最低'
+      return 'Elo 评分最高'
+    case 'highest_open_source_score':
+      return MEDIA_ELO_TYPES.has(type) ? '开源模型 Elo 最高' : '开源模型评分最高'
+    case 'highest_value':
+      return '性价比最高'
+    case 'lowest_price':
+      return 'API 价格最低'
+    case 'highest_output_tps':
+      return '输出 TPS 最高'
+    case 'highest_usage':
+      return '近 7 日 ModelGo 使用量最高'
+  }
 }
 
 /**
@@ -315,7 +353,7 @@ const SUMMARY_KEYS_BY_TYPE: Record<DiscoveryType, readonly HighlightKey[]> = {
  */
 export function toSummaryCards(overview: DiscoveryOverview | undefined, type: DiscoveryType): PrototypeSummaryCard[] {
   return SUMMARY_KEYS_BY_TYPE[type].map((key) => {
-    const label = HIGHLIGHT_LABEL[key]
+    const label = highlightLabel(key, type)
     const highlight = overview?.highlights?.[key]
     if (!highlight) return { label, model: EMPTY, value: EMPTY, unit: '', provider: '' }
     return {
@@ -337,12 +375,37 @@ function formatHighlightValue(value: number | null, key: HighlightKey, type: Dis
   return isLanguageType(type) ? value.toFixed(1) : `${Math.round(value)}`
 }
 
+/**
+ * 性价比与 API 价格的单位带「计价载体」，不能统一成 USD。
+ * 图像是每 1K 张、视频是每分钟、TTS 是每 1M 字符、STT 是每 1K 分钟 ——
+ * 抹成 `Elo / USD` 会让图像与视频的性价比看起来是同一个口径（2026-09-03 需求方指出）。
+ * 值同样照抄原型各 task 的 summary。
+ */
+const VALUE_UNIT: Partial<Record<DiscoveryType, string>> = {
+  TEXT_TO_IMAGE: 'Elo / ($/1K 张)',
+  IMAGE_EDITING: 'Elo / ($/1K 张)',
+  TEXT_TO_VIDEO: 'Elo / ($/min)',
+  IMAGE_TO_VIDEO: 'Elo / ($/min)',
+  TTS: 'Elo / USD',
+}
+
+const PRICE_UNIT: Partial<Record<DiscoveryType, string>> = {
+  TEXT_TO_IMAGE: '$/1K 张',
+  IMAGE_EDITING: '$/1K 张',
+  TEXT_TO_VIDEO: '$/min',
+  IMAGE_TO_VIDEO: '$/min',
+  TTS: '/ 1M 字符',
+  STT: '/ 1K 分钟',
+}
+
 function highlightUnit(key: HighlightKey, type: DiscoveryType): string {
   if (key === 'highest_output_tps') return 'Tokens / 秒'
-  if (key === 'lowest_price') return ''
+  if (key === 'lowest_price') return PRICE_UNIT[type] ?? ''
   if (key === 'highest_usage') return USAGE_UNIT_LABEL[type]
-  if (key === 'highest_value') return isLanguageType(type) ? 'Index / USD' : 'Elo / USD'
-  return isLanguageType(type) ? 'Index' : type === 'STT' ? '%' : 'Elo'
+  if (key === 'highest_value') return VALUE_UNIT[type] ?? 'Index / USD'
+  // STT 的质量指标是 AA-WER，单看「%」不知道是什么率，原型把指标名带在单位里
+  if (type === 'STT') return '% AA-WER'
+  return isLanguageType(type) ? 'Index' : 'Elo'
 }
 
 /**

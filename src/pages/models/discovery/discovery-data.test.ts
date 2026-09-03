@@ -181,10 +181,45 @@ describe('总览卡', () => {
   it('语言类展示速度卡，媒体类换成价格卡', () => {
     const text = toSummaryCards(undefined, 'TEXT_CHAT').map((c) => c.label)
     const image = toSummaryCards(undefined, 'TEXT_TO_IMAGE').map((c) => c.label)
-    expect(text).toContain('输出速度最快')
+    // 文案照原型：「输出 TPS 最高」。此前实现写成「输出速度最快」，这条断言把它固化了
+    expect(text).toContain('输出 TPS 最高')
     expect(text).not.toContain('API 价格最低')
     expect(image).toContain('API 价格最低')
-    expect(image).not.toContain('输出速度最快')
+    expect(image).not.toContain('输出 TPS 最高')
+  })
+
+  it('总览卡文案按 type 分歧，不共用一个常量', () => {
+    const first = (type: Parameters<typeof toSummaryCards>[1]) => toSummaryCards(undefined, type)[0].label
+    // STT 的主指标是 AA-WER，越低越好 —— 说成「最高」就是把指标方向讲反了
+    expect(first('STT')).toBe('识别错误率最低')
+    expect(first('TTS')).toBe('语音质量最高')
+    expect(first('TEXT_TO_IMAGE')).toBe('Elo 评分最高')
+    expect(first('AGENT')).toBe('综合评分最高')
+    // 开源卡在媒体类是「开源模型 Elo 最高」，语言类是「开源模型评分最高」
+    const imageLabels = toSummaryCards(undefined, 'TEXT_TO_IMAGE').map((c) => c.label)
+    expect(imageLabels).toContain('开源模型 Elo 最高')
+  })
+
+  it('性价比与价格的单位带计价载体，不统一成 USD', () => {
+    // 单位只在拿到 highlight 数据时才填（无数据整卡是「—」），所以要造带值的 overview
+    const withValue = (type: Parameters<typeof toSummaryCards>[1]) => ({
+      snapshot_date: '2026-09-02',
+      type,
+      highlights: {
+        highest_score: { value: 1, model: { model_name: 'A', creator_name: 'X' } },
+        highest_open_source_score: { value: 1, model: { model_name: 'A', creator_name: 'X' } },
+        highest_value: { value: 1, model: { model_name: 'A', creator_name: 'X' } },
+        lowest_price: { value: 1, model: { model_name: 'A', creator_name: 'X' } },
+        highest_output_tps: { value: 1, model: { model_name: 'A', creator_name: 'X' } },
+        highest_usage: { value: 1, model: { model_name: 'A', creator_name: 'X' } },
+      },
+    } as unknown as DiscoveryOverview)
+    const unitOf = (type: Parameters<typeof toSummaryCards>[1], label: string) =>
+      toSummaryCards(withValue(type), type).find((c) => c.label === label)?.unit
+    // 抹成 Elo / USD 会让图像与视频的性价比看起来同口径
+    expect(unitOf('TEXT_TO_IMAGE', '性价比最高')).toBe('Elo / ($/1K 张)')
+    expect(unitOf('TEXT_TO_VIDEO', '性价比最高')).toBe('Elo / ($/min)')
+    expect(unitOf('STT', '识别错误率最低')).toBe('% AA-WER')
   })
 })
 
@@ -257,12 +292,14 @@ describe('专项榜柱图', () => {
     expect(specialtyBarDomain([])).toEqual([0, 1])
   })
 
-  it('柱内短标签只留数字，单位与货币符号去掉', () => {
+  it('柱内标签保留货币符号与单位', () => {
     const rows = specialtyRows('单次任务成本', [
       toPrototypeModel(card({ model_name: 'A', cost_value: 0.0656 }), 'TEXT_CHAT'),
     ])
     expect(rows[0].value).toBe('$0.0656/次')
-    expect(rows[0].short).toBe('0.0656')
+    // 原型柱标签实测是 `$0.05` / `245 tok/s`。此前只取数字，理由是「单位写在副标题里」——
+    // 但「近 7 日热度」这类卡的副标题根本没有量纲，柱上就只剩读不出单位的裸数字
+    expect(rows[0].short).toBe('$0.0656/次')
   })
 
   it('紧凑数量后缀保留（50K 不能被切成 50）', () => {

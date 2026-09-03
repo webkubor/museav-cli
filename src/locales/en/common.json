@@ -46,7 +46,8 @@
       "global": "Global",
       "zh": "中文",
       "en": "EN",
-      "menu": "Dev Menu"
+      "menu": "Dev Menu",
+      "title": "Developer Tools"
     },
     "composer": {
       "clear": "Clear",

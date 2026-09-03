@@ -366,7 +366,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
         )}
         {/* Logo 展现 */}
         <div
-          className="group flex items-center gap-2.5 cursor-pointer active:scale-[0.97] transition-transform duration-150 select-none"
+          className="group flex shrink-0 items-center gap-2.5 cursor-pointer active:scale-[0.97] transition-transform duration-150 select-none"
           onClick={() => navigate(isAuthenticated ? '/dashboard' : '/models')}
           title={t('nav.dashboard')}
         >
@@ -379,15 +379,15 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
             type="button"
             onClick={openConnectModal}
             title={t('header.quickAccess')}
-            className="inline-flex items-center gap-1.5 rounded-full border border-brand-base/20 bg-brand-base/[0.06] px-2.5 py-1.5 text-xs font-bold text-brand-base transition-all duration-200 hover:border-brand-base/35 hover:bg-brand-base/[0.1] hover:shadow-sm active:scale-[0.97] md:px-3"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-brand-base/20 bg-brand-base/[0.06] px-2.5 py-1.5 text-xs font-bold text-brand-base transition-all duration-200 hover:border-brand-base/35 hover:bg-brand-base/[0.1] hover:shadow-sm active:scale-[0.97] md:px-3"
           >
             <LuZap size={12} className="shrink-0" />
             <span className="hidden md:inline">{t('header.quickAccess')}</span>
           </button>
         )}
 
-        {/* 开发工具条（仅 DEV）：主题 / 市场 / 语言切换 + 开发菜单。放在顶栏而不是
-            悬浮，避免和右下角的智能助手入口抢位置。 */}
+        {/* 开发工具条（仅 DEV）：主题 / 市场 / 语言切换 + 开发菜单。收成一枚扳手图标，
+            点开才展开面板——平铺时宽 378px，窄屏会把左边的「快速接入」挤没。 */}
         {DevToolbar && <Suspense fallback={null}><DevToolbar /></Suspense>}
       </div>
 

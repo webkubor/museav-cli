@@ -46,7 +46,8 @@
       "global": "海外",
       "zh": "中",
       "en": "EN",
-      "menu": "开发菜单"
+      "menu": "开发菜单",
+      "title": "开发者工具"
     },
     "composer": {
       "clear": "清空",

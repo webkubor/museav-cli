@@ -24,12 +24,12 @@ import {
   LuBuilding2,
 } from 'react-icons/lu'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
+import { OnboardingRewardDialog } from '@/features/onboarding/OnboardingGuideEntry'
 import { useTranslation } from 'react-i18next'
 import { DashboardHeader } from './DashboardHeader'
 import { DashboardSidebar } from './DashboardSidebar'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
-import { CustomerService } from '@/components/customer-service'
 import { PhoneBindingGuard } from '@/components/auth/PhoneBindingGuard'
 import { TopUpModal } from '@/pages/billing/TopUpModal'
 import { useRechargeStore } from '@/store/use-recharge-store'
@@ -303,8 +303,6 @@ export function DashboardLayout() {
           {/* 高阶极简自定义 Breadcrumbs */}
           <Breadcrumb items={getBreadcrumbs()} />
 
-          <CustomerService />
-
           {/* 国内环境强制绑定手机号守卫（#366）：无手机号时弹不可跳过的绑定弹窗，挂一次即可 */}
           <PhoneBindingGuard />
 
@@ -344,6 +342,9 @@ export function DashboardLayout() {
           </div>
         </main>
       </div>
+
+      {/* 新手奖励领取成功弹框：全局挂一次（领取入口在侧栏气泡里，跟随路由挂会被卸载） */}
+      <OnboardingRewardDialog />
     </div>
   )
 }

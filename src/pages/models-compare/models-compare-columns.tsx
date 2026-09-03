@@ -4,7 +4,6 @@
  */
 
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
 import { LuChevronDown, LuCode, LuPaperclip, LuSettings2, LuTriangleAlert, LuX } from 'react-icons/lu'
 import { Composer } from '@/components/ui/Composer'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
@@ -23,6 +22,8 @@ import {
   ATTACHMENT_LIMITS,
   isPaidModel,
 } from '../models/model-experience-data'
+import { ExperienceBalanceNotice } from '../models/ExperienceBalanceNotice'
+import { ExperienceFreeLimitNotice } from '../models/ExperienceFreeLimitNotice'
 import { ExperienceMessageList } from '../models/components/ExperienceMessageList'
 import { TaskFileDropZone } from '../models/components/TaskFileDropZone'
 import type { ModelsCompareContext } from './use-models-compare'
@@ -61,7 +62,6 @@ export function CompareColumns({ ctx }: { ctx: ModelsCompareContext }) {
 
 function CompareColumnCard({ ctx, column, idx }: { ctx: ModelsCompareContext; column: ColumnState; idx: number }) {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const { stream, columnFileInputRef, pendingAttachmentColumnRef } = ctx
 
   return (
@@ -151,23 +151,16 @@ function CompareColumnCard({ ctx, column, idx }: { ctx: ModelsCompareContext; co
         }
       />
 
-      {ctx.isBalanceZero && isPaidModel(column.model) && (
-        <div className="playground-balance-notice" role="alert">
-          <LuTriangleAlert size={15} />
-          <span>
-            <strong>{t('modelsExperience.balanceInsufficientTitle')}</strong>
-            {t('modelsExperience.balanceInsufficientHint')}
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              trackEvent('playground_recharge_click', { locked_model_count: 1 })
-              navigate('/billing', { state: { entrySource: 'recharge_cta' } })
-            }}
-          >
-            {t('modelsExperience.recharge')}
-          </button>
-        </div>
+      {/* 需求方 #833（1.0.6）：余额为 0 时免费/付费模型一律锁定，按模型免费与否分场景文案 */}
+      {ctx.isBalanceZero && (
+        <ExperienceBalanceNotice free={!isPaidModel(column.model)} lockedModelCount={1} />
+      )}
+
+      {/* 需求方 #833 场景三：该列上次发送被后端 4291 日限额拒绝 → 提示切换其他模型 + 查看用量；
+          4032 余额门槛（本地余额快照滞后）复用场景一文案。本地已判余额 0 时不重复叠加。 */}
+      {!ctx.isBalanceZero && ctx.columnFreeGates[column.conversationId] === 'daily_limit' && <ExperienceFreeLimitNotice />}
+      {!ctx.isBalanceZero && ctx.columnFreeGates[column.conversationId] === 'balance_required' && (
+        <ExperienceBalanceNotice free lockedModelCount={1} />
       )}
 
       {!ctx.syncInput && isOfflineModel(column.model) ? (
@@ -223,7 +216,7 @@ function CompareColumnCard({ ctx, column, idx }: { ctx: ModelsCompareContext; co
               onChange={(v) => ctx.updateColumn(idx, { draft: v })}
               onSend={() => ctx.handleIndependentSend(idx)}
               isStreaming={column.streaming}
-              disabled={ctx.isBalanceZero && isPaidModel(column.model)}
+              disabled={ctx.isBalanceZero}
               onStop={() => stream.abort(idx)}
               placeholder={ctx.compareTask === 'image_to_image'
                 ? t('modelsExperience.taskPlaceholder.image_to_image')

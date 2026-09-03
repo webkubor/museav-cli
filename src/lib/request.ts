@@ -10,6 +10,13 @@ import { reportServerError, reportHttpServerError } from '@/lib/error-diagnostic
 
 const API_V1_PREFIX = 'api/v1'
 
+/**
+ * observer 的模型发现六接口挂在 `/internal/v1/model-discovery/*`，不在 web-api 的
+ * `api/v1` 下（见《模型发现 / 模型详情 前端接口文档》）。走 get 的 `prefix` 选项切换，
+ * 请求仍是相对路径 —— 本地命中 vite proxy，线上等 nginx/web-api 落转发规则。
+ */
+export const INTERNAL_V1_PREFIX = 'internal/v1'
+
 // #267 注册登录密码不能传明文: these password-bearing endpoints send an encrypted
 // RSA+AES envelope instead of a plaintext JSON body, and receive an encrypted
 // {iv,data} response. Normalized (no leading slash) to match normalizePath.
@@ -41,8 +48,8 @@ export function apiBaseUrl() {
   return normalizeApiHost(marketDomain) ?? normalizeApiHost(import.meta.env.VITE_API_URL) ?? ''
 }
 
-function apiUrl(path: string) {
-  return `${apiBaseUrl()}/${API_V1_PREFIX}/${path.replace(/^\/+/, '')}`
+function apiUrl(path: string, prefix: string = API_V1_PREFIX) {
+  return `${apiBaseUrl()}/${prefix}/${path.replace(/^\/+/, '')}`
 }
 
 function apiPrefixUrl() {
@@ -54,8 +61,8 @@ function normalizePath(path: string) {
   return path.replace(/^\/+/, '')
 }
 
-function diagnosticApiPath(method: string, path: string) {
-  return `${method.toUpperCase()} /${API_V1_PREFIX}/${normalizePath(path)}`
+function diagnosticApiPath(method: string, path: string, prefix: string = API_V1_PREFIX) {
+  return `${method.toUpperCase()} /${prefix}/${normalizePath(path)}`
 }
 
 
@@ -252,7 +259,9 @@ function unwrapEnvelope<T>(envelope: ApiResponse<T>, fallbackTraceId?: string): 
   if (envelope.code !== 0) {
     const error = new ModelGoApiError({
       code: envelope.code,
-      msg: envelope.msg,
+      // observer（模型发现六接口）的错误信封用 `message`，web-api 用 `msg`。
+      // 少了这个兜底，observer 的 4001/4040 会弹出空白提示。
+      msg: envelope.msg ?? (envelope as { message?: string }).message ?? '',
       request_id: envelope.request_id,
       // 信封暂无 trace_id 时用响应头 x-trace-id/traceparent 兜底，让诊断弹窗能显示 Trace ID；
       // 后端信封补上 trace_id 后此兜底自然让位（envelope.trace_id 优先）。
@@ -298,9 +307,14 @@ export function normalizePage<P extends CursorPage<unknown>>(raw: P | P['items']
   } as P
 }
 
-export async function get<T>(path: string, params?: QueryParams): Promise<T> {
+export async function get<T>(
+  path: string,
+  params?: QueryParams,
+  options?: { prefix?: string },
+): Promise<T> {
+  const prefix = options?.prefix ?? API_V1_PREFIX
   const normalizedPath = normalizePath(path)
-  const url = apiUrl(normalizedPath)
+  const url = apiUrl(normalizedPath, prefix)
   const startedAt = nowMs()
   try {
     const httpResp = await client.get(url, { searchParams: searchParams(params) })
@@ -325,7 +339,7 @@ export async function get<T>(path: string, params?: QueryParams): Promise<T> {
     })
     return result
   } catch (error) {
-    if (error instanceof ModelGoApiError) error.path = diagnosticApiPath('GET', normalizedPath)
+    if (error instanceof ModelGoApiError) error.path = diagnosticApiPath('GET', normalizedPath, prefix)
     devLogApiError('GET', normalizedPath, url, startedAt, error, params)
     throw error
   }

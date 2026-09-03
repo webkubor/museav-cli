@@ -44,6 +44,7 @@ const GuardrailsPage = lazy(() => import('@/pages/guardrails'))
 const ModelsPage = lazy(() => import('@/pages/models'))
 const ModelsCatalogPage = lazy(() => import('@/pages/models/catalog'))
 const ModelDetailPage = lazy(() => import('@/pages/models/detail'))
+const ModelDiscoveryPage = lazy(() => import('@/pages/models/discovery'))
 const ModelsComparePage = lazy(() => import('@/pages/models-compare'))
 // DEV 专属页面/工具必须放在可静态消除的条件分支内，确保生产构建既不生成对应 chunk，
 // 也不注册路由——否则 /dev-config 在生产环境仍可被直接访问到。
@@ -52,9 +53,6 @@ const PlatformConfigPage = import.meta.env.DEV
   : null
 const NavLogger = import.meta.env.DEV
   ? lazy(() => import('@/components/dev/NavLogger').then((m) => ({ default: m.NavLogger })))
-  : null
-const DevToolbar = import.meta.env.DEV
-  ? lazy(() => import('@/components/dev-toolbar').then((m) => ({ default: m.DevToolbar })))
   : null
 const NotFoundPage = lazy(() => import('@/pages/not-found'))
 
@@ -114,6 +112,7 @@ import { useLangStore } from '@/store/use-brand-store'
 import { usePublicProtocolsStore } from '@/store/use-public-protocols-store'
 
 import { Toaster } from 'sonner'
+import { CustomerService } from '@/components/customer-service'
 
 // 注入市场标识（初始值用域名探测，PlatformLoader 会用 API 结果覆盖）
 document.documentElement.dataset.market = getMarket()
@@ -275,7 +274,6 @@ export default function App() {
             }} />
           </div>
         )}
-        {DevToolbar && <Suspense fallback={null}><DevToolbar /></Suspense>}
         <AuthProvider>
         <Suspense fallback={<RouteFallback />}>
         <Routes>
@@ -298,6 +296,9 @@ export default function App() {
           {/* 模型广场（公开，免登录，双主题）— 与官网同路径 /models，官网「模型」直接跳此 */}
           <Route path="/models" element={<PublicShell />}>
             <Route index element={withLocaleNamespaces(<ModelsCatalogPage />, MODEL_NAMESPACES)} />
+            {/* discovery 必须声明在 :modelId **之前** —— 否则会被参数路由吃掉，
+                当成一个叫 "discovery" 的模型 ID 去请求详情。 */}
+            <Route path="discovery" element={withLocaleNamespaces(<ModelDiscoveryPage />, MODEL_NAMESPACES)} />
             <Route path=":modelId" element={withLocaleNamespaces(<ModelDetailPage />, MODEL_NAMESPACES)} />
           </Route>
 
@@ -351,6 +352,11 @@ export default function App() {
           <Route path="*" element={withLocaleNamespaces(<NotFoundPage />, ['common'])} />
         </Routes>
         </Suspense>
+        {/* 智能助手悬浮入口（智能客服 PRD v0.1 §7.2）：官网、登录页和 Console
+            右下角共用同一个入口。此前只挂在 DashboardLayout 里，未登录用户
+            （PRD §2 的「未登录访客」角色）在登录页与公开的模型广场看不到它，
+            而平台知识咨询本来就不要求登录。放在 Routes 之外只挂一次。 */}
+        <CustomerService />
         </AuthProvider>
       </BrowserRouter>
     </Providers>

@@ -9,9 +9,10 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import {
   LuSearch, LuChevronDown, LuCheck, LuSlidersHorizontal, LuLayers, LuZap, LuBuilding2, LuShieldCheck,
-  LuColumns2, LuType, LuImage, LuVideo, LuAudioLines, LuDatabase, LuX,
+  LuChartLine, LuColumns2, LuType, LuImage, LuVideo, LuAudioLines, LuDatabase, LuX,
 } from 'react-icons/lu'
 import type { IconType } from 'react-icons'
+import { Button } from '@/components/ui/Button'
 import { listModels, listModelTags, listFeatured } from '@/services/catalog'
 import { useAuthStore } from '@/store/auth'
 import { toLoginWithRedirect } from '@/lib/redirect'
@@ -28,6 +29,8 @@ import {
   outputModalitiesOf,
 } from './modelCatalogFilterLogic'
 import { ModelsCompareModal } from '../components/ModelsCompareModal'
+import { OnboardingGuideFloatingEntry } from '@/features/onboarding/OnboardingGuideEntry'
+import { useOnboardingGuide } from '@/features/onboarding/use-onboarding-guide'
 import { queryLengthBucket, diffFilterChange, buildFilterSummary } from './catalog-tracking'
 import type { CatalogModelItem } from '@/types'
 import './catalog.css'
@@ -59,6 +62,9 @@ export default function ModelsCatalogPage() {
   const [search, setSearch] = useState(() => searchParams.get('q') ?? '')
   const [selected, setSelected] = useState<string[]>(() => searchParams.get('f')?.split(',').filter(Boolean) ?? [])
   const [sort, setSort] = useState<SortKey>(() => (searchParams.get('sort') as SortKey) || 'default')
+
+  // 新手指南：本页既是第 1 步的完成证据，也是悬浮入口的宿主
+  const { guide: onboardingGuide, reportStep: reportOnboardingStep } = useOnboardingGuide()
 
   useEffect(() => {
     const next = new URLSearchParams()
@@ -224,6 +230,31 @@ export default function ModelsCatalogPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modelsQuery.isLoading, modelsQuery.isError])
 
+  /**
+   * 新手指南第 1 步「浏览模型广场」：证据是**登录态下**目录真正展示出来这件事，
+   * 不是点了入口（规格 §7 表：认证后的页面访问业务事件）。匿名访客不计。
+   *
+   * ⚠️ 必须独立成一个 effect，不能挂在上面 marketplace_view 里 —— 那个有
+   * viewTrackedRef 单次闩锁，而本页是**公开页**，模型列表常常比 GET /tenants 先到；
+   * 租户信息没回来时 guide 还没建，store 的 `if (!guides[tenantId]) return` 会把这
+   * 一步静默丢掉，闩锁却已经翻了，于是这次访问永远补不回来。用户看到的症状就是
+   * 「点了『去浏览』没反应、一直 0/5」。
+   *
+   * 所以这里等 onboardingGuide 就绪再报，并且不加闩锁：领域层对重复完成同一步是
+   * 幂等的（返回原引用），guide 因为其他步骤推进而变化时重跑一次也只是空转。
+   */
+  useEffect(() => {
+    if (!isAuthenticated || !onboardingGuide) return
+    if (modelsQuery.isLoading || modelsQuery.isError) return
+    reportOnboardingStep('marketplace', 'page_visit', 'marketplace')
+  }, [
+    isAuthenticated,
+    onboardingGuide,
+    modelsQuery.isLoading,
+    modelsQuery.isError,
+    reportOnboardingStep,
+  ])
+
   /** marketplace_empty_shown：只在「从有结果变为无结果」时报一次，避免同一空态重复上报 */
   const wasEmptyRef = useRef(false)
   const reportEmptyIfNeeded = () => {
@@ -329,21 +360,38 @@ export default function ModelsCatalogPage() {
       {/* 页面结构（2026-08 视觉改版稿）：标题 / 轮播 两块全宽；搜索排序在下方
           两列布局的右列内、与筛选侧栏顶部平行。轮播保持全宽不被侧栏挤窄。 */}
       <div className="mg-plaza">
-          {/* 标题 */}
-          <div className="mb-6">
-            <h1 className="text-mg-text-1 catalog-title text-[34px] font-bold tracking-tight">
-              {t('modelsCatalog.page.title')}
-            </h1>
-            <p className="text-mg-text-3 mt-1.5 text-[14px]">
-              {t('modelsCatalog.page.subtitle')}
-            </p>
-            {/* 信任 chips：协议兼容 / 供应商直连 / SLA。2026-08 视觉改版稿改白底
-                描边 pill，SLA 用 warning 强调色（稿上唯一的暖色点缀）。 */}
-            <div className="mg-trust">
-              <span><LuZap size={12} />{t('modelsCatalog.trust.protocols')}</span>
-              <span><LuBuilding2 size={12} />{t('modelsCatalog.trust.providers')}</span>
-              <span className="is-sla"><LuShieldCheck size={12} />{t('modelsCatalog.trust.sla')}</span>
+          {/* 标题。右侧挂「模型发现」入口 —— 放标题行而不是搜索/排序工具栏，
+              避免和列表筛选语义混淆；窄屏时按钮随 flex-wrap 落到副标题下方左对齐。
+              这是模型发现的**唯一**入口，不进顶栏、不进左侧导航、不进模型卡
+              （见 plans/2026-08-24-v1.0.6-model-discovery-ui-flow §2.1）。 */}
+          <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="text-mg-text-1 catalog-title text-[34px] font-bold tracking-tight">
+                {t('modelsCatalog.page.title')}
+              </h1>
+              <p className="text-mg-text-3 mt-1.5 text-[14px]">
+                {t('modelsCatalog.page.subtitle')}
+              </p>
+              {/* 信任 chips：协议兼容 / 供应商直连 / SLA。2026-08 视觉改版稿改白底
+                  描边 pill，SLA 用 warning 强调色（稿上唯一的暖色点缀）。 */}
+              <div className="mg-trust">
+                <span><LuZap size={12} />{t('modelsCatalog.trust.protocols')}</span>
+                <span><LuBuilding2 size={12} />{t('modelsCatalog.trust.providers')}</span>
+                <span className="is-sla"><LuShieldCheck size={12} />{t('modelsCatalog.trust.sla')}</span>
+              </div>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                // 只记点击，不把「加载成功」伪报成点击（§2.1）
+                trackEvent('marketplace_discovery_entry_clicked', { source: 'catalog_header' })
+                navigate('/models/discovery')
+              }}
+            >
+              <LuChartLine size={14} />
+              {t('modelsCatalog.discovery.entry')}
+            </Button>
           </div>
 
           {/* 精选轮播。原型顶部只有「标题 + 副标题 + 信任 chips + 轮播」，没有数据卡
@@ -501,6 +549,9 @@ export default function ModelsCatalogPage() {
           )}
         </div>
       </div>
+
+      {/* 新手指南悬浮入口（规格 §5.1）：只在模型广场出现，与侧栏入口共享同一份租户进度 */}
+      <OnboardingGuideFloatingEntry />
 
       <ModelsCompareModal
         isOpen={isCompareOpen}

@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense, lazy } from 'react'
 import { LuMenu, LuZap } from 'react-icons/lu'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -24,6 +24,7 @@ import { trackEvent } from '@/lib/track'
 import { useTrackContext } from '@/hooks/use-track-context'
 import { toast } from 'sonner'
 import { ConnectModal } from '@/pages/api-keys/ConnectModal'
+import { useConnectModalStore } from '@/store/use-connect-modal-store'
 import { Modal } from '@/components/ui/Modal'
 import {
   buildSyncedNav,
@@ -40,6 +41,11 @@ import { LanguageSwitcher } from './LanguageSwitcher'
 /**
  * 重构后的 DashboardHeader
  */
+/** 开发工具条只在 DEV 加载，生产构建整块不打进包（与原先在 App.tsx 的写法一致） */
+const DevToolbar = import.meta.env.DEV
+  ? lazy(() => import('@/components/dev-toolbar').then((m) => ({ default: m.DevToolbar })))
+  : null
+
 export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenuClick }) => {
   const navigate = useNavigate()
   const location = useLocation()
@@ -114,7 +120,11 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
   const [orgModalVisible, setOrgModalVisible] = useState(false)
   const [newOrgName, setNewOrgName] = useState('')
 
-  const [connectModalVisible, setConnectModalVisible] = useState(false)
+  // 开关提到 store：新手指南第 4 步「去接入」要打开的就是这一个弹窗（规格 §7.3
+  // 「不建设两套配置界面」），而气泡在侧栏、跟顶栏不在同一棵树里。
+  const connectModalVisible = useConnectModalStore((s) => s.isOpen)
+  const openConnectModal = useConnectModalStore((s) => s.open)
+  const closeConnectModal = useConnectModalStore((s) => s.close)
 
   const { data: tenantsData } = useQuery({
     queryKey: ['tenants'],
@@ -257,7 +267,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
   }
 
   function handleCreateApiKeyFromConnect() {
-    setConnectModalVisible(false)
+    closeConnectModal()
     navigate(activeWorkspaceId ? `/workspace/${activeWorkspaceId}/api-keys` : '/dashboard')
   }
 
@@ -367,7 +377,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
         {isAuthenticated && (
           <button
             type="button"
-            onClick={() => setConnectModalVisible(true)}
+            onClick={openConnectModal}
             title={t('header.quickAccess')}
             className="inline-flex items-center gap-1.5 rounded-full border border-brand-base/20 bg-brand-base/[0.06] px-2.5 py-1.5 text-xs font-bold text-brand-base transition-all duration-200 hover:border-brand-base/35 hover:bg-brand-base/[0.1] hover:shadow-sm active:scale-[0.97] md:px-3"
           >
@@ -375,6 +385,10 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
             <span className="hidden md:inline">{t('header.quickAccess')}</span>
           </button>
         )}
+
+        {/* 开发工具条（仅 DEV）：主题 / 市场 / 语言切换 + 开发菜单。放在顶栏而不是
+            悬浮，避免和右下角的智能助手入口抢位置。 */}
+        {DevToolbar && <Suspense fallback={null}><DevToolbar /></Suspense>}
       </div>
 
       {/* 右侧：功能控制区 + 组织 Switcher + 用户头像 */}
@@ -448,7 +462,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
 
       <ConnectModal
         open={connectModalVisible}
-        onClose={() => setConnectModalVisible(false)}
+        onClose={closeConnectModal}
         openAIBaseUrl={gatewayEndpoints[0]?.baseUrl ?? ''}
         anthropicBaseUrl={gatewayEndpoints[1]?.baseUrl ?? gatewayEndpoints[0]?.baseUrl ?? ''}
         createdKeyText=""

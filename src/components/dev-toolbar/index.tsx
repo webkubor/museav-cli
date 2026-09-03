@@ -88,7 +88,11 @@ export function DevToolbar() {
   }
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[var(--mg-z-devtool)] flex items-center gap-3 px-4 py-2 rounded-full bg-mg-bg-2 backdrop-blur border border-mg-border shadow-lg shadow-black/5 select-none">
+    /* 跟着顶栏走，不再浮在页面上。
+       原先是 fixed 居中吸底，盖住页面中部的图表；挪到右下角后又和智能助手悬浮球
+       撞在一起（2026-09-02 实测）。开发工具本来就不该跟产品内容抢同一块位置，
+       现在挂在顶栏「快速接入」右侧，随页面滚动一起走。 */
+    <div className="hidden lg:flex items-center gap-2.5 px-2.5 py-1 rounded-full border border-mg-border select-none">
       <Seg
         value={theme}
         options={[

@@ -229,6 +229,14 @@
       "mainSpec": "主要规格"
     },
     "error.loadDetail": "加载模型详情失败，请稍后重试。",
+    "discovery": {
+      "title": "模型发现",
+      "subtitle": "按输出方式与任务维度对比可用模型的表现、成本与速度。",
+      "backToCatalog": "返回模型广场",
+      "entry": "模型发现",
+      "placeholder": "分析模块正在接入，敬请期待。",
+      "backToDiscovery": "返回模型发现"
+    },
     "outputModality": {
       "label": "输出模态",
       "all": "全部"

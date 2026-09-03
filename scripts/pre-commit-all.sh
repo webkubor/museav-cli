@@ -16,6 +16,46 @@ set -uo pipefail
 
 cd "$(git rev-parse --show-toplevel)" || exit 1
 
+# ── pnpm store 漂移自愈（必须在所有检查之前）────────────────────────────
+# pnpm 升大版本后 store 目录会换（v10 → v11），但 node_modules/.modules.yaml 里
+# 还记着旧路径。pnpm 判定要重建 node_modules，在 hook 的非 TTY 环境下无法确认，
+# 直接中止 —— 于是**本仓任何 commit 都失败**，而报错只有半截堆栈：
+#
+#     类型检查 ... ❌
+#            at runDepsStatusCheck (file:///...@pnpm/exe/...
+#
+# 完全不提 pnpm、不提 store，现象像门禁自己坏了。真错误要再往下挖才看得到
+# ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY。
+#
+# 2026-08-25 一天撞两次（主检出三个仓库 + 一个 worktree），每次都靠人工比对
+# .modules.yaml 才认出来。所以这里改成自愈：检测到漂移就自动迁移，而不是
+# 让人再认一遍那半截堆栈。store 里已有内容时 install 只要 1-3 秒。
+if command -v pnpm >/dev/null 2>&1 && [ -f node_modules/.modules.yaml ]; then
+  _cur_store="$(pnpm store path 2>/dev/null || true)"
+  _rec_store="$(sed -n 's/.*"storeDir": "\([^"]*\)".*/\1/p' node_modules/.modules.yaml | head -1)"
+  if [ -n "$_cur_store" ] && [ -n "$_rec_store" ] && [ "$_cur_store" != "$_rec_store" ]; then
+    echo "⚠ pnpm store 已漂移，正在自动迁移依赖（不改 lockfile）" >&2
+    echo "    记录: $_rec_store" >&2
+    echo "    当前: $_cur_store" >&2
+    if CI=true pnpm install --frozen-lockfile >/dev/null 2>&1; then
+      # 复检：install 应当重写 .modules.yaml 的 storeDir。若没变，说明这不是
+      # 真漂移（例如 .modules.yaml 被手工改过），此时 install 是 no-op ——
+      # 提示一次，别让人以为修好了，也别阻塞提交。
+      _new_store="$(sed -n 's/.*"storeDir": "\([^"]*\)".*/\1/p' node_modules/.modules.yaml | head -1)"
+      if [ "$_new_store" = "$_cur_store" ]; then
+        echo "✅ 依赖已迁移到当前 store，继续门禁" >&2
+      else
+        echo "⚠ install 完成但 storeDir 记录未变（仍是 $_new_store）。" >&2
+        echo "   多半是 .modules.yaml 被手工改过、pnpm 判定无需重建。" >&2
+        echo "   若本次提交正常通过即可忽略；反复出现请删 node_modules 重装。" >&2
+      fi
+    else
+      echo "✗ 自动迁移失败。手动跑：CI=true pnpm install --frozen-lockfile" >&2
+      exit 1
+    fi
+  fi
+fi
+
 # 类型 + 规范快检（全量构建在 pre-push/CI；内部做「有 cs 用 cs、无则降级 tsc+eslint」）
 sh scripts/pre-commit-check.sh || exit 1
 
@@ -26,6 +66,13 @@ bash scripts/ui-guard.sh || exit 1
 # （z-index 退回 auto、圆角/间距归零），而 tsc/eslint/vite build 全部照过——
 # 2026-08-12 的「全局组件无法点击」就是这么进 test 的，必须在提交期拦。
 node scripts/check-css-tokens.mjs || exit 1
+
+# Tailwind 颜色类名门禁（2026-08-25 接入）：写 text-mg-brand / text-mg-text-0 这种
+# 未在 @theme 注册的类名，**Tailwind 不报错、构建不报错、tsc 也不报错** —— 只是那条
+# 声明生成不出来、颜色静默继承父级。跑起来看着"差不多对"，事后完全回想不起哪里错了。
+# 同一天踩两次（mg-brand 22 处、mg-text-0 17 处），并顺带查出 5 处存量同类问题，
+# 说明靠人工比对 index.css 是不可靠的。
+node scripts/check-tailwind-tokens.mjs || exit 1
 
 # 硬编码回归门禁（2026-08-24 接入）：库里已有 token 却写死字面值 ——
 # ease / duration / radius / shadow / z-index / 语义色六类。规则真源在

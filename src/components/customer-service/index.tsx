@@ -4,13 +4,25 @@ import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 
 import { MarkdownContent } from '@/components/ui/MarkdownContent'
-import { LuX, LuSendHorizontal, LuRefreshCw, LuSquare } from 'react-icons/lu'
+import { LuX, LuSendHorizontal, LuRefreshCw, LuSquare, LuMessageSquareWarning } from 'react-icons/lu'
 import { useSiteLogo } from '@/config/brand-assets'
 import { storageKeys } from '@/lib/storage'
 import { useAuthStore } from '@/store/auth'
 import { useCustomerServiceStore } from '@/store/use-customer-service-store'
 import { formatChartDate, formatDate, formatShortTime } from '@/lib/format-date'
 import { useCsChat } from './use-cs-chat'
+import { AssistantOrb, type OrbState } from './AssistantOrb'
+import { FeedbackForm, FeedbackReceiptCard, FEEDBACK_FORM_ID } from './FeedbackPanel'
+import {
+  buildFeedbackReceipt,
+  buildFeedbackRequest,
+  createEmptyFeedbackDraft,
+  validateFeedbackDraft,
+  type FeedbackDraft,
+  type FeedbackErrors,
+} from './feedback'
+import { submitSupportFeedback } from '@/services/support'
+import { getRequestErrorMessage } from '@/lib/request-error-message'
 import type { Message, ConnectionStatus } from './use-cs-chat'
 
 function formatCsTimestamp(timestamp: number, t: (key: string, options?: Record<string, unknown>) => string) {
@@ -25,6 +37,26 @@ function formatCsTimestamp(timestamp: number, t: (key: string, options?: Record<
   if (isToday) return t('common.customerService.todayAt', { time: timeStr })
   if (isYesterday) return t('common.customerService.yesterdayAt', { time: timeStr })
   return `${formatChartDate(dateIso)} ${timeStr}`
+}
+
+/**
+ * 连接状态 + 生成状态 → orb 的表情（智能客服 PRD §7.2 / §7.4 / §8）。
+ * 「正在生成回答」优先于「在线」——用户更需要知道助手在干活，而不是连接正常。
+ */
+function toOrbState(status: ConnectionStatus, isLoading: boolean): OrbState {
+  if (status === 'offline') return 'error'
+  if (status === 'connecting') return 'working'
+  return isLoading ? 'thinking' : 'idle'
+}
+
+/** orb 的无障碍文案（PRD §7.2：入口必须具备可访问名称） */
+const ORB_LABELS: Partial<Record<OrbState, string>> = {
+  idle: '智能助手，在线',
+  thinking: '智能助手正在思考',
+  working: '智能助手正在连接',
+  asking: '智能助手在等你回复',
+  done: '智能助手有新消息',
+  error: '智能助手连接异常',
 }
 
 function StatusDot({ status }: { status: ConnectionStatus }) {
@@ -86,18 +118,34 @@ function ThinkingDots() {
   )
 }
 
+/**
+ * 面板主模式（PRD §7.1 模式表）。本期只实现 chat（初始空态 + 智能问答）与 feedback（反馈表单）；
+ * 人工排队/连接/服务/结束四种模式待后端人工通道就绪后再补。
+ */
+type PanelMode = 'chat' | 'feedback'
+
 export function CustomerService() {
   const { t } = useTranslation()
   const isOpen = useCustomerServiceStore((s) => s.isOpen)
   const toggleOpen = useCustomerServiceStore((s) => s.toggle)
   const logoSrc = useSiteLogo()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
-  const { messages, sendMessage, stopMessage, reconnect, status, isLoading, conversationId } = useCsChat({
+  const { messages, appendLocalMessage, sendMessage, stopMessage, reconnect, status, isLoading, conversationId } = useCsChat({
     source: 'console',
     tenantId: activeTenantId,
   })
 
   const [inputValue, setInputValue] = useState('')
+  const [mode, setMode] = useState<PanelMode>('chat')
+  const [feedbackDraft, setFeedbackDraft] = useState<FeedbackDraft>(() => createEmptyFeedbackDraft())
+  const [feedbackErrors, setFeedbackErrors] = useState<FeedbackErrors>({})
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
+  const [feedbackSubmitError, setFeedbackSubmitError] = useState<string | null>(null)
+  /**
+   * 幂等键（技术方案 §6.6：`client_submission_id` 重复提交返回同一张工单）。
+   * 同一次填写的重试必须复用同一个键，所以只在进入表单时换新，失败重试不换。
+   */
+  const submissionIdRef = useRef<string>('')
   const scrollRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -117,7 +165,16 @@ export function CustomerService() {
     }
   }, [messages, isLoading])
 
-  if (!activeTenantId) return null
+  /*
+   * 不再因为「没有活跃租户」就整块不渲染。
+   *
+   * 智能客服 PRD v0.1 §2 把「未登录访客」列为正式角色（问支持哪些模型、如何接入、
+   * 如何计费），§6.1 写明「未登录用户可以进行平台知识咨询，若问题需要查询账户数据
+   * 才提示登录」，§7.2 要求官网、登录页和 Console 共用同一个右下角入口。
+   *
+   * 接口侧也支持：2026-09-02 实测未带任何凭据 POST /api/v1/agent/chat 返回 200 +
+   * code 0。租户相关的 X-Tenant-Id 头本来就只在 tenantId 有值时才带。
+   */
 
   function handleMouseDown(e: React.MouseEvent) {
     dragRef.current = { startX: e.clientX, startY: e.clientY, startPosX: pos.x, startPosY: pos.y }
@@ -141,6 +198,8 @@ export function CustomerService() {
     window.addEventListener('mouseup', onMouseUp)
   }
 
+  const orbState = toOrbState(status, isLoading)
+
   function handleTriggerClick() {
     if (isDragging.current) return
     toggleOpen()
@@ -156,6 +215,81 @@ export function CustomerService() {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
+    }
+  }
+
+  /** 进入反馈模式：每次都重置草稿，发生时间默认当前本地时间（PRD §7.5） */
+  function openFeedback() {
+    setFeedbackDraft(createEmptyFeedbackDraft())
+    setFeedbackErrors({})
+    setFeedbackSubmitError(null)
+    submissionIdRef.current = crypto.randomUUID()
+    setMode('feedback')
+  }
+
+  /** PRD §7.5：取消直接回原对话，不生成任何消息 */
+  function cancelFeedback() {
+    setFeedbackErrors({})
+    setFeedbackSubmitError(null)
+    setMode('chat')
+  }
+
+  function handleFeedbackChange(patch: Partial<FeedbackDraft>) {
+    setFeedbackDraft((prev) => ({ ...prev, ...patch }))
+    // 改动即清掉对应字段的错误，避免用户已经改好了还挂着红字
+    setFeedbackErrors((prev) => {
+      const next = { ...prev }
+      if ('issueType' in patch) delete next.issueType
+      if ('description' in patch) delete next.description
+      return next
+    })
+  }
+
+  /**
+   * 提交反馈 → `POST /support/feedback`（契约见《ModelGo 智能客服与工单体系技术方案 v0.1》§5.1，
+   * **后端预计 9/7 上线**；入参与返回类型见 `src/interfaces/support.ts`）。
+   *
+   * 三条约束：
+   *   · 编号、状态文案、预计响应时间一律取服务端返回，前端不本地生成、不写死「2 小时内」。
+   *   · 接口未上线期间会失败，失败就在表单里如实报错并保留已填内容，**不静默吞掉、不伪造成功回执**。
+   *   · 重试复用同一个 `client_submission_id`，避免后端上线后重复建单。
+   *
+   * 待确认（不自行发明，联调/找产品确认后再补）：
+   *   1. 未登录访客（PRD §2 正式角色，本面板对未登录开放）提交后客服如何回联 —— 技术方案 §6.6 写
+   *      「账号手机号与邮箱从账号事实读取写入 account_snapshot」，未登录没有账号事实；PRD §7.5
+   *      字段表也没有联系方式字段。要不要给未登录用户加联系方式属产品决策。
+   *   2. 埋点 support_feedback_submit（PRD §10.2：问题类型、是否含 Request ID/附件）等 track 封装到位再挂。
+   */
+  async function handleFeedbackSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (feedbackSubmitting) return
+    const errors = validateFeedbackDraft(feedbackDraft)
+    setFeedbackErrors(errors)
+    if (Object.keys(errors).length > 0) return
+
+    setFeedbackSubmitError(null)
+    setFeedbackSubmitting(true)
+    try {
+      const response = await submitSupportFeedback(buildFeedbackRequest(feedbackDraft, {
+        clientSubmissionId: submissionIdRef.current || crypto.randomUUID(),
+        pageName: document.title,
+        pagePath: window.location.pathname,
+        conversationId,
+      }))
+      appendLocalMessage({
+        id: crypto.randomUUID(),
+        role: 'system',
+        content: '',
+        timestamp: Date.now(),
+        feedback: buildFeedbackReceipt(response, feedbackDraft),
+      })
+      setFeedbackDraft(createEmptyFeedbackDraft())
+      // PRD §7.5：提交成功后回执进对话流，并自动回到普通问答模式
+      setMode('chat')
+    } catch (error) {
+      setFeedbackSubmitError(getRequestErrorMessage(error, t('common.customerService.feedback.submitFailed')))
+    } finally {
+      setFeedbackSubmitting(false)
     }
   }
 
@@ -194,18 +328,7 @@ export function CustomerService() {
       >
         {isOpen
           ? <LuX className="text-mg-text-2" size={20} />
-          : (
-            <div style={{ position: 'relative' }}>
-              <img src={logoSrc} alt="CS" style={{ width: 28, height: 28, objectFit: 'contain' }} />
-              <span
-                className={cn(
-                  'absolute -right-0.5 -bottom-0.5 w-2.5 h-2.5 rounded-full border-2 border-mg-bg-2',
-                  status === 'online' ? 'bg-mg-success' : status === 'connecting' ? 'bg-mg-warning' : 'bg-mg-danger',
-                )}
-              />
-            </div>
-          )
-        }
+          : <AssistantOrb labels={ORB_LABELS} size={40} state={orbState} />}
       </div>
 
       {/* Chat window */}
@@ -260,9 +383,17 @@ export function CustomerService() {
             </div>
           </div>
 
-          {/* Messages */}
+          {/* 中部内容区：PRD §7.1 —— 反馈表单模式下整块换成表单，不跳转、不开二层弹窗 */}
           <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
-            {messages.length === 0 && (
+            {mode === 'feedback' && (
+              <FeedbackForm
+                draft={feedbackDraft}
+                errors={feedbackErrors}
+                onChange={handleFeedbackChange}
+                onSubmit={handleFeedbackSubmit}
+              />
+            )}
+            {mode === 'chat' && messages.length === 0 && (
               <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
                 <img src={logoSrc} alt="" style={{ width: 48, height: 48, opacity: 0.2 }} />
                 <p className="text-center text-xs text-mg-text-3">
@@ -270,12 +401,41 @@ export function CustomerService() {
                 </p>
               </div>
             )}
-            {messages.map((msg) => <MessageBubble key={msg.id} msg={msg} />)}
-            {isLoading && <ThinkingDots />}
+            {mode === 'chat' && messages.map((msg) => (
+              msg.feedback
+                ? <FeedbackReceiptCard key={msg.id} receipt={msg.feedback} />
+                : <MessageBubble key={msg.id} msg={msg} />
+            ))}
+            {mode === 'chat' && isLoading && <ThinkingDots />}
           </div>
 
-          {/* Input */}
+          {/* 底部区域：PRD §7.1 —— 问答模式是「问题反馈 + 消息输入」，反馈模式不显示聊天输入 */}
+          {mode === 'feedback' ? (
+            <div className="flex flex-col gap-2 border-t border-mg-fill-0 px-4 py-3">
+              {feedbackSubmitError && (
+                <p className="m-0 text-[11px] text-mg-danger" role="alert">{feedbackSubmitError}</p>
+              )}
+              <div className="flex justify-end gap-2">
+                <Button disabled={feedbackSubmitting} onClick={cancelFeedback} size="small" variant="ghost">
+                  {t('common.customerService.feedback.cancel')}
+                </Button>
+                <Button form={FEEDBACK_FORM_ID} htmlType="submit" loading={feedbackSubmitting} size="small" variant="brand">
+                  {t('common.customerService.feedback.submit')}
+                </Button>
+              </div>
+            </div>
+          ) : (
           <div style={{ padding: '12px 16px', borderTop: '1px solid var(--mg-fill-0)' }}>
+            <div className="mb-2 flex">
+              <Button
+                icon={<LuMessageSquareWarning size={13} />}
+                onClick={openFeedback}
+                size="small"
+                variant="ghost"
+              >
+                {t('common.customerService.feedback.entry')}
+              </Button>
+            </div>
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -317,6 +477,7 @@ export function CustomerService() {
               </button>
             </div>
           </div>
+          )}
         </div>
       )}
     </>

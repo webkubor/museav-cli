@@ -18,7 +18,7 @@ function PreviewCard({ icon, title, desc, action, onClick }: PreviewCardProps) {
   return (
     <div className="rounded-md border border-mg-border bg-card-bg p-4 shadow-sm shadow-black/2">
       <div className="flex items-start gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand-base">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-pale text-brand-base">
           {icon}
         </div>
         <div className="min-w-0 flex-1">

@@ -20,7 +20,7 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
-  LuImage, LuMic, LuVideo, LuArrowRight,
+  LuArrowRight,
   LuBrain, LuMapPin, LuGlobe, LuZap, LuWrench, LuTag,
   LuColumns2, LuSparkles,
 } from 'react-icons/lu'
@@ -37,20 +37,11 @@ import {
   PROTOCOL_LABEL_ZH, PROTOCOL_LABEL_EN, mergeProtocolLabels,
 } from '@/features/models/model-format'
 import { ExperienceTaskTags } from '@/features/models/components/ExperienceTaskTags'
+import { ModalityMark } from '@/features/models/components/ModalityMark'
 import { CardProtocolTags } from './CardProtocolTags'
 import { usePublicProtocolsStore } from '@/store/use-public-protocols-store'
 import { modelExperienceTasks, resolveModelCategory } from '../model-experience-data'
 import type { CatalogModelItem } from '@/types'
-
-const MODALITY_ICON: Record<string, IconType> = { image: LuImage, audio: LuMic, video: LuVideo }
-
-/** 输入→输出模态流的单个标记。原型文本模态用字母「T」，不是图标（qa#286）；
- *  其余模态（图像/音频/视频）仍用图标区分。 */
-function ModalityMark({ m, title }: { m: string; title: string }) {
-  if (m === 'text') return <span className="mg-mcard-flow-text" title={title}>T</span>
-  const Icon = MODALITY_ICON[m]
-  return Icon ? <Icon size={12} title={title} /> : null
-}
 
 function tagIcon(tag: string): IconType {
   const t = tag.toLowerCase()

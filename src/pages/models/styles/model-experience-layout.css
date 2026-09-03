@@ -450,3 +450,221 @@ body[theme-mode='dark'] .models-experience-empty-orb::after {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-6px); }
 }
+
+/* ── 空态模型卡片（需求方 #834）───────────────────────────────────────────────
+   卡壳走全局 .mg-tile（DESIGN.md：卡片一律 .mg-tile，不拿 fill 凑层次），这里只补
+   版式。规格格的类名不复用 .mg-metric —— 那套定义在 catalog.css 里，体验页并不
+   引入广场样式表，蹭过来会变成「样式取决于用户先逛没逛广场」。 */
+.models-experience-model-card {
+  /* 版式照原型 .playground-model-welcome：760px 宽（对比页 compact 档才是 680）、
+     内部 grid gap 14px、内边距随视口 20→28px。视觉（圆角/配色/字号）仍走控制台 token。 */
+  width: min(760px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 14px;
+  padding: clamp(20px, 2.5vw, 28px);
+  text-align: left;
+}
+
+.models-experience-model-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 描边+底色照 .mg-detail-avatar：透明底的白 logo 在浅色卡上会糊掉 */
+.models-experience-model-card-avatar {
+  flex-shrink: 0;
+  border: 1px solid var(--mg-border);
+  background: var(--mg-bg-1);
+}
+
+.models-experience-model-card-id {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.models-experience-model-card-name {
+  color: var(--mg-text-1);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.models-experience-model-card-api {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  color: var(--mg-text-3);
+  font-size: 12px;
+}
+
+.models-experience-model-card-api code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.models-experience-model-card-badges {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.models-experience-model-card-badge {
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.models-experience-model-card-badge.is-free {
+  color: var(--mg-success);
+  background: color-mix(in oklab, var(--mg-success) 14%, transparent);
+}
+
+.models-experience-model-card-badge.is-discount {
+  color: var(--mg-warning);
+  background: color-mix(in oklab, var(--mg-warning) 15%, transparent);
+}
+
+.models-experience-model-card-desc {
+  max-width: 700px;
+  color: var(--mg-text-2);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* 两列六格：左右两列各自独立分隔线（原型里两列的横线是断开的，不是通栏一条） */
+.models-experience-model-card-specs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* 原型 .playground-welcome-specs `gap: 0 20px` */
+  column-gap: 20px;
+}
+
+.models-experience-model-card-spec {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+  padding: 9px 0;
+  border-top: 1px solid var(--mg-border);
+}
+
+.models-experience-model-card-spec dt {
+  flex-shrink: 0;
+  color: var(--mg-text-3);
+  font-size: 13px;
+}
+
+/* 值右对齐（原型：标签左、值右）。省略号打在 OverflowTip 的主文本上，
+   单位与划线原价不参与截断，否则先被裁掉的是「/M Tokens」这种读价必需的信息。 */
+.models-experience-model-card-spec dd {
+  display: flex;
+  align-items: baseline;
+  /* 不给 gap：原型是「¥2/M Tokens」紧贴式，值与单位之间多一格空隙就读成两段
+     （与广场 .mg-metric-value 同口径）。标记与划线原价各自用 margin 留白。 */
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  color: var(--mg-text-1);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.models-experience-model-card-spec dd.is-price {
+  color: var(--mg-success);
+}
+
+.models-experience-model-card-spec-main {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.models-experience-model-card-spec dd i {
+  flex-shrink: 0;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.models-experience-model-card-spec dd s {
+  flex-shrink: 0;
+  margin-left: 5px;
+  color: var(--mg-text-4);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+/* 输入/输出类型格：每个模态是「图标 + 标签」一对，多模态可折行、整体右对齐
+   （原型 .playground-welcome-modalities：flex-wrap + gap 7px + justify-end，
+   对内每对 gap 3px）。 */
+.models-experience-model-card-spec dd.is-modality {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  justify-content: flex-end;
+  overflow: visible;
+}
+
+.mg-modality-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+/* 卡片挂在 .models-experience-empty 里，那层有 `span { font-size:13px; color:text-2 }`
+   的后代选择器（给空态提示文案用的），特指度压过单类名的 .mg-modality-chip，
+   会把模态标签染淡半档。这里把值的口径钉回 dd 自己，不受挂载位置影响。 */
+.models-experience-model-card-spec .mg-modality-chip {
+  color: inherit;
+  font-size: inherit;
+}
+
+/* 窄屏（侧栏展开或 390px 手机）：两列会把「输入价格 ¥2/M Tokens」挤成两截，落单列 */
+@media (max-width: 720px) {
+  .models-experience-model-card-specs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* 角标先折到自己一行（与广场卡片「顶行放角标」同型），把整行宽度让给名称：
+     否则 375px 下角标不收缩、名字先被榨干成「Qwe…」。 */
+  .models-experience-model-card-head {
+    flex-wrap: wrap;
+  }
+
+  .models-experience-model-card-badges {
+    order: -1;
+    flex-basis: 100%;
+    justify-content: flex-end;
+    margin-left: 0;
+  }
+
+  /* 名称/ID 改折行不省略：窄屏没有多余宽度可裁，省略号会把型号数字（5.0/V4 Pro）
+     这类关键信息吃掉。anywhere 只在真放不下时断词，不像 break-all 逢字就断。 */
+  .models-experience-model-card-name {
+    overflow: visible;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    font-size: 17px;
+  }
+
+  .models-experience-model-card-api code {
+    overflow: visible;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}

@@ -26,14 +26,20 @@ import { resolveModelCategory, hasPlaygroundExperience } from '../model-experien
 import { mapApiProtocols } from '../api-code-samples'
 import { ModelsCompareModal } from '../components/ModelsCompareModal'
 import { ApiAccessPanel } from './ApiAccessPanel'
+import { RuntimeMetricsSection } from './RuntimeMetricsSection'
+import { BenchmarkSection } from './BenchmarkSection'
 import '../catalog/catalog.css'
 
 /** 进入详情页时携带的导航上下文：来源 + 是否需要直接定位到 API 接入区 */
 interface DetailNavState {
-  source?: 'catalog_list' | 'catalog_featured' | 'related' | string
+  source?: 'catalog_list' | 'catalog_featured' | 'related' | 'discovery' | string
   scrollTo?: 'api-access'
   /** qa#292：从广场带过来的筛选 query（含 `?`），返回时原样带回去还原筛选 */
   fromSearch?: string
+  /** v1.0.6 §2.2：从模型发现页带过来的分析筛选 query，返回时原样带回 */
+  fromDiscoverySearch?: string
+  /** v1.0.6 §2.2：离开发现页时的滚动位置，返回后恢复现场 */
+  fromDiscoveryScrollY?: number
 }
 
 export default function ModelDetailPage() {
@@ -48,6 +54,22 @@ export default function ModelDetailPage() {
 
   const navState = (location.state as DetailNavState | null) ?? null
   const detailSource = navState?.source ?? 'direct'
+
+  /**
+   * v1.0.6 §2.2：来源是模型发现页时，返回目标改成发现页并带回它的分析筛选；
+   * 其余来源维持原有「返回模型广场」行为。发现页的筛选**不**带回广场，两者
+   * 是不同维度的筛选，混带会让广场出现莫名其妙的选中态。
+   */
+  const fromDiscovery = detailSource === 'discovery'
+  const backToSource = () => {
+    if (fromDiscovery) {
+      navigate(`/models/discovery${navState?.fromDiscoverySearch ?? ''}`, {
+        state: { restoreScrollY: navState?.fromDiscoveryScrollY },
+      })
+      return
+    }
+    navigate(`/models${navState?.fromSearch ?? ''}`)
+  }
 
   const apiSectionRef = useRef<HTMLDivElement>(null)
   const viewTrackedRef = useRef(false)
@@ -174,12 +196,14 @@ export default function ModelDetailPage() {
     <div className="models-catalog-page">
       <button
         type="button"
-        onClick={() => navigate(`/models${navState?.fromSearch ?? ''}`)}
+        onClick={backToSource}
         className="inline-flex w-fit items-center gap-1 text-[13px] text-mg-text-3 transition-colors hover:text-brand-base"
       >
         {/* 原型是 "← 返回模型广场"，← 是箭头不是尖括号，图标要用 LuArrowLeft 不是 LuChevronLeft */}
         <LuArrowLeft size={15} />
-        {t('modelsCatalog.detail.backToCatalog')}
+        {fromDiscovery
+          ? t('modelsCatalog.discovery.backToDiscovery')
+          : t('modelsCatalog.detail.backToCatalog')}
       </button>
 
       {detailQuery.isLoading ? (
@@ -248,6 +272,12 @@ export default function ModelDetailPage() {
               onCodeCopied={(codeTab) => trackEvent('marketplace_api_code_copied', { model_id: detail.model_id, code_tab: codeTab })}
             />
           </div>
+
+          {/* v1.0.6 §2.3 区块顺序：Hero/规格 → API 接入 → 平台运行表现 →
+              Benchmark → 相关模型。两块都是独立 .mg-tile.mg-detail-card，
+              与现有详情的纵向节奏一致，不把详情改成一张长卡。 */}
+          <RuntimeMetricsSection />
+          <BenchmarkSection modelId={detail.model_id} />
 
           {related.length > 0 && (
             <section className="mg-tile mg-detail-card">

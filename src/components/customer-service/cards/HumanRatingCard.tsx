@@ -44,7 +44,7 @@ export function HumanRatingCard({
     return (
       <article
         aria-label={t('common.customerService.humanRating.submittedAria')}
-        className="mg-tile mb-4 flex items-center gap-1.5 px-4 py-2.5 text-[12px] text-mg-text-2"
+        className="mg-tile mb-4 flex items-center gap-1.5 px-4 py-2.5 mg-text-caption text-mg-text-2"
       >
         <LuCircleCheck aria-hidden="true" className="text-mg-success" size={14} />
         <span role="status">{t('common.customerService.humanRating.submitted', { rating })}</span>
@@ -54,7 +54,7 @@ export function HumanRatingCard({
 
   if (status === 'skipped') {
     return (
-      <article className="mg-tile mb-4 px-4 py-2.5 text-[12px] text-mg-text-2">
+      <article className="mg-tile mb-4 px-4 py-2.5 mg-text-caption text-mg-text-2">
         {t('common.customerService.humanRating.skipped')}
       </article>
     )
@@ -66,7 +66,7 @@ export function HumanRatingCard({
         <strong className="mg-text-body font-semibold text-mg-text-1">
           {t('common.customerService.humanRating.title')}
         </strong>
-        {agentLabel ? <span className="text-[11px] text-mg-text-2">{agentLabel}</span> : null}
+        {agentLabel ? <span className="mg-cs-meta text-mg-text-2">{agentLabel}</span> : null}
       </header>
 
       <div aria-label={t('common.customerService.humanRating.starsAria')} className="mt-3 flex items-center gap-1" role="radiogroup">

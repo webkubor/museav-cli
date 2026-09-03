@@ -55,7 +55,7 @@ export function TicketPanel(props: TicketPanelProps) {
 
   if (props.loading) {
     return (
-      <div className="flex flex-1 items-center justify-center gap-1.5 text-[12px] text-mg-text-2">
+      <div className="flex flex-1 items-center justify-center gap-1.5 mg-text-caption text-mg-text-2">
         <LuLoaderCircle aria-hidden="true" className="animate-spin" size={14} />
         {t('common.customerService.ticket.loading')}
       </div>
@@ -68,7 +68,7 @@ export function TicketPanel(props: TicketPanelProps) {
         <strong className="mg-text-body font-semibold text-mg-text-1">
           {t('common.customerService.ticket.errorTitle')}
         </strong>
-        <p className="m-0 text-[11px] leading-relaxed text-mg-text-2">
+        <p className="m-0 mg-cs-meta leading-relaxed text-mg-text-2">
           {t('common.customerService.ticket.errorDesc')}
         </p>
         <div className="mt-1 flex gap-2">
@@ -131,7 +131,7 @@ function FeedbackTicketBody(props: TicketPanelProps & { ticket: SupportTicketDet
               {/* §7.11：补充以虚线分隔续写在问题描述之后，不呈现为独立消息 */}
               {(ticket.supplements ?? []).map((item) => (
                 <div className="mt-2 border-t border-dashed border-mg-border pt-2" key={item.id}>
-                  <p className="m-0 mb-1 text-[10px] text-mg-text-3">
+                  <p className="m-0 mb-1 mg-cs-micro text-mg-text-3">
                     {t('common.customerService.ticket.supplementAt', { time: formatDateTime(item.created_at) })}
                   </p>
                   {item.content ? (
@@ -156,7 +156,7 @@ function FeedbackTicketBody(props: TicketPanelProps & { ticket: SupportTicketDet
             ) : null}
             {snapshot.request_id ? (
               <Field label={t('common.customerService.feedback.requestIdLabel')}>
-                <code className="font-mono text-[12px] text-mg-text-1">{snapshot.request_id}</code>
+                <code className="font-mono mg-text-caption text-mg-text-1">{snapshot.request_id}</code>
               </Field>
             ) : null}
             {(snapshot.attachments ?? []).length > 0 ? (
@@ -268,7 +268,7 @@ function TimelineItem({
 
   if (message.kind === 'rating') {
     return (
-      <div className="text-center text-[11px] text-mg-text-2" ref={bindSentinel}>
+      <div className="text-center mg-cs-meta text-mg-text-2" ref={bindSentinel}>
         {t('common.customerService.ticket.ratingLine', { rating: message.content })}
       </div>
     )
@@ -277,8 +277,8 @@ function TimelineItem({
   if (isSystem) {
     return (
       <div className="flex flex-col items-center gap-0.5 text-center" ref={bindSentinel}>
-        <p className="m-0 text-[11px] leading-relaxed text-mg-text-2">{message.content}</p>
-        <time className="text-[10px] text-mg-text-3">{formatDateTime(message.created_at)}</time>
+        <p className="m-0 mg-cs-meta leading-relaxed text-mg-text-2">{message.content}</p>
+        <time className="mg-cs-micro text-mg-text-3">{formatDateTime(message.created_at)}</time>
       </div>
     )
   }
@@ -297,7 +297,7 @@ function TimelineItem({
           <AttachmentRow attachment={message.attachment} onDownload={onDownload} />
         ) : message.content}
       </div>
-      <time className="mt-0.5 px-1 text-[10px] text-mg-text-3">
+      <time className="mt-0.5 px-1 mg-cs-micro text-mg-text-3">
         {formatDateTime(message.created_at)}
       </time>
     </div>
@@ -361,7 +361,7 @@ function TicketFooter(props: TicketPanelProps & { ticket: SupportTicketDetail })
     }
     return (
       <footer className="flex flex-col gap-2 border-t border-mg-fill-0 px-4 py-3">
-        <label className="text-[11px] text-mg-text-2" htmlFor="mg-cs-supplement">
+        <label className="mg-cs-meta text-mg-text-2" htmlFor="mg-cs-supplement">
           {t('common.customerService.ticket.supplement')}
         </label>
         <Textarea
@@ -374,7 +374,7 @@ function TicketFooter(props: TicketPanelProps & { ticket: SupportTicketDetail })
         />
         <AttachmentPicker file={file} inputRef={fileInputRef} onPick={setFile} />
         {props.submitError ? (
-          <p className="m-0 text-[11px] text-mg-danger" role="alert">
+          <p className="m-0 mg-cs-meta text-mg-danger" role="alert">
             {t('common.customerService.ticket.supplementFailed')}
           </p>
         ) : null}
@@ -428,7 +428,7 @@ function TicketFooter(props: TicketPanelProps & { ticket: SupportTicketDetail })
       </div>
       <AttachmentPicker file={file} inputRef={fileInputRef} onPick={setFile} />
       {props.submitError ? (
-        <p className="m-0 text-[11px] text-mg-danger" role="alert">
+        <p className="m-0 mg-cs-meta text-mg-danger" role="alert">
           {t('common.customerService.ticket.replyFailed')}
         </p>
       ) : null}
@@ -449,8 +449,8 @@ function MetaList({
     <dl className={cn('m-0 flex flex-col gap-1', className)}>
       {rows.map((row) => (
         <div className="flex items-baseline justify-between gap-3" key={row.label}>
-          <dt className="shrink-0 text-[11px] text-mg-text-2">{row.label}</dt>
-          <dd className={cn('m-0 truncate text-[11px] text-mg-text-1', row.mono && 'font-mono')}>{row.value}</dd>
+          <dt className="shrink-0 mg-cs-meta text-mg-text-2">{row.label}</dt>
+          <dd className={cn('m-0 truncate mg-cs-meta text-mg-text-1', row.mono && 'font-mono')}>{row.value}</dd>
         </div>
       ))}
     </dl>
@@ -460,7 +460,7 @@ function MetaList({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-[11px] text-mg-text-2">{label}</span>
+      <span className="mg-cs-meta text-mg-text-2">{label}</span>
       {children}
     </div>
   )
@@ -475,7 +475,7 @@ function AttachmentRow({
 }) {
   const { t } = useTranslation()
   return (
-    <span className="mt-1 inline-flex max-w-full items-center gap-1 text-[11px] text-mg-text-1">
+    <span className="mt-1 inline-flex max-w-full items-center gap-1 mg-cs-meta text-mg-text-1">
       <LuPaperclip aria-hidden="true" className="shrink-0" size={11} />
       <span className="truncate" title={attachment.file_name}>{attachment.file_name}</span>
       <button
@@ -501,7 +501,7 @@ function AttachmentPicker({
 }) {
   const { t } = useTranslation()
   return (
-    <label className="inline-flex cursor-pointer items-center gap-1 text-[11px] text-mg-text-2 hover:text-mg-text-1">
+    <label className="inline-flex cursor-pointer items-center gap-1 mg-cs-meta text-mg-text-2 hover:text-mg-text-1">
       <input
         aria-label={t('common.customerService.ticket.attachmentAria')}
         className="sr-only"
@@ -522,7 +522,7 @@ function HandlingEvents({ ticket }: { ticket: SupportTicketDetail }) {
   if (events.length === 0 || ticket.service_mode === 'live') return null
   return (
     <div aria-label={t('common.customerService.ticket.handlingTitle')} className="mt-4">
-      <p className="m-0 mb-1.5 text-[11px] font-bold tracking-wide text-mg-text-2">
+      <p className="m-0 mb-1.5 mg-cs-meta font-bold tracking-wide text-mg-text-2">
         {t('common.customerService.ticket.handlingTitle')}
       </p>
       <ol className="m-0 flex list-none flex-col gap-2 p-0">
@@ -531,7 +531,7 @@ function HandlingEvents({ ticket }: { ticket: SupportTicketDetail }) {
             <span aria-hidden="true" className="mt-1 size-1 shrink-0 rounded-full bg-mg-fill-2" />
             <span className="min-w-0 flex-1">
               <span className="mg-text-body text-mg-text-1">{event.summary}</span>
-              <span className="ml-1.5 text-[10px] text-mg-text-3">
+              <span className="ml-1.5 mg-cs-micro text-mg-text-3">
                 {event.actor_name} · {formatDateTime(event.created_at)}
               </span>
             </span>

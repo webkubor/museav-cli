@@ -92,7 +92,7 @@ export function RecordsPanel(props: RecordsPanelProps) {
             title={t('common.customerService.records.errorTitle')}
           />
         ) : props.loading ? (
-          <div className="flex items-center justify-center gap-1.5 py-8 text-[12px] text-mg-text-2">
+          <div className="flex items-center justify-center gap-1.5 py-8 mg-text-caption text-mg-text-2">
             <LuLoaderCircle aria-hidden="true" className="animate-spin" size={14} />
             {t('common.customerService.records.loading')}
           </div>
@@ -111,7 +111,7 @@ export function RecordsPanel(props: RecordsPanelProps) {
             {props.hasMore ? (
               <button
                 className={cn(
-                  'mt-1 inline-flex items-center justify-center gap-1.5 rounded-sm py-2 text-[12px] text-mg-text-2',
+                  'mt-1 inline-flex items-center justify-center gap-1.5 rounded-sm py-2 mg-text-caption text-mg-text-2',
                   'hover:bg-mg-fill-0 hover:text-mg-text-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-glow',
                 )}
                 disabled={props.loadingMore}
@@ -153,7 +153,7 @@ function RecordRow({
       type="button"
     >
       <span className="flex items-center gap-1.5">
-        <span className="text-[11px] text-mg-text-2">{ticket.display_type}</span>
+        <span className="mg-cs-meta text-mg-text-2">{ticket.display_type}</span>
         <Badge size="xs" variant={STATUS_VARIANT[ticket.status]}>{ticket.status_label}</Badge>
         {hasUnread ? (
           <Badge className="ml-auto" size="xs" variant="brand">
@@ -163,9 +163,9 @@ function RecordRow({
       </span>
       <strong className="truncate mg-text-body font-semibold text-mg-text-1">{ticket.title}</strong>
       {ticket.latest_visible_message ? (
-        <span className="truncate text-[11px] text-mg-text-2">{ticket.latest_visible_message}</span>
+        <span className="truncate mg-cs-meta text-mg-text-2">{ticket.latest_visible_message}</span>
       ) : null}
-      <span className="text-[10px] text-mg-text-3">
+      <span className="mg-cs-micro text-mg-text-3">
         <span className="font-mono">{ticket.ticket_id}</span>
         {' · '}
         {formatDateTime(ticket.updated_at)}
@@ -188,7 +188,7 @@ function ResultBlock({
   return (
     <div className="flex flex-col items-center gap-1.5 py-8 text-center" role={role}>
       <strong className="mg-text-body font-semibold text-mg-text-1">{title}</strong>
-      <p className="m-0 max-w-[80%] text-[11px] leading-relaxed text-mg-text-2">{description}</p>
+      <p className="m-0 max-w-[80%] mg-cs-meta leading-relaxed text-mg-text-2">{description}</p>
       {action ? <div className="mt-1.5">{action}</div> : null}
     </div>
   )

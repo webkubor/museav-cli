@@ -43,22 +43,22 @@ export function AsyncTicketCard({ data }: { data: AsyncTicketCardData }) {
         <Badge className="ml-auto" size="sm" variant="brand">{data.statusLabel}</Badge>
       </header>
 
-      <p className="mt-2 mb-0 text-[12px] leading-relaxed text-mg-text-2">{data.reason}</p>
+      <p className="mt-2 mb-0 mg-text-caption leading-relaxed text-mg-text-2">{data.reason}</p>
 
       <dl className="mt-3 mb-0 flex flex-col gap-1.5">
         <div className="flex items-baseline justify-between gap-3">
-          <dt className="text-[11px] text-mg-text-2">{t('common.customerService.asyncTicket.idLabel')}</dt>
-          <dd className="m-0 font-mono text-[12px] text-mg-text-1">{data.ticketId}</dd>
+          <dt className="mg-cs-meta text-mg-text-2">{t('common.customerService.asyncTicket.idLabel')}</dt>
+          <dd className="m-0 font-mono mg-text-caption text-mg-text-1">{data.ticketId}</dd>
         </div>
         {data.expectedContactLabel ? (
           <div className="flex items-baseline justify-between gap-3">
-            <dt className="text-[11px] text-mg-text-2">{t('common.customerService.asyncTicket.etaLabel')}</dt>
-            <dd className="m-0 text-[12px] text-mg-text-1">{data.expectedContactLabel}</dd>
+            <dt className="mg-cs-meta text-mg-text-2">{t('common.customerService.asyncTicket.etaLabel')}</dt>
+            <dd className="m-0 mg-text-caption text-mg-text-1">{data.expectedContactLabel}</dd>
           </div>
         ) : null}
       </dl>
 
-      <p className="mt-3 mb-0 border-t border-mg-border pt-2.5 text-[11px] leading-relaxed text-mg-text-2">
+      <p className="mt-3 mb-0 border-t border-mg-border pt-2.5 mg-cs-meta leading-relaxed text-mg-text-2">
         {t('common.customerService.asyncTicket.contact')}
       </p>
     </article>

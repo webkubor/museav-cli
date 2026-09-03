@@ -174,7 +174,10 @@ if (full) {
         const body = blk.slice(brace)
         if (!CONTENT_GLASS_RE.test(body) || !CONTENT_SURFACE_RE.test(selector)) continue
         // 浮层命名（popover/dropdown/modal/sheet/tooltip/header）本就允许毛玻璃
+        // 浮层命名本就允许玻璃；.mg-tile 是 DESIGN.md 写明的唯一内容面例外
+        // （表面已并入玻璃系统，见 components.css 里那段注释）
         if (/(popover|dropdown|modal|dialog|sheet|tooltip|float|header|overlay)/i.test(selector)) continue
+        if (/\.mg-tile\b/.test(selector)) continue
         designWarns.push(
           `⚠ ${file}  内容面 \`${selector.trim().split('\n').pop().slice(0, 48)}\` 用了 backdrop-filter —— ` +
           `内容（卡片/面板/列表/表格）实心，毛玻璃只给浮层 chrome（DESIGN.md · Don'ts）`

@@ -124,8 +124,9 @@ export function UsageTrendSection({ granularity, accountId }: { granularity: Gra
                 content={({ active, payload }) => {
                   if (!active || !payload?.length) return null
                   const p = payload[0].payload as TrendPoint
+                  // 表面走全局浮层类 mg-float，与其它浮层同一档（原来是本处独有的 bg-mg-bg-2/98 + blur-md）
                   return (
-                    <div className="rounded-md border border-mg-border bg-mg-bg-2/98 backdrop-blur-md p-3 shadow-[0_8px_30px_rgb(0,0,0,0.06)] text-left select-none min-w-[120px] space-y-1">
+                    <div className="rounded-md mg-float p-3 text-left select-none min-w-[120px] space-y-1">
                       <div className="text-xs text-mg-text-3 font-medium">{t(`dashboard.workbench.trend.metric.${metric}`)}</div>
                       <div className="text-sm font-mono font-black text-brand-base tabular-nums">{formatValue(p.value)}</div>
                       <div className="text-xs text-mg-text-3 font-semibold font-mono pt-1 border-t border-mg-border">{fmtLabel(isMonth, p.bucket_start)}</div>

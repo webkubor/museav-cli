@@ -256,6 +256,33 @@
   filter: brightness(0.97);
 }
 
+/* 浮层统一表面（Popover / DropdownMenu / Select / Dialog / Sheet / Tooltip 全挂这一个类）
+   —— 配方（模糊、主题色、微光、阴影、描边）收在 --mg-float-*（tokens.css），组件侧只写 `mg-float`。
+   为什么收成一个类：此前 8 个浮层组件各写一套底色（bg-mg-bg-2 / bg-mg-bg-3 /
+   rgba(--mg-bg-0-rgb,.88) + backdrop-blur-md 三种都有），同一个下拉换个页面就换脸，
+   而且每加一个浮层就要重新猜「该用哪一档背景」。
+   ⚠️ 底线是遮挡不是效果：不透明度由 --mg-float-opacity 保证（见该 token 注释里的 #504 由来），
+   谁要调低它必须先做「浮层压在正文上截图看能不能读出字」这一步验证。 */
+.mg-float {
+  background: var(--mg-float-bg);
+  border: 1px solid var(--mg-float-line);
+  -webkit-backdrop-filter: blur(var(--mg-float-blur)) saturate(var(--mg-float-saturate));
+  backdrop-filter: blur(var(--mg-float-blur)) saturate(var(--mg-float-saturate));
+  /* 三层叠加：inset 顶部亮边（玻璃厚度）+ 品牌微光晕 + 分层柔和投影（浮起） */
+  box-shadow:
+    inset 0 1px 0 var(--mg-float-sheen),
+    var(--mg-float-glow),
+    var(--mg-float-shadow);
+}
+
+/* 不支持 backdrop-filter 的浏览器直接退回完全实色 —— 没有模糊时那 8% 的透明就是纯粹的漏字，
+   宁可丢玻璃质感也不能丢遮挡（这条是 #504 的下限，不是渐进增强的可选项）。 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .mg-float {
+    background: var(--mg-float-surface);
+  }
+}
+
 /* 内容瓦片 —— Apple 风卡片语言（2026-07-23）：淡边框(hairline) + 柔和扩散阴影撑层次，
    卡片靠阴影"浮起"而非硬线框。边框/阴影走 --mg-card-* token（深浅各一套，见 tokens.css）。
    .mg-tile 给静态容器；.mg-tile-hover 追加可交互抬升（悬浮上浮 + 阴影加深 + 品牌色边框） */

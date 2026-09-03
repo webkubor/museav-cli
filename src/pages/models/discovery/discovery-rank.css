@@ -69,10 +69,12 @@
   /* 必须显式给：按钮会继承 TableCell 的 .mg-text-body 行高（24px），
      6+6+24=36px 把整行顶到 69px；原型那颗继承的是 11px 字号的 normal 行高。 */
   line-height: 1;
-  /* 图标按钮：正方形槽位，不再按文字宽度撑开 */
+  /* 文案按 PRD 原型是「查看详情 ↗」/「待支持」（2026-09-03 改回），所以按内容宽，
+     不能再锁成 26×26 的正方形图标槽位——锁了文字会被裁。
+     高度仍固定：原型那颗是 27px（redesign.css:15645），这里取 26px 与其余小控件同档。 */
   height: 26px;
-  padding: 0;
-  width: 26px;
+  padding: 0 8px;
+  white-space: nowrap;
 }
 
 .model-discovery-detail-btn:disabled {

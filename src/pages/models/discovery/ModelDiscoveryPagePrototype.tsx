@@ -25,7 +25,6 @@ import {
   LuCheck,
   LuCheckCheck,
   LuChevronDown,
-  LuMinus,
   LuListFilter,
   LuRotateCcw,
   LuSearch,
@@ -1404,14 +1403,14 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
           <Table className="model-discovery-table">
             <TableHeader>
               <TableRow>
-                <TableHead align="center">排名</TableHead>
+                <TableHead>排名</TableHead>
                 <TableHead align="left">模型</TableHead>
-                <TableHead align="center">状态</TableHead>
-                <TableHead align="right">
+                <TableHead>状态</TableHead>
+                <TableHead>
                   {selectedMetricHeader}<em className="model-discovery-source-tag">{selectedMetricSource}</em>
                 </TableHead>
-                {supportingMetricHeaders.map((header) => <TableHead align="right" key={header}>{header}</TableHead>)}
-                <TableHead align="right"><span className="sr-only">操作</span></TableHead>
+                {supportingMetricHeaders.map((header) => <TableHead key={header}>{header}</TableHead>)}
+                <TableHead><span className="sr-only">操作</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1440,21 +1439,23 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                     role={hasDetail ? "link" : undefined}
                     tabIndex={hasDetail ? 0 : undefined}
                   >
-                    <TableCell align="center">{(safeTablePage - 1) * tablePageSize + index + 1}</TableCell>
+                    <TableCell>{(safeTablePage - 1) * tablePageSize + index + 1}</TableCell>
                     <TableCell align="left"><strong className="model-discovery-cell-model"><DiscoveryModelIcon model={model.name} provider={model.provider} /><span><span title={model.name}>{model.name}</span><small>{model.provider}</small></span></strong></TableCell>
-                    <TableCell align="center">
+                    <TableCell>
                       <em className={isModelConnected(model) ? "supported" : "pending"}>{modelAccessLabel(model)}</em>
                     </TableCell>
-                    <TableCell align="right"><b className="metric-primary">{selectedMetricValue(model)}</b></TableCell>
+                    <TableCell><b className="metric-primary">{selectedMetricValue(model)}</b></TableCell>
                     {supportingValues.map((value, valueIndex) => (
-                      <TableCell align="right" key={`${model.name}-${valueIndex}`}>{value}</TableCell>
+                      <TableCell key={`${model.name}-${valueIndex}`}>{value}</TableCell>
                     ))}
-                    <TableCell align="right">
+                    <TableCell>
                       {hasDetail
-                        /* 收成图标按钮：整行本来就是 role=link 可点（见 TableRow 上的 onClick），
-                           行尾这颗按钮做的是同一件事，20 行 × 「查看详情」四个字 + 描边
-                           是整页最大的一处视觉噪音。文案移到 title / aria-label，信息不丢。
-                           禁用态用减号而不是「待支持」三个字，同理。
+                        /* 文案按 PRD 原型：「查看详情 ↗」/ 禁用态「待支持」。
+                           2026-09-03 owner 澄清「1:1 还原」的边界后改回来的 —— 文案属于
+                           「字段」维度、真源是原型（CLAUDE.md 入场第 4 条的维度表）。
+                           此前这里收成了纯图标 + 减号，理由写的是「20 行 × 四个字是整页最大的
+                           视觉噪音，文案移到 title/aria-label 信息不丢」——那是拿视觉理由砍 PRD
+                           字段，不成立。
 
                            这里用原生 button 而不是控制台 Button 组件，与本文件其余 14 处一致：
                            Button 带着控制台的整套规格（高度锁在 --mg-control-h-sm=36px、
@@ -1462,8 +1463,8 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                            按钮（redesign.css:15645）——套组件就得靠层层 !important 对抗才能扳回来，
                            本页又是 1:1 例外。plan §3.2 要求的是表格体系走 Table + Pagination，
                            没有要求行内按钮换组件。样式见 discovery.css .model-discovery-detail-btn。 */
-                        ? <button aria-label={modelDetailAriaLabel(model)} className="model-discovery-detail-btn" onClick={(event) => { event.stopPropagation(); openModelDetail(model); }} title="查看详情" type="button"><LuArrowUpRight size={13} /></button>
-                        : <button aria-label={`${model.name} 暂未接入，待支持`} className="model-discovery-detail-btn" disabled title="暂未接入" type="button"><LuMinus size={13} /></button>}
+                        ? <button aria-label={modelDetailAriaLabel(model)} className="model-discovery-detail-btn" onClick={(event) => { event.stopPropagation(); openModelDetail(model); }} title="查看详情" type="button">查看详情<LuArrowUpRight size={13} /></button>
+                        : <button aria-label={`${model.name} 暂未接入，待支持`} className="model-discovery-detail-btn" disabled title="暂未接入" type="button">待支持</button>}
                     </TableCell>
                   </TableRow>
                 );

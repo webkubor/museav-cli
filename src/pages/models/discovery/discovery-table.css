@@ -55,3 +55,12 @@
   font-weight: 680;
   min-width: 72px;
 }
+
+/* 等宽数字。原型对表格行开了
+   `.model-discovery-table-row > span, > b { font-variant-numeric: tabular-nums }`，
+   这样 61.3 / 59.8 / $3.69 这些数值竖着看小数点是对齐的。
+   对整张表开，模型名那列是中英文混排、不受影响。 */
+.model-discovery-page .model-discovery-table-card td,
+.model-discovery-page .model-discovery-table-card th {
+  font-variant-numeric: tabular-nums;
+}

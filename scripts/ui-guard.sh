@@ -20,7 +20,7 @@ if [ "${1:-}" = "--rules" ]; then
   echo ""
   echo "受控豁免：文件里写 \`ui-guard-ignore: <关键词> —— <理由>\`（必须带理由）可跳过对应规则。"
   echo ""
-  echo "另有 node scripts/check-css-tokens.mjs：未声明的 var()（阻断）、裸字号 / 字体族字符串 / 内容面毛玻璃（提醒）"
+  echo "另有 node scripts/check-css-tokens.mjs：未声明的 var()（阻断）、CSS 简写重置 font:/all: inherit|unset（阻断，会静默击穿组件样式）、裸字号 / 字体族字符串 / 内容面毛玻璃（提醒）"
   exit 0
 fi
 

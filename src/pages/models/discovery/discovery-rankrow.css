@@ -207,7 +207,7 @@
   color: var(--accent);
   cursor: pointer;
   display: inline-flex;
-  font: inherit;
+  font-family: inherit;
   font-size: var(--discovery-fs-body);
   gap: 4px;
   padding: 3px 0;

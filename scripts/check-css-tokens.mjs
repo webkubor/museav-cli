@@ -51,6 +51,27 @@ const RAW_FONT_FAMILY_RE = /font-family:\s*(?!var\()[^;]+/g
     既出现 .mg-tile / card / panel / table 这类内容面命名，又出现 backdrop-filter。 */
 const CONTENT_GLASS_RE = /backdrop-filter/
 const CONTENT_SURFACE_RE = /(mg-tile|-card\b|-panel\b|-table\b|-row\b|-list\b)/
+/**
+ * 简写属性重置：`font: inherit` / `all: unset` 这类。
+ *
+ * 危害是**静默的**：简写会把该组下所有长属性一起重置（`font:` 连带 font-size /
+ * font-weight / line-height），而页面 CSS 的选择器权重（`.page-scope element`，两级）
+ * 通常高于组件自带的单类（`.mg-text-body`），于是组件样式被无声击穿 —— 页面看着"就是
+ * 大了一号"，但没人知道是哪来的。
+ *
+ * 2026-09-03 实测：模型发现页一条 `.model-discovery-page button, select, input
+ * { font: inherit }` 把本页 44 个控件里 12 个的字号从 14px 击穿成继承来的 16px，
+ * 需求方在「完整指标榜单」的筛选条上看出来才被发现。
+ *
+ * 正确写法：只重置真正需要的那个长属性 —— 原生控件不继承页面字体，写
+ * `font-family: inherit`（需要的话再加 `letter-spacing: inherit`）就够，字号交给组件类。
+ *
+ * 确有必要时在同一行加 `/* allow-shorthand-reset *\/` 豁免，但要在注释里写清为什么。
+ */
+const SHORTHAND_RESET_RE = /(?:^\s*|[;{]\s*)(font|all)\s*:\s*(inherit|initial|unset|revert(?:-layer)?)\b/g
+/** 豁免标记：同一行出现即跳过该行的简写检查 */
+const SHORTHAND_ALLOW = 'allow-shorthand-reset'
+
 /** 全局字阶档位，用于在提示里给出最接近的一档 */
 const TEXT_SCALE = [
   ['--mg-text-xs', 12], ['--mg-text-sm', 14], ['--mg-text-body', 16],
@@ -71,6 +92,8 @@ const tryDiffBase = () => {
 const fontWarns = []
 /** 其余 DESIGN.md 约束的警告（字体族、内容面毛玻璃） */
 const designWarns = []
+/** 简写重置是阻断级：它会静默击穿组件样式，且替代写法就在旁边，没有留存量的理由 */
+const shorthandBlocks = []
 let diffBase = 'HEAD'
 if (!full) {
   const base = tryDiffBase()
@@ -193,6 +216,15 @@ if (full) {
           console.error(`✗ ${file}:${lineNo}  引用了未声明的变量 var(${name})`)
         }
       }
+      if (/\.(css)$/.test(file) && !text.includes(SHORTHAND_ALLOW)) {
+        for (const m of text.matchAll(SHORTHAND_RESET_RE)) {
+          shorthandBlocks.push(
+            `✗ ${file}:${lineNo}  \`${m[1]}: ${m[2]}\` 是简写重置 —— 它会连带重置该组所有长属性` +
+            `（\`font:\` 还会带走 font-size / font-weight / line-height），而页面选择器权重高于` +
+            `组件自带的单类，会静默击穿组件样式。只重置需要的那一个长属性（如 font-family: inherit）。`
+          )
+        }
+      }
       if (/\.(css)$/.test(file)) {
         for (const m of text.matchAll(RAW_FONT_FAMILY_RE)) {
           if (/inherit|initial|unset/.test(m[0])) continue
@@ -224,6 +256,13 @@ if (fontWarns.length) {
   console.warn(`\n⚠️  ${fontWarns.length} 处新增裸字号（不阻断提交，但请收进字阶）：`)
   for (const w of fontWarns.slice(0, 20)) console.warn('   ' + w)
   if (fontWarns.length > 20) console.warn(`   …… 另 ${fontWarns.length - 20} 处`)
+}
+
+if (shorthandBlocks.length) {
+  console.error(`\n❌ ${shorthandBlocks.length} 处简写属性重置 —— 会静默击穿组件样式，必须改掉：`)
+  for (const b of shorthandBlocks) console.error('   ' + b)
+  console.error('   确有必要时在同一行加 /* allow-shorthand-reset */ 豁免，并写清为什么。')
+  process.exit(1)
 }
 
 if (failed) {

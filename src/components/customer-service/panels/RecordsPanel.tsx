@@ -153,7 +153,7 @@ function RecordRow({
       type="button"
     >
       <span className="flex items-center gap-1.5">
-        <span className="mg-cs-meta text-mg-text-2">{ticket.display_type}</span>
+        <span className="mg-text-meta text-mg-text-2">{ticket.display_type}</span>
         <Badge size="xs" variant={STATUS_VARIANT[ticket.status]}>{ticket.status_label}</Badge>
         {hasUnread ? (
           <Badge className="ml-auto" size="xs" variant="brand">
@@ -163,9 +163,9 @@ function RecordRow({
       </span>
       <strong className="truncate mg-text-body font-semibold text-mg-text-1">{ticket.title}</strong>
       {ticket.latest_visible_message ? (
-        <span className="truncate mg-cs-meta text-mg-text-2">{ticket.latest_visible_message}</span>
+        <span className="truncate mg-text-meta text-mg-text-2">{ticket.latest_visible_message}</span>
       ) : null}
-      <span className="mg-cs-micro text-mg-text-3">
+      <span className="mg-text-micro text-mg-text-3">
         <span className="font-mono">{ticket.ticket_id}</span>
         {' · '}
         {formatDateTime(ticket.updated_at)}
@@ -188,7 +188,7 @@ function ResultBlock({
   return (
     <div className="flex flex-col items-center gap-1.5 py-8 text-center" role={role}>
       <strong className="mg-text-body font-semibold text-mg-text-1">{title}</strong>
-      <p className="m-0 max-w-[80%] mg-cs-meta leading-relaxed text-mg-text-2">{description}</p>
+      <p className="m-0 max-w-[80%] mg-text-meta leading-relaxed text-mg-text-2">{description}</p>
       {action ? <div className="mt-1.5">{action}</div> : null}
     </div>
   )

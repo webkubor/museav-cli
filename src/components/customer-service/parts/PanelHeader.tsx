@@ -61,7 +61,7 @@ export function PanelHeader(props: PanelHeaderProps) {
 
       <div className="min-w-0 flex-1">
         <p className="m-0 truncate mg-text-body font-semibold text-mg-text-1">{headerTitle(props, t)}</p>
-        <div className="mt-px flex min-w-0 items-center gap-1.5 mg-cs-meta text-mg-text-2">
+        <div className="mt-px flex min-w-0 items-center gap-1.5 mg-text-meta text-mg-text-2">
           {headerSubtitle(props, t)}
         </div>
       </div>

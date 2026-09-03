@@ -139,10 +139,16 @@
         短假名，18px 撑得住；真实数据是「Claude Fable 5.1 (Adaptive Reasoning,
         Max Effort, Default Fallback)」70 个字符，18px 会撑爆整列、还压过 17px 的
         卡片标题。字号开不大的那部分层次，由 680 字重 + 主色补足——
-        **原型的数值是在原型的数据上调的，不能直接照搬到真实数据上。** */
-  --discovery-fs-micro: 10px;
-  --discovery-fs-body: var(--mg-text-xs);
-  --discovery-fs-block: 16px;
+        **原型的数值是在原型的数据上调的，不能直接照搬到真实数据上。**
+
+     2026-09-03 收敛：档位的**语义名保留在这里**（micro/body/block/title/subject 是这一页
+     的角色名，读代码时有意义），但**值一律引用控制台字阶**，不再自持数值——原来
+     micro 的 10px 曾在这里与智能客服面板各定义一份，同一个值写了两遍（已收）。
+     只有 title(17) 留作页面级：全局没有这一档，且上面注释①说明 block(16) < title(17)
+     是原型刻意的，硬归到 title-sm(18) 会破坏这个层级。 */
+  --discovery-fs-micro: var(--mg-font-size-micro);
+  --discovery-fs-body: var(--mg-font-size-caption);
+  --discovery-fs-block: var(--mg-font-size-value);
   --discovery-fs-title: 17px;
-  --discovery-fs-subject: var(--mg-text-sm);
+  --discovery-fs-subject: var(--mg-font-size-body);
 }

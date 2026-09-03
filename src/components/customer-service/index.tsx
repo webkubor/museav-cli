@@ -699,7 +699,7 @@ export function CustomerService() {
             {unreadTotal > 0 && !isHumanFlow(mode) ? (
               <span
                 aria-label={t('common.customerService.records.unreadCount', { count: unreadTotal })}
-                className="absolute -right-0.5 -top-0.5 inline-flex min-w-4 items-center justify-center rounded-full bg-brand-base px-1 mg-cs-micro font-bold text-white"
+                className="absolute -right-0.5 -top-0.5 inline-flex min-w-4 items-center justify-center rounded-full bg-brand-base px-1 mg-text-micro font-bold text-white"
                 role="status"
               >
                 {unreadTotal > UNREAD_BADGE_MAX ? `${UNREAD_BADGE_MAX}+` : unreadTotal}
@@ -851,7 +851,7 @@ function PanelFooter(props: {
     return (
       <div className="flex flex-col gap-2 border-t border-mg-fill-0 px-4 py-3">
         {props.feedbackSubmitError ? (
-          <p className="m-0 mg-cs-meta text-mg-danger" role="alert">{props.feedbackSubmitError}</p>
+          <p className="m-0 mg-text-meta text-mg-danger" role="alert">{props.feedbackSubmitError}</p>
         ) : null}
         <div className="flex justify-end gap-2">
           <Button disabled={props.feedbackSubmitting} onClick={props.onCancelFeedback} size="small" variant="ghost">

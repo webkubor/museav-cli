@@ -66,7 +66,7 @@ export function HumanRatingCard({
         <strong className="mg-text-body font-semibold text-mg-text-1">
           {t('common.customerService.humanRating.title')}
         </strong>
-        {agentLabel ? <span className="mg-cs-meta text-mg-text-2">{agentLabel}</span> : null}
+        {agentLabel ? <span className="mg-text-meta text-mg-text-2">{agentLabel}</span> : null}
       </header>
 
       <div aria-label={t('common.customerService.humanRating.starsAria')} className="mt-3 flex items-center gap-1" role="radiogroup">

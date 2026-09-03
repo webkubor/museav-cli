@@ -80,7 +80,7 @@ export function ChatPanel(props: ChatPanelProps) {
             </p>
           </div>
           <div>
-            <p className="m-0 mb-2 mg-cs-meta font-bold tracking-wide text-mg-text-2">
+            <p className="m-0 mb-2 mg-text-meta font-bold tracking-wide text-mg-text-2">
               {t('common.customerService.quickQuestionsTitle')}
             </p>
             <div className="flex flex-col gap-1.5" aria-label={t('common.customerService.quickQuestionsTitle')}>
@@ -162,7 +162,7 @@ function MessageRow({
   // 系统消息（排队提示、连接中、取消、人工结束）走居中细体，不用气泡
   if (message.role === 'system') {
     return (
-      <p className="mx-auto mb-4 max-w-[86%] text-center mg-cs-meta leading-relaxed text-mg-text-2" role="status">
+      <p className="mx-auto mb-4 max-w-[86%] text-center mg-text-meta leading-relaxed text-mg-text-2" role="status">
         {message.content}
       </p>
     )
@@ -178,7 +178,7 @@ function MessageRow({
         {message.role === 'human-agent' ? (
           <span
             aria-hidden="true"
-            className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-brand-base/10 mg-cs-micro font-bold text-brand-base"
+            className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-brand-base/10 mg-text-micro font-bold text-brand-base"
           >
             {t('common.customerService.handoff.agentInitial')}
           </span>
@@ -203,7 +203,7 @@ function MessageRow({
           ) : null}
         </div>
       </div>
-      <span className={cn('mt-1 px-1 mg-cs-micro text-mg-text-3')}>
+      <span className={cn('mt-1 px-1 mg-text-micro text-mg-text-3')}>
         {formatTimestamp(message.timestamp, t)}
       </span>
     </div>

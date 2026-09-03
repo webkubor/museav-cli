@@ -1,4 +1,14 @@
 /* ── 💎 通用元组件样式抽离与大厂极简现代美学（硅谷风格） ── */
+.mg-text-micro {
+  font-size: var(--mg-font-size-micro);
+  line-height: var(--mg-line-height-micro);
+}
+
+.mg-text-meta {
+  font-size: var(--mg-font-size-meta);
+  line-height: var(--mg-line-height-meta);
+}
+
 .mg-text-caption {
   font-size: var(--mg-font-size-caption);
   line-height: var(--mg-line-height-caption);
@@ -757,27 +767,6 @@ body:not([theme-mode='dark']) header.mg-glass-bar-strong {
 .mg-toast-warning .mg-toast-icon { color: var(--mg-toast-warning-icon) !important; }
 .mg-toast-error .mg-toast-icon { color: var(--mg-toast-error-icon) !important; }
 .mg-toast-info .mg-toast-icon { color: var(--mg-toast-info-icon) !important; }
-
-/* ── 智能助手：模块级字阶 ──────────────────────────────────────
-   面板宽 380px（窄屏还会收缩），需要 10/11px 这两档才排得开，而控制台全局字阶
-   最小是 caption 12px。按 check-css-tokens 允许的第二条路——「页面级字阶变量」
-   ——在这里把档位命名下来，与模型发现页的 --discovery-fs-* 同一范式：
-   有名字才有主次关系，改一处全模块生效，也不会散成裸数值。
-   12px 及以上直接用全局的 .mg-text-caption / .mg-text-body，不再自建。 */
-:root {
-  --mg-cs-fs-micro: 10px;   /* 时间戳、附件名等最弱注解 */
-  --mg-cs-fs-meta: 11px;    /* 元信息：状态、标签、字段名、副标题 */
-}
-
-.mg-cs-micro {
-  font-size: var(--mg-cs-fs-micro);
-  line-height: 1.4;
-}
-
-.mg-cs-meta {
-  font-size: var(--mg-cs-fs-meta);
-  line-height: 1.5;
-}
 
 /* ── 智能助手：回答生成中的三点动画 ────────────────────────────
    旧实现把 @keyframes 写在组件里的内联 <style> 标签里，每次挂载都往

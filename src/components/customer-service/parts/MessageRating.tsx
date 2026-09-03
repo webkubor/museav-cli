@@ -54,7 +54,7 @@ export function MessageRating({
         label={t('common.customerService.rating.down')}
         onClick={() => choose('down')}
       />
-      <span aria-live="polite" className="inline-flex items-center gap-1 mg-cs-meta text-mg-text-2" role="status">
+      <span aria-live="polite" className="inline-flex items-center gap-1 mg-text-meta text-mg-text-2" role="status">
         {acknowledged ? (
           <>
             <LuCircleCheck aria-hidden="true" size={12} />

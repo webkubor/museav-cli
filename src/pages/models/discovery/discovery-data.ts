@@ -72,6 +72,9 @@ export function formatScore(card: Pick<DiscoveryModelCard, 'primary_score' | 'pr
  */
 export function formatPrice(value: number | null, type: DiscoveryType): string {
   if (value === null) return EMPTY
+  // 0 是"免费"，不是"$0.0000"。后者读起来像精度丢失，柱图上还会标出一串没有信息量的零
+  // （单次任务成本榜首位实测就是 $0.0000，2026-09-03）。
+  if (value === 0) return '免费'
   if (isLanguageType(type)) return `$${value.toFixed(4)}/次`
   if (type === 'TEXT_TO_IMAGE' || type === 'IMAGE_EDITING') return `$${value}/1K 张`
   if (type === 'TEXT_TO_VIDEO' || type === 'IMAGE_TO_VIDEO') return `$${value}/分钟`
@@ -171,6 +174,11 @@ function specialtyFieldFor(
  *
  * **无该指标数据的模型直接排除**，不是排到末尾：接口的 null 表示第三方没提供，
  * 混进榜单会让人以为它排最后（即"最差"）。
+ *
+ * **用量榜还要排除 0**：「近 7 日热度 Top 10」是"最热的十个"，把零调用的模型排进去，
+ * 画出来是一排高度为 0、看不见的柱子加一排悬空的图标——test 环境实测 10 个里 5 个是 0
+ * （2026-09-03）。榜单宁可短，不能用零值凑数。
+ * 只对用量字段这么做：成本类指标的 0 是"免费"，是有效信息，不能一起排除。
  */
 export function specialtyRows(
   title: string,
@@ -182,6 +190,8 @@ export function specialtyRows(
   if (!spec) return []
   const picked = models
     .filter((model) => model.raw[spec.field] !== null)
+    // 用量为 0 = 该周期没被调用过，不进"最热"榜（见上方说明）
+    .filter((model) => spec.field !== 'usage' || (model.raw[spec.field] as number) > 0)
     .sort((first, second) => {
       const a = first.raw[spec.field]!
       const b = second.raw[spec.field]!

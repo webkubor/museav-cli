@@ -18,6 +18,8 @@ if [ "${1:-}" = "--rules" ]; then
     | sed -E 's/^[[:space:]]*# ── //; s/：/  ·  /' \
     | sed -E 's/^(BLOCK [0-9]+)/  ✗ \1/; s/^(WARN [0-9]+)/  ⚠ \1/'
   echo ""
+  echo "受控豁免：文件里写 \`ui-guard-ignore: <关键词> —— <理由>\`（必须带理由）可跳过对应规则。"
+  echo ""
   echo "另有 node scripts/check-css-tokens.mjs：未声明的 var()（阻断）、裸字号 / 字体族字符串 / 内容面毛玻璃（提醒）"
   exit 0
 fi
@@ -50,6 +52,15 @@ get_added() {
   else
     git diff --cached -U0 --diff-filter=ACM -- "$1" 2>/dev/null | grep -E '^\+' | grep -vE '^\+\+\+' | sed 's/^+//'
   fi
+}
+
+# 受控豁免：文件里写 `ui-guard-ignore: <关键词> —— <理由>` 可跳过命中该关键词的规则。
+# 为什么要有这个出口：没有豁免机制的门禁，遇到合理例外时人会整体绕过（--no-verify），
+# 那等于所有规则一起失效。受控豁免让例外**可见、带理由、可审计**——
+# grep 一下就知道全仓有哪些例外、为什么。滥用它是 code review 的事，不是门禁的事。
+# 必须写理由：只写关键词不带 `——` 的豁免视为无效。
+ignored() {
+  printf '%s' "$content" | grep -qE "ui-guard-ignore:[^\n]*$1[^\n]*——"
 }
 
 while IFS= read -r f; do
@@ -183,7 +194,7 @@ while IFS= read -r f; do
   #    且整个文件没有引用 ui/ 的任何浮层组件。
   #    `-modal` 不能裸写：`modality-bar`（模态导航）会被它命中，加上后缀边界排除。
   hits="$(printf '%s' "$added" | grep -vE '^[[:space:]]*[{]?(//|/\*|\*)' | grep -niE 'className=.[^"'"'"']*(popover|dropdown|-modal([^a-z]|$)|-dialog|flyout|tooltip)' || true)"
-  if [ -n "$hits" ] && ! printf '%s' "$content" | grep -qE "from ['\"]@/components/ui/(Popover|DropdownMenu|Select|Dialog|Modal|Sheet|SideSheet|Tooltip|Combobox|ConfirmModal)"; then
+  if [ -n "$hits" ] && ! ignored "浮层" && ! printf '%s' "$content" | grep -qE "from ['\"]@/components/ui/(Popover|DropdownMenu|Select|Dialog|Modal|Sheet|SideSheet|Tooltip|Combobox|ConfirmModal)"; then
     echo "⚠ [疑似手写浮层] $f — 弹窗/下拉/气泡走 @/components/ui 下的 Popover / DropdownMenu / Select / Dialog（统一玻璃质感 + 层级 + 外部点击与 ESC 关闭），别自己定位（DESIGN.md · Components）"
     printf '%s\n' "$hits" | sed 's/^/      /'
     warn=$((warn + 1))

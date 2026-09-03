@@ -96,7 +96,13 @@ function prefersReducedMotion() {
   return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
 }
 
-/** 图表内所有 tooltip 共用的外壳，样式在 discovery.css。 */
+/**
+ * 图表内所有 tooltip 共用的外壳，样式在 discovery.css。
+ *
+ * ui-guard-ignore: 浮层 —— 这是 Recharts <Tooltip content={...}> 的**内容**，
+ * 定位、显隐、跟随鼠标全由 Recharts 管，我们只提供内部排版。换成 ui/Popover
+ * 反而会多出一层自己管开关的浮层，与图表的 hover 生命周期打架。
+ */
 function ChartTooltip({ children }: { children: React.ReactNode }) {
   return <div className="model-discovery-chart-tooltip">{children}</div>
 }

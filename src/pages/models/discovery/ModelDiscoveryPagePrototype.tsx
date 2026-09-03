@@ -25,6 +25,7 @@ import {
   LuCheck,
   LuCheckCheck,
   LuChevronDown,
+  LuMinus,
   LuListFilter,
   LuRotateCcw,
   LuSearch,
@@ -40,6 +41,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import { InfoTip } from '@/components/ui/InfoTip'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
 import { SelectContent, SelectItem, SelectRoot, SelectTrigger, SelectValue } from '@/components/ui/Select'
+import { Popover } from '@/components/ui/Popover'
 import { Pagination } from '@/components/ui/Pagination'
 import {
   useDiscoveryAnalysis,
@@ -648,12 +650,10 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   const [yMetric, setYMetric] = useState(0);
   const [xMetric, setXMetric] = useState(0);
   const [pareto, setPareto] = useState(false);
-  const [modelFilterOpen, setModelFilterOpen] = useState(false);
   const [modelFilterSearch, setModelFilterSearch] = useState("");
   const [selectedModelNames, setSelectedModelNames] = useState<string[]>([]);
   const [rankingMetric, setRankingMetric] = useState<RankingMetric>("overall");
   const [providerFilter, setProviderFilter] = useState<string[]>([]);
-  const [providerFilterOpen, setProviderFilterOpen] = useState(false);
   const [tableAccess, setTableAccess] = useState<"all" | "supported" | "pending">("all");
   const [tablePage, setTablePage] = useState(1);
   /**
@@ -1112,11 +1112,9 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
     setTask(nextTask);
     setYMetric(0);
     setXMetric(0);
-    setModelFilterOpen(false);
     setModelFilterSearch("");
     setRankingMetric("overall");
     setProviderFilter([]);
-    setProviderFilterOpen(false);
     setTableAccess("all");
   }
 
@@ -1292,15 +1290,29 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
             <aside className="model-discovery-analysis-aside">
               <div className="mg-tile model-discovery-model-filter">
                 <h3><LuListFilter size={14} />模型筛选</h3><p>选择需要在图表中对比的模型。</p>
-                <button aria-expanded={modelFilterOpen} className="model-discovery-model-filter-trigger" onClick={() => setModelFilterOpen((current) => !current)} type="button"><span>{chartModels.length} / {chartCandidates.length} 个模型</span><LuChevronDown size={14} /></button>
-                {modelFilterOpen && <div className="model-discovery-model-filter-popover">
-                  <label><LuSearch size={14} /><input autoFocus placeholder="搜索模型" value={modelFilterSearch} onChange={(event) => setModelFilterSearch(event.target.value)} /></label>
-                  <div className="model-discovery-model-filter-list">
-                    {filteredModelOptions.map((model) => <button className={selectedModelNames.includes(model.name) ? "selected" : ""} key={model.name} onClick={() => toggleChartModel(model.name)} type="button"><DiscoveryModelIcon model={model.name} provider={model.provider} /><span><strong title={model.name}>{model.name}</strong><small>{model.provider}</small></span>{selectedModelNames.includes(model.name) && <LuCheck size={14} />}</button>)}
-                    {filteredModelOptions.length === 0 && <em>未找到匹配模型</em>}
-                  </div>
-                  <footer><button onClick={() => setSelectedModelNames([])} type="button"><LuX size={13} />清空</button><button onClick={() => setSelectedModelNames(visibleModels.map((model) => model.name))} type="button"><LuCheckCheck size={13} />全选</button><button onClick={() => setSelectedModelNames(visibleModels.slice(0, 7).map((model) => model.name))} type="button"><LuRotateCcw size={13} />恢复默认</button></footer>
-                </div>}
+                {/* 走 ui/Popover 而不是自己 absolute 定位：组件统一了玻璃表面、
+                    --mg-z-popover 层级、点击外部与 ESC 关闭、视口边缘避让。
+                    原先这里是手写浮层 + 硬编码 z-index:20，绕开了全局层级体系。 */}
+                <Popover
+                  className="model-discovery-model-filter-panel"
+                  position="bottom"
+                  trigger={
+                    <button className="model-discovery-model-filter-trigger" type="button">
+                      <span>{chartModels.length} / {chartCandidates.length} 个模型</span>
+                      <LuChevronDown size={14} />
+                    </button>
+                  }
+                  content={
+                    <>
+                      <label><LuSearch size={14} /><input autoFocus placeholder="搜索模型" value={modelFilterSearch} onChange={(event) => setModelFilterSearch(event.target.value)} /></label>
+                      <div className="model-discovery-model-filter-list">
+                        {filteredModelOptions.map((model) => <button className={selectedModelNames.includes(model.name) ? "selected" : ""} key={model.name} onClick={() => toggleChartModel(model.name)} type="button"><DiscoveryModelIcon model={model.name} provider={model.provider} /><span><strong title={model.name}>{model.name}</strong><small>{model.provider}</small></span>{selectedModelNames.includes(model.name) && <LuCheck size={14} />}</button>)}
+                        {filteredModelOptions.length === 0 && <em>未找到匹配模型</em>}
+                      </div>
+                      <footer><button onClick={() => setSelectedModelNames([])} type="button"><LuX size={13} />清空</button><button onClick={() => setSelectedModelNames(visibleModels.map((model) => model.name))} type="button"><LuCheckCheck size={13} />全选</button><button onClick={() => setSelectedModelNames(visibleModels.slice(0, 7).map((model) => model.name))} type="button"><LuRotateCcw size={13} />恢复默认</button></footer>
+                    </>
+                  }
+                />
               </div>
               <div className="mg-tile model-discovery-trend"><h3><LuTrendingUp size={14} />近 7 日 ModelGo 使用趋势</h3><p>按增长率从高到低排列</p>
                 {trendSeries.length > 0
@@ -1333,15 +1345,27 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
             </div>
             <div className="model-discovery-table-secondary-filters">
               <div className="model-discovery-provider-filter">
-                <button aria-expanded={providerFilterOpen} className="model-discovery-provider-filter-trigger" onClick={() => setProviderFilterOpen((current) => !current)} title={providerFilter.length > 0 ? providerFilter.join("、") : "全部厂商"} type="button"><span>{providerFilter.length === 0 ? "全部厂商" : providerFilter.slice(0, 2).join("、")}</span>{providerFilter.length > 2 && <em>+{providerFilter.length - 2}</em>}<LuChevronDown size={12} /></button>
-                {providerFilterOpen && <div className="model-discovery-provider-filter-popover" role="dialog" aria-label="选择厂商">
-                  <header><div><strong>选择厂商</strong><span>{providerFilter.length === 0 ? "当前展示全部" : `已选择 ${providerFilter.length} 个`}</span></div><button disabled={providerFilter.length === 0} onClick={() => setProviderFilter([])} type="button">重置</button></header>
-                  <div className="model-discovery-provider-options">{providers.map((provider) => {
-                    const selected = providerFilter.includes(provider);
-                    return <button aria-pressed={selected} className={selected ? "selected" : ""} key={provider} onClick={() => toggleProvider(provider)} type="button"><i>{selected && <LuCheck size={11} />}</i><span>{provider}</span></button>;
-                  })}</div>
-                  <footer><span>{providerFilter.length === 0 ? `${providers.length} 个厂商` : `筛选 ${providerFilter.length} 个厂商`}</span><button onClick={() => setProviderFilterOpen(false)} type="button">完成</button></footer>
-                </div>}
+                <Popover
+                  className="model-discovery-provider-filter-panel"
+                  position="bottom"
+                  trigger={
+                    <button className="model-discovery-provider-filter-trigger" title={providerFilter.length > 0 ? providerFilter.join("、") : "全部厂商"} type="button">
+                      <span>{providerFilter.length === 0 ? "全部厂商" : providerFilter.slice(0, 2).join("、")}</span>
+                      {providerFilter.length > 2 && <em>+{providerFilter.length - 2}</em>}
+                      <LuChevronDown size={12} />
+                    </button>
+                  }
+                  content={(close) => (
+                    <>
+                      <header><div><strong>选择厂商</strong><span>{providerFilter.length === 0 ? "当前展示全部" : `已选择 ${providerFilter.length} 个`}</span></div><button disabled={providerFilter.length === 0} onClick={() => setProviderFilter([])} type="button">重置</button></header>
+                      <div className="model-discovery-provider-options">{providers.map((provider) => {
+                        const selected = providerFilter.includes(provider);
+                        return <button aria-pressed={selected} className={selected ? "selected" : ""} key={provider} onClick={() => toggleProvider(provider)} type="button"><i>{selected && <LuCheck size={11} />}</i><span>{provider}</span></button>;
+                      })}</div>
+                      <footer><span>{providerFilter.length === 0 ? `${providers.length} 个厂商` : `筛选 ${providerFilter.length} 个厂商`}</span><button onClick={close} type="button">完成</button></footer>
+                    </>
+                  )}
+                />
               </div>
               <SelectRoot onValueChange={(value) => setTableAccess(value as "all" | "supported" | "pending")} value={tableAccess}>
                 <SelectTrigger aria-label="接入状态" className="model-discovery-select-trigger">
@@ -1407,14 +1431,19 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                     ))}
                     <TableCell align="right">
                       {hasDetail
-                        /* 这里用原生 button 而不是控制台 Button 组件，与本文件其余 14 处一致：
+                        /* 收成图标按钮：整行本来就是 role=link 可点（见 TableRow 上的 onClick），
+                           行尾这颗按钮做的是同一件事，20 行 × 「查看详情」四个字 + 描边
+                           是整页最大的一处视觉噪音。文案移到 title / aria-label，信息不丢。
+                           禁用态用减号而不是「待支持」三个字，同理。
+
+                           这里用原生 button 而不是控制台 Button 组件，与本文件其余 14 处一致：
                            Button 带着控制台的整套规格（高度锁在 --mg-control-h-sm=36px、
                            modern-btn-* 用 !important 锁死中性色），而原型这颗是 27px 高的品牌蓝小
                            按钮（redesign.css:15645）——套组件就得靠层层 !important 对抗才能扳回来，
                            本页又是 1:1 例外。plan §3.2 要求的是表格体系走 Table + Pagination，
                            没有要求行内按钮换组件。样式见 discovery.css .model-discovery-detail-btn。 */
-                        ? <button className="model-discovery-detail-btn" onClick={(event) => { event.stopPropagation(); openModelDetail(model); }} type="button">查看详情<LuArrowUpRight size={12} /></button>
-                        : <button className="model-discovery-detail-btn" disabled type="button">待支持</button>}
+                        ? <button aria-label={modelDetailAriaLabel(model)} className="model-discovery-detail-btn" onClick={(event) => { event.stopPropagation(); openModelDetail(model); }} title="查看详情" type="button"><LuArrowUpRight size={13} /></button>
+                        : <button aria-label={`${model.name} 暂未接入，待支持`} className="model-discovery-detail-btn" disabled title="暂未接入" type="button"><LuMinus size={13} /></button>}
                     </TableCell>
                   </TableRow>
                 );

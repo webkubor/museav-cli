@@ -313,8 +313,11 @@
   justify-self: end;
   /* 必须显式给：按钮会继承 TableCell 的 .mg-text-body 行高（24px），
      6+6+24=36px 把整行顶到 69px；原型那颗继承的是 11px 字号的 normal 行高。 */
-  line-height: 1.25;
-  padding: 6px 8px;
+  line-height: 1;
+  /* 图标按钮：正方形槽位，不再按文字宽度撑开 */
+  height: 26px;
+  padding: 0;
+  width: 26px;
 }
 
 .model-discovery-detail-btn:disabled {
@@ -1087,22 +1090,17 @@
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
-.model-discovery-model-filter-popover {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--discovery-radius-xl);
-  box-shadow: var(--discovery-shadow-popover);
+/* 表面（背景/边框/圆角/阴影/层级/定位）全部交给 ui/Popover 与 .mg-float，
+   这里只留内容排布。原先自持一套表面 + 硬编码 z-index:20，既和全站浮层不是
+   一套质感，也绕开了 --mg-z-* 层级体系（2026-09-03 换组件时清掉）。 */
+.model-discovery-model-filter-panel {
   display: grid;
   gap: 8px;
-  left: 14px;
   padding: 9px;
-  position: absolute;
-  right: 14px;
-  top: calc(100% - 8px);
-  z-index: 20;
+  width: min(320px, calc(100vw - 32px));
 }
 
-.model-discovery-model-filter-popover > label {
+.model-discovery-model-filter-panel > label {
   align-items: center;
   background: color-mix(in srgb, var(--line) 25%, var(--panel));
   border-radius: var(--discovery-radius-md);
@@ -1112,7 +1110,7 @@
   padding: 0 9px;
 }
 
-.model-discovery-model-filter-popover > label input {
+.model-discovery-model-filter-panel > label input {
   background: transparent;
   border: 0;
   color: var(--text);
@@ -1177,7 +1175,7 @@
   text-align: center;
 }
 
-.model-discovery-model-filter-popover footer {
+.model-discovery-model-filter-panel footer {
   border-top: 1px solid var(--line);
   display: grid;
   gap: 5px;
@@ -1185,7 +1183,7 @@
   padding-top: 8px;
 }
 
-.model-discovery-model-filter-popover footer button {
+.model-discovery-model-filter-panel footer button {
   align-items: center;
   background: color-mix(in srgb, var(--line) 18%, var(--panel));
   border: 0;
@@ -1199,7 +1197,7 @@
   min-height: 29px;
 }
 
-.model-discovery-model-filter-popover footer button:last-child {
+.model-discovery-model-filter-panel footer button:last-child {
   grid-column: 1 / -1;
 }
 
@@ -1518,52 +1516,43 @@
   height: 32px;
 }
 
-.model-discovery-provider-filter-popover {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--discovery-radius-2xl);
-  box-shadow: var(--discovery-shadow-overlay);
-  font-family: inherit;
+.model-discovery-provider-filter-panel {
   max-height: min(420px, calc(100dvh - 120px));
   overflow: hidden;
-  position: absolute;
-  right: 0;
-  top: calc(100% + 6px);
   width: 284px;
-  z-index: 20;
 }
 
-.model-discovery-provider-filter-popover > header,
-.model-discovery-provider-filter-popover > footer {
+.model-discovery-provider-filter-panel > header,
+.model-discovery-provider-filter-panel > footer {
   align-items: center;
   display: flex;
   justify-content: space-between;
 }
 
-.model-discovery-provider-filter-popover > header {
+.model-discovery-provider-filter-panel > header {
   background: color-mix(in srgb, var(--line) 18%, var(--panel));
   border-bottom: 1px solid var(--line);
   padding: 10px 11px 9px;
 }
 
-.model-discovery-provider-filter-popover > header > div {
+.model-discovery-provider-filter-panel > header > div {
   display: grid;
   gap: 1px;
 }
 
-.model-discovery-provider-filter-popover > header strong {
+.model-discovery-provider-filter-panel > header strong {
   color: var(--text);
   font-size: var(--discovery-fs-body);
   font-weight: 680;
 }
 
-.model-discovery-provider-filter-popover > header span,
-.model-discovery-provider-filter-popover > footer > span {
+.model-discovery-provider-filter-panel > header span,
+.model-discovery-provider-filter-panel > footer > span {
   color: var(--text-tertiary);
   font-size: var(--discovery-fs-micro);
 }
 
-.model-discovery-provider-filter-popover > header button {
+.model-discovery-provider-filter-panel > header button {
   background: transparent;
   border: 0;
   color: var(--accent);
@@ -1573,7 +1562,7 @@
   padding: 3px 1px;
 }
 
-.model-discovery-provider-filter-popover > header button:disabled {
+.model-discovery-provider-filter-panel > header button:disabled {
   color: var(--text-tertiary);
   cursor: default;
 }
@@ -1650,12 +1639,12 @@
   outline-offset: 1px;
 }
 
-.model-discovery-provider-filter-popover > footer {
+.model-discovery-provider-filter-panel > footer {
   border-top: 1px solid var(--line);
   padding: 7px 9px;
 }
 
-.model-discovery-provider-filter-popover > footer button {
+.model-discovery-provider-filter-panel > footer button {
   background: var(--accent);
   border: 0;
   border-radius: var(--discovery-radius-xs);
@@ -1669,11 +1658,11 @@
   transition: filter var(--mg-duration-fast) ease, transform var(--discovery-dur-snap) ease;
 }
 
-.model-discovery-provider-filter-popover > footer button:hover {
+.model-discovery-provider-filter-panel > footer button:hover {
   filter: brightness(0.96);
 }
 
-.model-discovery-provider-filter-popover > footer button:active {
+.model-discovery-provider-filter-panel > footer button:active {
   transform: translateY(1px);
 }
 

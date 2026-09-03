@@ -113,17 +113,3 @@ aside,
   outline: none;
 }
 
-/* ── 智能助手悬浮球（ai-orb）────────────────────────────────────
-   配色从品牌色派生，不写死色值：国内站与海外站的 --brand-base 不同，
-   明暗主题也各有一套，派生后四种组合都自动跟着走。
-   变量名是 ai-orb 的契约（--ao-*），见 node_modules/ai-orb/src/index.js。 */
-.mg-assistant-orb .agent-orb {
-  --ao-hi: color-mix(in oklab, var(--brand-base) 42%, white);
-  --ao-mid: var(--brand-base);
-  --ao-lo: color-mix(in oklab, var(--brand-base) 72%, black);
-  --ao-glow: var(--brand-base);
-  --ao-ink: color-mix(in oklab, var(--brand-base) 34%, black);
-  --ao-badge-bg: var(--mg-danger);
-  --ao-badge-fg: #fff;
-  --ao-badge-ring: var(--mg-bg-2);
-}

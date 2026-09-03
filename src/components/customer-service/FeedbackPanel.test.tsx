@@ -205,7 +205,7 @@ describe('CustomerService 反馈表单模式', () => {
     expect(screen.getByPlaceholderText('输入消息，Enter 发送')).toBeInTheDocument()
     expect(submitMock).not.toHaveBeenCalled()
     // 不生成消息：对话仍是空态
-    expect(screen.getByText('有什么我可以帮助你的？')).toBeInTheDocument()
+    expect(screen.getByText('有什么我可以帮助你的吗？')).toBeInTheDocument()
     expect(screen.queryByText('写了一半不想提了')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: '问题反馈' }))

@@ -9,17 +9,37 @@ use_count: 0
 > ## ⚠️ 入场先读（比下面所有规则都优先）
 > 1. `PROJECT-BRIEF.md` — 冷启动快照（8 个有效命令、真源优先级、PRD V1.0.3 限制）
 > 2. `docs/COLLABORATION.md` — 协同 SOP（worktree/认领锁/提单格式/UI 测试/验证闭环）
-> 3. **worktree 默认开、不是「确认有并发才开」**：本仓常年有多 agent/session 并发（巡检/supervisor 每 30 分钟把单派给 Codex、人和其他 session 随时可能在同一目录动手），等你发现冲突（重复 dev server、别人未提交的改动）时可能已经晚了。**任何代码改动落地前先 `cs wt fix/<名>` 或 `git worktree add -b feat/<名> ../wt-<名> origin/test` 开隔离 worktree，别直接在主检出的 `test` 分支上写代码/提交**——这一条不因为"这次只是小改"或"我一个人在做"而跳过，详见 `docs/COLLABORATION.md` §1/§4（2026-07-29 教训：直接在主检出改+提交，事后才发现另一个 session 同时在编辑别的文件，这次没冲突纯属运气）。
+> 3. **分支定位（2026-09-03 owner 拍板，之前的口口相传不算）**：
+>
+>    | 分支 | 定位 |
+>    |:---|:---|
+>    | `main` | 生产 |
+>    | `test` | 测试环境，**当前版本（1.0.6）在这里迭代** |
+>    | `feature/v1.0.x-*` | 版本集成分支，功能先进这里 |
+>    | `hotfix/*` | 不等版本节奏的临时 / 紧急需求 |
+>
+>    功能流向：**worktree 分支 → 版本分支 → 合入 `test` 走测试环境 → 整批上线合 `main`**。
+>    所以开 worktree 时 base 用**版本分支**、收尾也推回版本分支；**何时把版本分支合进
+>    `test` 由 owner 按版本节奏决定，agent 不要自己合**。
+>
+>    临时需求走 `hotfix/*`：从 `main` 分出，验完合 `main`，再回流 `test` 与当前版本分支
+>    ——它的意义就是绕开版本节奏，所以不要挂在版本分支上做。
+>
+>    ⚠️ `cs wt <名> --base <分支>` 取的是**本地**分支，可能落后远端。开之前先
+>    `git fetch origin <分支>`，或直接 `--base origin/<分支>`。2026-09-03 踩过：
+>    基线旧了一天，改动全打在旧代码上，sed 一个都没匹配到，白改一轮才发现。
+>
+> 4. **worktree 默认开、不是「确认有并发才开」**：本仓常年有多 agent/session 并发（巡检/supervisor 每 30 分钟把单派给 Codex、人和其他 session 随时可能在同一目录动手），等你发现冲突（重复 dev server、别人未提交的改动）时可能已经晚了。**任何代码改动落地前先 `cs wt fix/<名>` 或 `git worktree add -b feat/<名> ../wt-<名> origin/feature/v1.0.x-<当期版本分支>` 开隔离 worktree，别直接在主检出的 `test` 分支上写代码/提交**——这一条不因为"这次只是小改"或"我一个人在做"而跳过，详见 `docs/COLLABORATION.md` §1/§4（2026-07-29 教训：直接在主检出改+提交，事后才发现另一个 session 同时在编辑别的文件，这次没冲突纯属运气）。
 >
 >    **开完必须删——推完 test 就地清理，不是「攒着以后再说」**。开 worktree 这一步每次都做到了，删这一步长期没人做：2026-08-28 清点时挂着 4 个 worktree，其中 3 个分支早已合入 test、0 未合提交，还散在三个不同路径（`cs wt` 的 `.claude/worktrees/`、手工的 `.worktrees/`、`../wt-*`），加上 4 个僵尸本地分支和 2 个已合并的远端分支。收尾三步一起做，别只做前两步：
 >
 >    ```bash
->    git push origin HEAD:test                                   # 1. 推
+>    git push origin HEAD:feature/v1.0.x-<当期版本分支>            # 1. 推（不是 test，见上面第 3 条）
 >    git -C <主检出> worktree remove <worktree 路径>              # 2. 删 worktree（换个目录跑，不能在自己里面删自己）
 >    git -C <主检出> branch -d <分支> && git push origin --delete <分支>   # 3. 删本地 + 远端分支
 >    ```
 >
->    盘点用 `git worktree list` + `git branch --merged origin/test`；删别人建的远端分支前先问一句，删自己的不用。
+>    盘点用 `git worktree list` + `git branch --merged origin/<版本分支>`；删别人建的远端分支前先问一句，删自己的不用。
 
 > ## 🚦 UI 改动开工前置（硬性 · 先做再动手）
 > 治「不读规范就动手」——本仓 UI/组件/样式任何改动，先按序做：

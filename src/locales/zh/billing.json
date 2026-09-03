@@ -228,11 +228,7 @@
       "tierTableLabel": "返佣档位阶梯",
       "tierTableHint": "按被邀请人各自消费定档",
       "tierSpendThreshold": "累计消费 ≥ {{amount}}",
-      "tiers": {
-        "growth": "成长伙伴",
-        "core": "核心伙伴",
-        "strategic": "战略伙伴"
-      },
+      "tierCurrent": "当前",
       "rulesTitle": "分润规则：",
       "ruleItem1": "被邀请人每次实际付费消费实时计返佣；退款冲回，赠送/兑换码额度消费不计，奖励按其累计消费对应的档位比例计算。",
       "ruleItem2": "奖励直接计入奖励余额，无需转入主余额；模型调用时在主余额前自动抵扣，暂不支持提现。",

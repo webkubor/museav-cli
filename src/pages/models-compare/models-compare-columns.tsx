@@ -23,6 +23,7 @@ import {
   isPaidModel,
 } from '../models/model-experience-data'
 import { ExperienceBalanceNotice } from '../models/ExperienceBalanceNotice'
+import { ExperienceFreeLimitNotice } from '../models/ExperienceFreeLimitNotice'
 import { ExperienceMessageList } from '../models/components/ExperienceMessageList'
 import { TaskFileDropZone } from '../models/components/TaskFileDropZone'
 import type { ModelsCompareContext } from './use-models-compare'
@@ -153,6 +154,13 @@ function CompareColumnCard({ ctx, column, idx }: { ctx: ModelsCompareContext; co
       {/* 需求方 #833（1.0.6）：余额为 0 时免费/付费模型一律锁定，按模型免费与否分场景文案 */}
       {ctx.isBalanceZero && (
         <ExperienceBalanceNotice free={!isPaidModel(column.model)} lockedModelCount={1} />
+      )}
+
+      {/* 需求方 #833 场景三：该列上次发送被后端 4291 日限额拒绝 → 提示切换其他模型 + 查看用量；
+          4032 余额门槛（本地余额快照滞后）复用场景一文案。本地已判余额 0 时不重复叠加。 */}
+      {!ctx.isBalanceZero && ctx.columnFreeGates[column.conversationId] === 'daily_limit' && <ExperienceFreeLimitNotice />}
+      {!ctx.isBalanceZero && ctx.columnFreeGates[column.conversationId] === 'balance_required' && (
+        <ExperienceBalanceNotice free lockedModelCount={1} />
       )}
 
       {!ctx.syncInput && isOfflineModel(column.model) ? (

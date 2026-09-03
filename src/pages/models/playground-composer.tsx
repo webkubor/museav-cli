@@ -14,6 +14,8 @@ import {
   type ExperienceTaskType,
 } from './model-experience-data'
 import { ExperienceBalanceNotice } from './ExperienceBalanceNotice'
+import { ExperienceFreeLimitNotice } from './ExperienceFreeLimitNotice'
+import type { FreeModelGate } from './free-model-gate'
 import { TaskFileDropZone } from './components/TaskFileDropZone'
 import { TaskSwitch } from './components/TaskSwitch'
 import type { PlaygroundPendingAttachment } from './playground-utils'
@@ -27,6 +29,8 @@ export interface PlaygroundComposerProps {
   isSelectedModelOffline: boolean
   needsFileTask: boolean
   isBlockedByBalance: boolean
+  /** 后端免费模型门槛（#833）：上次发送被 4032/4291 拒绝时的场景，null = 无 */
+  freeModelGate: FreeModelGate | null
   isStreaming: boolean
   allowedAttachmentKinds: Array<keyof typeof ATTACHMENT_LIMITS>
   attachment: PlaygroundPendingAttachment | null
@@ -55,6 +59,7 @@ export function PlaygroundComposer({
   isSelectedModelOffline,
   needsFileTask,
   isBlockedByBalance,
+  freeModelGate,
   isStreaming,
   allowedAttachmentKinds,
   attachment,
@@ -82,6 +87,14 @@ export function PlaygroundComposer({
           free={!!selectedModel && !isPaidModel(selectedModel)}
           lockedModelCount={1}
         />
+      )}
+
+      {/* 需求方 #833 场景三：后端返回 4291 日限额 → 「今日免费调用已达上限」+ 查看用量；
+          后端返回 4032 余额门槛（本地余额快照滞后时才会走到）→ 复用场景一文案。
+          本地余额已判 0 时上面那条已在展示，不重复叠加。 */}
+      {!isBlockedByBalance && freeModelGate === 'daily_limit' && <ExperienceFreeLimitNotice />}
+      {!isBlockedByBalance && freeModelGate === 'balance_required' && (
+        <ExperienceBalanceNotice free lockedModelCount={1} />
       )}
 
       {/* 下线模型（PRD §AC-18，对齐原型 App.tsx:18634-18641）：composer 整体替换为

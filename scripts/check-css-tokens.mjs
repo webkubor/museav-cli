@@ -43,6 +43,14 @@ const cwd = process.cwd()
 
 /** 裸字号：CSS 的 `font-size: 13px` 与 Tailwind 的 `text-[13px]`。字阶走 --mg-text-* 或页面级字阶变量。 */
 const RAW_FONT_SIZE_RE = /(?:font-size:\s*([0-9.]+)px|text-\[([0-9.]+)px\])/g
+/** CSS 里直接写字体族字符串。字体统一走 --font-sans / --font-mono，
+    否则中文回退链、CJK webfont 体积、等宽数字这三件事各页各写一套（DESIGN.md · Typography）。 */
+const RAW_FONT_FAMILY_RE = /font-family:\s*(?!var\()[^;]+/g
+/** 内容面用毛玻璃。DESIGN.md 定的分工：内容（卡片/面板/列表/表格）实心，
+    backdrop-filter 只给浮层 chrome（顶栏/下拉/Modal/Sheet）。判据是同一条选择器块内
+    既出现 .mg-tile / card / panel / table 这类内容面命名，又出现 backdrop-filter。 */
+const CONTENT_GLASS_RE = /backdrop-filter/
+const CONTENT_SURFACE_RE = /(mg-tile|-card\b|-panel\b|-table\b|-row\b|-list\b)/
 /** 全局字阶档位，用于在提示里给出最接近的一档 */
 const TEXT_SCALE = [
   ['--mg-text-xs', 12], ['--mg-text-sm', 14], ['--mg-text-body', 16],
@@ -61,6 +69,8 @@ const tryDiffBase = () => {
 }
 /** 裸字号只警告不阻断：全仓 339 处存量，硬拦会瘫痪日常提交 */
 const fontWarns = []
+/** 其余 DESIGN.md 约束的警告（字体族、内容面毛玻璃） */
+const designWarns = []
 let diffBase = 'HEAD'
 if (!full) {
   const base = tryDiffBase()
@@ -154,6 +164,23 @@ if (full) {
 
   for (const file of files) {
     const added = addedLinesWithText(file)
+    // 内容面毛玻璃要看「整个选择器块」，不能逐行判断：选择器和 backdrop-filter 分处两行。
+    // 只在块内两者同时出现、且该块有改动行时才报。
+    if (/\.css$/.test(file) && added.size) {
+      for (const blk of readFileSync(`${cwd}/${file}`, 'utf8').split('}')) {
+        const brace = blk.indexOf('{')
+        if (brace < 0) continue
+        const selector = blk.slice(0, brace)
+        const body = blk.slice(brace)
+        if (!CONTENT_GLASS_RE.test(body) || !CONTENT_SURFACE_RE.test(selector)) continue
+        // 浮层命名（popover/dropdown/modal/sheet/tooltip/header）本就允许毛玻璃
+        if (/(popover|dropdown|modal|dialog|sheet|tooltip|float|header|overlay)/i.test(selector)) continue
+        designWarns.push(
+          `⚠ ${file}  内容面 \`${selector.trim().split('\n').pop().slice(0, 48)}\` 用了 backdrop-filter —— ` +
+          `内容（卡片/面板/列表/表格）实心，毛玻璃只给浮层 chrome（DESIGN.md · Don'ts）`
+        )
+      }
+    }
     for (const [lineNo, text] of added) {
       for (const m of text.matchAll(VAR_RE)) {
         const name = m[1]
@@ -161,6 +188,15 @@ if (full) {
         if (!declared.has(name)) {
           failed++
           console.error(`✗ ${file}:${lineNo}  引用了未声明的变量 var(${name})`)
+        }
+      }
+      if (/\.(css)$/.test(file)) {
+        for (const m of text.matchAll(RAW_FONT_FAMILY_RE)) {
+          if (/inherit|initial|unset/.test(m[0])) continue
+          designWarns.push(
+            `⚠ ${file}:${lineNo}  直接写了字体族 —— 走 var(--font-sans) / var(--font-mono)，` +
+            `否则中文回退链和等宽数字各页各写一套（DESIGN.md · Typography）`
+          )
         }
       }
       for (const m of text.matchAll(RAW_FONT_SIZE_RE)) {
@@ -173,6 +209,12 @@ if (full) {
       }
     }
   }
+}
+
+if (designWarns.length) {
+  console.warn(`\n⚠️  ${designWarns.length} 处新增代码与 DESIGN.md 约束不符：`)
+  for (const w of designWarns.slice(0, 15)) console.warn('   ' + w)
+  if (designWarns.length > 15) console.warn(`   …… 另 ${designWarns.length - 15} 处`)
 }
 
 if (fontWarns.length) {

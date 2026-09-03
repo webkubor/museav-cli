@@ -9,6 +9,19 @@
 # 退出码：0 通过（可能有 warn）；1 有硬性违规（block）阻断提交。
 set -uo pipefail
 
+# --rules：把「机器实际会拦什么」列出来。开工前跑一次，比读 249 行 DESIGN.md 可靠——
+# 清单直接从下方各条规则的注释里提取，不另存一份，所以不会与实现漂移。
+if [ "${1:-}" = "--rules" ]; then
+  echo "UI 门禁规则（BLOCK 阻断提交 / WARN 提醒）—— 真源 DESIGN.md，实现见本文件"
+  echo ""
+  grep -E '^[[:space:]]*# ── (BLOCK|WARN) [0-9]+：' "$0" \
+    | sed -E 's/^[[:space:]]*# ── //; s/：/  ·  /' \
+    | sed -E 's/^(BLOCK [0-9]+)/  ✗ \1/; s/^(WARN [0-9]+)/  ⚠ \1/'
+  echo ""
+  echo "另有 node scripts/check-css-tokens.mjs：未声明的 var()（阻断）、裸字号 / 字体族字符串 / 内容面毛玻璃（提醒）"
+  exit 0
+fi
+
 block=0
 warn=0
 
@@ -108,7 +121,7 @@ while IFS= read -r f; do
   # ── 以下为「防新增」规则：只扫本次新增行，存量不阻断（治「一个个发现太慢」，让机器挡新债） ──
   added="$(get_added "$f")"
 
-  # BLOCK 3：内联 style={{...}} 里写 CSS 变量 token。应走 Tailwind 类（text-mg-*/bg-mg-*/border-mg-*），
+  # ── BLOCK 3：内联 style={{...}} 里写 CSS 变量 token。应走 Tailwind 类（text-mg-*/bg-mg-*/border-mg-*），
   #    否则绕过 token 体系、双主题/双端不自适应（治 OAuthBindingTab 那种整片内联 style 的老坑）。
   #    ⚠️ 只拦 style={{...}} 内的 token：recharts 的 tick/cursor/activeDot 等 SVG 属性对象
   #    （fill/stroke 传 var token）是 SVG presentation 值，套不上 Tailwind 类，属合法写法放行。
@@ -121,7 +134,7 @@ while IFS= read -r f; do
     block=$((block + 1))
   fi
 
-  # BLOCK 4：内联 style 裸数值圆角（borderRadius: 8 / '8px'）。圆角只认 rounded-sm/md/lg/full token。
+  # ── BLOCK 4：内联 style 裸数值圆角（borderRadius: 8 / '8px'）。圆角只认 rounded-sm/md/lg/full token。
   # 仅匹配单值 px/裸数字，并要求值后是属性分隔符；放行 50% 圆形与多值气泡圆角。
   hits="$(printf '%s' "$added" | grep -nE "borderRadius:[[:space:]]*['\"]?[0-9]+(\.[0-9]+)?(px)?['\"]?[[:space:]]*(,|})" || true)"
   if [ -n "$hits" ]; then
@@ -130,7 +143,7 @@ while IFS= read -r f; do
     block=$((block + 1))
   fi
 
-  # WARN 4：疑似手写卡片（同行 border-mg-border + shadow-sm/md）。卡片统一 .mg-tile / <Card>
+  # ── WARN 4：疑似手写卡片（同行 border-mg-border + shadow-sm/md）。卡片统一 .mg-tile / <Card>
   #    （已绑 --mg-card-* Apple 卡片语言）；别再手写 border+shadow 拼卡致风格漂移。
   hits="$(printf '%s' "$added" | grep -nE 'border-mg-border' | grep -E 'shadow-(sm|md)' | grep -vE 'mg-tile' || true)"
   if [ -n "$hits" ]; then
@@ -139,7 +152,7 @@ while IFS= read -r f; do
     warn=$((warn + 1))
   fi
 
-  # WARN 5：疑似手写模型首字母头像（拿 model 相关变量 slice(0,1)/charAt(0) 当图标）。
+  # ── WARN 5：疑似手写模型首字母头像（拿 model 相关变量 slice(0,1)/charAt(0) 当图标）。
   #    模型身份统一走 <ModelIcon>（四层兜底：logo → lobehub 供应商图标 → 名称推断 → 首字母），
   #    这是反复出现的问题（模型体验单页/对比工作台都各自手写过），别再手搓文字色块替代。
   #    文件已 import ModelIcon 时放行（假定作者知情，这行只是极端兜底分支）。
@@ -161,7 +174,7 @@ while IFS= read -r f; do
     block=$((block + 1))
   fi
 
-  # ── BLOCK 6：手写浮层。弹窗 / 下拉 / 气泡统一走 ui/ 下的 Popover、DropdownMenu、
+  # ── WARN 6：手写浮层。弹窗 / 下拉 / 气泡统一走 ui/ 下的 Popover、DropdownMenu、
   #    Select、Dialog、Modal、Sheet、SideSheet、Tooltip——它们统一了磨砂玻璃质感、
   #    z-index 层级、点击外部关闭、ESC 关闭与焦点管理。
   #    自写的浮层每次都要重新踩一遍：背景透读、层级压不住、键盘出不去
@@ -198,6 +211,36 @@ while IFS= read -r f; do
   hits="$(printf '%s' "$added" | grep -vE '^[[:space:]]*[{]?(//|/\*|\*)' | grep -nE '>\{[a-zA-Z_.]*\.(name|display_name|description)\}<' | grep -vE 'title=|truncate|line-clamp|OverflowTip|text-ellipsis|sr-only' || true)"
   if [ -n "$hits" ]; then
     echo "⚠ [长文本无溢出兜底] $f — 名称/描述这类长度由数据决定的字段，需单行截断 + title（或 line-clamp / <OverflowTip>），否则真实数据下会换行撑乱行高（DESIGN.md · Typography）"
+    printf '%s\n' "$hits" | sed 's/^/      /'
+    warn=$((warn + 1))
+  fi
+
+  # ── BLOCK 7：直接写 --cn-* / --go-*。这两组是市场分支的**内部实现**，
+  #    直接引用等于把颜色钉死在单一市场，另一端就失效了。一律走 --brand-* / --mg-*，
+  #    由 data-market 自动路由（DESIGN.md · Don'ts）。
+  hits="$(printf '%s' "$added" | grep -nE 'var\(--(cn|go)-' || true)"
+  if [ -n "$hits" ]; then
+    echo "✗ [锁死单一市场] $f — --cn-* / --go-* 是市场分支的内部实现，引用它等于钉死一端；走 --brand-* / --mg-*，由 data-market 路由（DESIGN.md · Don'ts）"
+    printf '%s\n' "$hits" | sed 's/^/      /'
+    block=$((block + 1))
+  fi
+
+  # ── WARN 9：给 <PageHeader> 传间距覆盖。标题到首卡的标准间距是
+  #    「PageHeader 自带 mb-6 + 外层 space-y-6」叠出来的，私自覆盖会让标题贴卡
+  #    ——历史上 5 个页面这么干过，已全部修回（DESIGN.md · Layout）。
+  hits="$(printf '%s' "$added" | grep -nE '<PageHeader[^>]*(mb-0|mb-|mt-|my-)' || true)"
+  if [ -n "$hits" ]; then
+    echo "⚠ [覆盖 PageHeader 间距] $f — 标题到首卡的间距由 PageHeader 自带 mb-6 + 外层 space-y-6 叠成，别传 mb-*/mt-* 覆盖（DESIGN.md · Layout）"
+    printf '%s\n' "$hits" | sed 's/^/      /'
+    warn=$((warn + 1))
+  fi
+
+  # ── WARN 10：装饰性光球 / 通用渐变背景 —— DESIGN.md 点名的 AI slop。
+  #    典型形态：一个大圆 + blur + 半透明品牌色，绝对定位当背景装饰。
+  #    它不承载任何信息，还会在低端机上拖垮合成层。
+  hits="$(printf '%s' "$added" | grep -niE 'blur\((3[0-9]|[4-9][0-9]|[0-9]{3,})px\)|radial-gradient\([^)]*(circle|ellipse)[^)]*\)' || true)"
+  if [ -n "$hits" ]; then
+    echo "⚠ [疑似装饰光球/渐变] $f — 大半径 blur 圆与径向渐变背景是 DESIGN.md 点名的 AI slop（装饰性 orbs / 通用渐变），确认它是否承载信息（DESIGN.md · Don'ts）"
     printf '%s\n' "$hits" | sed 's/^/      /'
     warn=$((warn + 1))
   fi

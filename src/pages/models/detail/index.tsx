@@ -18,10 +18,10 @@ import { toLoginWithRedirect } from '@/lib/redirect'
 import { isNotFoundError } from '@/lib/request-error-message'
 import { trackEvent, trackPageView } from '@/lib/track'
 import { Button } from '@/components/ui/Button'
-import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
+import { formatContextLength, prettyModelName } from '@/lib/utils'
 import { ModelDetailPanel } from '@/features/models/components/ModelDetailPanel'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
-import { currencySymbol, priceUnitSuffix } from '@/features/models/model-format'
+import { relatedPriceView } from '@/features/models/related-price'
 import { resolveModelCategory, hasPlaygroundExperience } from '../model-experience-data'
 import { mapApiProtocols } from '../api-code-samples'
 import { ModelsCompareModal } from '../components/ModelsCompareModal'
@@ -259,7 +259,12 @@ export default function ModelDetailPage() {
                   1048576 显示成 1049K），名称走 prettyModelName（原本直接吐
                   `anthropic/claude-sonnet-4.6` 这类原始 ID）。 */}
               <div className="mg-related-grid">
-                {related.map((item) => (
+                {related.map((item) => {
+                  // 价格与是否显示上下文按 relatedPriceView 统一给（shared/modelgo_prd#861）：
+                  // 媒体模型主价格 = price_tiers 最高档（#853 口径）且不显示「NNNK 上下文」，
+                  // 文本模型维持「¥输入 / ¥输出 每M」。取值链复用卡片的 mediaPrimaryPrice。
+                  const price = relatedPriceView(item, isZh)
+                  return (
                   <button
                     key={item.id}
                     type="button"
@@ -277,33 +282,34 @@ export default function ModelDetailPage() {
                     </span>
                     <span className="mg-related-meta">
                       {item.vendor}
-                      {item.context_length > 0
+                      {price.showContext
                         && ` · ${formatContextLength(item.context_length)} ${t('modelsCatalog.labels.context')}`}
                     </span>
                     <span className="mg-related-price">
                       {/* 未配价（零价且无限免标记）显示「—」而非「$0 / 0 每M」——§9.1，
                           与详情面板/广场卡片同口径（qa#624）。
-                          per_call（按张）按 pricing_mode 分支渲染 /张（prd#852 契约：恒下发，
-                          不要从「output 为 0」的价格形态反推）；token 模型输出价为 0 时
-                          只展示输入价、不带单位，兜住脏数据。 */}
-                      {item.is_free
+                          媒体/按张模型单值主价格（¥77/M、¥0.22/张），划线原价只在原价确高于
+                          现价时跟在右侧（同卡片守卫）；文本模型两个数各带货币符号
+                          （原型 App.tsx:5996「¥输入 / ¥输出 每M」；prd#853 QA 复验指出）；
+                          输出价为 0 的脏数据只展示输入价、不带单位。 */}
+                      {price.kind === 'free'
                         ? t('modelsCatalog.detail.limitedFree')
-                        : item.pricing_mode === 'per_call'
-                          ? parseFloat(item.per_call_price ?? '') > 0
-                            ? `${currencySymbol(item.currency, isZh)}${trimPriceZeros(item.per_call_price ?? '0')}${priceUnitSuffix(undefined, 'per_call')}`
-                            : '—'
-                          : parseFloat(item.output_price) > 0
-                            ? t('modelsCatalog.detail.relatedPrice', {
-                                // 两个数各带货币符号（原型 App.tsx:5996「¥输入 / ¥输出 每M」；prd#853 QA 复验指出）
-                                input: `${currencySymbol(item.currency, isZh)}${trimPriceZeros(item.input_price)}`,
-                                output: `${currencySymbol(item.currency, isZh)}${trimPriceZeros(item.output_price)}`,
-                              })
-                            : parseFloat(item.input_price) > 0
-                              ? `${currencySymbol(item.currency, isZh)}${trimPriceZeros(item.input_price)}`
+                        : price.kind === 'primary'
+                          ? (
+                            <>
+                              {price.text}
+                              {price.strike && <s className="mg-metric-strike">{price.strike}</s>}
+                            </>
+                          )
+                          : price.kind === 'pair'
+                            ? t('modelsCatalog.detail.relatedPrice', { input: price.input, output: price.output })
+                            : price.kind === 'single'
+                              ? price.text
                               : '—'}
                     </span>
                   </button>
-                ))}
+                  )
+                })}
               </div>
             </section>
           )}

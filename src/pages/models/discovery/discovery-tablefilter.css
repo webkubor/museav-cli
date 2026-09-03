@@ -235,11 +235,6 @@
   transform: translateY(1px);
 }
 
-.model-discovery-table thead .metric-primary {
-  color: var(--accent);
-  font-weight: 680;
-}
-
 .model-discovery-table tbody .metric-primary {
   color: var(--accent);
   font-weight: 730;

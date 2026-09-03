@@ -27,38 +27,29 @@
   position: relative;
 }
 
-/* ── 与原型 1:1 的表格外观校准 ──────────────────────────────────────────────
-   本页是「1:1 复刻原型」的显式例外（见 discovery/index.tsx 顶部说明），而完整指标
-   榜单按铁律换成了控制台的 Table 组件，于是带进来三处原型没有的外观。这里在本页
-   作用域内校回去。
+/* ── 表格走控制台标准，不再按原型校准 ─────────────────────────────────────
+   这里原先覆盖了三项：单元格内距 11/14px（标准 12/16）、表头高度 auto（标准 40px）、
+   正文 12px/1.45（标准 .mg-text-body 14px/24px），理由写的是「本页 1:1 复刻原型」。
 
-   ⚠️ 只写在 .model-discovery-table 内，绝不动全局 Table 或 .mg-text-label ——
-   那两个是所有表格页共用的，改了就是拿一页的 1:1 要求去污染全站。
+   2026-09-03 撤销。两条原因：
+   ① 全仓 8 个表格页，只有这一页覆盖表格 token，其余 7 个（api-keys / guardrails /
+      tasks / referral / 审计 / 成员 …）零覆盖。同一个产品里表格长得不一样，
+      用户切页面就会觉得不是一个东西——一致性优先于单页还原度。
+   ② 「照搬原型数值」当天已经被推翻过一次：原型的尺寸是在原型的**假数据**上调的
+      （模型名「GPT-5.5」vs 真实的 70 字符），照搬必出问题。表格是同一个错误的第二次。
 
-   原型对照 modelgo_prd/src/redesign.css:15608 `.model-discovery-table-head/-row`。 */
-.model-discovery-table {
-  /* 原型的表头与行都是 padding: 11px 14px；控制台默认值更宽，实测每行高 13px，
-     整张榜单累积把页面撑高 300+px */
-  --mg-table-cell-px: 14px;
-  --mg-table-cell-py: 11px;
-  --mg-table-head-h: auto;
-}
+   代价是整张榜单高约 +180px（每行 57→66px × 20 行），在 3776px 的长页面上占 4.7%，
+   换全站表格一致，值。
+
+   唯一保留的偏离是表头大小写，见下。 */
 
 .model-discovery-table thead th {
-  /* TableHead 默认挂 .mg-text-label（styles/components.css），那条带
-     text-transform: uppercase，会把 Agentic Index / Artificial Analysis 顶成
-     AGENTIC INDEX / ARTIFICIAL ANALYSIS —— 原型是原样大小写。中文表头看不出来，
-     只有英文列被大写，同一行里反而不齐。 */
+  /* 保留 text-transform: none —— 但这不是"本页特例"，是一个**全局问题**在本页的规避：
+     TableHead 挂的 .mg-text-label 带 uppercase，那是按英文表头设计的；本仓表头中英混排，
+     结果同一行里「排名/模型/状态」原样、「Agentic Index」被顶成「AGENTIC INDEX」，
+     反而不齐。任何有英文列名的表格都会中招，该在组件或 token 层解决，不该每页各写一遍。
+     已记在 DESIGN.md 待办，收敛后这条要删。 */
   text-transform: none;
-  font-size: var(--discovery-fs-micro);
-}
-
-.model-discovery-table tbody td {
-  /* TableCell 挂 .mg-text-body（14px / 24px 行高），原型
-     .model-discovery-table-row 是 11px。字号和行高都要压回去 ——
-     只改字号的话，24px 的行高仍会把行撑到原型的 1.2 倍。 */
-  font-size: var(--discovery-fs-body);
-  line-height: 1.45;
 }
 
 /* 「查看详情 / 待支持」——照搬原型 redesign.css:15645

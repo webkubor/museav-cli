@@ -41,14 +41,19 @@
   font-size: var(--discovery-fs-micro);
 }
 
-.model-discovery-rank-head > span:last-child,
-.model-discovery-table thead .metric-primary {
+/* metric-primary 只出现在 tbody 的数值上（见 tsx），thead 里没有这个类——
+   原先这里和 tablefilter.css 各写了一条 `thead .metric-primary`，两条都是死规则，
+   2026-09-03 清理时删掉。表头里那个来源标签走 .model-discovery-source-tag。 */
+.model-discovery-rank-head > span:last-child {
   align-items: center;
   display: flex;
   gap: 6px;
 }
 
 .model-discovery-source-tag {
+  /* 跟在表头文字后面，需要自己撑开间距——它所在的 th 是普通行内流，
+     没有 flex gap 可用（表头去掉那条死的 flex 规则后暴露出来的，2026-09-03） */
+  margin-left: 6px;
   align-items: center;
   background: color-mix(in srgb, var(--accent) 7%, var(--panel));
   border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--line));

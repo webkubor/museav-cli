@@ -38,7 +38,8 @@ export function InfoTip({
       <span
         role="tooltip"
         className={cn(
-          'pointer-events-none absolute z-[var(--mg-z-tooltip)] w-max max-w-[260px] rounded-[var(--mg-tooltip-radius)] border border-mg-border bg-mg-bg-3 px-[var(--mg-tooltip-pad-x)] py-[var(--mg-tooltip-pad-y)] text-left mg-text-caption font-medium leading-snug text-mg-text-2 opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100',
+          // 表面统一走 mg-float（同 Popover / Dialog 一档玻璃），不再单写 bg-mg-bg-3 + shadow-lg
+          'pointer-events-none absolute z-[var(--mg-z-tooltip)] w-max max-w-[260px] rounded-[var(--mg-tooltip-radius)] mg-float px-[var(--mg-tooltip-pad-x)] py-[var(--mg-tooltip-pad-y)] text-left mg-text-caption font-medium leading-snug text-mg-text-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100',
           side === 'top' ? 'bottom-6' : 'top-6',
           align === 'center' ? 'left-1/2 -translate-x-1/2' : 'right-0',
         )}

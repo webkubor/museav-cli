@@ -78,7 +78,8 @@ const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-        "relative z-[var(--mg-z-dropdown)] max-h-96 min-w-[8rem] overflow-hidden rounded-[var(--mg-popover-radius)] border border-mg-border bg-mg-bg-2 text-mg-text-1 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+        // 表面统一走 mg-float（磨砂玻璃 + 品牌微染 + 微光），不再各自写 bg-mg-bg-2 + shadow-lg
+        "relative z-[var(--mg-z-dropdown)] max-h-96 min-w-[8rem] overflow-hidden rounded-[var(--mg-popover-radius)] mg-float text-mg-text-1 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
         position === "popper" &&
           "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
         className

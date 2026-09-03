@@ -260,6 +260,6 @@ YAML front matter 里的值是 **「国内 + 浅色」** 默认态；其余三�
 - ❌ 直接写 `--cn-*` / `--go-*`（会锁死单一市场）。
 - ❌ 给 `<PageHeader>` 传 `mb-0` 等覆盖间距。
 - ❌ AI slop：通用渐变、发光暗色 UI、装饰性光球(orbs)、重复图标卡阵、模板化 hero metric。
-- **毛玻璃(glassmorphism)分场景**（2026-07-23 定）：**内容面（卡片/面板/列表行/表格）禁半透明毛玻璃**，一律实心 `bg-0`（贴 Apple「内容实心、chrome 通透」的分工，也避免压在粒子 canvas 上糊字）。**通透/`backdrop-filter` 只留给浮层 chrome**——顶栏、下拉菜单、SideSheet/Modal，且**绝不叠在动画 canvas 上**（见下条）。
+- **毛玻璃(glassmorphism)分场景**（2026-07-23 定，2026-09-03 按实现修订）：**内容面默认实心**——列表行、表格、页面区块一律不做半透明毛玻璃（避免压在粒子 canvas 上糊字）。**唯一例外是 `.mg-tile`**：它的表面已并入玻璃系统（`--mg-tile-bg` 指向 `--mg-glass-*` 语义别名），让卡片与玻璃画布同一套语言、四象限自动跟随；这是刻意的，别按旧文字把它改回实色。除 `.mg-tile` 外的内容面仍是实心 `bg-0`（贴 Apple「内容实心、chrome 通透」的分工，也避免压在粒子 canvas 上糊字）。**通透/`backdrop-filter` 只留给浮层 chrome**——顶栏、下拉菜单、SideSheet/Modal，且**绝不叠在动画 canvas 上**（见下条）。
 - ❌ 用未安装的 UI 框架——本项目是 **Radix + 自有 ui 组件**，**不是 Semi**（CLAUDE.md 旧述已过时）。
 - ❌ 在动画 canvas 上叠 `backdrop-filter: blur()`（持续重绘卡顿）。

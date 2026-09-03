@@ -1,0 +1,177 @@
+/**
+ * 侧栏的模型筛选面板：触发器、搜索框、候选列表、底部操作。
+ *
+ * discovery.css 的分片之一。入口按顺序 @import，**顺序即层叠顺序**。
+ * 再拆分请用选择器锚点定位，不要用行号（见入口文件里的说明）。
+ */
+
+.model-discovery-analysis-aside {
+  display: grid;
+  gap: 12px;
+  grid-template-rows: auto 1fr;
+}
+
+/* 圆角交给 .mg-tile（--mg-tile-radius），这里只留内距；
+   原本走 --discovery-radius-2xl(10px)，与同页其他 tile 的 14px 不齐。 */
+.model-discovery-model-filter,
+.model-discovery-trend {
+  padding: 14px;
+}
+
+.model-discovery-model-filter {
+  position: relative;
+  z-index: 12;
+}
+
+.model-discovery-model-filter h3,
+.model-discovery-trend h3 {
+  align-items: center;
+  display: flex;
+  font-size: var(--discovery-fs-body);
+  gap: 6px;
+  margin: 0;
+}
+
+.model-discovery-model-filter p,
+.model-discovery-trend p {
+  color: var(--text-tertiary);
+  font-size: var(--discovery-fs-micro);
+  line-height: 1.5;
+  margin: 4px 0 9px;
+}
+
+.model-discovery-model-filter .model-discovery-model-filter-trigger {
+  align-items: center;
+  background: color-mix(in srgb, var(--line) 18%, var(--panel));
+  border: 1px solid var(--line);
+  border-radius: var(--discovery-radius-md);
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  font-family: inherit;
+  font-size: var(--discovery-fs-body);
+  font-weight: 620;
+  justify-content: space-between;
+  line-height: 1;
+  min-height: 32px;
+  padding: 0 10px;
+  width: 100%;
+}
+
+.model-discovery-model-filter .model-discovery-model-filter-trigger[aria-expanded="true"] {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+/* 表面（背景/边框/圆角/阴影/层级/定位）全部交给 ui/Popover 与 .mg-float，
+   这里只留内容排布。原先自持一套表面 + 硬编码 z-index:20，既和全站浮层不是
+   一套质感，也绕开了 --mg-z-* 层级体系（2026-09-03 换组件时清掉）。 */
+.model-discovery-model-filter-panel {
+  display: grid;
+  gap: 8px;
+  padding: 9px;
+  width: min(320px, calc(100vw - 32px));
+}
+
+.model-discovery-model-filter-panel > label {
+  align-items: center;
+  background: color-mix(in srgb, var(--line) 25%, var(--panel));
+  border-radius: var(--discovery-radius-md);
+  color: var(--muted);
+  display: flex;
+  gap: 7px;
+  padding: 0 9px;
+}
+
+.model-discovery-model-filter-panel > label input {
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  font-size: var(--discovery-fs-body);
+  min-height: 34px;
+  outline: none;
+  width: 100%;
+}
+
+.model-discovery-model-filter-list {
+  display: grid;
+  gap: 2px;
+  max-height: 228px;
+  overflow-y: auto;
+}
+
+.model-discovery-model-filter-list > button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--discovery-radius-md);
+  color: var(--text-soft);
+  cursor: pointer;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 18px minmax(0, 1fr) 16px;
+  padding: 7px 8px;
+  text-align: left;
+}
+
+.model-discovery-model-filter-list > button:hover,
+.model-discovery-model-filter-list > button.selected {
+  background: color-mix(in srgb, var(--accent) 7%, var(--panel));
+}
+
+.model-discovery-model-filter-list > button > span {
+  display: grid;
+  min-width: 0;
+}
+
+.model-discovery-model-filter-list > button strong {
+  font-size: var(--discovery-fs-micro);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-discovery-model-filter-list > button small {
+  color: var(--text-tertiary);
+  font-size: var(--discovery-fs-micro);
+}
+
+.model-discovery-model-filter-list > button > svg {
+  color: var(--accent);
+}
+
+.model-discovery-model-filter-list > em {
+  color: var(--text-tertiary);
+  font-size: var(--discovery-fs-micro);
+  font-style: normal;
+  padding: 18px 8px;
+  text-align: center;
+}
+
+.model-discovery-model-filter-panel footer {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 5px;
+  grid-template-columns: 1fr 1fr;
+  padding-top: 8px;
+}
+
+.model-discovery-model-filter-panel footer button {
+  align-items: center;
+  background: color-mix(in srgb, var(--line) 18%, var(--panel));
+  border: 0;
+  border-radius: var(--mg-radius-xs);
+  color: var(--text-soft);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: var(--discovery-fs-micro);
+  gap: 5px;
+  justify-content: center;
+  min-height: 29px;
+}
+
+.model-discovery-model-filter-panel footer button:last-child {
+  grid-column: 1 / -1;
+}
+
+/* Recharts 容器：高度由图表组件给，这里只留外边距 */

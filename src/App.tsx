@@ -1,6 +1,6 @@
 import { useEffect, useState, lazy, Suspense, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation, useSearchParams } from 'react-router-dom'
 import { Providers } from '@/components/providers'
 import { useActiveTheme } from '@/hooks/use-active-theme'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
@@ -11,6 +11,8 @@ import { RequireEnterpriseTenant } from '@/components/auth/RequireEnterpriseTena
 import { RequireWorkspace } from '@/components/auth/RequireWorkspace'
 import { LocaleNamespaces } from '@/components/i18n/LocaleNamespaces'
 import { CONSOLE_ROUTES, type ConsoleRouteMeta } from '@/config/console-routes'
+import { useAuthStore } from '@/store/auth'
+import { resolveReferralCode } from '@/pages/signup/referral-code'
 import type { LocaleNamespace } from '@/i18n'
 
 // 页面路由懒加载：各页面拆为独立 chunk，按需加载，缩小首屏体积
@@ -18,6 +20,29 @@ import type { LocaleNamespace } from '@/i18n'
 function RedirectPreservingSearch({ to }: { to: string }) {
   const location = useLocation()
   return <Navigate to={{ pathname: to, search: location.search }} replace />
+}
+
+/**
+ * 根路径落点：登录了进控制台，没登录去公开的模型广场——不再把访客弹到登录页。
+ * 1.0.6 起模型广场是对外挂出去的公开页，访客访问站点根地址应该直接看到模型，
+ * 登录留给顶栏按钮，而不是进门先拦一道。
+ *
+ * 推荐码在这里先落一次 session：原先 /?aff=X 会被 RequireAuth 折成
+ * /login?redirect=%2F%3Faff%3DX，由登录页从 redirect 内嵌 query 里解出来；现在不经过
+ * 登录页了，广场页也不解析推荐码，不在这一跳存住就 100% 丢码（qa#675 同源）。
+ */
+function RootEntry() {
+  const [searchParams] = useSearchParams()
+  const location = useLocation()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const isLoading = useAuthStore((s) => s.isLoading)
+
+  resolveReferralCode(searchParams)
+
+  // 会话还在拉：先不跳，否则已登录用户会闪一下广场再弹回控制台
+  if (isLoading) return null
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />
+  return <Navigate to={{ pathname: '/models', search: location.search }} replace />
 }
 
 const DashboardPage = lazy(() => import('@/pages/dashboard'))
@@ -293,6 +318,10 @@ export default function App() {
           <Route path="/device" element={withLocaleNamespaces(<DevicePage />, ['device'])} />
           <Route path="/billing/wechat-cashier" element={withLocaleNamespaces(<WechatCashierPage />, ['billing'])} />
 
+          {/* 根路径：登录进控制台、未登录进模型广场。必须声明在下面受保护的 path="/" 之前，
+              且那一组不再留 index 子路由，否则 "/" 会先被它吃掉、访客又被弹回登录页。 */}
+          <Route path="/" element={<RootEntry />} />
+
           {/* 模型广场（公开，免登录，双主题）— 与官网同路径 /models，官网「模型」直接跳此 */}
           <Route path="/models" element={<PublicShell />}>
             <Route index element={withLocaleNamespaces(<ModelsCatalogPage />, MODEL_NAMESPACES)} />
@@ -304,7 +333,7 @@ export default function App() {
 
           {/* 控制台路由（需登录） */}
           <Route path="/" element={<RequireAuth><DashboardLayout /></RequireAuth>}>
-            <Route index element={<Navigate to="/dashboard" replace />} />
+            {/* 无 index 子路由：根路径由上面的 RootEntry 接管（登录→/dashboard，访客→/models） */}
 
             {/* 租户级菜单页：由 config/console-routes 单一真源驱动 + 逐路由权限守卫 */}
             {CONSOLE_ROUTES.filter((r) => r.scope === 'tenant').map(consoleRoute)}

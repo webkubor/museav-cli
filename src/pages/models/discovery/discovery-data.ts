@@ -72,6 +72,9 @@ export function formatScore(card: Pick<DiscoveryModelCard, 'primary_score' | 'pr
  */
 export function formatPrice(value: number | null, type: DiscoveryType): string {
   if (value === null) return EMPTY
+  // 0 是"免费"，不是"$0.0000"。后者读起来像精度丢失，柱图上还会标出一串没有信息量的零
+  // （单次任务成本榜首位实测就是 $0.0000，2026-09-03）。
+  if (value === 0) return '免费'
   if (isLanguageType(type)) return `$${value.toFixed(4)}/次`
   if (type === 'TEXT_TO_IMAGE' || type === 'IMAGE_EDITING') return `$${value}/1K 张`
   if (type === 'TEXT_TO_VIDEO' || type === 'IMAGE_TO_VIDEO') return `$${value}/分钟`
@@ -171,6 +174,11 @@ function specialtyFieldFor(
  *
  * **无该指标数据的模型直接排除**，不是排到末尾：接口的 null 表示第三方没提供，
  * 混进榜单会让人以为它排最后（即"最差"）。
+ *
+ * **用量榜还要排除 0**：「近 7 日热度 Top 10」是"最热的十个"，把零调用的模型排进去，
+ * 画出来是一排高度为 0、看不见的柱子加一排悬空的图标——test 环境实测 10 个里 5 个是 0
+ * （2026-09-03）。榜单宁可短，不能用零值凑数。
+ * 只对用量字段这么做：成本类指标的 0 是"免费"，是有效信息，不能一起排除。
  */
 export function specialtyRows(
   title: string,
@@ -182,6 +190,8 @@ export function specialtyRows(
   if (!spec) return []
   const picked = models
     .filter((model) => model.raw[spec.field] !== null)
+    // 用量为 0 = 该周期没被调用过，不进"最热"榜（见上方说明）
+    .filter((model) => spec.field !== 'usage' || (model.raw[spec.field] as number) > 0)
     .sort((first, second) => {
       const a = first.raw[spec.field]!
       const b = second.raw[spec.field]!
@@ -342,9 +352,15 @@ function highlightUnit(key: HighlightKey, type: DiscoveryType): string {
  * 就递减的 tab 上凑巧看不出来，但 STT 的前 5 名全是 0%（第三方 WER 精度太粗，
  * 真实值被压成 0），进度条却仍一根比一根短，等于用视觉编造出并不存在的差距。
  *
- * 现在的口径：条长 = 该模型相对最优值的比例。越高越好的指标取 `value / max`，
- * 越低越好的（STT 的 WER）取 `min / value`。**全部同值时返回 0（不画条）** ——
- * 没有差距就不该显示出差距。
+ * 现在的口径：**与下方柱图同一把尺**——带地板的 min-max 归一化（见 specialtyBarDomain）。
+ *
+ * 曾经用的是 `value / max`，与柱图的 min-max 是两套算法：Agent Top 5 实测
+ * 61.3 / 59.8 / 59.2 / 59.1 / 58.7，按 value/max 算出来条长 214 / 209 / 206 / 206 / 205px，
+ * 首尾只差 9px，肉眼完全等长；而同一批数据在下面的柱图里落差清晰可见。同一页对同一组
+ * 数据给出两种视觉结论，比单纯"看不出差距"更糟（2026-09-03 实测）。
+ *
+ * 地板取 BAR_FLOOR，与柱图一致：最短的那条仍保留 28% 长度，不至于缩成一个点。
+ * **全部同值时返回 0（不画条）**——没有差距就不该显示出差距。
  */
 export function rankBarWidth(
   model: PrototypeModel,
@@ -360,8 +376,12 @@ export function rankBarWidth(
   // 全部同分（STT 的一堆 0 就是这种）：没有差距可表达，不画条
   if (max === min) return 0
 
-  const ratio = ascending ? (own === 0 ? 1 : min / own) : own / max
-  return Math.max(0, Math.min(100, ratio * 100))
+  // 归一化到 [0, 1]：越高越好取 (v - min)/(max - min)，越低越好（STT 的 WER）反向
+  const normalized = ascending ? (max - own) / (max - min) : (own - min) / (max - min)
+  const ratio = BAR_FLOOR + (1 - BAR_FLOOR) * normalized
+  // 收敛到两位小数：这个值直接进 inline style，浮点尾巴会写出
+  // `width: 28.000000000000004%` 这种脏值
+  return Math.round(Math.max(0, Math.min(100, ratio * 100)) * 100) / 100
 }
 
 /** 用量单位的中文展示名。 */

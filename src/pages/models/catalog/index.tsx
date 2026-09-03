@@ -455,8 +455,9 @@ export default function ModelsCatalogPage() {
                 {sortLabels[sort]}
                 <LuChevronDown size={13} className={sortOpen ? 'rotate-180' : ''} />
               </button>
+              {/* 排序下拉表面走全局浮层类 mg-float，与 ui/DropdownMenu 同一档，避免同页两种下拉两种脸 */}
               {sortOpen && (
-                <div className="bg-mg-bg-2 border-mg-border absolute right-0 top-full z-[var(--mg-z-dropdown)] mt-1.5 min-w-[140px] overflow-hidden rounded-[var(--mg-popover-radius)] border py-1 shadow-lg">
+                <div className="mg-float absolute right-0 top-full z-[var(--mg-z-dropdown)] mt-1.5 min-w-[140px] overflow-hidden rounded-[var(--mg-popover-radius)] py-1">
                   {(['default', 'newest', 'cheapest'] as SortKey[]).map((key) => (
                     <button
                       key={key}

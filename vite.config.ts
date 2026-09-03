@@ -6,6 +6,7 @@ import { execSync } from 'child_process'
 import { readFileSync } from 'fs'
 import { agentEyes, agentProxy, agentVersion } from 'vite-plugin-agent-eyes'
 import { devRequirementsPlugin } from './scripts/dev-requirements-plugin'
+import { uiAuditPlugin } from './scripts/ui-audit-plugin'
 
 // 构建时产出 /version.json：供「新版本强制更新弹窗」拉取最新部署的版本号做「当前→最新」对比。
 // package version 很少 bump，真正区分每次部署的是 commit + 构建时间，故三者都带上。
@@ -84,6 +85,10 @@ export default defineConfig(({ mode }) => {
       },
     }),
     devRequirementsPlugin(),
+    // UI 运行时审计：dev 期自动跑 scripts/ui-runtime-audit.js 并把问题回传终端。
+    // 它查的五项静态门禁一条都抓不到（只在真实数据 + 真实容器宽度下暴露），
+    // 而原本只能手动注入执行——等于"写了靠自觉"，正是要治的病。不阻断，只让问题被看见。
+    uiAuditPlugin(),
   ],
   build: {
     chunkSizeWarningLimit: 900,

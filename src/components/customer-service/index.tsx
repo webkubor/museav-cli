@@ -1,18 +1,51 @@
-import { Button } from '@/components/ui/Button'
-import { useState, useEffect, useRef } from 'react'
-import { useTranslation } from 'react-i18next'
-import { cn } from '@/lib/utils'
+/**
+ * 智能助手悬浮面板（智能客服 PRD v0.1，V1.0.6）。
+ *
+ * 这个文件只做两件事：**渲染由 `mode` 决定的形态**，以及**把用户操作与服务端事件
+ * 翻译成模式转移**。所有业务规则住在别处 —— 模式表在 `machine.ts`，实时链路在
+ * `use-support-events.ts`，列表编排在 `use-support-records.ts`，数据来源在 `gateway.ts`。
+ *
+ * 技术方案 §7.1 的两条硬规则在这里生效：
+ *   1. 渲染分支全部从 `MODE_SPEC[mode]` 查表得到，不写「有没有客服名字」这类隐式推断。
+ *   2. 模式切换只由用户操作与服务端事件触发；**前端计时器不改形态、更不建工单**
+ *      （§6.8：转异步只能由后台事件驱动）。
+ *
+ * 视觉一律走 token 类与 `ui/*` 组件：旧实现把 20 处 CSS 变量与 4 处裸数值圆角写在内联
+ * style 里，被 `scripts/ui-guard.sh` 判为 2 项 BLOCK（内联 style token、内联裸圆角），
+ * 本次一并还清 —— 只剩入口的 right/bottom 两个拖拽坐标还留在 style 上（运行时算出来的
+ * 位置值，不是设计 token）。
+ */
 
-import { MarkdownContent } from '@/components/ui/MarkdownContent'
-import { LuX, LuSendHorizontal, LuRefreshCw, LuSquare, LuMessageSquareWarning } from 'react-icons/lu'
-import { useSiteLogo } from '@/config/brand-assets'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { LuMessageSquareWarning, LuRefreshCw, LuSendHorizontal, LuSquare, LuX } from 'react-icons/lu'
+
+import { Button } from '@/components/ui/Button'
+import { Textarea } from '@/components/ui/Textarea'
+import { cn } from '@/lib/utils'
+import { getRequestErrorMessage } from '@/lib/request-error-message'
 import { storageKeys } from '@/lib/storage'
 import { useAuthStore } from '@/store/auth'
 import { useCustomerServiceStore } from '@/store/use-customer-service-store'
-import { formatChartDate, formatDate, formatShortTime } from '@/lib/format-date'
-import { useCsChat } from './use-cs-chat'
-import { AssistantOrb, type OrbState } from './AssistantOrb'
-import { FeedbackForm, FeedbackReceiptCard, FEEDBACK_FORM_ID } from './FeedbackPanel'
+import type {
+  SupportAttachment,
+  SupportEvent,
+  SupportHumanRatingValue,
+  SupportTicketDetail,
+  SupportTicketSummary,
+} from '@/interfaces/support'
+import { MODE_SPEC, isHumanFlow, type SupportMode } from './machine'
+import { supportGateway } from './gateway'
+import { useCsChat, type Message } from './use-cs-chat'
+import { supportTrack } from './support-track'
+import { useSupportEvents, UNREAD_BADGE_MAX } from './use-support-events'
+import { useSupportRecords } from './use-support-records'
+import { FeedbackForm, FEEDBACK_FORM_ID } from './FeedbackPanel'
+import { ChatPanel } from './panels/ChatPanel'
+import { RecordsPanel } from './panels/RecordsPanel'
+import { TicketPanel } from './panels/TicketPanel'
+import { PanelHeader } from './parts/PanelHeader'
+import { SupportMark } from './parts/SupportMark'
 import {
   buildFeedbackReceipt,
   buildFeedbackRequest,
@@ -21,175 +54,246 @@ import {
   type FeedbackDraft,
   type FeedbackErrors,
 } from './feedback'
-import { submitSupportFeedback } from '@/services/support'
-import { getRequestErrorMessage } from '@/lib/request-error-message'
-import type { Message, ConnectionStatus } from './use-cs-chat'
-
-function formatCsTimestamp(timestamp: number, t: (key: string, options?: Record<string, unknown>) => string) {
-  const date = new Date(timestamp)
-  const now = new Date()
-  const dateIso = date.toISOString()
-  const isToday = formatDate(dateIso) === formatDate(now.toISOString())
-  const yesterday = new Date(now)
-  yesterday.setDate(now.getDate() - 1)
-  const isYesterday = formatDate(dateIso) === formatDate(yesterday.toISOString())
-  const timeStr = formatShortTime(dateIso)
-  if (isToday) return t('common.customerService.todayAt', { time: timeStr })
-  if (isYesterday) return t('common.customerService.yesterdayAt', { time: timeStr })
-  return `${formatChartDate(dateIso)} ${timeStr}`
-}
 
 /**
- * 连接状态 + 生成状态 → orb 的表情（智能客服 PRD §7.2 / §7.4 / §8）。
- * 「正在生成回答」优先于「在线」——用户更需要知道助手在干活，而不是连接正常。
+ * 明确的人工意图（PRD §7.6：「转人工」「找客服」「我要人工处理」等直接进入排队，无需二次确认）。
+ *
+ * ⚠️ 待后端确认并落 API 单：意图识别的真源在服务端（技术方案 §6.2「规则前置短路」），
+ * 但 `POST /agent/chat` 的事件信封目前只有 start/delta/done/error，**没有下发意图的字段**，
+ * 前端无从知道后端判成了转人工。所以这里做与服务端同源的「规则前置短路」兜底，
+ * 只匹配明确表达 —— PRD §3.2 明确「不因用户表达不满而自动转人工」，所以绝不做情绪判断。
+ * 后端在 chat 事件里补 `intent` 后，这张表连同 `matchHandoffIntent` 一起删掉。
  */
-function toOrbState(status: ConnectionStatus, isLoading: boolean): OrbState {
-  if (status === 'offline') return 'error'
-  if (status === 'connecting') return 'working'
-  return isLoading ? 'thinking' : 'idle'
-}
+const HANDOFF_PATTERNS = [
+  /^\s*转人工\s*$/,
+  /转(接)?人工/,
+  /人工客服/,
+  /找客服/,
+  /我要人工/,
+  /人工处理/,
+  /\b(talk to|speak to)\s+(a\s+)?(human|agent|person)\b/i,
+  /\bhuman (agent|support)\b/i,
+]
 
-/** orb 的无障碍文案（PRD §7.2：入口必须具备可访问名称） */
-const ORB_LABELS: Partial<Record<OrbState, string>> = {
-  idle: '智能助手，在线',
-  thinking: '智能助手正在思考',
-  working: '智能助手正在连接',
-  asking: '智能助手在等你回复',
-  done: '智能助手有新消息',
-  error: '智能助手连接异常',
+function matchHandoffIntent(message: string) {
+  return HANDOFF_PATTERNS.some((pattern) => pattern.test(message))
 }
-
-function StatusDot({ status }: { status: ConnectionStatus }) {
-  return (
-    <span
-      className={cn(
-        'inline-block w-[7px] h-[7px] rounded-full mr-[5px] align-middle',
-        status === 'online' ? 'bg-mg-success shadow-[0_0_6px_var(--mg-success)]' : status === 'connecting' ? 'bg-mg-warning' : 'bg-mg-danger',
-      )}
-    />
-  )
-}
-
-function MessageBubble({ msg }: { msg: Message }) {
-  const { t } = useTranslation()
-  const isUser = msg.role === 'user'
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: isUser ? 'flex-end' : 'flex-start', marginBottom: 16 }}>
-      <div style={{
-        maxWidth: '80%',
-        padding: '10px 14px',
-        borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-        background: isUser ? 'var(--mg-fill-1)' : 'var(--mg-fill-0)',
-        color: 'var(--mg-text-1)',
-        fontSize: 13,
-        lineHeight: '1.6',
-        wordBreak: 'break-word',
-        whiteSpace: isUser ? 'pre-wrap' : undefined,
-        border: isUser ? '1px solid var(--mg-fill-1)' : '1px solid var(--mg-border)',
-        opacity: msg.isError ? 0.7 : 1,
-      }}>
-        {msg.content
-          ? (isUser
-            ? msg.content
-            : <MarkdownContent>{msg.content}</MarkdownContent>
-          )
-          : (msg.role === 'agent' ? <span className="italic text-mg-text-3">{t('common.customerService.thinking')}</span> : '')
-        }
-      </div>
-      <span className="mt-1 px-1 text-[10px] text-mg-text-3">
-        {formatCsTimestamp(msg.timestamp, t)}
-      </span>
-    </div>
-  )
-}
-
-function ThinkingDots() {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '8px 14px', marginBottom: 16 }}>
-      {[0, 1, 2].map((i) => (
-        <span key={i} style={{
-          width: 6, height: 6, borderRadius: '50%',
-          backgroundColor: 'var(--mg-fill-2)',
-          opacity: 0.6,
-          animation: `cs-bounce 1.2s ${i * 0.2}s ease-in-out infinite`,
-        }} />
-      ))}
-    </div>
-  )
-}
-
-/**
- * 面板主模式（PRD §7.1 模式表）。本期只实现 chat（初始空态 + 智能问答）与 feedback（反馈表单）；
- * 人工排队/连接/服务/结束四种模式待后端人工通道就绪后再补。
- */
-type PanelMode = 'chat' | 'feedback'
 
 export function CustomerService() {
   const { t } = useTranslation()
   const isOpen = useCustomerServiceStore((s) => s.isOpen)
   const toggleOpen = useCustomerServiceStore((s) => s.toggle)
-  const logoSrc = useSiteLogo()
+  const setOpen = useCustomerServiceStore((s) => s.setOpen)
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
-  const { messages, appendLocalMessage, sendMessage, stopMessage, reconnect, status, isLoading, conversationId } = useCsChat({
-    source: 'console',
-    tenantId: activeTenantId,
-  })
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
+  const [mode, setMode] = useState<SupportMode>('chat')
   const [inputValue, setInputValue] = useState('')
-  const [mode, setMode] = useState<PanelMode>('chat')
+
+  const chatOptions = useMemo(() => ({ source: 'console', tenantId: activeTenantId }), [activeTenantId])
+  const {
+    messages,
+    appendLocalMessage,
+    patchLocalMessage,
+    rateMessage,
+    sendMessage,
+    stopMessage,
+    reconnect,
+    status,
+    isLoading,
+    conversationId,
+  } = useCsChat(chatOptions)
+
+  /* ── 人工服务流程 ─────────────────────────────────────────────────────── */
+  const [handoffTicketId, setHandoffTicketId] = useState<string | null>(null)
+  const [queuePosition, setQueuePosition] = useState<number | undefined>(undefined)
+  const [handoffBusy, setHandoffBusy] = useState(false)
+  /** 已插过卡片的工单，保证「同一次后台状态变更只创建一张卡」（§7.6.1 幂等要求） */
+  const cardedTicketsRef = useRef<Set<string>>(new Set())
+  const handoffTicketIdRef = useRef<string | null>(null)
+  handoffTicketIdRef.current = handoffTicketId
+  /** 埋点计时锚点：排队开始与接通时刻（§10.2 support_handoff_connected / _end 的耗时字段） */
+  const queueStartedAtRef = useRef<number | null>(null)
+  const liveStartedAtRef = useRef<number | null>(null)
+
+  /* ── 服务记录与详情 ───────────────────────────────────────────────────── */
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null)
+  const [ticketDetail, setTicketDetail] = useState<SupportTicketDetail | null>(null)
+  const [ticketLoading, setTicketLoading] = useState(false)
+  const [ticketError, setTicketError] = useState(false)
+  const [ticketSubmitting, setTicketSubmitting] = useState(false)
+  const [ticketSubmitError, setTicketSubmitError] = useState(false)
+  const [ratingSubmittingId, setRatingSubmittingId] = useState<string | null>(null)
+
+  /* ── 问题反馈 ─────────────────────────────────────────────────────────── */
   const [feedbackDraft, setFeedbackDraft] = useState<FeedbackDraft>(() => createEmptyFeedbackDraft())
   const [feedbackErrors, setFeedbackErrors] = useState<FeedbackErrors>({})
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
   const [feedbackSubmitError, setFeedbackSubmitError] = useState<string | null>(null)
-  /**
-   * 幂等键（技术方案 §6.6：`client_submission_id` 重复提交返回同一张工单）。
-   * 同一次填写的重试必须复用同一个键，所以只在进入表单时换新，失败重试不换。
-   */
+  /** 幂等键：同一次填写的重试复用同一个，只在进入表单时换新（技术方案 §6.6） */
   const submissionIdRef = useRef<string>('')
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // draggable trigger state
-  const [pos, setPos] = useState(() => {
+  /**
+   * `handleEvent` 要用 `mergeTickets`，而后者由下面的 `useSupportEvents` 返回 ——
+   * 声明顺序上还轮不到它。用 ref 打破这个环，effect 里同步（ref 不能在渲染期写）。
+   */
+  const mergeTicketsRef = useRef<((items: SupportTicketSummary[]) => void) | null>(null)
+
+  const appendSystem = useCallback((content: string) => {
+    appendLocalMessage({ id: crypto.randomUUID(), role: 'system', content, timestamp: Date.now() })
+  }, [appendLocalMessage])
+
+  /* ── 实时事件 ─────────────────────────────────────────────────────────── */
+
+  const handleEvent = useCallback((event: SupportEvent) => {
+    const isActiveHandoff = event.ticket_id === handoffTicketIdRef.current
+
+    if (event.type === 'queue.position_changed' && isActiveHandoff) {
+      setQueuePosition(event.payload.queue_position)
+      return
+    }
+
+    if (event.type === 'ticket.status_changed' && event.payload.status === 'processing' && isActiveHandoff) {
+      setMode('live')
+      liveStartedAtRef.current = Date.now()
+      supportTrack.handoffConnected({ queueMs: Date.now() - (queueStartedAtRef.current ?? Date.now()) })
+      if (event.payload.message) appendSystem(event.payload.message)
+      /**
+       * 客服姓名与工号（§4.5：processing 的人工服务顶部要显示它）不在这个事件里 ——
+       * 技术方案 §5.3 给 status_changed 的 payload 只有 status / waiting_user / message，
+       * 摘要要自己重拉。拉回来并入缓存，`agentLabel` 就从缓存派生出来了。
+       */
+      void supportGateway.getTicket(event.ticket_id)
+        .then((detail) => mergeTicketsRef.current?.([detail]))
+        .catch(() => { /* 拉不到就退回兜底文案，不影响会话本身 */ })
+      return
+    }
+
+    if (event.type === 'message.created' && isActiveHandoff && event.payload.sender_type === 'agent') {
+      appendLocalMessage({
+        id: `agent-${event.event_id}`,
+        role: 'human-agent',
+        content: event.payload.message ?? '',
+        timestamp: new Date(event.occurred_at).getTime(),
+      })
+      return
+    }
+
+    // §6.8：转异步完全由后台驱动 —— 收到事件才结束人工流程并插卡，前端计时器永不建单
+    if (event.type === 'ticket.async_converted') {
+      if (cardedTicketsRef.current.has(`async:${event.ticket_id}`)) return
+      cardedTicketsRef.current.add(`async:${event.ticket_id}`)
+      if (isActiveHandoff) {
+        supportTrack.handoffEnd({
+          durationMs: Date.now() - (liveStartedAtRef.current ?? queueStartedAtRef.current ?? Date.now()),
+          endedBy: 'async_converted',
+        })
+        setHandoffTicketId(null)
+        setQueuePosition(undefined)
+        liveStartedAtRef.current = null
+        queueStartedAtRef.current = null
+        setMode((current) => (isHumanFlow(current) ? 'chat' : current))
+      }
+      appendLocalMessage({
+        id: `async-${event.event_id}`,
+        role: 'system',
+        content: '',
+        timestamp: new Date(event.occurred_at).getTime(),
+        card: {
+          kind: 'async-ticket',
+          data: {
+            ticketId: event.ticket_id,
+            statusLabel: event.payload.status_label ?? '',
+            reason: event.payload.message ?? '',
+            expectedContactLabel: event.payload.expected_contact_label,
+          },
+        },
+      })
+      return
+    }
+
+    if (event.type === 'ticket.cancelled' && isActiveHandoff) {
+      supportTrack.handoffEnd({
+        durationMs: Date.now() - (queueStartedAtRef.current ?? Date.now()),
+        endedBy: 'cancelled',
+      })
+      setHandoffTicketId(null)
+      setQueuePosition(undefined)
+      liveStartedAtRef.current = null
+      queueStartedAtRef.current = null
+      setMode((current) => (isHumanFlow(current) ? 'chat' : current))
+      appendSystem(event.payload.message ?? t('common.customerService.handoff.cancelled'))
+    }
+  }, [appendLocalMessage, appendSystem, t])
+
+  const { tickets, unreadTotal, hasUnread, mergeTickets, markReadLocally } = useSupportEvents({ onEvent: handleEvent })
+
+  useEffect(() => {
+    mergeTicketsRef.current = mergeTickets
+  }, [mergeTickets])
+
+  /** 客服身份从工单缓存派生，不另存一份 state —— 单一真源，事件与重拉都能更新它 */
+  const agentLabel = handoffTicketId ? tickets.get(handoffTicketId)?.assignee_display_name ?? null : null
+
+  const records = useSupportRecords({
+    active: mode === 'records',
+    onLoaded: mergeTickets,
+  })
+
+  /* ── 面板开关 ─────────────────────────────────────────────────────────── */
+
+  // §10.2：展开助手。只在打开这一侧发，收起不发
+  useEffect(() => {
+    if (isOpen) supportTrack.assistantOpen({ loggedIn: isAuthenticated })
+  }, [isOpen, isAuthenticated])
+
+  // §7.2：按 Esc 关闭；关闭只收起面板，不结束当前会话
+  useEffect(() => {
+    if (!isOpen) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [isOpen, setOpen])
+
+  /* ── 拖拽入口 ─────────────────────────────────────────────────────────── */
+
+  const [pos, setPos] = useState<{ x: number; y: number }>(() => {
     try {
       const saved = localStorage.getItem(storageKeys.csTriggerPos())
       return saved ? JSON.parse(saved) : { x: 0, y: 0 }
-    } catch { return { x: 0, y: 0 } }
+    } catch {
+      return { x: 0, y: 0 }
+    }
   })
   const dragRef = useRef<{ startX: number; startY: number; startPosX: number; startPosY: number } | null>(null)
-  const isDragging = useRef(false)
+  const isDraggingRef = useRef(false)
+  /** 拖拽结束要落盘最新位置：state 在 mouseup 的闭包里是旧值，旧实现存的一直是拖拽前的坐标 */
+  const posRef = useRef(pos)
+  posRef.current = pos
 
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+  function handleMouseDown(event: React.MouseEvent) {
+    dragRef.current = {
+      startX: event.clientX,
+      startY: event.clientY,
+      startPosX: pos.x,
+      startPosY: pos.y,
     }
-  }, [messages, isLoading])
+    isDraggingRef.current = false
 
-  /*
-   * 不再因为「没有活跃租户」就整块不渲染。
-   *
-   * 智能客服 PRD v0.1 §2 把「未登录访客」列为正式角色（问支持哪些模型、如何接入、
-   * 如何计费），§6.1 写明「未登录用户可以进行平台知识咨询，若问题需要查询账户数据
-   * 才提示登录」，§7.2 要求官网、登录页和 Console 共用同一个右下角入口。
-   *
-   * 接口侧也支持：2026-09-02 实测未带任何凭据 POST /api/v1/agent/chat 返回 200 +
-   * code 0。租户相关的 X-Tenant-Id 头本来就只在 tenantId 有值时才带。
-   */
-
-  function handleMouseDown(e: React.MouseEvent) {
-    dragRef.current = { startX: e.clientX, startY: e.clientY, startPosX: pos.x, startPosY: pos.y }
-    isDragging.current = false
-
-    function onMouseMove(ev: MouseEvent) {
-      if (!dragRef.current) return
-      const dx = ev.clientX - dragRef.current.startX
-      const dy = ev.clientY - dragRef.current.startY
-      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) isDragging.current = true
-      const newPos = { x: dragRef.current.startPosX + dx, y: dragRef.current.startPosY + dy }
-      setPos(newPos)
+    function onMouseMove(moveEvent: MouseEvent) {
+      const origin = dragRef.current
+      if (!origin) return
+      const dx = moveEvent.clientX - origin.startX
+      const dy = moveEvent.clientY - origin.startY
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) isDraggingRef.current = true
+      setPos({ x: origin.startPosX + dx, y: origin.startPosY + dy })
     }
     function onMouseUp() {
-      try { localStorage.setItem(storageKeys.csTriggerPos(), JSON.stringify(pos)) } catch { /* ignore */ }
+      try {
+        localStorage.setItem(storageKeys.csTriggerPos(), JSON.stringify(posRef.current))
+      } catch { /* 隐私模式下写不进就算了，位置不是关键状态 */ }
       dragRef.current = null
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseup', onMouseUp)
@@ -198,27 +302,302 @@ export function CustomerService() {
     window.addEventListener('mouseup', onMouseUp)
   }
 
-  const orbState = toOrbState(status, isLoading)
+  /* ── 对话与转人工 ─────────────────────────────────────────────────────── */
 
-  function handleTriggerClick() {
-    if (isDragging.current) return
-    toggleOpen()
+  const startHandoff = useCallback(async (trigger: 'intent' | 'button', userMessage?: string) => {
+    if (!MODE_SPEC[mode].canStartHandoff || handoffBusy) return
+    setHandoffBusy(true)
+    queueStartedAtRef.current = Date.now()
+    supportTrack.handoffStart({
+      trigger,
+      assistantTurns: messages.filter((message) => message.role === 'assistant').length,
+    })
+    if (userMessage) {
+      appendLocalMessage({ id: crypto.randomUUID(), role: 'user', content: userMessage, timestamp: Date.now() })
+    }
+    try {
+      const ticket = await supportGateway.startHandoff({
+        client_submission_id: crypto.randomUUID(),
+        trigger,
+        conversation_id: conversationId,
+        page_name: document.title,
+        page_path: window.location.pathname,
+      })
+      setHandoffTicketId(ticket.ticket_id)
+      setQueuePosition(ticket.queue_position)
+      setMode('queueing')
+      mergeTickets([ticket])
+      appendSystem(t('common.customerService.handoff.queuedNotice', { count: ticket.queue_position ?? 0 }))
+    } catch (error) {
+      // §8 排队失败：保留当前对话与交接摘要，允许重试 —— 如实报错，不假装排上了
+      appendSystem(getRequestErrorMessage(error, t('common.customerService.handoff.startFailed')))
+    } finally {
+      setHandoffBusy(false)
+    }
+  }, [appendLocalMessage, appendSystem, conversationId, handoffBusy, mergeTickets, messages, mode, t])
+
+  const ask = useCallback((question: string, entry: 'composer' | 'quick_question' = 'composer') => {
+    const text = question.trim()
+    if (!text) return
+    if (mode === 'live') {
+      // 人工服务中用户消息走人工通道，不进 /agent/chat
+      void replyInLiveSession(text)
+      return
+    }
+    supportTrack.questionSubmit(text, { entry })
+    if (matchHandoffIntent(text)) {
+      void startHandoff('intent', text)
+      return
+    }
+    void sendMessage(text)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, sendMessage, startHandoff])
+
+  /** 人工服务中的用户消息：走工单消息接口，本地乐观插入（技术方案 §7.1） */
+  const replyInLiveSession = useCallback(async (text: string) => {
+    const ticketId = handoffTicketIdRef.current
+    if (!ticketId) return
+    appendLocalMessage({ id: crypto.randomUUID(), role: 'user', content: text, timestamp: Date.now() })
+    try {
+      const ticket = await supportGateway.reply(ticketId, {
+        client_message_id: crypto.randomUUID(),
+        content: text,
+      })
+      mergeTickets([ticket])
+    } catch (error) {
+      appendSystem(getRequestErrorMessage(error, t('common.customerService.handoff.sendFailed')))
+    }
+  }, [appendLocalMessage, appendSystem, mergeTickets, t])
+
+  const cancelHandoff = useCallback(async () => {
+    const ticketId = handoffTicketId
+    if (!ticketId) return
+    setHandoffBusy(true)
+    try {
+      const ticket = await supportGateway.cancelHandoff(ticketId)
+      mergeTickets([ticket])
+      // 取消后的收尾由 ticket.cancelled 事件统一做，避免和事件重复插两条提示
+    } catch (error) {
+      appendSystem(getRequestErrorMessage(error, t('common.customerService.handoff.cancelFailed')))
+    } finally {
+      setHandoffBusy(false)
+    }
+  }, [appendSystem, handoffTicketId, mergeTickets, t])
+
+  const endHandoff = useCallback(async () => {
+    const ticketId = handoffTicketId
+    if (!ticketId) return
+    setHandoffBusy(true)
+    try {
+      const ticket = await supportGateway.endHandoff(ticketId)
+      mergeTickets([ticket])
+      supportTrack.handoffEnd({
+        durationMs: Date.now() - (liveStartedAtRef.current ?? Date.now()),
+        endedBy: 'user',
+      })
+      liveStartedAtRef.current = null
+      queueStartedAtRef.current = null
+      setHandoffTicketId(null)
+      setQueuePosition(undefined)
+      setMode('chat')
+      appendSystem(t('common.customerService.handoff.ended'))
+      // §7.7：每个已结束的人工会话只生成一张评价卡
+      if (!cardedTicketsRef.current.has(`rating:${ticketId}`)) {
+        cardedTicketsRef.current.add(`rating:${ticketId}`)
+        appendLocalMessage({
+          id: `rating-${ticketId}`,
+          role: 'system',
+          content: '',
+          timestamp: Date.now(),
+          card: {
+            kind: 'human-rating',
+            ticketId,
+            agentLabel: ticket.assignee_display_name ?? agentLabel,
+            status: 'pending',
+          },
+        })
+      }
+    } catch (error) {
+      appendSystem(getRequestErrorMessage(error, t('common.customerService.handoff.endFailed')))
+    } finally {
+      setHandoffBusy(false)
+    }
+  }, [agentLabel, appendLocalMessage, appendSystem, handoffTicketId, mergeTickets, t])
+
+  /* ── 五星评价 ─────────────────────────────────────────────────────────── */
+
+  /**
+   * 就地改一张评价卡。刻意**不用** useCallback —— 它要读当前的 `messages`，
+   * 包起来就会捕获首次渲染的闭包，改到旧数组上（第一版就踩了这个）。
+   */
+  function patchRatingCard(
+    messageId: string,
+    patch: Partial<Extract<NonNullable<Message['card']>, { kind: 'human-rating' }>>,
+  ) {
+    const target = messages.find((message) => message.id === messageId)
+    if (!target?.card || target.card.kind !== 'human-rating') return
+    patchLocalMessage(messageId, { card: { ...target.card, ...patch } })
   }
 
-  function handleSend() {
-    if (!inputValue.trim() || isLoading) return
-    sendMessage(inputValue)
-    setInputValue('')
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSend()
+  async function submitRating(messageId: string) {
+    const target = messages.find((message) => message.id === messageId)
+    if (!target?.card || target.card.kind !== 'human-rating' || target.card.rating === undefined) return
+    setRatingSubmittingId(messageId)
+    try {
+      const ticket = await supportGateway.rate(target.card.ticketId, target.card.rating)
+      mergeTickets([ticket])
+      supportTrack.humanRating({ rating: target.card.rating, skipped: false })
+      patchRatingCard(messageId, { status: 'submitted' })
+    } catch (error) {
+      appendSystem(getRequestErrorMessage(error, t('common.customerService.humanRating.submitFailed')))
+    } finally {
+      setRatingSubmittingId(null)
     }
   }
 
-  /** 进入反馈模式：每次都重置草稿，发生时间默认当前本地时间（PRD §7.5） */
+  /* ── 服务记录与工单详情 ───────────────────────────────────────────────── */
+
+  const loadTicket = useCallback(async (ticketId: string) => {
+    setTicketLoading(true)
+    setTicketError(false)
+    try {
+      const detail = await supportGateway.getTicket(ticketId)
+      setTicketDetail(detail)
+      mergeTickets([detail])
+    } catch {
+      setTicketDetail(null)
+      setTicketError(true)
+    } finally {
+      setTicketLoading(false)
+    }
+  }, [mergeTickets])
+
+  function openRecords() {
+    supportTrack.recordsOpen({
+      unreadTickets: [...tickets.values()].filter((ticket) => (ticket.unread_count ?? 0) > 0).length,
+    })
+    setMode('records')
+  }
+
+  function openTicket(ticketId: string) {
+    const summary = tickets.get(ticketId)
+    // 「是否置顶」= 有未读的工单会被服务端排到最前（§6.11），与未读同义
+    if (summary) supportTrack.ticketOpen(summary, { pinned: (summary.unread_count ?? 0) > 0 })
+    setSelectedTicketId(ticketId)
+    setTicketSubmitError(false)
+    setMode('ticket')
+    void loadTicket(ticketId)
+  }
+
+  function back() {
+    if (mode === 'ticket') {
+      setSelectedTicketId(null)
+      setTicketDetail(null)
+      setMode('records')
+      records.refresh()
+      return
+    }
+    setMode('chat')
+  }
+
+  const markTicketRead = useCallback(async (readSeq: number) => {
+    const ticketId = selectedTicketId
+    if (!ticketId || readSeq <= 0) return
+    markReadLocally(ticketId, readSeq)
+    try {
+      await supportGateway.markRead(ticketId, readSeq)
+    } catch {
+      // 已读游标推进失败不影响阅读；下一次进入详情会再试
+    }
+  }, [markReadLocally, selectedTicketId])
+
+  async function uploadIfNeeded(file: File | null) {
+    if (!file) return undefined
+    const attachment = await supportGateway.uploadAttachment(file)
+    return [attachment.id]
+  }
+
+  async function replyTicket(content: string, file: File | null) {
+    if (!selectedTicketId) return false
+    setTicketSubmitting(true)
+    setTicketSubmitError(false)
+    try {
+      const attachmentIds = await uploadIfNeeded(file)
+      await supportGateway.reply(selectedTicketId, {
+        client_message_id: crypto.randomUUID(),
+        content: content.trim(),
+        ...(attachmentIds ? { attachment_ids: attachmentIds } : {}),
+      })
+      await loadTicket(selectedTicketId)
+      return true
+    } catch {
+      setTicketSubmitError(true)
+      return false
+    } finally {
+      setTicketSubmitting(false)
+    }
+  }
+
+  async function supplementTicket(content: string, file: File | null) {
+    if (!selectedTicketId) return false
+    setTicketSubmitting(true)
+    setTicketSubmitError(false)
+    try {
+      const attachmentIds = await uploadIfNeeded(file)
+      const detail = await supportGateway.supplement(selectedTicketId, {
+        client_message_id: crypto.randomUUID(),
+        content: content.trim(),
+        ...(attachmentIds ? { attachment_ids: attachmentIds } : {}),
+      })
+      setTicketDetail(detail)
+      if (ticketDetail) supportTrack.ticketSupplementSubmit(ticketDetail, { hasAttachment: Boolean(file), ok: true })
+      return true
+    } catch {
+      setTicketSubmitError(true)
+      if (ticketDetail) supportTrack.ticketSupplementSubmit(ticketDetail, { hasAttachment: Boolean(file), ok: false })
+      return false
+    } finally {
+      setTicketSubmitting(false)
+    }
+  }
+
+  async function reopenTicket() {
+    if (!selectedTicketId) return
+    try {
+      const ticket = await supportGateway.reopen(selectedTicketId)
+      mergeTickets([ticket])
+      await loadTicket(selectedTicketId)
+    } catch {
+      setTicketSubmitError(true)
+    }
+  }
+
+  /** 「再次反馈」：带着来源工单进反馈表单（§7.11 / 原型的 followup 语义） */
+  function createFollowup() {
+    openFeedback()
+  }
+
+  async function downloadAttachment(attachment: SupportAttachment) {
+    supportTrack.ticketAttachmentDownload({
+      ticketType: ticketDetail?.ticket_type ?? 'unknown',
+      // 补充里的附件 id 不在表单快照的附件列表里，据此区分来源（§10.2 attachment_source）
+      source: (ticketDetail?.feedback?.attachments ?? []).some((item) => item.id === attachment.id)
+        ? 'original'
+        : 'supplement',
+    })
+    try {
+      const { url } = await supportGateway.attachmentUrl(attachment.id)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = attachment.file_name
+      anchor.click()
+    } catch {
+      appendSystem(t('common.customerService.ticket.downloadFailed'))
+    }
+  }
+
+  /* ── 问题反馈 ─────────────────────────────────────────────────────────── */
+
   function openFeedback() {
     setFeedbackDraft(createEmptyFeedbackDraft())
     setFeedbackErrors({})
@@ -227,16 +606,15 @@ export function CustomerService() {
     setMode('feedback')
   }
 
-  /** PRD §7.5：取消直接回原对话，不生成任何消息 */
+  /** §7.5：取消直接回原对话，不生成任何消息 */
   function cancelFeedback() {
     setFeedbackErrors({})
     setFeedbackSubmitError(null)
     setMode('chat')
   }
 
-  function handleFeedbackChange(patch: Partial<FeedbackDraft>) {
+  function changeFeedback(patch: Partial<FeedbackDraft>) {
     setFeedbackDraft((prev) => ({ ...prev, ...patch }))
-    // 改动即清掉对应字段的错误，避免用户已经改好了还挂着红字
     setFeedbackErrors((prev) => {
       const next = { ...prev }
       if ('issueType' in patch) delete next.issueType
@@ -245,23 +623,8 @@ export function CustomerService() {
     })
   }
 
-  /**
-   * 提交反馈 → `POST /support/feedback`（契约见《ModelGo 智能客服与工单体系技术方案 v0.1》§5.1，
-   * **后端预计 9/7 上线**；入参与返回类型见 `src/interfaces/support.ts`）。
-   *
-   * 三条约束：
-   *   · 编号、状态文案、预计响应时间一律取服务端返回，前端不本地生成、不写死「2 小时内」。
-   *   · 接口未上线期间会失败，失败就在表单里如实报错并保留已填内容，**不静默吞掉、不伪造成功回执**。
-   *   · 重试复用同一个 `client_submission_id`，避免后端上线后重复建单。
-   *
-   * 待确认（不自行发明，联调/找产品确认后再补）：
-   *   1. 未登录访客（PRD §2 正式角色，本面板对未登录开放）提交后客服如何回联 —— 技术方案 §6.6 写
-   *      「账号手机号与邮箱从账号事实读取写入 account_snapshot」，未登录没有账号事实；PRD §7.5
-   *      字段表也没有联系方式字段。要不要给未登录用户加联系方式属产品决策。
-   *   2. 埋点 support_feedback_submit（PRD §10.2：问题类型、是否含 Request ID/附件）等 track 封装到位再挂。
-   */
-  async function handleFeedbackSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  async function submitFeedback(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
     if (feedbackSubmitting) return
     const errors = validateFeedbackDraft(feedbackDraft)
     setFeedbackErrors(errors)
@@ -270,21 +633,27 @@ export function CustomerService() {
     setFeedbackSubmitError(null)
     setFeedbackSubmitting(true)
     try {
-      const response = await submitSupportFeedback(buildFeedbackRequest(feedbackDraft, {
+      const response = await supportGateway.submitFeedback(buildFeedbackRequest(feedbackDraft, {
         clientSubmissionId: submissionIdRef.current || crypto.randomUUID(),
         pageName: document.title,
         pagePath: window.location.pathname,
         conversationId,
       }))
+      mergeTickets([response])
+      supportTrack.feedbackSubmit({
+        issueType: feedbackDraft.issueType || 'unknown',
+        hasRequestId: Boolean(feedbackDraft.requestId.trim()),
+        hasAttachment: Boolean(feedbackDraft.attachmentId),
+      })
       appendLocalMessage({
         id: crypto.randomUUID(),
         role: 'system',
         content: '',
         timestamp: Date.now(),
-        feedback: buildFeedbackReceipt(response, feedbackDraft),
+        card: { kind: 'feedback-receipt', receipt: buildFeedbackReceipt(response, feedbackDraft) },
       })
       setFeedbackDraft(createEmptyFeedbackDraft())
-      // PRD §7.5：提交成功后回执进对话流，并自动回到普通问答模式
+      // §7.5：提交成功后回执进对话流，并自动回到普通问答模式
       setMode('chat')
     } catch (error) {
       setFeedbackSubmitError(getRequestErrorMessage(error, t('common.customerService.feedback.submitFailed')))
@@ -293,193 +662,277 @@ export function CustomerService() {
     }
   }
 
+  /* ── 渲染 ─────────────────────────────────────────────────────────────── */
+
+  const spec = MODE_SPEC[mode]
+  const composerDisabled = spec.footer === 'input-disabled'
+
+  function handleSend() {
+    const text = inputValue.trim()
+    if (!text || isLoading || composerDisabled) return
+    ask(text)
+    setInputValue('')
+  }
+
   return (
     <>
-      <style>{`
-        @keyframes cs-bounce {
-          0%, 80%, 100% { transform: scale(1); opacity: 0.4; }
-          40% { transform: scale(1.4); opacity: 1; }
-        }
-      `}</style>
-
-      {/* Floating trigger button */}
+      {/* 悬浮入口：§7.2 ModelGo 圆形入口 + 在线状态点；§6.11 关闭态显示未读数（99+ 上限） */}
       <div
+        className={cn(
+          'fixed z-[1000] flex size-13 cursor-grab items-center justify-center rounded-full',
+          'border border-mg-border bg-mg-bg-2 shadow-md select-none',
+        )}
+        onClick={() => { if (!isDraggingRef.current) toggleOpen() }}
         onMouseDown={handleMouseDown}
-        onClick={handleTriggerClick}
-        style={{
-          position: 'fixed',
-          right: 24 - pos.x,
-          bottom: 24 - pos.y,
-          zIndex: 1000,
-          width: 52,
-          height: 52,
-          borderRadius: '50%',
-          // 浮层必须实底：--mg-bg-0 已并入玻璃（半透明），悬浮层用 --mg-bg-2（需求方#529/#559）
-          background: 'var(--mg-bg-2)',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'grab',
-          userSelect: 'none',
-          transition: 'box-shadow 0.2s',
-          border: '1px solid var(--mg-border)',
-        }}
+        style={{ right: 24 - pos.x, bottom: 24 - pos.y }}
       >
-        {isOpen
-          ? <LuX className="text-mg-text-2" size={20} />
-          : <AssistantOrb labels={ORB_LABELS} size={40} state={orbState} />}
+        {isOpen ? (
+          <>
+            <LuX aria-hidden="true" className="text-mg-text-2" size={20} />
+            <span className="sr-only">{t('common.customerService.close')}</span>
+          </>
+        ) : (
+          <>
+            <SupportMark size={26} status={status} />
+            <span className="sr-only">{t('common.customerService.openAria')}</span>
+            {/* §7.8：人工服务进行中不显示未读入口 —— 会话就在眼前，再提醒是干扰 */}
+            {unreadTotal > 0 && !isHumanFlow(mode) ? (
+              <span
+                aria-label={t('common.customerService.records.unreadCount', { count: unreadTotal })}
+                className="absolute -right-0.5 -top-0.5 inline-flex min-w-4 items-center justify-center rounded-full bg-brand-base px-1 mg-text-micro font-bold text-white"
+                role="status"
+              >
+                {unreadTotal > UNREAD_BADGE_MAX ? `${UNREAD_BADGE_MAX}+` : unreadTotal}
+              </span>
+            ) : null}
+          </>
+        )}
       </div>
 
-      {/* Chat window */}
-      {isOpen && (
-        <div style={{
-          position: 'fixed',
-          right: 24,
-          bottom: 88,
-          width: 380,
-          height: 560,
-          zIndex: 999,
-          borderRadius: 20,
-          // 聊天窗悬浮在页面内容上，玻璃 bg-0 会把下层内容透出来叠字（需求方#559），改实底 bg-2
-          background: 'var(--mg-bg-2)',
-          border: '1px solid var(--mg-border)',
-          boxShadow: '0 20px 60px -10px rgba(15,23,42,0.2)',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}>
-          {/* Header */}
-          <div style={{
-            padding: '16px 20px',
-            borderBottom: '1px solid var(--mg-fill-0)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            background: 'var(--mg-bg-1)',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <img src={logoSrc} alt="Logo" style={{ width: 28, height: 28, objectFit: 'contain' }} />
-              <div>
-                <p className="m-0 text-[13px] font-bold text-mg-text-1">{t('common.customerService.assistant')}</p>
-                <p className="m-0 text-[11px] text-mg-text-2">
-                  <StatusDot status={status} />
-                  {status === 'online' ? t('common.customerService.online') : status === 'connecting' ? t('common.customerService.connecting') : t('common.customerService.offline')}
-                </p>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {status === 'offline' && (
-                <Button size="small"  variant="ghost" icon={<LuRefreshCw />} onClick={reconnect} />
-              )}
-              <span style={{
-                fontSize: 10, color: 'var(--mg-text-3)',
-                padding: '2px 8px', borderRadius: 100,
-                background: conversationId ? 'var(--mg-fill-0)' : 'var(--mg-primary-light)',
-                border: `1px solid ${conversationId ? 'var(--mg-border)' : 'var(--mg-primary)'}`,
-              }}>
-                {conversationId ? 'Resumed' : 'New'}
-              </span>
-            </div>
-          </div>
+      {isOpen ? (
+        <aside
+          aria-label={t('common.customerService.assistant')}
+          className={cn(
+            'fixed bottom-22 right-6 z-[999] flex flex-col overflow-hidden rounded-lg',
+            // 固定 380×560 是桌面尺寸；窄屏/矮屏按视口收缩，避免裁切与横向溢出（PRD §12 响应式验收）
+            'h-140 max-h-[calc(100vh-7rem)] w-95 max-w-[calc(100vw-3rem)]',
+            // 浮层必须实底：--mg-bg-0 已并入玻璃（半透明），会把下层内容透出来叠字（需求方 #529/#559）
+            'border border-mg-border bg-mg-bg-2 shadow-lg',
+          )}
+          role="dialog"
+        >
+          <PanelHeader
+            agentLabel={agentLabel}
+            busy={handoffBusy}
+            connectionStatus={status}
+            hasUnread={hasUnread}
+            mode={mode}
+            onBack={back}
+            onCancelConnect={cancelHandoff}
+            onCancelQueue={cancelHandoff}
+            onEndLive={endHandoff}
+            onOpenRecords={openRecords}
+            queuePosition={queuePosition}
+            ticketId={ticketDetail?.ticket_id}
+            ticketStatusLabel={ticketDetail?.status_label}
+          />
 
-          {/* 中部内容区：PRD §7.1 —— 反馈表单模式下整块换成表单，不跳转、不开二层弹窗 */}
-          <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
-            {mode === 'feedback' && (
+          {mode === 'records' ? (
+            <RecordsPanel
+              error={Boolean(records.error)}
+              filter={records.filter}
+              hasMore={records.hasMore}
+              items={records.items}
+              loading={records.loading}
+              loadingMore={records.loadingMore}
+              onFilterChange={records.setFilter}
+              onLoadMore={records.loadMore}
+              onOpenTicket={openTicket}
+              onQueryChange={records.setQuery}
+              onRetry={records.retry}
+              query={records.query}
+              total={records.total}
+            />
+          ) : mode === 'ticket' ? (
+            <TicketPanel
+              error={ticketError}
+              loading={ticketLoading}
+              onBackToList={back}
+              onCreateFollowup={createFollowup}
+              onDownloadAttachment={downloadAttachment}
+              onRead={markTicketRead}
+              onReopen={reopenTicket}
+              onReply={replyTicket}
+              onRetry={() => selectedTicketId && void loadTicket(selectedTicketId)}
+              onSupplement={supplementTicket}
+              submitError={ticketSubmitError}
+              submitting={ticketSubmitting}
+              ticket={ticketDetail}
+            />
+          ) : mode === 'feedback' ? (
+            <div className="flex-1 overflow-y-auto px-5 py-4">
               <FeedbackForm
                 draft={feedbackDraft}
                 errors={feedbackErrors}
-                onChange={handleFeedbackChange}
-                onSubmit={handleFeedbackSubmit}
+                onChange={changeFeedback}
+                onSubmit={submitFeedback}
               />
-            )}
-            {mode === 'chat' && messages.length === 0 && (
-              <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-                <img src={logoSrc} alt="" style={{ width: 48, height: 48, opacity: 0.2 }} />
-                <p className="text-center text-xs text-mg-text-3">
-                  {t('common.customerService.empty')}
-                </p>
-              </div>
-            )}
-            {mode === 'chat' && messages.map((msg) => (
-              msg.feedback
-                ? <FeedbackReceiptCard key={msg.id} receipt={msg.feedback} />
-                : <MessageBubble key={msg.id} msg={msg} />
-            ))}
-            {mode === 'chat' && isLoading && <ThinkingDots />}
-          </div>
-
-          {/* 底部区域：PRD §7.1 —— 问答模式是「问题反馈 + 消息输入」，反馈模式不显示聊天输入 */}
-          {mode === 'feedback' ? (
-            <div className="flex flex-col gap-2 border-t border-mg-fill-0 px-4 py-3">
-              {feedbackSubmitError && (
-                <p className="m-0 text-[11px] text-mg-danger" role="alert">{feedbackSubmitError}</p>
-              )}
-              <div className="flex justify-end gap-2">
-                <Button disabled={feedbackSubmitting} onClick={cancelFeedback} size="small" variant="ghost">
-                  {t('common.customerService.feedback.cancel')}
-                </Button>
-                <Button form={FEEDBACK_FORM_ID} htmlType="submit" loading={feedbackSubmitting} size="small" variant="brand">
-                  {t('common.customerService.feedback.submit')}
-                </Button>
-              </div>
             </div>
           ) : (
-          <div style={{ padding: '12px 16px', borderTop: '1px solid var(--mg-fill-0)' }}>
-            <div className="mb-2 flex">
-              <Button
-                icon={<LuMessageSquareWarning size={13} />}
-                onClick={openFeedback}
-                size="small"
-                variant="ghost"
-              >
-                {t('common.customerService.feedback.entry')}
-              </Button>
-            </div>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              background: 'var(--mg-fill-0)',
-              border: '1px solid var(--mg-border)',
-              borderRadius: 12,
-              padding: '8px 12px',
-            }}>
-              <textarea
-                ref={textareaRef}
-                rows={1}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                disabled={isLoading}
-                placeholder={isLoading ? t('common.customerService.placeholderLoading') : t('common.customerService.placeholder')}
-                style={{
-                  flex: 1, border: 'none', outline: 'none', background: 'transparent',
-                  resize: 'none', fontSize: 13, lineHeight: '1.5', color: 'var(--mg-text-1)',
-                  maxHeight: 100, overflowY: 'auto', fontFamily: 'inherit',
-                  padding: 0, margin: 0,
-                }}
-              />
-              <button
-                onClick={isLoading ? stopMessage : handleSend}
-                disabled={!isLoading && !inputValue.trim()}
-                aria-label={isLoading ? t('common.customerService.stop') : t('common.customerService.send')}
-                style={{
-                  width: 32, height: 32, borderRadius: 8, border: 'none',
-                  background: isLoading || inputValue.trim() ? 'var(--brand-base)' : 'var(--mg-fill-1)',
-                  color: isLoading || inputValue.trim() ? '#ffffff' : 'var(--mg-text-3)',
-                  cursor: isLoading || inputValue.trim() ? 'pointer' : 'not-allowed',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0, transition: 'all 0.2s',
-                }}
-              >
-                {isLoading ? <LuSquare size={13} /> : <LuSendHorizontal size={14} />}
-              </button>
-            </div>
-          </div>
+            <ChatPanel
+              isLoading={isLoading}
+              messages={messages}
+              onAsk={ask}
+              onRate={(id, rating) => {
+                supportTrack.answerRating(rating)
+                void rateMessage(id, rating)
+              }}
+              onRatingCardChange={(id, rating: SupportHumanRatingValue) => patchRatingCard(id, { rating })}
+              onRatingCardSkip={(id) => {
+                supportTrack.humanRating({ skipped: true })
+                patchRatingCard(id, { status: 'skipped' })
+              }}
+              onRatingCardSubmit={(id) => void submitRating(id)}
+              ratingSubmittingId={ratingSubmittingId}
+            />
           )}
-        </div>
-      )}
+
+          <PanelFooter
+            composerDisabled={composerDisabled}
+            feedbackSubmitError={feedbackSubmitError}
+            feedbackSubmitting={feedbackSubmitting}
+            inputValue={inputValue}
+            isLoading={isLoading}
+            mode={mode}
+            onCancelFeedback={cancelFeedback}
+            onInputChange={setInputValue}
+            onOpenFeedback={openFeedback}
+            onReconnect={reconnect}
+            onSend={handleSend}
+            onStop={stopMessage}
+            status={status}
+          />
+        </aside>
+      ) : null}
     </>
+  )
+}
+
+/**
+ * 底部区域。形态取自 `MODE_SPEC[mode].footer`，PRD §7.1 模式表的「底部区域」列：
+ *   chat            问题反馈 + 消息输入
+ *   feedback-actions 表单提交/取消，不显示聊天输入
+ *   input-disabled  排队中 / 连接中：输入禁用且不显示问题反馈
+ *   live-input      人工咨询输入，不显示问题反馈
+ *   none            服务记录列表不显示输入
+ *   ticket-actions  工单详情的写入口由 TicketPanel 按能力位自己渲染
+ */
+function PanelFooter(props: {
+  mode: SupportMode
+  status: 'connecting' | 'online' | 'offline'
+  inputValue: string
+  isLoading: boolean
+  composerDisabled: boolean
+  feedbackSubmitting: boolean
+  feedbackSubmitError: string | null
+  onInputChange: (value: string) => void
+  onSend: () => void
+  onStop: () => void
+  onOpenFeedback: () => void
+  onCancelFeedback: () => void
+  onReconnect: () => void
+}) {
+  const { t } = useTranslation()
+  const footer = MODE_SPEC[props.mode].footer
+
+  if (footer === 'none' || footer === 'ticket-actions') return null
+
+  if (footer === 'feedback-actions') {
+    return (
+      <div className="flex flex-col gap-2 border-t border-mg-fill-0 px-4 py-3">
+        {props.feedbackSubmitError ? (
+          <p className="m-0 mg-text-meta text-mg-danger" role="alert">{props.feedbackSubmitError}</p>
+        ) : null}
+        <div className="flex justify-end gap-2">
+          <Button disabled={props.feedbackSubmitting} onClick={props.onCancelFeedback} size="small" variant="ghost">
+            {t('common.customerService.feedback.cancel')}
+          </Button>
+          <Button
+            form={FEEDBACK_FORM_ID}
+            htmlType="submit"
+            loading={props.feedbackSubmitting}
+            size="small"
+            variant="brand"
+          >
+            {t('common.customerService.feedback.submit')}
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  const placeholder = props.composerDisabled
+    ? t('common.customerService.handoff.composerConnecting')
+    : footer === 'live-input'
+      ? t('common.customerService.handoff.composerLive')
+      : props.isLoading
+        ? t('common.customerService.placeholderLoading')
+        : t('common.customerService.placeholder')
+
+  const canSend = Boolean(props.inputValue.trim()) && !props.composerDisabled
+
+  return (
+    <div className="border-t border-mg-fill-0 px-4 py-3">
+      {/* §7.5：普通问答底部只保留「问题反馈」，人工流程期间不显示 */}
+      {footer === 'chat' ? (
+        <div className="mb-2 flex items-center gap-2">
+          <Button
+            icon={<LuMessageSquareWarning size={13} />}
+            onClick={props.onOpenFeedback}
+            size="small"
+            variant="ghost"
+          >
+            {t('common.customerService.feedback.entry')}
+          </Button>
+          {props.status === 'offline' ? (
+            <Button
+              aria-label={t('common.customerService.reconnect')}
+              icon={<LuRefreshCw size={13} />}
+              onClick={props.onReconnect}
+              size="small"
+              variant="ghost"
+            />
+          ) : null}
+        </div>
+      ) : null}
+
+      <div className="flex items-center gap-2 rounded-md border border-mg-border bg-mg-fill-0 px-3 py-2">
+        <Textarea
+          aria-label={t('common.customerService.inputAria')}
+          // Textarea 默认带 --mg-textarea-min-h（给表单多行域用），聊天输入要按 rows=1 起步，
+          // 所以覆掉 min-height；容器已经有边框与底色，这里只留文字层
+          className="max-h-25 min-h-0 flex-1 resize-none border-none bg-transparent p-0 focus:ring-0 focus-visible:ring-0"
+          disabled={props.composerDisabled || props.isLoading}
+          onChange={(event) => props.onInputChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+              event.preventDefault()
+              props.onSend()
+            }
+          }}
+          placeholder={placeholder}
+          rows={1}
+          value={props.inputValue}
+        />
+        <Button
+          aria-label={props.isLoading ? t('common.customerService.stop') : t('common.customerService.send')}
+          disabled={!props.isLoading && !canSend}
+          icon={props.isLoading ? <LuSquare size={13} /> : <LuSendHorizontal size={14} />}
+          onClick={props.isLoading ? props.onStop : props.onSend}
+          size="small"
+          variant="brand"
+        />
+      </div>
+    </div>
   )
 }

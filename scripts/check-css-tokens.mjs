@@ -21,6 +21,17 @@
  * CSS 里的 var() 失效方式完全相同，却曾整类漏检，导致 191d2dd 那批把硬编码类机械换成
  * var(...) 但变量未建的改动一路进了 test。同时挂进 vite.config 的 git.precommit 硬拦。
  *
+ * 2026-09-03 增加**裸字号检查**。起因：需求方对比 PRD 原型后指出模型发现页
+ * 「字体都一样大，没有主次关系」，追下去发现该页 66 处字号里 57 处挤在 9/10/11/12px，
+ * 而全局字阶最小档是 --mg-text-xs(12px)——整页正文都在体系之外。
+ *
+ * 再追一层：字阶 token 一直都有（--mg-text-hero/h1/h2/h3/body/sm/xs），但
+ * modelgo-design-tokens 的硬编码门禁只有 7 条规则（danger-hex / overlay / global-z /
+ * easing / transition-duration / radius-px / shadow），**没有一条管 font-size**。
+ * 圆角阴影动效从来没出过问题因为有门禁，字号处处违规因为没有——规则只在能被机器
+ * 执行的地方才真正存在。全仓存量 339 处（CSS 215 + Tailwind text-[..px] 124），
+ * 故走 warn 而非 block：存量不阻断提交，但新增行当场点名。
+ *
  * 用法：
  *   node scripts/check-css-tokens.mjs [baseRef]   # 默认：只查改动行（含 .css/.ts/.tsx）
  *   node scripts/check-css-tokens.mjs --full       # 扫全仓存量（较慢，手动跑）
@@ -29,6 +40,24 @@ import { execSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 
 const cwd = process.cwd()
+
+/** 裸字号：CSS 的 `font-size: 13px` 与 Tailwind 的 `text-[13px]`。字阶走 --mg-text-* 或页面级字阶变量。 */
+const RAW_FONT_SIZE_RE = /(?:font-size:\s*([0-9.]+)px|text-\[([0-9.]+)px\])/g
+/** CSS 里直接写字体族字符串。字体统一走 --font-sans / --font-mono，
+    否则中文回退链、CJK webfont 体积、等宽数字这三件事各页各写一套（DESIGN.md · Typography）。 */
+const RAW_FONT_FAMILY_RE = /font-family:\s*(?!var\()[^;]+/g
+/** 内容面用毛玻璃。DESIGN.md 定的分工：内容（卡片/面板/列表/表格）实心，
+    backdrop-filter 只给浮层 chrome（顶栏/下拉/Modal/Sheet）。判据是同一条选择器块内
+    既出现 .mg-tile / card / panel / table 这类内容面命名，又出现 backdrop-filter。 */
+const CONTENT_GLASS_RE = /backdrop-filter/
+const CONTENT_SURFACE_RE = /(mg-tile|-card\b|-panel\b|-table\b|-row\b|-list\b)/
+/** 全局字阶档位，用于在提示里给出最接近的一档 */
+const TEXT_SCALE = [
+  ['--mg-text-xs', 12], ['--mg-text-sm', 14], ['--mg-text-body', 16],
+  ['--mg-text-h3', 20], ['--mg-text-h2', 28], ['--mg-text-h1', 44],
+]
+const nearestScale = (px) => TEXT_SCALE.reduce((best, cur) =>
+  Math.abs(cur[1] - px) < Math.abs(best[1] - px) ? cur : best)
 const sh = (cmd) => execSync(cmd, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
 const full = process.argv.includes('--full')
 
@@ -38,6 +67,10 @@ const tryDiffBase = () => {
   }
   return process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2] : 'origin/main'
 }
+/** 裸字号只警告不阻断：全仓 339 处存量，硬拦会瘫痪日常提交 */
+const fontWarns = []
+/** 其余 DESIGN.md 约束的警告（字体族、内容面毛玻璃） */
+const designWarns = []
 let diffBase = 'HEAD'
 if (!full) {
   const base = tryDiffBase()
@@ -131,6 +164,26 @@ if (full) {
 
   for (const file of files) {
     const added = addedLinesWithText(file)
+    // 内容面毛玻璃要看「整个选择器块」，不能逐行判断：选择器和 backdrop-filter 分处两行。
+    // 只在块内两者同时出现、且该块有改动行时才报。
+    if (/\.css$/.test(file) && added.size) {
+      for (const blk of readFileSync(`${cwd}/${file}`, 'utf8').split('}')) {
+        const brace = blk.indexOf('{')
+        if (brace < 0) continue
+        const selector = blk.slice(0, brace)
+        const body = blk.slice(brace)
+        if (!CONTENT_GLASS_RE.test(body) || !CONTENT_SURFACE_RE.test(selector)) continue
+        // 浮层命名（popover/dropdown/modal/sheet/tooltip/header）本就允许毛玻璃
+        // 浮层命名本就允许玻璃；.mg-tile 是 DESIGN.md 写明的唯一内容面例外
+        // （表面已并入玻璃系统，见 components.css 里那段注释）
+        if (/(popover|dropdown|modal|dialog|sheet|tooltip|float|header|overlay)/i.test(selector)) continue
+        if (/\.mg-tile\b/.test(selector)) continue
+        designWarns.push(
+          `⚠ ${file}  内容面 \`${selector.trim().split('\n').pop().slice(0, 48)}\` 用了 backdrop-filter —— ` +
+          `内容（卡片/面板/列表/表格）实心，毛玻璃只给浮层 chrome（DESIGN.md · Don'ts）`
+        )
+      }
+    }
     for (const [lineNo, text] of added) {
       for (const m of text.matchAll(VAR_RE)) {
         const name = m[1]
@@ -140,8 +193,37 @@ if (full) {
           console.error(`✗ ${file}:${lineNo}  引用了未声明的变量 var(${name})`)
         }
       }
+      if (/\.(css)$/.test(file)) {
+        for (const m of text.matchAll(RAW_FONT_FAMILY_RE)) {
+          if (/inherit|initial|unset/.test(m[0])) continue
+          designWarns.push(
+            `⚠ ${file}:${lineNo}  直接写了字体族 —— 走 var(--font-sans) / var(--font-mono)，` +
+            `否则中文回退链和等宽数字各页各写一套（DESIGN.md · Typography）`
+          )
+        }
+      }
+      for (const m of text.matchAll(RAW_FONT_SIZE_RE)) {
+        const px = parseFloat(m[1] ?? m[2])
+        const [token, tokenPx] = nearestScale(px)
+        fontWarns.push(
+          `⚠ ${file}:${lineNo}  裸字号 ${px}px —— 走字阶 token（最近的一档是 ${token} = ${tokenPx}px），` +
+          `或页面级字阶变量。字号不成档位就没有主次关系。`
+        )
+      }
     }
   }
+}
+
+if (designWarns.length) {
+  console.warn(`\n⚠️  ${designWarns.length} 处新增代码与 DESIGN.md 约束不符：`)
+  for (const w of designWarns.slice(0, 15)) console.warn('   ' + w)
+  if (designWarns.length > 15) console.warn(`   …… 另 ${designWarns.length - 15} 处`)
+}
+
+if (fontWarns.length) {
+  console.warn(`\n⚠️  ${fontWarns.length} 处新增裸字号（不阻断提交，但请收进字阶）：`)
+  for (const w of fontWarns.slice(0, 20)) console.warn('   ' + w)
+  if (fontWarns.length > 20) console.warn(`   …… 另 ${fontWarns.length - 20} 处`)
 }
 
 if (failed) {

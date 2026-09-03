@@ -31,6 +31,7 @@ import {
   YAxis,
 } from 'recharts'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
+import { agentFallback, agentVisual } from '@model-go/icons/agents'
 import { specialtyBarDomain } from './discovery-data'
 
 /**
@@ -44,10 +45,47 @@ import { specialtyBarDomain } from './discovery-data'
  * UI flow 文档 §3.1 也明确「模型/厂商身份用 ModelIcon」。
  *
  * 唯一例外是热门 Agent 排行：那里按 PRD 显示应用名首字符（Agent 应用不是模型，
- * 图标库里没有它们），继续用 .model-discovery-model-mark。
+ * 图标库里没有它们），走 agentVisual 的首字母兜底。
  */
 export function DiscoveryModelIcon({ model, provider, className }: { model: string; provider: string; className?: string }) {
   return <ModelIcon className={className} model={{ display_name: model, provider }} rounded="rounded-sm" variant="dense" />
+}
+
+/**
+ * 热门 Agent 榜的图标。
+ *
+ * 走 `@model-go/icons/agents` 的 `agentVisual()`——库里就有三级兜底：
+ * ① 131 个知名 agent 的本地 SVG（矢量、跟随主题）② favicon 覆盖长尾
+ * ③ 首字母块，颜色按名字哈希稳定取，不会随排序变化闪烁。
+ *
+ * 这里原先是 `agent.name.trim().charAt(0)` 裸截首字母——DESIGN.md 明令禁止的写法，
+ * 而且把库里现成的 131 个官方 logo 全绕过去了（2026-09-03）。
+ *
+ * favicon 一级暂时不启用：国内站取不到 `t0.gstatic.com`，要先有自建 img-proxy
+ * 才能开（库的文档写明「不换 base 就是一片空图」）。所以现在是 SVG 命中就用 SVG，
+ * 否则直接落到稳定色首字母块，跳过中间那级。
+ */
+export function DiscoveryAgentIcon({ id, name }: { id: string; name: string }) {
+  const visual = agentVisual({ id, name })
+  if (visual.kind === 'svg') {
+    return (
+      <i
+        aria-hidden="true"
+        className="model-discovery-agent-icon"
+        dangerouslySetInnerHTML={{ __html: visual.svg }}
+      />
+    )
+  }
+  const fallback = visual.kind === 'initial' ? visual : agentFallback(name)
+  return (
+    <i
+      aria-hidden="true"
+      className="model-discovery-agent-icon is-initial"
+      style={{ '--agent-mark-color': fallback.color } as React.CSSProperties}
+    >
+      {fallback.initial}
+    </i>
+  )
 }
 
 /** 入场动效时长，对应 discovery.css 的 `--discovery-dur-enter`（唯一允许被看见的动画）。 */
@@ -58,7 +96,13 @@ function prefersReducedMotion() {
   return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
 }
 
-/** 图表内所有 tooltip 共用的外壳，样式在 discovery.css。 */
+/**
+ * 图表内所有 tooltip 共用的外壳，样式在 discovery.css。
+ *
+ * ui-guard-ignore: 浮层 —— 这是 Recharts <Tooltip content={...}> 的**内容**，
+ * 定位、显隐、跟随鼠标全由 Recharts 管，我们只提供内部排版。换成 ui/Popover
+ * 反而会多出一层自己管开关的浮层，与图表的 hover 生命周期打架。
+ */
 function ChartTooltip({ children }: { children: React.ReactNode }) {
   return <div className="model-discovery-chart-tooltip">{children}</div>
 }
@@ -197,7 +241,10 @@ export function SpecialtyBarChart({ rows, description, hoveredModel, onHoverMode
   if (rows.length === 0) return <div className="model-discovery-chart-empty-block">暂无该指标的数据</div>
   return (
     <div className="model-discovery-specialty-chart">
-      <ResponsiveContainer height={210} width="100%">
+      {/* 高度按宽高比走，不写死像素：这四张图在两列栅格里，列宽随视口连续变化，
+          固定 210px 在宽屏上显得扁、窄屏上又压不下十根柱子。min/max 只做安全边界，
+          防止超宽屏把图拉得过高。 */}
+      <ResponsiveContainer aspect={2.4} maxHeight={280} minHeight={170} width="100%">
         <BarChart data={rows} margin={{ bottom: 0, left: 0, right: 0, top: 10 }} onMouseLeave={() => onHoverModel(null)}>
           <CartesianGrid stroke="var(--line)" vertical={false} />
           {/* 轴本身不画：柱内已标真实数值，再放一条刻度轴只会在 34px 宽的卡片里抢地方。
@@ -364,7 +411,8 @@ export function AnalysisScatterChart({
     `${point.name}，${yLabel} ${formatY(point.y)}，${xLabel} ${formatX(point.x)}${point.clickable ? '，点击查看详情' : ''}`
   return (
     <div className="model-discovery-scatter-plot">
-      <ResponsiveContainer height={300} width="100%">
+      {/* 散点比柱图更吃纵向空间（点要散得开才看得出分布），比例给得更方 */}
+      <ResponsiveContainer aspect={2.1} maxHeight={380} minHeight={240} width="100%">
         <ScatterChart margin={{ bottom: 26, left: 14, right: 16, top: 8 }} onMouseLeave={() => onHoverModel(null)}>
           <CartesianGrid stroke="var(--line)" />
           <XAxis
@@ -372,7 +420,7 @@ export function AnalysisScatterChart({
             dataKey="x"
             domain={[xMin, xMax]}
             label={{ className: 'model-discovery-axis-title', position: 'insideBottom', offset: -20, value: `${xLabel}（${xUnit}）` }}
-            tick={{ fill: 'var(--discovery-text-faint)', fontSize: 9 }}
+            tick={{ fill: 'var(--mg-text-4)', fontSize: 9 }}
             tickFormatter={formatX}
             tickLine={false}
             ticks={xTicks}
@@ -383,7 +431,7 @@ export function AnalysisScatterChart({
             dataKey="y"
             domain={[yMin, yMax]}
             label={{ angle: -90, className: 'model-discovery-axis-title', position: 'insideLeft', value: `${yLabel}（${yUnit}）` }}
-            tick={{ fill: 'var(--discovery-text-faint)', fontSize: 9 }}
+            tick={{ fill: 'var(--mg-text-4)', fontSize: 9 }}
             tickFormatter={formatY}
             tickLine={false}
             ticks={yTicks}
@@ -489,14 +537,15 @@ function TrendTooltip({ active, payload, usageLabel }: TrendTooltipProps) {
 export function TrendBarChart({ points, usageLabel }: TrendBarChartProps): ReactElement {
   return (
     <div className="model-discovery-trend-chart">
-      <ResponsiveContainer height={150} width="100%">
+      {/* 趋势图在侧栏窄列里，比例更扁 */}
+      <ResponsiveContainer aspect={2.0} maxHeight={190} minHeight={130} width="100%">
         <BarChart data={points} margin={{ bottom: 0, left: 0, right: 4, top: 14 }}>
           <CartesianGrid stroke="var(--line)" vertical={false} />
           <YAxis
             axisLine={false}
             /* 全是负增长时也要把 0 留在轴上，否则零线没地方画 */
             domain={[(min: number) => Math.min(0, min), (max: number) => Math.max(0, max)]}
-            tick={{ fill: 'var(--discovery-text-faint)', fontSize: 9 }}
+            tick={{ fill: 'var(--mg-text-4)', fontSize: 9 }}
             /* 4 档：150px 高的小图里 5 档会挤到最后一格被丢掉，留出不等距的空当 */
             tickCount={4}
             tickFormatter={(value: number) => `${value}%`}

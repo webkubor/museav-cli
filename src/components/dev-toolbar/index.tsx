@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
+import { LuWrench } from 'react-icons/lu'
+import { Popover } from '@/components/ui/Popover'
 import type { PlatformConfig } from '@/services/platform'
 import { cn } from '@/lib/utils'
 import { useLangStore } from '@/store/use-brand-store'
@@ -42,7 +44,7 @@ function Seg<T extends string>({
 }
 
 /**
- * 开发者工具栏（仅 DEV 环境，悬浮底部居中）。
+ * 开发者工具栏（仅 DEV 环境，顶栏内一枚扳手图标，点开才展开面板）。
  * 切换国内/海外、语言——市场切换一把带动 logo / 品牌 / 主题色（主题色按 data-market 走 CSS）。
  * 另含黑/白主题快速切换，方便本地调样式。
  * 「开发菜单」跳转平台配置调试页（原侧栏「开发者菜单」移入此处，不侵入业务侧栏）。
@@ -87,12 +89,8 @@ export function DevToolbar() {
     saveTheme(next)
   }
 
-  return (
-    /* 跟着顶栏走，不再浮在页面上。
-       原先是 fixed 居中吸底，盖住页面中部的图表；挪到右下角后又和智能助手悬浮球
-       撞在一起（2026-09-02 实测）。开发工具本来就不该跟产品内容抢同一块位置，
-       现在挂在顶栏「快速接入」右侧，随页面滚动一起走。 */
-    <div className="hidden lg:flex items-center gap-2.5 px-2.5 py-1 rounded-full border border-mg-border select-none">
+  const panel = (
+    <div className="flex items-center gap-2.5 px-3 py-2">
       <Seg
         value={theme}
         options={[
@@ -122,10 +120,33 @@ export function DevToolbar() {
       <button
         type="button"
         onClick={() => navigate('/dev-config')}
-        className="rounded-full bg-mg-fill-0 px-3 py-1 text-xs font-bold text-mg-text-2 transition-colors hover:text-mg-text-1"
+        className="whitespace-nowrap rounded-full bg-mg-fill-0 px-3 py-1 text-xs font-bold text-mg-text-2 transition-colors hover:text-mg-text-1"
       >
         {t('common.devToolbar.menu')}
       </button>
+    </div>
+  )
+
+  /* 只在顶栏占一枚 36px 图标，展开的面板走 Popover 浮层。
+     历史：先是 fixed 吸底盖住页面图表 → 挪右下角又和智能助手悬浮球撞 → 平铺进顶栏后
+     宽 378px，在 lg~1230px 区间把「快速接入」挤到只剩 39px、文字全没（2026-09-03 实测）。
+     开发工具不该跟产品内容抢横向空间，收成图标后无论多窄都只占一枚按钮。 */
+  return (
+    <div className="hidden lg:block w-9 shrink-0 select-none">
+      <Popover
+        position="bottom"
+        content={panel}
+        trigger={
+          <button
+            type="button"
+            title={t('common.devToolbar.title')}
+            aria-label={t('common.devToolbar.title')}
+            className="inline-flex h-8 w-9 items-center justify-center rounded-full border border-mg-border text-mg-text-3 transition-colors hover:text-mg-text-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-base/40"
+          >
+            <LuWrench size={14} />
+          </button>
+        }
+      />
     </div>
   )
 }

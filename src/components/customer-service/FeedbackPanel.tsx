@@ -20,7 +20,7 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import { getRequestErrorMessage } from '@/lib/request-error-message'
-import { uploadSupportAttachment } from '@/services/support'
+import { supportGateway } from './gateway'
 import {
   feedbackIssueTypes,
   type FeedbackDraft,
@@ -52,7 +52,7 @@ function FieldLabel({ children, required }: { children: React.ReactNode; require
   return (
     <div className="flex items-center gap-1 text-xs font-bold text-mg-text-2">
       <span>{children}</span>
-      <span className="font-normal text-[10px] text-mg-text-3">
+      <span className="font-normal mg-text-micro text-mg-text-3">
         {required ? t('common.customerService.feedback.required') : t('common.customerService.feedback.optional')}
       </span>
     </div>
@@ -63,7 +63,7 @@ function FieldError({ id, code }: { id: string; code?: keyof typeof ERROR_LABEL_
   const { t } = useTranslation()
   if (!code) return null
   return (
-    <p className="m-0 text-[11px] text-mg-danger" id={id} role="alert">
+    <p className="m-0 mg-text-meta text-mg-danger" id={id} role="alert">
       {t(ERROR_LABEL_KEY[code])}
     </p>
   )
@@ -91,7 +91,7 @@ export function FeedbackForm({ draft, errors, onChange, onSubmit }: FeedbackForm
     setUploadError(null)
     setUploading(true)
     try {
-      const attachment = await uploadSupportAttachment(file)
+      const attachment = await supportGateway.uploadAttachment(file)
       onChange({ attachmentId: attachment.id, attachmentName: attachment.file_name || file.name })
     } catch (error) {
       if (fileRef.current) fileRef.current.value = ''
@@ -105,10 +105,10 @@ export function FeedbackForm({ draft, errors, onChange, onSubmit }: FeedbackForm
   return (
     <section aria-labelledby="cs-feedback-title" className="flex flex-col gap-4">
       <header className="flex flex-col gap-1">
-        <h2 className="m-0 text-[13px] font-bold text-mg-text-1" id="cs-feedback-title">
+        <h2 className="m-0 mg-text-body font-bold text-mg-text-1" id="cs-feedback-title">
           {t('common.customerService.feedback.title')}
         </h2>
-        <p className="m-0 text-[11px] leading-relaxed text-mg-text-3">
+        <p className="m-0 mg-text-meta leading-relaxed text-mg-text-3">
           {t('common.customerService.feedback.subtitle')}
         </p>
       </header>
@@ -187,7 +187,7 @@ export function FeedbackForm({ draft, errors, onChange, onSubmit }: FeedbackForm
                 : t('common.customerService.feedback.attachmentPick')}
             </Button>
             {draft.attachmentName && (
-              <span className="flex min-w-0 items-center gap-1 text-[11px] text-mg-text-2">
+              <span className="flex min-w-0 items-center gap-1 mg-text-meta text-mg-text-2">
                 <span className="truncate">{draft.attachmentName}</span>
                 <button
                   aria-label={t('common.customerService.feedback.attachmentClear')}
@@ -205,7 +205,7 @@ export function FeedbackForm({ draft, errors, onChange, onSubmit }: FeedbackForm
             )}
           </div>
           {uploadError && (
-            <p className="m-0 text-[11px] text-mg-danger" role="alert">{uploadError}</p>
+            <p className="m-0 mg-text-meta text-mg-danger" role="alert">{uploadError}</p>
           )}
         </div>
       </form>
@@ -246,7 +246,7 @@ export function FeedbackReceiptCard({ receipt }: { receipt: FeedbackReceipt }) {
       </header>
       <dl className="m-0 flex flex-col gap-1">
         {rows.map((row) => (
-          <div className="flex gap-2 text-[11px]" key={row.label}>
+          <div className="flex gap-2 mg-text-meta" key={row.label}>
             <dt className="w-16 shrink-0 text-mg-text-3">{row.label}</dt>
             <dd className="m-0 min-w-0 flex-1 break-words text-mg-text-1">{row.value}</dd>
           </div>

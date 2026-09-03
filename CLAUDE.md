@@ -9,24 +9,48 @@ use_count: 0
 > ## ⚠️ 入场先读（比下面所有规则都优先）
 > 1. `PROJECT-BRIEF.md` — 冷启动快照（8 个有效命令、真源优先级、PRD V1.0.3 限制）
 > 2. `docs/COLLABORATION.md` — 协同 SOP（worktree/认领锁/提单格式/UI 测试/验证闭环）
-> 3. **worktree 默认开、不是「确认有并发才开」**：本仓常年有多 agent/session 并发（巡检/supervisor 每 30 分钟把单派给 Codex、人和其他 session 随时可能在同一目录动手），等你发现冲突（重复 dev server、别人未提交的改动）时可能已经晚了。**任何代码改动落地前先 `cs wt fix/<名>` 或 `git worktree add -b feat/<名> ../wt-<名> origin/test` 开隔离 worktree，别直接在主检出的 `test` 分支上写代码/提交**——这一条不因为"这次只是小改"或"我一个人在做"而跳过，详见 `docs/COLLABORATION.md` §1/§4（2026-07-29 教训：直接在主检出改+提交，事后才发现另一个 session 同时在编辑别的文件，这次没冲突纯属运气）。
+> 3. **分支定位（2026-09-03 owner 拍板，之前的口口相传不算）**：
+>
+>    | 分支 | 定位 |
+>    |:---|:---|
+>    | `main` | 生产 |
+>    | `test` | 测试环境，**当前版本（1.0.6）在这里迭代** |
+>    | `feature/v1.0.x-*` | 版本集成分支，功能先进这里 |
+>    | `hotfix/*` | 不等版本节奏的临时 / 紧急需求 |
+>
+>    功能流向：**worktree 分支 → 版本分支 → 合入 `test` 走测试环境 → 整批上线合 `main`**。
+>    所以开 worktree 时 base 用**版本分支**、收尾也推回版本分支；**何时把版本分支合进
+>    `test` 由 owner 按版本节奏决定，agent 不要自己合**。
+>
+>    临时需求走 `hotfix/*`：从 `main` 分出，验完合 `main`，再回流 `test` 与当前版本分支
+>    ——它的意义就是绕开版本节奏，所以不要挂在版本分支上做。
+>
+>    ⚠️ `cs wt <名> --base <分支>` 取的是**本地**分支，可能落后远端。开之前先
+>    `git fetch origin <分支>`，或直接 `--base origin/<分支>`。2026-09-03 踩过：
+>    基线旧了一天，改动全打在旧代码上，sed 一个都没匹配到，白改一轮才发现。
+>
+> 4. **worktree 默认开、不是「确认有并发才开」**：本仓常年有多 agent/session 并发（巡检/supervisor 每 30 分钟把单派给 Codex、人和其他 session 随时可能在同一目录动手），等你发现冲突（重复 dev server、别人未提交的改动）时可能已经晚了。**任何代码改动落地前先 `cs wt fix/<名>` 或 `git worktree add -b feat/<名> ../wt-<名> origin/feature/v1.0.x-<当期版本分支>` 开隔离 worktree，别直接在主检出的 `test` 分支上写代码/提交**——这一条不因为"这次只是小改"或"我一个人在做"而跳过，详见 `docs/COLLABORATION.md` §1/§4（2026-07-29 教训：直接在主检出改+提交，事后才发现另一个 session 同时在编辑别的文件，这次没冲突纯属运气）。
 >
 >    **开完必须删——推完 test 就地清理，不是「攒着以后再说」**。开 worktree 这一步每次都做到了，删这一步长期没人做：2026-08-28 清点时挂着 4 个 worktree，其中 3 个分支早已合入 test、0 未合提交，还散在三个不同路径（`cs wt` 的 `.claude/worktrees/`、手工的 `.worktrees/`、`../wt-*`），加上 4 个僵尸本地分支和 2 个已合并的远端分支。收尾三步一起做，别只做前两步：
 >
 >    ```bash
->    git push origin HEAD:test                                   # 1. 推
+>    git push origin HEAD:feature/v1.0.x-<当期版本分支>            # 1. 推（不是 test，见上面第 3 条）
 >    git -C <主检出> worktree remove <worktree 路径>              # 2. 删 worktree（换个目录跑，不能在自己里面删自己）
 >    git -C <主检出> branch -d <分支> && git push origin --delete <分支>   # 3. 删本地 + 远端分支
 >    ```
 >
->    盘点用 `git worktree list` + `git branch --merged origin/test`；删别人建的远端分支前先问一句，删自己的不用。
+>    盘点用 `git worktree list` + `git branch --merged origin/<版本分支>`；删别人建的远端分支前先问一句，删自己的不用。
 
 > ## 🚦 UI 改动开工前置（硬性 · 先做再动手）
 > 治「不读规范就动手」——本仓 UI/组件/样式任何改动，先按序做：
-> 1. `cs flow frontend` → 拿到必读规则与禁止项
-> 2. 读 `cs rule frontend_design_standard` + 本仓 `DESIGN.md`（圆角/颜色/组件/图标铁律）
+> 1. **`bash scripts/ui-guard.sh --rules`** → 一条命令列出机器实际会拦的全部约束（BLOCK 阻断提交 / WARN 提醒）。**这是最短路径**：清单从门禁实现里提取，不会与代码漂移，比读 249 行 DESIGN.md 可靠。写之前扫一眼，就知道边界在哪。
+> 2. `cs flow frontend` → 拿到必读规则与禁止项；细节与「为什么」查 `cs rule frontend_design_standard` + 本仓 `DESIGN.md`
 > 3. **组件铁律**：主操作用 `Button variant="brand"`，禁止手写 `<button className="bg-brand-*">`；卡片用 `.mg-tile`，勿拿 `bg-mg-fill-0` 凑层次；圆角只用 `rounded-sm/md/lg/full`（**禁 `rounded-xl/2xl/3xl`**，它们是禁用刻度＝直角）；图标按用途三选一：**模型/厂牌 logo 用 `@model-go/icons`**（私有库，与运营后台共用同一份 vendor 别名索引与厂牌主色；渲染统一走 `<ModelIcon>`，别直接 import 图标包）；通用 UI 图标用 `react-icons`；`@lobehub/icons` 仅限私有库还没收的第三方标识（OAuth 登录的 GitHub/Google/微信等），新增前先确认私有库里没有。
+>    **浮层铁律**：弹窗/下拉/气泡一律用 `ui/` 下的 `Select`、`Popover`、`DropdownMenu`、`Dialog`、`Modal`、`Sheet`、`Tooltip`，**禁止原生 `<select>`**（下拉列表由操作系统渲染，半透明且不跟随主题，CSS 一行都够不着），也别自己 absolute/fixed 定位手搓浮层（每次都要重踩背景透读、层级压不住、ESC 出不去）。ui-guard 已硬拦这两类。
+>    ⚠️ **移植原型时只照搬功能与布局，不照搬实现**：原型是独立小项目，用的是原生控件和自写浮层，1:1 照搬 DOM 会把这些一起搬进来——2026-09-03 模型发现页就是这么留下两个原生 select 和一个手写 popover 的。
+>    ⚠️ **也别照搬原型的数值**：原型的字号/间距是在**原型的假数据**上调的。发现页模型名在原型里是「GPT-5.5」，真实接口给的是 70 个字符的「Claude Fable 5.1 (Adaptive Reasoning, Max Effort, Default Fallback)」——照搬原型的 18px 直接撑爆整列。**比例关系可以学（主角显著大于配角），数值必须在真实数据上重调**。反过来也一样：拿「体系最小档 12px」去套原型的高密度小字，会把主角压成正文、整行糊掉，两次我都犯过。
 > 4. 提交前 UI 门禁 `scripts/ui-guard.sh` 会硬拦上述违规；**完成前必须浏览器验证**（engineering_baseline §4.2 结构化验收），禁止"没验就说完成"。
+>    验证不是"截图看一眼"，跑 **`scripts/ui-runtime-audit.js`**：把它的内容注入目标页执行（chrome-devtools 的 `evaluate_script` / playwright 的 `browser_evaluate`），一次拿到横向滚动、文本溢出无兜底、同容器字号挤档、浮层背景透读、同组条长无区分度五项。**这五项静态门禁一条都抓不到**——它们只在真实数据 + 真实容器宽度下暴露，源码里看不出违规。`ok:false` 就是没做完。测之前把窗口调到 1024 与 1440 各跑一次，窄屏才暴露收缩链问题。
 > 5. **布局/排版对标现状，不对标原型视觉（前置，别只靠最后验证）**：原型只给「功能 + 交互」，它自身的视觉 ≠ 本控制台视觉。布局、排版、间距、组件用法的真源是**现状控制台**——动手前先挑一个现有最像的页/模块（同类 表格/表单/抽屉/卡片/筛选条）当参照，照它的结构 + `ui/*` 组件 + `DESIGN.md` + token 排；别照原型视觉、也别凭空排。PRD 没 UI 方向是正常的（PRD 给功能，UI 方向的真源是现状代码）。UI 验证应是**开工选参照 + 中途对着它比**，不是最后才发现排版不对。
 > 6. **动业务模块前先读 `docs/ui-reference/<module>.md`**（现有：`api-keys`、`guardrails`）——里面是该模块的 UI 框架 + 字段文案（照 PRD 原型常量）+ 不同身份（owner/admin/space owner/member）的显示差异，是开工对齐的提炼，省掉每次全量扫代码。⚠️ 它是**衍生文档非真源**，冲突时以 PRD 原型 + 现状代码为准；PRD 改版后按 `docs/ui-reference/README.md` 重跑同步。
 

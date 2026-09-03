@@ -621,43 +621,140 @@ body:not([theme-mode='dark']) header.mg-glass-bar-strong {
   background: var(--mg-surface-3);
 }
 
-/* Toast 通知：通过 <Toaster toastOptions.classNames> 绑定，所有 appToast/sonner 调用同源。 */
+/* token-check-ignore: sonner toast optical glassmorphism multi-layer micro-glow */
+/* Toast 通知：先锋级光纤内透毛玻璃 + 双主题微光体系（由 <Toaster toastOptions.classNames> 绑定） */
 .mg-toast {
-  width: min(var(--mg-toast-width), calc(100vw - 32px)) !important;
-  gap: var(--mg-toast-gap) !important;
-  padding: var(--mg-toast-pad-y) var(--mg-toast-pad-x) !important;
-  border-radius: var(--mg-toast-radius) !important;
-  border: 1px solid var(--mg-toast-border) !important;
-  background: var(--mg-toast-bg) !important;
-  color: var(--mg-toast-title) !important;
-  box-shadow: var(--mg-toast-shadow) !important;
+  width: min(420px, calc(100vw - 32px)) !important;
+  gap: 12px !important;
+  padding: 10px 18px 10px 14px !important;
+  border-radius: var(--mg-radius-pill, 999px) !important;
+  border: 0 !important; /* 彻底去除机械硬边框 */
+  -webkit-backdrop-filter: blur(28px) saturate(2) !important;
+  backdrop-filter: blur(28px) saturate(2) !important;
+  transition: transform var(--mg-duration-fast, 0.2s) var(--mg-ease-emphasized, cubic-bezier(0.16, 1, 0.3, 1)), box-shadow var(--mg-duration-fast, 0.2s), background var(--mg-duration-base, 0.3s) !important;
+}
+
+/* 浅色主题：白昼水晶高透毛玻璃 + 内部漫射 */
+:root:not([data-theme='dark']):not([theme-mode='dark']) .mg-toast {
+  background: radial-gradient(ellipse 160px 80px at 0% 50%, rgba(37, 99, 235, 0.12), transparent 75%), rgba(255, 255, 255, 0.92) !important;
+  box-shadow: 
+    inset 0 1px 0.5px rgba(255, 255, 255, 1),
+    inset 0 -1px 0.5px rgba(0, 0, 0, 0.04),
+    0 0 28px -2px rgba(37, 99, 235, 0.18),
+    0 12px 30px -4px rgba(15, 23, 42, 0.08) !important;
+  color: #0f172a !important;
+}
+
+/* 深色主题：深邃黑曜石毛玻璃 + 极光顶光 */
+[data-theme='dark'] .mg-toast,
+[theme-mode='dark'] .mg-toast,
+.dark .mg-toast {
+  background: radial-gradient(ellipse 180px 90px at 0% 50%, rgba(59, 130, 246, 0.25), transparent 75%), rgba(11, 15, 23, 0.85) !important;
+  box-shadow: 
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.35),
+    inset 0 0 18px rgba(59, 130, 246, 0.1),
+    0 0 36px -2px rgba(59, 130, 246, 0.35),
+    0 20px 48px -6px rgba(0, 0, 0, 0.75) !important;
+  color: #ffffff !important;
+}
+
+/* 1. 成功通知 (Success) 微光内透 */
+:root:not([data-theme='dark']):not([theme-mode='dark']) .mg-toast-success {
+  background: radial-gradient(ellipse 160px 80px at 0% 50%, rgba(16, 185, 129, 0.22), transparent 75%), rgba(255, 255, 255, 0.92) !important;
+  box-shadow: 
+    inset 0 1px 0.5px rgba(255, 255, 255, 1),
+    inset 0 -1px 0.5px rgba(0, 0, 0, 0.04),
+    0 0 30px -2px rgba(16, 185, 129, 0.28),
+    0 12px 30px -4px rgba(15, 23, 42, 0.08) !important;
+}
+[data-theme='dark'] .mg-toast-success,
+[theme-mode='dark'] .mg-toast-success,
+.dark .mg-toast-success {
+  background: radial-gradient(ellipse 180px 90px at 0% 50%, rgba(29, 195, 155, 0.35), transparent 75%), rgba(11, 15, 23, 0.85) !important;
+  box-shadow: 
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.35),
+    inset 0 0 18px rgba(29, 195, 155, 0.15),
+    0 0 38px -2px rgba(29, 195, 155, 0.45),
+    0 20px 48px -6px rgba(0, 0, 0, 0.75) !important;
+}
+
+/* 2. 错误通知 (Error) 微光内透 */
+:root:not([data-theme='dark']):not([theme-mode='dark']) .mg-toast-error {
+  background: radial-gradient(ellipse 160px 80px at 0% 50%, rgba(244, 63, 94, 0.22), transparent 75%), rgba(255, 245, 245, 0.95) !important;
+  box-shadow: 
+    inset 0 1px 0.5px rgba(255, 255, 255, 1),
+    inset 0 -1px 0.5px rgba(0, 0, 0, 0.04),
+    0 0 32px -2px rgba(244, 63, 94, 0.32),
+    0 12px 30px -4px rgba(15, 23, 42, 0.12) !important;
+}
+[data-theme='dark'] .mg-toast-error,
+[theme-mode='dark'] .mg-toast-error,
+.dark .mg-toast-error {
+  background: radial-gradient(ellipse 180px 90px at 0% 50%, rgba(244, 63, 94, 0.35), transparent 75%), rgba(20, 11, 15, 0.88) !important;
+  box-shadow: 
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.35),
+    inset 0 0 18px rgba(244, 63, 94, 0.15),
+    0 0 38px -2px rgba(244, 63, 94, 0.5),
+    0 20px 48px -6px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* 3. 警告通知 (Warning) 微光内透 */
+:root:not([data-theme='dark']):not([theme-mode='dark']) .mg-toast-warning {
+  background: radial-gradient(ellipse 160px 80px at 0% 50%, rgba(245, 158, 11, 0.22), transparent 75%), rgba(255, 251, 235, 0.95) !important;
+  box-shadow: 
+    inset 0 1px 0.5px rgba(255, 255, 255, 1),
+    0 0 30px -2px rgba(245, 158, 11, 0.28),
+    0 12px 30px -4px rgba(15, 23, 42, 0.08) !important;
+}
+[data-theme='dark'] .mg-toast-warning,
+[theme-mode='dark'] .mg-toast-warning,
+.dark .mg-toast-warning {
+  background: radial-gradient(ellipse 180px 90px at 0% 50%, rgba(245, 158, 11, 0.35), transparent 75%), rgba(23, 16, 8, 0.88) !important;
+  box-shadow: 
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.35),
+    inset 0 0 18px rgba(245, 158, 11, 0.15),
+    0 0 38px -2px rgba(245, 158, 11, 0.45),
+    0 20px 48px -6px rgba(0, 0, 0, 0.8) !important;
 }
 
 .mg-toast-title {
-  color: var(--mg-toast-title) !important;
-  font-size: var(--mg-text-sm) !important;
-  line-height: var(--mg-text-sm-line) !important;
-  font-weight: var(--mg-weight-bold) !important;
+  color: inherit !important;
+  font-size: 13.5px !important;
+  line-height: 1.4 !important;
+  font-weight: 600 !important;
 }
 
 .mg-toast-description {
-  color: var(--mg-toast-description) !important;
-  font-size: var(--mg-text-xs) !important;
-  line-height: var(--mg-text-xs-line) !important;
+  color: inherit !important;
+  opacity: 0.75 !important;
+  font-size: 12px !important;
+  line-height: 1.4 !important;
 }
 
 .mg-toast-close {
-  color: var(--mg-toast-close-color) !important;
-  border-color: var(--mg-border) !important;
-  background: var(--mg-bg-3) !important;
+  color: inherit !important;
+  opacity: 0.6 !important;
+  border-radius: var(--mg-radius-pill, 999px) !important;
+  border: 0 !important;
+  background: rgba(125, 125, 125, 0.15) !important;
+  transition: opacity var(--mg-duration-fast, 0.2s), background var(--mg-duration-fast, 0.2s) !important;
+}
+.mg-toast-close:hover {
+  opacity: 1 !important;
+  background: rgba(125, 125, 125, 0.25) !important;
 }
 
 .mg-toast-icon {
-  width: var(--mg-icon-sm);
-  height: var(--mg-icon-sm);
+  width: 18px !important;
+  height: 18px !important;
+  filter: drop-shadow(0 0 8px currentColor) !important;
 }
 
-.mg-toast-success .mg-toast-icon { color: var(--mg-toast-success-icon) !important; }
-.mg-toast-warning .mg-toast-icon { color: var(--mg-toast-warning-icon) !important; }
-.mg-toast-error .mg-toast-icon { color: var(--mg-toast-error-icon) !important; }
-.mg-toast-info .mg-toast-icon { color: var(--mg-toast-info-icon) !important; }
+.mg-toast-success .mg-toast-icon { color: var(--mg-success-text, #10b981) !important; }
+[data-theme='dark'] .mg-toast-success .mg-toast-icon,
+[theme-mode='dark'] .mg-toast-success .mg-toast-icon,
+.dark .mg-toast-success .mg-toast-icon { color: #1DC39B !important; }
+
+.mg-toast-info .mg-toast-icon { color: var(--mg-info-text, #3b82f6) !important; }
+.mg-toast-warning .mg-toast-icon { color: var(--mg-warning-text, #f59e0b) !important; }
+.mg-toast-error .mg-toast-icon { color: var(--mg-error-text, #f43f5e) !important; }

@@ -39,6 +39,7 @@ import { Button } from '@/components/ui/Button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import { InfoTip } from '@/components/ui/InfoTip'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
+import { SelectContent, SelectItem, SelectRoot, SelectTrigger, SelectValue } from '@/components/ui/Select'
 import { Pagination } from '@/components/ui/Pagination'
 import {
   useDiscoveryAnalysis,
@@ -50,6 +51,7 @@ import {
 import { rankBarWidth, specialtyRows } from './discovery-data'
 import {
   AnalysisScatterChart,
+  DiscoveryAgentIcon,
   DiscoveryModelIcon,
   SpecialtyBarChart,
   TrendBarChart,
@@ -606,7 +608,7 @@ function AgentPopularityLeaderboard() {
         {agentColumns.map((column, columnIndex) => <div className="model-discovery-agent-popularity-column" key={columnIndex} role="presentation">
           {column.map((agent) => <div className="model-discovery-agent-popularity-row" key={agent.id} role="listitem">
             <span className="model-discovery-agent-popularity-rank">{agent.rank}.</span>
-            <i aria-hidden="true" className="model-discovery-model-mark model-discovery-agent-popularity-icon">{agent.name.trim().charAt(0)}</i>
+            <DiscoveryAgentIcon id={agent.id} name={agent.name} />
             <div className="model-discovery-agent-popularity-copy"><strong>{agent.name}</strong><span title={agent.description}>{agent.description}</span></div>
             <strong className="model-discovery-agent-popularity-usage">{compactTokenUsage(agent.tokenUsage)}<span>Tokens</span></strong>
           </div>)}
@@ -1044,6 +1046,11 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
    * 接口的 growth_rate 是小数（0.5 = +50%），且**可能为 null** —— 序列不足两个点
    * （系统刚上线只有一天快照），或起点用量为 0，都算不出增长率。这类模型不进
    * 趋势图，而不是当成 0% 画一根空柱。
+   *
+   * **当期用量为 0 的也不进**：那种模型 growth_rate 恒为 -1，画出来是一根触底的
+   * -100% 柱子。上周有量、这周归零，这是"停用"，不是"趋势"——图要回答的是谁在涨
+   * 谁在跌。test 环境近 7 日几乎没有调用量，7 根柱子全是 -100%、图例 6 条也全是
+   * -100%，整张图看起来像坏了（2026-09-03 视觉验收）。
    */
   // 用量筛选交给接口：没有快照数据的模型本就不会出现在 usage-trends 的返回里
   const trendModels = chartModels.filter((model) => isModelConnected(model));
@@ -1052,6 +1059,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
     .map((model) => {
       const remote = trendData?.models.find((item) => item.source_model_id === model.sourceModelId);
       if (!remote || remote.growth_rate === null) return undefined;
+      if (remote.current_usage === null || remote.current_usage <= 0) return undefined;
       return {
         model,
         color: providerColor(model.provider),
@@ -1063,6 +1071,13 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
     .filter((series): series is NonNullable<typeof series> => series !== undefined)
     .sort((left, right) => right.growth - left.growth);
   const trendUsageLabel = modality === "text" ? "近 7 日 Token 用量" : taskProfile.usageLabel;
+  /* 空态要说清是哪一种「没有」，否则用户只看到一句「暂无」，分不清是自己没选模型、
+     还是平台确实没数据。 */
+  const trendEmptyHint = trendModels.length === 0
+    ? "选择已接入模型后查看趋势"
+    : trendData && trendData.models.some((item) => Number(item.current_usage) > 0)
+      ? "所选模型暂无足够的历史快照，无法计算增长率"
+      : "所选模型近 7 日没有调用量，暂无趋势可比";
   /** Recharts 消费的趋势数据。增长率保留正负号，负增长由零线之下的柱子表达。 */
   const trendPoints: TrendChartPoint[] = trendSeries.map((series) => ({
     color: series.color,
@@ -1129,43 +1144,34 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   return (
     <div className="model-discovery-page">
       <header className="model-discovery-head">
-        <div>
-          <div className="model-discovery-title-row">
-            <h1>模型发现</h1>
-            <div className="model-discovery-meta">
-              {/* 每日 08:30 刷新一次，不是实时值；同步失败时接口继续返回上一次成功的
-                  快照，日期会停在旧值——所以这里必须展示接口回传的真实日期。 */}
-              <span>{snapshotDate ? `数据快照：${snapshotDate}` : "数据快照加载中"}</span>
-            </div>
-          </div>
-          <p>聚合业界评测、专业分析与 ModelGo 平台数据，帮助团队完成模型选型。</p>
+        <div className="model-discovery-head-copy">
+          <h1>模型发现</h1>
+          <p>
+            聚合业界评测、专业分析与 ModelGo 平台数据，帮助团队完成模型选型
+            {/* 每日 08:30 刷新一次，不是实时值；同步失败时接口继续返回上一次成功的
+                快照，日期会停在旧值——所以这里必须展示接口回传的真实日期。
+                挂在副标题末尾而不是标题旁：它是数据的时效说明，和副标题同属元信息，
+                贴在 44px 大标题右边只会像一块补丁。 */}
+            <em className="model-discovery-snapshot">{snapshotDate ? `数据快照 ${snapshotDate}` : "数据快照加载中"}</em>
+          </p>
         </div>
         <Button onClick={onViewAllModels} size="sm" type="button" variant="outline">
           返回模型广场<LuArrowUpRight size={13} />
         </Button>
       </header>
 
-      {/* 一级模态导航：Agent 最左且默认，见 plans/2026-08-24-v1.0.6-model-discovery-ui-flow §3.2 模块 2。
-          只做导航，内容由下方各模块按 modality 自行渲染，故不使用 TabsContent。 */}
-      <Tabs onValueChange={(value) => switchModality(value as ModalityKey)} value={modality}>
-        <TabsList aria-label="模型模态" variant="underline">
-          {modalityOptions.map((option) => (
-            <TabsTrigger key={option.key} value={option.key} variant="underline">{option.label}</TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
-
-      <div className="model-discovery-taskbar">
-        {/* Agent 无二级任务（§3.2 模块可见性） */}
-        {modality !== "agent" && (
-          <Tabs onValueChange={switchTask} value={task}>
-            <TabsList aria-label="任务类型" variant="underline">
-              {config.tasks.map((item) => <TabsTrigger key={item} value={item} variant="underline">{item}</TabsTrigger>)}
-            </TabsList>
-          </Tabs>
-        )}
-        {/* 范围走紧凑 segmented control（§3.2 模块 3）。ml-auto 承接原 .model-discovery-scope
-            的 margin-left:auto —— 它必须贴住 taskbar 右端，不能跟着任务 Tab 靠左。 */}
+      {/* 一级模态导航 + 范围筛选同一行（§3.2 模块 2 / 3）。
+          两者都是"缩小看什么"的控件，原先模态 tab 独占一行、范围控件被放进下面的
+          taskbar，而 Agent 模态没有二级任务，那一行就只剩右端一个孤零零的控件、
+          左边整片空白（2026-09-03 视觉验收）。合到一行后 Agent 下省掉整行。 */}
+      <div className="model-discovery-modality-bar">
+        <Tabs onValueChange={(value) => switchModality(value as ModalityKey)} value={modality}>
+          <TabsList aria-label="模型模态" variant="underline">
+            {modalityOptions.map((option) => (
+              <TabsTrigger key={option.key} value={option.key} variant="underline">{option.label}</TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
         <Tabs className="ml-auto" onValueChange={(value) => setScope(value as typeof scope)} value={scope}>
           <TabsList aria-label="模型范围" variant="pills">
             <TabsTrigger value="all" variant="pills">全部行业模型</TabsTrigger>
@@ -1173,6 +1179,17 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
           </TabsList>
         </Tabs>
       </div>
+
+      {/* 二级任务 tab：Agent 无二级任务（§3.2 模块可见性），整行不渲染 */}
+      {modality !== "agent" && (
+        <div className="model-discovery-taskbar">
+          <Tabs onValueChange={switchTask} value={task}>
+            <TabsList aria-label="任务类型" variant="underline">
+              {config.tasks.map((item) => <TabsTrigger key={item} value={item} variant="underline">{item}</TabsTrigger>)}
+            </TabsList>
+          </Tabs>
+        </div>
+      )}
 
       <section className="model-discovery-overview">
         <article className="mg-tile model-discovery-rank-card">
@@ -1188,7 +1205,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
           ))}
           {visibleModels.slice(0, 5).map((model, index) => {
             const hasDetail = canOpenModelDetail(model);
-            return <div aria-label={hasDetail ? modelDetailAriaLabel(model) : undefined} className={`model-discovery-rank-row ${hasDetail ? "model-discovery-row-clickable" : ""}`} key={model.name} onClick={hasDetail ? () => openModelDetail(model) : undefined} onKeyDown={hasDetail ? (event) => handleModelRowKeyDown(event, model) : undefined} role={hasDetail ? "link" : undefined} tabIndex={hasDetail ? 0 : undefined}><span>{index + 1}</span><strong>{model.name}<small>{model.provider}</small></strong><em className={isModelConnected(model) ? "supported" : "pending"}>{modelAccessLabel(model)}</em><div><i style={{ width: `${rankBarWidth(model, visibleModels.slice(0, 5), scoreAscending)}%` }} /><b>{model.score}</b></div></div>;
+            return <div aria-label={hasDetail ? modelDetailAriaLabel(model) : undefined} className={`model-discovery-rank-row ${hasDetail ? "model-discovery-row-clickable" : ""}`} key={model.name} onClick={hasDetail ? () => openModelDetail(model) : undefined} onKeyDown={hasDetail ? (event) => handleModelRowKeyDown(event, model) : undefined} role={hasDetail ? "link" : undefined} tabIndex={hasDetail ? 0 : undefined}><span>{index + 1}</span><strong className="model-discovery-rank-name"><DiscoveryModelIcon model={model.name} provider={model.provider} /><span><span title={model.name}>{model.name}</span><small>{model.provider}</small></span></strong><em className={isModelConnected(model) ? "supported" : "pending"}>{modelAccessLabel(model)}</em><div><i style={{ width: `${rankBarWidth(model, visibleModels.slice(0, 5), scoreAscending)}%` }} /><b>{model.score}</b></div></div>;
           })}
           <div className="model-discovery-rank-more"><button onClick={viewFullRanking} type="button">查看更多<LuChevronDown size={13} /></button></div>
         </article>
@@ -1288,7 +1305,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
               <div className="mg-tile model-discovery-trend"><h3><LuTrendingUp size={14} />近 7 日 ModelGo 使用趋势</h3><p>按增长率从高到低排列</p>
                 {trendSeries.length > 0
                   ? <><TrendBarChart points={trendPoints} usageLabel={trendUsageLabel} /><div className="model-discovery-trend-legend">{trendSeries.map((series) => <span key={series.model.name}><i style={{ "--trend-color": series.color } as CSSProperties} /><strong>{series.model.name}</strong><b>{formatGrowth(series.growth)}</b></span>)}</div></>
-                  : <div className="model-discovery-trend-empty">{trendModels.length === 0 ? "选择已接入模型后查看趋势" : "所选模型暂无足够的历史快照，无法计算增长率"}</div>}
+                  : <div className="model-discovery-trend-empty">{trendEmptyHint}</div>}
               </div>
             </aside>
           </div>
@@ -1300,7 +1317,19 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
         <div className="mg-tile model-discovery-table-card">
           <div className="model-discovery-table-tools">
             <div className="model-discovery-table-primary-filter">
-              <label><LuChartColumn size={14} /><span>指标类型</span><select aria-label="指标类型" value={selectedRankingOption.key} onChange={(event) => setRankingMetric(event.target.value as RankingMetric)}>{availableRankingMetricOptions.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}</select><LuChevronDown size={12} /></label>
+              {/* 走控制台 Select（Radix）而不是原生 <select>：原生的下拉列表由操作系统渲染，
+                  macOS 上是一层半透明系统材质，底下的表头文字会透出来，我们的 CSS 一行都够不着
+                  （2026-09-03 视觉验收）。全站浮层要统一质感，就不能留原生下拉。 */}
+              <SelectRoot onValueChange={(value) => setRankingMetric(value as RankingMetric)} value={selectedRankingOption.key}>
+                <SelectTrigger aria-label="指标类型" className="model-discovery-select-trigger model-discovery-metric-trigger">
+                  <LuChartColumn className="shrink-0" size={14} />
+                  <span className="model-discovery-metric-label">指标类型</span>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableRankingMetricOptions.map((option) => <SelectItem key={option.key} value={option.key}>{option.label}</SelectItem>)}
+                </SelectContent>
+              </SelectRoot>
             </div>
             <div className="model-discovery-table-secondary-filters">
               <div className="model-discovery-provider-filter">
@@ -1314,7 +1343,16 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                   <footer><span>{providerFilter.length === 0 ? `${providers.length} 个厂商` : `筛选 ${providerFilter.length} 个厂商`}</span><button onClick={() => setProviderFilterOpen(false)} type="button">完成</button></footer>
                 </div>}
               </div>
-              <label><select aria-label="接入状态" value={tableAccess} onChange={(event) => setTableAccess(event.target.value as "all" | "supported" | "pending")}><option value="all">全部接入状态</option><option value="supported">已接入</option><option value="pending">暂未接入</option></select><LuChevronDown size={12} /></label>
+              <SelectRoot onValueChange={(value) => setTableAccess(value as "all" | "supported" | "pending")} value={tableAccess}>
+                <SelectTrigger aria-label="接入状态" className="model-discovery-select-trigger">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部接入状态</SelectItem>
+                  <SelectItem value="supported">已接入</SelectItem>
+                  <SelectItem value="pending">暂未接入</SelectItem>
+                </SelectContent>
+              </SelectRoot>
             </div>
           </div>
           {/* 语义表格（plan §3.2 模块 7：走现有 Table + Pagination，不手写表格体系）。
@@ -1359,7 +1397,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                     tabIndex={hasDetail ? 0 : undefined}
                   >
                     <TableCell align="center">{(safeTablePage - 1) * tablePageSize + index + 1}</TableCell>
-                    <TableCell align="left"><strong>{model.name}<small>{model.provider}</small></strong></TableCell>
+                    <TableCell align="left"><strong className="model-discovery-cell-model"><DiscoveryModelIcon model={model.name} provider={model.provider} /><span><span title={model.name}>{model.name}</span><small>{model.provider}</small></span></strong></TableCell>
                     <TableCell align="center">
                       <em className={isModelConnected(model) ? "supported" : "pending"}>{modelAccessLabel(model)}</em>
                     </TableCell>

@@ -1,11 +1,11 @@
 /**
  * 模型详情 · Benchmark 基准评测（§5）。
  *
- * 数据：GET /internal/v1/model-discovery/models/:modelgo_id/benchmarks（v1.0.6，observer 每日快照）
+ * 数据：GET /api/v1/model-discovery/models/:modelgo_id/benchmarks（v1.0.6，web-api 代理 observer 每日快照）
  *
  * 只读模块：无筛选、无排序、无跳转。三条硬规则：
  * - `Artificial Analysis` 来源标签**只出现一次**（§5.1）
- * - 整块无数据（模型未命中 4040 / 两部分都空）就 `return null` —— 详情直接接
+ * - 整块无数据（模型未命中 40401 / 两部分都空）就 `return null` —— 详情直接接
  *   相关模型，不留标题、不留空卡
  * - **单个指标取不到值时保留该项、标注「暂无数据」**：接口的指标清单是固定的完整
  *   结构，数值取不到也会返回（score/display_score 为 null），后端明确要求前端保持
@@ -73,7 +73,7 @@ function CompositeCard({ index }: { index: BenchmarkCompositeIndex }) {
 
 export function BenchmarkSection({ modelId }: { modelId: string }) {
   // catalog 的 model_id 与 observer 的 modelgo_id 口径不一致，必须转换后再请求，
-  // 否则绝大多数模型拿 4040、整块静默消失（qa#708，见 toBenchmarkModelId 的说明）
+  // 否则绝大多数模型拿 40401、整块静默消失（qa#708，见 toBenchmarkModelId 的说明）
   const benchmarkId = toBenchmarkModelId(modelId)
   const { data, isLoading } = useQuery({
     queryKey: ['model-benchmarks', benchmarkId],
@@ -81,7 +81,7 @@ export function BenchmarkSection({ modelId }: { modelId: string }) {
     enabled: Boolean(benchmarkId),
     // 每日快照，同一天内重复进出详情页不必反复请求
     staleTime: 5 * 60 * 1000,
-    // 模型未命中（4040）是常态而非故障：ModelGo 目录里的模型不一定进了第三方榜单
+    // 模型未命中（40401）是常态而非故障：ModelGo 目录里的模型不一定进了第三方榜单
     retry: (count, err) => !isNotFoundError(err) && count < 1,
   })
 

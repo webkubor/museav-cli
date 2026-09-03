@@ -1,10 +1,10 @@
 /**
  * 模型发现服务（v1.0.6）
- * API：GET /internal/v1/model-discovery/*
+ * API：GET /api/v1/model-discovery/*
  *
  * 锁两件容易回归的事：
- * 1. 六个接口都必须带 internal/v1 前缀 —— 漏了会打到 web-api 的 api/v1 上吃 40401，
- *    而且本地 vite proxy 也只代理 /internal/v1/model-discovery/ 这一段。
+ * 1. 六个接口都走 web-api 的默认 api/v1 前缀，不带 observer 的 internal/v1 ——
+ *    web-api 上没有 internal/v1 这条路由，带了会整页吃 40401（2026-09-03 test 环境实测）。
  * 2. type × metric 的合法组合与后端校验一致 —— 发出非法组合会被 4001 打回，
  *    尤其 STT 没有 VALUE_SCORE（产品口径，不是数据缺失）。
  */
@@ -12,10 +12,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/lib/request', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/request')>()
-  return { get: vi.fn(), INTERNAL_V1_PREFIX: actual.INTERNAL_V1_PREFIX }
+  return { ...actual, get: vi.fn() }
 })
 
-import { get, INTERNAL_V1_PREFIX } from '@/lib/request'
+import { get } from '@/lib/request'
 import {
   getDiscoveryAnalysis,
   getDiscoveryOverview,
@@ -52,7 +52,7 @@ describe('模型发现接口前缀', () => {
     getMock.mockResolvedValue({})
   })
 
-  it('六个接口一律走 internal/v1，不走 api/v1', async () => {
+  it('六个接口一律走默认 api/v1 前缀，不带 internal/v1', async () => {
     await getDiscoveryOverview({ type: 'TEXT_CHAT' })
     await listDiscoveryRankings({ type: 'TEXT_CHAT', metric: 'INTELLIGENCE_INDEX' })
     await listDiscoveryModelOptions({ type: 'TEXT_CHAT' })
@@ -68,9 +68,8 @@ describe('模型发现接口前缀', () => {
     expect(getMock).toHaveBeenCalledTimes(6)
     for (const call of getMock.mock.calls) {
       expect(call[0]).toMatch(/^model-discovery\//)
-      expect(call[2]).toEqual({ prefix: INTERNAL_V1_PREFIX })
+      expect(call[2]).toBeUndefined()
     }
-    expect(INTERNAL_V1_PREFIX).toBe('internal/v1')
   })
 
   it('Benchmark 用 modelgo_id 作路径参数并转义', async () => {
@@ -78,7 +77,6 @@ describe('模型发现接口前缀', () => {
     expect(getMock).toHaveBeenCalledWith(
       'model-discovery/models/gpt%20image%2F2/benchmarks',
       { type: 'TEXT_TO_IMAGE' },
-      { prefix: INTERNAL_V1_PREFIX },
     )
   })
 })

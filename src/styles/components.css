@@ -177,6 +177,27 @@
   border-color: var(--mg-btn-outline-border-hover) !important;
 }
 
+/* 品牌色次级入口。配比取 PRD 原型实测（底 8% / 边 38%），但用 --brand-base
+   与 --mg-* 表达而不是原型的字面色值 —— 国内靛紫 / 海外翠绿、明暗四象限自动跟随。 */
+.modern-btn-brand-outline {
+  @apply border;
+  transition: var(--mg-btn-transition);
+  font-weight: 650;
+  background-color: color-mix(in oklab, var(--brand-base) 8%, var(--mg-bg-0)) !important;
+  border-color: color-mix(in oklab, var(--brand-base) 38%, var(--mg-border)) !important;
+  color: var(--brand-base) !important;
+}
+
+.modern-btn-brand-outline:hover {
+  transform: translateY(var(--mg-btn-hover-y));
+  background-color: color-mix(in oklab, var(--brand-base) 13%, var(--mg-bg-0)) !important;
+  border-color: var(--brand-base) !important;
+}
+
+.modern-btn-brand-outline:active {
+  transform: translateY(0);
+}
+
 .modern-btn-secondary {
   @apply transition-all;
   transition: var(--mg-btn-transition);

@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import {
   LuSearch, LuChevronDown, LuCheck, LuSlidersHorizontal, LuLayers, LuZap, LuBuilding2, LuShieldCheck,
-  LuChartLine, LuColumns2, LuType, LuImage, LuVideo, LuAudioLines, LuDatabase, LuX,
+  LuChartColumn, LuArrowRight, LuColumns2, LuType, LuImage, LuVideo, LuAudioLines, LuDatabase, LuX,
 } from 'react-icons/lu'
 import type { IconType } from 'react-icons'
 import { Button } from '@/components/ui/Button'
@@ -360,10 +360,11 @@ export default function ModelsCatalogPage() {
       {/* 页面结构（2026-08 视觉改版稿）：标题 / 轮播 两块全宽；搜索排序在下方
           两列布局的右列内、与筛选侧栏顶部平行。轮播保持全宽不被侧栏挤窄。 */}
       <div className="mg-plaza">
-          {/* 标题。右侧挂「模型发现」入口 —— 放标题行而不是搜索/排序工具栏，
-              避免和列表筛选语义混淆；窄屏时按钮随 flex-wrap 落到副标题下方左对齐。
-              这是模型发现的**唯一**入口，不进顶栏、不进左侧导航、不进模型卡
-              （见 plans/2026-08-24-v1.0.6-model-discovery-ui-flow §2.1）。 */}
+          {/* 标题区只有身份信息（标题 + 副标题 + 信任 chips）。
+              「模型发现」入口在下面的搜索/排序工具栏最右 —— 2026-09-03 按 PRD 原型
+              （.marketplace-discovery-entry）挪回去的，原先放这里且降成中性 outline，
+              与原型不一致。它仍是模型发现的**唯一**入口，不进顶栏、不进左侧导航、
+              不进模型卡（见 plans/2026-08-24-v1.0.6-model-discovery-ui-flow §2.1 修订段）。 */}
           <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
             <div>
               <h1 className="text-mg-text-1 catalog-title text-[34px] font-bold tracking-tight">
@@ -380,18 +381,6 @@ export default function ModelsCatalogPage() {
                 <span className="is-sla"><LuShieldCheck size={12} />{t('modelsCatalog.trust.sla')}</span>
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                // 只记点击，不把「加载成功」伪报成点击（§2.1）
-                trackEvent('marketplace_discovery_entry_clicked', { source: 'catalog_header' })
-                navigate('/models/discovery')
-              }}
-            >
-              <LuChartLine size={14} />
-              {t('modelsCatalog.discovery.entry')}
-            </Button>
           </div>
 
           {/* 精选轮播。原型顶部只有「标题 + 副标题 + 信任 chips + 轮播」，没有数据卡
@@ -474,6 +463,22 @@ export default function ModelsCatalogPage() {
                 </div>
               )}
             </div>
+            {/* 模型发现入口。位置与形态按 PRD 原型（.marketplace-discovery-entry）：
+                与搜索、排序同一行的最右，柱状图标 + 文案 + 右箭头，品牌色强调。
+                此前放在页头且降成中性 outline，与原型不一致（2026-09-03 需求方指出）。 */}
+            <Button
+              variant="brand-outline"
+              size="sm"
+              onClick={() => {
+                // 只记点击，不把「加载成功」伪报成点击（§2.1）
+                trackEvent('marketplace_discovery_entry_clicked', { source: 'catalog_toolbar' })
+                navigate('/models/discovery')
+              }}
+            >
+              <LuChartColumn size={14} />
+              {t('modelsCatalog.discovery.entry')}
+              <LuArrowRight size={13} />
+            </Button>
           </div>
 
           {/* 输出模态分类栏（#872 需求点 9）：搜索栏下方，与侧栏各维度组合筛选；

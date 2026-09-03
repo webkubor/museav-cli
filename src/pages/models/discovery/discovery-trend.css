@@ -1,0 +1,125 @@
+/**
+ * 近 7 日使用趋势柱图：柱子、零线、标签与图例。
+ *
+ * discovery.css 的分片之一。入口按顺序 @import，**顺序即层叠顺序**。
+ * 再拆分请用选择器锚点定位，不要用行号（见入口文件里的说明）。
+ */
+
+.model-discovery-trend-chart {
+  margin-top: 9px;
+  min-width: 0;
+}
+
+.model-discovery-trend-bar {
+  fill: var(--trend-color);
+  opacity: 0.88;
+  rx: var(--discovery-radius-2xs);
+}
+
+.model-discovery-trend-label {
+  fill: var(--text-soft);
+  font-size: var(--discovery-fs-micro);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 零线：增长率有正有负，分界线画出来才看得出方向 */
+.model-discovery-trend-zero line {
+  stroke: var(--line);
+}
+
+.model-discovery-trend-legend {
+  display: grid;
+  gap: 4px 10px;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  margin-top: 10px;
+}
+
+.model-discovery-trend-legend > span {
+  align-items: center;
+  display: grid;
+  font-size: var(--discovery-fs-micro);
+  gap: 5px;
+  grid-template-columns: 7px minmax(0, 1fr) auto;
+}
+
+.model-discovery-trend-legend > span > i {
+  background: var(--trend-color);
+  border-radius: var(--discovery-radius-circle);
+  height: 7px;
+  width: 7px;
+}
+
+.model-discovery-trend-legend strong {
+  font-size: var(--discovery-fs-micro);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-discovery-trend-legend b {
+  color: var(--discovery-growth-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.model-discovery-trend-empty {
+  align-items: center;
+  color: var(--text-tertiary);
+  display: flex;
+  font-size: var(--discovery-fs-micro);
+  justify-content: center;
+  min-height: 120px;
+}
+
+.model-discovery-specialties {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.model-discovery-specialties article {
+  --specialty-color: var(--accent);
+  overflow: visible;
+  padding: 16px 18px 15px;
+}
+
+/* 四张专项榜同色。
+   原先是蓝 / 青 / 紫 / 绿四个色系，但颜色在这里**不承载任何信息**——四张图是并列的
+   四个维度，靠标题区分就够了，四种大色块只是把注意力从数据本身拽走。
+   参照站的做法是强调色面积极小、层级交给灰阶，这里同理：柱子统一品牌色，
+   相邻两张用透明度轻微拉开，避免整片同色糊成一块。 */
+.model-discovery-specialties article:nth-child(even) {
+  --specialty-color: color-mix(in oklab, var(--accent) 82%, transparent);
+}
+
+.model-discovery-specialties article:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.model-discovery-specialties article > header {
+  align-items: flex-start;
+  display: flex;
+  justify-content: space-between;
+}
+
+.model-discovery-specialties article > header > span {
+  background: color-mix(in srgb, var(--accent) 9%, var(--panel));
+  border-radius: var(--mg-radius-pill);
+  color: var(--accent);
+  font-size: var(--discovery-fs-micro);
+  font-weight: 700;
+  padding: 4px 7px;
+}
+
+.model-discovery-specialties h3 {
+  font-size: var(--discovery-fs-title);
+  margin: 0;
+}
+
+.model-discovery-specialties p {
+  align-items: center;
+  color: var(--text-tertiary);
+  display: flex;
+  font-size: var(--discovery-fs-micro);
+  gap: 6px;
+  margin: 4px 0 0;
+}

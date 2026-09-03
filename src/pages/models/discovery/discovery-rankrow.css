@@ -1,0 +1,213 @@
+/**
+ * Top 5 排名行：表头、行布局、进度条与入场动效、查看更多。
+ *
+ * discovery.css 的分片之一。入口按顺序 @import，**顺序即层叠顺序**。
+ * 再拆分请用选择器锚点定位，不要用行号（见入口文件里的说明）。
+ */
+
+.model-discovery-card-head {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 16px 18px 13px;
+}
+
+.model-discovery-card-head span {
+  color: var(--text-tertiary);
+  display: block;
+  font-size: var(--discovery-fs-body);
+  margin-top: 5px;
+}
+
+.model-discovery-card-head h2 {
+  font-size: var(--discovery-fs-title);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.model-discovery-rank-head,
+.model-discovery-rank-row {
+  align-items: center;
+  display: grid;
+  gap: 9px;
+  grid-template-columns: 28px minmax(160px, 1.2fr) minmax(118px, 0.7fr) minmax(170px, 1fr);
+  padding: 10px 18px;
+}
+
+.model-discovery-rank-head {
+  background: color-mix(in srgb, var(--line) 24%, transparent);
+  color: var(--text-tertiary);
+  font-size: var(--discovery-fs-micro);
+}
+
+.model-discovery-rank-head > span:last-child,
+.model-discovery-table thead .metric-primary {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+}
+
+.model-discovery-source-tag {
+  align-items: center;
+  background: color-mix(in srgb, var(--accent) 7%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--line));
+  border-radius: var(--discovery-radius-2xs);
+  color: var(--text-tertiary);
+  display: inline-flex;
+  flex: none;
+  font-size: var(--discovery-fs-micro);
+  font-style: normal;
+  font-weight: 560;
+  height: 17px;
+  line-height: 1;
+  padding: 0 5px;
+  white-space: nowrap;
+}
+
+.model-discovery-rank-row {
+  border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  font-size: var(--discovery-fs-body);
+}
+
+.model-discovery-rank-row.model-discovery-row-clickable,
+.model-discovery-table .model-discovery-row-clickable {
+  cursor: pointer;
+  transition: background-color var(--discovery-dur-quick) ease, box-shadow var(--discovery-dur-quick) ease;
+}
+
+.model-discovery-rank-row:hover {
+  background: color-mix(in srgb, var(--accent) 6%, var(--panel));
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--accent) 72%, transparent);
+}
+
+.model-discovery-rank-row.model-discovery-row-clickable:focus-visible,
+.model-discovery-table .model-discovery-row-clickable:focus-visible {
+  background: color-mix(in srgb, var(--accent) 7%, var(--panel));
+  box-shadow: inset 3px 0 0 var(--accent), inset 0 0 0 2px color-mix(in srgb, var(--accent) 28%, transparent);
+  outline: none;
+}
+
+.model-discovery-rank-row > span:first-child {
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.model-discovery-rank-row strong {
+  /* 模型名是这一行的主角，走 subject 档；厂商名 micro，两者差 4px 才有主次
+     （比例关系见文件头字阶注释） */
+  font-size: var(--discovery-fs-subject);
+  font-weight: 680;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  /* display 与 gap 交给 .model-discovery-rank-name（同一个元素上的类）——
+     原先这里写 display:grid + gap:2px，而 .model-discovery-rank-name 只有
+     (0,1,0) 的优先级，压不过本选择器的 (0,1,1)：图标与文字之间实际是 2px
+     而不是想要的 10px，改完看着"生效了"其实没有（2026-09-03 用 computed
+     style 基线才量出来）。两处争同一属性时，把属性留在一处，别靠 !important 打架。 */
+}
+
+.model-discovery-rank-row strong small {
+  color: var(--text-tertiary);
+  font-size: var(--discovery-fs-micro);
+  font-weight: 500;
+}
+
+.model-discovery-rank-row em,
+.model-discovery-table em {
+  border-radius: var(--mg-radius-pill);
+  font-size: var(--discovery-fs-micro);
+  font-style: normal;
+  justify-self: start;
+  padding: 3px 7px;
+  white-space: nowrap;
+}
+
+.model-discovery-rank-row em.supported,
+.model-discovery-table em.supported {
+  background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+  color: var(--accent);
+}
+
+.model-discovery-rank-row em.pending,
+.model-discovery-table em.pending {
+  background: color-mix(in srgb, var(--line) 55%, var(--panel));
+  color: var(--text-tertiary);
+}
+
+.model-discovery-rank-row > div {
+  align-items: center;
+  display: grid;
+  gap: 9px;
+  grid-template-columns: minmax(70px, 1fr) 36px;
+}
+
+.model-discovery-rank-row > div::before {
+  background: color-mix(in srgb, var(--line) 55%, transparent);
+  border-radius: var(--mg-radius-pill);
+  content: "";
+  grid-column: 1;
+  grid-row: 1;
+  height: 6px;
+}
+
+/* 条长由内联 style 的百分比给（rankBarWidth），入场用 scaleX 从左侧生长——
+   scaleX 不改变布局宽度，所以动画期间条尾不会把右边的数值挤动。
+   切 tab / 换指标时 React 复用同一批 DOM，动画不会重播；这里要的是首屏那一次
+   「排名条长出来」的读数引导，不是每次交互都动。 */
+.model-discovery-rank-row > div i {
+  animation: model-discovery-rank-grow var(--discovery-dur-enter) var(--mg-ease-decelerate) both;
+  background: var(--accent);
+  border-radius: var(--mg-radius-pill);
+  grid-column: 1;
+  grid-row: 1;
+  height: 6px;
+  transform-origin: left center;
+  /* 条长本身也过渡：切换指标时从旧长度平滑到新长度，而不是瞬间跳 */
+  transition: width var(--discovery-dur-base) var(--mg-ease-standard);
+}
+
+@keyframes model-discovery-rank-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .model-discovery-rank-row > div i {
+    animation: none;
+    transition: none;
+  }
+}
+
+.model-discovery-rank-row > div b {
+  font-variant-numeric: tabular-nums;
+  grid-column: 2;
+  grid-row: 1;
+  text-align: right;
+}
+
+.model-discovery-rank-more {
+  align-items: center;
+  border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  display: flex;
+  justify-content: flex-end;
+  min-height: 38px;
+  padding: 6px 18px;
+}
+
+.model-discovery-rank-more button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--accent);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: var(--discovery-fs-body);
+  gap: 4px;
+  padding: 3px 0;
+}
+
+.model-discovery-rank-more button:hover {
+  color: color-mix(in srgb, var(--accent) 82%, #142033);
+}

@@ -1,0 +1,92 @@
+/**
+ * 总览栅格与卡片外壳，以及与原型 1:1 的表格外观校准、详情按钮。
+ *
+ * discovery.css 的分片之一。入口按顺序 @import，**顺序即层叠顺序**。
+ * 再拆分请用选择器锚点定位，不要用行号（见入口文件里的说明）。
+ */
+
+.model-discovery-overview {
+
+  align-items: stretch;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1.55fr) minmax(350px, 0.85fr);
+}
+
+.model-discovery-analysis-card {
+  overflow: hidden;
+}
+
+/* rank-card 改用 .mg-tile（自带 --mg-tile-radius / 边框 / 表面），这里只补它需要的裁剪 */
+.model-discovery-rank-card {
+  overflow: hidden;
+}
+
+.model-discovery-table-card {
+  overflow: visible;
+  position: relative;
+}
+
+/* ── 与原型 1:1 的表格外观校准 ──────────────────────────────────────────────
+   本页是「1:1 复刻原型」的显式例外（见 discovery/index.tsx 顶部说明），而完整指标
+   榜单按铁律换成了控制台的 Table 组件，于是带进来三处原型没有的外观。这里在本页
+   作用域内校回去。
+
+   ⚠️ 只写在 .model-discovery-table 内，绝不动全局 Table 或 .mg-text-label ——
+   那两个是所有表格页共用的，改了就是拿一页的 1:1 要求去污染全站。
+
+   原型对照 modelgo_prd/src/redesign.css:15608 `.model-discovery-table-head/-row`。 */
+.model-discovery-table {
+  /* 原型的表头与行都是 padding: 11px 14px；控制台默认值更宽，实测每行高 13px，
+     整张榜单累积把页面撑高 300+px */
+  --mg-table-cell-px: 14px;
+  --mg-table-cell-py: 11px;
+  --mg-table-head-h: auto;
+}
+
+.model-discovery-table thead th {
+  /* TableHead 默认挂 .mg-text-label（styles/components.css），那条带
+     text-transform: uppercase，会把 Agentic Index / Artificial Analysis 顶成
+     AGENTIC INDEX / ARTIFICIAL ANALYSIS —— 原型是原样大小写。中文表头看不出来，
+     只有英文列被大写，同一行里反而不齐。 */
+  text-transform: none;
+  font-size: var(--discovery-fs-micro);
+}
+
+.model-discovery-table tbody td {
+  /* TableCell 挂 .mg-text-body（14px / 24px 行高），原型
+     .model-discovery-table-row 是 11px。字号和行高都要压回去 ——
+     只改字号的话，24px 的行高仍会把行撑到原型的 1.2 倍。 */
+  font-size: var(--discovery-fs-body);
+  line-height: 1.45;
+}
+
+/* 「查看详情 / 待支持」——照搬原型 redesign.css:15645
+   `.model-discovery-table-row > button`。用原生 button 承接（理由见 tsx 里的注释）。 */
+.model-discovery-detail-btn {
+  align-items: center;
+  background: color-mix(in srgb, var(--accent) 9%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
+  border-radius: var(--discovery-radius-md); /* 原型 7px */
+  color: var(--accent);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: var(--discovery-fs-micro);
+  gap: 4px;
+  justify-content: center;
+  justify-self: end;
+  /* 必须显式给：按钮会继承 TableCell 的 .mg-text-body 行高（24px），
+     6+6+24=36px 把整行顶到 69px；原型那颗继承的是 11px 字号的 normal 行高。 */
+  line-height: 1;
+  /* 图标按钮：正方形槽位，不再按文字宽度撑开 */
+  height: 26px;
+  padding: 0;
+  width: 26px;
+}
+
+.model-discovery-detail-btn:disabled {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+}

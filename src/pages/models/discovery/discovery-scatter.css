@@ -1,0 +1,134 @@
+/**
+ * 多维分析散点图：图例、坐标轴、优选区、散点交互与图表联动。
+ *
+ * discovery.css 的分片之一。入口按顺序 @import，**顺序即层叠顺序**。
+ * 再拆分请用选择器锚点定位，不要用行号（见入口文件里的说明）。
+ */
+
+.model-discovery-analysis-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1.62fr) minmax(255px, 0.62fr);
+  margin-top: 12px;
+}
+
+.model-discovery-scatter {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--discovery-radius-2xl);
+  min-height: 352px;
+  overflow: visible;
+  padding: 13px 16px 14px;
+}
+
+.model-discovery-scatter-legend {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 13px;
+  min-height: 24px;
+}
+
+.model-discovery-scatter-legend span,
+.model-discovery-scatter-legend em {
+  align-items: center;
+  color: var(--muted);
+  display: inline-flex;
+  font-size: var(--discovery-fs-micro);
+  font-style: normal;
+  gap: 5px;
+}
+
+.model-discovery-scatter-legend span i {
+  background: var(--legend-color);
+  border-radius: var(--discovery-radius-circle);
+  height: 8px;
+  width: 8px;
+}
+
+.model-discovery-scatter-legend em {
+  color: var(--text-tertiary);
+  margin-left: auto;
+}
+
+/* Recharts 的 ResponsiveContainer 直接量这个容器的宽度，所以它只留外边距，
+   不再设 height / position —— 高度由图表组件给，坐标由 scale 算。 */
+.model-discovery-scatter-plot {
+  margin-top: 6px;
+  min-width: 0;
+}
+
+/* 轴标题（Recharts <Label> 渲染成 SVG text，故用 fill 而不是 color） */
+.model-discovery-axis-title {
+  fill: var(--text-soft);
+  font-size: var(--discovery-fs-micro);
+  font-weight: 620;
+}
+
+/* 优选区：ReferenceArea 渲染成一层 <g>，底色画在里面那条 path 上（recharts 画的是
+   path 不是 rect，选择器写 rect 会静默不生效）。CSS 声明优先于 SVG 的
+   presentation attribute，所以能盖掉 recharts 的默认灰。 */
+.model-discovery-advantage-zone .recharts-reference-area-rect {
+  fill: color-mix(in srgb, #71c785 16%, transparent);
+  stroke: color-mix(in srgb, #52a96a 22%, transparent);
+}
+
+.model-discovery-advantage-label {
+  fill: var(--discovery-advantage-text);
+  font-size: var(--discovery-fs-micro);
+  font-weight: 650;
+}
+
+/* 散点：一个 <g> 承载交互（可点 / 联动 / 键盘），里面的 circle 只管画。 */
+.model-discovery-point-hit {
+  outline: 0;
+}
+
+.model-discovery-point-hit.clickable {
+  cursor: pointer;
+}
+
+.model-discovery-scatter-point {
+  fill: var(--point-color);
+  stroke: var(--panel);
+  stroke-width: 2px;
+  transition: r var(--discovery-dur-instant) var(--mg-ease-standard),
+    stroke-width var(--discovery-dur-instant) var(--mg-ease-standard);
+}
+
+/* 未接入的画空心：与图例「实心：已接入 · 空心：暂未接入」对应 */
+.model-discovery-scatter-point.pending {
+  fill: var(--panel);
+  stroke: var(--point-color);
+}
+
+.model-discovery-point-hit:hover .model-discovery-scatter-point,
+.model-discovery-point-hit:focus-visible .model-discovery-scatter-point {
+  r: 8;
+}
+
+/* ── 图表联动 ────────────────────────────────────────────────
+   柱图与散点图画的是同一批模型。hover 任一处，另一处的同名模型跟着亮起来 ——
+   这是两张图之间唯一的关联线索，没有它用户看不出散点右上角那个点就是柱图第一根。
+   被联动的一侧只做「提亮 + 微放大」，不改变位置，避免看起来像数据变了。 */
+.model-discovery-point-hit.linked .model-discovery-scatter-point {
+  r: 9;
+  stroke: var(--point-color);
+  stroke-opacity: 0.35;
+  stroke-width: 6px;
+}
+
+.model-discovery-point-hit:focus-visible .model-discovery-scatter-point {
+  stroke: var(--accent);
+  stroke-width: 3px;
+}
+
+/* 图表容器内的空态（选不到模型 / 该指标无数据） */
+.model-discovery-chart-empty-block {
+  align-items: center;
+  color: var(--text-tertiary);
+  display: flex;
+  font-size: var(--discovery-fs-body);
+  justify-content: center;
+  min-height: 160px;
+}

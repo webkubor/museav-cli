@@ -10,13 +10,6 @@ import { reportServerError, reportHttpServerError } from '@/lib/error-diagnostic
 
 const API_V1_PREFIX = 'api/v1'
 
-/**
- * observer 的模型发现六接口挂在 `/internal/v1/model-discovery/*`，不在 web-api 的
- * `api/v1` 下（见《模型发现 / 模型详情 前端接口文档》）。走 get 的 `prefix` 选项切换，
- * 请求仍是相对路径 —— 本地命中 vite proxy，线上等 nginx/web-api 落转发规则。
- */
-export const INTERNAL_V1_PREFIX = 'internal/v1'
-
 // #267 注册登录密码不能传明文: these password-bearing endpoints send an encrypted
 // RSA+AES envelope instead of a plaintext JSON body, and receive an encrypted
 // {iv,data} response. Normalized (no leading slash) to match normalizePath.

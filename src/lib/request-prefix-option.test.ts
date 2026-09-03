@@ -1,7 +1,7 @@
 /**
- * observer（模型发现六接口）接入 get() 的两处契约：
- * 1. `prefix` 选项能把请求打到 `internal/v1` 而不是默认的 `api/v1`；
- * 2. observer 的错误信封用 `message`（web-api 用 `msg`），少了兜底会弹空白提示。
+ * get() 的两处通用契约：
+ * 1. `prefix` 选项能把请求打到非默认前缀（默认 `api/v1`）；
+ * 2. 错误信封没有 `msg` 时兜底取 `message`，少了兜底会弹空白提示。
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -12,7 +12,7 @@ vi.mock('ky', () => ({
   default: { create: () => ({ get: kyGet }), get: vi.fn() },
 }))
 
-import { get, INTERNAL_V1_PREFIX, ModelGoApiError } from '@/lib/request'
+import { get, ModelGoApiError } from '@/lib/request'
 
 function envelope(body: unknown) {
   return {
@@ -32,21 +32,21 @@ describe('get 的 prefix 选项', () => {
     expect(kyGet.mock.calls[0][0]).toContain('/api/v1/catalog/models')
   })
 
-  it('带 prefix 时走 internal/v1，且不残留 api/v1', async () => {
+  it('带 prefix 时走指定前缀，且不残留 api/v1', async () => {
     kyGet.mockResolvedValue(envelope({ code: 0, data: { ok: true } }))
-    await get('model-discovery/overview', { type: 'TEXT_CHAT' }, { prefix: INTERNAL_V1_PREFIX })
+    await get('model-discovery/overview', { type: 'TEXT_CHAT' }, { prefix: 'internal/v1' })
     const url = kyGet.mock.calls[0][0] as string
     expect(url).toContain('/internal/v1/model-discovery/overview')
     expect(url).not.toContain('api/v1')
   })
 })
 
-describe('observer 错误信封', () => {
+describe('错误信封 message 兜底', () => {
   beforeEach(() => {
     kyGet.mockReset()
   })
 
-  it('code 非 0 时取 message（observer 无 msg 字段）', async () => {
+  it('code 非 0 且无 msg 字段时取 message', async () => {
     kyGet.mockResolvedValue(
       envelope({
         code: 4001,
@@ -56,7 +56,7 @@ describe('observer 错误信封', () => {
     )
 
     await expect(
-      get('model-discovery/rankings', { type: 'STT', metric: 'VALUE_SCORE' }, { prefix: INTERNAL_V1_PREFIX }),
+      get('model-discovery/rankings', { type: 'STT', metric: 'VALUE_SCORE' }),
     ).rejects.toMatchObject({ code: 4001, rawMessage: 'validation failed' })
   })
 

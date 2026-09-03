@@ -1,16 +1,17 @@
 /**
  * 模型发现 / 模型详情 Benchmark（v1.0.6）
  * 路由：/models/discovery、/models/:id（Benchmark 区块）
- * API：GET /internal/v1/model-discovery/{overview,rankings,model-options,analysis,usage-trends,models/:id/benchmarks}
+ * API：GET /api/v1/model-discovery/{overview,rankings,model-options,analysis,usage-trends,models/:id/benchmarks}
  *
- * 这六个接口挂在 observer 上，前缀是 `internal/v1` 而非 web-api 的 `api/v1`，
- * 故统一带 `INTERNAL_V1_PREFIX`。路径保持相对 —— 本地命中 vite proxy，
- * 线上待 nginx/web-api 落转发规则（写成绝对地址会绕过 proxy 被 CORS 拦）。
+ * 数据源是 observer 的每日快照，但对前端统一由 web-api 在 `api/v1` 下代理暴露
+ * （2026-09-03 test 环境实测六接口均已在 web-api 上，observer 的 `internal/v1`
+ * 前缀是内网地址，浏览器直连会被 CORS 拦、经 web-api 打 `internal/v1` 则吃 40401）。
+ * 所以这里走 get() 的默认前缀，与其余业务接口无差别。
  *
  * 全部只读最近一次成功发布的每日快照，响应回传实际使用的 `snapshot_date`，
  * 页面需展示"数据截至 X"。
  */
-import { get, INTERNAL_V1_PREFIX } from '@/lib/request'
+import { get } from '@/lib/request'
 import type {
   DiscoveryAnalysisParams,
   DiscoveryRankingsParams,
@@ -28,14 +29,13 @@ import type {
 } from '@/types'
 
 const BASE = 'model-discovery'
-const OPTIONS = { prefix: INTERNAL_V1_PREFIX } as const
 
 /**
  * 总览：主页面顶部六个 highlight 卡片，一次返回。
  * 某个 highlight 为 null 表示该类型下没有符合条件的模型，**保留卡位展示空态**。
  */
 export function getDiscoveryOverview(params: DiscoveryTypeParams) {
-  return get<DiscoveryOverview>(`${BASE}/overview`, params, OPTIONS)
+  return get<DiscoveryOverview>(`${BASE}/overview`, params)
 }
 
 /**
@@ -43,7 +43,7 @@ export function getDiscoveryOverview(params: DiscoveryTypeParams) {
  * 展示"共 N 个模型"用响应里的 `total`（随 metric 变化），不要用模型选项的总数。
  */
 export function listDiscoveryRankings(params: DiscoveryRankingsParams) {
-  return get<DiscoveryRankings>(`${BASE}/rankings`, params, OPTIONS)
+  return get<DiscoveryRankings>(`${BASE}/rankings`, params)
 }
 
 /**
@@ -51,7 +51,7 @@ export function listDiscoveryRankings(params: DiscoveryRankingsParams) {
  * 用于模型选择器（value 取 `source_model_id`）与厂商下拉（对 creator_name 去重）。
  */
 export function listDiscoveryModelOptions(params: DiscoveryTypeParams) {
-  return get<DiscoveryModelOptions>(`${BASE}/model-options`, params, OPTIONS)
+  return get<DiscoveryModelOptions>(`${BASE}/model-options`, params)
 }
 
 /**
@@ -59,23 +59,22 @@ export function listDiscoveryModelOptions(params: DiscoveryTypeParams) {
  * 所以 points 长度可能小于传入的模型数（预期行为）。
  */
 export function getDiscoveryAnalysis(params: DiscoveryAnalysisParams) {
-  return get<DiscoveryAnalysis>(`${BASE}/analysis`, params, OPTIONS)
+  return get<DiscoveryAnalysis>(`${BASE}/analysis`, params)
 }
 
 /** 使用趋势：所选模型的用量序列，与散点图拆开的独立接口。 */
 export function getDiscoveryUsageTrends(params: DiscoveryUsageTrendsParams) {
-  return get<DiscoveryUsageTrends>(`${BASE}/usage-trends`, params, OPTIONS)
+  return get<DiscoveryUsageTrends>(`${BASE}/usage-trends`, params)
 }
 
 /**
  * 模型详情 Benchmark。路径参数是 `modelgo_id`（不是 source_model_id），
- * 模型未命中返回 4040。
+ * 模型未命中返回 40401。
  */
 export function getModelBenchmarks(modelgoId: string, params?: ModelBenchmarksParams) {
   return get<ModelBenchmarks>(
     `${BASE}/models/${encodeURIComponent(modelgoId)}/benchmarks`,
     params,
-    OPTIONS,
   )
 }
 
@@ -91,7 +90,7 @@ export function joinSourceModelIds(ids: readonly string[]) {
  * 一律小写且把点号写成连字符（catalog `glm-5.2` ↔ observer `glm-5-2`、
  * `MiniMax-M3` ↔ `minimax-m3`）。2026-09-02 实测 catalog 首页 50 个模型，
  * **原样请求只有 3 个命中，规范化后 20 个命中** —— 不转换的话 Benchmark 区块会对
- * 绝大多数模型静默返回 4040、整块消失，页面看着"正常"其实全线失效。
+ * 绝大多数模型静默返回 40401、整块消失，页面看着"正常"其实全线失效。
  *
  * 转换是确定性的字符替换，已核对命中项的模型名一一对应，且 catalog 内不存在
  * 规范化后碰撞的 id。剩余未命中的多是测试夹具（pytest-* / fakellm/*）与确实不在

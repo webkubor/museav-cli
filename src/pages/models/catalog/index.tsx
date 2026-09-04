@@ -465,10 +465,12 @@ export default function ModelsCatalogPage() {
             </div>
             {/* 模型发现入口。位置与形态按 PRD 原型（.marketplace-discovery-entry）：
                 与搜索、排序同一行的最右，柱状图标 + 文案 + 右箭头，品牌色强调。
-                此前放在页头且降成中性 outline，与原型不一致（2026-09-03 需求方指出）。 */}
+                此前放在页头且降成中性 outline，与原型不一致（2026-09-03 需求方指出）。
+                尺寸与同一行的搜索(lg)/排序触发器(lg)同档（2026-09-04 控件统一）：
+                此前 size="sm"(32px) 跟在 48px 的搜索框后面，flex 行里高度参差。 */}
             <Button
               variant="brand-outline"
-              size="sm"
+              size="lg"
               onClick={() => {
                 // 只记点击，不把「加载成功」伪报成点击（§2.1）
                 trackEvent('marketplace_discovery_entry_clicked', { source: 'catalog_toolbar' })

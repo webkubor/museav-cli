@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/Table'
 import { useAuthStore } from '@/store/auth'
 import { AsyncTasksSummaryBar } from '@/pages/logs/summary'
-import { listTasks } from '@/services/tasks'
+import { getTask, listTasks } from '@/services/tasks'
 import { listWorkspaces } from '@/services/workspaces'
 import { listTenantMembers } from '@/services/tenants'
 import { listApiKeys } from '@/services/api-keys'
@@ -33,11 +33,12 @@ import { PAGE_SIZE, REFRESH_INTERVAL, EMPTY_TASK_ITEMS, timePresetOptions, resol
 import { TaskDetailSheet } from './TaskDetailSheet'
 import { TaskRow } from './TaskRow'
 import { TaskMoreFilters } from './TaskMoreFilters'
+import { taskForAutoOpen } from './task-artifact-link'
 
 // ─── 主页面 ───────────────────────────────────────────────────────────────────
 
 /**
- * 异步任务面板（#361）：从原「任务历史」页抽出，内嵌到「调用日志」页的「异步任务」记录类型下。
+ * 任务产物面板（#361/#954）：从原「任务历史」页抽出，内嵌到「调用日志」页的「任务产物」记录类型下。
  * 视图范围沿用调用日志：mine=按当前账号裁剪；enterprise/space=租户/空间范围（服务端权威裁剪）。
  */
 export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refreshRef, onFetchingChange }: {
@@ -52,7 +53,7 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
   const presetOptions = timePresetOptions(t)
 
-  // ?task_id= 下钻（#14）：初始搜索落到该任务，命中后经下方自动展开详情
+  // ?task_id= 下钻（#14/#954）：初始搜索落到该任务；列表时间窗未命中时再用详情接口兜底展开。
   const [search, setSearch]         = useState(initialTaskId ?? '')
   const debouncedSearch             = useDebouncedValue(search.trim(), 350)
   const [statusFilter, setStatus]   = useState('all')
@@ -118,6 +119,15 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
     queryKey: ['tasks', tenantId, params],
     queryFn: () => listTasks(params),
     // 每 10s 后台静默自动刷新（见下方 countdown 计时器）；手动刷新走页头刷新按钮（#46）
+  })
+
+  // 下钻兜底（#954）：任务可能早于列表默认 7 天窗口，列表查不到时用详情接口仍能展开
+  const { data: linkedTaskDetail } = useQuery({
+    queryKey: ['task-detail', initialTaskId],
+    queryFn: () => getTask(initialTaskId!),
+    enabled: Boolean(initialTaskId),
+    retry: false,
+    meta: { silentError: true },
   })
 
   // 后台自动刷新：每 10s 自动刷新一次（计时不再外显），手动刷新会重置倒计时
@@ -187,18 +197,19 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
     return list
   }, [items, kindFilter, artifactFilter, billingFilter, expiredIds])
 
-  // ?task_id= 下钻（#14）：数据到位后按 gateway_request_id 精确匹配自动展开任务详情，一次性
+  // ?task_id= 下钻（#14/#954）：数据到位后按 gateway_request_id 精确匹配自动展开任务详情，一次性。
+  // 任务可能早于列表默认 7 天窗口，详情接口成功时仍必须能打开对应任务，不能静默留在空列表。
   const taskAutoOpenedRef = useRef(false)
   useEffect(() => {
     if (taskAutoOpenedRef.current || !initialTaskId) return
-    const match = items.find((t) => t.gateway_request_id === initialTaskId)
+    const match = taskForAutoOpen(items, initialTaskId, linkedTaskDetail)
     if (match) {
       taskAutoOpenedRef.current = true
       // eslint-disable-next-line react-hooks/set-state-in-effect -- URL 带 task_id 时数据到位后一次性打开任务详情（taskAutoOpenedRef 幂等）
       setSelectedTask(match)
       trackEvent('logs_detail_view', { record_type: 'async', kind: resolveKind(match), status: match.status, source: 'url_task_id' })
     }
-  }, [items, initialTaskId])
+  }, [items, initialTaskId, linkedTaskDetail])
 
   const markExpired = (taskId: string) =>
     setExpiredIds((prev) => (prev.has(taskId) ? prev : new Set(prev).add(taskId)))

@@ -69,7 +69,7 @@
     "taskId": "Task ID",
     "taskInfo": "Task info",
     "taskStatus": "Task status",
-    "title": "Async task details",
+    "title": "Task artifact details",
     "workspace": "Workspace"
   },
   "empty": {
@@ -78,8 +78,8 @@
     "loadErrorDescription": "Failed to fetch the task list. Check your network and try again.",
     "loadErrorTitle": "Failed to load",
     "loading": "Loading…",
-    "noTasksDescription": "After starting async video, image, or music generation, task status, cost, and artifacts will appear here.",
-    "noTasksTitle": "No async tasks"
+    "noTasksDescription": "After starting video, image, or music generation, task status, cost, and artifacts will appear here.",
+    "noTasksTitle": "No task artifacts"
   },
   "duration": {
     "seconds": "{{count}} seconds"

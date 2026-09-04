@@ -1323,9 +1323,12 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                 <h3><LuListFilter size={14} />模型筛选</h3><p>选择需要在图表中对比的模型。</p>
                 {/* 走 ui/Popover 而不是自己 absolute 定位：组件统一了玻璃表面、
                     --mg-z-popover 层级、点击外部与 ESC 关闭、视口边缘避让。
-                    原先这里是手写浮层 + 硬编码 z-index:20，绕开了全局层级体系。 */}
+                    原先这里是手写浮层 + 硬编码 z-index:20，绕开了全局层级体系。
+                    className 必须带 .model-discovery-scope：Popover portal 到 body，
+                    不带的话 --line/--panel/--accent 在面板里全空，按钮填充/选中态
+                    一直悄悄失效（discovery-tokens.css 顶部有这条警告，2026-09-04 补上）。 */}
                 <Popover
-                  className="model-discovery-model-filter-panel"
+                  className="model-discovery-model-filter-panel model-discovery-scope"
                   position="bottom"
                   trigger={
                     <button className="model-discovery-model-filter-trigger" type="button">

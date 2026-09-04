@@ -69,7 +69,7 @@
     "taskId": "任务 ID",
     "taskInfo": "任务信息",
     "taskStatus": "任务状态",
-    "title": "异步任务详情",
+    "title": "任务产物详情",
     "workspace": "工作空间"
   },
   "empty": {
@@ -78,8 +78,8 @@
     "loadErrorDescription": "任务列表拉取出错，请检查网络后重试。",
     "loadErrorTitle": "加载失败",
     "loading": "加载中…",
-    "noTasksDescription": "发起视频、图片或音乐等异步生成任务后，会在这里显示状态、费用和产物。",
-    "noTasksTitle": "暂无异步任务"
+    "noTasksDescription": "发起视频、图片或音乐等生成任务后，会在这里显示状态、费用和产物。",
+    "noTasksTitle": "暂无任务产物"
   },
   "duration": {
     "seconds": "{{count}} 秒"

@@ -6,7 +6,7 @@
     "loading": "Loading logs...",
     "empty": "No matching records",
     "header": {
-      "asyncDesc": "Review multimodal async task status, artifacts, and download expiry.",
+      "asyncDesc": "Review multimodal task artifact status, artifacts, and download expiry.",
       "mineDesc": "Review my call records and troubleshooting details.",
       "spaceDesc": "Review calls from all members in the spaces I manage.",
       "enterpriseDesc": "Track enterprise calls by workspace, member, and API Key.",

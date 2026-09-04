@@ -20,7 +20,7 @@
     "requestFailed": "体验请求失败：",
     "sendFailed": "该消息发送失败",
     "videoGenerating": "视频生成中，可点击",
-    "videoGeneratingLink": "在调用日志的异步任务里追踪",
+    "videoGeneratingLink": "在调用日志的任务产物里追踪",
     "videoGenerateFailed": "视频生成失败",
     "errorModelNotAllowed": "该模型暂时不可用，请更换其他模型重试",
     "errorProviderUnavailable": "该模型服务暂不可用，请更换其他模型或稍后重试",

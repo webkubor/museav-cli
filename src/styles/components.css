@@ -408,6 +408,38 @@
   box-sizing: border-box !important;
 }
 
+/* ── Input 尺寸档位（2026-09-04 控件统一，同 Button 的 size 体系）─────────
+   高度/内距成套走 token，写在未分层 CSS：页面的 h-8/h-9 等高度类（分层
+   utilities）盖不过这里的 min-height，控件不再被各页面拉长压扁。
+   sm(32px)=面板内搜索（下拉面板/侧栏/弹窗内），lg(48px)=公共主搜索（模型广场）。
+   字号不随档位变：控件正文一律 --mg-font-size-body(13px)，档位只调高度与内距。 */
+.modern-input-sm {
+  min-height: var(--mg-control-h-sm);
+  /* 32px 档位收窄纵向内距（space-1=4px）：默认的 pad-y-sm(8px)×2 + 22px 行高
+     会把内容撑到 38px，min-height 拦不住内容扩张，sm 档必须配套减内距 */
+  padding-top: var(--mg-space-1);
+  padding-bottom: var(--mg-space-1);
+}
+
+.modern-input-lg {
+  min-height: var(--mg-control-h-lg);
+}
+
+/* ── Select 触发器尺寸档位（2026-09-04 控件统一）──────────────────────────
+   与 Input 的档位同一套刻度：sm(32)=面板内，md(40)=页面工具栏默认。
+   未分层 CSS 钉 height + min-height 双保险：页面传 h-8/h-9（分层 utilities）
+   既盖不过未分层规则，tailwind-merge 也不会把组件类合并掉——高度只认档位。
+   sm 档同步收窄箭头图标，md 档保持 16px。 */
+.mg-select-trigger-sm {
+  height: var(--mg-control-h-sm);
+  min-height: var(--mg-control-h-sm);
+}
+
+.mg-select-trigger-md {
+  height: var(--mg-control-h-md);
+  min-height: var(--mg-control-h-md);
+}
+
 .modern-input-field::placeholder {
   color: var(--mg-text-3) !important;
   opacity: 0.7;
@@ -437,6 +469,10 @@
   -webkit-backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.5);
   backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.5);
   border-color: var(--mg-border) !important;
+  /* 搜索变体的圆角是 pill（组件里的 rounded-full 因上方 base 规则的 !important
+     一直没生效，搜索框实际渲染 14px、与模型广场的 pill 搜索两副面孔——
+     2026-09-04 控件统一时补上）：搜索=胶囊、普通输入/下拉=radius-control。 */
+  border-radius: var(--mg-radius-pill) !important;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.07),
     0 4px 18px -6px rgba(0, 0, 0, 0.14) !important;

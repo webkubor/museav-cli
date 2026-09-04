@@ -270,6 +270,21 @@ while IFS= read -r f; do
     warn=$((warn + 1))
   fi
 
+
+  # ── BLOCK 11：控件格式被页面类覆盖（h-*/text-*/rounded-* 打在 ui 控件上）。
+  #    2026-09-04 控件统一：Input/Select/Combobox 的尺寸已经成套走 token 档位
+  #    （size 属性：sm 32 / md 40 / lg 48，字号一律 13px、圆角一律档位 token），
+  #    页面再叠 h-8/h-9/text-xs/rounded-lg 等类就是「长的长、扁的扁」的根源——
+  #    有的被组件 CSS 压掉变成死代码，有的真生效把同一控件改成另一副面孔。
+  #    改尺寸只能传 size 属性；豁免写 ui-guard-ignore: 控件格式 —— 理由。
+  #    实现见 check-control-format-overrides.py（剥离 {...} 内嵌元素后再查直接属性）。
+  hits="$(python3 "$(dirname "$0")/check-control-format-overrides.py" "$f" 2>/dev/null || true)"
+  if [ -n "$hits" ] && ! ignored "控件格式"; then
+    echo "✗ [控件格式覆盖] $f — ui/Input/Select/Combobox 的尺寸/字号/圆角由 size 档位约束，禁止页面类覆盖（DESIGN.md · 控件统一 2026-09-04）"
+    printf '%s\n' "$hits" | sed 's/^/      /'
+    block=$((block + 1))
+  fi
+
 done <<EOF
 $file_list
 EOF

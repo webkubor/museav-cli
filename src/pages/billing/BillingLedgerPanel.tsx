@@ -260,19 +260,19 @@ export function BillingLedgerPanel({
         </div>
         {ledgerTab === 'transactions' && (
           <div className="billing-ledger-filters flex items-center gap-2 flex-wrap">
-            <Select value={timeFilter} onChange={onTimeChange} className="h-8 w-28 text-xs rounded-md">
+            <Select value={timeFilter} onChange={onTimeChange} className="w-28">
               {TIME_FILTERS.map((k) => (
                 <Select.Option key={k} value={k}>{t(`billing.income.timeFilters.${k}`)}</Select.Option>
               ))}
             </Select>
-            <Select value={type} onChange={onTypeChange} className="h-8 w-28 text-xs rounded-md">
+            <Select value={type} onChange={onTypeChange} className="w-28">
               {TYPE_FILTERS.map((f) => (
                 <Select.Option key={f.value} value={f.value}>
                   {f.value === 'all' ? t('billing.income.typeAll') : t(`billing.income.types.${f.value}`)}
                 </Select.Option>
               ))}
             </Select>
-            <Select value={bucketFilter} onChange={onBucketChange} className="h-8 w-32 text-xs rounded-md">
+            <Select value={bucketFilter} onChange={onBucketChange} className="w-32">
               {BUCKET_FILTERS.map((f) => (
                 <Select.Option key={f.value} value={f.value}>
                   {f.value === 'all' ? t('billing.income.bucketAll') : t(`billing.income.buckets.${f.value}`)}

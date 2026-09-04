@@ -93,13 +93,13 @@ function GlobalBudgetControl({
             onChange={(e) => onChange({ amount: e.target.value })}
             placeholder={t('guardrails.budget.amountPlaceholder')}
             disabled={disabled}
-            className="h-9 text-xs flex-1"
+            className="flex-1"
           />
           <Select
             value={draft.period}
             onChange={(v) => onChange({ period: v as PeriodUnit })}
             aria-label={t('guardrails.budget.periodAria', { label })}
-            className="h-9 text-xs w-28"
+            className="w-28"
             disabled={disabled}
           >
             {GUARDRAIL_BUDGET_PERIOD_OPTIONS.map((o) => (
@@ -159,14 +159,14 @@ function MemberKeyBudgetControl({
           value={amount}
           onChange={(e) => onAmountChange(e.target.value)}
           placeholder={t('guardrails.budget.amountPlaceholder')}
-          className="h-9 text-xs flex-1"
+          className="flex-1"
           disabled={disabled}
         />
         <Select
           value={period}
           onChange={(v) => onPeriodChange(v as PeriodUnit)}
           aria-label={t('guardrails.budget.periodAria', { label })}
-          className="h-9 text-xs w-28"
+          className="w-28"
           disabled={disabled}
         >
           {GUARDRAIL_BUDGET_PERIOD_OPTIONS.map((o) => (
@@ -222,13 +222,13 @@ function MemberKeyBoostBudgetControl({
             onChange={(e) => onAmountChange(e.target.value)}
             placeholder={t('guardrails.budget.amountPlaceholder')}
             disabled={disabled}
-            className="h-9 text-xs flex-1"
+            className="flex-1"
           />
           <Select
             value={period}
             onChange={(v) => onPeriodChange(v as PeriodUnit)}
             aria-label={t('guardrails.budget.periodAria', { label })}
-            className="h-9 text-xs w-28"
+            className="w-28"
             disabled={disabled}
           >
             {GUARDRAIL_BUDGET_PERIOD_OPTIONS.map((o) => (
@@ -500,9 +500,9 @@ export function GuardrailDetailSheet({
                         value={budgetAmount}
                         onChange={(e) => onBudgetAmountChange(e.target.value)}
                         placeholder={t('guardrails.budget.amountPlaceholder')}
-                        className="h-9 text-xs flex-1"
+                        className="flex-1"
                       />
-                      <Select value={budgetPeriodUnit} onChange={(v) => onBudgetPeriodUnitChange(v as PeriodUnit)} className="h-9 text-xs w-28">
+                      <Select value={budgetPeriodUnit} onChange={(v) => onBudgetPeriodUnitChange(v as PeriodUnit)} className="w-28">
                         {GUARDRAIL_BUDGET_PERIOD_OPTIONS.map((o) => (
                           <SelectItem key={o.value} value={o.value}>{t(`guardrails.period.${o.value}`)}</SelectItem>
                         ))}

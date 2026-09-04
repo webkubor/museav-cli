@@ -69,7 +69,7 @@ export function RecordsPanel(props: RecordsPanelProps) {
           aria-label={t('common.customerService.records.searchAria')}
           onChange={(event) => props.onQueryChange(event.target.value)}
           placeholder={t('common.customerService.records.searchPlaceholder')}
-          prefix={<LuSearch aria-hidden="true" size={14} />}
+          prefix={<LuSearch aria-hidden="true" className="w-4 h-4" />}
           value={props.query}
         />
         <Tabs onValueChange={(value) => props.onFilterChange(value as SupportTicketFilter)} value={props.filter}>

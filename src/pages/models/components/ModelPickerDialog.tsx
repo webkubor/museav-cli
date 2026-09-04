@@ -405,7 +405,7 @@ export function ModelPickerDialog({
             placeholder={t('modelsExperience.picker.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-8 text-xs"
+            size="sm"
             autoFocus
           />
 

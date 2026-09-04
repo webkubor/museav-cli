@@ -49,11 +49,13 @@
   cursor: pointer;
   display: flex;
   font-family: inherit;
-  font-size: var(--discovery-fs-body);
+  /* 控件字号归一 --mg-font-size-body(13px)（2026-09-04 控件统一），高度走
+     --mg-control-h-sm(32px) 档位：本页正文字阶（12px）不动，控件与全站控件同一张脸 */
+  font-size: var(--mg-font-size-body);
   font-weight: 620;
   justify-content: space-between;
   line-height: 1;
-  min-height: 32px;
+  min-height: var(--mg-control-h-sm);
   padding: 0 10px;
   width: 100%;
 }
@@ -71,26 +73,6 @@
   gap: 8px;
   padding: 9px;
   width: min(320px, calc(100vw - 32px));
-}
-
-.model-discovery-model-filter-panel > label {
-  align-items: center;
-  background: color-mix(in srgb, var(--line) 25%, var(--panel));
-  border-radius: var(--discovery-radius-md);
-  color: var(--muted);
-  display: flex;
-  gap: 7px;
-  padding: 0 9px;
-}
-
-.model-discovery-model-filter-panel > label input {
-  background: transparent;
-  border: 0;
-  color: var(--text);
-  font-size: var(--discovery-fs-body);
-  min-height: 34px;
-  outline: none;
-  width: 100%;
 }
 
 .model-discovery-model-filter-list {

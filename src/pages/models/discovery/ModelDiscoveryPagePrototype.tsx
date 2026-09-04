@@ -40,6 +40,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import { InfoTip } from '@/components/ui/InfoTip'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
 import { SelectContent, SelectItem, SelectRoot, SelectTrigger, SelectValue } from '@/components/ui/Select'
+import { Input } from '@/components/ui/Input'
 import { Popover } from '@/components/ui/Popover'
 import { Pagination } from '@/components/ui/Pagination'
 import {
@@ -1334,7 +1335,16 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                   }
                   content={
                     <>
-                      <label><LuSearch size={14} /><input autoFocus placeholder="搜索模型" value={modelFilterSearch} onChange={(event) => setModelFilterSearch(event.target.value)} /></label>
+                      {/* 面板内搜索统一 ui/Input sm 档（2026-09-04 控件统一）：
+                          32px 高度 + 13px 字号，替换原型手写的 label+input */}
+                      <Input
+                        autoFocus
+                        placeholder="搜索模型"
+                        value={modelFilterSearch}
+                        onChange={(event) => setModelFilterSearch(event.target.value)}
+                        prefix={<LuSearch className="w-3.5 h-3.5" />}
+                        size="sm"
+                      />
                       <div className="model-discovery-model-filter-list">
                         {filteredModelOptions.map((model) => <button className={selectedModelNames.includes(model.name) ? "selected" : ""} key={model.name} onClick={() => toggleChartModel(model.name)} type="button"><DiscoveryModelIcon model={model.name} provider={model.provider} /><span><strong title={model.name}>{model.name}</strong><small>{model.provider}</small></span>{selectedModelNames.includes(model.name) && <LuCheck size={14} />}</button>)}
                         {filteredModelOptions.length === 0 && <em>未找到匹配模型</em>}
@@ -1363,7 +1373,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                   macOS 上是一层半透明系统材质，底下的表头文字会透出来，我们的 CSS 一行都够不着
                   （2026-09-03 视觉验收）。全站浮层要统一质感，就不能留原生下拉。 */}
               <SelectRoot onValueChange={(value) => setRankingMetric(value as RankingMetric)} value={selectedRankingOption.key}>
-                <SelectTrigger aria-label="指标类型" className="model-discovery-select-trigger model-discovery-metric-trigger">
+                <SelectTrigger aria-label="指标类型" triggerSize="sm" className="model-discovery-select-trigger model-discovery-metric-trigger">
                   <LuChartColumn className="shrink-0" size={14} />
                   <span className="model-discovery-metric-label">指标类型</span>
                   <SelectValue />
@@ -1398,7 +1408,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                 />
               </div>
               <SelectRoot onValueChange={(value) => setTableAccess(value as "all" | "supported" | "pending")} value={tableAccess}>
-                <SelectTrigger aria-label="接入状态" className="model-discovery-select-trigger">
+                <SelectTrigger aria-label="接入状态" triggerSize="sm" className="model-discovery-select-trigger">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

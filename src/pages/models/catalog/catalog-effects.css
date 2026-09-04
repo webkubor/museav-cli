@@ -16,9 +16,6 @@
     0 0 0 4px color-mix(in oklab, var(--brand-base) 12%, transparent),
     0 0 22px -6px color-mix(in oklab, var(--brand-base) 45%, transparent);
 }
-.catalog-search-icon { color: var(--mg-text-4); transition: color 0.2s ease; }
-.catalog-search-wrap:focus-within .catalog-search-icon { color: var(--brand-base); }
-
 .catalog-title {
   text-shadow:
     0 6px 30px color-mix(in oklab, var(--brand-base) 22%, transparent),

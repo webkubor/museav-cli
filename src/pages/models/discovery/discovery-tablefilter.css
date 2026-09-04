@@ -23,10 +23,12 @@
   cursor: pointer;
   display: flex;
   font-family: inherit;
-  font-size: var(--discovery-fs-body);
+  /* 控件字号归一 --mg-font-size-body(13px)（2026-09-04 控件统一）；高度走
+     --mg-control-h-sm(32px) 档位 token */
+  font-size: var(--mg-font-size-body);
   font-weight: 400;
   gap: 6px;
-  height: 32px;
+  height: var(--mg-control-h-sm);
   min-width: 124px;
   max-width: 232px;
   padding: 0 9px;
@@ -82,7 +84,7 @@
 
 .model-discovery-table-secondary-filters > label {
   box-sizing: border-box;
-  height: 32px;
+  height: var(--mg-control-h-sm);
 }
 
 .model-discovery-provider-filter-panel {

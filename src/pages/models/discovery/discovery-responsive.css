@@ -198,22 +198,23 @@
 /* 表格筛选区的 Select。
    ① 控制台 SelectTrigger 默认 w-full（表单里铺满一列），放进筛选条要收成按内容宽，
       否则两个筛选器各撑几百像素、挤到换行。
-   ② 字号 / 圆角 / 内边距对齐**本页**节奏而不是控制台表单默认：这一页是 1:1 复刻原型的
-      高密度 dashboard，正文档位是 --discovery-fs-body(12px)、控件圆角
-      --discovery-control-radius；控制台默认的 14px + 14px 圆角在这条筛选条里比表头
-      （12px）还大，与同排自写的厂商筛选器（.model-discovery-provider-filter-trigger）
-      三处不一致 —— 2026-09-03 需求方指出「select 字体那么大、大小还不统一」。
-      对齐基准取同排那个自写筛选器，逐项抄它：12px / 同一圆角 token / padding 0 9px。
-   ③ 高度用固定 32px 而不是 height:auto + min-height：auto 时上下 padding 为 0，
-      文字贴边，视觉上「内边距太小」（同一次反馈）。
+   ② 字号 / 高度 / 内边距走**全站控件档位**（2026-09-04 控件统一）：本页正文
+      保持 12px 高密度节奏不变，但控件（Select/筛选触发器/面板内搜索）与全站
+      同一张脸——13px 字号（--mg-font-size-body）+ 32px（--mg-control-h-sm 档）。
+      此前同排三种尺寸（Select 14px / 自写厂商筛选器 12px / 模型筛选触发器 12px），
+      2026-09-03 需求方指出「select 字体那么大、大小还不统一」，当时按 12px 抄齐；
+      现随全站控件统一升到 13px，本条筛选条内仍互相一致。
+   ③ 高度用固定 32px（--mg-control-h-sm）而不是 height:auto + min-height：auto 时
+      上下 padding 为 0，文字贴边，视觉上「内边距太小」（同一次反馈）。
    ④ 选择器必须带 .model-discovery-page 前缀：SelectTrigger 的字号 / 圆角 / padding
       是 Tailwind utilities（同为单类权重），不加前缀会输给它们——第一版只写单类，
       结果只有 SelectTrigger 没设的 height/width 生效，冲突的三项全被压掉。 */
 .model-discovery-page .model-discovery-select-trigger {
-  height: 32px;
+  /* 高度交给组件档位（triggerSize="sm" → --mg-control-h-sm）；这里只收宽度、
+     内距与圆角对齐本页节奏 */
   width: auto;
   padding: 0 9px;
-  font-size: var(--discovery-fs-body);
+  font-size: var(--mg-font-size-body);
   border-radius: var(--discovery-control-radius);
 }
 

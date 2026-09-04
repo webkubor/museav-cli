@@ -13,6 +13,7 @@ import {
 } from 'react-icons/lu'
 import type { IconType } from 'react-icons'
 import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 import { listModels, listModelTags, listFeatured } from '@/services/catalog'
 import { useAuthStore } from '@/store/auth'
 import { toLoginWithRedirect } from '@/lib/redirect'
@@ -413,21 +414,16 @@ export default function ModelsCatalogPage() {
         </div>
 
         <div>
-          {/* 搜索 + 排序 */}
+          {/* 搜索 + 排序（2026-09-04 控件统一：搜索走 ui/Input 标准组件 size="lg"——
+              48px 高度/13px 字号/pill 圆角全部来自 token 档位，替换原先手写的
+              .mg-search-input；排序按钮同档高度，与搜索框并排等高） */}
           <div className="models-toolbar">
-            <div className="catalog-search-wrap relative flex-1">
-              <LuSearch size={16} className="catalog-search-icon absolute left-4 top-1/2 -translate-y-1/2" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder={t('modelsCatalog.search.placeholder')}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="mg-search-input"
-              />
-              {/* 有输入内容时显示清空按钮（#872 需求点 11，原型 marketplace-search-clear）：
-                  清空后焦点留在搜索框，方便继续输入 */}
-              {search && (
+            <Input
+              ref={searchInputRef}
+              variant="search"
+              size="lg"
+              prefix={<LuSearch className="w-4 h-4" />}
+              suffix={search ? (
                 <button
                   type="button"
                   className="mg-search-clear"
@@ -437,8 +433,12 @@ export default function ModelsCatalogPage() {
                 >
                   <LuX size={14} />
                 </button>
-              )}
-            </div>
+              ) : undefined}
+              placeholder={t('modelsCatalog.search.placeholder')}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1"
+            />
             <div className="relative" ref={sortRef}>
               <button type="button" onClick={() => setSortOpen((v) => !v)} className="mg-sort-btn">
                 {sortLabels[sort]}

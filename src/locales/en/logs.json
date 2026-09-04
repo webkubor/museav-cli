@@ -15,8 +15,8 @@
       "enterpriseView": "Org View",
       "spaceView": "Space",
       "mineView": "My View",
-      "syncRecord": "Sync calls",
-      "asyncRecord": "Async tasks"
+      "syncRecord": "Logs",
+      "asyncRecord": "Task artifacts"
     },
     "timeRange": {
       "today": "Today",
@@ -201,7 +201,14 @@
       "payloadError": "Failed to load raw payload",
       "payloadEmpty": "No raw payload",
       "payloadTruncated": "Truncated",
-      "payloadCopied": "Payload copied"
+      "payloadCopied": "Payload copied",
+      "taskArtifact": {
+        "title": "Task artifact",
+        "taskStatus": "Task status",
+        "artifactState": "Artifact status",
+        "artifactCount": "Artifacts",
+        "viewTask": "View task detail"
+      }
     },
     "status": {
       "success": "Success",

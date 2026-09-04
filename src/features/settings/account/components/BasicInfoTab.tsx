@@ -16,7 +16,9 @@ import { appToast } from '@/lib/app-toast'
 import { trackEvent } from '@/lib/track'
 import { errorCodeOf } from '@/lib/request-error-message'
 import { useMarket } from '@/hooks/useMarket'
-import { LuGift, LuLock } from 'react-icons/lu'
+import { LuGift } from 'react-icons/lu'
+import { ContactRebindDialog, type ContactRebindMode } from './ContactRebindDialog'
+import { maskEmail, maskPhone } from '../contact-mask'
 
 interface BasicInfoTabProps {
   profile: AccountProfile
@@ -94,6 +96,13 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
     },
   })
 
+  // 换绑（shared/modelgo_prd#837）：手机号 / 邮箱字段本体保持脱敏只读，右侧入口弹三步换绑弹窗
+  const [rebindMode, setRebindMode] = useState<ContactRebindMode | null>(null)
+  const openRebind = (mode: ContactRebindMode) => {
+    trackEvent(mode === 'phone' ? 'account.phone:rebind_open' : 'account.email:rebind_open')
+    setRebindMode(mode)
+  }
+
   const avatarLetter = (profile.display_name || profile.email || profile.phone || 'U').charAt(0).toUpperCase()
   const isDirty = displayName.trim() !== profile.display_name && displayName.trim() !== ''
 
@@ -113,7 +122,7 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
             {profile.display_name || '—'}
           </div>
           <div style={{ color: 'var(--mg-text-2)', fontSize: '13px', marginTop: '3.5px' }}>
-            {profile.email || (profile.phone ? `${profile.phone.includes('+') ? '' : '+86 '}${profile.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')}` : '—')}
+            {profile.email ? maskEmail(profile.email) : profile.phone ? maskPhone(profile.phone) : '—'}
           </div>
         </div>
       </div>
@@ -126,11 +135,12 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
             <span className="block text-xs font-semibold uppercase tracking-wider text-mg-text-2">
               {t('account.info.phoneLabel')}
             </span>
-            <Input
-              value={`${profile.phone.includes('+') ? '' : '+86 '}${profile.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')}`}
-              readOnly
-              suffix={<LuLock size={14} />}
-            />
+            <div className="flex gap-2.5">
+              <Input className="flex-1" value={maskPhone(profile.phone)} readOnly aria-label={t('account.info.phoneLabel')} />
+              <Button variant="outline" className="shrink-0 rounded-sm px-4 font-semibold" onClick={() => openRebind('phone')}>
+                {t('account.info.rebind.changePhone')}
+              </Button>
+            </div>
             <span className="block text-xs leading-relaxed text-mg-text-3">
               {t('account.info.phoneHint')}
             </span>
@@ -141,12 +151,20 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
           <span className="block text-xs font-semibold uppercase tracking-wider text-mg-text-2">
             {t('account.info.emailLabel')}
           </span>
-          <Input
-            value={profile.email || ''}
-            placeholder={profile.email ? undefined : t('account.info.emailUnbound')}
-            readOnly
-            suffix={profile.email ? <LuLock size={14} /> : undefined}
-          />
+          <div className="flex gap-2.5">
+            <Input
+              className="flex-1"
+              value={profile.email ? maskEmail(profile.email) : ''}
+              placeholder={profile.email ? undefined : t('account.info.emailUnbound')}
+              readOnly
+              aria-label={t('account.info.emailLabel')}
+            />
+            {profile.email && (
+              <Button variant="outline" className="shrink-0 rounded-sm px-4 font-semibold" onClick={() => openRebind('email')}>
+                {t('account.info.rebind.changeEmail')}
+              </Button>
+            )}
+          </div>
           {profile.email ? (
             <span className="block text-xs leading-relaxed text-mg-text-3">{t('account.info.emailHint')}</span>
           ) : (
@@ -216,6 +234,10 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
             </Button>
           </div>
         </div>
+
+        {rebindMode && (
+          <ContactRebindDialog key={rebindMode} mode={rebindMode} profile={profile} onClose={() => setRebindMode(null)} />
+        )}
 
         {referral?.inviteLink && (
           <div className="pt-4 border-t border-mg-border/40">

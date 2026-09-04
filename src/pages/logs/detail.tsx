@@ -27,6 +27,7 @@ import { formatDateTimeWithSeconds, formatDuration } from '@/lib/format-date'
 import { cn, formatNumber } from '@/lib/utils'
 import { listApiKeys } from '@/services/api-keys'
 import { listTenantMembers } from '@/services/tenants'
+import { getTask } from '@/services/tasks'
 import { useAuthStore } from '@/store/auth'
 import type { CallLogItem } from '@/types'
 import {
@@ -103,6 +104,7 @@ export function LogDetailSheet({
   row,
   workspaceName,
   onOpenLogSettings,
+  onOpenTask,
 }: {
   requestPayloadText: string
   responsePayloadText: string
@@ -116,6 +118,8 @@ export function LogDetailSheet({
   row: CallLogItem | null
   workspaceName?: string
   onOpenLogSettings?: (workspaceId: string) => void
+  /** 跳转「任务产物」记录类型并打开该任务详情（需求方#954） */
+  onOpenTask?: (requestId: string) => void
 }) {
   const { t } = useTranslation()
   const { hasPermission } = usePermissions()
@@ -136,6 +140,16 @@ export function LogDetailSheet({
     queryKey: ['api-keys', wsId],
     queryFn: () => listApiKeys(wsId!),
     enabled: !!wsId,
+    staleTime: 60_000,
+  })
+  // 任务产物探测（需求方#954）：多模态异步任务的提交日志与任务共用 request_id，
+  // 打开详情时对 GET /async-tasks/{requestId} 打一枪，命中才渲染「任务产物」模块；
+  // 纯同步调用后端回 404 → query error → 模块不出现，无需前端硬编码 call_type 名单。
+  const { data: asyncTask } = useQuery({
+    queryKey: ['log-async-task', row?.request_id],
+    queryFn: () => getTask(row!.request_id),
+    enabled: open && !!row?.request_id,
+    retry: false,
     staleTime: 60_000,
   })
   // `items` 由 getPage 在请求边界保证是数组（需求方#635 生产事故的根治点）；
@@ -232,6 +246,21 @@ export function LogDetailSheet({
               <DetailRow label="TPM" value={tpmLabel(row)} mono />
             </DetailGrid>
           </DetailSection>
+
+          {asyncTask?.task && (
+            <DetailSection title={t('logs.detail.taskArtifact.title')}>
+              <DetailGrid compact>
+                <DetailRow label={t('logs.detail.taskArtifact.taskStatus')} value={t(`status.${asyncTask.task.status}`, { defaultValue: asyncTask.task.status })} />
+                <DetailRow label={t('logs.detail.taskArtifact.artifactState')} value={asyncTask.task.artifact_state ? t(`artifactState.${asyncTask.task.artifact_state}`, { defaultValue: asyncTask.task.artifact_state }) : '—'} />
+              </DetailGrid>
+              {onOpenTask && (
+                <Button variant="outline" size="sm" onClick={() => onOpenTask(row.request_id)}>
+                  {t('logs.detail.taskArtifact.viewTask')}
+                  <LuArrowUpRight className="ml-1.5 h-3.5 w-3.5" />
+                </Button>
+              )}
+            </DetailSection>
+          )}
 
           <DetailSection title={t('logs.detail.sections.responseTiming')}>
             <ResponseTiming row={row} />
@@ -512,6 +541,8 @@ function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, pa
   responseSSE?: SSEReassembled | null
   row: CallLogItem
   onOpenLogSettings?: (workspaceId: string) => void
+  /** 跳转「任务产物」记录类型并打开该任务详情（需求方#954） */
+  onOpenTask?: (requestId: string) => void
 }) {
   const { t } = useTranslation()
   // 脱敏后继续：Request 只展示替换后的占位符，绝不展示原文（同时用于复制）。

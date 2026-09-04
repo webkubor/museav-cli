@@ -15,8 +15,8 @@
       "enterpriseView": "企业视图",
       "spaceView": "空间视图",
       "mineView": "我的视图",
-      "syncRecord": "同步调用",
-      "asyncRecord": "异步任务"
+      "syncRecord": "日志记录",
+      "asyncRecord": "任务产物"
     },
     "timeRange": {
       "today": "今天",
@@ -201,7 +201,14 @@
       "payloadError": "原始 Payload 加载失败",
       "payloadEmpty": "暂无原始 Payload",
       "payloadTruncated": "已截断",
-      "payloadCopied": "Payload 已复制"
+      "payloadCopied": "Payload 已复制",
+      "taskArtifact": {
+        "title": "任务产物",
+        "taskStatus": "任务状态",
+        "artifactState": "产物状态",
+        "artifactCount": "产物数量",
+        "viewTask": "查看任务详情"
+      }
     },
     "status": {
       "success": "成功",

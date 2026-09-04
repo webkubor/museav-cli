@@ -145,12 +145,15 @@ export function LogDetailSheet({
   // 任务产物探测（需求方#954）：多模态异步任务的提交日志与任务共用 request_id，
   // 打开详情时对 GET /async-tasks/{requestId} 打一枪，命中才渲染「任务产物」模块；
   // 纯同步调用后端回 404 → query error → 模块不出现，无需前端硬编码 call_type 名单。
+  // meta.silentError：404 是探测的常态结果而非故障，禁止全局 toast 弹「请求失败」
+  //（否则每次打开同步日志详情都会闪一条错误提示）。
   const { data: asyncTask } = useQuery({
     queryKey: ['log-async-task', row?.request_id],
     queryFn: () => getTask(row!.request_id),
     enabled: open && !!row?.request_id,
     retry: false,
     staleTime: 60_000,
+    meta: { silentError: true },
   })
   // `items` 由 getPage 在请求边界保证是数组（需求方#635 生产事故的根治点）；
   // 这里的 `?.` 只处理 react-query 加载中的 undefined。

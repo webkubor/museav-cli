@@ -350,7 +350,7 @@ export default function ModelsCatalogPage() {
         type="button"
         onClick={() => { const n = !filtersOpen; if (n) window.scrollTo(0, 0); setFiltersOpen(n) }}
         aria-expanded={filtersOpen}
-        className={`bg-mg-bg-2 fixed bottom-6 right-5 z-[var(--mg-z-sticky)] inline-flex h-11 items-center gap-2 rounded-full border px-6 text-[14px] font-medium shadow-lg backdrop-blur lg:hidden ${
+        className={`bg-mg-bg-2 fixed bottom-6 right-5 z-[var(--mg-z-sticky)] inline-flex h-11 items-center gap-2 rounded-full border px-6 mg-text-body font-medium shadow-lg backdrop-blur lg:hidden ${
           filtersOpen ? 'border-brand-base text-brand-base' : 'border-mg-border text-mg-text-2'
         }`}
       >
@@ -371,7 +371,7 @@ export default function ModelsCatalogPage() {
               <h1 className="text-mg-text-1 catalog-title text-[34px] font-bold tracking-tight">
                 {t('modelsCatalog.page.title')}
               </h1>
-              <p className="text-mg-text-3 mt-1.5 text-[14px]">
+              <p className="text-mg-text-3 mt-1.5 mg-text-body">
                 {t('modelsCatalog.page.subtitle')}
               </p>
               {/* 信任 chips：协议兼容 / 供应商直连 / SLA。2026-08 视觉改版稿改白底
@@ -452,7 +452,7 @@ export default function ModelsCatalogPage() {
                       key={key}
                       type="button"
                       onClick={() => handleSortChange(key)}
-                      className={`hover:bg-mg-fill-1 flex w-full items-center gap-2 px-4 py-2 text-left text-[12.5px] transition-colors ${
+                      className={`hover:bg-mg-fill-1 flex w-full items-center gap-2 px-4 py-2 text-left mg-text-body transition-colors ${
                         sort === key ? 'text-brand-base' : 'text-mg-text-2'
                       }`}
                     >
@@ -515,14 +515,14 @@ export default function ModelsCatalogPage() {
               ))}
             </div>
           ) : modelsQuery.isError ? (
-            <div className="border-mg-border text-mg-text-3 rounded-md border p-6 text-center text-[13px]">
+            <div className="border-mg-border text-mg-text-3 rounded-md border p-6 text-center mg-text-body">
               {t('modelsCatalog.error.load')}
             </div>
           ) : visibleModels.length === 0 ? (
             <div className="bg-mg-bg-0 border-mg-border flex flex-col items-center justify-center rounded-md border py-20 text-center">
               <LuLayers size={28} className="text-mg-text-4 mb-3" />
-              <p className="text-mg-text-3 text-[13px]">{t('modelsCatalog.emptyFiltered')}</p>
-              <button type="button" onClick={reset} className="text-mg-text-3 mt-3 text-[12px] underline-offset-2 hover:underline">
+              <p className="text-mg-text-3 mg-text-body">{t('modelsCatalog.emptyFiltered')}</p>
+              <button type="button" onClick={reset} className="text-mg-text-3 mt-3 mg-text-caption underline-offset-2 hover:underline">
                 {t('modelsCatalog.clearFilters')}
               </button>
             </div>

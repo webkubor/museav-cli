@@ -12,6 +12,7 @@ import { useModelsPlayground } from './use-models-playground'
 import { PlaygroundModelBar } from './playground-modelbar'
 import { PlaygroundComposer } from './playground-composer'
 import { HistorySessionSidebar } from './components/HistorySessionSidebar'
+import { ExperienceModelCard } from './ExperienceModelCard'
 import { ExperienceMessageList } from './components/ExperienceMessageList'
 import { ModelPickerDialog } from './components/ModelPickerDialog'
 import { ModelSettingsModal } from './components/ModelSettingsModal'
@@ -132,17 +133,26 @@ export default function ModelsPage() {
                 onRetry={retryMediaMessage}
                 assistantModel={selectedModel}
                 emptyState={
-                  /* 视觉改版（Figma「模型体验」稿）：分类小图标换成品牌玻璃球引导图；
-                     示例 Prompt 从空态区挪到输入框下方的卡片行（见 Composer 之后） */
-                  <div className="models-experience-empty">
-                    <span className="models-experience-empty-orb" aria-hidden="true">
-                      <span className="models-experience-empty-orb-refract-a" />
-                      <span className="models-experience-empty-orb-refract-b" />
-                      <span className="models-experience-empty-orb-rim" />
-                    </span>
-                    <strong>{categoryEmptyCopy(effectiveTask).title}</strong>
-                    <span>{categoryEmptyCopy(effectiveTask).hint}</span>
-                  </div>
+                  /* 需求方 #834：选中模型时空态整块换成模型卡片 —— 原型
+                     （modelgo_prd/src/App.tsx:20887）就是「有模型给 WelcomeCard、
+                     没模型才给提示块」的二选一，卡片不是加在引导文案旁边的挂件。
+                     模型缺失/已下线时保留原有的玻璃球 + 分类文案（Figma「模型体验」稿；
+                     示例 Prompt 在输入框下方，见 Composer 之后）。 */
+                  selectedModel && !isSelectedModelOffline ? (
+                    <div className="models-experience-empty">
+                      <ExperienceModelCard model={selectedModel} task={effectiveTask} />
+                    </div>
+                  ) : (
+                    <div className="models-experience-empty">
+                      <span className="models-experience-empty-orb" aria-hidden="true">
+                        <span className="models-experience-empty-orb-refract-a" />
+                        <span className="models-experience-empty-orb-refract-b" />
+                        <span className="models-experience-empty-orb-rim" />
+                      </span>
+                      <strong>{categoryEmptyCopy(effectiveTask).title}</strong>
+                      <span>{categoryEmptyCopy(effectiveTask).hint}</span>
+                    </div>
+                  )
                 }
               />
 

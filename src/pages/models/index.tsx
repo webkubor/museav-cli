@@ -12,6 +12,7 @@ import { useModelsPlayground } from './use-models-playground'
 import { PlaygroundModelBar } from './playground-modelbar'
 import { PlaygroundComposer } from './playground-composer'
 import { HistorySessionSidebar } from './components/HistorySessionSidebar'
+import { ExperienceModelCard } from './ExperienceModelCard'
 import { ExperienceMessageList } from './components/ExperienceMessageList'
 import { ModelPickerDialog } from './components/ModelPickerDialog'
 import { ModelSettingsModal } from './components/ModelSettingsModal'
@@ -133,13 +134,22 @@ export default function ModelsPage() {
                 assistantModel={selectedModel}
                 emptyState={
                   /* 视觉改版（Figma「模型体验」稿）：分类小图标换成品牌玻璃球引导图；
-                     示例 Prompt 从空态区挪到输入框下方的卡片行（见 Composer 之后） */
+                     示例 Prompt 从空态区挪到输入框下方的卡片行（见 Composer 之后）。
+                     需求方 #834：选中模型后空态中央改摆模型卡片（原型里卡片就是空态
+                     的主体，玻璃球让位）；卡片只在空态出现，发出首条消息即随空态消失。
+                     引导文案保留在卡片下方 —— 各任务空态文案是 PRD §7.9 的任务差异
+                     说明（文生图/图生图各不同），原型只覆盖了对话页，删掉媒体任务就
+                     没有任何输入指引。 */
                   <div className="models-experience-empty">
-                    <span className="models-experience-empty-orb" aria-hidden="true">
-                      <span className="models-experience-empty-orb-refract-a" />
-                      <span className="models-experience-empty-orb-refract-b" />
-                      <span className="models-experience-empty-orb-rim" />
-                    </span>
+                    {selectedModel && !isSelectedModelOffline ? (
+                      <ExperienceModelCard model={selectedModel} />
+                    ) : (
+                      <span className="models-experience-empty-orb" aria-hidden="true">
+                        <span className="models-experience-empty-orb-refract-a" />
+                        <span className="models-experience-empty-orb-refract-b" />
+                        <span className="models-experience-empty-orb-rim" />
+                      </span>
+                    )}
                     <strong>{categoryEmptyCopy(effectiveTask).title}</strong>
                     <span>{categoryEmptyCopy(effectiveTask).hint}</span>
                   </div>

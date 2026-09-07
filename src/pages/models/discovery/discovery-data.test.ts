@@ -352,3 +352,23 @@ describe('单价构成明细', () => {
     expect(toPrototypeModel(card({}), 'TEXT_TO_IMAGE').unitPrices).toBeNull()
   })
 })
+
+describe('成本为 null 不能渲染成 0（需求方#969 缺陷 1）', () => {
+  it('cost_value=null → price 是「—」、raw.price 是 null', () => {
+    const m = toPrototypeModel(card({ cost_value: null }), 'AGENT')
+    expect(m.price).toBe(EMPTY)
+    expect(m.raw.price).toBeNull()
+  })
+
+  it('cost_value=0 是真免费，与「没数据」必须区分', () => {
+    const m = toPrototypeModel(card({ cost_value: 0 }), 'AGENT')
+    expect(m.price).toBe('免费')
+    expect(m.raw.price).toBe(0)
+  })
+
+  it('有值时 raw.price 保留原始数值，不是展示串', () => {
+    const m = toPrototypeModel(card({ cost_value: 6.1169 }), 'AGENT')
+    expect(m.raw.price).toBe(6.1169)
+    expect(m.price).toBe('$6.1169/次')
+  })
+})

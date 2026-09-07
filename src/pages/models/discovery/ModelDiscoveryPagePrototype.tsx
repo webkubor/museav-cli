@@ -50,7 +50,7 @@ import {
   useDiscoveryTable,
   useDiscoveryTrends,
 } from './use-discovery-query'
-import { rankBarWidth, specialtyRows, unitPriceDetail } from './discovery-data'
+import { EMPTY, rankBarWidth, specialtyRows, unitPriceDetail } from './discovery-data'
 import type { DiscoveryUnitPrices } from '@/types'
 import {
   AnalysisScatterChart,
@@ -108,6 +108,12 @@ type DiscoveryModel = {
   release?: string;
   /** 单价构成，成本列 tooltip 用。只有语言类下发，且各档位可能缺项。 */
   unitPrices?: DiscoveryUnitPrices | null;
+  /**
+   * 排序与格式化用的原始数值。**不要从展示串反解析** —— `price` 在无数据时是「—」，
+   * 解析出来是 0，会把「没有成本数据」显示成「$0.00」，和真的 0（免费）分不开
+   * （需求方#969 缺陷 1：95 个模型里 45 个 cost_value=null，全被渲染成 $0.00）。
+   */
+  raw?: { price: number | null };
 };
 
 /**
@@ -285,11 +291,20 @@ function formatGrowth(growth: number) {
   return `${growth > 0 ? "+" : ""}${growth}%`;
 }
 
-function taskCostFor(model: DiscoveryModel): number {
-  return plainMetricValue(model.price);
+/**
+ * 单次任务成本的原始数值。**只读 `raw.price`，不解析展示串** ——
+ * 接口 `cost_value` 为 null 时 `price` 是「—」，`plainMetricValue("—")` 会得到 0。
+ * 返回 null 表示第三方没有该模型的成本数据，调用方必须按空处理，不能当 0 参与比较。
+ */
+function taskCostFor(model: DiscoveryModel): number | null {
+  const value = model.raw?.price;
+  return typeof value === "number" ? value : null;
 }
 
-function formatTaskCost(value: number) {
+/** 无成本数据显示「—」；真的 0 显示「免费」，与「没数据」区分开。 */
+function formatTaskCost(value: number | null) {
+  if (value === null) return EMPTY;
+  if (value === 0) return "免费";
   return `$${value.toFixed(2)}`;
 }
 
@@ -547,12 +562,6 @@ function metricValue(value: string) {
   return amount;
 }
 
-function plainMetricValue(value: string | undefined) {
-  if (!value) return 0;
-  const amount = Number.parseFloat(value.replace(/[^0-9.]/g, ""));
-  return Number.isFinite(amount) ? amount : 0;
-}
-
 function createAxisTicks(values: number[]) {
   const finiteValues = values.filter(Number.isFinite);
   if (finiteValues.length === 0) return [0, 0.25, 0.5, 0.75, 1];
@@ -799,7 +808,11 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       description: "每 1K 张标准图像价格（$/1k images）",
       source: "Artificial Analysis",
       lowerIsBetter: true,
-      rows: [...taskModels].sort((first, second) => plainMetricValue(first.price) - plainMetricValue(second.price)).map((model) => ({ model: model.name, value: `$${plainMetricValue(model.price)}` })),
+      // 同 #969 缺陷 1：无价格的模型不进榜，也不要把展示串「—」解析成 0
+      rows: [...taskModels]
+        .filter((model) => typeof model.raw?.price === "number")
+        .sort((first, second) => (first.raw!.price ?? 0) - (second.raw!.price ?? 0))
+        .map((model) => ({ model: model.name, value: model.price })),
     },
     {
       title: "近 7 日使用量",
@@ -829,7 +842,11 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       description: "每分钟生成视频价格（$/min）",
       source: "Artificial Analysis",
       lowerIsBetter: true,
-      rows: [...taskModels].sort((first, second) => plainMetricValue(first.price) - plainMetricValue(second.price)).map((model) => ({ model: model.name, value: `$${plainMetricValue(model.price)}` })),
+      // 同 #969 缺陷 1：无价格的模型不进榜，也不要把展示串「—」解析成 0
+      rows: [...taskModels]
+        .filter((model) => typeof model.raw?.price === "number")
+        .sort((first, second) => (first.raw!.price ?? 0) - (second.raw!.price ?? 0))
+        .map((model) => ({ model: model.name, value: model.price })),
     },
     {
       title: "近 7 日使用量",
@@ -852,8 +869,10 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       description: "Artificial Analysis 基准任务加权平均成本（USD/Task）",
       source: "Artificial Analysis",
       lowerIsBetter: true,
+      // 无成本数据的模型不进榜 —— 当 0 参与排序会霸占「成本最低」的首位（#969 缺陷 1）
       rows: [...taskModels]
-        .sort((first, second) => taskCostFor(first) - taskCostFor(second))
+        .filter((model) => taskCostFor(model) !== null)
+        .sort((first, second) => (taskCostFor(first) ?? 0) - (taskCostFor(second) ?? 0))
         .map((model) => ({ model: model.name, value: formatTaskCost(taskCostFor(model)) })),
     },
     {
@@ -1000,11 +1019,13 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   }
 
   function tableMetricNumber(model: DiscoveryModel) {
-    if (rankingMetric === "price") return plainMetricValue(model.price);
+    if (rankingMetric === "price") return model.raw?.price ?? Number.POSITIVE_INFINITY;
     if (rankingMetric === "usage") return metricValue(model.usage);
     if (rankingMetric === "value") {
       const quality = metricValue(model.score);
-      const cost = isTextAgent ? taskCostFor(model) : plainMetricValue(model.price);
+      // 无成本数据算不出性价比，排到末尾（返回 0），不要用 0 当分母算出一个虚高的值
+      const cost = isTextAgent ? taskCostFor(model) : model.raw?.price ?? null;
+      if (cost === null) return 0;
       return taskProfile.qualityLowerIsBetter ? 1 / Math.max(quality * cost, 0.01) : quality / Math.max(cost, 0.01);
     }
     return metricValue(model.score);

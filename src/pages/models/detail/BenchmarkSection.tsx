@@ -7,10 +7,13 @@
  * - `Artificial Analysis` 来源标签**只出现一次**（§5.1）
  * - 整块无数据（模型未命中 40401 / 两部分都空）就 `return null` —— 详情直接接
  *   相关模型，不留标题、不留空卡
- * - **单个指标取不到值时保留该项、标注「暂无数据」**：接口的指标清单是固定的完整
+ * - **组内单项取不到值时保留该项、标注「暂无数据」**：接口的指标清单是固定的完整
  *   结构，数值取不到也会返回（score/display_score 为 null），后端明确要求前端保持
  *   完整结构展示空态、不要删项也不要补 0。这与 §5.2「缺失就隐藏那一项」的原意
  *   （不要用「—」冒充有数据）不冲突：空态是显式标注，不是占位符。
+ * - **但整组一项有效值都没有时隐藏整组**（需求方#969 缺陷 2，PRD §11.2「空分组自动
+ *   隐藏」）：保留完整结构的前提是这组里至少有一项能看，6/6 全 null 的组渲染出来
+ *   是 6 行「暂无数据」，那不是空态标注、就是占位垃圾。
  */
 import { useQuery } from '@tanstack/react-query'
 import { getModelBenchmarks } from '@/services/model-discovery'
@@ -46,6 +49,44 @@ function percentWidth(item: BenchmarkItem) {
   return Math.min(100, Math.max(0, item.display_score))
 }
 
+/**
+ * 分布柱的高度序列。**这组数值是示意用的固定正态形状，不是该模型的真实分布** ——
+ * PRD 原型（`modelgo_prd/src/MarketplaceBenchmarkPanel.tsx` 的 `distributionBars`）
+ * 就是写死的同一串，接口的 `composite_indices[].distribution` 实测恒为空数组。
+ *
+ * 唯一数据驱动的是标记线位置：走 `ahead_percent`（真实百分位）。所以这张图表达的是
+ * 「你在整体里大致靠前/靠后」，柱形只提供参照背景，不承载数值信息 —— 也因此柱子
+ * `aria-hidden`，屏幕阅读器只读标记线的 aria-label。
+ */
+const DISTRIBUTION_BARS = [3, 5, 8, 13, 21, 34, 48, 63, 74, 80, 74, 63, 48, 34, 21, 13, 8, 5, 3]
+
+/** 分布图 + 当前模型位置标记线（PRD §11.3，需求方#969 缺陷 3）。 */
+function CompositeDistribution({ index, label }: { index: BenchmarkCompositeIndex; label: string }) {
+  // 没有百分位就没有标记线可画，整张图不出 —— 只剩背景柱形没有意义
+  if (index.ahead_percent === null) return null
+  // 贴边的标记线会被裁掉一半，收进 2%~98%
+  const marker = Math.max(2, Math.min(98, index.ahead_percent))
+  const position = `${marker}%`
+
+  return (
+    <div
+      className="mg-benchmark-distribution"
+      aria-label={
+        index.rank !== null && index.total !== null
+          ? `${label}：在 ${index.total} 个同类模型中排名第 ${index.rank}，领先 ${index.ahead_percent}%`
+          : `${label}：领先 ${index.ahead_percent}%`
+      }
+    >
+      <div className="mg-benchmark-distribution-bars" aria-hidden="true">
+        {DISTRIBUTION_BARS.map((height, barIndex) => (
+          <span key={`${index.metric}-${barIndex}`} style={{ height: `${height}%` }} />
+        ))}
+      </div>
+      <span className="mg-benchmark-distribution-marker" style={{ left: position }} aria-hidden="true" />
+    </div>
+  )
+}
+
 function CompositeCard({ index }: { index: BenchmarkCompositeIndex }) {
   const label = COMPOSITE_LABEL[index.metric] ?? index.metric
   const score = index.score === null ? null : String(index.score)
@@ -66,6 +107,7 @@ function CompositeCard({ index }: { index: BenchmarkCompositeIndex }) {
             {index.ahead_percent !== null ? ` · 领先 ${index.ahead_percent}%` : ''}
           </i>
         ) : null}
+        {score === null ? null : <CompositeDistribution index={index} label={label} />}
       </dd>
     </div>
   )
@@ -86,8 +128,13 @@ export function BenchmarkSection({ modelId }: { modelId: string }) {
   })
 
   const composites = data?.composite_indices ?? []
-  // group 内没有指标项就整组隐藏（TTS 当前返回空数组）
-  const groups = (data?.benchmark_groups ?? []).filter((group) => group.items.length > 0)
+  // 整组隐藏的判据是「有没有**有效值**」，不是「有没有指标项」（需求方#969 缺陷 2）：
+  // 接口的指标清单是固定完整结构，取不到值也会返回一项 score:null —— 按项数判断的话，
+  // 6/6 全 null 的「推理与知识」组照样渲染，整组 6 行全是「暂无数据」，没有任何信息量。
+  // 实测 deepseek-v4-pro 的 4 组 12 项里 11 项 null，3 组整组为空。
+  const groups = (data?.benchmark_groups ?? []).filter((group) =>
+    group.items.some((item) => item.score !== null || item.display_score !== null),
+  )
 
   // 加载中不占位：整块本来就可能不存在，先撑一个空壳再抽掉会让详情页跳动
   if (isLoading) return null

@@ -139,3 +139,35 @@
   box-shadow: var(--mg-card-shadow);
   padding: 12px 10px;
 }
+
+/* ── Benchmark 摘要卡的分布图（PRD §11.3，需求方#969 缺陷 3）──────────────
+   19 根柱是**示意用的固定正态形状**（与 PRD 原型的 distributionBars 同一串），
+   接口的 distribution 实测恒为空数组；唯一数据驱动的是标记线位置 ahead_percent。
+   所以柱形只做参照背景，用 fill-1 的低对比表达「不承载数值」，标记线才上品牌色。 */
+.mg-benchmark-distribution {
+  height: 24px;
+  margin-top: 6px;
+  position: relative;
+}
+
+.mg-benchmark-distribution-bars {
+  align-items: flex-end;
+  display: flex;
+  gap: 1px;
+  height: 100%;
+}
+
+.mg-benchmark-distribution-bars > span {
+  background: var(--mg-fill-1);
+  flex: 1;
+  min-height: 2px;
+}
+
+.mg-benchmark-distribution-marker {
+  background: var(--brand-base);
+  border-radius: var(--radius-full);
+  bottom: 0;
+  position: absolute;
+  top: 0;
+  width: 2px;
+}

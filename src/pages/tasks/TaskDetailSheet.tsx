@@ -385,7 +385,11 @@ export function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; o
             </article>
           </div>
 
-          {/* 产物已过期 / 已被清理 */}
+          {/* 产物已过期 / 已被清理。
+              **限 kind === 'video' 是对的，不要"对齐 PRD"把它放开**：平台只清理视频产物，
+              图片产物暂不清除，音频当前没有模型（2026-09-07 owner 确认）。PRD 那边这块
+              不限 kind，但它是原型的通用写法，不代表图片/音频也会过期 —— 放开会让图片
+              任务在完成后误显「产物已超过有效期」。 */}
           {gone && kind === 'video' && isTaskDone(task.status) && artifactState === 'expired' && (
             <div className="rounded-md border border-mg-border bg-mg-bg-0 mg-panel-relaxed flex flex-col items-center gap-2 text-mg-text-4">
               <LuVideoOff size={32} />

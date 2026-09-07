@@ -7,6 +7,7 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   getDiscoveryAnalysis,
+  getHotAgents,
   getDiscoveryOverview,
   getDiscoveryUsageTrends,
   joinSourceModelIds,
@@ -14,7 +15,9 @@ import {
   listDiscoveryRankings,
 } from '@/services/model-discovery'
 import { DISCOVERY_PRIMARY_METRIC } from '@/constants/model-discovery'
-import type { DiscoveryMetric, DiscoveryModelOption, DiscoveryType, DiscoveryUsageTrends } from '@/types'
+import type { DiscoveryMetric, DiscoveryModelOption, DiscoveryType, DiscoveryUsageTrends,
+  HotAgentPeriod,
+} from '@/types'
 import {
   discoveryTypeFor,
   isLanguageType,
@@ -314,4 +317,28 @@ export function useDiscoveryAnalysis(
   }, [query.data])
 
   return { points, isLoading: query.isLoading }
+}
+
+/**
+ * 热门 Agent 应用榜（接口文档第七节）。
+ *
+ * 首屏 10 条、展开 20 条，所以固定拉 20 —— 数据源每周期 200 条，不截断会白拉一堆。
+ * 三个周期各自一个 queryKey：数据在同一份快照里，切周期只是换参数，缓存分开更省。
+ */
+export function useHotAgents(period: HotAgentPeriod, enabled: boolean) {
+  const query = useQuery({
+    queryKey: ['discovery-hot-agents', period],
+    queryFn: () => getHotAgents({ period, limit: 20 }),
+    enabled,
+    staleTime: STALE_TIME,
+    placeholderData: keepPrevious,
+  })
+  return {
+    apps: query.data?.apps ?? [],
+    /** 榜单完整条数（不受 limit 影响），用于「共 N 个应用」。 */
+    total: query.data?.total ?? 0,
+    source: query.data?.source,
+    snapshotDate: query.data?.snapshot_date,
+    isLoading: query.isLoading,
+  }
 }

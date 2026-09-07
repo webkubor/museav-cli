@@ -162,3 +162,13 @@
 .model-discovery-agent-popularity-more svg.flip {
   transform: rotate(180deg);
 }
+
+/* 热门 Agent 榜的数据来源标注（接口文档第七节要求）。
+   `.model-discovery-section-head > span` 那条只命中直接子元素，这里的 span 包在
+   标题 div 里，所以单独给一条，样式取值与那条保持一致。 */
+.model-discovery-agent-popularity-head h2 + span {
+  color: var(--text-tertiary);
+  display: block;
+  font-size: var(--discovery-fs-micro);
+  margin-top: 2px;
+}

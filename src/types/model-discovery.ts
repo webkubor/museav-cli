@@ -301,3 +301,44 @@ export interface ModelBenchmarks {
   composite_indices: BenchmarkCompositeIndex[]
   benchmark_groups: BenchmarkGroup[]
 }
+
+/** 热门 Agent 应用榜的一条（字段命名跟随数据源 OpenRouter，不是模型卡那套）。 */
+export interface HotAgentApp {
+  /**
+   * 榜单名次。**有空洞，不要按数组下标重排** —— 数据源会隐藏未公开的应用，
+   * 实测 200 条的名次散布在 1~229，day / week 榜甚至没有第 1 名。直接展示原值。
+   */
+  rank: number
+  app_id: number
+  /** 应用名。数据源叫 `title` 不是 `name`。 */
+  title: string
+  /** 英文原文，产品已确认不翻译。空值率约 75%，按空隐藏。 */
+  description?: string | null
+  /** 基本都有，可作跳转链接。 */
+  origin_url?: string | null
+  /** 空值率约 97%。 */
+  favicon_url?: string | null
+  categories?: string[] | null
+  app_created_at?: string | null
+  /** token 消耗。月榜最大约 4.96e13，仍在 JS 安全整数内。 */
+  total_tokens: number
+  total_requests?: number | null
+}
+
+export type HotAgentPeriod = 'day' | 'week' | 'month'
+
+/** （七）热门 Agent 应用榜。 */
+export interface HotAgents {
+  snapshot_date: string
+  period: HotAgentPeriod
+  /**
+   * 数据来源，固定 `openrouter`。**页面必须标注** —— 这是 OpenRouter 平台上的流量
+   * 分布，不是全行业市场份额（Claude Code 的真实用量绝大部分直连 Anthropic）。
+   * 当「热门风向标」用没问题，当「市场占比」用就是错的。
+   */
+  source: string
+  /** 榜单完整条数（固定 200），**不受 `limit` 影响**，用于「共 N 个应用」。 */
+  total: number
+  /** 某个周期为空时是空数组而非 null。 */
+  apps: HotAgentApp[]
+}

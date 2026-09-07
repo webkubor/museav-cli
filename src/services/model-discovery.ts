@@ -21,6 +21,8 @@ import type {
 } from '@/interfaces/model-discovery'
 import type {
   DiscoveryAnalysis,
+  HotAgents,
+  HotAgentPeriod,
   DiscoveryModelOptions,
   DiscoveryOverview,
   DiscoveryRankings,
@@ -88,3 +90,17 @@ export function joinSourceModelIds(ids: readonly string[]) {
   return ids.join(',')
 }
 
+/**
+ * （七）热门 Agent 应用榜。Agent 页的「热门 Agent 排行」。
+ *
+ * `limit` 缺省不截断（数据源每周期固定 200 条），首屏只要前 20 就传 20；
+ * 响应的 `total` 始终是完整条数、不受 limit 影响。取值 1~200，非法值返回 40001。
+ *
+ * ⚠️ 两条口径必须守住：
+ *   1. `rank` **有空洞**，按数组下标重排会得出错误名次（实测名次散布 1~229）
+ *   2. `source` 固定 `openrouter`，**页面必须标注数据来源** —— 它是 OpenRouter 平台的
+ *      流量分布，不是市场份额
+ */
+export function getHotAgents(params: { period?: HotAgentPeriod; limit?: number } = {}) {
+  return get<HotAgents>(`${BASE}/hot-agents`, params)
+}

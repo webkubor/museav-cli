@@ -12,7 +12,6 @@
  *   rank         总览栅格、卡片外壳、表格外观校准、详情按钮
  *   rankrow      Top 5 排名行与进度条
  *   summary      总览摘要卡
- *   agent        热门 Agent 排行
  *   analysis     多维分析工具条（预设、轴选择器）
  *   scatter      散点图与图表联动
  *   tooltip      图表 tooltip 外壳与图内空态
@@ -40,7 +39,6 @@
 @import './discovery-rank.css';
 @import './discovery-rankrow.css';
 @import './discovery-summary.css';
-@import './discovery-agent.css';
 @import './discovery-analysis.css';
 @import './discovery-scatter.css';
 @import './discovery-tooltip.css';

@@ -41,7 +41,7 @@ import {
   REDACTION_PLACEHOLDER,
   type DerivedLogStatus,
 } from './guardrail'
-import { cacheHitRateLabel, cacheTokenState } from './cache'
+import { cacheHitRateLabel, cacheTokenState, isCacheCardVisible } from './cache'
 import type { SSEReassembled } from './reassemble-sse'
 
 export type PayloadKind = 'request' | 'response'
@@ -183,12 +183,10 @@ export function LogDetailSheet({
                 <DiagnosticCard icon={<LuReceiptText />} label={t('logs.detail.diagnostics.cost')} value={<Money amount={Number(row.cost.amount) > 0 ? row.cost.amount : null} currency={row.cost.currency} />} hint={row.billing_status ? row.billing_status.charAt(0).toUpperCase() + row.billing_status.slice(1) : t('logs.detail.diagnostics.billingStatusMissing')} tone="warning" />
                 <DiagnosticCard icon={<LuDatabase />} label="Tokens" value={tokenFlow(row)} hint={t('logs.detail.diagnostics.tokenFlowHint')} tone="success" />
                 <DiagnosticCard icon={<LuGitFork />} label="Fallback" value={t('logs.detail.diagnostics.fallbackCount', { count: row.fallback_count })} hint={row.fallback_count > 0 ? t('logs.detail.diagnostics.fallbackTriggered') : t('logs.detail.diagnostics.fallbackNotTriggered')} tone={row.fallback_count > 0 ? 'warning' : 'brand'} />
-                {/* 缓存卡对无缓存能力的模型隐藏（需求方#885）：只有后端明确回 cache_supported=false
-                    （多模态/出图/语音）才隐藏；字段缺失时照常展示——web-api DTO 至今未透传该字段
-                    （test swagger logs.Row 实测无此属性），按 `cache_supported &&` 渲染会让这张卡
-                    对所有模型消失，连本该有命中率的文本模型也看不到，等于需求做了个反效果。
-                    展示时 5 张卡在 2 列下第 5 张会孤行留半空——让「缓存」占满整行，分布均匀；隐藏时恰好 2×2。 */}
-                {row.cache_supported !== false && (
+                {/* 缓存卡只在 cache_supported === true 时渲染（需求方#885）：false 或字段缺失
+                    一律隐藏，出图/语音/TTS 不再显「未命中 · 0 tokens」。展示时 5 张卡在 2 列下
+                    第 5 张会孤行留半空——让「缓存」占满整行；隐藏时恰好 2×2。 */}
+                {isCacheCardVisible(row) && (
                   <DiagnosticCard className="sm:col-span-2" icon={<LuGauge />} label={t('logs.detail.diagnostics.cache')} value={cacheHitRateLabel(row)} hint={cacheHintText(row, t)} tone={row.usage.cache_read_tokens > 0 ? 'success' : 'brand'} />
                 )}
               </>

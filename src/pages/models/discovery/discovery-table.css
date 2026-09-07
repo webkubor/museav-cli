@@ -64,3 +64,12 @@
 .model-discovery-page .model-discovery-table-card th {
   font-variant-numeric: tabular-nums;
 }
+
+/* 单次任务成本带单价构成 tooltip（qa#708 第 5 条）：用虚下划线暗示「这里有更多信息」，
+   否则原生 title 要靠悬停撞运气才被发现。只有拿到 unit_prices 的行才带这个类，
+   媒体/语音类与缺价格的模型不会出现虚线。 */
+.model-discovery-page .model-discovery-cost-detail {
+  text-decoration: underline dotted var(--mg-text-4);
+  text-underline-offset: 3px;
+  cursor: help;
+}

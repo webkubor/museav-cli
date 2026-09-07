@@ -50,7 +50,8 @@ import {
   useDiscoveryTable,
   useDiscoveryTrends,
 } from './use-discovery-query'
-import { rankBarWidth, specialtyRows } from './discovery-data'
+import { rankBarWidth, specialtyRows, unitPriceDetail } from './discovery-data'
+import type { DiscoveryUnitPrices } from '@/types'
 import {
   AnalysisScatterChart,
   DiscoveryAgentIcon,
@@ -105,6 +106,8 @@ type DiscoveryModel = {
   samples?: string;
   voices?: string;
   release?: string;
+  /** 单价构成，成本列 tooltip 用。只有语言类下发，且各档位可能缺项。 */
+  unitPrices?: DiscoveryUnitPrices | null;
 };
 
 /**
@@ -993,8 +996,15 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
     return metricValue(model.score);
   }
 
-  function supportingMetrics(model: DiscoveryModel) {
-    return [isTextAgent ? formatTaskCost(taskCostFor(model)) : model.price, model.release ?? "—", model.usage];
+  function supportingMetrics(model: DiscoveryModel): Array<{ text: string; title?: string }> {
+    return [
+      {
+        text: isTextAgent ? formatTaskCost(taskCostFor(model)) : model.price,
+        title: unitPriceDetail(model.unitPrices),
+      },
+      { text: model.release ?? "—" },
+      { text: model.usage },
+    ];
   }
 
   const supportingMetricHeaders = isTextAgent
@@ -1470,7 +1480,11 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                     </TableCell>
                     <TableCell><b className="metric-primary">{selectedMetricValue(model)}</b></TableCell>
                     {supportingValues.map((value, valueIndex) => (
-                      <TableCell key={`${model.name}-${valueIndex}`}>{value}</TableCell>
+                      <TableCell key={`${model.name}-${valueIndex}`}>
+                        {value.title
+                          ? <span className="model-discovery-cost-detail" title={value.title}>{value.text}</span>
+                          : value.text}
+                      </TableCell>
                     ))}
                     <TableCell>
                       {hasDetail

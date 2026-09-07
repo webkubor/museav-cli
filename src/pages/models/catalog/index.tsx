@@ -47,7 +47,7 @@ import './catalog.css'
  * `modelgo_id` 点不进详情页（qa#718），Benchmark 只有 18/33 命中，热门 Agent 排行还没
  * 数据源（qa#708 第 4 条）。入口先不对外露出。
  *
- * 取值：**只有 `feature/969-model-discovery` 分支配 `on`**（`.env.development` 与
+ * 取值：**只有 `feature/v1.0.6-model-discovery` 分支配 `on`**（`.env.development` 与
  * `.env.test` 各一行）。`test` 与当班 `release/v1.0.6` 都不配 —— 没开发完的功能不进
  * 集成分支的可见范围。联调收口后连同代码一起合入当班 release，那时才把开关一并带过去。
  *

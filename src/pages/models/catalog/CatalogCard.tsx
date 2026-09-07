@@ -39,6 +39,7 @@ import {
 import { ExperienceTaskTags } from '@/features/models/components/ExperienceTaskTags'
 import { ModalityMark } from '@/features/models/components/ModalityMark'
 import { CardProtocolTags } from './CardProtocolTags'
+import { ModalityMark } from '@/features/models/components/ModalityMark'
 import { usePublicProtocolsStore } from '@/store/use-public-protocols-store'
 import { modelExperienceTasks, resolveModelCategory } from '../model-experience-data'
 import type { CatalogModelItem } from '@/types'

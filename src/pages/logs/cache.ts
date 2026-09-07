@@ -34,3 +34,8 @@ export function cacheTokenState(row: CallLogItem): { key: 'read' | 'write' | 'no
   if (row.usage.cache_write_tokens > 0) return { key: 'write', count: row.usage.cache_write_tokens }
   return { key: 'none', count: 0 }
 }
+
+/** 缓存卡只在后端明确回 cache_supported=true 时展示；false / 缺失一律隐藏（需求方#885）。 */
+export function isCacheCardVisible(row: CallLogItem): boolean {
+  return row.cache_supported === true
+}

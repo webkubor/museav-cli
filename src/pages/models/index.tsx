@@ -133,26 +133,26 @@ export default function ModelsPage() {
                 onRetry={retryMediaMessage}
                 assistantModel={selectedModel}
                 emptyState={
-                  /* 视觉改版（Figma「模型体验」稿）：分类小图标换成品牌玻璃球引导图；
-                     示例 Prompt 从空态区挪到输入框下方的卡片行（见 Composer 之后）。
-                     需求方 #834：选中模型后空态中央改摆模型卡片（原型里卡片就是空态
-                     的主体，玻璃球让位）；卡片只在空态出现，发出首条消息即随空态消失。
-                     引导文案保留在卡片下方 —— 各任务空态文案是 PRD §7.9 的任务差异
-                     说明（文生图/图生图各不同），原型只覆盖了对话页，删掉媒体任务就
-                     没有任何输入指引。 */
-                  <div className="models-experience-empty">
-                    {selectedModel && !isSelectedModelOffline ? (
-                      <ExperienceModelCard model={selectedModel} />
-                    ) : (
+                  /* 需求方 #834：选中模型时空态整块换成模型卡片 —— 原型
+                     （modelgo_prd/src/App.tsx:20887）就是「有模型给 WelcomeCard、
+                     没模型才给提示块」的二选一，卡片不是加在引导文案旁边的挂件。
+                     模型缺失/已下线时保留原有的玻璃球 + 分类文案（Figma「模型体验」稿；
+                     示例 Prompt 在输入框下方，见 Composer 之后）。 */
+                  selectedModel && !isSelectedModelOffline ? (
+                    <div className="models-experience-empty">
+                      <ExperienceModelCard model={selectedModel} task={effectiveTask} />
+                    </div>
+                  ) : (
+                    <div className="models-experience-empty">
                       <span className="models-experience-empty-orb" aria-hidden="true">
                         <span className="models-experience-empty-orb-refract-a" />
                         <span className="models-experience-empty-orb-refract-b" />
                         <span className="models-experience-empty-orb-rim" />
                       </span>
-                    )}
-                    <strong>{categoryEmptyCopy(effectiveTask).title}</strong>
-                    <span>{categoryEmptyCopy(effectiveTask).hint}</span>
-                  </div>
+                      <strong>{categoryEmptyCopy(effectiveTask).title}</strong>
+                      <span>{categoryEmptyCopy(effectiveTask).hint}</span>
+                    </div>
+                  )
                 }
               />
 

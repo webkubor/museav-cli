@@ -69,6 +69,8 @@
       "inputType": "Input Type",
       "outputType": "Output Type",
       "maxOutput": "Max Output",
+      "maxOutputByApi": "Per API spec",
+      "aria": "{{name}} model overview",
       "tokens": "Tokens"
     },
     "copyReply": "Copy reply",

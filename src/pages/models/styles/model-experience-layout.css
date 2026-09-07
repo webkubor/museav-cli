@@ -456,9 +456,13 @@ body[theme-mode='dark'] .models-experience-empty-orb::after {
    版式。规格格的类名不复用 .mg-metric —— 那套定义在 catalog.css 里，体验页并不
    引入广场样式表，蹭过来会变成「样式取决于用户先逛没逛广场」。 */
 .models-experience-model-card {
-  width: min(720px, 100%);
+  /* 版式照原型 .playground-model-welcome：760px 宽（对比页 compact 档才是 680）、
+     内部 grid gap 14px、内边距随视口 20→28px。视觉（圆角/配色/字号）仍走控制台 token。 */
+  width: min(760px, 100%);
   margin: 0 auto;
-  padding: 20px 22px;
+  display: grid;
+  gap: 14px;
+  padding: clamp(20px, 2.5vw, 28px);
   text-align: left;
 }
 
@@ -468,8 +472,11 @@ body[theme-mode='dark'] .models-experience-empty-orb::after {
   gap: 12px;
 }
 
+/* 描边+底色照 .mg-detail-avatar：透明底的白 logo 在浅色卡上会糊掉 */
 .models-experience-model-card-avatar {
   flex-shrink: 0;
+  border: 1px solid var(--mg-border);
+  background: var(--mg-bg-1);
 }
 
 .models-experience-model-card-id {
@@ -533,7 +540,7 @@ body[theme-mode='dark'] .models-experience-empty-orb::after {
 }
 
 .models-experience-model-card-desc {
-  margin-top: 14px;
+  max-width: 700px;
   color: var(--mg-text-2);
   font-size: 13px;
   line-height: 1.6;
@@ -541,10 +548,10 @@ body[theme-mode='dark'] .models-experience-empty-orb::after {
 
 /* 两列六格：左右两列各自独立分隔线（原型里两列的横线是断开的，不是通栏一条） */
 .models-experience-model-card-specs {
-  margin-top: 6px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: 28px;
+  /* 原型 .playground-welcome-specs `gap: 0 20px` */
+  column-gap: 20px;
 }
 
 .models-experience-model-card-spec {
@@ -552,7 +559,7 @@ body[theme-mode='dark'] .models-experience-empty-orb::after {
   align-items: baseline;
   gap: 12px;
   min-width: 0;
-  padding: 11px 0;
+  padding: 9px 0;
   border-top: 1px solid var(--mg-border);
 }
 
@@ -601,27 +608,34 @@ body[theme-mode='dark'] .models-experience-empty-orb::after {
   font-weight: 400;
 }
 
-/* 模态标记（T / 图像图标）与后面的文字之间留白，多个模态之间同样 */
-.models-experience-model-card-spec dd > svg,
-.models-experience-model-card-spec dd > .mg-mcard-flow-text {
-  flex-shrink: 0;
-  margin-right: 5px;
-  align-self: center;
+/* 输入/输出类型格：每个模态是「图标 + 标签」一对，多模态可折行、整体右对齐
+   （原型 .playground-welcome-modalities：flex-wrap + gap 7px + justify-end，
+   对内每对 gap 3px）。 */
+.models-experience-model-card-spec dd.is-modality {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  justify-content: flex-end;
+  overflow: visible;
 }
 
-/* 模态标记里的字母「T」（ModalityMark）：广场那份在 catalog.css，这里补体验页作用域 */
-.models-experience-model-card-spec .mg-mcard-flow-text {
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 12px;
+.mg-modality-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+/* 卡片挂在 .models-experience-empty 里，那层有 `span { font-size:13px; color:text-2 }`
+   的后代选择器（给空态提示文案用的），特指度压过单类名的 .mg-modality-chip，
+   会把模态标签染淡半档。这里把值的口径钉回 dd 自己，不受挂载位置影响。 */
+.models-experience-model-card-spec .mg-modality-chip {
+  color: inherit;
+  font-size: inherit;
 }
 
 /* 窄屏（侧栏展开或 390px 手机）：两列会把「输入价格 ¥2/M Tokens」挤成两截，落单列 */
 @media (max-width: 720px) {
-  .models-experience-model-card {
-    padding: 16px;
-  }
-
   .models-experience-model-card-specs {
     grid-template-columns: minmax(0, 1fr);
   }

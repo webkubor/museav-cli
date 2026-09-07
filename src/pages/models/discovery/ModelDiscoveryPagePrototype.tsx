@@ -190,6 +190,20 @@ const modalityOptions: Array<{ key: ModalityKey; label: string }> = [
   { key: "audio", label: "音频" },
 ];
 
+/**
+ * 本版本先不上线的模态 —— 只从 tab 列表隐藏，**配置与数据链路全部保留**
+ * （audio 的 taskMetricProfiles / discoveryConfigs / audioTaskConfigs /
+ * TTS-STT 专项榜都还在，接口侧 TTS 96 个、STT 67 个模型也是通的）。
+ *
+ * 要恢复上线：把这个数组清空即可，不用改别处。**不要顺手删掉 audio 的配置**，
+ * 那些 Record<ModalityKey, …> 缺一个键就编译不过，而且下个版本还要用。
+ */
+const HIDDEN_MODALITIES: readonly ModalityKey[] = ["audio"];
+
+const visibleModalityOptions = modalityOptions.filter(
+  (option) => !HIDDEN_MODALITIES.includes(option.key),
+);
+
 const rankingMetricOptions: Array<{ key: RankingMetric; label: string; specialtyIndex?: number }> = [
   { key: "overall", label: "综合评价" },
   { key: "value", label: "性价比", specialtyIndex: 0 },
@@ -1206,7 +1220,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       <div className="model-discovery-modality-bar">
         <Tabs onValueChange={(value) => switchModality(value as ModalityKey)} value={modality}>
           <TabsList aria-label="模型模态" variant="underline">
-            {modalityOptions.map((option) => (
+            {visibleModalityOptions.map((option) => (
               <TabsTrigger key={option.key} value={option.key} variant="underline">{option.label}</TabsTrigger>
             ))}
           </TabsList>

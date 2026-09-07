@@ -44,12 +44,15 @@ import './catalog.css'
  * **唯一入口按钮**，直接输 URL 仍能进（方便验证与演示）。
  *
  * 为什么要开关：v1.0.6 的联调还没收口 —— 榜单里 161 个标「ModelGo 已接入」的模型缺
- * `modelgo_id` 点不进详情页（qa#718），Benchmark 也只有 18/33 命中。入口先不对外露出。
+ * `modelgo_id` 点不进详情页（qa#718），Benchmark 只有 18/33 命中，热门 Agent 排行还没
+ * 数据源（qa#708 第 4 条）。入口先不对外露出。
  *
- * 取值：**只有 `release-1.0.6` 分支的 `.env.test` 配 `on`**；`.env.development` /
- * `.env.test` / `.env.production` 都不配，即本地、测试环境、生产一律看不到入口。
- * 本地不用开这个开关也能开发发现页 —— 路由没关，直接访问 `/models/discovery` 即可。
- * **两个分支只差 release-1.0.6 的 .env.test 那一行，代码相同，合并不会冲突。**
+ * 取值：**只有 `feature/969-model-discovery` 分支配 `on`**（`.env.development` 与
+ * `.env.test` 各一行）。`test` 与当班 `release/v1.0.6` 都不配 —— 没开发完的功能不进
+ * 集成分支的可见范围。联调收口后连同代码一起合入当班 release，那时才把开关一并带过去。
+ *
+ * 路由 `/models/discovery` 在所有分支上都通，直接输 URL 就能看页面，
+ * 开关管的只是模型广场工具栏那枚入口按钮。
  */
 const DISCOVERY_ENTRY_ENABLED = import.meta.env.VITE_ENABLE_DISCOVERY_ENTRY === 'on'
 

@@ -168,16 +168,6 @@
       "pending": "Pending",
       "apply": "Apply"
     },
-    "appUpdate": {
-      "title": "New Version Available",
-      "updating": "Updating...",
-      "updateNow": "Update Now",
-      "desc": "A new version is available with improvements and fixes. Update before continuing to ensure normal use.",
-      "currentVersion": "Current Version",
-      "latestVersion": "Latest Version",
-      "viewChangelog": "View Changelog",
-      "reloadWarning": "The page will reload during the update. Check any unsaved input before continuing."
-    },
     "customerService": {
       "thinking": "Thinking...",
       "todayAt": "Today {{time}}",

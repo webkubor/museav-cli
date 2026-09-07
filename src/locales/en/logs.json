@@ -207,7 +207,7 @@
         "taskStatus": "Task status",
         "artifactState": "Artifact status",
         "artifactCount": "Artifacts",
-        "viewTask": "View task detail",
+        "viewTask": "View task artifact detail",
         "guide": {
           "available": "The artifact is ready — open the task artifact detail to view it.",
           "failed": "Artifact generation failed — open the task artifact detail for the reason.",

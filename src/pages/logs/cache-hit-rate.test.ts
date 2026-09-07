@@ -11,7 +11,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { CallLogItem } from '@/types'
-import { cacheHitRate, cacheHitRateLabel, cacheTokenState } from './cache'
+import { cacheHitRate, cacheHitRateLabel, cacheTokenState, isCacheCardVisible } from './cache'
 
 function rowWith(usage: Partial<CallLogItem['usage']>): CallLogItem {
   return {
@@ -59,22 +59,17 @@ describe('cacheHitRateLabel', () => {
   })
 })
 
-describe('缓存卡可见性（守 81fba6e6 的回归）', () => {
-  // 渲染条件是 row.cache_supported !== false。web-api DTO 至今不透传该字段，
-  // 若写成 `row.cache_supported &&`，卡片会对所有模型消失——需求要的是加命中率，
-  // 结果连原有的命中/未命中都没了。字段缺失必须照常展示，只有明确 false 才隐藏。
-  const visible = (row: CallLogItem) => row.cache_supported !== false
-
-  it('后端未透传标识（undefined）→ 照常展示', () => {
-    expect(visible(rowWith({ input_tokens: 100, cache_read_tokens: 300 }))).toBe(true)
+describe('缓存卡可见性（需求方#885：只在 cache_supported === true 时展示）', () => {
+  it('后端未透传标识（undefined）→ 隐藏', () => {
+    expect(isCacheCardVisible(rowWith({ input_tokens: 100, cache_read_tokens: 300 }))).toBe(false)
   })
 
-  it('后端明确回 false（出图/语音）→ 隐藏', () => {
-    expect(visible({ ...rowWith({}), cache_supported: false })).toBe(false)
+  it('后端明确回 false（出图/语音/TTS）→ 隐藏', () => {
+    expect(isCacheCardVisible({ ...rowWith({}), cache_supported: false })).toBe(false)
   })
 
-  it('后端明确回 true → 展示', () => {
-    expect(visible({ ...rowWith({}), cache_supported: true })).toBe(true)
+  it('后端明确回 true（对话/补全）→ 展示', () => {
+    expect(isCacheCardVisible({ ...rowWith({}), cache_supported: true })).toBe(true)
   })
 })
 

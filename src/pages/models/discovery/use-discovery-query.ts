@@ -4,7 +4,7 @@
  * 每日快照，同一天内切来切去不必反复请求，故 staleTime 给 5 分钟。
  */
 import { useMemo } from 'react'
-import { useQueries, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import {
   getDiscoveryAnalysis,
   getDiscoveryOverview,
@@ -161,15 +161,16 @@ export interface DiscoveryTableResult {
 }
 
 /**
- * 完整榜单：**服务端排序 + 服务端分页**。
+ * 完整榜单：**服务端排序 + 服务端分页**，厂商多选也走同一条路。
  *
  * 原先整张表吃的是一次取回的前 100 条、再在前端分页——榜单标着「共 631 个模型」
  * 却只能翻 5 页。排序也一样：接口按 metric 在全量上排好，前端自己排只能排出
  * 这 100 条里的顺序。
  *
- * 厂商筛选是多选，而接口的 `creator` 只认单值（传逗号分隔会静默返回 0 条，
- * 不报错——见 qa#710）。所以多选时按厂商并发拉取再合并；无筛选与单选走
- * 服务端分页这条正路。
+ * 厂商多选曾经要按厂商并发拉取再前端合并，因为接口的 `creator` 只认单值、传逗号
+ * 分隔会静默返回 0 条（qa#708 第 3 条）。**2026-09-07 实测后端已支持逗号多值**
+ * （Anthropic=21 + OpenAI=41 → 多值 total=62，三页 25/25/12 跨页无重无漏，
+ * 与 integration_status 组合也正常），并发兜底连同前端重排一并删除。
  */
 export function useDiscoveryTable(
   modality: ModalityKey,
@@ -189,66 +190,35 @@ export function useDiscoveryTable(
   const enabled = Boolean(type && metric) && status !== 'none'
   const integrationStatus = status === 'none' ? undefined : status
 
-  // 无筛选 / 单选厂商：服务端分页，一次一页
-  const single = useQuery({
-    queryKey: ['discovery-table', type, metric, options.page, options.pageSize, options.creators[0], integrationStatus],
+  // 厂商筛选按选中顺序拼成逗号串；queryKey 用同一个串，顺序变了才算换查询
+  const creator = options.creators.join(',')
+
+  const query = useQuery({
+    queryKey: ['discovery-table', type, metric, options.page, options.pageSize, creator, integrationStatus],
     queryFn: () =>
       listDiscoveryRankings({
         type: type!,
         metric: metric!,
         page: options.page,
         page_size: options.pageSize,
-        ...(options.creators.length === 1 ? { creator: options.creators[0] } : {}),
+        ...(creator ? { creator } : {}),
         ...(integrationStatus ? { integration_status: integrationStatus } : {}),
       }),
-    enabled: enabled && options.creators.length <= 1,
+    enabled,
     staleTime: STALE_TIME,
     placeholderData: keepPrevious,
   })
 
-  // 多选厂商：接口不支持多值，按厂商并发拉取后合并
-  const multi = useQueries({
-    queries:
-      enabled && options.creators.length > 1
-        ? options.creators.map((creator) => ({
-            queryKey: ['discovery-table-creator', type, metric, creator, integrationStatus],
-            queryFn: () =>
-              listDiscoveryRankings({
-                type: type!,
-                metric: metric!,
-                creator,
-                page_size: PAGE_SIZE,
-                ...(integrationStatus ? { integration_status: integrationStatus } : {}),
-              }),
-            staleTime: STALE_TIME,
-          }))
-        : [],
-  })
-
-  const isMulti = options.creators.length > 1
-
   const merged = useMemo(() => {
     if (!type) return { models: [], total: 0 }
-    if (!isMulti) {
-      const data = single.data
-      return {
-        models: data ? data.items.map((item) => toPrototypeModel(item, type)) : [],
-        total: data?.total ?? 0,
-      }
-    }
-    // 合并后按 rank 重排（各厂商的 rank 是各自查询内的名次，合并后需按分值重来）
-    const items = multi.flatMap((query) => query.data?.items ?? [])
-    const ordered = [...items].sort((first, second) => first.rank - second.rank)
+    const data = query.data
     return {
-      models: ordered.map((item) => toPrototypeModel(item, type)),
-      total: ordered.length,
+      models: data ? data.items.map((item) => toPrototypeModel(item, type)) : [],
+      total: data?.total ?? 0,
     }
-  }, [type, isMulti, single.data, multi])
+  }, [type, query.data])
 
-  return {
-    ...merged,
-    isLoading: isMulti ? multi.some((query) => query.isLoading) : single.isLoading,
-  }
+  return { ...merged, isLoading: query.isLoading }
 }
 
 export interface DiscoveryOptionsResult {

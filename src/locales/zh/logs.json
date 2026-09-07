@@ -207,7 +207,15 @@
         "taskStatus": "任务状态",
         "artifactState": "产物状态",
         "artifactCount": "产物数量",
-        "viewTask": "查看任务详情"
+        "viewTask": "查看任务详情",
+        "guide": {
+          "available": "产物已生成，可前往任务产物详情查看。",
+          "failed": "产物生成失败，可前往任务产物详情查看失败原因。",
+          "expired": "产物已过期，可前往任务产物详情查看任务信息。",
+          "generating": "产物正在生成，请稍后前往任务产物详情查看。"
+        },
+        "totalDuration": "总耗时",
+        "totalDurationHint": "从任务提交到结束"
       }
     },
     "status": {

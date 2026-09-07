@@ -24,6 +24,7 @@ import { Money } from '@/components/ui/Money'
 import { SideSheet } from '@/components/ui/SideSheet'
 import { StatusBadge, type StatusConfig } from '@/components/ui/StatusBadge'
 import { formatDateTimeWithSeconds, formatDuration } from '@/lib/format-date'
+import { artifactGuideKey, artifactTone, taskTotalDuration } from './task-artifact'
 import { cn, formatNumber } from '@/lib/utils'
 import { listApiKeys } from '@/services/api-keys'
 import { listTenantMembers } from '@/services/tenants'
@@ -250,9 +251,22 @@ export function LogDetailSheet({
 
           {asyncTask?.task && (
             <DetailSection title={t('logs.detail.taskArtifact.title')}>
+              <p className={cn('mg-text-caption', artifactTone(asyncTask.task.artifact_state))}>
+                {t(`logs.detail.taskArtifact.guide.${artifactGuideKey(asyncTask.task.artifact_state)}`)}
+              </p>
               <DetailGrid compact>
                 <DetailRow label={t('logs.detail.taskArtifact.taskStatus')} value={t(`status.${asyncTask.task.status}`, { defaultValue: asyncTask.task.status })} />
                 <DetailRow label={t('logs.detail.taskArtifact.artifactState')} value={asyncTask.task.artifact_state ? t(`artifactState.${asyncTask.task.artifact_state}`, { defaultValue: asyncTask.task.artifact_state }) : '—'} />
+                {(() => {
+                  const ms = taskTotalDuration(asyncTask.task)
+                  return ms === null ? null : (
+                    <DetailRow
+                      label={t('logs.detail.taskArtifact.totalDuration')}
+                      value={<span title={t('logs.detail.taskArtifact.totalDurationHint')}>{formatDuration(ms)}</span>}
+                      mono
+                    />
+                  )
+                })()}
               </DetailGrid>
               {onOpenTask && (
                 <Button variant="outline" size="sm" onClick={() => onOpenTask(row.request_id)}>

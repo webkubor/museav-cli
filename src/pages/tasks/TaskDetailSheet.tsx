@@ -390,7 +390,9 @@ export function TaskDetailSheet({ task: listTask, onClose }: { task: TaskItem; o
             <div className="rounded-md border border-mg-border bg-mg-bg-0 mg-panel-relaxed flex flex-col items-center gap-2 text-mg-text-4">
               <LuVideoOff size={32} />
               <p className="mg-text-body font-semibold">{t('artifact.expired')}</p>
-              <p className="mg-text-caption text-mg-text-3">{t('artifact.videoExpired')}</p>
+              {/* 措辞以 PRD 为准（App.tsx 的「过期说明」）：不再写「视频文件」——
+                  异步任务还有图片与音乐，产物类型不该出现在这句通用提示里 */}
+              <p className="mg-text-caption text-mg-text-3">{t('artifact.expiredNote')}</p>
             </div>
           )}
 

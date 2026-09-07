@@ -131,32 +131,6 @@
   .model-discovery-selects {
     justify-content: flex-start;
   }
-
-  .model-discovery-section-head.model-discovery-agent-popularity-head {
-    align-items: center;
-    flex-direction: row;
-  }
-
-  .model-discovery-agent-popularity-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .model-discovery-agent-popularity-column + .model-discovery-agent-popularity-column {
-    border-left: 0;
-    border-top: 1px solid var(--line);
-  }
-
-  .model-discovery-agent-popularity-row {
-    gap: 9px;
-    grid-template-columns: 22px 32px minmax(0, 1fr) auto;
-    min-height: 66px;
-    padding-inline: 12px;
-  }
-
-  .model-discovery-agent-icon {
-    height: 32px;
-    width: 32px;
-  }
 }
 
 /* 模型名单元格：图标 + （名称 / 厂商）两行。图标不参与压缩，名称一列可收缩，

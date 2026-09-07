@@ -109,7 +109,3 @@
   color: var(--text-tertiary);
   font-size: var(--discovery-fs-micro);
 }
-
-.model-discovery-agent-popularity-head {
-  align-items: center;
-}

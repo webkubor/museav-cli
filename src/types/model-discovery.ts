@@ -93,6 +93,24 @@ export interface DiscoveryModelCard {
   /** 近 7 日滚动用量。 */
   usage_value: number | null
   usage_unit: DiscoveryUsageUnit
+  /**
+   * 单价构成，用于把 `cost_value`（单次任务总成本）拆开展示。
+   *
+   * **只有语言类（AGENT / TEXT_CHAT / CODE_GENERATION）返回**，媒体与语音类整个字段
+   * 不下发；语言类里也不是人人都有 —— 2026-09-07 实测 TEXT_CHAT 前 100 名有 5 个整块
+   * 缺失、**49 个缺 `cache_write_tokens`**。所以渲染必须逐项判空，不能假设四项齐全。
+   */
+  unit_prices?: DiscoveryUnitPrices | null
+}
+
+/** 单价构成。字段按 `unit` 计价，缺失表示该档位无公开价格，不是 0。 */
+export interface DiscoveryUnitPrices {
+  /** 目前实测只有 USD_PER_1M_TOKENS 一种取值。 */
+  unit: string
+  input_tokens?: number | null
+  output_tokens?: number | null
+  cache_hit_tokens?: number | null
+  cache_write_tokens?: number | null
 }
 
 /** 总览的单个 highlight：指标 + 值 + 完整模型卡。 */

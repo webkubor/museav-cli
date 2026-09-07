@@ -21,6 +21,7 @@ import {
   specialtyRows,
   toPrototypeModel,
   toSummaryCards,
+  unitPriceDetail,
 } from './discovery-data'
 import type { PrototypeModel } from './discovery-data'
 import type { DiscoveryOverview, DiscoveryRankingItem } from '@/types'
@@ -307,5 +308,47 @@ describe('专项榜柱图', () => {
       toPrototypeModel(card({ model_name: 'A', usage_value: 50_000 }), 'TEXT_CHAT'),
     ])
     expect(rows[0].short).toBe('50K')
+  })
+})
+
+describe('单价构成明细', () => {
+  const unit = 'USD_PER_1M_TOKENS'
+
+  it('四档齐全时逐行列出，按输入/输出/缓存命中/缓存写入的顺序', () => {
+    expect(unitPriceDetail({ unit, input_tokens: 10, output_tokens: 50, cache_hit_tokens: 0.25, cache_write_tokens: 12.5 }))
+      .toBe('输入 $10/M tokens\n输出 $50/M tokens\n缓存命中 $0.25/M tokens\n缓存写入 $12.5/M tokens')
+  })
+
+  it('缺项直接不列，不补 0 —— 实测 TEXT_CHAT 前 100 名有 49 个缺 cache_write_tokens', () => {
+    const detail = unitPriceDetail({ unit, input_tokens: 3, output_tokens: 15, cache_hit_tokens: 0.3, cache_write_tokens: null })
+    expect(detail).toBe('输入 $3/M tokens\n输出 $15/M tokens\n缓存命中 $0.3/M tokens')
+    expect(detail).not.toContain('缓存写入')
+    expect(detail).not.toContain('$0/M')
+  })
+
+  it('价格真的是 0 时照常列出（0 是价格，不是缺失）', () => {
+    expect(unitPriceDetail({ unit, input_tokens: 0, output_tokens: 0 })).toBe('输入 $0/M tokens\n输出 $0/M tokens')
+  })
+
+  it('整块缺失或四档全空时返回 undefined，调用方据此不挂 tooltip', () => {
+    expect(unitPriceDetail(null)).toBeUndefined()
+    expect(unitPriceDetail(undefined)).toBeUndefined()
+    expect(unitPriceDetail({ unit })).toBeUndefined()
+  })
+
+  it('未知计价单位原样展示，不猜换算', () => {
+    expect(unitPriceDetail({ unit: 'USD_PER_TASK', input_tokens: 2 })).toBe('输入 $2 USD_PER_TASK')
+  })
+
+  it('rankings 的 unit_prices 能经 toPrototypeModel 带到页面模型上', () => {
+    const model = toPrototypeModel(
+      card({ unit_prices: { unit, input_tokens: 10, output_tokens: 50 } }),
+      'TEXT_CHAT',
+    )
+    expect(unitPriceDetail(model.unitPrices)).toBe('输入 $10/M tokens\n输出 $50/M tokens')
+  })
+
+  it('媒体类型不下发该字段时页面模型上是 null', () => {
+    expect(toPrototypeModel(card({}), 'TEXT_TO_IMAGE').unitPrices).toBeNull()
   })
 })

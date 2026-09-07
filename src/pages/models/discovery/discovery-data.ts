@@ -16,6 +16,7 @@ import type {
   DiscoveryOverview,
   DiscoveryRankingItem,
   DiscoveryType,
+  DiscoveryUnitPrices,
 } from '@/types'
 
 export type ModalityKey = 'agent' | 'text' | 'image' | 'video' | 'audio'
@@ -99,6 +100,8 @@ export interface PrototypeModel {
   valueScore: string
   /** 端到端时延，媒体类型不提供。 */
   latency: string
+  /** 单价构成，用于成本列的 tooltip。只有语言类有，且各档位可能缺项。 */
+  unitPrices?: DiscoveryUnitPrices | null
   /** 排序用的原始数值，避免从展示串里反解析（"$0.34/M" 会被解析出 0.34 但丢单位）。 */
   raw: {
     score: number | null
@@ -137,6 +140,7 @@ export function toPrototypeModel(item: DiscoveryRankingItem, type: DiscoveryType
     release: item.release_date ?? undefined,
     valueScore: item.value_score === null ? EMPTY : item.value_score.toFixed(1),
     latency: item.end_to_end_latency_ms === null ? EMPTY : `${Math.round(item.end_to_end_latency_ms)} ms`,
+    unitPrices: item.unit_prices ?? null,
     raw: {
       score: item.primary_score,
       price: item.cost_value,
@@ -458,4 +462,30 @@ export const USAGE_UNIT_LABEL: Record<DiscoveryType, string> = {
   IMAGE_TO_VIDEO: '成功任务',
   TTS: '字符',
   STT: '音频分钟',
+}
+
+/**
+ * 单次任务成本的构成明细，给成本列的 tooltip 用（qa#708 第 5 条）。
+ *
+ * 接口 2026-09-07 起在 rankings 每个 item 上返回 `unit_prices`。**逐项判空是必需的**：
+ * 只有语言类下发这个字段，媒体与语音类整块没有；语言类里 TEXT_CHAT 前 100 名还有 5 个
+ * 整块缺失、**49 个缺 `cache_write_tokens`**。缺项直接不列，**不要补 0** ——「没有公开
+ * 价格」和「价格是 0」是两回事，后者会被读成免费。
+ *
+ * 返回 undefined 表示没有可展示的明细，调用方不挂 tooltip。
+ */
+export function unitPriceDetail(prices: DiscoveryUnitPrices | null | undefined): string | undefined {
+  if (!prices) return undefined
+  // 目前实测 unit 只有 USD_PER_1M_TOKENS 一种；出现别的取值时原样显示单位，不猜换算
+  const suffix = prices.unit === 'USD_PER_1M_TOKENS' ? '/M tokens' : ` ${prices.unit}`
+  const rows: Array<[string, number | null | undefined]> = [
+    ['输入', prices.input_tokens],
+    ['输出', prices.output_tokens],
+    ['缓存命中', prices.cache_hit_tokens],
+    ['缓存写入', prices.cache_write_tokens],
+  ]
+  const parts = rows
+    .filter((row): row is [string, number] => typeof row[1] === 'number')
+    .map(([label, value]) => `${label} $${value}${suffix}`)
+  return parts.length ? parts.join('\n') : undefined
 }

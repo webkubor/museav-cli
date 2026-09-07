@@ -189,6 +189,7 @@ export type {
   DiscoveryIntegrationStatus,
   DiscoveryDirection,
   DiscoveryModelCard,
+  DiscoveryUnitPrices,
   DiscoveryHighlight,
   DiscoveryHighlights,
   DiscoveryOverview,

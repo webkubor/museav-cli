@@ -47,6 +47,7 @@ function card(over: Partial<DiscoveryRankingItem> = {}): DiscoveryRankingItem {
     model_name: 'GLM-5.2 (max)',
     creator_name: 'Z.ai',
     integration_status: 'MODELGO',
+    is_integrated: true,
     is_open_source: true,
     release_date: '2026-07-16',
     primary_metric: 'INTELLIGENCE_INDEX',
@@ -115,10 +116,13 @@ describe('质量分按指标口径格式化', () => {
 })
 
 describe('模型卡转换', () => {
-  it('MODELGO 已接入才给 id（能跳详情）', () => {
+  it('已接入才给 id（能跳详情）—— 判据是 is_integrated 不是国别', () => {
     expect(toPrototypeModel(card(), 'TEXT_CHAT').id).toBe('glm-5-2')
-    expect(toPrototypeModel(card({ integration_status: 'MODELGO_AI' }), 'TEXT_CHAT').id).toBeUndefined()
-    expect(toPrototypeModel(card({ integration_status: 'MODELGO_AI' }), 'TEXT_CHAT').supported).toBe(false)
+    // 境外厂商但我们上架了：照样给 id，能跳站内详情（原先按国别判会误判成不可跳）
+    expect(toPrototypeModel(card({ integration_status: 'MODELGO_AI' }), 'TEXT_CHAT').id).toBe('glm-5-2')
+    expect(toPrototypeModel(card({ integration_status: 'MODELGO_AI' }), 'TEXT_CHAT').supported).toBe(true)
+    // 没上架：不给 id
+    expect(toPrototypeModel(card({ is_integrated: false }), 'TEXT_CHAT').id).toBeUndefined()
   })
 
   it('modelgo_id 为空时不给 id，避免点出 404', () => {
@@ -311,7 +315,7 @@ describe('专项榜柱图', () => {
   })
 })
 
-describe('单价构成明细', () => {
+describe('计费单价（不是成本构成拆解）', () => {
   const unit = 'USD_PER_1M_TOKENS'
 
   it('四档齐全时逐行列出，按输入/输出/缓存命中/缓存写入的顺序', () => {
@@ -350,5 +354,32 @@ describe('单价构成明细', () => {
 
   it('媒体类型不下发该字段时页面模型上是 null', () => {
     expect(toPrototypeModel(card({}), 'TEXT_TO_IMAGE').unitPrices).toBeNull()
+  })
+})
+
+describe('接入态只认 is_integrated', () => {
+  it('is_integrated=true → supported，无论厂商国别', () => {
+    expect(toPrototypeModel(card({ is_integrated: true, integration_status: 'MODELGO_AI' }), 'TEXT_CHAT').supported).toBe(true)
+    expect(toPrototypeModel(card({ is_integrated: true, integration_status: 'MODELGO' }), 'TEXT_CHAT').supported).toBe(true)
+  })
+
+  it('is_integrated=false → 不 supported，即使 integration_status 是 MODELGO（国产）', () => {
+    // 这正是 qa#718 的病根：拿国别当接入态，把 161 个从未上架的国产模型标成已接入
+    const model = toPrototypeModel(card({ is_integrated: false, integration_status: 'MODELGO' }), 'TEXT_CHAT')
+    expect(model.supported).toBe(false)
+    expect(model.integrationStatus).toBe('MODELGO')
+  })
+
+  it('字段缺失（后端旧版本）按未接入处理，不猜', () => {
+    const item = { ...card(), is_integrated: undefined as unknown as boolean }
+    expect(toPrototypeModel(item, 'TEXT_CHAT').supported).toBe(false)
+  })
+
+  it('国别原样带到页面模型上，供「ModelGo.ai 已接入」分支判断', () => {
+    expect(toPrototypeModel(card({ integration_status: 'MODELGO_AI' }), 'TEXT_CHAT').integrationStatus).toBe('MODELGO_AI')
+  })
+
+  it('未接入的模型不给 id —— 点不进站内详情', () => {
+    expect(toPrototypeModel(card({ is_integrated: false, modelgo_id: 'glm-5-2' }), 'TEXT_CHAT').id).toBeUndefined()
   })
 })

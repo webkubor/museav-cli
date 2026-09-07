@@ -9,6 +9,11 @@ import type { DiscoveryIntegrationStatus, DiscoveryMetric, DiscoveryType, QueryP
 /** 总览 / 模型选项：只有 type 一个维度。 */
 export interface DiscoveryTypeParams extends QueryParams {
   type: DiscoveryType
+  /**
+   * `true` = 仅看已接入。总览的六张卡也要跟着收窄 —— 否则会出现榜单全是已接入、
+   * 卡片却推荐了个用不了的模型。
+   */
+  integrated?: boolean
 }
 
 /** 统一排名。取 Top N 就传小的 page_size，完整榜单用正常分页，不需要区分调用。 */
@@ -18,6 +23,12 @@ export interface DiscoveryRankingsParams extends QueryParams {
   /** 厂商名称，全等匹配（不区分大小写）。候选值取模型选项的 creator_name 去重。 */
   creator?: string
   integration_status?: DiscoveryIntegrationStatus
+  /**
+   * `true` = 仅看已接入（目录里有且上架）。**接口只认 true / false 两个字面量**，
+   * 传 1 / yes 会被当作未传、静默不过滤。判接入态用它，不要用 `integration_status`
+   * （那是厂商国别，见 qa#718）。
+   */
+  integrated?: boolean
   /** 仅返回开放权重模型。 */
   open_source?: boolean
   /** 默认 1。 */

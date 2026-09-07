@@ -14,6 +14,7 @@
 import type {
   DiscoveryModelCard,
   DiscoveryOverview,
+  DiscoveryIntegrationStatus,
   DiscoveryRankingItem,
   DiscoveryType,
   DiscoveryUnitPrices,
@@ -100,6 +101,11 @@ export interface PrototypeModel {
   valueScore: string
   /** 端到端时延，媒体类型不提供。 */
   latency: string
+  /**
+   * 厂商国别归属（接口 `integration_status`）：`MODELGO` 国产 / `MODELGO_AI` 境外。
+   * **它不表示是否接入** —— 接入态是 `supported`（接口 `is_integrated`）。
+   */
+  integrationStatus?: DiscoveryIntegrationStatus
   /** 单价构成，用于成本列的 tooltip。只有语言类有，且各档位可能缺项。 */
   unitPrices?: DiscoveryUnitPrices | null
   /** 排序用的原始数值，避免从展示串里反解析（"$0.34/M" 会被解析出 0.34 但丢单位）。 */
@@ -120,7 +126,11 @@ export interface PrototypeModel {
  * MODELGO_AI 只在榜单里展示，没有详情页，所以不给 id。
  */
 export function toPrototypeModel(item: DiscoveryRankingItem, type: DiscoveryType): PrototypeModel {
-  const supported = item.integration_status === 'MODELGO'
+  // 「已接入」只认 is_integrated（目录里有 + 上架 + 未删除）。
+  // 此前用的 integration_status === 'MODELGO' 是**厂商国别**，把从未上架的国产模型
+  // 全标成了已接入 —— 2026-09-07 实测九个类型合计 217 个假「已接入」里 161 个连
+  // modelgo_id 都没有，页面上「已接入」徽标配着禁用的「待支持」按钮（qa#718）。
+  const supported = item.is_integrated === true
   return {
     // 只有已接入的模型能跳详情；modelgo_id 为空时也不给 id，避免点出 404
     id: supported && item.modelgo_id ? item.modelgo_id : undefined,
@@ -140,6 +150,7 @@ export function toPrototypeModel(item: DiscoveryRankingItem, type: DiscoveryType
     release: item.release_date ?? undefined,
     valueScore: item.value_score === null ? EMPTY : item.value_score.toFixed(1),
     latency: item.end_to_end_latency_ms === null ? EMPTY : `${Math.round(item.end_to_end_latency_ms)} ms`,
+    integrationStatus: item.integration_status,
     unitPrices: item.unit_prices ?? null,
     raw: {
       score: item.primary_score,
@@ -465,14 +476,19 @@ export const USAGE_UNIT_LABEL: Record<DiscoveryType, string> = {
 }
 
 /**
- * 单次任务成本的构成明细，给成本列的 tooltip 用（qa#708 第 5 条）。
+ * 计费单价（价目表），给成本列的 tooltip 用（接口文档第三节（二））。
  *
- * 接口 2026-09-07 起在 rankings 每个 item 上返回 `unit_prices`。**逐项判空是必需的**：
- * 只有语言类下发这个字段，媒体与语音类整块没有；语言类里 TEXT_CHAT 前 100 名还有 5 个
- * 整块缺失、**49 个缺 `cache_write_tokens`**。缺项直接不列，**不要补 0** ——「没有公开
- * 价格」和「价格是 0」是两回事，后者会被读成免费。
+ * ⚠️ **它不是「单次任务成本的构成拆解」** —— 接口文档明确两者不要混用：
+ * 单价之和没有任何意义，也不等于 `cost_value`。所以 tooltip 标题必须是「计费单价」，
+ * 写成「成本构成」会让人以为四档加起来就是那笔任务成本。真正的成本拆解要等付费档接入。
  *
- * 返回 undefined 表示没有可展示的明细，调用方不挂 tooltip。
+ * 只有语言类（AGENT / TEXT_CHAT / CODE_GENERATION）下发，媒体与语音类整个字段没有。
+ *
+ * **逐项判空必须用「字段是否存在」，不能用 `!price`** —— `0` 是合法单价（部分模型缓存
+ * 命中免费，文档实测有 6 个模型如此），当成缺失会把「免费」显示成「没有这档」。
+ * 四档全空时接口整个对象都不下发（文档称 TEXT_CHAT 约 18% 属这种）。
+ *
+ * 返回 undefined 表示没有可展示的单价，调用方不挂 tooltip。
  */
 export function unitPriceDetail(prices: DiscoveryUnitPrices | null | undefined): string | undefined {
   if (!prices) return undefined

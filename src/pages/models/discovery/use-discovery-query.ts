@@ -64,21 +64,34 @@ export interface DiscoveryQueryResult {
   isError: boolean
 }
 
-export function useDiscoveryQuery(modality: ModalityKey, task: string): DiscoveryQueryResult {
+export function useDiscoveryQuery(
+  modality: ModalityKey,
+  task: string,
+  /** 'supported' = 仅看已接入：总览六张卡与 Top 榜都只在已接入模型里选 */
+  scope: 'all' | 'supported' = 'all',
+): DiscoveryQueryResult {
   const type = discoveryTypeFor(modality, task)
   const metric = type ? DISCOVERY_PRIMARY_METRIC[type] : undefined
 
+  const integratedOnly = scope === 'supported'
+
   const rankings = useQuery({
-    queryKey: ['discovery-rankings', type],
-    queryFn: () => listDiscoveryRankings({ type: type!, metric: metric!, page_size: PAGE_SIZE }),
+    queryKey: ['discovery-rankings', type, integratedOnly],
+    queryFn: () =>
+      listDiscoveryRankings({
+        type: type!,
+        metric: metric!,
+        page_size: PAGE_SIZE,
+        ...(integratedOnly ? { integrated: true } : {}),
+      }),
     enabled: Boolean(type && metric),
     staleTime: STALE_TIME,
     placeholderData: keepPrevious,
   })
 
   const overview = useQuery({
-    queryKey: ['discovery-overview', type],
-    queryFn: () => getDiscoveryOverview({ type: type! }),
+    queryKey: ['discovery-overview', type, integratedOnly],
+    queryFn: () => getDiscoveryOverview({ type: type!, ...(integratedOnly ? { integrated: true } : {}) }),
     enabled: Boolean(type),
     staleTime: STALE_TIME,
     placeholderData: keepPrevious,
@@ -145,16 +158,27 @@ function tableMetricFor(type: DiscoveryType, metric: TableMetric): DiscoveryMetr
  * `integration_status`，取更严格的那个；两者互斥时（只看已接入 + 只看未接入）
  * 返回 'none'，调用方据此直接给空结果，不必发一次注定为空的请求。
  */
-function integrationStatusFor(
+/**
+ * 把页面的两个筛选器映射成接口参数。
+ *
+ * **「仅看已接入」走 `integrated` 布尔参数，不是 `integration_status`** ——
+ * 后者是厂商国别（MODELGO 国产 / MODELGO_AI 境外），拿它当接入态会把从未上架的
+ * 国产模型筛进来（qa#718）。接口只认 `true` / `false` 两个字面量，传 `1`/`yes`
+ * 会被当作未传、静默不过滤。
+ *
+ * 「待支持」= 未接入，`integrated=false`。两个筛选器同时要「已接入」和「待支持」时
+ * 是空集，返回 `none` 让调用方直接不发请求。
+ */
+function integrationFilterFor(
   scope: 'all' | 'supported',
   tableAccess: 'all' | 'supported' | 'pending',
-): 'MODELGO' | 'MODELGO_AI' | 'none' | undefined {
+): { integrated?: boolean } | 'none' {
   const wantsConnected = scope === 'supported' || tableAccess === 'supported'
   const wantsPending = tableAccess === 'pending'
   if (wantsConnected && wantsPending) return 'none'
-  if (wantsConnected) return 'MODELGO'
-  if (wantsPending) return 'MODELGO_AI'
-  return undefined
+  if (wantsConnected) return { integrated: true }
+  if (wantsPending) return { integrated: false }
+  return {}
 }
 
 export interface DiscoveryTableResult {
@@ -189,15 +213,15 @@ export function useDiscoveryTable(
 ): DiscoveryTableResult {
   const type = discoveryTypeFor(modality, task)
   const metric = type ? tableMetricFor(type, options.metric) : undefined
-  const status = integrationStatusFor(options.scope, options.tableAccess)
-  const enabled = Boolean(type && metric) && status !== 'none'
-  const integrationStatus = status === 'none' ? undefined : status
+  const filter = integrationFilterFor(options.scope, options.tableAccess)
+  const enabled = Boolean(type && metric) && filter !== 'none'
+  const integratedParam = filter === 'none' ? undefined : filter.integrated
 
   // 厂商筛选按选中顺序拼成逗号串；queryKey 用同一个串，顺序变了才算换查询
   const creator = options.creators.join(',')
 
   const query = useQuery({
-    queryKey: ['discovery-table', type, metric, options.page, options.pageSize, creator, integrationStatus],
+    queryKey: ['discovery-table', type, metric, options.page, options.pageSize, creator, integratedParam],
     queryFn: () =>
       listDiscoveryRankings({
         type: type!,
@@ -205,7 +229,7 @@ export function useDiscoveryTable(
         page: options.page,
         page_size: options.pageSize,
         ...(creator ? { creator } : {}),
-        ...(integrationStatus ? { integration_status: integrationStatus } : {}),
+        ...(integratedParam === undefined ? {} : { integrated: integratedParam }),
       }),
     enabled,
     staleTime: STALE_TIME,

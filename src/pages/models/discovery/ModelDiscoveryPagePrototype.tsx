@@ -52,7 +52,7 @@ import {
   useHotAgents,
 } from './use-discovery-query'
 import { rankBarWidth, specialtyRows, unitPriceDetail } from './discovery-data'
-import type { DiscoveryUnitPrices } from '@/types'
+import type { DiscoveryIntegrationStatus, DiscoveryUnitPrices } from '@/types'
 import {
   AnalysisScatterChart,
   DiscoveryAgentIcon,
@@ -101,8 +101,10 @@ type DiscoveryModel = {
   samples?: string;
   voices?: string;
   release?: string;
-  /** 单价构成，成本列 tooltip 用。只有语言类下发，且各档位可能缺项。 */
+  /** 计费单价，成本列 tooltip 用。只有语言类下发，且各档位可能缺项。 */
   unitPrices?: DiscoveryUnitPrices | null;
+  /** 厂商国别（接口 integration_status）：MODELGO 国产 / MODELGO_AI 境外。不表示接入态。 */
+  integrationStatus?: DiscoveryIntegrationStatus;
 };
 
 /**
@@ -155,21 +157,35 @@ function normalizeProviderName(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-/** 只依赖 provider / supported，故对散点用的轻量模型对象同样适用。 */
-type AccessShape = Pick<DiscoveryModel, "provider" | "supported">;
+/** 只依赖 provider / supported / integrationStatus，故对散点用的轻量模型对象同样适用。 */
+type AccessShape = Pick<DiscoveryModel, "provider" | "supported" | "integrationStatus">;
 
-/** integration_status 为 MODELGO（supported）的模型必然是本平台已接入的国产模型，不看名单。 */
+/**
+ * 厂商国别。**接口的 `integration_status` 就是这个维度**（MODELGO 国产 / MODELGO_AI 境外），
+ * 与是否接入无关。字段缺省时才退回本地厂商白名单。
+ *
+ * 此前这里写的是 `model.supported || 白名单`，而那时 `supported` 取自
+ * `integration_status === 'MODELGO'` —— 两个维度被揉成一个，于是境外厂商里我们真上架了
+ * 的模型（如 Claude Fable 5）被判成「海外未接入」，点击跳去 ModelGo.ai 外链而不是站内详情。
+ */
 function isDomesticModel(model: AccessShape) {
-  return model.supported || domesticModelProviders.has(normalizeProviderName(model.provider));
+  if (model.integrationStatus) return model.integrationStatus === "MODELGO";
+  return domesticModelProviders.has(normalizeProviderName(model.provider));
 }
 
+/**
+ * 该模型在页面上是否算「有落点」：本平台已接入（站内详情），或境外模型（ModelGo.ai 外链）。
+ * 国产但未接入的没有落点 —— 显示「暂未接入 ModelGo」+ 禁用按钮。
+ */
 function isModelConnected(model: AccessShape) {
-  return isDomesticModel(model) ? model.supported : true;
+  return model.supported || !isDomesticModel(model);
 }
 
+/** 三态文案：本平台已接入 / 境外站已接入 / 国产未接入。判据顺序不能换。 */
 function modelAccessLabel(model: DiscoveryModel) {
+  if (model.supported) return "ModelGo 已接入";
   if (!isDomesticModel(model)) return "ModelGo.ai 已接入";
-  return model.supported ? "ModelGo 已接入" : "暂未接入 ModelGo";
+  return "暂未接入 ModelGo";
 }
 
 function modelGoAiModelUrl(model: Pick<DiscoveryModel, "name">) {
@@ -638,15 +654,17 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
    * 榜单分页的总数走 useDiscoveryTableQuery 的 `tableTotal`（那是按当前筛选条件的命中数，
    * 与这里按 metric 的可排序总数不是同一个口径，别混用）。
    */
+  // scope 必须声明在 useDiscoveryQuery 之前：总览的六张卡要跟着「仅看已接入」收窄，
+  // 否则会出现榜单全是已接入、卡片却推荐了个用不了的模型（接口文档第三节（一））
+  const [scope, setScope] = useState<"all" | "supported">("all");
   const {
     models: apiModels,
     summaryCards: apiSummaryCards,
     snapshotDate,
     dataType: discoveryDataType,
     isLoading: discoveryLoading,
-  } = useDiscoveryQuery(modality, task);
+  } = useDiscoveryQuery(modality, task, scope);
   const configuredModels = apiModels;
-  const [scope, setScope] = useState<"all" | "supported">("all");
   const [yMetric, setYMetric] = useState(0);
   const [xMetric, setXMetric] = useState(0);
   const [pareto, setPareto] = useState(false);
@@ -921,27 +939,30 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   const safeTablePage = Math.min(tablePage, tablePageCount);
 
   /** 跳详情只需要这四个字段，散点用的轻量模型对象同样适用。 */
-  type DetailShape = Pick<DiscoveryModel, "id" | "name" | "provider" | "supported">;
+  type DetailShape = Pick<DiscoveryModel, "id" | "name" | "provider" | "supported" | "integrationStatus">;
 
   function canOpenModelDetail(model: DetailShape) {
-    const hasDestination = isDomesticModel(model) ? Boolean(model.id) : true;
+    // 已接入 → 需要 modelgo_id 才能跳站内详情；未接入的境外模型 → 走 ModelGo.ai 外链
+    const hasDestination = model.supported ? Boolean(model.id) : !isDomesticModel(model);
     return isModelConnected(model) && hasDestination;
   }
 
   function modelDetailAriaLabel(model: DetailShape) {
-    return isDomesticModel(model)
+    return model.supported
       ? `查看 ${model.name} 模型详情`
       : `在 ModelGo.ai 查看 ${model.name} 模型`;
   }
 
   function openModelDetail(model: DetailShape) {
     if (!canOpenModelDetail(model)) return;
-    if (!isDomesticModel(model)) {
-      window.open(modelGoAiModelUrl(model), "_blank", "noopener,noreferrer");
+    // 本平台已接入优先走站内详情 —— 境外厂商只要我们上架了也算（判据是 supported 不是国别）
+    if (model.supported && model.id) {
+      onOpenModel(model.id);
       return;
     }
-    if (!model.id) return;
-    onOpenModel(model.id);
+    if (!isDomesticModel(model)) {
+      window.open(modelGoAiModelUrl(model), "_blank", "noopener,noreferrer");
+    }
   }
 
   // Top 5 卡的行是 div、完整榜单的行是 tr（Table 组件），故取二者共同的 HTMLElement
@@ -975,7 +996,11 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
     return [
       {
         text: isTextAgent ? formatTaskCost(taskCostFor(model)) : model.price,
-        title: unitPriceDetail(model.unitPrices),
+        // tooltip 首行标明是「计费单价」——接口文档要求，四档单价之和不等于这笔任务成本
+        title: (() => {
+          const detail = unitPriceDetail(model.unitPrices);
+          return detail ? `计费单价\n${detail}` : undefined;
+        })(),
       },
       { text: model.release ?? "—" },
       { text: model.usage },
@@ -1457,7 +1482,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                     {supportingValues.map((value, valueIndex) => (
                       <TableCell key={`${model.name}-${valueIndex}`}>
                         {value.title
-                          ? <span className="model-discovery-cost-detail" title={value.title}>{value.text}</span>
+                          ? <span className="model-discovery-unit-price" title={value.title}>{value.text}</span>
                           : value.text}
                       </TableCell>
                     ))}

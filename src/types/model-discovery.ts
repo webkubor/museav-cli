@@ -71,7 +71,22 @@ export interface DiscoveryModelCard {
   source_slug?: string | null
   model_name: string
   creator_name: string | null
+  /**
+   * **厂商国别归属，与是否接入无关** —— `MODELGO` 国产 / `MODELGO_AI` 境外。
+   * 判断「已接入」一律用 `is_integrated`，拿这个字段当接入态会把从未接入的模型标成
+   * 已接入（2026-09-07 实测 TEXT_CHAT 前 100 条：本字段 =MODELGO 有 24 个，
+   * 而真正 `is_integrated` 的只有 20 个）。
+   */
   integration_status: DiscoveryIntegrationStatus
+  /**
+   * 是否已接入：**我们目录里有 + 状态为上架 + 未删除**。
+   * 已接入徽标、「仅看已接入」开关、能否跳站内详情，一律以它为准。
+   *
+   * 与「`modelgo_id` 是否为空」不等价：已下架的模型 `modelgo_id` 仍会下发
+   * （详情页可跳转），但本字段为 false。接口文档第五节「用 modelgo_id 是否为空判断」
+   * 那句是旧口径，已被第一节的本字段取代。
+   */
+  is_integrated: boolean
   is_open_source: boolean
   /** TTS / STT 无发布时间，恒为 null。 */
   release_date: string | null
@@ -94,16 +109,24 @@ export interface DiscoveryModelCard {
   usage_value: number | null
   usage_unit: DiscoveryUsageUnit
   /**
-   * 单价构成，用于把 `cost_value`（单次任务总成本）拆开展示。
+   * **计费单价**（价目表），不是「单次任务成本的构成拆解」。
+   *
+   * 接口文档明确：两者不要混用 —— **单价之和没有任何意义，也不等于 `cost_value`**，
+   * tooltip 文案必须是「计费单价」而非「成本构成」。真正的成本拆解要等付费档接入。
    *
    * **只有语言类（AGENT / TEXT_CHAT / CODE_GENERATION）返回**，媒体与语音类整个字段
-   * 不下发；语言类里也不是人人都有 —— 2026-09-07 实测 TEXT_CHAT 前 100 名有 5 个整块
-   * 缺失、**49 个缺 `cache_write_tokens`**。所以渲染必须逐项判空，不能假设四项齐全。
+   * 不下发；语言类里四档全空时整个对象也不出现（文档称 TEXT_CHAT 约 18% 属这种，
+   * 2026-09-07 实测前 100 名有 5 个整块缺失、49 个缺 `cache_write_tokens`）。
    */
   unit_prices?: DiscoveryUnitPrices | null
 }
 
-/** 单价构成。字段按 `unit` 计价，缺失表示该档位无公开价格，不是 0。 */
+/**
+ * 计费单价。四档**各自可空，缺失的档整个不出现**。
+ *
+ * ⚠️ 判空必须用「字段是否存在」，**不能用 `!price`** —— `0` 是合法单价
+ * （部分模型缓存命中免费，文档实测有 6 个模型如此），当成缺失会把免费显示成没有。
+ */
 export interface DiscoveryUnitPrices {
   /** 目前实测只有 USD_PER_1M_TOKENS 一种取值。 */
   unit: string

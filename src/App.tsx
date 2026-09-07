@@ -137,7 +137,6 @@ import { useLangStore } from '@/store/use-brand-store'
 import { usePublicProtocolsStore } from '@/store/use-public-protocols-store'
 
 import { Toaster } from 'sonner'
-import { CustomerService } from '@/components/customer-service'
 
 // 注入市场标识（初始值用域名探测，PlatformLoader 会用 API 结果覆盖）
 document.documentElement.dataset.market = getMarket()
@@ -381,11 +380,6 @@ export default function App() {
           <Route path="*" element={withLocaleNamespaces(<NotFoundPage />, ['common'])} />
         </Routes>
         </Suspense>
-        {/* 智能助手悬浮入口（智能客服 PRD v0.1 §7.2）：官网、登录页和 Console
-            右下角共用同一个入口。此前只挂在 DashboardLayout 里，未登录用户
-            （PRD §2 的「未登录访客」角色）在登录页与公开的模型广场看不到它，
-            而平台知识咨询本来就不要求登录。放在 Routes 之外只挂一次。 */}
-        <CustomerService />
         </AuthProvider>
       </BrowserRouter>
     </Providers>

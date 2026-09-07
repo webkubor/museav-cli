@@ -36,6 +36,22 @@ import { queryLengthBucket, diffFilterChange, buildFilterSummary } from './catal
 import type { CatalogModelItem } from '@/types'
 import './catalog.css'
 
+
+/**
+ * 模型发现入口的开关。
+ *
+ * 模型发现页本身与路由 `/models/discovery` 都保留 —— 关掉的只是模型广场工具栏里这枚
+ * **唯一入口按钮**，直接输 URL 仍能进（方便验证与演示）。
+ *
+ * 为什么要开关：v1.0.6 的联调还没收口 —— 榜单里 161 个标「ModelGo 已接入」的模型缺
+ * `modelgo_id` 点不进详情页（qa#718），Benchmark 也只有 18/33 命中。入口先不对外露出。
+ *
+ * 取值：`.env.development` 配 `on`（本地要能开发），`.env.test` 与 `.env.production`
+ * 不配即为关；`release-1.0.6` 分支的 `.env.test` 单独配 `on` 用于验证。
+ * **两个分支只差这一行 env，代码相同，合并不会冲突。**
+ */
+const DISCOVERY_ENTRY_ENABLED = import.meta.env.VITE_ENABLE_DISCOVERY_ENTRY === 'on'
+
 type SortKey = 'default' | 'newest' | 'cheapest'
 
 /** 输出模态分类栏图标（原型 marketplaceOutputModalityOptions 同款隐喻） */
@@ -468,19 +484,21 @@ export default function ModelsCatalogPage() {
                 此前放在页头且降成中性 outline，与原型不一致（2026-09-03 需求方指出）。
                 尺寸与同一行的搜索(lg)/排序触发器(lg)同档（2026-09-04 控件统一）：
                 此前 size="sm"(32px) 跟在 48px 的搜索框后面，flex 行里高度参差。 */}
-            <Button
-              variant="brand-outline"
-              size="lg"
-              onClick={() => {
-                // 只记点击，不把「加载成功」伪报成点击（§2.1）
-                trackEvent('marketplace_discovery_entry_clicked', { source: 'catalog_toolbar' })
-                navigate('/models/discovery')
-              }}
-            >
-              <LuChartColumn size={14} />
-              {t('modelsCatalog.discovery.entry')}
-              <LuArrowRight size={13} />
-            </Button>
+            {DISCOVERY_ENTRY_ENABLED && (
+              <Button
+                variant="brand-outline"
+                size="lg"
+                onClick={() => {
+                  // 只记点击，不把「加载成功」伪报成点击（§2.1）
+                  trackEvent('marketplace_discovery_entry_clicked', { source: 'catalog_toolbar' })
+                  navigate('/models/discovery')
+                }}
+              >
+                <LuChartColumn size={14} />
+                {t('modelsCatalog.discovery.entry')}
+                <LuArrowRight size={13} />
+              </Button>
+            )}
           </div>
 
           {/* 输出模态分类栏（#872 需求点 9）：搜索栏下方，与侧栏各维度组合筛选；

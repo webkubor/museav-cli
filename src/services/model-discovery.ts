@@ -70,6 +70,11 @@ export function getDiscoveryUsageTrends(params: DiscoveryUsageTrendsParams) {
 /**
  * 模型详情 Benchmark。路径参数是 `modelgo_id`（不是 source_model_id），
  * 模型未命中返回 40401。
+ *
+ * **直接传 catalog 的 `model_id`**：2026-09-07 实测后端已把两边口径对齐
+ * （qa#708 第 1 条），catalog 33 个真实模型原样请求命中 18 个；此前前端那层
+ * `toLowerCase()` + 点号转连字符的猜规则适配已删除 —— 保留它反而只剩 3 个命中。
+ * 剩下 15 个未命中的是图像/视频类与确实不在第三方榜单里的模型，本就该整块不显示。
  */
 export function getModelBenchmarks(modelgoId: string, params?: ModelBenchmarksParams) {
   return get<ModelBenchmarks>(
@@ -83,22 +88,3 @@ export function joinSourceModelIds(ids: readonly string[]) {
   return ids.join(',')
 }
 
-/**
- * 把 catalog 的 `model_id` 转成 Benchmark 接口认的 `modelgo_id`。
- *
- * **两边的 id 口径当前不一致**：observer 的 `modelgo_id` 直接复制第三方 slug，
- * 一律小写且把点号写成连字符（catalog `glm-5.2` ↔ observer `glm-5-2`、
- * `MiniMax-M3` ↔ `minimax-m3`）。2026-09-02 实测 catalog 首页 50 个模型，
- * **原样请求只有 3 个命中，规范化后 20 个命中** —— 不转换的话 Benchmark 区块会对
- * 绝大多数模型静默返回 40401、整块消失，页面看着"正常"其实全线失效。
- *
- * 转换是确定性的字符替换，已核对命中项的模型名一一对应，且 catalog 内不存在
- * 规范化后碰撞的 id。剩余未命中的多是测试夹具（pytest-* / fakellm/*）与确实不在
- * 第三方榜单里的模型，本就该整块不显示。
- *
- * 这是补偿口径差异的**适配层，不是长期方案**：后端单 qa#708 要求把 `modelgo_id`
- * 与模型目录对齐（接口文档第五节也把它列为待确认事项），对齐后这里应删掉、改回原样透传。
- */
-export function toBenchmarkModelId(catalogModelId: string) {
-  return catalogModelId.toLowerCase().replace(/\./g, '-')
-}

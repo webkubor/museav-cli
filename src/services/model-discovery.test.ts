@@ -23,7 +23,6 @@ import {
   getModelBenchmarks,
   listDiscoveryModelOptions,
   listDiscoveryRankings,
-  toBenchmarkModelId,
 } from '@/services/model-discovery'
 import {
   DISCOVERY_METRICS_BY_TYPE,
@@ -111,21 +110,5 @@ describe('type × metric 组合护栏', () => {
         text.filter((m) => !m.endsWith('_INDEX')),
       )
     }
-  })
-})
-
-describe('toBenchmarkModelId', () => {
-  it('把 catalog 的点号 id 转成 observer 的连字符 id', () => {
-    expect(toBenchmarkModelId('glm-5.2')).toBe('glm-5-2')
-    expect(toBenchmarkModelId('kimi-k2.7-code')).toBe('kimi-k2-7-code')
-    expect(toBenchmarkModelId('qwen3.7-max')).toBe('qwen3-7-max')
-  })
-
-  it('大写一律转小写（catalog MiniMax-M3 ↔ observer minimax-m3）', () => {
-    expect(toBenchmarkModelId('MiniMax-M3')).toBe('minimax-m3')
-  })
-
-  it('本就规范的 id 原样返回', () => {
-    expect(toBenchmarkModelId('deepseek-v4-pro')).toBe('deepseek-v4-pro')
   })
 })

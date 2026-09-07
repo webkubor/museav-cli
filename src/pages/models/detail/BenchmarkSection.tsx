@@ -13,7 +13,7 @@
  *   （不要用「—」冒充有数据）不冲突：空态是显式标注，不是占位符。
  */
 import { useQuery } from '@tanstack/react-query'
-import { getModelBenchmarks, toBenchmarkModelId } from '@/services/model-discovery'
+import { getModelBenchmarks } from '@/services/model-discovery'
 import { isNotFoundError } from '@/lib/request-error-message'
 import type { BenchmarkCompositeIndex, BenchmarkItem, DiscoveryMetric } from '@/types'
 
@@ -72,13 +72,13 @@ function CompositeCard({ index }: { index: BenchmarkCompositeIndex }) {
 }
 
 export function BenchmarkSection({ modelId }: { modelId: string }) {
-  // catalog 的 model_id 与 observer 的 modelgo_id 口径不一致，必须转换后再请求，
-  // 否则绝大多数模型拿 40401、整块静默消失（qa#708，见 toBenchmarkModelId 的说明）
-  const benchmarkId = toBenchmarkModelId(modelId)
+  // catalog 的 model_id 原样传：2026-09-07 实测后端已把 modelgo_id 对齐成 catalog 口径
+  // （qa#708 第 1 条），此前那层 toLowerCase + 点转连字符的猜规则适配已删 —— 它现在
+  // 是有害的，把 15 个本来能命中的模型转成了 40401（原样 18/33 → 转换后 3/33）
   const { data, isLoading } = useQuery({
-    queryKey: ['model-benchmarks', benchmarkId],
-    queryFn: () => getModelBenchmarks(benchmarkId),
-    enabled: Boolean(benchmarkId),
+    queryKey: ['model-benchmarks', modelId],
+    queryFn: () => getModelBenchmarks(modelId),
+    enabled: Boolean(modelId),
     // 每日快照，同一天内重复进出详情页不必反复请求
     staleTime: 5 * 60 * 1000,
     // 模型未命中（40401）是常态而非故障：ModelGo 目录里的模型不一定进了第三方榜单

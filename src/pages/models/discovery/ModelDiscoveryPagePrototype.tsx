@@ -54,6 +54,7 @@ import { rankBarWidth, specialtyRows, unitPriceDetail } from './discovery-data'
 import type { DiscoveryUnitPrices } from '@/types'
 import {
   AnalysisScatterChart,
+  DiscoveryAgentIcon,
   DiscoveryModelIcon,
   SpecialtyBarChart,
   TrendBarChart,
@@ -63,9 +64,16 @@ import {
 
 type ModalityKey = "agent" | "text" | "image" | "video" | "audio";
 type RankingMetric = "overall" | "value" | "price" | "usage";
+type AgentPopularityPeriod = "day" | "week" | "month";
 /** 散点 X 轴的取数来源。samples/voices/performance 随 PRD 73cbb28 撤下，已无配置引用。 */
 type AnalysisMetricSource = "price" | "speed" | "latency" | "usage";
 
+type AgentApplication = {
+  id: string;
+  name: string;
+  description: string;
+  tokenUsage: number;
+};
 type AnalysisAxisProfile = {
   yMetrics: string[];
   xMetrics: Array<{ label: string; unit: string; source: AnalysisMetricSource; lowerIsBetter: boolean; presetLabel: string }>;
@@ -430,6 +438,88 @@ const agentDiscoveryConfig: DiscoveryConfig = {
   yMetrics: ["Agentic Index"],
 };
 
+const agentPopularityPeriods: Array<{ key: AgentPopularityPeriod; label: string }> = [
+  { key: "day", label: "本日" },
+  { key: "week", label: "本周" },
+  { key: "month", label: "本月" },
+];
+
+/**
+ * ⚠️ 全页唯一还留着的 mock —— 「热门 Agent 排行」是**应用**维度（Hermes Agent、
+ * Claude Code…），而 v1.0.6 的六个接口返回的都是**模型**，没有任何应用维度数据。
+ *
+ * 已提 qa#709 请后端确认补接口还是把该模块下线。在此之前这份榜单是写死的，
+ * 不要把它当成真实数据引用，也不要照它的形状去接别的模块。
+ */
+const agentApplications: Record<AgentPopularityPeriod, AgentApplication[]> = {
+  day: [
+    { id: "hermes-agent", name: "Hermes Agent", description: "Hermes Agent is an open-source, self-improving AI agent by Nous Research that runs persistently with memory across sessions, and builds reusable skills from experience. It comes with 40+ built-in tools, including web search, browser automation, and vision, plus scheduled automations and subagents.", tokenUsage: 1_458_881_530_720 },
+    { id: "claude-code", name: "Claude Code", description: "Claude Code is Anthropic's agentic coding tool that reads your entire codebase, plans and executes changes across files, runs tests, and iterates on failures, all from natural language prompts.", tokenUsage: 334_253_105_091 },
+    { id: "kilo-code", name: "Kilo Code", description: "Kilo Code is an open-source AI coding agent that works across VS Code, JetBrains, and CLI to help developers ship code faster with agentic workflows.", tokenUsage: 243_602_077_191 },
+    { id: "cline", name: "Cline", description: "Cline is an open-source AI coding agent that lives inside your IDE, autonomously exploring your codebase, editing files, running terminal commands, and using browser automation.", tokenUsage: 197_830_567_961 },
+    { id: "openclaw", name: "OpenClaw", description: "OpenClaw is an open-source AI agent that connects to your messaging apps and takes real actions on your behalf, from running commands and browsing the web to managing files and sending emails.", tokenUsage: 152_022_999_648 },
+    { id: "pi", name: "pi", description: "There are many coding agents, but this one is yours.", tokenUsage: 128_548_684_477 },
+    { id: "framer", name: "Framer", description: "Create a professional website with Framer’s no-code AI website builder. Design freely, manage CMS content, optimize SEO, collaborate, and publish fast.", tokenUsage: 122_974_048_354 },
+    { id: "app-4137556", name: "Zazen (Freebuff fork)", description: "freebuff.com", tokenUsage: 106_274_356_214 },
+    { id: "app-4580043", name: "HighLevel", description: "www.gohighlevel.com", tokenUsage: 72_464_455_244 },
+    { id: "app-3682314", name: "omp", description: "omp.sh", tokenUsage: 71_615_127_842 },
+    { id: "nous-research-api", name: "Nous Research API", description: "Nous Research is an AI research team focused on advancing open-source AI.", tokenUsage: 65_014_622_819 },
+    { id: "descript", name: "Descript", description: "AI Video & Podcast Editor", tokenUsage: 47_447_624_946 },
+    { id: "lemonade", name: "Lemonade", description: "The AI tool for Roblox games.", tokenUsage: 43_322_686_955 },
+    { id: "codex", name: "Codex", description: "A coding agent that helps you build and ship with AI", tokenUsage: 39_347_406_258 },
+    { id: "isekai-zero", name: "ISEKAI ZERO", description: "AI adventures. Travel with your favorite characters", tokenUsage: 36_887_634_343 },
+    { id: "janitor-ai", name: "Janitor AI", description: "Janitor AI is a chatbot platform where users create and chat with custom AI characters for interactive roleplay, storytelling, and immersive fiction.", tokenUsage: 32_210_895_083 },
+    { id: "app-4132065", name: "Hello Minds, powered by Ethoswarm", description: "www.hellominds.ai", tokenUsage: 27_681_437_156 },
+    { id: "stan", name: "Sahasra", description: "All-in-one creator store", tokenUsage: 24_502_237_846 },
+    { id: "app-2640550", name: "Peezy Gateway", description: "p0.systems", tokenUsage: 23_274_028_608 },
+    { id: "app-2237546", name: "Cursor", description: "cursor.com", tokenUsage: 22_293_418_234 },
+  ],
+  week: [
+    { id: "hermes-agent", name: "Hermes Agent", description: "Hermes Agent is an open-source, self-improving AI agent by Nous Research that runs persistently with memory across sessions, and builds reusable skills from experience. It comes with 40+ built-in tools, including web search, browser automation, and vision, plus scheduled automations and subagents.", tokenUsage: 10_002_983_822_990 },
+    { id: "claude-code", name: "Claude Code", description: "Claude Code is Anthropic's agentic coding tool that reads your entire codebase, plans and executes changes across files, runs tests, and iterates on failures, all from natural language prompts.", tokenUsage: 2_297_352_075_910 },
+    { id: "kilo-code", name: "Kilo Code", description: "Kilo Code is an open-source AI coding agent that works across VS Code, JetBrains, and CLI to help developers ship code faster with agentic workflows.", tokenUsage: 1_591_258_651_068 },
+    { id: "cline", name: "Cline", description: "Cline is an open-source AI coding agent that lives inside your IDE, autonomously exploring your codebase, editing files, running terminal commands, and using browser automation.", tokenUsage: 1_374_609_616_050 },
+    { id: "openclaw", name: "OpenClaw", description: "OpenClaw is an open-source AI agent that connects to your messaging apps and takes real actions on your behalf, from running commands and browsing the web to managing files and sending emails.", tokenUsage: 1_085_183_369_010 },
+    { id: "pi", name: "pi", description: "There are many coding agents, but this one is yours.", tokenUsage: 784_897_817_190 },
+    { id: "framer", name: "Framer", description: "Create a professional website with Framer’s no-code AI website builder. Design freely, manage CMS content, optimize SEO, collaborate, and publish fast.", tokenUsage: 768_721_928_010 },
+    { id: "app-4137556", name: "Zazen (Freebuff fork)", description: "freebuff.com", tokenUsage: 653_040_033_453 },
+    { id: "nous-research-api", name: "Nous Research API", description: "Nous Research is an AI research team focused on advancing open-source AI.", tokenUsage: 510_163_032_574 },
+    { id: "app-3682314", name: "omp", description: "omp.sh", tokenUsage: 479_688_266_282 },
+    { id: "app-4580043", name: "HighLevel", description: "www.gohighlevel.com", tokenUsage: 465_723_137_092 },
+    { id: "descript", name: "Descript", description: "AI Video & Podcast Editor", tokenUsage: 338_895_757_729 },
+    { id: "codex", name: "Codex", description: "A coding agent that helps you build and ship with AI", tokenUsage: 279_806_899_078 },
+    { id: "isekai-zero", name: "ISEKAI ZERO", description: "AI adventures. Travel with your favorite characters", tokenUsage: 271_518_301_600 },
+    { id: "lemonade", name: "Lemonade", description: "The AI tool for Roblox games.", tokenUsage: 256_935_139_758 },
+    { id: "app-4132065", name: "Hello Minds, powered by Ethoswarm", description: "www.hellominds.ai", tokenUsage: 250_582_441_879 },
+    { id: "janitor-ai", name: "Janitor AI", description: "Janitor AI is a chatbot platform where users create and chat with custom AI characters for interactive roleplay, storytelling, and immersive fiction.", tokenUsage: 234_194_116_465 },
+    { id: "app-2640550", name: "Peezy Gateway", description: "p0.systems", tokenUsage: 174_119_314_031 },
+    { id: "stan", name: "Sahasra", description: "All-in-one creator store", tokenUsage: 160_508_224_895 },
+    { id: "app-2237546", name: "Cursor", description: "cursor.com", tokenUsage: 154_834_706_310 },
+  ],
+  month: [
+    { id: "hermes-agent", name: "Hermes Agent", description: "Hermes Agent is an open-source, self-improving AI agent by Nous Research that runs persistently with memory across sessions, and builds reusable skills from experience. It comes with 40+ built-in tools, including web search, browser automation, and vision, plus scheduled automations and subagents.", tokenUsage: 34_744_052_334_893 },
+    { id: "claude-code", name: "Claude Code", description: "Claude Code is Anthropic's agentic coding tool that reads your entire codebase, plans and executes changes across files, runs tests, and iterates on failures, all from natural language prompts.", tokenUsage: 8_225_562_943_824 },
+    { id: "kilo-code", name: "Kilo Code", description: "Kilo Code is an open-source AI coding agent that works across VS Code, JetBrains, and CLI to help developers ship code faster with agentic workflows.", tokenUsage: 7_221_529_419_722 },
+    { id: "openclaw", name: "OpenClaw", description: "OpenClaw is an open-source AI agent that connects to your messaging apps and takes real actions on your behalf, from running commands and browsing the web to managing files and sending emails.", tokenUsage: 4_452_230_508_096 },
+    { id: "cline", name: "Cline", description: "Cline is an open-source AI coding agent that lives inside your IDE, autonomously exploring your codebase, editing files, running terminal commands, and using browser automation.", tokenUsage: 3_948_533_898_395 },
+    { id: "pi", name: "pi", description: "There are many coding agents, but this one is yours.", tokenUsage: 2_868_500_108_538 },
+    { id: "descript", name: "Descript", description: "AI Video & Podcast Editor", tokenUsage: 1_718_004_199_525 },
+    { id: "app-3909382", name: "Command Code", description: "commandcode.ai", tokenUsage: 1_634_692_961_004 },
+    { id: "app-4132065", name: "Hello Minds, powered by Ethoswarm", description: "www.hellominds.ai", tokenUsage: 1_372_905_875_621 },
+    { id: "framer", name: "Framer", description: "Create a professional website with Framer’s no-code AI website builder. Design freely, manage CMS content, optimize SEO, collaborate, and publish fast.", tokenUsage: 1_343_713_894_378 },
+    { id: "isekai-zero", name: "ISEKAI ZERO", description: "AI adventures. Travel with your favorite characters", tokenUsage: 1_033_645_071_927 },
+    { id: "codex", name: "Codex", description: "A coding agent that helps you build and ship with AI", tokenUsage: 1_028_098_283_451 },
+    { id: "app-3682314", name: "omp", description: "omp.sh", tokenUsage: 1_020_745_149_015 },
+    { id: "nous-research-api", name: "Nous Research API", description: "Nous Research is an AI research team focused on advancing open-source AI.", tokenUsage: 999_695_205_329 },
+    { id: "janitor-ai", name: "Janitor AI", description: "Janitor AI is a chatbot platform where users create and chat with custom AI characters for interactive roleplay, storytelling, and immersive fiction.", tokenUsage: 979_733_184_339 },
+    { id: "lemonade", name: "Lemonade", description: "The AI tool for Roblox games.", tokenUsage: 868_014_529_297 },
+    { id: "app-2640550", name: "Peezy Gateway", description: "p0.systems", tokenUsage: 853_290_545_250 },
+    { id: "app-4137556", name: "Zazen (Freebuff fork)", description: "freebuff.com", tokenUsage: 656_473_093_879 },
+    { id: "app-4580043", name: "HighLevel", description: "www.gohighlevel.com", tokenUsage: 630_456_435_463 },
+    { id: "stan", name: "Sahasra", description: "All-in-one creator store", tokenUsage: 554_349_479_924 },
+  ],
+};
+
 function discoveryConfigFor(modality: ModalityKey) {
   return modality === "agent" ? agentDiscoveryConfig : discoveryConfigs[modality];
 }
@@ -471,6 +561,20 @@ function createAxisTicks(values: number[]) {
   return ticks;
 }
 
+function compactTokenUsage(value: number) {
+  const units = [
+    { minimum: 1_000_000_000_000, suffix: "T" },
+    { minimum: 1_000_000_000, suffix: "B" },
+    { minimum: 1_000_000, suffix: "M" },
+    { minimum: 1_000, suffix: "K" },
+  ];
+  const unit = units.find(({ minimum }) => value >= minimum);
+  if (!unit) return `${value}`;
+  const amount = value / unit.minimum;
+  const precision = amount >= 100 ? 0 : amount >= 10 ? 1 : 2;
+  return `${amount.toFixed(precision).replace(/\.0+$|(?<=\.[0-9])0$/, "")}${unit.suffix}`;
+}
+
 function compactNumber(value: number) {
   if (value >= 1_000_000_000_000) return `${(value / 1_000_000_000_000).toFixed(value >= 10_000_000_000_000 ? 0 : 1)}T`;
   if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(value >= 10_000_000_000 ? 0 : 1)}B`;
@@ -507,6 +611,39 @@ function useProviderColor() {
     (provider: string) => brandColor(provider, theme) ?? 'var(--mg-text-2)',
     [theme],
   )
+}
+
+function AgentPopularityLeaderboard() {
+  const [period, setPeriod] = useState<AgentPopularityPeriod>("day");
+  const [expanded, setExpanded] = useState(false);
+  const rankedAgents = agentApplications[period].map((agent, index) => ({ ...agent, rank: index + 1 }));
+  const visibleAgents = rankedAgents.slice(0, expanded ? 20 : 10);
+  const columnSize = Math.ceil(visibleAgents.length / 2);
+  const agentColumns = [visibleAgents.slice(0, columnSize), visibleAgents.slice(columnSize)];
+
+  return <section className="model-discovery-section model-discovery-agent-popularity">
+    <div className="model-discovery-section-head model-discovery-agent-popularity-head">
+      <div><h2>热门 Agent 排行</h2></div>
+      <div aria-label="热门 Agent 排行统计周期" className="runtime-range-switch" role="radiogroup">
+        {agentPopularityPeriods.map((option) => <button aria-checked={period === option.key} className={period === option.key ? "active" : ""} key={option.key} onClick={() => setPeriod(option.key)} role="radio" type="button">{option.label}</button>)}
+      </div>
+    </div>
+    <div className="mg-tile model-discovery-agent-popularity-card">
+      <div className="model-discovery-agent-popularity-grid" id="agent-popularity-list" role="list">
+        {agentColumns.map((column, columnIndex) => <div className="model-discovery-agent-popularity-column" key={columnIndex} role="presentation">
+          {column.map((agent) => <div className="model-discovery-agent-popularity-row" key={agent.id} role="listitem">
+            <span className="model-discovery-agent-popularity-rank">{agent.rank}.</span>
+            <DiscoveryAgentIcon id={agent.id} name={agent.name} />
+            <div className="model-discovery-agent-popularity-copy"><strong>{agent.name}</strong><span title={agent.description}>{agent.description}</span></div>
+            <strong className="model-discovery-agent-popularity-usage">{compactTokenUsage(agent.tokenUsage)}<span>Tokens</span></strong>
+          </div>)}
+        </div>)}
+      </div>
+      <div className="model-discovery-rank-more model-discovery-agent-popularity-more">
+        <button aria-controls="agent-popularity-list" aria-expanded={expanded} onClick={() => setExpanded((current) => !current)} type="button">{expanded ? "收起" : "查看更多"}<LuChevronDown aria-hidden="true" className={expanded ? "flip" : ""} size={13} /></button>
+      </div>
+    </div>
+  </section>;
 }
 
 function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (modelId: string) => void; onViewAllModels: () => void }) {
@@ -1388,6 +1525,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
         </div>
       </section>
 
+      {modality === "agent" && <AgentPopularityLeaderboard />}
     </div>
   );
 }

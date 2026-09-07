@@ -8,6 +8,17 @@ import { agentEyes, agentProxy, agentVersion } from 'vite-plugin-agent-eyes'
 import { devRequirementsPlugin } from './scripts/dev-requirements-plugin'
 import { uiAuditPlugin } from './scripts/ui-audit-plugin'
 
+// 当前分支名。CI 优先用注入的环境变量（Jenkins 的 GIT_BRANCH / GitLab CI 的 CI_COMMIT_REF_NAME），
+// 因为流水线 checkout 后处于 detached HEAD，`rev-parse --abbrev-ref HEAD` 只会返回字面量 HEAD。
+function resolveBranch(): string {
+  const fromEnv = process.env.GIT_BRANCH || process.env.CI_COMMIT_REF_NAME
+  if (fromEnv) return fromEnv.replace(/^origin\//, '')
+  try {
+    const head = execSync('git rev-parse --abbrev-ref HEAD').toString().trim()
+    return head === 'HEAD' ? '' : head
+  } catch { return '' }
+}
+
 // 构建时产出 /version.json：供「新版本强制更新弹窗」拉取最新部署的版本号做「当前→最新」对比。
 // package version 很少 bump，真正区分每次部署的是 commit + 构建时间，故三者都带上。
 function emitVersionJson(): Plugin {
@@ -56,6 +67,10 @@ export default defineConfig(({ mode }) => {
   return {
   define: {
     'process.env.NODE_ENV': JSON.stringify(mode === 'test' ? 'development' : 'production'),
+    // 当前分支：开发工具栏用来核对「跑的是哪个分支的产物」。
+    // Jenkins 上 checkout 后是 detached HEAD，rev-parse 只会得到 HEAD，所以优先读它注入的
+    // GIT_BRANCH（形如 origin/test）。dev server 只在启动时求值一次——本地切分支要重启才更新。
+    __BUILD_BRANCH__: JSON.stringify(resolveBranch()),
   },
   plugins: [
     tailwindcss(),

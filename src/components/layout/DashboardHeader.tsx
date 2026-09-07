@@ -41,8 +41,11 @@ import { LanguageSwitcher } from './LanguageSwitcher'
 /**
  * 重构后的 DashboardHeader
  */
-/** 开发工具条只在 DEV 加载，生产构建整块不打进包（与原先在 App.tsx 的写法一致） */
-const DevToolbar = import.meta.env.DEV
+/** 开发工具条在 DEV 与测试环境加载，生产构建整块不打进包（与原先在 App.tsx 的写法一致）。
+    测试环境也要有：工具栏里的分支徽标就是用来核对「这个站跑的是哪个分支的产物」的，
+    只在本地 dev 显示等于核对不到。开关是 .env.test 里已有的 VITE_SHOW_DEV_TOOLS，
+    .env.production 不配即为关。 */
+const DevToolbar = import.meta.env.DEV || import.meta.env.VITE_SHOW_DEV_TOOLS === 'true'
   ? lazy(() => import('@/components/dev-toolbar').then((m) => ({ default: m.DevToolbar })))
   : null
 

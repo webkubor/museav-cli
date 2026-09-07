@@ -117,6 +117,16 @@ export function DevToolbar() {
         onChange={switchLang}
       />
       <div className="h-4 w-px bg-mg-border" />
+      {/* 当前分支：核对「页面上跑的是哪个分支的产物」。CI 上取自 Jenkins 注入的 GIT_BRANCH，
+          本地取 git rev-parse；dev server 只在启动时求值，切分支要重启才更新（见 vite.config.ts）。 */}
+      {__BUILD_BRANCH__ && (
+        <span
+          title={t('common.devToolbar.branch')}
+          className="whitespace-nowrap rounded-full bg-mg-fill-0 px-3 py-1 font-mono text-xs font-bold text-mg-text-2"
+        >
+          {__BUILD_BRANCH__}
+        </span>
+      )}
       <button
         type="button"
         onClick={() => navigate('/dev-config')}

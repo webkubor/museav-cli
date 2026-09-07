@@ -47,7 +47,8 @@
       "zh": "中文",
       "en": "EN",
       "menu": "Dev Menu",
-      "title": "Developer Tools"
+      "title": "Developer Tools",
+      "branch": "Current branch"
     },
     "composer": {
       "clear": "Clear",

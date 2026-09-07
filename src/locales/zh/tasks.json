@@ -9,7 +9,7 @@
     "infoUnavailable": "产物信息暂未提供",
     "preservationWarning": "产物到期后平台不再保留，请尽快下载保存。",
     "resultExpiry": "产物有效期：{{value}}",
-    "videoExpired": "视频文件已自动清理，不支持预览与下载"
+    "expiredNote": "产物已超过有效期，平台不再保留下载文件。"
   },
   "artifactState": {
     "all": "全部产物状态",

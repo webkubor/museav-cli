@@ -34,6 +34,7 @@ import {
 } from 'react-icons/lu'
 import { useCallback, useMemo, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { brandColor } from '@model-go/icons'
+import { useTranslation } from 'react-i18next'
 import { useActiveTheme } from '@/hooks/use-active-theme'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -59,6 +60,7 @@ import { getMarketConfig, isTestOrDev } from "@/config/market"
 import { getMarket, type Market } from "@/lib/market"
 import { appToast } from "@/lib/app-toast"
 import {
+
   AnalysisScatterChart,
   DiscoveryAgentIcon,
   DiscoveryModelIcon,
@@ -67,6 +69,9 @@ import {
   type AnalysisScatterPoint,
   type TrendChartPoint,
 } from './discovery-charts'
+
+/** 配置表是模块级常量，里面调不了 hook —— 统一接收 t，由组件用 useMemo 构造 */
+type TFn = ReturnType<typeof useTranslation>['t']
 
 type ModalityKey = "agent" | "text" | "image" | "video" | "audio";
 type RankingMetric = "overall" | "value" | "price" | "usage";
@@ -122,6 +127,9 @@ type DiscoveryModel = {
  * 每种模态的展示配置。**只剩产品文案与轴配置** —— 模型列表、总览卡、专项榜的行数据
  * 原先都写在这里，现已全部改走接口（见 use-discovery-query）。
  */
+/** 专项榜取哪个字段排序，由这个语义标识决定 —— 不能用标题文案匹配，那会随语言变。 */
+type SpecialtyKind = "value" | "tps" | "latency" | "usage" | "price" | "score";
+
 type DiscoveryConfig = {
   label: string;
   tasks: string[];
@@ -129,7 +137,7 @@ type DiscoveryConfig = {
   yMetrics: string[];
   xMetrics: string[];
   presets: Array<{ label: string; y: number; x: number }>;
-  specialties: Array<{ title: string; description: string }>;
+  specialties: Array<{ kind: SpecialtyKind; title: string; description: string }>;
 };
 
 /**
@@ -197,10 +205,10 @@ function isModelConnected(model: AccessShape) {
 }
 
 /** 三态文案：本平台已接入 / 境外站已接入 / 国产未接入。判据顺序不能换。 */
-function modelAccessLabel(model: DiscoveryModel) {
-  if (model.supported) return "ModelGo 已接入";
-  if (!isDomesticModel(model)) return "ModelGo.ai 已接入";
-  return "暂未接入 ModelGo";
+function modelAccessLabel(t: TFn, model: DiscoveryModel) {
+  if (model.supported) return t("modelsDiscovery.status.integratedCn");
+  if (!isDomesticModel(model)) return t("modelsDiscovery.status.integratedCom");
+  return t("modelsDiscovery.status.notIntegrated");
 }
 
 /**
@@ -233,12 +241,12 @@ function modelDetailUrl(model: Pick<DiscoveryModel, "name"> & { id?: string; int
   return `${getMarketConfig(targetMarket).consoleUrl}${path}`;
 }
 
-const modalityOptions: Array<{ key: ModalityKey; label: string }> = [
+const buildModalityOptions = (t: TFn): Array<{ key: ModalityKey; label: string }> => [
   { key: "agent", label: "Agent" },
-  { key: "text", label: "文本" },
-  { key: "image", label: "图像" },
-  { key: "video", label: "视频" },
-  { key: "audio", label: "音频" },
+  { key: "text", label: t("modelsDiscovery.modality.text") },
+  { key: "image", label: t("modelsDiscovery.modality.image") },
+  { key: "video", label: t("modelsDiscovery.modality.video") },
+  { key: "audio", label: t("modelsDiscovery.modality.audio") },
 ];
 
 /**
@@ -251,59 +259,58 @@ const modalityOptions: Array<{ key: ModalityKey; label: string }> = [
  */
 const HIDDEN_MODALITIES: readonly ModalityKey[] = ["audio"];
 
-const visibleModalityOptions = modalityOptions.filter(
-  (option) => !HIDDEN_MODALITIES.includes(option.key),
-);
+const buildVisibleModalityOptions = (t: TFn) =>
+  buildModalityOptions(t).filter((option) => !HIDDEN_MODALITIES.includes(option.key));
 
-const rankingMetricOptions: Array<{ key: RankingMetric; label: string; specialtyIndex?: number }> = [
-  { key: "overall", label: "综合评价" },
-  { key: "value", label: "性价比", specialtyIndex: 0 },
-  { key: "usage", label: "使用量", specialtyIndex: 3 },
+const buildRankingMetricOptions = (t: TFn): Array<{ key: RankingMetric; label: string; specialtyIndex?: number }> => [
+  { key: "overall", label: t("modelsDiscovery.metric.overall") },
+  { key: "value", label: t("modelsDiscovery.metric.valueForMoney"), specialtyIndex: 0 },
+  { key: "usage", label: t("modelsDiscovery.metric.usage"), specialtyIndex: 3 },
 ];
 
-const taskMetricProfiles: Record<ModalityKey, Record<string, TaskMetricProfile>> = {
+const buildTaskMetricProfiles = (t: TFn): Record<ModalityKey, Record<string, TaskMetricProfile>> => ({
   agent: {
-    Agent: { qualityLabel: "Agentic Index", qualityBasis: "工具调用、规划与端到端任务完成能力", qualityUnit: "Index", valueLabel: "Agentic Index / 单次任务成本", valueUnit: "Index / USD", speedLabel: "输出 TPS", speedUnit: "Tokens / 秒", latencyLabel: "首个工具调用时延 P50", latencyUnit: "ms", usageLabel: "近 7 日 Agent 任务量", usageUnit: "成功任务" },
+    Agent: { qualityLabel: "Agentic Index", qualityBasis: t("modelsDiscovery.basis.agent"), qualityUnit: "Index", valueLabel: t("modelsDiscovery.value.agentic"), valueUnit: "Index / USD", speedLabel: t("modelsDiscovery.metric.outputTps"), speedUnit: t("modelsDiscovery.unit.tokensPerSecond"), latencyLabel: t("modelsDiscovery.metric.firstToolCallP50"), latencyUnit: "ms", usageLabel: t("modelsDiscovery.metric.agentTasks7d"), usageUnit: t("modelsDiscovery.unit.successfulTasks") },
   },
   text: {
-    文本对话: { qualityLabel: "Intelligence Index", qualityBasis: "通用知识、推理与问题求解能力", qualityUnit: "Index", valueLabel: "Intelligence Index / 单次任务成本", valueUnit: "Index / USD", speedLabel: "输出 TPS", speedUnit: "Tokens / 秒", latencyLabel: "TTFT P50", latencyUnit: "ms", usageLabel: "近 7 日调用 Tokens", usageUnit: "Tokens" },
-    代码生成: { qualityLabel: "Coding Index", qualityBasis: "代码生成、修复与工程任务能力", qualityUnit: "Index", valueLabel: "Coding Index / 单次任务成本", valueUnit: "Index / USD", speedLabel: "输出 TPS", speedUnit: "Tokens / 秒", latencyLabel: "TTFT P50", latencyUnit: "ms", usageLabel: "近 7 日代码调用 Tokens", usageUnit: "Tokens" },
+    文本对话: { qualityLabel: "Intelligence Index", qualityBasis: t("modelsDiscovery.basis.textChat"), qualityUnit: "Index", valueLabel: t("modelsDiscovery.value.intelligence"), valueUnit: "Index / USD", speedLabel: t("modelsDiscovery.metric.outputTps"), speedUnit: t("modelsDiscovery.unit.tokensPerSecond"), latencyLabel: "TTFT P50", latencyUnit: "ms", usageLabel: t("modelsDiscovery.metric.callTokens7d"), usageUnit: "Tokens" },
+    代码生成: { qualityLabel: "Coding Index", qualityBasis: t("modelsDiscovery.basis.codeGen"), qualityUnit: "Index", valueLabel: t("modelsDiscovery.value.coding"), valueUnit: "Index / USD", speedLabel: t("modelsDiscovery.metric.outputTps"), speedUnit: t("modelsDiscovery.unit.tokensPerSecond"), latencyLabel: "TTFT P50", latencyUnit: "ms", usageLabel: t("modelsDiscovery.metric.codeTokens7d"), usageUnit: "Tokens" },
   },
   image: {
-    文生图: { qualityLabel: "Elo 评分", qualityBasis: "提示词遵循与生成质量", qualityUnit: "Elo", valueLabel: "Elo 评分 / 每 1K 张标准图像价格", valueUnit: "Elo / ($/1K 张)", speedLabel: "API 价格", speedUnit: "USD / 1K 张", latencyLabel: "近 7 日使用量", latencyUnit: "成功任务", usageLabel: "近 7 日文生图任务量", usageUnit: "成功任务" },
-    图片编辑: { qualityLabel: "Elo 评分", qualityBasis: "编辑遵循与视觉一致性", qualityUnit: "Elo", valueLabel: "Elo 评分 / 每 1K 张标准图像价格", valueUnit: "Elo / ($/1K 张)", speedLabel: "API 价格", speedUnit: "USD / 1K 张", latencyLabel: "近 7 日使用量", latencyUnit: "成功任务", usageLabel: "近 7 日图片编辑任务量", usageUnit: "成功任务" },
+    文生图: { qualityLabel: t("modelsDiscovery.metric.eloScore"), qualityBasis: t("modelsDiscovery.basis.textToImage"), qualityUnit: "Elo", valueLabel: t("modelsDiscovery.value.eloPerKImage"), valueUnit: t("modelsDiscovery.unit.eloPerKImage"), speedLabel: t("modelsDiscovery.metric.apiPrice"), speedUnit: t("modelsDiscovery.unit.usdPerKImages"), latencyLabel: t("modelsDiscovery.metric.usage7d"), latencyUnit: t("modelsDiscovery.unit.successfulTasks"), usageLabel: t("modelsDiscovery.metric.t2iTasks7d"), usageUnit: t("modelsDiscovery.unit.successfulTasks") },
+    图片编辑: { qualityLabel: t("modelsDiscovery.metric.eloScore"), qualityBasis: t("modelsDiscovery.basis.imageEdit"), qualityUnit: "Elo", valueLabel: t("modelsDiscovery.value.eloPerKImage"), valueUnit: t("modelsDiscovery.unit.eloPerKImage"), speedLabel: t("modelsDiscovery.metric.apiPrice"), speedUnit: t("modelsDiscovery.unit.usdPerKImages"), latencyLabel: t("modelsDiscovery.metric.usage7d"), latencyUnit: t("modelsDiscovery.unit.successfulTasks"), usageLabel: t("modelsDiscovery.metric.editTasks7d"), usageUnit: t("modelsDiscovery.unit.successfulTasks") },
   },
   video: {
-    文生视频: { qualityLabel: "Elo 评分", qualityBasis: "Artificial Analysis 文生视频偏好评测", qualityUnit: "Elo", valueLabel: "Elo 评分 / API 每分钟价格", valueUnit: "Elo / ($/min)", speedLabel: "API 价格", speedUnit: "USD / 分钟", latencyLabel: "近 7 日使用量", latencyUnit: "成功任务", usageLabel: "近 7 日文生视频任务量", usageUnit: "成功任务" },
-    图生视频: { qualityLabel: "Elo 评分", qualityBasis: "Artificial Analysis 图生视频偏好评测", qualityUnit: "Elo", valueLabel: "Elo 评分 / API 每分钟价格", valueUnit: "Elo / ($/min)", speedLabel: "API 价格", speedUnit: "USD / 分钟", latencyLabel: "近 7 日使用量", latencyUnit: "成功任务", usageLabel: "近 7 日图生视频任务量", usageUnit: "成功任务" },
+    文生视频: { qualityLabel: t("modelsDiscovery.metric.eloScore"), qualityBasis: t("modelsDiscovery.basis.textToVideo"), qualityUnit: "Elo", valueLabel: t("modelsDiscovery.value.eloPerMinute"), valueUnit: "Elo / ($/min)", speedLabel: t("modelsDiscovery.metric.apiPrice"), speedUnit: t("modelsDiscovery.unit.usdPerMinute"), latencyLabel: t("modelsDiscovery.metric.usage7d"), latencyUnit: t("modelsDiscovery.unit.successfulTasks"), usageLabel: t("modelsDiscovery.metric.t2vTasks7d"), usageUnit: t("modelsDiscovery.unit.successfulTasks") },
+    图生视频: { qualityLabel: t("modelsDiscovery.metric.eloScore"), qualityBasis: t("modelsDiscovery.basis.imageToVideo"), qualityUnit: "Elo", valueLabel: t("modelsDiscovery.value.eloPerMinute"), valueUnit: "Elo / ($/min)", speedLabel: t("modelsDiscovery.metric.apiPrice"), speedUnit: t("modelsDiscovery.unit.usdPerMinute"), latencyLabel: t("modelsDiscovery.metric.usage7d"), latencyUnit: t("modelsDiscovery.unit.successfulTasks"), usageLabel: t("modelsDiscovery.metric.i2vTasks7d"), usageUnit: t("modelsDiscovery.unit.successfulTasks") },
   },
   audio: {
-    "语音合成（TTS）": { qualityLabel: "语音质量 Elo", qualityBasis: "语音质量与偏好评测", qualityUnit: "Elo", valueLabel: "语音质量 Elo / API 价格", valueUnit: "Elo / USD", speedLabel: "API 价格", speedUnit: "USD / 1M 字符", latencyLabel: "近 7 日使用量", latencyUnit: "字符", usageLabel: "近 7 日语音合成量", usageUnit: "字符" },
-    "语音识别（STT）": { qualityLabel: "AA-WER", qualityBasis: "词错误率，数值越低识别越准确", qualityUnit: "%", valueLabel: "AA-WER / API 价格", valueUnit: "% / USD", speedLabel: "API 价格", speedUnit: "USD / 1K 分钟", latencyLabel: "近 7 日使用量", latencyUnit: "音频分钟", usageLabel: "近 7 日识别音频量", usageUnit: "音频分钟", qualityLowerIsBetter: true },
+    "语音合成（TTS）": { qualityLabel: t("modelsDiscovery.metric.voiceQualityElo"), qualityBasis: t("modelsDiscovery.basis.tts"), qualityUnit: "Elo", valueLabel: t("modelsDiscovery.summary.valueVoicePerApi"), valueUnit: "Elo / USD", speedLabel: t("modelsDiscovery.metric.apiPrice"), speedUnit: t("modelsDiscovery.unit.usdPerMChars"), latencyLabel: t("modelsDiscovery.metric.usage7d"), latencyUnit: t("modelsDiscovery.unit.characters"), usageLabel: t("modelsDiscovery.metric.ttsChars7d"), usageUnit: t("modelsDiscovery.unit.characters") },
+    "语音识别（STT）": { qualityLabel: "AA-WER", qualityBasis: t("modelsDiscovery.basis.stt"), qualityUnit: "%", valueLabel: t("modelsDiscovery.value.aaWer"), valueUnit: "% / USD", speedLabel: t("modelsDiscovery.metric.apiPrice"), speedUnit: t("modelsDiscovery.unit.usdPerKMinutes"), latencyLabel: t("modelsDiscovery.metric.usage7d"), latencyUnit: t("modelsDiscovery.unit.audioMinutes"), usageLabel: t("modelsDiscovery.metric.sttMinutes7d"), usageUnit: t("modelsDiscovery.unit.audioMinutes"), qualityLowerIsBetter: true },
   },
-};
+})
 
-const summaryTooltipCopy: Record<ModalityKey, Record<string, string[]>> = {
+const buildSummaryTooltipCopy = (t: TFn): Record<ModalityKey, Record<string, string[]>> => ({
   agent: {
-    Agent: ["工具调用与任务完成能力的 Agentic Index", "开放权重模型中 Agentic Index 最高", "Agentic Index ÷ 单次任务成本", "每秒输出 Token 数", "近 7 日 ModelGo 成功 Agent 任务数"],
+    Agent: [t("modelsDiscovery.tooltip.agentQuality"), t("modelsDiscovery.tooltip.agentOpen"), t("modelsDiscovery.tooltip.agentValue"), t("modelsDiscovery.tooltip.tokensPerSec"), t("modelsDiscovery.tooltip.agentUsage")],
   },
   text: {
-    文本对话: ["通用知识与推理能力的 Intelligence Index", "开放权重模型中 Intelligence Index 最高", "Intelligence Index ÷ 单次任务成本", "每秒输出 Token 数", "近 7 日 ModelGo 调用 Token 数"],
-    代码生成: ["代码生成与修复能力的 Coding Index", "开放权重模型中 Coding Index 最高", "Coding Index ÷ 单次任务成本", "每秒输出 Token 数", "近 7 日 ModelGo 代码调用 Token 数"],
+    文本对话: [t("modelsDiscovery.tooltip.textQuality"), t("modelsDiscovery.tooltip.textOpen"), t("modelsDiscovery.tooltip.textValue"), t("modelsDiscovery.tooltip.tokensPerSec"), t("modelsDiscovery.tooltip.textUsage")],
+    代码生成: [t("modelsDiscovery.tooltip.codeQuality"), t("modelsDiscovery.tooltip.codeOpen"), t("modelsDiscovery.tooltip.codeValue"), t("modelsDiscovery.tooltip.tokensPerSec"), t("modelsDiscovery.tooltip.codeUsage")],
   },
   image: {
-    文生图: ["文生图偏好评测的 Elo 评分", "开放权重文生图模型中 Elo 最高", "Elo ÷ 每 1K 张图像价格", "每 1K 张标准图像的公开 API 价格", "近 7 日 ModelGo 文生图成功任务数"],
-    图片编辑: ["图片编辑偏好评测的 Elo 评分", "开放权重编辑模型中 Elo 最高", "编辑 Elo ÷ 每 1K 张图像价格", "每 1K 张标准图像的公开 API 价格", "近 7 日 ModelGo 图片编辑成功任务数"],
+    文生图: [t("modelsDiscovery.tooltip.t2iQuality"), t("modelsDiscovery.tooltip.t2iOpen"), t("modelsDiscovery.tooltip.t2iValue"), t("modelsDiscovery.tooltip.perKImagePrice"), t("modelsDiscovery.tooltip.t2iUsage")],
+    图片编辑: [t("modelsDiscovery.tooltip.editQuality"), t("modelsDiscovery.tooltip.editOpen"), t("modelsDiscovery.tooltip.editValue"), t("modelsDiscovery.tooltip.perKImagePrice"), t("modelsDiscovery.tooltip.editUsage")],
   },
   video: {
-    文生视频: ["文生视频偏好评测的 Elo 评分", "开放权重文生视频模型中 Elo 最高", "Elo ÷ 每分钟视频价格", "每分钟生成视频的公开 API 价格", "近 7 日 ModelGo 文生视频成功任务数"],
-    图生视频: ["图生视频偏好评测的 Elo 评分", "开放权重图生视频模型中 Elo 最高", "Elo ÷ 每分钟视频价格", "每分钟生成视频的公开 API 价格", "近 7 日 ModelGo 图生视频成功任务数"],
+    文生视频: [t("modelsDiscovery.tooltip.t2vQuality"), t("modelsDiscovery.tooltip.t2vOpen"), t("modelsDiscovery.tooltip.t2vValue"), t("modelsDiscovery.tooltip.perMinPrice"), t("modelsDiscovery.tooltip.t2vUsage")],
+    图生视频: [t("modelsDiscovery.tooltip.i2vQuality"), t("modelsDiscovery.tooltip.i2vOpen"), t("modelsDiscovery.tooltip.t2vValue"), t("modelsDiscovery.tooltip.perMinPrice"), t("modelsDiscovery.tooltip.i2vUsage")],
   },
   audio: {
-    "语音合成（TTS）": ["语音自然度与偏好的 Elo 评分", "语音质量 Elo ÷ 每 1M 字符价格", "每 1M 字符的公开 API 价格", "近 7 日 ModelGo 合成字符数"],
-    "语音识别（STT）": ["统一测试集上的词错误率，越低越好", "每 1,000 分钟音频的公开价格", "近 7 日 ModelGo 转写音频分钟数"],
+    "语音合成（TTS）": [t("modelsDiscovery.tooltip.ttsQuality"), t("modelsDiscovery.tooltip.ttsValue"), t("modelsDiscovery.tooltip.perMCharPrice"), t("modelsDiscovery.tooltip.ttsUsage")],
+    "语音识别（STT）": [t("modelsDiscovery.tooltip.sttQuality"), t("modelsDiscovery.tooltip.sttPrice"), t("modelsDiscovery.tooltip.sttUsage")],
   },
-};
+})
 
 const taskMetricSources: Record<ModalityKey, Record<string, string>> = {
   agent: { Agent: "Artificial Analysis" },
@@ -347,179 +354,200 @@ function taskCostFor(model: DiscoveryModel): number | null {
 }
 
 /** 无成本数据显示「—」；真的 0 显示「免费」，与「没数据」区分开。 */
-function formatTaskCost(value: number | null) {
+function formatTaskCost(t: TFn, value: number | null) {
   if (value === null) return EMPTY;
-  if (value === 0) return "免费";
+  if (value === 0) return t("modelsDiscovery.unit.free");
   return `$${value.toFixed(2)}`;
 }
 
-const sourceConstrainedAnalysisProfiles: Partial<Record<ModalityKey, Record<string, AnalysisAxisProfile>>> = {
+const buildSourceConstrainedAnalysisProfiles = (t: TFn): Partial<Record<ModalityKey, Record<string, AnalysisAxisProfile>>> => ({
   image: {
     文生图: {
-      yMetrics: ["Elo 评分", "API 价格"],
+      yMetrics: [t("modelsDiscovery.metric.eloScore"), t("modelsDiscovery.metric.apiPrice")],
       xMetrics: [
-        { label: "API 价格", unit: "USD / 1K 张", source: "price", lowerIsBetter: true, presetLabel: "质量 × API 价格" },
-        { label: "近 7 日使用量", unit: "成功任务", source: "usage", lowerIsBetter: false, presetLabel: "质量 × 使用量" },
+        { label: t("modelsDiscovery.metric.apiPrice"), unit: t("modelsDiscovery.unit.usdPerKImages"), source: "price", lowerIsBetter: true, presetLabel: t("modelsDiscovery.preset.qualityApiPrice") },
+        { label: t("modelsDiscovery.metric.usage7d"), unit: t("modelsDiscovery.unit.successfulTasks"), source: "usage", lowerIsBetter: false, presetLabel: t("modelsDiscovery.preset.qualityUsage") },
       ],
       presets: [
-        { label: "质量 × API 价格", y: 0, x: 0 },
-        { label: "质量 × 使用量", y: 0, x: 1 },
-        { label: "API 价格 × 使用量", y: 1, x: 1 },
+        { label: t("modelsDiscovery.preset.qualityApiPrice"), y: 0, x: 0 },
+        { label: t("modelsDiscovery.preset.qualityUsage"), y: 0, x: 1 },
+        { label: t("modelsDiscovery.preset.apiPriceUsage"), y: 1, x: 1 },
       ],
     },
     图片编辑: {
-      yMetrics: ["Elo 评分", "API 价格"],
+      yMetrics: [t("modelsDiscovery.metric.eloScore"), t("modelsDiscovery.metric.apiPrice")],
       xMetrics: [
-        { label: "API 价格", unit: "USD / 1K 张", source: "price", lowerIsBetter: true, presetLabel: "质量 × API 价格" },
-        { label: "近 7 日使用量", unit: "成功任务", source: "usage", lowerIsBetter: false, presetLabel: "质量 × 使用量" },
+        { label: t("modelsDiscovery.metric.apiPrice"), unit: t("modelsDiscovery.unit.usdPerKImages"), source: "price", lowerIsBetter: true, presetLabel: t("modelsDiscovery.preset.qualityApiPrice") },
+        { label: t("modelsDiscovery.metric.usage7d"), unit: t("modelsDiscovery.unit.successfulTasks"), source: "usage", lowerIsBetter: false, presetLabel: t("modelsDiscovery.preset.qualityUsage") },
       ],
       presets: [
-        { label: "质量 × API 价格", y: 0, x: 0 },
-        { label: "质量 × 使用量", y: 0, x: 1 },
-        { label: "API 价格 × 使用量", y: 1, x: 1 },
+        { label: t("modelsDiscovery.preset.qualityApiPrice"), y: 0, x: 0 },
+        { label: t("modelsDiscovery.preset.qualityUsage"), y: 0, x: 1 },
+        { label: t("modelsDiscovery.preset.apiPriceUsage"), y: 1, x: 1 },
       ],
     },
   },
   video: {
     文生视频: {
-      yMetrics: ["Elo 评分", "API 价格"],
+      yMetrics: [t("modelsDiscovery.metric.eloScore"), t("modelsDiscovery.metric.apiPrice")],
       xMetrics: [
-        { label: "API 价格", unit: "USD / 分钟", source: "price", lowerIsBetter: true, presetLabel: "质量 × API 价格" },
-        { label: "近 7 日使用量", unit: "成功任务", source: "usage", lowerIsBetter: false, presetLabel: "质量 × 使用量" },
+        { label: t("modelsDiscovery.metric.apiPrice"), unit: t("modelsDiscovery.unit.usdPerMinute"), source: "price", lowerIsBetter: true, presetLabel: t("modelsDiscovery.preset.qualityApiPrice") },
+        { label: t("modelsDiscovery.metric.usage7d"), unit: t("modelsDiscovery.unit.successfulTasks"), source: "usage", lowerIsBetter: false, presetLabel: t("modelsDiscovery.preset.qualityUsage") },
       ],
       presets: [
-        { label: "质量 × API 价格", y: 0, x: 0 },
-        { label: "质量 × 使用量", y: 0, x: 1 },
-        { label: "API 价格 × 使用量", y: 1, x: 1 },
+        { label: t("modelsDiscovery.preset.qualityApiPrice"), y: 0, x: 0 },
+        { label: t("modelsDiscovery.preset.qualityUsage"), y: 0, x: 1 },
+        { label: t("modelsDiscovery.preset.apiPriceUsage"), y: 1, x: 1 },
       ],
     },
     图生视频: {
-      yMetrics: ["Elo 评分", "API 价格"],
+      yMetrics: [t("modelsDiscovery.metric.eloScore"), t("modelsDiscovery.metric.apiPrice")],
       xMetrics: [
-        { label: "API 价格", unit: "USD / 分钟", source: "price", lowerIsBetter: true, presetLabel: "质量 × API 价格" },
-        { label: "近 7 日使用量", unit: "成功任务", source: "usage", lowerIsBetter: false, presetLabel: "质量 × 使用量" },
+        { label: t("modelsDiscovery.metric.apiPrice"), unit: t("modelsDiscovery.unit.usdPerMinute"), source: "price", lowerIsBetter: true, presetLabel: t("modelsDiscovery.preset.qualityApiPrice") },
+        { label: t("modelsDiscovery.metric.usage7d"), unit: t("modelsDiscovery.unit.successfulTasks"), source: "usage", lowerIsBetter: false, presetLabel: t("modelsDiscovery.preset.qualityUsage") },
       ],
       presets: [
-        { label: "质量 × API 价格", y: 0, x: 0 },
-        { label: "质量 × 使用量", y: 0, x: 1 },
-        { label: "API 价格 × 使用量", y: 1, x: 1 },
+        { label: t("modelsDiscovery.preset.qualityApiPrice"), y: 0, x: 0 },
+        { label: t("modelsDiscovery.preset.qualityUsage"), y: 0, x: 1 },
+        { label: t("modelsDiscovery.preset.apiPriceUsage"), y: 1, x: 1 },
       ],
     },
   },
   audio: {
     "语音合成（TTS）": {
-      yMetrics: ["语音质量 Elo", "API 价格"],
+      yMetrics: [t("modelsDiscovery.metric.voiceQualityElo"), t("modelsDiscovery.metric.apiPrice")],
       xMetrics: [
-        { label: "API 价格", unit: "USD / 1M 字符", source: "price", lowerIsBetter: true, presetLabel: "质量 × API 价格" },
-        { label: "近 7 日使用量", unit: "字符", source: "usage", lowerIsBetter: false, presetLabel: "质量 × 使用量" },
+        { label: t("modelsDiscovery.metric.apiPrice"), unit: t("modelsDiscovery.unit.usdPerMChars"), source: "price", lowerIsBetter: true, presetLabel: t("modelsDiscovery.preset.qualityApiPrice") },
+        { label: t("modelsDiscovery.metric.usage7d"), unit: t("modelsDiscovery.unit.characters"), source: "usage", lowerIsBetter: false, presetLabel: t("modelsDiscovery.preset.qualityUsage") },
       ],
       presets: [
-        { label: "质量 × API 价格", y: 0, x: 0 },
-        { label: "质量 × 使用量", y: 0, x: 1 },
-        { label: "API 价格 × 使用量", y: 1, x: 1 },
+        { label: t("modelsDiscovery.preset.qualityApiPrice"), y: 0, x: 0 },
+        { label: t("modelsDiscovery.preset.qualityUsage"), y: 0, x: 1 },
+        { label: t("modelsDiscovery.preset.apiPriceUsage"), y: 1, x: 1 },
       ],
     },
   },
-};
+})
 
-const discoveryConfigs: Record<Exclude<ModalityKey, "agent">, DiscoveryConfig> = {
+const buildDiscoveryConfigs = (t: TFn): Record<Exclude<ModalityKey, "agent">, DiscoveryConfig> => ({
   text: {
-    label: "文本",
+    label: t("modelsDiscovery.modality.text"),
     tasks: ["文本对话", "代码生成"],
     scoreLabel: "Intelligence Index",
     yMetrics: ["Intelligence Index", "Coding Index", "Agentic Index"],
-    xMetrics: ["输入价格", "输出价格", "输出 TPS", "首 Token 延迟", "近 7 日使用量"],
+    xMetrics: [t("modelsDiscovery.metric.inputPrice"), t("modelsDiscovery.metric.outputPrice"), t("modelsDiscovery.metric.outputTps"), t("modelsDiscovery.metric.ttft"), t("modelsDiscovery.metric.usage7d")],
     presets: [
-      { label: "质量 × 价格", y: 0, x: 0 },
-      { label: "质量 × 输出 TPS", y: 0, x: 2 },
-      { label: "质量 × 延迟", y: 0, x: 3 },
-      { label: "上下文 × 价格", y: 6, x: 0 },
-      { label: "质量 × 使用量", y: 0, x: 4 },
+      { label: t("modelsDiscovery.preset.qualityPrice"), y: 0, x: 0 },
+      { label: t("modelsDiscovery.preset.qualityTps"), y: 0, x: 2 },
+      { label: t("modelsDiscovery.preset.qualityLatency"), y: 0, x: 3 },
+      { label: t("modelsDiscovery.preset.contextPrice"), y: 6, x: 0 },
+      { label: t("modelsDiscovery.preset.qualityUsage"), y: 0, x: 4 },
     ],
     specialties: [
-      { title: "性价比领先", description: "主指标 / 单次任务成本" },
-      { title: "输出 TPS", description: "每秒输出 Token 数" },
-      { title: "首 Token 时延领先", description: "首 Token 响应时延" },
-      { title: "近 7 日热度", description: "ModelGo 调用 Tokens" },
+      { kind: "value", title: t("modelsDiscovery.metric.valueLeader"), description: t("modelsDiscovery.summary.valueDesc") },
+      { kind: "tps", title: t("modelsDiscovery.metric.outputTps"), description: t("modelsDiscovery.tooltip.tokensPerSec") },
+      { kind: "latency", title: t("modelsDiscovery.metric.ttftLeader"), description: t("modelsDiscovery.metric.ttftP50") },
+      { kind: "usage", title: t("modelsDiscovery.metric.popularity7d"), description: t("modelsDiscovery.summary.tokensDesc") },
     ],
   },
   image: {
-    label: "图像",
+    label: t("modelsDiscovery.modality.image"),
     tasks: ["文生图", "图片编辑"],
-    scoreLabel: "Elo 评分",
-    yMetrics: ["Elo 评分"],
-    xMetrics: ["标准单图价格", "近 7 日使用量"],
+    scoreLabel: t("modelsDiscovery.metric.eloScore"),
+    yMetrics: [t("modelsDiscovery.metric.eloScore")],
+    xMetrics: [t("modelsDiscovery.metric.unitImagePrice"), t("modelsDiscovery.metric.usage7d")],
     presets: [
-      { label: "质量 × 价格", y: 0, x: 0 },
-      { label: "质量 × 使用量", y: 0, x: 1 },
-      { label: "API 价格 × 使用量", y: 1, x: 1 },
+      { label: t("modelsDiscovery.preset.qualityPrice"), y: 0, x: 0 },
+      { label: t("modelsDiscovery.preset.qualityUsage"), y: 0, x: 1 },
+      { label: t("modelsDiscovery.preset.apiPriceUsage"), y: 1, x: 1 },
     ],
     specialties: [
-      { title: "性价比领先", description: "Elo 评分 / 标准单图价格" },
-      { title: "API 价格", description: "每 1K 张标准图像价格" },
-      { title: "近 7 日热度", description: "ModelGo 成功任务量" },
+      { kind: "value", title: t("modelsDiscovery.metric.valueLeader"), description: t("modelsDiscovery.summary.valueEloPerImage") },
+      { kind: "price", title: t("modelsDiscovery.metric.apiPrice"), description: t("modelsDiscovery.summary.perKImage") },
+      { kind: "usage", title: t("modelsDiscovery.metric.popularity7d"), description: t("modelsDiscovery.summary.tasksDesc") },
     ],
   },
   video: {
-    label: "视频",
+    label: t("modelsDiscovery.modality.video"),
     tasks: ["文生视频", "图生视频"],
-    scoreLabel: "Elo 评分",
-    yMetrics: ["Elo 评分", "文生视频能力", "图生视频能力", "运动一致性"],
-    xMetrics: ["每分钟价格", "近 7 日使用量"],
-    presets: [{ label: "质量 × 价格", y: 0, x: 0 }, { label: "质量 × 使用量", y: 0, x: 1 }, { label: "API 价格 × 使用量", y: 1, x: 1 }],
+    scoreLabel: t("modelsDiscovery.metric.eloScore"),
+    yMetrics: [t("modelsDiscovery.metric.eloScore"), t("modelsDiscovery.metric.t2vCapability"), t("modelsDiscovery.metric.i2vCapability"), t("modelsDiscovery.metric.motionConsistency")],
+    xMetrics: [t("modelsDiscovery.metric.perMinutePrice"), t("modelsDiscovery.metric.usage7d")],
+    presets: [{ label: t("modelsDiscovery.preset.qualityPrice"), y: 0, x: 0 }, { label: t("modelsDiscovery.preset.qualityUsage"), y: 0, x: 1 }, { label: t("modelsDiscovery.preset.apiPriceUsage"), y: 1, x: 1 }],
     specialties: [
-      { title: "性价比领先", description: "Elo 评分 / 每分钟价格" },
-      { title: "API 价格", description: "每分钟生成视频价格" },
-      { title: "近 7 日热度", description: "ModelGo 成功任务量" },
+      { kind: "value", title: t("modelsDiscovery.metric.valueLeader"), description: t("modelsDiscovery.summary.valueEloPerMin") },
+      { kind: "price", title: t("modelsDiscovery.metric.apiPrice"), description: t("modelsDiscovery.summary.perMinVideo") },
+      { kind: "usage", title: t("modelsDiscovery.metric.popularity7d"), description: t("modelsDiscovery.summary.tasksDesc") },
     ],
   },
   audio: {
-    label: "音频",
+    label: t("modelsDiscovery.modality.audio"),
     tasks: ["语音合成（TTS）", "语音识别（STT）"],
-    scoreLabel: "Elo 评分",
-    yMetrics: ["Elo 评分", "自然度 / 准确率", "稳定性"],
-    xMetrics: ["公开价格", "近 7 日使用量"],
-    presets: [{ label: "质量 × 价格", y: 0, x: 0 }, { label: "质量 × 使用量", y: 0, x: 1 }, { label: "API 价格 × 使用量", y: 1, x: 1 }],
+    scoreLabel: t("modelsDiscovery.metric.eloScore"),
+    yMetrics: [t("modelsDiscovery.metric.eloScore"), t("modelsDiscovery.metric.naturalnessAccuracy"), t("modelsDiscovery.metric.stability")],
+    xMetrics: [t("modelsDiscovery.metric.publicPrice"), t("modelsDiscovery.metric.usage7d")],
+    presets: [{ label: t("modelsDiscovery.preset.qualityPrice"), y: 0, x: 0 }, { label: t("modelsDiscovery.preset.qualityUsage"), y: 0, x: 1 }, { label: t("modelsDiscovery.preset.apiPriceUsage"), y: 1, x: 1 }],
     specialties: [
-      { title: "性价比领先", description: "任务得分 / 公开价格" },
-      { title: "API 价格", description: "每 1M 字符的公开 API 价格" },
-      { title: "近 7 日热度", description: "ModelGo 请求量" },
+      { kind: "value", title: t("modelsDiscovery.metric.valueLeader"), description: t("modelsDiscovery.summary.valueScorePerPrice") },
+      { kind: "price", title: t("modelsDiscovery.metric.apiPrice"), description: t("modelsDiscovery.tooltip.perMCharPrice") },
+      { kind: "usage", title: t("modelsDiscovery.metric.popularity7d"), description: t("modelsDiscovery.summary.requestsDesc") },
     ],
   },
-};
+})
 
-const audioTaskConfigs: Record<string, Pick<DiscoveryConfig, "specialties">> = {
+const buildAudioTaskConfigs = (t: TFn): Record<string, Pick<DiscoveryConfig, "specialties">> => ({
   "语音合成（TTS）": {
     specialties: [
-      { title: "性价比", description: "语音质量 Elo / API 价格" },
-      { title: "API 价格", description: "每 1M 字符的公开 API 价格" },
-      { title: "近 7 日使用量", description: "ModelGo 语音合成字符量" },
+      { kind: "value", title: t("modelsDiscovery.metric.valueForMoney"), description: t("modelsDiscovery.summary.valueVoicePerApi") },
+      { kind: "price", title: t("modelsDiscovery.metric.apiPrice"), description: t("modelsDiscovery.tooltip.perMCharPrice") },
+      { kind: "usage", title: t("modelsDiscovery.metric.usage7d"), description: t("modelsDiscovery.summary.ttsCharsDesc") },
     ],
   },
   "语音识别（STT）": {
     specialties: [
-      { title: "API 价格", description: "每 1,000 分钟音频转写价格" },
-      { title: "近 7 日使用量", description: "ModelGo 识别音频分钟数" },
+      { kind: "price", title: t("modelsDiscovery.metric.apiPrice"), description: t("modelsDiscovery.summary.perKMinute") },
+      { kind: "usage", title: t("modelsDiscovery.metric.usage7d"), description: t("modelsDiscovery.summary.sttMinutesDesc") },
     ],
   },
-};
+})
 
-const agentDiscoveryConfig: DiscoveryConfig = {
-  ...discoveryConfigs.text,
+const buildAgentDiscoveryConfig = (t: TFn): DiscoveryConfig => ({
+  ...buildDiscoveryConfigs(t).text,
   label: "Agent",
   tasks: ["Agent"],
   scoreLabel: "Agentic Index",
   yMetrics: ["Agentic Index"],
-};
+})
 
-const agentPopularityPeriods: Array<{ key: AgentPopularityPeriod; label: string }> = [
-  { key: "day", label: "本日" },
-  { key: "week", label: "本周" },
-  { key: "month", label: "本月" },
+const buildAgentPopularityPeriods = (t: TFn): Array<{ key: AgentPopularityPeriod; label: string }> => [
+  { key: "day", label: t("modelsDiscovery.range.day") },
+  { key: "week", label: t("modelsDiscovery.range.week") },
+  { key: "month", label: t("modelsDiscovery.range.month") },
 ];
 
-function discoveryConfigFor(modality: ModalityKey) {
-  return modality === "agent" ? agentDiscoveryConfig : discoveryConfigs[modality];
+/**
+ * task 既是显示名又是 taskMetricProfiles / discoveryConfigs 的对象 key，
+ * 所以标识保持中文不动，只在渲染处映射成当前语言的显示名。
+ * 表里没有的（如 "Agent"）原样返回 —— 那是不翻译的专有名词。
+ */
+const TASK_LABEL_KEYS: Record<string, string> = {
+  "文本对话": "modelsDiscovery.task.textChat",
+  "代码生成": "modelsDiscovery.task.codeGen",
+  "文生图": "modelsDiscovery.task.textToImage",
+  "图片编辑": "modelsDiscovery.task.imageEdit",
+  "文生视频": "modelsDiscovery.task.textToVideo",
+  "图生视频": "modelsDiscovery.task.imageToVideo",
+  "语音合成（TTS）": "modelsDiscovery.task.tts",
+  "语音识别（STT）": "modelsDiscovery.task.stt",
+};
+
+function taskLabel(t: TFn, task: string) {
+  const key = TASK_LABEL_KEYS[task];
+  return key ? t(key) : task;
+}
+
+function discoveryConfigFor(t: TFn, modality: ModalityKey) {
+  return modality === "agent" ? buildAgentDiscoveryConfig(t) : buildDiscoveryConfigs(t)[modality];
 }
 
 function metricValue(value: string) {
@@ -628,16 +656,20 @@ function useProviderColor(fallback = 'var(--mg-text-2)') {
  * 视觉跟随本页自有语言（model-discovery-chart-empty-block），不套 mg 体系的 EmptyState：
  * 本页是「1:1 复刻原型」的显式例外，有自己的一套 class 与间距，混进另一套 token 会打架。
  */
-function DiscoveryLoadError({ onRetry, text = "数据加载失败" }: { onRetry: () => void; text?: string }) {
+function DiscoveryLoadError({ onRetry, text }: { onRetry: () => void; text?: string }) {
+  const { t } = useTranslation()
+  const message = text ?? t("modelsDiscovery.error.load")
   return (
     <p className="model-discovery-chart-empty-block model-discovery-load-error">
-      {text}
-      <button onClick={onRetry} type="button">重试</button>
+      {message}
+      <button onClick={onRetry} type="button">{t("modelsDiscovery.action.retry")}</button>
     </p>
   );
 }
 
 function AgentPopularityLeaderboard() {
+  const { t } = useTranslation()
+  const agentPopularityPeriods = useMemo(() => buildAgentPopularityPeriods(t), [t]);
   const [period, setPeriod] = useState<AgentPopularityPeriod>("day");
   const [expanded, setExpanded] = useState(false);
   const { apps, total, source, isLoading, isError, refetch } = useHotAgents(period, true);
@@ -651,14 +683,14 @@ function AgentPopularityLeaderboard() {
   return <section className="model-discovery-section model-discovery-agent-popularity">
     <div className="model-discovery-section-head model-discovery-agent-popularity-head">
       <div>
-        <h2>热门 Agent 排行</h2>
+        <h2>{t("modelsDiscovery.section.agentRank")}</h2>
         {/* 数据来源标注：接口文档明确要求，否则这份榜会被当成市场份额读 */}
         <span className="model-discovery-agent-popularity-source">
-          {source ? `数据来源 ${source} 平台流量` : "数据来源：第三方平台流量"}
-          {total > 0 ? ` · 共 ${total} 个应用` : ""}
+          {source ? t("modelsDiscovery.agentRank.source", { source }) : t("modelsDiscovery.agentRank.sourceFallback")}
+          {total > 0 ? ` · ${t("modelsDiscovery.agentRank.total", { count: total })}` : ""}
         </span>
       </div>
-      <div aria-label="热门 Agent 排行统计周期" className="runtime-range-switch" role="radiogroup">
+      <div aria-label={t("modelsDiscovery.a11y.agentRange")} className="runtime-range-switch" role="radiogroup">
         {agentPopularityPeriods.map((option) => <button aria-checked={period === option.key} className={period === option.key ? "active" : ""} key={option.key} onClick={() => setPeriod(option.key)} role="radio" type="button">{option.label}</button>)}
       </div>
     </div>
@@ -676,9 +708,9 @@ function AgentPopularityLeaderboard() {
           ))}
         </div>
       ) : isError ? (
-        <DiscoveryLoadError onRetry={refetch} text="应用榜加载失败" />
+        <DiscoveryLoadError onRetry={refetch} text={t("modelsDiscovery.error.appRank")} />
       ) : apps.length === 0 ? (
-        <p className="model-discovery-chart-empty-block">当前周期暂无应用榜数据</p>
+        <p className="model-discovery-chart-empty-block">{t("modelsDiscovery.empty.appRank")}</p>
       ) : (
         <div className="model-discovery-agent-popularity-grid" id="agent-popularity-list" role="list">
           {agentColumns.map((column, columnIndex) => <div className="model-discovery-agent-popularity-column" key={columnIndex} role="presentation">
@@ -700,7 +732,7 @@ function AgentPopularityLeaderboard() {
       )}
       {apps.length > 10 && (
         <div className="model-discovery-rank-more model-discovery-agent-popularity-more">
-          <button aria-controls="agent-popularity-list" aria-expanded={expanded} onClick={() => setExpanded((current) => !current)} type="button">{expanded ? "收起" : "查看更多"}<LuChevronDown aria-hidden="true" className={expanded ? "flip" : ""} size={13} /></button>
+          <button aria-controls="agent-popularity-list" aria-expanded={expanded} onClick={() => setExpanded((current) => !current)} type="button">{expanded ? t("modelsDiscovery.action.collapse") : t("modelsDiscovery.action.viewMore")}<LuChevronDown aria-hidden="true" className={expanded ? "flip" : ""} size={13} /></button>
         </div>
       )}
     </div>
@@ -708,8 +740,14 @@ function AgentPopularityLeaderboard() {
 }
 
 function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (modelId: string) => void; onViewAllModels: () => void }) {
+  const { t } = useTranslation()
+  const visibleModalityOptions = useMemo(() => buildVisibleModalityOptions(t), [t]);
+  const rankingMetricOptions = useMemo(() => buildRankingMetricOptions(t), [t]);
+  const taskMetricProfiles = useMemo(() => buildTaskMetricProfiles(t), [t]);
+  const summaryTooltipCopy = useMemo(() => buildSummaryTooltipCopy(t), [t]);
+  const audioTaskConfigs = useMemo(() => buildAudioTaskConfigs(t), [t]);
   const [modality, setModality] = useState<ModalityKey>("agent");
-  const config = discoveryConfigFor(modality);
+  const config = discoveryConfigFor(t, modality);
   const [task, setTask] = useState(config.tasks[0]);
   const taskProfile = taskMetricProfiles[modality][task];
   const metricSource = taskMetricSources[modality][task];
@@ -787,7 +825,8 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
     setLastTableFilterKey(tableFilterKey);
     setTablePage(1);
   }
-  const constrainedAnalysisProfile = sourceConstrainedAnalysisProfiles[modality]?.[task];
+  const sourceConstrainedProfiles = useMemo(() => buildSourceConstrainedAnalysisProfiles(t), [t]);
+  const constrainedAnalysisProfile = sourceConstrainedProfiles[modality]?.[task];
   const isTextAgent = modality === "text" || modality === "agent";
   /**
    * Y 轴可选项只保留**接口真的有数据**的那些。
@@ -797,13 +836,13 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
    * 一个主指标，所以非 constrained 档位就只给主指标一项。
    */
   const analysisYMetrics = constrainedAnalysisProfile?.yMetrics ?? [taskProfile.qualityLabel];
-  const analysisCostLabel = taskProfile.valueLabel.split(" / ").at(-1) ?? "单次任务成本";
-  const analysisPresetPrefix = modality === "image" ? "Elo" : "质量";
+  const analysisCostLabel = taskProfile.valueLabel.split(" / ").at(-1) ?? t("modelsDiscovery.metric.costPerTask");
+  const analysisPresetPrefix = modality === "image" ? "Elo" : t("modelsDiscovery.metric.quality");
   const defaultAnalysisXMetrics: AnalysisAxisProfile["xMetrics"] = [
-    { label: analysisCostLabel, unit: isTextAgent ? "USD / Task" : "USD", source: "price", lowerIsBetter: true, presetLabel: `${analysisPresetPrefix} × 成本` },
-    { label: taskProfile.speedLabel, unit: taskProfile.speedUnit, source: "speed", lowerIsBetter: false, presetLabel: `${analysisPresetPrefix} × 输出 TPS` },
-    { label: taskProfile.latencyLabel, unit: taskProfile.latencyUnit, source: "latency", lowerIsBetter: true, presetLabel: `${analysisPresetPrefix} × 时延` },
-    { label: taskProfile.usageLabel, unit: taskProfile.usageUnit, source: "usage", lowerIsBetter: false, presetLabel: `${analysisPresetPrefix} × 使用量` },
+    { label: analysisCostLabel, unit: isTextAgent ? "USD / Task" : "USD", source: "price", lowerIsBetter: true, presetLabel: `${analysisPresetPrefix} × ${t("modelsDiscovery.preset.axisCost")}` },
+    { label: taskProfile.speedLabel, unit: taskProfile.speedUnit, source: "speed", lowerIsBetter: false, presetLabel: `${analysisPresetPrefix} × ${t("modelsDiscovery.preset.axisTps")}` },
+    { label: taskProfile.latencyLabel, unit: taskProfile.latencyUnit, source: "latency", lowerIsBetter: true, presetLabel: `${analysisPresetPrefix} × ${t("modelsDiscovery.preset.axisLatency")}` },
+    { label: taskProfile.usageLabel, unit: taskProfile.usageUnit, source: "usage", lowerIsBetter: false, presetLabel: `${analysisPresetPrefix} × ${t("modelsDiscovery.preset.axisUsage")}` },
   ];
   const analysisXMetrics = constrainedAnalysisProfile?.xMetrics ?? defaultAnalysisXMetrics;
   const analysisPresets = constrainedAnalysisProfile?.presets ?? analysisXMetrics.map((metric, index) => ({ label: metric.presetLabel, y: 0, x: index }));
@@ -818,26 +857,29 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
     : config.specialties;
   const specialties = specialtyTemplates.map((item) => ({
     ...item,
-    rows: specialtyRows(item.title, taskModels, { scoreAscending }),
+    rows: specialtyRows(item.kind, taskModels, { scoreAscending }),
   }));
   const imageBenchmarkRankings = [
     {
-      title: "质量 Elo 评分",
-      description: "图像偏好评测 Elo",
+      kind: "score" as SpecialtyKind,
+      title: t("modelsDiscovery.metric.qualityElo"),
+      description: t("modelsDiscovery.summary.imageEloDesc"),
       source: "Artificial Analysis",
       lowerIsBetter: false,
       rows: [...taskModels].sort((first, second) => metricValue(second.score) - metricValue(first.score)).map((model) => ({ model: model.name, value: model.score })),
     },
     {
-      title: "性价比",
-      description: "质量 Elo / API 价格",
+      kind: "value" as SpecialtyKind,
+      title: t("modelsDiscovery.metric.valueForMoney"),
+      description: t("modelsDiscovery.summary.valueQualityPerApi"),
       source: "Artificial Analysis",
       lowerIsBetter: false,
-      rows: specialtyRows("性价比", taskModels),
+      rows: specialtyRows("value", taskModels),
     },
     {
-      title: "API 价格",
-      description: "每 1K 张标准图像价格（$/1k images）",
+      kind: "price" as SpecialtyKind,
+      title: t("modelsDiscovery.metric.apiPrice"),
+      description: t("modelsDiscovery.summary.perKImageUnit"),
       source: "Artificial Analysis",
       lowerIsBetter: true,
       // 同 #969 缺陷 1：无价格的模型不进榜，也不要把展示串「—」解析成 0
@@ -847,8 +889,9 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
         .map((model) => ({ model: model.name, value: model.price })),
     },
     {
-      title: "近 7 日使用量",
-      description: "ModelGo 成功任务量",
+      kind: "usage" as SpecialtyKind,
+      title: t("modelsDiscovery.metric.usage7d"),
+      description: t("modelsDiscovery.summary.tasksDesc"),
       source: "ModelGo",
       lowerIsBetter: false,
       rows: [...taskModels].sort((first, second) => metricValue(second.usage) - metricValue(first.usage)).map((model) => ({ model: model.name, value: model.usage })),
@@ -856,22 +899,25 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   ];
   const videoBenchmarkRankings = [
     {
-      title: "质量 Elo 评分",
-      description: "视频偏好评测 Elo",
+      kind: "score" as SpecialtyKind,
+      title: t("modelsDiscovery.metric.qualityElo"),
+      description: t("modelsDiscovery.summary.videoEloDesc"),
       source: "Artificial Analysis",
       lowerIsBetter: false,
       rows: [...taskModels].sort((first, second) => metricValue(second.score) - metricValue(first.score)).map((model) => ({ model: model.name, value: model.score })),
     },
     {
-      title: "性价比",
-      description: "质量 Elo / API 价格",
+      kind: "value" as SpecialtyKind,
+      title: t("modelsDiscovery.metric.valueForMoney"),
+      description: t("modelsDiscovery.summary.valueQualityPerApi"),
       source: "Artificial Analysis",
       lowerIsBetter: false,
-      rows: specialtyRows("性价比", taskModels),
+      rows: specialtyRows("value", taskModels),
     },
     {
-      title: "API 价格",
-      description: "每分钟生成视频价格（$/min）",
+      kind: "price" as SpecialtyKind,
+      title: t("modelsDiscovery.metric.apiPrice"),
+      description: t("modelsDiscovery.summary.perMinVideoUnit"),
       source: "Artificial Analysis",
       lowerIsBetter: true,
       // 同 #969 缺陷 1：无价格的模型不进榜，也不要把展示串「—」解析成 0
@@ -881,8 +927,9 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
         .map((model) => ({ model: model.name, value: model.price })),
     },
     {
-      title: "近 7 日使用量",
-      description: "ModelGo 成功任务量",
+      kind: "usage" as SpecialtyKind,
+      title: t("modelsDiscovery.metric.usage7d"),
+      description: t("modelsDiscovery.summary.tasksDesc"),
       source: "ModelGo",
       lowerIsBetter: false,
       rows: [...taskModels].sort((first, second) => metricValue(second.usage) - metricValue(first.usage)).map((model) => ({ model: model.name, value: model.usage })),
@@ -890,33 +937,37 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   ];
   const textBenchmarkRankings = [
     {
-      title: "综合评分",
+      kind: "score" as SpecialtyKind,
+      title: t("modelsDiscovery.metric.overallScore"),
       description: taskProfile.qualityLabel,
       source: "Artificial Analysis",
       lowerIsBetter: Boolean(taskProfile.qualityLowerIsBetter),
       rows: [...taskModels].map((model) => ({ model: model.name, value: model.score })),
     },
     {
-      title: "单次任务成本",
-      description: "Artificial Analysis 基准任务加权平均成本（USD/Task）",
+      kind: "price" as SpecialtyKind,
+      title: t("modelsDiscovery.metric.costPerTask"),
+      description: t("modelsDiscovery.summary.costDesc"),
       source: "Artificial Analysis",
       lowerIsBetter: true,
       // 无成本数据的模型不进榜 —— 当 0 参与排序会霸占「成本最低」的首位（#969 缺陷 1）
       rows: [...taskModels]
         .filter((model) => taskCostFor(model) !== null)
         .sort((first, second) => (taskCostFor(first) ?? 0) - (taskCostFor(second) ?? 0))
-        .map((model) => ({ model: model.name, value: formatTaskCost(taskCostFor(model)) })),
+        .map((model) => ({ model: model.name, value: formatTaskCost(t, taskCostFor(model)) })),
     },
     {
-      title: "输出 TPS",
-      description: "每秒输出 Token 数（Tokens/秒）",
+      kind: "tps" as SpecialtyKind,
+      title: t("modelsDiscovery.metric.outputTps"),
+      description: t("modelsDiscovery.summary.tpsDescUnit"),
       source: "Artificial Analysis",
       lowerIsBetter: false,
       rows: [...taskModels].sort((first, second) => metricValue(second.performance) - metricValue(first.performance)).map((model) => ({ model: model.name, value: model.performance })),
     },
     {
-      title: "近 7 日热度",
-      description: "ModelGo 调用 Tokens",
+      kind: "usage" as SpecialtyKind,
+      title: t("modelsDiscovery.metric.popularity7d"),
+      description: t("modelsDiscovery.summary.tokensDesc"),
       source: "ModelGo",
       lowerIsBetter: false,
       rows: [...taskModels].sort((first, second) => metricValue(second.usage) - metricValue(first.usage)).map((model) => ({ model: model.name, value: model.usage })),
@@ -925,8 +976,9 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   const audioBenchmarkRankings = task === "语音合成（TTS）"
     ? [
       {
-        title: "语音质量 Elo",
-        description: "语音质量与偏好评测 Elo",
+        kind: "score" as SpecialtyKind,
+        title: t("modelsDiscovery.metric.voiceQualityElo"),
+        description: t("modelsDiscovery.summary.voiceEloDesc"),
         source: "Artificial Analysis",
         lowerIsBetter: false,
         rows: [...taskModels].sort((first, second) => metricValue(second.score) - metricValue(first.score)).map((model) => ({ model: model.name, value: model.score })),
@@ -956,23 +1008,23 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   const availableRankingMetricOptions = isTextAgent
     ? rankingMetricOptions
     : modality === "audio" && task === "语音识别（STT）"
-      ? [{ key: "overall", label: "识别准确率" }, { key: "price", label: "API 价格", specialtyIndex: 0 }, { key: "usage", label: "使用量", specialtyIndex: 1 }] satisfies typeof rankingMetricOptions
-      : [{ key: "overall", label: modality === "audio" ? "语音质量" : "Elo 评分" }, { key: "value", label: "性价比", specialtyIndex: 0 }, { key: "price", label: "API 价格", specialtyIndex: 1 }, { key: "usage", label: "使用量", specialtyIndex: 2 }] satisfies typeof rankingMetricOptions;
+      ? [{ key: "overall", label: t("modelsDiscovery.metric.accuracy") }, { key: "price", label: t("modelsDiscovery.metric.apiPrice"), specialtyIndex: 0 }, { key: "usage", label: t("modelsDiscovery.metric.usage"), specialtyIndex: 1 }] satisfies typeof rankingMetricOptions
+      : [{ key: "overall", label: modality === "audio" ? t("modelsDiscovery.metric.voiceQuality") : t("modelsDiscovery.metric.eloScore") }, { key: "value", label: t("modelsDiscovery.metric.valueForMoney"), specialtyIndex: 0 }, { key: "price", label: t("modelsDiscovery.metric.apiPrice"), specialtyIndex: 1 }, { key: "usage", label: t("modelsDiscovery.metric.usage"), specialtyIndex: 2 }] satisfies typeof rankingMetricOptions;
   const selectedRankingOption = availableRankingMetricOptions.find((option) => option.key === rankingMetric) ?? availableRankingMetricOptions[0];
   const selectedSpecialty = selectedRankingOption.specialtyIndex === undefined ? undefined : specialties[selectedRankingOption.specialtyIndex];
-  const selectedMetricRows = selectedSpecialty ? specialtyRows(selectedSpecialty.title, taskModels, { scoreAscending }) : [];
+  const selectedMetricRows = selectedSpecialty ? specialtyRows(selectedSpecialty.kind, taskModels, { scoreAscending }) : [];
   const selectedMetricValues = new Map(selectedMetricRows.map((row) => [row.model, row.value]));
   const specialtyDescriptions = isTextAgent
     ? [taskProfile.valueLabel, taskProfile.speedLabel, taskProfile.latencyLabel, taskProfile.usageLabel]
     : modality === "audio" && task === "语音识别（STT）"
-      ? ["公开 API 价格", taskProfile.usageLabel]
-      : [taskProfile.valueLabel, "公开 API 价格", taskProfile.usageLabel];
+      ? [t("modelsDiscovery.metric.publicApiPrice"), taskProfile.usageLabel]
+      : [taskProfile.valueLabel, t("modelsDiscovery.metric.publicApiPrice"), taskProfile.usageLabel];
   const selectedMetricHeader = rankingMetric === "value"
     ? isTextAgent
-      ? `${taskProfile.qualityLabel} / 单次任务成本`
-      : `${taskProfile.qualityLabel} / 公开价格`
+      ? t("modelsDiscovery.value.perTaskCost", { metric: taskProfile.qualityLabel })
+      : t("modelsDiscovery.value.perPublicPrice", { metric: taskProfile.qualityLabel })
     : rankingMetric === "price"
-      ? "API 价格"
+      ? t("modelsDiscovery.metric.apiPrice")
     : selectedRankingOption.specialtyIndex === undefined
       ? taskProfile.qualityLabel
       : specialtyDescriptions[selectedRankingOption.specialtyIndex];
@@ -1027,8 +1079,8 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
 
   function modelDetailAriaLabel(model: DetailShape) {
     return model.supported
-      ? `查看 ${model.name} 模型详情`
-      : `在 ModelGo.ai 查看 ${model.name} 模型`;
+      ? t("modelsDiscovery.action.viewModelDetail", { name: model.name })
+      : t("modelsDiscovery.action.viewOnGlobal", { name: model.name });
   }
 
   /**
@@ -1050,7 +1102,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
     // 文案要说实话：不是「数据源没给 ID」，而是**这个模型我们没上架**，所以没有详情页。
     // 实测未接入模型拿 source_slug 查 catalog 一律 40401 not found（2026-09-08）。
     // 把责任说成数据缺失会让用户以为是系统故障。
-    appToast.info("该模型尚未接入 ModelGo", "平台未上架该模型，暂无详情页可查看");
+    appToast.info(t("modelsDiscovery.empty.notOnModelGo"), t("modelsDiscovery.empty.noDetailPage"));
   }
 
   // Top 5 卡的行是 div、完整榜单的行是 tr（Table 组件），故取二者共同的 HTMLElement
@@ -1085,11 +1137,11 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   function supportingMetrics(model: DiscoveryModel): Array<{ text: string; title?: string }> {
     return [
       {
-        text: isTextAgent ? formatTaskCost(taskCostFor(model)) : model.price,
+        text: isTextAgent ? formatTaskCost(t, taskCostFor(model)) : model.price,
         // tooltip 首行标明是「计费单价」——接口文档要求，四档单价之和不等于这笔任务成本
         title: (() => {
-          const detail = unitPriceDetail(model.unitPrices);
-          return detail ? `计费单价\n${detail}` : undefined;
+          const detail = unitPriceDetail(t, model.unitPrices);
+          return detail ? t("modelsDiscovery.price.unitPrice", { detail }) : undefined;
         })(),
       },
       { text: model.release ?? "—" },
@@ -1098,8 +1150,8 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   }
 
   const supportingMetricHeaders = isTextAgent
-    ? ["单次任务成本", "发布时间", "ModelGo 使用量"]
-    : ["公开价格", "发布时间", "ModelGo 使用量"];
+    ? [t("modelsDiscovery.metric.costPerTask"), t("modelsDiscovery.metric.releaseDate"), t("modelsDiscovery.summary.usageDesc")]
+    : [t("modelsDiscovery.metric.publicPrice"), t("modelsDiscovery.metric.releaseDate"), t("modelsDiscovery.summary.usageDesc")];
   /**
    * 散点用的轻量模型对象：名称 / 厂商 / 接入状态来自 model-options（全量），
    * 坐标来自 analysis 接口。原先两者都取自榜单前 100 条，选择器一旦能选到第 100 名
@@ -1227,14 +1279,14 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
     })
     .filter((series): series is NonNullable<typeof series> => series !== undefined)
     .sort((left, right) => right.growth - left.growth);
-  const trendUsageLabel = modality === "text" ? "近 7 日 Token 用量" : taskProfile.usageLabel;
+  const trendUsageLabel = modality === "text" ? t("modelsDiscovery.metric.usageTokens7d") : taskProfile.usageLabel;
   /* 空态要说清是哪一种「没有」，否则用户只看到一句「暂无」，分不清是自己没选模型、
      还是平台确实没数据。 */
   const trendEmptyHint = trendModels.length === 0
-    ? "选择已接入模型后查看趋势"
+    ? t("modelsDiscovery.empty.pickIntegrated")
     : trendData && trendData.models.some((item) => Number(item.current_usage) > 0)
-      ? "所选模型暂无足够的历史快照，无法计算增长率"
-      : "所选模型近 7 日没有调用量，暂无趋势可比";
+      ? t("modelsDiscovery.empty.noGrowth")
+      : t("modelsDiscovery.empty.noTrend");
   /** Recharts 消费的趋势数据。增长率保留正负号，负增长由零线之下的柱子表达。 */
   const trendPoints: TrendChartPoint[] = trendSeries.map((series) => ({
     color: series.color,
@@ -1263,7 +1315,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   }
 
   function switchModality(next: ModalityKey) {
-    const nextConfig = discoveryConfigFor(next);
+    const nextConfig = discoveryConfigFor(t, next);
     const nextTask = nextConfig.tasks[0];
     setModality(next);
     setTask(nextTask);
@@ -1304,13 +1356,13 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
               每日 08:30 刷新一次，不是实时值；同步失败时接口继续返回上一次成功的
               快照，日期会停在旧值——所以这里必须展示接口回传的真实日期。 */}
           <div className="model-discovery-title-row">
-            <h1>模型发现</h1>
-            <Badge size="sm" variant="outline">{snapshotDate ? `数据快照 ${snapshotDate}` : "数据快照加载中"}</Badge>
+            <h1>{t("modelsDiscovery.page.title")}</h1>
+            <Badge size="sm" variant="outline">{snapshotDate ? t("modelsDiscovery.page.snapshot", { date: snapshotDate }) : t("modelsDiscovery.page.snapshotLoading")}</Badge>
           </div>
-          <p>聚合业界评测、专业分析与 ModelGo 平台数据，帮助团队完成模型选型</p>
+          <p>{t("modelsDiscovery.page.subtitle")}</p>
         </div>
         <Button onClick={onViewAllModels} size="sm" type="button" variant="brand-outline">
-          返回模型广场<LuArrowUpRight size={13} />
+          {t("modelsDiscovery.page.backToCatalog")}<LuArrowUpRight size={13} />
         </Button>
       </header>
 
@@ -1319,7 +1371,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
           首个卡片（实测间距 0px）；按 PRD 原型改回两行，taskbar 始终渲染。 */}
       <div className="model-discovery-modality-bar">
         <Tabs onValueChange={(value) => switchModality(value as ModalityKey)} value={modality}>
-          <TabsList aria-label="模型模态" variant="underline">
+          <TabsList aria-label={t("modelsDiscovery.a11y.modality")} variant="underline">
             {visibleModalityOptions.map((option) => (
               <TabsTrigger key={option.key} value={option.key} variant="underline">{option.label}</TabsTrigger>
             ))}
@@ -1331,25 +1383,25 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       <div className="model-discovery-taskbar">
         {modality !== "agent" && (
           <Tabs onValueChange={switchTask} value={task}>
-            <TabsList aria-label="任务类型" variant="underline">
-              {config.tasks.map((item) => <TabsTrigger key={item} value={item} variant="underline">{item}</TabsTrigger>)}
+            <TabsList aria-label={t("modelsDiscovery.a11y.taskType")} variant="underline">
+              {config.tasks.map((item) => <TabsTrigger key={item} value={item} variant="underline">{taskLabel(t, item)}</TabsTrigger>)}
             </TabsList>
           </Tabs>
         )}
         <Tabs className="ml-auto" onValueChange={(value) => setScope(value as typeof scope)} value={scope}>
-          <TabsList aria-label="模型范围" variant="pills">
-            <TabsTrigger value="all" variant="pills">全部行业模型</TabsTrigger>
-            <TabsTrigger value="supported" variant="pills">仅看已接入</TabsTrigger>
+          <TabsList aria-label={t("modelsDiscovery.a11y.scope")} variant="pills">
+            <TabsTrigger value="all" variant="pills">{t("modelsDiscovery.scope.all")}</TabsTrigger>
+            <TabsTrigger value="supported" variant="pills">{t("modelsDiscovery.scope.supported")}</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
       <section className="model-discovery-overview">
         <article className="mg-tile model-discovery-rank-card">
-          <div className="model-discovery-card-head"><div><h2>{task} Top 5</h2><span>{taskProfile.qualityBasis}</span></div></div>
-          <div className="model-discovery-rank-head"><span>#</span><span>模型</span><span>接入状态</span><span>{taskProfile.qualityLabel}<em className="model-discovery-source-tag">{metricSource}</em></span></div>
+          <div className="model-discovery-card-head"><div><h2>{taskLabel(t, task)} Top 5</h2><span>{taskProfile.qualityBasis}</span></div></div>
+          <div className="model-discovery-rank-head"><span>#</span><span>{t("modelsDiscovery.table.model")}</span><span>{t("modelsDiscovery.metric.integrationStatus")}</span><span>{taskProfile.qualityLabel}<em className="model-discovery-source-tag">{metricSource}</em></span></div>
           {!discoveryLoading && discoveryError && visibleModels.length === 0 && (
-            <DiscoveryLoadError onRetry={refetchDiscovery} text="榜单加载失败" />
+            <DiscoveryLoadError onRetry={refetchDiscovery} text={t("modelsDiscovery.error.rank")} />
           )}
           {discoveryLoading && visibleModels.length === 0 && [0, 1, 2, 3, 4].map((i) => (
             <div className="model-discovery-rank-row" key={`skeleton-${i}`}>
@@ -1361,9 +1413,9 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
           ))}
           {visibleModels.slice(0, 5).map((model, index) => {
             const hasDetail = canOpenModelDetail(model);
-            return <div aria-label={hasDetail ? modelDetailAriaLabel(model) : undefined} className={`model-discovery-rank-row ${hasDetail ? "model-discovery-row-clickable" : ""}`} key={model.name} onClick={hasDetail ? () => openModelDetail(model) : undefined} onKeyDown={hasDetail ? (event) => handleModelRowKeyDown(event, model) : undefined} role={hasDetail ? "link" : undefined} tabIndex={hasDetail ? 0 : undefined}><span>{index + 1}</span><strong className="model-discovery-rank-name"><DiscoveryModelIcon model={model.name} provider={model.provider} /><span><span title={model.name}>{model.name}</span><small>{model.provider}</small></span></strong><em className={isModelConnected(model) ? "supported" : "pending"}>{modelAccessLabel(model)}</em><div><ProgressBar flow showGlow={false} size="xs" value={rankBarWidth(model, visibleModels.slice(0, 5), scoreAscending)} /><b>{model.score}</b></div></div>;
+            return <div aria-label={hasDetail ? modelDetailAriaLabel(model) : undefined} className={`model-discovery-rank-row ${hasDetail ? "model-discovery-row-clickable" : ""}`} key={model.name} onClick={hasDetail ? () => openModelDetail(model) : undefined} onKeyDown={hasDetail ? (event) => handleModelRowKeyDown(event, model) : undefined} role={hasDetail ? "link" : undefined} tabIndex={hasDetail ? 0 : undefined}><span>{index + 1}</span><strong className="model-discovery-rank-name"><DiscoveryModelIcon model={model.name} provider={model.provider} /><span><span title={model.name}>{model.name}</span><small>{model.provider}</small></span></strong><em className={isModelConnected(model) ? "supported" : "pending"}>{modelAccessLabel(t, model)}</em><div><ProgressBar flow showGlow={false} size="xs" value={rankBarWidth(model, visibleModels.slice(0, 5), scoreAscending)} /><b>{model.score}</b></div></div>;
           })}
-          <div className="model-discovery-rank-more"><button onClick={viewFullRanking} type="button">查看更多<LuChevronDown size={13} /></button></div>
+          <div className="model-discovery-rank-more"><button onClick={viewFullRanking} type="button">{t("modelsDiscovery.action.viewMore")}<LuChevronDown size={13} /></button></div>
         </article>
         <div className={`model-discovery-summary-grid cards-${summaryCards.length}`}>
           {summaryCards.map((item, index) => (
@@ -1371,7 +1423,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
               <span>{item.label}<InfoTip align="end" className="ml-auto" text={item.tooltip} /></span>
               <div className="model-discovery-summary-content">
                 {item.empty ? (
-                  <p className="model-discovery-summary-empty">暂无数据</p>
+                  <p className="model-discovery-summary-empty">{t("modelsDiscovery.empty.noData")}</p>
                 ) : (
                   <>
                     <div className="model-discovery-summary-model">
@@ -1388,9 +1440,9 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       </section>
 
       <section className="model-discovery-section">
-        <div className="model-discovery-section-head"><div><h2>专项指标排行</h2></div></div>
+        <div className="model-discovery-section-head"><div><h2>{t("modelsDiscovery.section.specialtyRank")}</h2></div></div>
         <div className="model-discovery-specialties">{rankingCards.map((item) => {
-          const rows = specialtyRows(item.title, visibleModels, { scoreAscending });
+          const rows = specialtyRows(item.kind, visibleModels, { scoreAscending });
           // 柱子此前有 hover 效果和 tabIndex，却没有任何点击行为——看着可点其实是死的。
           // 从当前榜单里找回完整模型对象后接上跳详情，跳不了的就不给可点的样子。
           const barModelOf = (name: string) => visibleModels.find((model) => model.name === name);
@@ -1416,30 +1468,30 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       </section>
 
       {(modality !== "audio" || task === "语音合成（TTS）") && <section className="model-discovery-section">
-        <div className="model-discovery-section-head"><div><h2>模型能力多维分析</h2></div></div>
+        <div className="model-discovery-section-head"><div><h2>{t("modelsDiscovery.section.multiDim")}</h2></div></div>
         <div className="mg-tile model-discovery-analysis-card">
           <div className="model-discovery-analysis-tools">
             <div className="model-discovery-presets">{analysisPresets.map((preset, index) => <button className={preset.y === yMetric && preset.x === xMetric ? "active" : ""} key={preset.label} onClick={() => applyPreset(index)} type="button">{preset.label}</button>)}</div>
             <div className="model-discovery-selects">
-              <span className="model-discovery-fixed-axis">纵轴<strong>{activeYAxisLabel}</strong></span>
-              <span className="model-discovery-fixed-axis">横轴<strong>{activeXAxis.label}</strong></span>
-              <button className={pareto ? "active" : ""} onClick={() => setPareto((current) => !current)} type="button"><LuSlidersHorizontal size={12} />优选区</button>
+              <span className="model-discovery-fixed-axis">{t("modelsDiscovery.chart.yAxis")}<strong>{activeYAxisLabel}</strong></span>
+              <span className="model-discovery-fixed-axis">{t("modelsDiscovery.chart.xAxis")}<strong>{activeXAxis.label}</strong></span>
+              <button className={pareto ? "active" : ""} onClick={() => setPareto((current) => !current)} type="button"><LuSlidersHorizontal size={12} />{t("modelsDiscovery.chart.advantageZone")}</button>
             </div>
           </div>
           <div className="model-discovery-analysis-grid">
             <div className={`model-discovery-scatter ${pareto ? "show-pareto" : ""}`}>
               <div className="model-discovery-scatter-legend">
                 {chartProviders.map((provider) => <span key={provider}><i style={{ "--legend-color": providerColor(provider) } as CSSProperties} />{provider}</span>)}
-                <em>实心：已接入 · 空心：暂未接入</em>
+                <em>{t("modelsDiscovery.chart.legend")}</em>
               </div>
               {analysisError && scatterPoints.length === 0 ? (
-                <DiscoveryLoadError onRetry={refetchAnalysis} text="分析数据加载失败" />
+                <DiscoveryLoadError onRetry={refetchAnalysis} text={t("modelsDiscovery.error.analysis")} />
               ) : (
               <AnalysisScatterChart
                 emptyHint={
                   selectedModelNames.length === 0
-                    ? "请选择至少一个模型"
-                    : `已选 ${selectedModelNames.length} 个模型，但它们在「${activeYAxisLabel} × ${activeXAxis.label}」下都没有数据`
+                    ? t("modelsDiscovery.empty.pickAtLeastOne")
+                    : t("modelsDiscovery.chart.noDataForSelection", { count: selectedModelNames.length, y: activeYAxisLabel, x: activeXAxis.label })
                 }
                 formatX={formatXAxisTick}
                 formatY={formatYAxisTick}
@@ -1463,7 +1515,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
             </div>
             <aside className="model-discovery-analysis-aside">
               <div className="mg-tile model-discovery-model-filter">
-                <h3><LuListFilter size={14} />模型筛选</h3><p>选择需要在图表中对比的模型。</p>
+                <h3><LuListFilter size={14} />{t("modelsDiscovery.section.modelFilter")}</h3><p>{t("modelsDiscovery.section.modelFilterDesc")}</p>
                 {/* 走 ui/Popover 而不是自己 absolute 定位：组件统一了玻璃表面、
                     --mg-z-popover 层级、点击外部与 ESC 关闭、视口边缘避让。
                     原先这里是手写浮层 + 硬编码 z-index:20，绕开了全局层级体系。
@@ -1475,7 +1527,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                   position="bottom"
                   trigger={
                     <button className="model-discovery-model-filter-trigger" type="button">
-                      <span>{chartModels.length} / {chartCandidates.length} 个模型</span>
+                      <span>{t("modelsDiscovery.filter.modelCount", { selected: chartModels.length, total: chartCandidates.length })}</span>
                       <LuChevronDown size={14} />
                     </button>
                   }
@@ -1485,7 +1537,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                           32px 高度 + 13px 字号，替换原型手写的 label+input */}
                       <Input
                         autoFocus
-                        placeholder="搜索模型"
+                        placeholder={t("modelsDiscovery.action.searchModel")}
                         value={modelFilterSearch}
                         onChange={(event) => setModelFilterSearch(event.target.value)}
                         prefix={<LuSearch className="w-3.5 h-3.5" />}
@@ -1493,18 +1545,18 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                       />
                       <div className="model-discovery-model-filter-list">
                         {filteredModelOptions.map((model) => <button className={selectedModelNames.includes(model.name) ? "selected" : ""} key={model.name} onClick={() => toggleChartModel(model.name)} type="button"><DiscoveryModelIcon model={model.name} provider={model.provider} /><span><strong title={model.name}>{model.name}</strong><small>{model.provider}</small></span>{selectedModelNames.includes(model.name) && <LuCheck size={14} />}</button>)}
-                        {filteredModelOptions.length === 0 && <em>未找到匹配模型</em>}
+                        {filteredModelOptions.length === 0 && <em>{t("modelsDiscovery.empty.noMatchModel")}</em>}
                       </div>
-                      <footer><button onClick={() => setSelectedModelNames([])} type="button"><LuX size={13} />清空</button><button onClick={() => setSelectedModelNames(chartCandidates.map((model) => model.name))} type="button"><LuCheckCheck size={13} />全选</button><button onClick={() => setSelectedModelNames(chartCandidates.map((model) => model.name))} type="button"><LuRotateCcw size={13} />恢复默认</button></footer>
+                      <footer><button onClick={() => setSelectedModelNames([])} type="button"><LuX size={13} />{t("modelsDiscovery.action.clear")}</button><button onClick={() => setSelectedModelNames(chartCandidates.map((model) => model.name))} type="button"><LuCheckCheck size={13} />{t("modelsDiscovery.action.selectAll")}</button><button onClick={() => setSelectedModelNames(chartCandidates.map((model) => model.name))} type="button"><LuRotateCcw size={13} />恢复默认</button></footer>
                     </>
                   }
                 />
               </div>
-              <div className="mg-tile model-discovery-trend"><h3><LuTrendingUp size={14} />近 7 日 ModelGo 使用趋势</h3><p>按增长率从高到低排列</p>
+              <div className="mg-tile model-discovery-trend"><h3><LuTrendingUp size={14} />{t("modelsDiscovery.section.trend")}</h3><p>{t("modelsDiscovery.section.trendDesc")}</p>
                 {trendSeries.length > 0
                   ? <><TrendBarChart points={trendPoints} usageLabel={trendUsageLabel} /><div className="model-discovery-trend-legend">{trendSeries.map((series) => <span key={series.model.name}><i style={{ "--trend-color": series.color } as CSSProperties} /><strong title={series.model.name}>{series.model.name}</strong><b>{formatGrowth(series.growth)}</b></span>)}</div></>
                   : trendError
-                    ? <div className="model-discovery-trend-empty"><DiscoveryLoadError onRetry={refetchTrend} text="趋势数据加载失败" /></div>
+                    ? <div className="model-discovery-trend-empty"><DiscoveryLoadError onRetry={refetchTrend} text={t("modelsDiscovery.error.trend")} /></div>
                     : <div className="model-discovery-trend-empty">{trendEmptyHint}</div>}
               </div>
             </aside>
@@ -1513,7 +1565,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       </section>}
 
       <section className="model-discovery-section" id="model-discovery-full-ranking">
-        <div className="model-discovery-section-head"><div><h2>完整指标榜单</h2></div></div>
+        <div className="model-discovery-section-head"><div><h2>{t("modelsDiscovery.section.fullRanking")}</h2></div></div>
         <div className="mg-tile model-discovery-table-card">
           <div className="model-discovery-table-tools">
             <div className="model-discovery-table-primary-filter">
@@ -1521,9 +1573,9 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                   macOS 上是一层半透明系统材质，底下的表头文字会透出来，我们的 CSS 一行都够不着
                   （2026-09-03 视觉验收）。全站浮层要统一质感，就不能留原生下拉。 */}
               <SelectRoot onValueChange={(value) => setRankingMetric(value as RankingMetric)} value={selectedRankingOption.key}>
-                <SelectTrigger aria-label="指标类型" triggerSize="sm" className="model-discovery-select-trigger model-discovery-metric-trigger">
+                <SelectTrigger aria-label={t("modelsDiscovery.a11y.metricType")} triggerSize="sm" className="model-discovery-select-trigger model-discovery-metric-trigger">
                   <LuChartColumn className="shrink-0" size={14} />
-                  <span className="model-discovery-metric-label">指标类型</span>
+                  <span className="model-discovery-metric-label">{t("modelsDiscovery.a11y.metricType")}</span>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1537,32 +1589,32 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                   className="model-discovery-provider-filter-panel model-discovery-scope"
                   position="bottom"
                   trigger={
-                    <button className="model-discovery-provider-filter-trigger" title={providerFilter.length > 0 ? providerFilter.join("、") : "全部厂商"} type="button">
-                      <span>{providerFilter.length === 0 ? "全部厂商" : providerFilter.slice(0, 2).join("、")}</span>
+                    <button className="model-discovery-provider-filter-trigger" title={providerFilter.length > 0 ? providerFilter.join("、") : t("modelsDiscovery.action.allVendors")} type="button">
+                      <span>{providerFilter.length === 0 ? t("modelsDiscovery.action.allVendors") : providerFilter.slice(0, 2).join("、")}</span>
                       {providerFilter.length > 2 && <em>+{providerFilter.length - 2}</em>}
                       <LuChevronDown size={12} />
                     </button>
                   }
                   content={(close) => (
                     <>
-                      <header><div><strong>选择厂商</strong><span>{providerFilter.length === 0 ? "当前展示全部" : `已选择 ${providerFilter.length} 个`}</span></div><button disabled={providerFilter.length === 0} onClick={() => setProviderFilter([])} type="button">重置</button></header>
+                      <header><div><strong>{t("modelsDiscovery.filter.selectVendor")}</strong><span>{providerFilter.length === 0 ? t("modelsDiscovery.action.showingAll") : t("modelsDiscovery.filter.selectedCount", { count: providerFilter.length })}</span></div><button disabled={providerFilter.length === 0} onClick={() => setProviderFilter([])} type="button">重置</button></header>
                       <div className="model-discovery-provider-options">{providers.map((provider) => {
                         const selected = providerFilter.includes(provider);
                         return <button aria-pressed={selected} className={selected ? "selected" : ""} key={provider} onClick={() => toggleProvider(provider)} type="button"><i>{selected && <LuCheck size={11} />}</i><span>{provider}</span></button>;
                       })}</div>
-                      <footer><span>{providerFilter.length === 0 ? `${providers.length} 个厂商` : `筛选 ${providerFilter.length} 个厂商`}</span><button onClick={close} type="button">完成</button></footer>
+                      <footer><span>{providerFilter.length === 0 ? t("modelsDiscovery.filter.vendorCount", { count: providers.length }) : t("modelsDiscovery.filter.vendorFiltered", { count: providerFilter.length })}</span><button onClick={close} type="button">完成</button></footer>
                     </>
                   )}
                 />
               </div>
               <SelectRoot onValueChange={(value) => setTableAccess(value as "all" | "supported" | "pending")} value={tableAccess}>
-                <SelectTrigger aria-label="接入状态" triggerSize="sm" className="model-discovery-select-trigger">
+                <SelectTrigger aria-label={t("modelsDiscovery.metric.integrationStatus")} triggerSize="sm" className="model-discovery-select-trigger">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">全部接入状态</SelectItem>
-                  <SelectItem value="supported">已接入</SelectItem>
-                  <SelectItem value="pending">暂未接入</SelectItem>
+                  <SelectItem value="all">{t("modelsDiscovery.filter.allStatus")}</SelectItem>
+                  <SelectItem value="supported">{t("modelsDiscovery.filter.integrated")}</SelectItem>
+                  <SelectItem value="pending">{t("modelsDiscovery.filter.pending")}</SelectItem>
                 </SelectContent>
               </SelectRoot>
             </div>
@@ -1572,14 +1624,14 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
           <Table className="model-discovery-table">
             <TableHeader>
               <TableRow>
-                <TableHead>排名</TableHead>
-                <TableHead align="left">模型</TableHead>
-                <TableHead>状态</TableHead>
+                <TableHead>{t("modelsDiscovery.table.rank")}</TableHead>
+                <TableHead align="left">{t("modelsDiscovery.table.model")}</TableHead>
+                <TableHead>{t("modelsDiscovery.table.status")}</TableHead>
                 <TableHead>
                   {selectedMetricHeader}<em className="model-discovery-source-tag">{selectedMetricSource}</em>
                 </TableHead>
                 {supportingMetricHeaders.map((header) => <TableHead key={header}>{header}</TableHead>)}
-                <TableHead><span className="sr-only">操作</span></TableHead>
+                <TableHead><span className="sr-only">{t("modelsDiscovery.table.actions")}</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1593,13 +1645,13 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
               {tableModels.length === 0 && !tableLoading && tableError && (
                 <TableRow>
                   <TableCell align="center" colSpan={8}>
-                    <DiscoveryLoadError onRetry={refetchTable} text="榜单数据加载失败" />
+                    <DiscoveryLoadError onRetry={refetchTable} text={t("modelsDiscovery.error.rankData")} />
                   </TableCell>
                 </TableRow>
               )}
               {tableModels.length === 0 && !tableLoading && !tableError && (
                 <TableRow>
-                  <TableCell align="center" colSpan={8}>当前筛选条件下没有模型</TableCell>
+                  <TableCell align="center" colSpan={8}>{t("modelsDiscovery.empty.noModelUnderFilter")}</TableCell>
                 </TableRow>
               )}
               {tableModels.map((model, index) => {
@@ -1618,7 +1670,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                     <TableCell>{(safeTablePage - 1) * tablePageSize + index + 1}</TableCell>
                     <TableCell align="left"><strong className="model-discovery-cell-model"><DiscoveryModelIcon model={model.name} provider={model.provider} /><span><span title={model.name}>{model.name}</span><small>{model.provider}</small></span></strong></TableCell>
                     <TableCell>
-                      <em className={isModelConnected(model) ? "supported" : "pending"}>{modelAccessLabel(model)}</em>
+                      <em className={isModelConnected(model) ? "supported" : "pending"}>{modelAccessLabel(t, model)}</em>
                     </TableCell>
                     <TableCell><b className="metric-primary">{selectedMetricValue(model)}</b></TableCell>
                     {supportingValues.map((value, valueIndex) => (
@@ -1643,8 +1695,8 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                            按钮（redesign.css:15645）——套组件就得靠层层 !important 对抗才能扳回来，
                            本页又是 1:1 例外。plan §3.2 要求的是表格体系走 Table + Pagination，
                            没有要求行内按钮换组件。样式见 discovery.css .model-discovery-detail-btn。 */
-                        ? <button aria-label={modelDetailAriaLabel(model)} className="model-discovery-detail-btn" onClick={(event) => { event.stopPropagation(); openModelDetail(model); }} title="查看详情" type="button">查看详情<LuArrowUpRight size={13} /></button>
-                        : <button aria-label={`${model.name} 暂未接入，待支持`} className="model-discovery-detail-btn" disabled title="暂未接入" type="button">待支持</button>}
+                        ? <button aria-label={modelDetailAriaLabel(model)} className="model-discovery-detail-btn" onClick={(event) => { event.stopPropagation(); openModelDetail(model); }} title={t("modelsDiscovery.action.viewDetail")} type="button">{t("modelsDiscovery.action.viewDetail")}<LuArrowUpRight size={13} /></button>
+                        : <button aria-label={t("modelsDiscovery.status.pendingSupport", { name: model.name })} className="model-discovery-detail-btn" disabled title={t("modelsDiscovery.status.notIntegratedShort")} type="button">待支持</button>}
                     </TableCell>
                   </TableRow>
                 );
@@ -1662,7 +1714,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
             pageSize={tablePageSize}
             total={tableTotal}
             // 原型的量词是「个模型」而不是通用的「条」
-            totalLabel={`共 ${tableTotal} 个模型`}
+            totalLabel={t("modelsDiscovery.table.totalModels", { count: tableTotal })}
           />
         </div>
       </section>

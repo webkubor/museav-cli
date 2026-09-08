@@ -14,6 +14,7 @@
  * 唯一的例外是厂牌色 `color`：它由调用方从 providerMarkColors 传进来，那张硬编码
  * 色表的存废是独立议题（见 ModelDiscoveryPagePrototype 里的说明），不在本次范围。
  */
+import { useTranslation } from 'react-i18next'
 import { useMemo, type KeyboardEvent, type ReactElement } from 'react'
 import {
   Bar,
@@ -176,6 +177,7 @@ interface BarShapeProps {
  * 详情了。颜色与圆角都交给 CSS（`.model-discovery-specialty-bar`），这里只出几何量。
  */
 function SpecialtyBarShape(props: BarShapeProps) {
+  const { t } = useTranslation()
   const { x = 0, y = 0, width = 0, height = 0, index = 0, payload, hoveredModel, onHoverModel, isClickable, onOpenModel, providerColor } = props
   if (!payload) return null
   const clickable = isClickable?.(payload.model) ?? false
@@ -188,7 +190,7 @@ function SpecialtyBarShape(props: BarShapeProps) {
   }
   return (
     <g
-      aria-label={`第 ${index + 1} 名，${payload.model}，${payload.value}${clickable ? '，点击查看详情' : ''}`}
+      aria-label={`${t('modelsDiscovery.a11y.rankItem', { rank: index + 1, model: payload.model, value: payload.value })}${clickable ? t('modelsDiscovery.chart.clickForDetail') : ''}`}
       className={`model-discovery-bar-hit ${clickable ? 'clickable' : ''} ${linked ? 'linked' : ''}`}
       onClick={clickable ? open : undefined}
       onKeyDown={clickable ? handleKeyDown : undefined}
@@ -237,6 +239,7 @@ interface SpecialtyTooltipProps {
 }
 
 function SpecialtyTooltip({ active, payload, rows = [], description }: SpecialtyTooltipProps) {
+  const { t } = useTranslation()
   const row = payload?.[0]?.payload
   if (!active || !row) return null
   const rank = rows.findIndex((item) => item.model === row.model) + 1
@@ -246,15 +249,16 @@ function SpecialtyTooltip({ active, payload, rows = [], description }: Specialty
         <DiscoveryModelIcon model={row.model} provider={row.provider} />
         {row.model}
       </strong>
-      <span>第 {rank} 名 · {description}</span>
+      <span>{t('modelsDiscovery.chart.rankLine', { rank, description })}</span>
       <b>{row.value}</b>
     </ChartTooltip>
   )
 }
 
 export function SpecialtyBarChart({ rows, description, hoveredModel, onHoverModel, isClickable, onOpenModel, providerColor }: SpecialtyBarChartProps) {
+  const { t } = useTranslation()
   const domain = useMemo(() => specialtyBarDomain(rows.map((row) => row.numeric)), [rows])
-  if (rows.length === 0) return <div className="model-discovery-chart-empty-block">暂无该指标的数据</div>
+  if (rows.length === 0) return <div className="model-discovery-chart-empty-block">{t('modelsDiscovery.empty.noMetricData')}</div>
   return (
     <div className="model-discovery-specialty-chart">
       {/* 高度按宽高比走，不写死像素：这四张图在两列栅格里，列宽随视口连续变化，
@@ -422,12 +426,13 @@ export function AnalysisScatterChart({
   onOpenModel,
   emptyHint,
 }: AnalysisScatterChartProps) {
+  const { t } = useTranslation()
   // 空态必须分归因：「没选模型」是用户的事，「选了但没坐标」是数据的事。
   // 共用一句「请选择至少一个模型」会在全选 31 个模型时照样弹出来，把数据缺失
   // 说成用户没操作（2026-09-08 owner 截图：API 价格 × 使用量 组合下 31/31 全选
   // 仍显示该文案）。analysis 接口会排除任一坐标为空的模型，而视频/TTS 这些子类
   // 整体没有 API_PRICE，返回必然是 0 点。
-  if (points.length === 0) return <div className="model-discovery-chart-empty-block">{emptyHint ?? '请选择至少一个模型'}</div>
+  if (points.length === 0) return <div className="model-discovery-chart-empty-block">{emptyHint ?? t('modelsDiscovery.empty.pickAtLeastOne')}</div>
   const xMin = xTicks[0]
   const xMax = xTicks[xTicks.length - 1]
   const yMin = yTicks[0]
@@ -440,7 +445,7 @@ export function AnalysisScatterChart({
     `${xLabel}：${formatX(point.x)} ${xUnit}`,
   ]
   const ariaLabelFor = (point: AnalysisScatterPoint) =>
-    `${point.name}，${yLabel} ${formatY(point.y)}，${xLabel} ${formatX(point.x)}${point.clickable ? '，点击查看详情' : ''}`
+    `${t('modelsDiscovery.a11y.scatterPoint', { name: point.name, yLabel, y: formatY(point.y), xLabel, x: formatX(point.x) })}${point.clickable ? t('modelsDiscovery.chart.clickForDetail') : ''}`
   return (
     <div className="model-discovery-scatter-plot">
       {/* 散点比柱图更吃纵向空间（点要散得开才看得出分布），比例给得更方 */}
@@ -479,7 +484,7 @@ export function AnalysisScatterChart({
               y2={zoneY[1]}
             >
               {/* 标题写成 <Label> 子节点：传 label={{...}} 时 recharts 不渲染 */}
-              <Label className="model-discovery-advantage-label" position="insideTopLeft" value="优选区" />
+              <Label className="model-discovery-advantage-label" position="insideTopLeft" value={t('modelsDiscovery.chart.advantageZone')} />
             </ReferenceArea>
           )}
           <Tooltip content={<AnalysisTooltip lines={tooltipLines} />} cursor={{ stroke: 'var(--line)', strokeDasharray: '3 3' }} />
@@ -532,10 +537,11 @@ interface TrendShapeProps {
 }
 
 function TrendBarShape({ x = 0, y = 0, width = 0, height = 0, payload }: TrendShapeProps) {
+  const { t } = useTranslation()
   if (!payload) return null
   return (
     <g
-      aria-label={`${payload.name}，近 7 日${payload.growthLabel}`}
+      aria-label={t('modelsDiscovery.a11y.trendItem', { name: payload.name, label: payload.growthLabel })}
       className="model-discovery-bar-hit"
       style={{ '--trend-color': payload.color } as React.CSSProperties}
     >
@@ -551,6 +557,7 @@ interface TrendTooltipProps {
 }
 
 function TrendTooltip({ active, payload, usageLabel }: TrendTooltipProps) {
+  const { t } = useTranslation()
   const point = payload?.[0]?.payload
   if (!active || !point) return null
   return (
@@ -561,7 +568,7 @@ function TrendTooltip({ active, payload, usageLabel }: TrendTooltipProps) {
       </strong>
       <em>{usageLabel}</em>
       <b>{point.usage}</b>
-      <span>近 7 日 {point.growthLabel}</span>
+      <span>{t('modelsDiscovery.chart.last7d', { label: point.growthLabel })}</span>
     </ChartTooltip>
   )
 }

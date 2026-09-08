@@ -361,7 +361,7 @@ describe('计费单价（不是成本构成拆解）', () => {
 })
 
 describe('接入态只认 is_integrated', () => {
-  it('is_integrated=true → supported，无论厂商国别', () => {
+  it('is_integrated=true → supported，无论接在哪个站', () => {
     expect(toPrototypeModel(card({ is_integrated: true, integration_status: 'MODELGO_AI' }), 'TEXT_CHAT').supported).toBe(true)
     expect(toPrototypeModel(card({ is_integrated: true, integration_status: 'MODELGO' }), 'TEXT_CHAT').supported).toBe(true)
   })

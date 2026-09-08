@@ -102,8 +102,9 @@ export interface PrototypeModel {
   /** 端到端时延，媒体类型不提供。 */
   latency: string
   /**
-   * 厂商国别归属（接口 `integration_status`）：`MODELGO` 国产 / `MODELGO_AI` 境外。
-   * **它不表示是否接入** —— 接入态是 `supported`（接口 `is_integrated`）。
+   * 该模型接入在哪个域名（接口 `integration_status`）：
+   * `MODELGO` = 国内站 modelgo.com / `MODELGO_AI` = 国外站 modelgo.ai。
+   * 详情落点由它决定；当前站有没有则看 `supported`（接口 `is_integrated`）。
    */
   integrationStatus?: DiscoveryIntegrationStatus
   /** 单价构成，用于成本列的 tooltip。只有语言类有，且各档位可能缺项。 */
@@ -127,9 +128,9 @@ export interface PrototypeModel {
  */
 export function toPrototypeModel(item: DiscoveryRankingItem, type: DiscoveryType): PrototypeModel {
   // 「已接入」只认 is_integrated（目录里有 + 上架 + 未删除）。
-  // 此前用的 integration_status === 'MODELGO' 是**厂商国别**，把从未上架的国产模型
-  // 全标成了已接入 —— 2026-09-07 实测九个类型合计 217 个假「已接入」里 161 个连
-  // modelgo_id 都没有，页面上「已接入」徽标配着禁用的「待支持」按钮（qa#718）。
+  // 此前用的 integration_status === 'MODELGO' 说的是**接在哪个站**，不是当前站有没有，
+  // 于是国内站没上架的模型也被标成已接入 —— 2026-09-07 实测九个类型合计 217 个假
+  // 「已接入」里 161 个连 modelgo_id 都没有，徽标配着禁用的「待支持」按钮（qa#718）。
   const supported = item.is_integrated === true
   return {
     /**

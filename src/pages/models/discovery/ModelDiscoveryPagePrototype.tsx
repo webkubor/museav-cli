@@ -106,7 +106,7 @@ type DiscoveryModel = {
   release?: string;
   /** 计费单价，成本列 tooltip 用。只有语言类下发，且各档位可能缺项。 */
   unitPrices?: DiscoveryUnitPrices | null;
-  /** 厂商国别（接口 integration_status）：MODELGO 国产 / MODELGO_AI 境外。不表示接入态。 */
+  /** 接在哪个站（接口 integration_status）：MODELGO=国内 modelgo.com / MODELGO_AI=国外 modelgo.ai。当前站有没有看 supported。 */
   integrationStatus?: DiscoveryIntegrationStatus;
   /**
    * 排序与格式化用的原始数值。**不要从展示串反解析** —— `price` 在无数据时是「—」，
@@ -131,11 +131,10 @@ type DiscoveryConfig = {
 };
 
 /**
- * 国产厂商名单，用来把「国产未接入」与「海外（ModelGo.ai 已接入）」分开——接口的
- * integration_status 只有 MODELGO / MODELGO_AI 两态，分不出这一层。
+ * 兜底白名单：只在接口没下发 integration_status 时用，按厂商猜它接在国内站。
+ * 有字段就一律以字段为准（字段是真源，白名单只是缺字段时的降级）。
  * 比对前统一小写并去掉空格与标点：接口 creator_name 的写法与展示名不一致
- * （"Z AI" vs "Z.ai"、"ByteDance Seed"、"KlingAI"），2026-09-03 test 环境实测
- * GLM-5.3 / Kimi K3 这些 MODELGO 模型因此被标成「ModelGo.ai 已接入」并外链到 modelgo.ai。
+ * （"Z AI" vs "Z.ai"、"ByteDance Seed"、"KlingAI"）。
  */
 const domesticModelProviders = new Set(
   [
@@ -170,14 +169,19 @@ function normalizeProviderName(name: string) {
 type AccessShape = Pick<DiscoveryModel, "provider" | "supported" | "integrationStatus">;
 
 /**
- * 厂商国别。**接口的 `integration_status` 就是这个维度**（MODELGO 国产 / MODELGO_AI 境外），
- * 与是否接入无关。字段缺省时才退回本地厂商白名单。
+ * 这个模型接在哪个站：`integration_status === 'MODELGO'` → 国内站 modelgo.com，
+ * `'MODELGO_AI'` → 国外站 modelgo.ai。字段缺省时才退回本地厂商白名单。
+ *
+ * ⚠️ 它**不是**厂商国别（此前注释这么写，是错的，2026-09-08 owner 纠正）。
+ * 所以 `is_integrated=false` + `MODELGO_AI` 不矛盾：国内站没接入、国外站接了，
+ * 点详情就该外链去 modelgo.ai。
  *
  * 此前这里写的是 `model.supported || 白名单`，而那时 `supported` 取自
  * `integration_status === 'MODELGO'` —— 两个维度被揉成一个，于是境外厂商里我们真上架了
  * 的模型（如 Claude Fable 5）被判成「海外未接入」，点击跳去 ModelGo.ai 外链而不是站内详情。
  */
 function isDomesticModel(model: AccessShape) {
+  // 名字里的 domestic 指「接在国内站」，不是厂商是不是国产公司。
   if (model.integrationStatus) return model.integrationStatus === "MODELGO";
   return domesticModelProviders.has(normalizeProviderName(model.provider));
 }
@@ -212,10 +216,11 @@ function modelDetailUrl(model: Pick<DiscoveryModel, "name"> & { id?: string; int
   //    而 market.ts 的 requireEnv 对它是必需项，先取域名会直接抛错。
   if (isTestOrDev()) return path;
 
-  // ② 再判**这个模型被哪个市场支持** —— 落点只由模型决定，**与当前访问的域名无关**。
+  // ② 再判**这个模型接在哪个站** —— 落点只由模型决定，**与当前访问的域名无关**。
   //    owner 2026-09-08 原话：「我们展示的模型-国内不支持-国外有，那就要跳转国外，
   //    即便是现在访问的域名是国内」。
-  //    判据用接口的 integration_status（MODELGO = 国产 / MODELGO_AI = 境外）。
+  //    判据就是接口的 integration_status：MODELGO = 国内 modelgo.com /
+  //    MODELGO_AI = 国外 modelgo.ai。字段直接说了落点，不需要另外推断。
   //    原来这里硬编码 getMarketConfig("global")，等于假定「跨站一定是去国外」：
   //    在国外站点一个国产模型会跳回它自己，而不是回国内站。
   const targetMarket: Market = model.integrationStatus === "MODELGO" ? "china" : "global";

@@ -168,8 +168,8 @@ function tableMetricFor(type: DiscoveryType, metric: TableMetric): DiscoveryMetr
  * 把页面的两个筛选器映射成接口参数。
  *
  * **「仅看已接入」走 `integrated` 布尔参数，不是 `integration_status`** ——
- * 后者是厂商国别（MODELGO 国产 / MODELGO_AI 境外），拿它当接入态会把从未上架的
- * 国产模型筛进来（qa#718）。接口只认 `true` / `false` 两个字面量，传 `1`/`yes`
+ * 后者说的是接在哪个站（MODELGO=国内 / MODELGO_AI=国外），拿它当接入态会把国内站
+ * 没上架的模型筛进来（qa#718）。接口只认 `true` / `false` 两个字面量，传 `1`/`yes`
  * 会被当作未传、静默不过滤。
  *
  * 「待支持」= 未接入，`integrated=false`。两个筛选器同时要「已接入」和「待支持」时

@@ -72,10 +72,17 @@ export interface DiscoveryModelCard {
   model_name: string
   creator_name: string | null
   /**
-   * **厂商国别归属，与是否接入无关** —— `MODELGO` 国产 / `MODELGO_AI` 境外。
-   * 判断「已接入」一律用 `is_integrated`，拿这个字段当接入态会把从未接入的模型标成
-   * 已接入（2026-09-07 实测 TEXT_CHAT 前 100 条：本字段 =MODELGO 有 24 个，
-   * 而真正 `is_integrated` 的只有 20 个）。
+   * **这个模型接入在哪个域名** —— `MODELGO` = 国内站（modelgo.com）/
+   * `MODELGO_AI` = 国外站（modelgo.ai）。
+   *
+   * 它决定「详情该跳哪个站」：国内站的模型回 modelgo.com，国外站的去 modelgo.ai，
+   * 与用户当前访问的是哪个域名无关。
+   *
+   * 与 `is_integrated` 分工：本字段说**接在哪个站**，`is_integrated` 说**当前站有没有**。
+   * 两者都要看：`is_integrated=true` → 站内详情；`false` 且本字段指向另一个站 → 跳那个站。
+   *
+   * ⚠️ 这里原先写的是「厂商国别归属」，那是错的（2026-09-08 owner 纠正）。
+   * 那句错误描述让原型、前端、以及后续几次改动都把它当成国别在用。
    */
   integration_status: DiscoveryIntegrationStatus
   /**

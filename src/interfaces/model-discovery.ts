@@ -26,7 +26,7 @@ export interface DiscoveryRankingsParams extends QueryParams {
   /**
    * `true` = 仅看已接入（目录里有且上架）。**接口只认 true / false 两个字面量**，
    * 传 1 / yes 会被当作未传、静默不过滤。判接入态用它，不要用 `integration_status`
-   * （那是厂商国别，见 qa#718）。
+   * （那是「接在哪个站」，见 qa#718）。
    */
   integrated?: boolean
   /** 仅返回开放权重模型。 */

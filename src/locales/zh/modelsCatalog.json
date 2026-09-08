@@ -197,7 +197,7 @@
     "detail.title": "模型详情",
     "detail": {
       "backToCatalog": "返回模型广场",
-      "notFound": "该模型不存在或已下架",
+      "notFound": "该模型未在本站上架",
       "viewApiGuide": "查看API接入手册",
       "relatedModels": "相关模型",
       "limitedFree": "限时免费",
@@ -226,7 +226,9 @@
       "ruleDimOther": "分档价格",
       "ruleRangeOther": "区间",
       "gradientFootnote": "价格按上下文长度与输出长度分档，最终以实际调用结算为准",
-      "mainSpec": "主要规格"
+      "mainSpec": "主要规格",
+      "notFoundHint": "它可能已下架，或只在另一个站点提供。",
+      "notFoundCrossSite": "去 ModelGo.ai 查看"
     },
     "error.loadDetail": "加载模型详情失败，请稍后重试。",
     "discovery": {

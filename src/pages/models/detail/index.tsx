@@ -12,10 +12,11 @@ import { LuArrowLeft, LuExternalLink } from 'react-icons/lu'
 import { getModel, listModels, listRelatedModels } from '@/services/catalog'
 import { useAuthStore } from '@/store/auth'
 import { useLangStore } from '@/store/use-brand-store'
-import { getMarketConfig } from '@/config/market'
+import { getMarketConfig, isTestOrDev } from '@/config/market'
 import { appendCrossSiteParams } from '@/lib/cross-site-link'
 import { toLoginWithRedirect } from '@/lib/redirect'
 import { isNotFoundError } from '@/lib/request-error-message'
+import { crossSiteModelUrl } from './cross-site-model-url'
 import { trackEvent, trackPageView } from '@/lib/track'
 import { Button } from '@/components/ui/Button'
 import { formatContextLength, prettyModelName } from '@/lib/utils'
@@ -51,6 +52,9 @@ export default function ModelDetailPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const market = useLangStore((s) => s.market)
   const docsUrl = appendCrossSiteParams(getMarketConfig(market).docsUrl)
+
+  // 40401 时的跨站兜底，判断口径见 cross-site-model-url.ts
+  const crossSiteUrl = crossSiteModelUrl(modelId, market, isTestOrDev(), (m) => getMarketConfig(m).consoleUrl)
 
   const navState = (location.state as DetailNavState | null) ?? null
   const detailSource = navState?.source ?? 'direct'
@@ -216,9 +220,22 @@ export default function ModelDetailPage() {
         <div className="border-mg-border text-mg-text-3 rounded-md border p-8 text-center text-[13px]">
           {/* 资源确实不存在（40401/404）才说「模型不存在」；网络/服务故障是另一回事，
               说成「不存在」会误导用户以为模型已下架（qa#595） */}
-          {detailQuery.isError && !isNotFoundError(detailQuery.error)
-            ? t('modelsCatalog.detail.loadFailed')
-            : t('modelsCatalog.detail.notFound')}
+          {detailQuery.isError && !isNotFoundError(detailQuery.error) ? (
+            t('modelsCatalog.detail.loadFailed')
+          ) : (
+            <>
+              <p>{t('modelsCatalog.detail.notFound')}</p>
+              <p className="mt-1">{t('modelsCatalog.detail.notFoundHint')}</p>
+              {crossSiteUrl && (
+                <Button className="mt-4" variant="outline" size="sm" asChild>
+                  <a href={crossSiteUrl} rel="noopener noreferrer" target="_blank">
+                    {t('modelsCatalog.detail.notFoundCrossSite')}
+                    <LuExternalLink size={13} />
+                  </a>
+                </Button>
+              )}
+            </>
+          )}
         </div>
       ) : (
         <>

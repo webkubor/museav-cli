@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveModelCategory, modelExperienceTasks, hasPlaygroundExperience } from './model-experience-data'
+import { resolveModelCategory, modelExperienceTasks, hasPlaygroundExperience, modelPreferredTask, modelDefaultTask, modelEntryTask } from './model-experience-data'
 import type { CatalogModelItem } from '@/types'
 
 function model(partial: Partial<CatalogModelItem>): CatalogModelItem {
@@ -127,5 +127,44 @@ describe('modelExperienceTasks（任务推导）', () => {
     const m = model({})
     expect(modelExperienceTasks(m)).toEqual(['text_to_text'])
     expect(hasPlaygroundExperience(m)).toBe(true)
+  })
+})
+
+// prd#980：广场「试用」进体验页时会话任务要按模型能力派生。声明图片输入的视频模型（wan2.7-i2v）
+// 不带参考帧上游直接 400，目录模态又分不出「图片必填/可选」，所以视频类只要声明了图片输入就先落
+// image_to_video；t2v 模型（只有 text 输入）行为不变。
+describe('modelPreferredTask / modelDefaultTask / modelEntryTask（prd#980 视频类进场任务）', () => {
+  const i2v = model({ model_id: 'wan2.7-i2v', input_modalities: ['text', 'image'], output_modalities: ['video'] })
+  const t2v = model({ model_id: 'wan2.7-t2v', input_modalities: ['text'], output_modalities: ['video'] })
+  const v2v = model({ model_id: 'x-v2v', input_modalities: ['text', 'video'], output_modalities: ['video'] })
+  const imageEdit = model({ input_modalities: ['text', 'image'], output_modalities: ['image'] })
+
+  it('声明图片输入的视频模型默认落 image_to_video，不再落类别默认 text_to_video', () => {
+    expect(modelPreferredTask(i2v, 'video')).toBe('image_to_video')
+    expect(modelDefaultTask(i2v, 'video')).toBe('image_to_video')
+  })
+
+  it('负控：纯文生视频模型仍是 text_to_video，不要求上传图片', () => {
+    expect(modelPreferredTask(t2v, 'video')).toBeNull()
+    expect(modelDefaultTask(t2v, 'video')).toBe('text_to_video')
+  })
+
+  it('声明视频输入（无图片输入）的视频模型落 video_to_video', () => {
+    expect(modelDefaultTask(v2v, 'video')).toBe('video_to_video')
+  })
+
+  it('图像类没有这条硬约束：图生图模型仍默认 text_to_image', () => {
+    expect(modelPreferredTask(imageEdit, 'image')).toBeNull()
+    expect(modelDefaultTask(imageEdit, 'image')).toBe('text_to_image')
+  })
+
+  it('换模型时硬约束优先于「沿用当前任务」：从 t2v 切到 i2v 模型落 image_to_video', () => {
+    expect(modelEntryTask(i2v, 'video', 'text_to_video')).toBe('image_to_video')
+  })
+
+  it('换模型时没有硬约束就沿用当前任务，不支持才退到默认任务', () => {
+    expect(modelEntryTask(imageEdit, 'image', 'image_to_image')).toBe('image_to_image')
+    expect(modelEntryTask(t2v, 'video', 'image_to_video')).toBe('text_to_video')
+    expect(modelEntryTask(imageEdit, 'image', null)).toBe('text_to_image')
   })
 })

@@ -535,6 +535,39 @@ export function modelCategoryTasks(model: CatalogModelItem, category: Experience
   return filtered.length > 0 ? filtered : all
 }
 
+/** 模型「进场」时必须优先落到的任务（prd#980）：视频类模型只要声明了图片输入就先落 image_to_video、
+ *  声明了视频输入就落 video_to_video —— 这类模型（如 wan2.7-i2v）没有参考帧上游直接 400，而目录
+ *  的 input_modalities 分不出「图片必填」和「图片可选」，前端也不能按模型名 -i2v 后缀猜，所以统一
+ *  先落需要附件的任务，文生视频仍可通过任务切换按钮显式选回。其余类别没有这种硬约束，返回 null。 */
+export function modelPreferredTask(model: CatalogModelItem, category: ExperienceCategoryKey): ExperienceTaskType | null {
+  if (category !== 'video') return null
+  const tasks = modelCategoryTasks(model, category)
+  const inp = inputMods(model)
+  if (inp.includes('image') && tasks.includes('image_to_video')) return 'image_to_video'
+  if (inp.includes('video') && tasks.includes('video_to_video')) return 'video_to_video'
+  return null
+}
+
+/** 模型在给定类别下、没有任何已选任务时的默认任务：先看 modelPreferredTask 的硬约束，
+ *  再退到类别默认（EXPERIENCE_CATEGORY_DEFAULT_TASK），类别默认该模型不支持就取第一个可体验任务。 */
+export function modelDefaultTask(model: CatalogModelItem, category: ExperienceCategoryKey): ExperienceTaskType {
+  const preferred = modelPreferredTask(model, category)
+  if (preferred) return preferred
+  const tasks = modelCategoryTasks(model, category)
+  const fallback = EXPERIENCE_CATEGORY_DEFAULT_TASK[category]
+  return tasks.includes(fallback) ? fallback : tasks[0]
+}
+
+/** 换到某个模型（未显式指定任务）时应落到的任务，PRD §7.1 selectModelTask 的模态版：
+ *  有硬约束先落硬约束；否则新模型还支持当前任务就沿用，不支持就退到 modelDefaultTask。
+ *  单模型页 handlePick 与 ModelPickerDialog 的任务预览共用，保证预览与真正切过去后一致。 */
+export function modelEntryTask(model: CatalogModelItem, category: ExperienceCategoryKey, currentTask?: ExperienceTaskType | null): ExperienceTaskType {
+  const preferred = modelPreferredTask(model, category)
+  if (preferred) return preferred
+  const tasks = modelCategoryTasks(model, category)
+  return currentTask && tasks.includes(currentTask) ? currentTask : modelDefaultTask(model, category)
+}
+
 /** 模型是否有任何可体验任务（PRD 模型广场 §AC-13「暂未开放」判定依据，
  *  原型 App.tsx:4619 `getPlaygroundTasks(model).length === 0` 同语义的模态推导版） */
 export function hasPlaygroundExperience(model: CatalogModelItem): boolean {

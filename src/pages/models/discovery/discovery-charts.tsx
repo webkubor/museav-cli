@@ -104,7 +104,12 @@ function prefersReducedMotion() {
  * 反而会多出一层自己管开关的浮层，与图表的 hover 生命周期打架。
  */
 function ChartTooltip({ children }: { children: React.ReactNode }) {
-  return <div className="model-discovery-chart-tooltip">{children}</div>
+  // mg-float = 全站浮层玻璃表面（毛玻璃 + 遮挡下限，见 components.css / tokens.css #504）。
+  // 这里只叠内部排版，表面不自持——自持过一版，用了 --panel(=--mg-bg-0，已并入玻璃是
+  // 半透明) 又没有 backdrop-filter，tooltip 压在柱子上就是纯漏字：底下的数值标签
+  // 透上来跟卡片里的文字叠在一起（2026-09-08 owner 截图）。tokens.css 第 168 行
+  // 「浮层必须实底」记的就是这条，本处当时漏改。
+  return <div className="mg-float model-discovery-chart-tooltip">{children}</div>
 }
 
 /* ────────────────────────────────────────────────────────────────

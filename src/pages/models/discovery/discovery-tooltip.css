@@ -8,11 +8,11 @@
 /* ── 图表 tooltip ───────────────────────────────────────────
    三张图共用一份：Recharts 的 <Tooltip content> 渲染进图表容器，位置由它自己算，
    不再需要原先那三套 `top: clamp(...)` / `nth-child` 的手工避让规则。 */
+/* 表面（底色/描边/模糊/阴影）全部交给 .mg-float —— 与全站浮层同一套玻璃，
+   这里只留排布与圆角。别在这里重写 background：--panel 是 --mg-bg-0，
+   已并入玻璃系统是半透明的，没有 backdrop-filter 兜着就是漏字。 */
 .model-discovery-chart-tooltip {
-  background: var(--panel);
-  border: 1px solid var(--line);
   border-radius: var(--mg-radius-sm);
-  box-shadow: var(--discovery-shadow-float);
   display: grid;
   gap: 4px;
   min-width: 0;

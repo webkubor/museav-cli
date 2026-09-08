@@ -181,3 +181,30 @@ When implementing, return:
 - The concrete components/paths changed.
 - Any framework constraints kept or fixed.
 - Verification run: build/typecheck/lint/browser check when available.
+
+<!-- agent-eyes:begin -->
+## 运行时视野（vite-plugin-agent-eyes 自动维护，勿手改此块）
+
+本项目 dev 期把**真实**请求/响应、报错、控制台、交互轨迹写到 `log/`。
+**排查前端/接口/登录/样式问题前先读它，不要从源码或类型定义反推。**
+
+```bash
+ls log/                        # 有哪些端口在跑
+cat log/<port>/api-calls.log   # 真实请求体 + 响应体
+cat log/<port>/errors.log      # 报错（聚合去重，最新在最上）
+```
+
+| 想知道 | 读哪个 |
+|---|---|
+| 接口返回什么字段、值是什么 | `<port>/api-calls.log` ← **字段真源，类型定义和注释都不是** |
+| 哪里报错了 | `<port>/errors.log` |
+| 用户点了什么才出错 | `<port>/interaction.log` |
+| 登录/cookie/CORS/302 | `<port>/proxy-<host>.log` |
+| 当前登录的是谁 | `<port>/auth-state.json`（脱敏画像，无 token） |
+| 页面长什么样 | `<port>/snapshots/`（PNG + DOM 快照） |
+| 提交被门禁拦了 | `log/guard-report.json` |
+
+注意：大响应体在日志里会被截断，整份 JSON 解析会失败，按单个 item 的花括号配平解析。
+日志每次 dev 启动清空，看到的就是本次。改完 vite 配置要重启 dev 再验。
+完整说明见 `log/README.md` 与 `node_modules/vite-plugin-agent-eyes/AGENT_GUIDE.md`。
+<!-- agent-eyes:end -->

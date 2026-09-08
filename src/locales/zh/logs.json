@@ -6,7 +6,7 @@
     "loading": "正在加载调用日志...",
     "empty": "未找到匹配的日志记录",
     "header": {
-      "asyncDesc": "查看多模态异步任务的执行状态、产物和下载有效期。",
+      "asyncDesc": "查看多模态任务产物的执行状态、产物和下载有效期。",
       "mineDesc": "查看我的调用记录和排障详情。",
       "spaceDesc": "查看负责空间内全部成员的调用。",
       "enterpriseDesc": "按工作空间、成员和 API Key 追踪企业调用。",
@@ -15,8 +15,8 @@
       "enterpriseView": "企业视图",
       "spaceView": "空间视图",
       "mineView": "我的视图",
-      "syncRecord": "同步调用",
-      "asyncRecord": "异步任务"
+      "syncRecord": "日志记录",
+      "asyncRecord": "任务产物"
     },
     "timeRange": {
       "today": "今天",
@@ -201,7 +201,22 @@
       "payloadError": "原始 Payload 加载失败",
       "payloadEmpty": "暂无原始 Payload",
       "payloadTruncated": "已截断",
-      "payloadCopied": "Payload 已复制"
+      "payloadCopied": "Payload 已复制",
+      "taskArtifact": {
+        "title": "任务产物",
+        "taskStatus": "任务状态",
+        "artifactState": "产物状态",
+        "artifactCount": "产物数量",
+        "viewTask": "查看任务产物详情",
+        "guide": {
+          "available": "产物已生成，可前往任务产物详情查看。",
+          "failed": "产物生成失败，可前往任务产物详情查看失败原因。",
+          "expired": "产物已过期，可前往任务产物详情查看任务信息。",
+          "generating": "产物正在生成，请稍后前往任务产物详情查看。"
+        },
+        "totalDuration": "总耗时",
+        "totalDurationHint": "从任务提交到结束"
+      }
     },
     "status": {
       "success": "成功",

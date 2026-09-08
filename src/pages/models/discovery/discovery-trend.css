@@ -82,14 +82,17 @@
   padding: 16px 18px 15px;
 }
 
-/* 四张专项榜同色。
-   原先是蓝 / 青 / 紫 / 绿四个色系，但颜色在这里**不承载任何信息**——四张图是并列的
-   四个维度，靠标题区分就够了，四种大色块只是把注意力从数据本身拽走。
-   参照站的做法是强调色面积极小、层级交给灰阶，这里同理：柱子统一品牌色，
-   相邻两张用透明度轻微拉开，避免整片同色糊成一块。 */
-.model-discovery-specialties article:nth-child(even) {
-  --specialty-color: color-mix(in oklab, var(--accent) 82%, transparent);
-}
+/* 柱子按**模型厂牌色**上色（owner 2026-09-08 拍板），与散点图、近 7 日使用趋势
+   同一个来源：@model-go/icons 的 brandColor(vendor, theme)，在 SpecialtyBarShape
+   里以 --specialty-color 逐柱覆盖。
+
+   这里推翻了 2026-09-03 的「四张榜统一品牌色」——那次的理由是"颜色不承载信息"，
+   按 article 分色确实如此（四张图是并列维度，靠标题区分就够）。但按**厂牌**分色
+   不一样：颜色此时承载的是"这根柱子是谁家的模型"，和图例、散点、趋势图是同一套
+   语义，页面内三处用同一套厂牌色才叫统一。所以下面 article 级的
+   `--specialty-color: var(--accent)` 只作**无品牌色厂牌的回落**（brandColor 返回
+   null 的单色标识厂牌，实测 TEXT_CHAT 59 家里 35 家）。
+   ⚠️ 回落不能用 --mg-text-2：暗色主题下它是浅灰(212,212,216)，柱内白字直接消失。 */
 
 .model-discovery-specialties article:last-child:nth-child(odd) {
   grid-column: 1 / -1;

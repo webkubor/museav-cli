@@ -576,11 +576,11 @@ function compactNumber(value: number) {
  *
  * 实测 TEXT_CHAT 的 59 家厂商里 24 家有专属品牌色，其余走中性色。
  */
-function useProviderColor() {
+function useProviderColor(fallback = 'var(--mg-text-2)') {
   const theme = useActiveTheme()
   return useCallback(
-    (provider: string) => brandColor(provider, theme) ?? 'var(--mg-text-2)',
-    [theme],
+    (provider: string) => brandColor(provider, theme) ?? fallback,
+    [fallback, theme],
   )
 }
 
@@ -732,6 +732,14 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
    */
   const [hoveredModel, setHoveredModel] = useState<string | null>(null);
   const providerColor = useProviderColor();
+  /**
+   * 专项排行柱子的取色：同一套 brandColor，但**回落色不同**。
+   *
+   * 散点/图例是小圆点，无品牌色时回落浅灰(--mg-text-2)没问题；柱子是大色块且
+   * 柱内压着白色数值标签，暗色主题下 --mg-text-2 是 rgb(212,212,216)，白字直接
+   * 消失。所以这里回落到品牌色——即 2026-09-03 之前四张榜的统一色。
+   */
+  const specialtyBarColor = useProviderColor('var(--accent)');
 
   /**
    * 接口已按该类型的主指标排好序（rankings 的 direction 决定升降序，STT 的 WER
@@ -1018,7 +1026,10 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       window.open(modelGoAiModelUrl(model), "_blank", "noopener,noreferrer");
       return;
     }
-    appToast.info("该模型暂无详情页", "数据源未提供 ModelGo 模型 ID，无法定位详情");
+    // 文案要说实话：不是「数据源没给 ID」，而是**这个模型我们没上架**，所以没有详情页。
+    // 实测未接入模型拿 source_slug 查 catalog 一律 40401 not found（2026-09-08）。
+    // 把责任说成数据缺失会让用户以为是系统故障。
+    appToast.info("该模型尚未接入 ModelGo", "平台未上架该模型，暂无详情页可查看");
   }
 
   // Top 5 卡的行是 div、完整榜单的行是 tr（Table 组件），故取二者共同的 HTMLElement
@@ -1372,6 +1383,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                 const model = barModelOf(name);
                 if (model) openModelDetail(model);
               }}
+              providerColor={specialtyBarColor}
               rows={rows}
             />
           </article>;
@@ -1399,6 +1411,11 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                 <DiscoveryLoadError onRetry={refetchAnalysis} text="分析数据加载失败" />
               ) : (
               <AnalysisScatterChart
+                emptyHint={
+                  selectedModelNames.length === 0
+                    ? "请选择至少一个模型"
+                    : `已选 ${selectedModelNames.length} 个模型，但它们在「${activeYAxisLabel} × ${activeXAxis.label}」下都没有数据`
+                }
                 formatX={formatXAxisTick}
                 formatY={formatYAxisTick}
                 hoveredModel={hoveredModel}

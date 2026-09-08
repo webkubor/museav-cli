@@ -128,7 +128,7 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
             ? promo?.discount_label
             : promo?.discount_label_en || promo?.discount_label
           const symbol = currencySymbol(slide.currency, isZhLang())
-          const detailHref = `/models/${slide.slug || slide.model_id}`
+          const detailHref = `/models/${slide.model_id || slide.slug}`
           return (
             <article
               key={slide.carousel_item_id}

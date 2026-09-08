@@ -87,7 +87,7 @@ export function CatalogCard({
     isZh ? 'label' : 'label_en',
   )
 
-  const detailHref = `/models/${model.slug || model.id}`
+  const detailHref = `/models/${model.model_id || model.id}`
   const symbol = currencySymbol(model.pricing?.currency, isZh)
   const ctxValue = (model.context_length ?? 0) > 0 ? formatContextLength(model.context_length) : '—'
   // 传 vendor 才会剥「DeepSeek: DeepSeek V4 Pro」这类厂商前缀（原型卡片只写模型名，

@@ -299,7 +299,7 @@ export default function ModelDetailPage() {
                     key={item.id}
                     type="button"
                     className="mg-tile mg-tile-hover mg-related-card"
-                    onClick={() => navigate(`/models/${item.slug || item.id}`, { state: { source: 'related' } })}
+                    onClick={() => navigate(`/models/${item.model_id || item.id}`, { state: { source: 'related' } })}
                   >
                     <span className="mg-related-head">
                       <ModelIcon

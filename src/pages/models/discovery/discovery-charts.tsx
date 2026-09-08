@@ -128,6 +128,8 @@ export interface SpecialtyChartRow {
 }
 
 interface SpecialtyBarChartProps {
+  /** 厂牌主色取色函数。柱子按模型厂牌上色，与散点图、近 7 日趋势同一套色。 */
+  providerColor: (provider: string) => string
   rows: SpecialtyChartRow[]
   /** 榜单副标题，进 tooltip 的第二行 */
   description: string
@@ -147,6 +149,8 @@ function normalizeRect(y: number, height: number): { y: number; height: number }
 }
 
 interface BarShapeProps {
+  /** 厂牌主色，与散点图/趋势图同一个来源（brandColor），由调用方传入 */
+  providerColor?: (provider: string) => string
   x?: number
   y?: number
   width?: number
@@ -166,7 +170,7 @@ interface BarShapeProps {
  * 详情了。颜色与圆角都交给 CSS（`.model-discovery-specialty-bar`），这里只出几何量。
  */
 function SpecialtyBarShape(props: BarShapeProps) {
-  const { x = 0, y = 0, width = 0, height = 0, index = 0, payload, hoveredModel, onHoverModel, isClickable, onOpenModel } = props
+  const { x = 0, y = 0, width = 0, height = 0, index = 0, payload, hoveredModel, onHoverModel, isClickable, onOpenModel, providerColor } = props
   if (!payload) return null
   const clickable = isClickable?.(payload.model) ?? false
   const linked = hoveredModel === payload.model
@@ -185,6 +189,7 @@ function SpecialtyBarShape(props: BarShapeProps) {
       onMouseEnter={() => onHoverModel?.(payload.model)}
       onMouseLeave={() => onHoverModel?.(null)}
       role={clickable ? 'link' : undefined}
+      style={providerColor ? ({ '--specialty-color': providerColor(payload.provider) } as React.CSSProperties) : undefined}
       tabIndex={0}
     >
       <rect className="model-discovery-specialty-bar" width={width} x={x} {...normalizeRect(y, height)} />
@@ -241,7 +246,7 @@ function SpecialtyTooltip({ active, payload, rows = [], description }: Specialty
   )
 }
 
-export function SpecialtyBarChart({ rows, description, hoveredModel, onHoverModel, isClickable, onOpenModel }: SpecialtyBarChartProps) {
+export function SpecialtyBarChart({ rows, description, hoveredModel, onHoverModel, isClickable, onOpenModel, providerColor }: SpecialtyBarChartProps) {
   const domain = useMemo(() => specialtyBarDomain(rows.map((row) => row.numeric)), [rows])
   if (rows.length === 0) return <div className="model-discovery-chart-empty-block">暂无该指标的数据</div>
   return (
@@ -279,6 +284,7 @@ export function SpecialtyBarChart({ rows, description, hoveredModel, onHoverMode
                 isClickable={isClickable}
                 onHoverModel={onHoverModel}
                 onOpenModel={onOpenModel}
+                providerColor={providerColor}
               />
             }
           >
@@ -309,6 +315,8 @@ export interface AnalysisScatterPoint {
 }
 
 interface AnalysisScatterChartProps {
+  /** 无点时的文案。由调用方按真实原因给（没选模型 / 该维度组合无数据），不在图表里猜。 */
+  emptyHint?: string
   points: AnalysisScatterPoint[]
   xTicks: number[]
   yTicks: number[]
@@ -399,8 +407,14 @@ export function AnalysisScatterChart({
   hoveredModel,
   onHoverModel,
   onOpenModel,
+  emptyHint,
 }: AnalysisScatterChartProps) {
-  if (points.length === 0) return <div className="model-discovery-chart-empty-block">请选择至少一个模型</div>
+  // 空态必须分归因：「没选模型」是用户的事，「选了但没坐标」是数据的事。
+  // 共用一句「请选择至少一个模型」会在全选 31 个模型时照样弹出来，把数据缺失
+  // 说成用户没操作（2026-09-08 owner 截图：API 价格 × 使用量 组合下 31/31 全选
+  // 仍显示该文案）。analysis 接口会排除任一坐标为空的模型，而视频/TTS 这些子类
+  // 整体没有 API_PRICE，返回必然是 0 点。
+  if (points.length === 0) return <div className="model-discovery-chart-empty-block">{emptyHint ?? '请选择至少一个模型'}</div>
   const xMin = xTicks[0]
   const xMax = xTicks[xTicks.length - 1]
   const yMin = yTicks[0]

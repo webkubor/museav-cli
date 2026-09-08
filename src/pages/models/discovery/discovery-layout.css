@@ -37,6 +37,13 @@
   justify-content: space-between;
 }
 
+.model-discovery-title-row {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
 .model-discovery-head h1 {
   font-size: clamp(30px, 3vw, 36px);
   letter-spacing: -0.04em;
@@ -54,37 +61,25 @@
   text-wrap: pretty;
 }
 
-/* 数据快照：跟在副标题末尾，靠一个分隔点与正文断开。
-   原先是标题右侧一枚带边框的小胶囊——边框 + 底色让它在 36px 大标题旁边显得像补丁，
-   而它承载的只是"这份数据什么时候的"这一句元信息，不值一个独立控件的视觉分量。 */
-.model-discovery-snapshot {
-  color: var(--text-tertiary);
-  font-style: normal;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.model-discovery-snapshot::before {
-  content: "·";
-  margin: 0 6px;
-}
-
-/* 模态 tab 与范围筛选同一行：左导航右筛选，控制台常见排布。
+/* 模态 tab 独占一行（PRD .model-discovery-modalities）。
    下边框由 tab 的 underline 变体自己画，这里不再补线，避免双线。 */
 .model-discovery-modality-bar {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin: 14px 0 0;
+  margin: 22px 0 0;
 }
 
+/* 二级任务 + 范围筛选。这行始终渲染：它的 margin-bottom 是与首个卡片之间
+   唯一的间距来源，Agent 模态下若整行不渲染，tab 会直接贴死卡片。 */
 .model-discovery-taskbar {
   align-items: center;
   display: flex;
   gap: 12px;
   justify-content: space-between;
   margin: 12px 0 14px;
+  min-height: 30px;
 }
 
 .model-discovery-presets,

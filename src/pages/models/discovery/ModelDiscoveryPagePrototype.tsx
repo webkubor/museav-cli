@@ -35,6 +35,7 @@ import {
 import { useCallback, useMemo, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { brandColor } from '@model-go/icons'
 import { useActiveTheme } from '@/hooks/use-active-theme'
+import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import { InfoTip } from '@/components/ui/InfoTip'
@@ -1299,25 +1300,23 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
     <div className="model-discovery-page">
       <header className="model-discovery-head">
         <div className="model-discovery-head-copy">
-          <h1>模型发现</h1>
-          <p>
-            聚合业界评测、专业分析与 ModelGo 平台数据，帮助团队完成模型选型
-            {/* 每日 08:30 刷新一次，不是实时值；同步失败时接口继续返回上一次成功的
-                快照，日期会停在旧值——所以这里必须展示接口回传的真实日期。
-                挂在副标题末尾而不是标题旁：它是数据的时效说明，和副标题同属元信息，
-                贴在 44px 大标题右边只会像一块补丁。 */}
-            <span className="model-discovery-snapshot">{snapshotDate ? `数据快照 ${snapshotDate}` : "数据快照加载中"}</span>
-          </p>
+          {/* 标题行按 PRD 原型：大标题 + 右侧数据快照胶囊，副标题另起一行。
+              每日 08:30 刷新一次，不是实时值；同步失败时接口继续返回上一次成功的
+              快照，日期会停在旧值——所以这里必须展示接口回传的真实日期。 */}
+          <div className="model-discovery-title-row">
+            <h1>模型发现</h1>
+            <Badge size="sm" variant="outline">{snapshotDate ? `数据快照 ${snapshotDate}` : "数据快照加载中"}</Badge>
+          </div>
+          <p>聚合业界评测、专业分析与 ModelGo 平台数据，帮助团队完成模型选型</p>
         </div>
         <Button onClick={onViewAllModels} size="sm" type="button" variant="brand-outline">
           返回模型广场<LuArrowUpRight size={13} />
         </Button>
       </header>
 
-      {/* 一级模态导航 + 范围筛选同一行（§3.2 模块 2 / 3）。
-          两者都是"缩小看什么"的控件，原先模态 tab 独占一行、范围控件被放进下面的
-          taskbar，而 Agent 模态没有二级任务，那一行就只剩右端一个孤零零的控件、
-          左边整片空白（2026-09-03 视觉验收）。合到一行后 Agent 下省掉整行。 */}
+      {/* 一级模态导航独占一行（§3.2 模块 2），下面 taskbar 是二级任务 + 范围筛选。
+          曾把范围筛选并到模态行、Agent 模态整行不渲染 taskbar，结果 tab 底边直接贴住
+          首个卡片（实测间距 0px）；按 PRD 原型改回两行，taskbar 始终渲染。 */}
       <div className="model-discovery-modality-bar">
         <Tabs onValueChange={(value) => switchModality(value as ModalityKey)} value={modality}>
           <TabsList aria-label="模型模态" variant="underline">
@@ -1326,6 +1325,17 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
             ))}
           </TabsList>
         </Tabs>
+      </div>
+
+      {/* 二级任务 tab：Agent 无二级任务（§3.2 模块可见性），左侧留空，范围筛选仍靠右 */}
+      <div className="model-discovery-taskbar">
+        {modality !== "agent" && (
+          <Tabs onValueChange={switchTask} value={task}>
+            <TabsList aria-label="任务类型" variant="underline">
+              {config.tasks.map((item) => <TabsTrigger key={item} value={item} variant="underline">{item}</TabsTrigger>)}
+            </TabsList>
+          </Tabs>
+        )}
         <Tabs className="ml-auto" onValueChange={(value) => setScope(value as typeof scope)} value={scope}>
           <TabsList aria-label="模型范围" variant="pills">
             <TabsTrigger value="all" variant="pills">全部行业模型</TabsTrigger>
@@ -1333,17 +1343,6 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
           </TabsList>
         </Tabs>
       </div>
-
-      {/* 二级任务 tab：Agent 无二级任务（§3.2 模块可见性），整行不渲染 */}
-      {modality !== "agent" && (
-        <div className="model-discovery-taskbar">
-          <Tabs onValueChange={switchTask} value={task}>
-            <TabsList aria-label="任务类型" variant="underline">
-              {config.tasks.map((item) => <TabsTrigger key={item} value={item} variant="underline">{item}</TabsTrigger>)}
-            </TabsList>
-          </Tabs>
-        </div>
-      )}
 
       <section className="model-discovery-overview">
         <article className="mg-tile model-discovery-rank-card">

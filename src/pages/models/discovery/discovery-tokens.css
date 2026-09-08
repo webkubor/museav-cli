@@ -108,6 +108,9 @@
   --discovery-dur-instant: var(--mg-duration-instant);
   --discovery-dur-base: var(--mg-duration-fast);
   --discovery-dur-enter: var(--mg-duration-slow);
+  /* 图表数据入场（柱图/散点/趋势/相对条）。比 enter 慢一倍多是刻意的——见
+     tokens.css 里 --mg-duration-chart 的说明：交互要快，读数要慢。 */
+  --discovery-dur-chart: var(--mg-duration-chart);
 
   --discovery-dur-snap: var(--discovery-dur-instant);
   --discovery-dur-quick: var(--discovery-dur-instant);

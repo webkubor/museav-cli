@@ -88,8 +88,14 @@ export function DiscoveryAgentIcon({ id, name }: { id: string; name: string }) {
   )
 }
 
-/** 入场动效时长，对应 discovery.css 的 `--discovery-dur-enter`（唯一允许被看见的动画）。 */
-const ENTER_DURATION = 420
+/**
+ * 图表数据的入场时长，对应 `--discovery-dur-chart`（= --mg-duration-chart 0.9s）。
+ *
+ * Recharts 只吃数字，没法直接引 CSS 变量，改这里要同步改那个 token。
+ * 原先是 420ms（--discovery-dur-enter），与 hover/展开这类交互反馈同档 —— 一闪而过，
+ * 数量差还没看出来动画就结束了。交互要快、读数要慢，是两把尺子。
+ */
+const ENTER_DURATION = 900
 
 /** 关掉动效偏好时不播入场，只给最终态 —— 与原先 CSS 里的 media query 等价。 */
 function prefersReducedMotion() {

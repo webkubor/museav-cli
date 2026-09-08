@@ -733,24 +733,6 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
    * 且少一轮渲染：effect 版会先用旧页码渲染一次再纠正。
    * 这是实现方式的调整，不改任何 UI 与交互。
    */
-  /**
-   * 散点图默认选中前 7 个模型。不能放在 useState 初值里——那时接口数据还没到；
-   * 也不用 effect（本仓 eslint 禁 set-state-in-effect），走「渲染期按上一次值调整
-   * 状态」，与下方 tablePage 归位同一套写法。
-   *
-   * ⚠️ 判据必须是**数据实际对应的类型**（接口响应里的 type），不能用当前选中的
-   * `modality|task`。查询开了 placeholderData 保留旧数据，切 tab 的那一帧入参已经
-   * 变了、models 却还是上一个类型的：拿入参做判据会在旧数据上就把重置执行掉并把
-   * key 记成新值，等真数据到达时条件已不成立，于是散点图停在「上一个 tab 的模型名」
-   * 上，在新候选里一个也匹配不到，图表空掉。
-   */
-  const selectionKey = discoveryDataType ?? "";
-  const [lastSelectionKey, setLastSelectionKey] = useState("");
-  if (taskModels.length > 0 && lastSelectionKey !== selectionKey) {
-    setLastSelectionKey(selectionKey);
-    setSelectedModelNames(taskModels.slice(0, 7).map((model) => model.name));
-  }
-
   const tableFilterKey = `${modality}|${task}|${scope}|${rankingMetric}|${providerFilter.join(",")}|${tableAccess}`;
   const [lastTableFilterKey, setLastTableFilterKey] = useState(tableFilterKey);
   if (lastTableFilterKey !== tableFilterKey) {
@@ -1078,6 +1060,32 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       })),
     [allModelOptions, scope],
   );
+  /**
+   * 散点图默认**全选**当前候选（owner 2026-09-08 拍板）。不能放在 useState 初值里
+   * ——那时接口数据还没到；也不用 effect（本仓 eslint 禁 set-state-in-effect），
+   * 走「渲染期按上一次值调整状态」，与下方 tablePage 归位同一套写法。
+   *
+   * 为什么不是榜单前 N：PRD 没规定模型筛选的默认值（规定了默认值的是周期切换=本日、
+   * 热门榜=前 10 条、维度组合=质量×成本）。此前默认取质量榜前 7，而**质量榜前 7 在
+   * 多数模态拿不到 x 轴数据**，analysis 接口会把任一坐标为空的模型直接排除，于是
+   * 打开页面就是空图（2026-09-08 test 实测：文生图 7→1 个点、图像编辑 7→2、
+   * 文生视频/图生视频/TTS 全是 0；全选后文生图 1→13、图像编辑 2→4、文本 7→80）。
+   *
+   * ⚠️ 判据必须是**数据实际对应的类型**（接口响应里的 type），不能用当前选中的
+   * `modality|task`。查询开了 placeholderData 保留旧数据，切 tab 的那一帧入参已经
+   * 变了、models 却还是上一个类型的：拿入参做判据会在旧数据上就把重置执行掉并把
+   * key 记成新值，等真数据到达时条件已不成立，于是散点图停在「上一个 tab 的模型名」
+   * 上，在新候选里一个也匹配不到，图表空掉。
+   *
+   * 判据用 chartCandidates 而不是榜单：候选来自 model-options（全量、不分页），
+   * 它到达才谈得上「全选」。
+   */
+  const selectionKey = discoveryDataType ?? "";
+  const [lastSelectionKey, setLastSelectionKey] = useState("");
+  if (chartCandidates.length > 0 && lastSelectionKey !== selectionKey) {
+    setLastSelectionKey(selectionKey);
+    setSelectedModelNames(chartCandidates.map((model) => model.name));
+  }
   const chartModels = chartCandidates.filter((model) => selectedModelNames.includes(model.name));
   const filteredModelOptions = chartCandidates.filter((model) => model.name.toLowerCase().includes(modelFilterSearch.trim().toLowerCase()));
   const activeXAxis = analysisXMetrics[xMetric] ?? analysisXMetrics[0];
@@ -1415,7 +1423,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                         {filteredModelOptions.map((model) => <button className={selectedModelNames.includes(model.name) ? "selected" : ""} key={model.name} onClick={() => toggleChartModel(model.name)} type="button"><DiscoveryModelIcon model={model.name} provider={model.provider} /><span><strong title={model.name}>{model.name}</strong><small>{model.provider}</small></span>{selectedModelNames.includes(model.name) && <LuCheck size={14} />}</button>)}
                         {filteredModelOptions.length === 0 && <em>未找到匹配模型</em>}
                       </div>
-                      <footer><button onClick={() => setSelectedModelNames([])} type="button"><LuX size={13} />清空</button><button onClick={() => setSelectedModelNames(chartCandidates.map((model) => model.name))} type="button"><LuCheckCheck size={13} />全选</button><button onClick={() => setSelectedModelNames(visibleModels.slice(0, 7).map((model) => model.name))} type="button"><LuRotateCcw size={13} />恢复默认</button></footer>
+                      <footer><button onClick={() => setSelectedModelNames([])} type="button"><LuX size={13} />清空</button><button onClick={() => setSelectedModelNames(chartCandidates.map((model) => model.name))} type="button"><LuCheckCheck size={13} />全选</button><button onClick={() => setSelectedModelNames(chartCandidates.map((model) => model.name))} type="button"><LuRotateCcw size={13} />恢复默认</button></footer>
                     </>
                   }
                 />

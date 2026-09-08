@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
@@ -7,7 +6,9 @@ import { Popover } from '@/components/ui/Popover'
 import type { PlatformConfig } from '@/services/platform'
 import { cn } from '@/lib/utils'
 import { useLangStore } from '@/store/use-brand-store'
-import { applyBrandTheme, applyTheme, getSavedTheme, resolveTheme, saveBrandTheme, saveTheme } from '@/lib/theme'
+import { useAuthStore } from '@/store/auth'
+import { applyBrandTheme, applyTheme, saveBrandTheme, saveTheme } from '@/lib/theme'
+import { useActiveTheme } from '@/hooks/use-active-theme'
 import type { Market, Lang } from '@/lib/market'
 
 interface SegOption<T extends string> {
@@ -57,7 +58,9 @@ export function DevToolbar() {
   const setMarket = useLangStore((s) => s.setMarket)
   const setLang = useLangStore((s) => s.setLang)
   const qc = useQueryClient()
-  const [theme, setThemeState] = useState<'light' | 'dark'>(() => resolveTheme(getSavedTheme()))
+  const account = useAuthStore((s) => s.account)
+  // 读 DOM 真值而不是 localStorage：匿名 key 与用户 key 可能不一致，按钮高亮必须跟随实际渲染。
+  const theme = useActiveTheme()
 
   const switchMarket = (m: Market) => {
     setMarket(m)
@@ -84,9 +87,11 @@ export function DevToolbar() {
   }
 
   const switchTheme = (next: 'light' | 'dark') => {
-    setThemeState(next)
     applyTheme(next)
-    saveTheme(next)
+    // 必须带 account_id：saveTheme 不传 userId 只写匿名 key，而 DashboardHeader 的
+    // useEffect([account]) 会用 getUserTheme(account_id) 重新 applyTheme —— 用户 key
+    // 里的旧值会把这里的切换翻回去，表现成「点了没反应」。
+    saveTheme(next, account?.account_id)
   }
 
   const panel = (

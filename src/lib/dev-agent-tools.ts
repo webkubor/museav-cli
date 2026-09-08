@@ -166,12 +166,35 @@ export function installAgentTools(deps: ConsoleToolsDeps): () => void {
   }
 
   // 出口 2：WebMCP —— 浏览器支持时注册标准 tools（provideContext 已废，context 写进 description）
-  const mc = (navigator as unknown as { modelContext?: ModelContextLike }).modelContext
+  //
+  // 入口优先 document.modelContext：Chrome 已把 WebMCP 迁过去，navigator 那个是
+  // deprecated shim（控制台常驻一条 "navigator.modelContext is deprecated" 警告）。
+  const mc = (document as unknown as { modelContext?: ModelContextLike }).modelContext
+    ?? (navigator as unknown as { modelContext?: ModelContextLike }).modelContext
   const registered: string[] = []
   if (mc?.registerTool) {
+    // 注册必须幂等，且失败不能抛出去。三件事叠在一起会把整个控制台打崩：
+    //   ① main.tsx 开了 StrictMode，effect 走「挂载 → 卸载 → 再挂载」
+    //   ② 下面 cleanup 里的 unregisterTool 是**可选**的，对方没实现就静默不清理
+    //   ③ 于是第二次挂载重复注册同名 tool，registerTool 抛
+    //      InvalidStateError: Duplicate tool name
+    // 这个异常在 effect 里抛出后没人接，React 把它当渲染错误处理，
+    // DashboardLayout 整棵子树被 error boundary 接管 —— 用户看到的是页面挂了，
+    // 硬刷新又"好了"（重新走首次挂载），很容易误判成缓存问题。
+    // 2026-09-07 测试环境实际发生。
+    //
+    // 这是 dev/自动化工具的旁路，坏了顶多是 agent 用不了导航能力，
+    // 绝不该影响任何一个真实用户能不能打开控制台。
     const reg = (name: string, description: string, inputSchema: unknown, execute: (a: never) => unknown) => {
-      mc.registerTool!({ name, description, inputSchema, execute })
-      registered.push(name)
+      try {
+        mc.unregisterTool?.(name)   // 先清同名：不依赖 cleanup 一定跑过、也不依赖对方一定实现了它
+      } catch { /* 没注册过就是没注册过，忽略 */ }
+      try {
+        mc.registerTool!({ name, description, inputSchema, execute })
+        registered.push(name)
+      } catch (e) {
+        console.warn('[agent-tools] WebMCP registerTool 失败，跳过该工具:', name, e)
+      }
     }
     reg('console_list_pages',
       '列出当前登录账户在 ModelGo 控制台**有权限进入的所有页面**（key + 路由 path + scope）。已按账户角色/权限过滤。',
@@ -193,6 +216,9 @@ export function installAgentTools(deps: ConsoleToolsDeps): () => void {
 
   return () => {
     delete window.__mg_nav
-    if (mc?.unregisterTool) registered.forEach((n) => mc.unregisterTool!(n))
+    // 同理：卸载失败也不能抛 —— cleanup 抛异常会打断 React 的卸载流程
+    registered.forEach((n) => {
+      try { mc?.unregisterTool?.(n) } catch { /* 清不掉就算了，reg 那边有幂等兜底 */ }
+    })
   }
 }

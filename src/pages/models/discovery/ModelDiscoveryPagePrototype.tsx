@@ -51,6 +51,7 @@ import {
   useDiscoveryTrends,
   useHotAgents,
 } from './use-discovery-query'
+import { ProgressBar } from '@/components/ui/ProgressBar'
 import { EMPTY, rankBarWidth, specialtyRows, unitPriceDetail } from './discovery-data'
 import type { DiscoveryIntegrationStatus, DiscoveryUnitPrices } from '@/types'
 import { getMarketConfig, isTestOrDev } from "@/config/market"
@@ -689,7 +690,7 @@ function AgentPopularityLeaderboard() {
                 {agent.description ? <span title={agent.description}>{agent.description}</span> : null}
                 {/* 相对条放在 copy 里而不是新起一列：那四列 grid
                     (28px 34px 1fr auto) 加第五个 item 会把条挤到第二行、行高跳变。 */}
-                <i style={{ width: `${Math.max((agent.total_tokens / maxTokens) * 100, 2)}%` }} />
+                <ProgressBar flow showGlow={false} size="xs" value={Math.max((agent.total_tokens / maxTokens) * 100, 2)} />
               </div>
               <strong className="model-discovery-agent-popularity-usage">{compactTokenUsage(agent.total_tokens)}<span>Tokens</span></strong>
             </div>)}
@@ -1361,7 +1362,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
           ))}
           {visibleModels.slice(0, 5).map((model, index) => {
             const hasDetail = canOpenModelDetail(model);
-            return <div aria-label={hasDetail ? modelDetailAriaLabel(model) : undefined} className={`model-discovery-rank-row ${hasDetail ? "model-discovery-row-clickable" : ""}`} key={model.name} onClick={hasDetail ? () => openModelDetail(model) : undefined} onKeyDown={hasDetail ? (event) => handleModelRowKeyDown(event, model) : undefined} role={hasDetail ? "link" : undefined} tabIndex={hasDetail ? 0 : undefined}><span>{index + 1}</span><strong className="model-discovery-rank-name"><DiscoveryModelIcon model={model.name} provider={model.provider} /><span><span title={model.name}>{model.name}</span><small>{model.provider}</small></span></strong><em className={isModelConnected(model) ? "supported" : "pending"}>{modelAccessLabel(model)}</em><div><i style={{ width: `${rankBarWidth(model, visibleModels.slice(0, 5), scoreAscending)}%` }} /><b>{model.score}</b></div></div>;
+            return <div aria-label={hasDetail ? modelDetailAriaLabel(model) : undefined} className={`model-discovery-rank-row ${hasDetail ? "model-discovery-row-clickable" : ""}`} key={model.name} onClick={hasDetail ? () => openModelDetail(model) : undefined} onKeyDown={hasDetail ? (event) => handleModelRowKeyDown(event, model) : undefined} role={hasDetail ? "link" : undefined} tabIndex={hasDetail ? 0 : undefined}><span>{index + 1}</span><strong className="model-discovery-rank-name"><DiscoveryModelIcon model={model.name} provider={model.provider} /><span><span title={model.name}>{model.name}</span><small>{model.provider}</small></span></strong><em className={isModelConnected(model) ? "supported" : "pending"}>{modelAccessLabel(model)}</em><div><ProgressBar flow showGlow={false} size="xs" value={rankBarWidth(model, visibleModels.slice(0, 5), scoreAscending)} /><b>{model.score}</b></div></div>;
           })}
           <div className="model-discovery-rank-more"><button onClick={viewFullRanking} type="button">查看更多<LuChevronDown size={13} /></button></div>
         </article>

@@ -149,48 +149,13 @@
   grid-template-columns: minmax(70px, 1fr) 36px;
 }
 
-.model-discovery-rank-row > div::before {
-  background: color-mix(in srgb, var(--line) 55%, transparent);
-  border-radius: var(--mg-radius-pill);
-  content: "";
+/* 排名条走 ui/ProgressBar（flow 流光），表面/轨/动效全在组件里，这里只管它在
+   grid 里占第 1 列、与右侧数值同一行。原先是自制的 <i> + ::before 轨 + scaleX
+   一次性生长——owner 2026-09-08：「我说动效啊，我说进度条流线的那种感觉，
+   我的用量分析用过」。用量分析页一直用的就是这个组件的 flow。 */
+.model-discovery-rank-row > div > div:first-child {
   grid-column: 1;
   grid-row: 1;
-  height: 6px;
-}
-
-/* 条长由内联 style 的百分比给（rankBarWidth），入场用 scaleX 从左侧生长——
-   scaleX 不改变布局宽度，所以动画期间条尾不会把右边的数值挤动。
-   切 tab / 换指标时 React 复用同一批 DOM，动画不会重播；这里要的是首屏那一次
-   「排名条长出来」的读数引导，不是每次交互都动。 */
-.model-discovery-rank-row > div i {
-  /* 与热门 Agent 排行的相对条、四张柱图同一档（--discovery-dur-chart 0.9s）：
-     同一页面里的"进度条生长"必须一个速度，否则先后跑完会读成两套动效。 */
-  /* 缓动用 standard 而不是 decelerate：decelerate(0.25,1,0.5,1) 头 10% 的时间就
-     冲到 35%、一半时间已经 93%，剩下全在做看不见的收尾——**光把时长从 420ms 提到
-     900ms 没用，照样一闪而过**（2026-09-08 实测三条曲线的进度分布后换的）。
-     standard(0.4,0,0.2,1) 先加速后减速，10%/30%/50% 时间对应 3%/37%/78%，
-     生长过程才看得出来。decelerate 适合"元素进入视口"，不适合进度生长。 */
-  animation: model-discovery-rank-grow var(--discovery-dur-chart) var(--mg-ease-standard) both;
-  background: var(--accent);
-  border-radius: var(--mg-radius-pill);
-  grid-column: 1;
-  grid-row: 1;
-  height: 6px;
-  transform-origin: left center;
-  /* 条长本身也过渡：切换指标时从旧长度平滑到新长度，而不是瞬间跳 */
-  transition: width var(--discovery-dur-base) var(--mg-ease-standard);
-}
-
-@keyframes model-discovery-rank-grow {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .model-discovery-rank-row > div i {
-    animation: none;
-    transition: none;
-  }
 }
 
 .model-discovery-rank-row > div b {

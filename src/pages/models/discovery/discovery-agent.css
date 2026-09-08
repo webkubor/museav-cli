@@ -141,26 +141,12 @@
   white-space: nowrap;
 }
 
-/* Token 量的相对条。本模块此前只有数字、没有条，而它图标最多、信息密度最高，
-   整块 136 个元素里只有 1 个元素带过渡——全页最静的一块（Top 5 排行早有
-   scaleX 生长条，这里没同步过来，2026-09-08 owner 指出）。
-   动画与缓动直接复用 Top 5 那条 keyframes，不另造一套。 */
-.model-discovery-agent-popularity-copy i {
-  /* 缓动用 standard 而不是 decelerate：decelerate(0.25,1,0.5,1) 头 10% 的时间就
-     冲到 35%、一半时间已经 93%，剩下全在做看不见的收尾——**光把时长从 420ms 提到
-     900ms 没用，照样一闪而过**（2026-09-08 实测三条曲线的进度分布后换的）。
-     standard(0.4,0,0.2,1) 先加速后减速，10%/30%/50% 时间对应 3%/37%/78%，
-     生长过程才看得出来。decelerate 适合"元素进入视口"，不适合进度生长。 */
-  animation: model-discovery-rank-grow var(--discovery-dur-chart) var(--mg-ease-standard) both;
-  background: color-mix(in srgb, var(--accent) 52%, transparent);
-  border-radius: var(--mg-radius-pill);
-  display: block;
-  height: 3px;
+/* Token 量的相对条走 ui/ProgressBar（flow 流光），与 Top 5 排行同一个组件。
+   原先是自制 <i> + scaleX：动效理解错了——owner 要的是"流线感"（持续流光），
+   不是一次性生长。组件的 flow 复用全局 shimmer-slide keyframe。
+   这里只给它一点上边距，其余交给组件。 */
+.model-discovery-agent-popularity-copy > div {
   margin-top: 6px;
-  max-width: 100%;
-  transform-origin: left center;
-  /* 切周期（本日/本周/本月）时从旧长度平滑到新长度，而不是瞬间跳 */
-  transition: width var(--discovery-dur-base) var(--mg-ease-standard);
 }
 
 /* 行 hover 也补上——原先整行没有任何反馈。行本身不跳转（PRD），
@@ -174,7 +160,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .model-discovery-agent-popularity-copy i,
   .model-discovery-agent-popularity-row {
     animation: none;
     transition: none;

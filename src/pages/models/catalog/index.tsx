@@ -43,13 +43,14 @@ import './catalog.css'
  * 模型发现页本身与路由 `/models/discovery` 都保留 —— 关掉的只是模型广场工具栏里这枚
  * **唯一入口按钮**，直接输 URL 仍能进（方便验证与演示）。
  *
- * 为什么要开关：v1.0.6 的联调还没收口 —— 榜单里 161 个标「ModelGo 已接入」的模型缺
- * `modelgo_id` 点不进详情页（qa#718），Benchmark 只有 18/33 命中，热门 Agent 排行还没
- * 数据源（qa#708 第 4 条）。入口先不对外露出。
+ * 为什么要开关：v1.0.6 联调期入口先不对外露出 —— 榜单里 161 个标「ModelGo 已接入」的
+ * 模型缺 `modelgo_id` 点不进详情页（qa#718），Benchmark 只有 18/33 命中，热门 Agent 排行
+ * 还没数据源（qa#708 第 4 条）。开关留着，是为了随时能把入口收回去。
  *
- * 取值：**只有 `feature/v1.0.6-model-discovery` 分支配 `on`**（`.env.development` 与
- * `.env.test` 各一行）。`test` 与当班 `release/v1.0.6` 都不配 —— 没开发完的功能不进
- * 集成分支的可见范围。联调收口后连同代码一起合入当班 release，那时才把开关一并带过去。
+ * 取值（2026-09-08 现状）：`test` 与当班 `release/v1.0.6` 的 `.env.test`、
+ * `.env.development` **都配了 `on`**，即测试环境入口已开。`main` 不配 —— 生产还没有
+ * 这个功能。原先承载它的 `feature/v1.0.6-model-discovery` 分支已合入并删除，
+ * 不要再照它找开关。
  *
  * 路由 `/models/discovery` 在所有分支上都通，直接输 URL 就能看页面，
  * 开关管的只是模型广场工具栏那枚入口按钮。

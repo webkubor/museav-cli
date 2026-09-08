@@ -1,3 +1,4 @@
+/** 调用日志详情与响应诊断；路由：/logs。 */
 import { type ReactNode } from 'react'
 import { MarkdownContent } from '@/components/ui/MarkdownContent'
 import {
@@ -43,6 +44,7 @@ import {
   REDACTION_PLACEHOLDER,
   type DerivedLogStatus,
 } from './guardrail'
+import { isAsyncCall } from './async-call'
 import { cacheHitRateLabel, cacheTokenState, isCacheCardVisible } from './cache'
 import type { SSEReassembled } from './reassemble-sse'
 
@@ -143,15 +145,13 @@ export function LogDetailSheet({
     enabled: !!wsId,
     staleTime: 60_000,
   })
-  // 任务产物探测（需求方#954）：多模态异步任务的提交日志与任务共用 request_id，
-  // 打开详情时对 GET /async-tasks/{requestId} 打一枪，命中才渲染「任务产物」模块；
-  // 纯同步调用后端回 404 → query error → 模块不出现，无需前端硬编码 call_type 名单。
-  // meta.silentError：404 是探测的常态结果而非故障，禁止全局 toast 弹「请求失败」
-  //（否则每次打开同步日志详情都会闪一条错误提示）。
+  // qa#719 优先使用明确任务 ID；缺失保留旧 request_id 探测兼容历史日志。
+  // 探测 404 静默处理，不伪造任务数据。
+  const taskId = row?.async_task_id || row?.request_id
   const { data: asyncTask } = useQuery({
-    queryKey: ['log-async-task', row?.request_id],
-    queryFn: () => getTask(row!.request_id),
-    enabled: open && !!row?.request_id,
+    queryKey: ['log-async-task', taskId],
+    queryFn: () => getTask(taskId!),
+    enabled: open && !!taskId,
     retry: false,
     staleTime: 60_000,
     meta: { silentError: true },
@@ -188,7 +188,7 @@ export function LogDetailSheet({
           </header>
 
           <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {isModelNotStarted(row) ? (
+            {isModelNotStarted(row) && !isAsyncCall(row) ? (
               <>
                 {/* 模型请求未发起（如预算拦截）：无耗时/Token/费用 → 两张定制诊断卡。
                     脱敏后继续的护栏命中不走这里，仍展示完整指标卡。 */}
@@ -197,9 +197,9 @@ export function LogDetailSheet({
               </>
             ) : (
               <>
-                <DiagnosticCard icon={<LuClock3 />} label={t('logs.detail.diagnostics.totalDuration')} value={formatMaybeDuration(row.duration_ms)} hint={t('logs.detail.diagnostics.firstTokenHint', { value: formatMaybeDuration(row.speed.first_token_ms) })} tone={row.status === 'failed' ? 'danger' : 'brand'} />
+                <DiagnosticCard icon={<LuClock3 />} label={t('logs.detail.diagnostics.totalDuration')} value={formatMaybeDuration(row.duration_ms)} hint={isAsyncCall(row) ? t('logs.metrics.asyncNotCounted') : t('logs.detail.diagnostics.firstTokenHint', { value: formatMaybeDuration(row.speed.first_token_ms) })} tone={row.status === 'failed' ? 'danger' : 'brand'} />
                 <DiagnosticCard icon={<LuReceiptText />} label={t('logs.detail.diagnostics.cost')} value={<Money amount={Number(row.cost.amount) > 0 ? row.cost.amount : null} currency={row.cost.currency} />} hint={row.billing_status ? row.billing_status.charAt(0).toUpperCase() + row.billing_status.slice(1) : t('logs.detail.diagnostics.billingStatusMissing')} tone="warning" />
-                <DiagnosticCard icon={<LuDatabase />} label="Tokens" value={tokenFlow(row)} hint={t('logs.detail.diagnostics.tokenFlowHint')} tone="success" />
+                <DiagnosticCard icon={<LuDatabase />} label="Tokens" value={isAsyncCall(row) && !(row.usage?.total_tokens > 0) ? '—' : tokenFlow(row)} hint={t(isAsyncCall(row) && !(row.usage?.total_tokens > 0) ? 'logs.metrics.asyncNotCounted' : 'logs.detail.diagnostics.tokenFlowHint')} tone="success" />
                 <DiagnosticCard icon={<LuGitFork />} label="Fallback" value={t('logs.detail.diagnostics.fallbackCount', { count: row.fallback_count })} hint={row.fallback_count > 0 ? t('logs.detail.diagnostics.fallbackTriggered') : t('logs.detail.diagnostics.fallbackNotTriggered')} tone={row.fallback_count > 0 ? 'warning' : 'brand'} />
                 {/* 缓存卡只在 cache_supported === true 时渲染（需求方#885）：false 或字段缺失
                     一律隐藏，出图/语音/TTS 不再显「未命中 · 0 tokens」。展示时 5 张卡在 2 列下
@@ -244,8 +244,8 @@ export function LogDetailSheet({
               <DetailRow label={t('logs.detail.httpStatus')} value={httpStatus(row)} mono />
               <DetailRow label={t('logs.detail.billingStatus')} value={row.billing_status} />
               {!isModelNotStarted(row) && <DetailRow label={t('logs.detail.callType')} value={row.call_type} />}
-              <DetailRow label="TPOT" value={row.tpot_ms > 0 ? `${row.tpot_ms}ms` : ''} mono />
-              <DetailRow label="TPM" value={tpmLabel(row)} mono />
+              {!isAsyncCall(row) && <DetailRow label="TPOT" value={row.tpot_ms > 0 ? `${row.tpot_ms}ms` : ''} mono />}
+              {!isAsyncCall(row) && <DetailRow label="TPM" value={tpmLabel(row)} mono />}
             </DetailGrid>
           </DetailSection>
 
@@ -269,7 +269,7 @@ export function LogDetailSheet({
                 })()}
               </DetailGrid>
               {onOpenTask && (
-                <Button variant="outline" size="sm" onClick={() => onOpenTask(row.request_id)}>
+                <Button variant="outline" size="sm" onClick={() => onOpenTask(taskId!)}>
                   {t('logs.detail.taskArtifact.viewTask')}
                   <LuArrowUpRight className="ml-1.5 h-3.5 w-3.5" />
                 </Button>
@@ -356,6 +356,9 @@ function DetailRow({ label, mono = false, value }: { label: string; mono?: boole
 
 function ResponseTiming({ row }: { row: CallLogItem }) {
   const { t } = useTranslation()
+  if (isAsyncCall(row)) {
+    return <p className="mg-text-caption text-mg-text-3">{t('logs.metrics.asyncNotCounted')}</p>
+  }
   if (isModelNotStarted(row)) {
     return (
       <div className="rounded-md border border-mg-border bg-mg-fill-0/30 p-[var(--mg-panel-padding-md)]">

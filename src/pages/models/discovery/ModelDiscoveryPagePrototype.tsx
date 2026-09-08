@@ -32,10 +32,24 @@ import {
   LuTrendingUp,
   LuX,
 } from 'react-icons/lu'
-import { useCallback, useMemo, useState, type CSSProperties, type KeyboardEvent } from "react";
-import { brandColor } from '@model-go/icons'
+import { useMemo, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { useTranslation } from 'react-i18next'
-import { useActiveTheme } from '@/hooks/use-active-theme'
+import { AgentPopularityLeaderboard, DiscoveryLoadError } from './discovery-agent-popularity'
+import { useProviderColor } from './discovery-colors'
+import {
+  buildRankingMetricOptions,
+  buildTaskMetricProfiles,
+  buildSummaryTooltipCopy,
+  buildSourceConstrainedAnalysisProfiles,
+  buildDiscoveryConfigs,
+  buildAudioTaskConfigs,
+  buildAgentDiscoveryConfig,
+  type TFn,
+  type ModalityKey,
+  type RankingMetric,
+  type AnalysisAxisProfile,
+  type SpecialtyKind,
+} from './discovery-config'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs'
@@ -51,7 +65,6 @@ import {
   useDiscoveryQuery,
   useDiscoveryTable,
   useDiscoveryTrends,
-  useHotAgents,
 } from './use-discovery-query'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { EMPTY, rankBarWidth, specialtyRows, unitPriceDetail } from './discovery-data'
@@ -62,42 +75,12 @@ import { appToast } from "@/lib/app-toast"
 import {
 
   AnalysisScatterChart,
-  DiscoveryAgentIcon,
   DiscoveryModelIcon,
   SpecialtyBarChart,
   TrendBarChart,
   type AnalysisScatterPoint,
   type TrendChartPoint,
 } from './discovery-charts'
-
-/** 配置表是模块级常量，里面调不了 hook —— 统一接收 t，由组件用 useMemo 构造 */
-type TFn = ReturnType<typeof useTranslation>['t']
-
-type ModalityKey = "agent" | "text" | "image" | "video" | "audio";
-type RankingMetric = "overall" | "value" | "price" | "usage";
-type AgentPopularityPeriod = "day" | "week" | "month";
-/** 散点 X 轴的取数来源。samples/voices/performance 随 PRD 73cbb28 撤下，已无配置引用。 */
-type AnalysisMetricSource = "price" | "speed" | "latency" | "usage";
-
-type AnalysisAxisProfile = {
-  yMetrics: string[];
-  xMetrics: Array<{ label: string; unit: string; source: AnalysisMetricSource; lowerIsBetter: boolean; presetLabel: string }>;
-  presets?: Array<{ label: string; y: number; x: number }>;
-};
-type TaskMetricProfile = {
-  qualityLabel: string;
-  qualityBasis: string;
-  qualityUnit: string;
-  valueLabel: string;
-  valueUnit: string;
-  speedLabel: string;
-  speedUnit: string;
-  latencyLabel: string;
-  latencyUnit: string;
-  usageLabel: string;
-  usageUnit: string;
-  qualityLowerIsBetter?: boolean;
-};
 
 type DiscoveryModel = {
   id?: string;
@@ -121,23 +104,6 @@ type DiscoveryModel = {
    * （需求方#969 缺陷 1：95 个模型里 45 个 cost_value=null，全被渲染成 $0.00）。
    */
   raw?: { price: number | null };
-};
-
-/**
- * 每种模态的展示配置。**只剩产品文案与轴配置** —— 模型列表、总览卡、专项榜的行数据
- * 原先都写在这里，现已全部改走接口（见 use-discovery-query）。
- */
-/** 专项榜取哪个字段排序，由这个语义标识决定 —— 不能用标题文案匹配，那会随语言变。 */
-type SpecialtyKind = "value" | "tps" | "latency" | "usage" | "price" | "score";
-
-type DiscoveryConfig = {
-  label: string;
-  tasks: string[];
-  scoreLabel: string;
-  yMetrics: string[];
-  xMetrics: string[];
-  presets: Array<{ label: string; y: number; x: number }>;
-  specialties: Array<{ kind: SpecialtyKind; title: string; description: string }>;
 };
 
 /**
@@ -262,56 +228,6 @@ const HIDDEN_MODALITIES: readonly ModalityKey[] = ["audio"];
 const buildVisibleModalityOptions = (t: TFn) =>
   buildModalityOptions(t).filter((option) => !HIDDEN_MODALITIES.includes(option.key));
 
-const buildRankingMetricOptions = (t: TFn): Array<{ key: RankingMetric; label: string; specialtyIndex?: number }> => [
-  { key: "overall", label: t("modelsDiscovery.metric.overall") },
-  { key: "value", label: t("modelsDiscovery.metric.valueForMoney"), specialtyIndex: 0 },
-  { key: "usage", label: t("modelsDiscovery.metric.usage"), specialtyIndex: 3 },
-];
-
-const buildTaskMetricProfiles = (t: TFn): Record<ModalityKey, Record<string, TaskMetricProfile>> => ({
-  agent: {
-    Agent: { qualityLabel: "Agentic Index", qualityBasis: t("modelsDiscovery.basis.agent"), qualityUnit: "Index", valueLabel: t("modelsDiscovery.value.agentic"), valueUnit: "Index / USD", speedLabel: t("modelsDiscovery.metric.outputTps"), speedUnit: t("modelsDiscovery.unit.tokensPerSecond"), latencyLabel: t("modelsDiscovery.metric.firstToolCallP50"), latencyUnit: "ms", usageLabel: t("modelsDiscovery.metric.agentTasks7d"), usageUnit: t("modelsDiscovery.unit.successfulTasks") },
-  },
-  text: {
-    文本对话: { qualityLabel: "Intelligence Index", qualityBasis: t("modelsDiscovery.basis.textChat"), qualityUnit: "Index", valueLabel: t("modelsDiscovery.value.intelligence"), valueUnit: "Index / USD", speedLabel: t("modelsDiscovery.metric.outputTps"), speedUnit: t("modelsDiscovery.unit.tokensPerSecond"), latencyLabel: "TTFT P50", latencyUnit: "ms", usageLabel: t("modelsDiscovery.metric.callTokens7d"), usageUnit: "Tokens" },
-    代码生成: { qualityLabel: "Coding Index", qualityBasis: t("modelsDiscovery.basis.codeGen"), qualityUnit: "Index", valueLabel: t("modelsDiscovery.value.coding"), valueUnit: "Index / USD", speedLabel: t("modelsDiscovery.metric.outputTps"), speedUnit: t("modelsDiscovery.unit.tokensPerSecond"), latencyLabel: "TTFT P50", latencyUnit: "ms", usageLabel: t("modelsDiscovery.metric.codeTokens7d"), usageUnit: "Tokens" },
-  },
-  image: {
-    文生图: { qualityLabel: t("modelsDiscovery.metric.eloScore"), qualityBasis: t("modelsDiscovery.basis.textToImage"), qualityUnit: "Elo", valueLabel: t("modelsDiscovery.value.eloPerKImage"), valueUnit: t("modelsDiscovery.unit.eloPerKImage"), speedLabel: t("modelsDiscovery.metric.apiPrice"), speedUnit: t("modelsDiscovery.unit.usdPerKImages"), latencyLabel: t("modelsDiscovery.metric.usage7d"), latencyUnit: t("modelsDiscovery.unit.successfulTasks"), usageLabel: t("modelsDiscovery.metric.t2iTasks7d"), usageUnit: t("modelsDiscovery.unit.successfulTasks") },
-    图片编辑: { qualityLabel: t("modelsDiscovery.metric.eloScore"), qualityBasis: t("modelsDiscovery.basis.imageEdit"), qualityUnit: "Elo", valueLabel: t("modelsDiscovery.value.eloPerKImage"), valueUnit: t("modelsDiscovery.unit.eloPerKImage"), speedLabel: t("modelsDiscovery.metric.apiPrice"), speedUnit: t("modelsDiscovery.unit.usdPerKImages"), latencyLabel: t("modelsDiscovery.metric.usage7d"), latencyUnit: t("modelsDiscovery.unit.successfulTasks"), usageLabel: t("modelsDiscovery.metric.editTasks7d"), usageUnit: t("modelsDiscovery.unit.successfulTasks") },
-  },
-  video: {
-    文生视频: { qualityLabel: t("modelsDiscovery.metric.eloScore"), qualityBasis: t("modelsDiscovery.basis.textToVideo"), qualityUnit: "Elo", valueLabel: t("modelsDiscovery.value.eloPerMinute"), valueUnit: "Elo / ($/min)", speedLabel: t("modelsDiscovery.metric.apiPrice"), speedUnit: t("modelsDiscovery.unit.usdPerMinute"), latencyLabel: t("modelsDiscovery.metric.usage7d"), latencyUnit: t("modelsDiscovery.unit.successfulTasks"), usageLabel: t("modelsDiscovery.metric.t2vTasks7d"), usageUnit: t("modelsDiscovery.unit.successfulTasks") },
-    图生视频: { qualityLabel: t("modelsDiscovery.metric.eloScore"), qualityBasis: t("modelsDiscovery.basis.imageToVideo"), qualityUnit: "Elo", valueLabel: t("modelsDiscovery.value.eloPerMinute"), valueUnit: "Elo / ($/min)", speedLabel: t("modelsDiscovery.metric.apiPrice"), speedUnit: t("modelsDiscovery.unit.usdPerMinute"), latencyLabel: t("modelsDiscovery.metric.usage7d"), latencyUnit: t("modelsDiscovery.unit.successfulTasks"), usageLabel: t("modelsDiscovery.metric.i2vTasks7d"), usageUnit: t("modelsDiscovery.unit.successfulTasks") },
-  },
-  audio: {
-    "语音合成（TTS）": { qualityLabel: t("modelsDiscovery.metric.voiceQualityElo"), qualityBasis: t("modelsDiscovery.basis.tts"), qualityUnit: "Elo", valueLabel: t("modelsDiscovery.summary.valueVoicePerApi"), valueUnit: "Elo / USD", speedLabel: t("modelsDiscovery.metric.apiPrice"), speedUnit: t("modelsDiscovery.unit.usdPerMChars"), latencyLabel: t("modelsDiscovery.metric.usage7d"), latencyUnit: t("modelsDiscovery.unit.characters"), usageLabel: t("modelsDiscovery.metric.ttsChars7d"), usageUnit: t("modelsDiscovery.unit.characters") },
-    "语音识别（STT）": { qualityLabel: "AA-WER", qualityBasis: t("modelsDiscovery.basis.stt"), qualityUnit: "%", valueLabel: t("modelsDiscovery.value.aaWer"), valueUnit: "% / USD", speedLabel: t("modelsDiscovery.metric.apiPrice"), speedUnit: t("modelsDiscovery.unit.usdPerKMinutes"), latencyLabel: t("modelsDiscovery.metric.usage7d"), latencyUnit: t("modelsDiscovery.unit.audioMinutes"), usageLabel: t("modelsDiscovery.metric.sttMinutes7d"), usageUnit: t("modelsDiscovery.unit.audioMinutes"), qualityLowerIsBetter: true },
-  },
-})
-
-const buildSummaryTooltipCopy = (t: TFn): Record<ModalityKey, Record<string, string[]>> => ({
-  agent: {
-    Agent: [t("modelsDiscovery.tooltip.agentQuality"), t("modelsDiscovery.tooltip.agentOpen"), t("modelsDiscovery.tooltip.agentValue"), t("modelsDiscovery.tooltip.tokensPerSec"), t("modelsDiscovery.tooltip.agentUsage")],
-  },
-  text: {
-    文本对话: [t("modelsDiscovery.tooltip.textQuality"), t("modelsDiscovery.tooltip.textOpen"), t("modelsDiscovery.tooltip.textValue"), t("modelsDiscovery.tooltip.tokensPerSec"), t("modelsDiscovery.tooltip.textUsage")],
-    代码生成: [t("modelsDiscovery.tooltip.codeQuality"), t("modelsDiscovery.tooltip.codeOpen"), t("modelsDiscovery.tooltip.codeValue"), t("modelsDiscovery.tooltip.tokensPerSec"), t("modelsDiscovery.tooltip.codeUsage")],
-  },
-  image: {
-    文生图: [t("modelsDiscovery.tooltip.t2iQuality"), t("modelsDiscovery.tooltip.t2iOpen"), t("modelsDiscovery.tooltip.t2iValue"), t("modelsDiscovery.tooltip.perKImagePrice"), t("modelsDiscovery.tooltip.t2iUsage")],
-    图片编辑: [t("modelsDiscovery.tooltip.editQuality"), t("modelsDiscovery.tooltip.editOpen"), t("modelsDiscovery.tooltip.editValue"), t("modelsDiscovery.tooltip.perKImagePrice"), t("modelsDiscovery.tooltip.editUsage")],
-  },
-  video: {
-    文生视频: [t("modelsDiscovery.tooltip.t2vQuality"), t("modelsDiscovery.tooltip.t2vOpen"), t("modelsDiscovery.tooltip.t2vValue"), t("modelsDiscovery.tooltip.perMinPrice"), t("modelsDiscovery.tooltip.t2vUsage")],
-    图生视频: [t("modelsDiscovery.tooltip.i2vQuality"), t("modelsDiscovery.tooltip.i2vOpen"), t("modelsDiscovery.tooltip.t2vValue"), t("modelsDiscovery.tooltip.perMinPrice"), t("modelsDiscovery.tooltip.i2vUsage")],
-  },
-  audio: {
-    "语音合成（TTS）": [t("modelsDiscovery.tooltip.ttsQuality"), t("modelsDiscovery.tooltip.ttsValue"), t("modelsDiscovery.tooltip.perMCharPrice"), t("modelsDiscovery.tooltip.ttsUsage")],
-    "语音识别（STT）": [t("modelsDiscovery.tooltip.sttQuality"), t("modelsDiscovery.tooltip.sttPrice"), t("modelsDiscovery.tooltip.sttUsage")],
-  },
-})
-
 const taskMetricSources: Record<ModalityKey, Record<string, string>> = {
   agent: { Agent: "Artificial Analysis" },
   text: { 文本对话: "Artificial Analysis", 代码生成: "Artificial Analysis" },
@@ -359,171 +275,6 @@ function formatTaskCost(t: TFn, value: number | null) {
   if (value === 0) return t("modelsDiscovery.unit.free");
   return `$${value.toFixed(2)}`;
 }
-
-const buildSourceConstrainedAnalysisProfiles = (t: TFn): Partial<Record<ModalityKey, Record<string, AnalysisAxisProfile>>> => ({
-  image: {
-    文生图: {
-      yMetrics: [t("modelsDiscovery.metric.eloScore"), t("modelsDiscovery.metric.apiPrice")],
-      xMetrics: [
-        { label: t("modelsDiscovery.metric.apiPrice"), unit: t("modelsDiscovery.unit.usdPerKImages"), source: "price", lowerIsBetter: true, presetLabel: t("modelsDiscovery.preset.qualityApiPrice") },
-        { label: t("modelsDiscovery.metric.usage7d"), unit: t("modelsDiscovery.unit.successfulTasks"), source: "usage", lowerIsBetter: false, presetLabel: t("modelsDiscovery.preset.qualityUsage") },
-      ],
-      presets: [
-        { label: t("modelsDiscovery.preset.qualityApiPrice"), y: 0, x: 0 },
-        { label: t("modelsDiscovery.preset.qualityUsage"), y: 0, x: 1 },
-        { label: t("modelsDiscovery.preset.apiPriceUsage"), y: 1, x: 1 },
-      ],
-    },
-    图片编辑: {
-      yMetrics: [t("modelsDiscovery.metric.eloScore"), t("modelsDiscovery.metric.apiPrice")],
-      xMetrics: [
-        { label: t("modelsDiscovery.metric.apiPrice"), unit: t("modelsDiscovery.unit.usdPerKImages"), source: "price", lowerIsBetter: true, presetLabel: t("modelsDiscovery.preset.qualityApiPrice") },
-        { label: t("modelsDiscovery.metric.usage7d"), unit: t("modelsDiscovery.unit.successfulTasks"), source: "usage", lowerIsBetter: false, presetLabel: t("modelsDiscovery.preset.qualityUsage") },
-      ],
-      presets: [
-        { label: t("modelsDiscovery.preset.qualityApiPrice"), y: 0, x: 0 },
-        { label: t("modelsDiscovery.preset.qualityUsage"), y: 0, x: 1 },
-        { label: t("modelsDiscovery.preset.apiPriceUsage"), y: 1, x: 1 },
-      ],
-    },
-  },
-  video: {
-    文生视频: {
-      yMetrics: [t("modelsDiscovery.metric.eloScore"), t("modelsDiscovery.metric.apiPrice")],
-      xMetrics: [
-        { label: t("modelsDiscovery.metric.apiPrice"), unit: t("modelsDiscovery.unit.usdPerMinute"), source: "price", lowerIsBetter: true, presetLabel: t("modelsDiscovery.preset.qualityApiPrice") },
-        { label: t("modelsDiscovery.metric.usage7d"), unit: t("modelsDiscovery.unit.successfulTasks"), source: "usage", lowerIsBetter: false, presetLabel: t("modelsDiscovery.preset.qualityUsage") },
-      ],
-      presets: [
-        { label: t("modelsDiscovery.preset.qualityApiPrice"), y: 0, x: 0 },
-        { label: t("modelsDiscovery.preset.qualityUsage"), y: 0, x: 1 },
-        { label: t("modelsDiscovery.preset.apiPriceUsage"), y: 1, x: 1 },
-      ],
-    },
-    图生视频: {
-      yMetrics: [t("modelsDiscovery.metric.eloScore"), t("modelsDiscovery.metric.apiPrice")],
-      xMetrics: [
-        { label: t("modelsDiscovery.metric.apiPrice"), unit: t("modelsDiscovery.unit.usdPerMinute"), source: "price", lowerIsBetter: true, presetLabel: t("modelsDiscovery.preset.qualityApiPrice") },
-        { label: t("modelsDiscovery.metric.usage7d"), unit: t("modelsDiscovery.unit.successfulTasks"), source: "usage", lowerIsBetter: false, presetLabel: t("modelsDiscovery.preset.qualityUsage") },
-      ],
-      presets: [
-        { label: t("modelsDiscovery.preset.qualityApiPrice"), y: 0, x: 0 },
-        { label: t("modelsDiscovery.preset.qualityUsage"), y: 0, x: 1 },
-        { label: t("modelsDiscovery.preset.apiPriceUsage"), y: 1, x: 1 },
-      ],
-    },
-  },
-  audio: {
-    "语音合成（TTS）": {
-      yMetrics: [t("modelsDiscovery.metric.voiceQualityElo"), t("modelsDiscovery.metric.apiPrice")],
-      xMetrics: [
-        { label: t("modelsDiscovery.metric.apiPrice"), unit: t("modelsDiscovery.unit.usdPerMChars"), source: "price", lowerIsBetter: true, presetLabel: t("modelsDiscovery.preset.qualityApiPrice") },
-        { label: t("modelsDiscovery.metric.usage7d"), unit: t("modelsDiscovery.unit.characters"), source: "usage", lowerIsBetter: false, presetLabel: t("modelsDiscovery.preset.qualityUsage") },
-      ],
-      presets: [
-        { label: t("modelsDiscovery.preset.qualityApiPrice"), y: 0, x: 0 },
-        { label: t("modelsDiscovery.preset.qualityUsage"), y: 0, x: 1 },
-        { label: t("modelsDiscovery.preset.apiPriceUsage"), y: 1, x: 1 },
-      ],
-    },
-  },
-})
-
-const buildDiscoveryConfigs = (t: TFn): Record<Exclude<ModalityKey, "agent">, DiscoveryConfig> => ({
-  text: {
-    label: t("modelsDiscovery.modality.text"),
-    tasks: ["文本对话", "代码生成"],
-    scoreLabel: "Intelligence Index",
-    yMetrics: ["Intelligence Index", "Coding Index", "Agentic Index"],
-    xMetrics: [t("modelsDiscovery.metric.inputPrice"), t("modelsDiscovery.metric.outputPrice"), t("modelsDiscovery.metric.outputTps"), t("modelsDiscovery.metric.ttft"), t("modelsDiscovery.metric.usage7d")],
-    presets: [
-      { label: t("modelsDiscovery.preset.qualityPrice"), y: 0, x: 0 },
-      { label: t("modelsDiscovery.preset.qualityTps"), y: 0, x: 2 },
-      { label: t("modelsDiscovery.preset.qualityLatency"), y: 0, x: 3 },
-      { label: t("modelsDiscovery.preset.contextPrice"), y: 6, x: 0 },
-      { label: t("modelsDiscovery.preset.qualityUsage"), y: 0, x: 4 },
-    ],
-    specialties: [
-      { kind: "value", title: t("modelsDiscovery.metric.valueLeader"), description: t("modelsDiscovery.summary.valueDesc") },
-      { kind: "tps", title: t("modelsDiscovery.metric.outputTps"), description: t("modelsDiscovery.tooltip.tokensPerSec") },
-      { kind: "latency", title: t("modelsDiscovery.metric.ttftLeader"), description: t("modelsDiscovery.metric.ttftP50") },
-      { kind: "usage", title: t("modelsDiscovery.metric.popularity7d"), description: t("modelsDiscovery.summary.tokensDesc") },
-    ],
-  },
-  image: {
-    label: t("modelsDiscovery.modality.image"),
-    tasks: ["文生图", "图片编辑"],
-    scoreLabel: t("modelsDiscovery.metric.eloScore"),
-    yMetrics: [t("modelsDiscovery.metric.eloScore")],
-    xMetrics: [t("modelsDiscovery.metric.unitImagePrice"), t("modelsDiscovery.metric.usage7d")],
-    presets: [
-      { label: t("modelsDiscovery.preset.qualityPrice"), y: 0, x: 0 },
-      { label: t("modelsDiscovery.preset.qualityUsage"), y: 0, x: 1 },
-      { label: t("modelsDiscovery.preset.apiPriceUsage"), y: 1, x: 1 },
-    ],
-    specialties: [
-      { kind: "value", title: t("modelsDiscovery.metric.valueLeader"), description: t("modelsDiscovery.summary.valueEloPerImage") },
-      { kind: "price", title: t("modelsDiscovery.metric.apiPrice"), description: t("modelsDiscovery.summary.perKImage") },
-      { kind: "usage", title: t("modelsDiscovery.metric.popularity7d"), description: t("modelsDiscovery.summary.tasksDesc") },
-    ],
-  },
-  video: {
-    label: t("modelsDiscovery.modality.video"),
-    tasks: ["文生视频", "图生视频"],
-    scoreLabel: t("modelsDiscovery.metric.eloScore"),
-    yMetrics: [t("modelsDiscovery.metric.eloScore"), t("modelsDiscovery.metric.t2vCapability"), t("modelsDiscovery.metric.i2vCapability"), t("modelsDiscovery.metric.motionConsistency")],
-    xMetrics: [t("modelsDiscovery.metric.perMinutePrice"), t("modelsDiscovery.metric.usage7d")],
-    presets: [{ label: t("modelsDiscovery.preset.qualityPrice"), y: 0, x: 0 }, { label: t("modelsDiscovery.preset.qualityUsage"), y: 0, x: 1 }, { label: t("modelsDiscovery.preset.apiPriceUsage"), y: 1, x: 1 }],
-    specialties: [
-      { kind: "value", title: t("modelsDiscovery.metric.valueLeader"), description: t("modelsDiscovery.summary.valueEloPerMin") },
-      { kind: "price", title: t("modelsDiscovery.metric.apiPrice"), description: t("modelsDiscovery.summary.perMinVideo") },
-      { kind: "usage", title: t("modelsDiscovery.metric.popularity7d"), description: t("modelsDiscovery.summary.tasksDesc") },
-    ],
-  },
-  audio: {
-    label: t("modelsDiscovery.modality.audio"),
-    tasks: ["语音合成（TTS）", "语音识别（STT）"],
-    scoreLabel: t("modelsDiscovery.metric.eloScore"),
-    yMetrics: [t("modelsDiscovery.metric.eloScore"), t("modelsDiscovery.metric.naturalnessAccuracy"), t("modelsDiscovery.metric.stability")],
-    xMetrics: [t("modelsDiscovery.metric.publicPrice"), t("modelsDiscovery.metric.usage7d")],
-    presets: [{ label: t("modelsDiscovery.preset.qualityPrice"), y: 0, x: 0 }, { label: t("modelsDiscovery.preset.qualityUsage"), y: 0, x: 1 }, { label: t("modelsDiscovery.preset.apiPriceUsage"), y: 1, x: 1 }],
-    specialties: [
-      { kind: "value", title: t("modelsDiscovery.metric.valueLeader"), description: t("modelsDiscovery.summary.valueScorePerPrice") },
-      { kind: "price", title: t("modelsDiscovery.metric.apiPrice"), description: t("modelsDiscovery.tooltip.perMCharPrice") },
-      { kind: "usage", title: t("modelsDiscovery.metric.popularity7d"), description: t("modelsDiscovery.summary.requestsDesc") },
-    ],
-  },
-})
-
-const buildAudioTaskConfigs = (t: TFn): Record<string, Pick<DiscoveryConfig, "specialties">> => ({
-  "语音合成（TTS）": {
-    specialties: [
-      { kind: "value", title: t("modelsDiscovery.metric.valueForMoney"), description: t("modelsDiscovery.summary.valueVoicePerApi") },
-      { kind: "price", title: t("modelsDiscovery.metric.apiPrice"), description: t("modelsDiscovery.tooltip.perMCharPrice") },
-      { kind: "usage", title: t("modelsDiscovery.metric.usage7d"), description: t("modelsDiscovery.summary.ttsCharsDesc") },
-    ],
-  },
-  "语音识别（STT）": {
-    specialties: [
-      { kind: "price", title: t("modelsDiscovery.metric.apiPrice"), description: t("modelsDiscovery.summary.perKMinute") },
-      { kind: "usage", title: t("modelsDiscovery.metric.usage7d"), description: t("modelsDiscovery.summary.sttMinutesDesc") },
-    ],
-  },
-})
-
-const buildAgentDiscoveryConfig = (t: TFn): DiscoveryConfig => ({
-  ...buildDiscoveryConfigs(t).text,
-  label: "Agent",
-  tasks: ["Agent"],
-  scoreLabel: "Agentic Index",
-  yMetrics: ["Agentic Index"],
-})
-
-const buildAgentPopularityPeriods = (t: TFn): Array<{ key: AgentPopularityPeriod; label: string }> => [
-  { key: "day", label: t("modelsDiscovery.range.day") },
-  { key: "week", label: t("modelsDiscovery.range.week") },
-  { key: "month", label: t("modelsDiscovery.range.month") },
-];
 
 /**
  * task 既是显示名又是 taskMetricProfiles / discoveryConfigs 的对象 key，
@@ -581,20 +332,6 @@ function createAxisTicks(values: number[]) {
   return ticks;
 }
 
-function compactTokenUsage(value: number) {
-  const units = [
-    { minimum: 1_000_000_000_000, suffix: "T" },
-    { minimum: 1_000_000_000, suffix: "B" },
-    { minimum: 1_000_000, suffix: "M" },
-    { minimum: 1_000, suffix: "K" },
-  ];
-  const unit = units.find(({ minimum }) => value >= minimum);
-  if (!unit) return `${value}`;
-  const amount = value / unit.minimum;
-  const precision = amount >= 100 ? 0 : amount >= 10 ? 1 : 2;
-  return `${amount.toFixed(precision).replace(/\.0+$|(?<=\.[0-9])0$/, "")}${unit.suffix}`;
-}
-
 function compactNumber(value: number) {
   if (value >= 1_000_000_000_000) return `${(value / 1_000_000_000_000).toFixed(value >= 10_000_000_000_000 ? 0 : 1)}T`;
   if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(value >= 10_000_000_000 ? 0 : 1)}B`;
@@ -603,140 +340,6 @@ function compactNumber(value: number) {
   if (value >= 100) return `${Math.round(value)}`;
   if (value >= 10) return value.toFixed(1).replace(/\.0$/, "");
   return value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
-}
-
-/* 原型的 providerMarks（42 条厂牌首字母）已删除 —— 模型/厂牌标识改走 ModelIcon，
-   见下面 DiscoveryModelIcon 的说明。下面这张色表还留着，只用于图表着色（趋势柱、
-   散点点色与图例），不再参与图标渲染。
-   ⚠️ 它同样是硬编码的厂牌色，而 @model-go/icons 导出了 brandColor(vendor, theme)
-   ——  库里那份还按深浅双轴分了档（深蓝深紫在深底压不住、亮黄亮青在浅底压不住）。
-   图表配色换过去是下一步，属独立改动，不混在图标这一刀里。 */
-/**
- * 图表用的厂牌主色，走私包 `@model-go/icons` 的 `brandColor(vendor, theme)`。
- *
- * 这里原本硬编码了 32 个厂牌色值。私包才是厂牌色的真源，而且它按**深浅双轴各配一个
- * 生效值**（深蓝深紫在深底压不住、亮黄亮青在浅底压不住），硬编码那份只有一个值，
- * 暗色主题下必然有一批压不住。
- *
- * ⚠️ **`brandColor` 返回 null 不是「查不到」，是「这个厂牌是单色标识」**——
- * OpenAI、Z AI、Moonshot 这类 logo 本身就是黑白的，库刻意不给色值，让它跟随主题
- * （原先硬编码表里给它们填的正是 #111827 近黑）。所以回落值必须是**跟随主题的中性色**，
- * 不能回落到品牌色：那会让所有单色厂牌在图上变成同一片品牌蓝，还和图表主色撞色。
- *
- * 实测 TEXT_CHAT 的 59 家厂商里 24 家有专属品牌色，其余走中性色。
- */
-function useProviderColor(fallback = 'var(--mg-text-2)') {
-  const theme = useActiveTheme()
-  return useCallback(
-    (provider: string) => brandColor(provider, theme) ?? fallback,
-    [fallback, theme],
-  )
-}
-
-/**
- * 热门 Agent 排行。数据走 `GET /model-discovery/hot-agents`（接口文档第七节），
- * 原先那份 20×3 条写死的榜单已删。
- *
- * 三条接口口径落在这里，改动前先看清：
- *   1. **`rank` 原值展示，不按数组下标重排** —— 数据源会隐藏未公开的应用，实测名次
- *      散布在 1~229，day / week 榜甚至没有第 1 名。重排会编出不存在的名次。
- *   2. **必须标注数据来源** —— `source` 固定 `openrouter`，是该平台的流量分布，不是
- *      全行业市场份额（Claude Code 真实用量绝大部分直连 Anthropic）。当风向标没问题，
- *      当市场占比就是错的。
- *   3. `description` 是英文原文（产品确认不翻译），空值率约 75%；`favicon_url` 约 97%
- *      为空 —— 都按空隐藏，不占位。
- */
-/**
- * 区块级加载失败提示。
- *
- * 补这个的原因：本页 6 个数据 hook 里原先只有 useDiscoveryQuery 吐 isError，而**没有任何
- * 消费端接它**——接口挂了页面就永久停在骨架屏或空态，用户分不清「没数据」和「坏了」
- * （2026-09-08 审计发现）。
- *
- * 视觉跟随本页自有语言（model-discovery-chart-empty-block），不套 mg 体系的 EmptyState：
- * 本页是「1:1 复刻原型」的显式例外，有自己的一套 class 与间距，混进另一套 token 会打架。
- */
-function DiscoveryLoadError({ onRetry, text }: { onRetry: () => void; text?: string }) {
-  const { t } = useTranslation()
-  const message = text ?? t("modelsDiscovery.error.load")
-  return (
-    <p className="model-discovery-chart-empty-block model-discovery-load-error">
-      {message}
-      <button onClick={onRetry} type="button">{t("modelsDiscovery.action.retry")}</button>
-    </p>
-  );
-}
-
-function AgentPopularityLeaderboard() {
-  const { t } = useTranslation()
-  const agentPopularityPeriods = useMemo(() => buildAgentPopularityPeriods(t), [t]);
-  const [period, setPeriod] = useState<AgentPopularityPeriod>("day");
-  const [expanded, setExpanded] = useState(false);
-  const { apps, total, source, isLoading, isError, refetch } = useHotAgents(period, true);
-  const visibleAgents = apps.slice(0, expanded ? 20 : 10);
-  // Token 量的相对条：以榜首为满格。接口按 Token 降序，apps[0] 即最大值；
-  // 兜底 1 防 0 除。条只表达"相对谁多"，精确值仍在右侧数字上。
-  const maxTokens = Math.max(apps[0]?.total_tokens ?? 0, 1);
-  const columnSize = Math.ceil(visibleAgents.length / 2);
-  const agentColumns = [visibleAgents.slice(0, columnSize), visibleAgents.slice(columnSize)];
-
-  return <section className="model-discovery-section model-discovery-agent-popularity">
-    <div className="model-discovery-section-head model-discovery-agent-popularity-head">
-      <div>
-        <h2>{t("modelsDiscovery.section.agentRank")}</h2>
-        {/* 数据来源标注：接口文档明确要求，否则这份榜会被当成市场份额读 */}
-        <span className="model-discovery-agent-popularity-source">
-          {source ? t("modelsDiscovery.agentRank.source", { source }) : t("modelsDiscovery.agentRank.sourceFallback")}
-          {total > 0 ? ` · ${t("modelsDiscovery.agentRank.total", { count: total })}` : ""}
-        </span>
-      </div>
-      <div aria-label={t("modelsDiscovery.a11y.agentRange")} className="runtime-range-switch" role="radiogroup">
-        {agentPopularityPeriods.map((option) => <button aria-checked={period === option.key} className={period === option.key ? "active" : ""} key={option.key} onClick={() => setPeriod(option.key)} role="radio" type="button">{option.label}</button>)}
-      </div>
-    </div>
-    <div className="mg-tile model-discovery-agent-popularity-card">
-      {isLoading && apps.length === 0 ? (
-        <div className="model-discovery-agent-popularity-grid" role="presentation">
-          {[0, 1].map((column) => (
-            <div className="model-discovery-agent-popularity-column" key={column} role="presentation">
-              {[0, 1, 2, 3, 4].map((row) => (
-                <div className="model-discovery-agent-popularity-row" key={row}>
-                  <span className="h-4 w-full animate-pulse rounded-sm bg-mg-fill-2" />
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      ) : isError ? (
-        <DiscoveryLoadError onRetry={refetch} text={t("modelsDiscovery.error.appRank")} />
-      ) : apps.length === 0 ? (
-        <p className="model-discovery-chart-empty-block">{t("modelsDiscovery.empty.appRank")}</p>
-      ) : (
-        <div className="model-discovery-agent-popularity-grid" id="agent-popularity-list" role="list">
-          {agentColumns.map((column, columnIndex) => <div className="model-discovery-agent-popularity-column" key={columnIndex} role="presentation">
-            {column.map((agent) => <div className="model-discovery-agent-popularity-row" key={agent.app_id} role="listitem">
-              {/* rank 用接口原值 —— 名次有空洞是正常的，不要用下标 */}
-              <span className="model-discovery-agent-popularity-rank">{agent.rank}.</span>
-              <DiscoveryAgentIcon id={String(agent.app_id)} name={agent.title} />
-              <div className="model-discovery-agent-popularity-copy">
-                <strong>{agent.title}</strong>
-                {agent.description ? <span title={agent.description}>{agent.description}</span> : null}
-                {/* 相对条放在 copy 里而不是新起一列：那四列 grid
-                    (28px 34px 1fr auto) 加第五个 item 会把条挤到第二行、行高跳变。 */}
-                <ProgressBar flow showGlow={false} size="xs" value={Math.max((agent.total_tokens / maxTokens) * 100, 2)} />
-              </div>
-              <strong className="model-discovery-agent-popularity-usage">{compactTokenUsage(agent.total_tokens)}<span>Tokens</span></strong>
-            </div>)}
-          </div>)}
-        </div>
-      )}
-      {apps.length > 10 && (
-        <div className="model-discovery-rank-more model-discovery-agent-popularity-more">
-          <button aria-controls="agent-popularity-list" aria-expanded={expanded} onClick={() => setExpanded((current) => !current)} type="button">{expanded ? t("modelsDiscovery.action.collapse") : t("modelsDiscovery.action.viewMore")}<LuChevronDown aria-hidden="true" className={expanded ? "flip" : ""} size={13} /></button>
-        </div>
-      )}
-    </div>
-  </section>;
 }
 
 function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (modelId: string) => void; onViewAllModels: () => void }) {

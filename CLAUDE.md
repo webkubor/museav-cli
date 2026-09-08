@@ -45,7 +45,14 @@ use_count: 0
 > 治「不读规范就动手」——本仓 UI/组件/样式任何改动，先按序做：
 > 1. **`bash scripts/ui-guard.sh --rules`** → 一条命令列出机器实际会拦的全部约束（BLOCK 阻断提交 / WARN 提醒）。**这是最短路径**：清单从门禁实现里提取，不会与代码漂移，比读 249 行 DESIGN.md 可靠。写之前扫一眼，就知道边界在哪。
 > 2. `cs flow frontend` → 拿到必读规则与禁止项；细节与「为什么」查 `cs rule frontend_design_standard` + 本仓 `DESIGN.md`
-> 3. **组件铁律**：主操作用 `Button variant="brand"`，禁止手写 `<button className="bg-brand-*">`；卡片用 `.mg-tile`，勿拿 `bg-mg-fill-0` 凑层次；圆角只用 `rounded-sm/md/lg/full`（**禁 `rounded-xl/2xl/3xl`**，它们是禁用刻度＝直角）；图标按用途三选一：**模型/厂牌 logo 用 `@model-go/icons`**（私有库，与运营后台共用同一份 vendor 别名索引与厂牌主色；渲染统一走 `<ModelIcon>`，别直接 import 图标包）；通用 UI 图标用 `react-icons`；`@lobehub/icons` 仅限私有库还没收的第三方标识（OAuth 登录的 GitHub/Google/微信等），新增前先确认私有库里没有。
+> 3. **先查「有什么」再动手：`src/components/ui/COMPONENTS.md`**（自动生成，`node scripts/gen-ui-inventory.mjs`）。
+>    下面第 4 条的铁律教的是**怎么用**，这份清单答的是**有什么**——40 个现成组件，
+>    以及藏在 props 里的能力。**搜能力词，别搜组件名**：要「进度条流光」搜 `流光`
+>    （是 `ProgressBar` 的 `flow`），要「毛玻璃浮层」搜 `玻璃`（是 `.mg-float`）。
+>    2026-09-08 连踩两次：自己拿 `<i>` + scaleX 造了个进度条，而 `ProgressBar flow`
+>    早有；又差点重写图表 tooltip 的表面，而 `.mg-float` 早在。**手写一个已存在的
+>    组件比写得丑更糟**——样式分叉、主题漏一套、无障碍缺、下次改规范时改不到你这份。
+> 4. **组件铁律**：主操作用 `Button variant="brand"`，禁止手写 `<button className="bg-brand-*">`；卡片用 `.mg-tile`，勿拿 `bg-mg-fill-0` 凑层次；圆角只用 `rounded-sm/md/lg/full`（**禁 `rounded-xl/2xl/3xl`**，它们是禁用刻度＝直角）；图标按用途三选一：**模型/厂牌 logo 用 `@model-go/icons`**（私有库，与运营后台共用同一份 vendor 别名索引与厂牌主色；渲染统一走 `<ModelIcon>`，别直接 import 图标包）；通用 UI 图标用 `react-icons`；`@lobehub/icons` 仅限私有库还没收的第三方标识（OAuth 登录的 GitHub/Google/微信等），新增前先确认私有库里没有。
 >    **浮层铁律**：弹窗/下拉/气泡一律用 `ui/` 下的 `Select`、`Popover`、`DropdownMenu`、`Dialog`、`Modal`、`Sheet`、`Tooltip`，**禁止原生 `<select>`**（下拉列表由操作系统渲染，半透明且不跟随主题，CSS 一行都够不着），也别自己 absolute/fixed 定位手搓浮层（每次都要重踩背景透读、层级压不住、ESC 出不去）。ui-guard 已硬拦这两类。
 >    ⚠️ **「1:1 还原 PRD」到底还原什么 —— 逐维度定死，别再临场判断**（2026-09-03 owner 澄清）：
 >

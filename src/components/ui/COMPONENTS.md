@@ -10,17 +10,49 @@
 组件之外还有两类现成资产：CSS 工具类（`.mg-tile` 卡片 / `.mg-float` 浮层玻璃，见 `src/styles/components.css`）
 和设计 token（`modelgo-design-tokens` + `src/styles/tokens.css`）。
 
-共 25 个组件文件。
+共 40 个组件文件。
+
+## Avatar
+
+`src/components/ui/Avatar.tsx`
+
+现代高颜值 Avatar 头像组件 (基于 Radix UI Avatar Primitive) 职责：替代原有的 Avatar，支持防闪烁的图像懒加载以及优雅的缩写备用文本 (Fallback)
+
+同文件还导出：`AvatarImage` · `AvatarFallback`
 
 ## AvatarUpload
 
 `src/components/ui/AvatarUpload.tsx`
+
+## Badge
+
+`src/components/ui/Badge.tsx`
 
 ## Breadcrumb
 
 `src/components/ui/Breadcrumb.tsx`
 
 高阶 Web3 质感胶囊面包屑导航组件 职责：展示当前页面在系统层级中的位置，并支持点击跳转与 Hover 物理微动效
+
+## Button
+
+`src/components/ui/Button.tsx`
+
+极简现代高颜值 Button 组件 职责：提供高度自适应、动效优雅、符合折中样式的 shadcn 风格 Button 依赖：class-variance-authority, cn 工具函数 import * as Re
+
+可选值：
+- `htmlType`: `submit` | `button` | `reset`
+- `size`: `icon` | `default` | `xs` | `sm` | `lg` | `xl` | `small` | `large`
+- `variant`: `default` | `destructive` | `outline` | `secondary` | `ghost` | `link` | `glass` | `brand`
+- `type`: `submit` | `button` | `reset` | `primary` | `secondary` | `danger` | `tertiary`
+
+## Card
+
+`src/components/ui/Card.tsx`
+
+现代高颜值 Card 组件 职责：提供统一的内容容器，支持阴影、边框、玻璃拟态及悬停动效
+
+同文件还导出：`CardHeader` · `CardFooter` · `CardTitle` · `CardDescription` · `CardContent`
 
 ## CodeBlock
 
@@ -30,6 +62,22 @@
 
 值得知道的 props：
 - `className` — 追加/覆盖样式，如 max-h-72、w-full 等
+
+## Combobox
+
+`src/components/ui/Combobox.tsx`
+
+值得知道的 props：
+- `keywords` — 额外参与搜索匹配的隐藏关键字（如 model_id、邮箱、掩码 key）
+- `size` — 尺寸档位：sm(32) 面板内 / md(40) 默认。与 ui/Select 同一套 token
+
+## Composer
+
+`src/components/ui/Composer.tsx`
+
+值得知道的 props：
+- `onClear` — 省略时不展示"清空"按钮（如 PRD 要求某些工作台不展示清空入口时留空）
+- `textareaSlot` — 语音识别任务用一句静态提示替换掉文本框（PRD App.tsx:18498 逐字对齐）
 
 ## ConfirmModal
 
@@ -55,15 +103,33 @@
 
 `src/components/ui/DateRangePicker.tsx`
 
-## DropdownMenuContent
+## Dialog
+
+`src/components/ui/Dialog.tsx`
+
+现代高颜值 Dialog 组件 (基于 Radix UI Dialog Primitive) 职责：替代原有的 Modal，提供极其柔和的磨砂遮罩、中心滑入微动效、及标准的对话框骨架
+
+同文件还导出：`DialogPortal` · `DialogOverlay` · `DialogClose` · `DialogTrigger` · `DialogContent` · `DialogHeader` · `DialogFooter` · `DialogTitle` · `DialogDescription`
+
+## DropdownMenu
 
 `src/components/ui/DropdownMenu.tsx`
 
-同文件还导出：`DropdownMenuItem` · `DropdownMenuSeparator`
+同文件还导出：`DropdownMenuContent` · `DropdownMenuItem` · `DropdownMenuSeparator` · `DropdownMenuTrigger` · `DropdownMenuGroup` · `DropdownMenuPortal`
 
 ## EmptyState
 
 `src/components/ui/EmptyState.tsx`
+
+## ErrorBoundary
+
+`src/components/ui/ErrorBoundary.tsx`
+
+变化时重置错误态（如路由 pathname 变化，切页后自动恢复） */ resetKey?: string 自定义降级 UI
+
+值得知道的 props：
+- `resetKey` — 变化时重置错误态（如路由 pathname 变化，切页后自动恢复）
+- `fallback` — 自定义降级 UI；不传用默认卡片
 
 ## FirstChargeLockGate
 
@@ -98,6 +164,18 @@
 
 值得知道的 props：
 - `side` — 气泡方位：默认 top
+
+## Input
+
+`src/components/ui/Input.tsx`
+
+极简现代高颜值 Input 组件 职责：提供高度自适应、带 Focus 品牌环发光的标准 Input，高阶支持前缀与后缀元素 依赖：cn 工具函数 ── 尺寸即格式约束（2026-09-04 控件统一）─────────
+
+可选值：
+- `variant`: `default` | `search`
+
+值得知道的 props：
+- `size` — 尺寸档位：sm(32) 面板内 / md(40) 工具栏默认 / lg(48) 公共主搜索。高度+内距成套，页面不可覆盖
 
 ## KpiCard
 
@@ -170,6 +248,23 @@
 值得知道的 props：
 - `flow` — 填充条上叠一层流光扫过（"流动感"），复用全局 shimmer-slide keyframe
 
+## Select
+
+`src/components/ui/Select.tsx`
+
+同文件还导出：`SelectRoot` · `SelectGroup` · `SelectValue` · `SelectTrigger` · `SelectContent` · `SelectLabel` · `SelectItem` · `SelectSeparator` · `SelectScrollUpButton` · `SelectScrollDownButton`
+
+值得知道的 props：
+- `size` — 尺寸档位：sm(32) 面板内 / md(40) 默认。高度+图标成套走 token，页面类覆盖不生效
+
+## Sheet
+
+`src/components/ui/Sheet.tsx`
+
+现代高颜值 Sheet 侧抽屉组件 职责：替代原有的 SideSheet，支持左、右、上、下四个维度的抽屉划出交互
+
+同文件还导出：`SheetPortal` · `SheetOverlay` · `SheetTrigger` · `SheetClose` · `SheetContent` · `SheetHeader` · `SheetFooter` · `SheetTitle` · `SheetDescription`
+
 ## SideSheet
 
 `src/components/ui/SideSheet.tsx`
@@ -180,6 +275,27 @@
 ## StatusBadge
 
 `src/components/ui/StatusBadge.tsx`
+
+## Switch
+
+`src/components/ui/Switch.tsx`
+
+值得知道的 props：
+- `onChange` — Alias for onCheckedChange
+
+## Table
+
+`src/components/ui/Table.tsx`
+
+现代高颜值 Table 组件 职责：提供高度统一、响应式优秀且美观的数据展示表格
+
+同文件还导出：`TableHeader` · `TableBody` · `TableFooter` · `TableRow` · `TableHead` · `TableCell` · `TableCaption`
+
+## Tabs
+
+`src/components/ui/Tabs.tsx`
+
+同文件还导出：`TabsList` · `TabsTrigger` · `TabsContent`
 
 ## TagInput
 
@@ -193,6 +309,12 @@
 - `splitPattern` — 批量分隔符（如 /[\s,;，；]+/）：提交时按其把一段文本拆成多个 tag——粘贴一串邮箱的场景
 - `lockedValues` — 锁定的 tag：始终以 chip 展示、不可移除（无 × 按钮），如创建空间时的负责人
 - `lockedBadge` — 锁定 chip 上展示的小标签文案（如「负责人」）；不传则仅隐藏移除按钮
+
+## Textarea
+
+`src/components/ui/Textarea.tsx`
+
+现代高颜值 Textarea 多行输入框组件 职责：提供与 Input 完全统一的发光聚焦环、高感圆角和响应式状态的多行文本域
 
 ## TiltCard
 

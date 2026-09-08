@@ -32,13 +32,37 @@ function firstSentence(block) {
   return (m ? m[1] : text.slice(0, 110)).trim()
 }
 
-/** 组件名 -> 上方紧邻的 JSDoc */
+/**
+ * 导出的组件名 + 各自上方紧邻的 JSDoc。
+ *
+ * 两种写法都要覆盖，否则会静默漏掉一半：
+ *   ① `export const X = ...` / `export function X()`
+ *   ② `const X = React.forwardRef(...)` + 文件末尾 `export { X, Y }`
+ * ② 是本仓 shadcn 系组件的主流写法（Table/Select/Switch/Tabs 都是），
+ * 第一版只抓了 ①，42 个文件里漏了 10 个。
+ */
 function exportedComponents(src) {
-  const out = []
-  const re = /(\/\*\*[\s\S]*?\*\/)?\s*export\s+(?:const|function)\s+([A-Z][A-Za-z0-9_]*)/g
-  let m
-  while ((m = re.exec(src))) out.push({ name: m[2], doc: firstSentence(m[1]) })
-  return out
+  const names = new Set()
+
+  // ① 直接 export
+  for (const m of src.matchAll(/export\s+(?:const|function)\s+([A-Z][A-Za-z0-9_]*)/g)) names.add(m[1])
+  // ②' class 组件（ErrorBoundary）与 default 导出（Combobox）
+  for (const m of src.matchAll(/export\s+(?:default\s+)?class\s+([A-Z][A-Za-z0-9_]*)/g)) names.add(m[1])
+  for (const m of src.matchAll(/export\s+default\s+([A-Z][A-Za-z0-9_]*)/g)) names.add(m[1])
+  // ② export { A, B as C }
+  for (const m of src.matchAll(/export\s*\{([^}]+)\}/g)) {
+    for (const part of m[1].split(',')) {
+      const name = part.trim().split(/\s+as\s+/).pop().trim()
+      if (/^[A-Z][A-Za-z0-9_]*$/.test(name)) names.add(name)
+    }
+  }
+
+  // 每个名字回到它的定义处，取上方 JSDoc
+  return [...names].map((name) => {
+    const def = new RegExp(`(\\/\\*\\*[\\s\\S]*?\\*\\/)?\\s*(?:export\\s+)?(?:default\\s+)?(?:const|function|class)\\s+${name}\\b`)
+    const m = def.exec(src)
+    return { name, doc: firstSentence(m?.[1]) }
+  })
 }
 
 /** 带 JSDoc 的 props（藏起来的能力都在这里） */

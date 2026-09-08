@@ -93,3 +93,19 @@ else
   # 不静默跳过：说清哪道门禁没跑、为什么。依赖没装时前面的快检本来也过不了。
   echo "pre-commit: ⚠ 硬编码门禁未运行 —— 找不到 $USAGE_GUARD，先 pnpm install" >&2
 fi
+
+# 组件清单不漂移（2026-09-08 接入）：src/components/ui/COMPONENTS.md 是自动生成的
+# 「本仓有什么现成组件」清单，agent 开工前查它决定"写还是复用"。
+#
+# 为什么要拦：过时的清单比没有清单更坏 —— 照着它做会漏掉新组件、或用上已删的。
+# 而它是生成物，改了组件不重跑就必然过时，没人会主动想起来。
+#
+# 只在本次提交动了 src/components/ui/*.tsx 时校验，平时零开销。
+if git diff --cached --name-only | grep -qE '^src/components/ui/.*\.tsx$'; then
+  node scripts/gen-ui-inventory.mjs >/dev/null || exit 1
+  if ! git diff --quiet -- src/components/ui/COMPONENTS.md; then
+    echo "pre-commit: ✗ 组件清单已过时 —— 本次改了 ui/*.tsx，COMPONENTS.md 需要重新生成" >&2
+    echo "            已就地更新，git add src/components/ui/COMPONENTS.md 再提交" >&2
+    exit 1
+  fi
+fi

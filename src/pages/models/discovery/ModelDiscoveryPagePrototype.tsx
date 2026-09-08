@@ -621,6 +621,9 @@ function AgentPopularityLeaderboard() {
   const [expanded, setExpanded] = useState(false);
   const { apps, total, source, isLoading, isError, refetch } = useHotAgents(period, true);
   const visibleAgents = apps.slice(0, expanded ? 20 : 10);
+  // Token 量的相对条：以榜首为满格。接口按 Token 降序，apps[0] 即最大值；
+  // 兜底 1 防 0 除。条只表达"相对谁多"，精确值仍在右侧数字上。
+  const maxTokens = Math.max(apps[0]?.total_tokens ?? 0, 1);
   const columnSize = Math.ceil(visibleAgents.length / 2);
   const agentColumns = [visibleAgents.slice(0, columnSize), visibleAgents.slice(columnSize)];
 
@@ -665,6 +668,9 @@ function AgentPopularityLeaderboard() {
               <div className="model-discovery-agent-popularity-copy">
                 <strong>{agent.title}</strong>
                 {agent.description ? <span title={agent.description}>{agent.description}</span> : null}
+                {/* 相对条放在 copy 里而不是新起一列：那四列 grid
+                    (28px 34px 1fr auto) 加第五个 item 会把条挤到第二行、行高跳变。 */}
+                <i style={{ width: `${Math.max((agent.total_tokens / maxTokens) * 100, 2)}%` }} />
               </div>
               <strong className="model-discovery-agent-popularity-usage">{compactTokenUsage(agent.total_tokens)}<span>Tokens</span></strong>
             </div>)}

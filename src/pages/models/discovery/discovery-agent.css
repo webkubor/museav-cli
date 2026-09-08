@@ -141,6 +141,41 @@
   white-space: nowrap;
 }
 
+/* Token 量的相对条。本模块此前只有数字、没有条，而它图标最多、信息密度最高，
+   整块 136 个元素里只有 1 个元素带过渡——全页最静的一块（Top 5 排行早有
+   scaleX 生长条，这里没同步过来，2026-09-08 owner 指出）。
+   动画与缓动直接复用 Top 5 那条 keyframes，不另造一套。 */
+.model-discovery-agent-popularity-copy i {
+  animation: model-discovery-rank-grow var(--discovery-dur-enter) var(--mg-ease-decelerate) both;
+  background: color-mix(in srgb, var(--accent) 52%, transparent);
+  border-radius: var(--mg-radius-pill);
+  display: block;
+  height: 3px;
+  margin-top: 6px;
+  max-width: 100%;
+  transform-origin: left center;
+  /* 切周期（本日/本周/本月）时从旧长度平滑到新长度，而不是瞬间跳 */
+  transition: width var(--discovery-dur-base) var(--mg-ease-standard);
+}
+
+/* 行 hover 也补上——原先整行没有任何反馈。行本身不跳转（PRD），
+   所以只做极轻的底色变化，不做抬升/描边那种"可点"暗示。 */
+.model-discovery-agent-popularity-row {
+  transition: background var(--mg-duration-fast) ease;
+}
+
+.model-discovery-agent-popularity-row:hover {
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .model-discovery-agent-popularity-copy i,
+  .model-discovery-agent-popularity-row {
+    animation: none;
+    transition: none;
+  }
+}
+
 .model-discovery-agent-popularity-usage {
   font-size: var(--discovery-fs-body);
   font-variant-numeric: tabular-nums;

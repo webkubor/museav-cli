@@ -798,19 +798,8 @@ body:not([theme-mode='dark']) header.mg-glass-bar-strong {
   line-height: 1.4 !important;
 }
 
-.mg-toast-close {
-  color: inherit !important;
-  opacity: 0.6 !important;
-  border-radius: var(--mg-radius-pill, 999px) !important;
-  border: 0 !important;
-  background: rgba(125, 125, 125, 0.15) !important;
-  transition: opacity var(--mg-duration-fast, 0.2s), background var(--mg-duration-fast, 0.2s) !important;
-}
-.mg-toast-close:hover {
-  opacity: 1 !important;
-  background: rgba(125, 125, 125, 0.25) !important;
-}
-
+/* .mg-toast-close 已随 closeButton 一起移除（2026-09-08）：只改配色不管定位，
+   按钮会被甩到卡片外左上角。见 App.tsx 的 Toaster 注释。 */
 .mg-toast-icon {
   width: 18px !important;
   height: 18px !important;

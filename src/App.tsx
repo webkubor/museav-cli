@@ -263,14 +263,17 @@ export default function App() {
            光改横向位置躲不开 —— 窗口一窄，导航往左挤、居中的 toast 也往左移，照样重叠
            （实测 1440/1280/1100px 分别重叠 132/212/122px）。72 = header 60 + 12 间距。 */
         offset="72px"
-        closeButton
+        /* 不给关闭按钮：toast 本来就自动消失，多一个关闭键既无必要，样式也定不住 ——
+           sonner 的关闭键靠它自己的 --toast-close-button-* 变量定位，而本项目把 toast
+           改成了自定义布局（top-center + 自定义 padding），按钮会被甩到卡片外的左上角
+           （2026-09-08 owner 截图实证）。要恢复必须同时接过定位变量，只改配色不管定位
+           就是那个 bug。 */
         theme={activeTheme}
         toastOptions={{
           classNames: {
             toast: 'mg-toast',
             title: 'mg-toast-title',
             description: 'mg-toast-description',
-            closeButton: 'mg-toast-close',
             icon: 'mg-toast-icon',
             success: 'mg-toast-success',
             warning: 'mg-toast-warning',

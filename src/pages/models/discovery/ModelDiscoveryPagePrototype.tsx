@@ -1371,11 +1371,17 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
             <article className={`mg-tile model-discovery-summary-card ${summaryCards.length % 2 === 1 && index === summaryCards.length - 1 ? "wide" : ""}`} key={item.label}>
               <span>{item.label}<InfoTip align="end" className="ml-auto" text={item.tooltip} /></span>
               <div className="model-discovery-summary-content">
-                <div className="model-discovery-summary-model">
-                  <DiscoveryModelIcon model={item.model} provider={item.provider} />
-                  <strong>{item.model}</strong>
-                </div>
-                <div className="model-discovery-summary-value"><b>{item.value}</b><small>{item.unit}</small></div>
+                {item.empty ? (
+                  <p className="model-discovery-summary-empty">暂无数据</p>
+                ) : (
+                  <>
+                    <div className="model-discovery-summary-model">
+                      <DiscoveryModelIcon model={item.model} provider={item.provider} />
+                      <strong>{item.model}</strong>
+                    </div>
+                    <div className="model-discovery-summary-value"><b>{item.value}</b><small>{item.unit}</small></div>
+                  </>
+                )}
               </div>
             </article>
           ))}

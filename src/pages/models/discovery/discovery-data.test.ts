@@ -160,7 +160,11 @@ describe('总览卡', () => {
 
     const cards = toSummaryCards(overview, 'TEXT_TO_IMAGE')
     expect(cards).toHaveLength(5)
-    expect(cards.every((c) => c.value === EMPTY)).toBe(true)
+    // 卡位保留但标记成空态；**不再拿 '—' 去填模型名和数值**——灰圆点加两条短横
+    // 看着像没加载完的骨架屏，渲染侧要据此走「暂无数据」分支。
+    expect(cards.every((c) => c.empty)).toBe(true)
+    expect(cards.every((c) => c.model === '' && c.value === '')).toBe(true)
+    expect(cards.map((c) => c.label)).toContain('性价比最高')
   })
 
   it('卡片数量与顺序按业务类型固定，不随数据有无变化', () => {

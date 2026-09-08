@@ -302,6 +302,12 @@ export interface PrototypeSummaryCard {
   /** 厂商名，用于卡片上的品牌图标。取 highlight 自带的 creator_name —— highlight 是在
    *  全量模型上算出来的，本地只有前 100 条，从本地列表反查会找不到而回退成模型名。 */
   provider: string
+  /**
+   * 该类型下没有符合条件的模型。卡位要留（见 toSummaryCards 说明），但**不能拿 '—'
+   * 去填模型名和数值** —— 一个灰圆点加两条短横看着像加载没完成的骨架屏，
+   * 比明说「暂无数据」更糟。渲染侧据此走空态分支。
+   */
+  empty: boolean
 }
 
 type HighlightKey = keyof DiscoveryOverview['highlights']
@@ -381,13 +387,14 @@ export function toSummaryCards(overview: DiscoveryOverview | undefined, type: Di
   return SUMMARY_KEYS_BY_TYPE[type].map((key) => {
     const label = highlightLabel(key, type)
     const highlight = overview?.highlights?.[key]
-    if (!highlight) return { label, model: EMPTY, value: EMPTY, unit: '', provider: '' }
+    if (!highlight) return { label, model: '', value: '', unit: '', provider: '', empty: true }
     return {
       label,
       model: highlight.model.model_name,
       value: formatHighlightValue(highlight.value, key, type),
       unit: highlightUnit(key, type),
       provider: highlight.model.creator_name ?? '',
+      empty: false,
     }
   })
 }

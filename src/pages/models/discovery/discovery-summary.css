@@ -48,6 +48,15 @@
   padding-bottom: 2px;
 }
 
+.model-discovery-summary-empty {
+  align-items: center;
+  color: var(--text-tertiary);
+  display: flex;
+  /* 与有数据时的两行内容（block 行 + gap 10px + title 行）等高，
+     整排卡片不会因为某一张没数据而塌一截。 */
+  min-height: calc(var(--discovery-fs-block) * 1.2 + var(--discovery-fs-title) * 1.1 + 10px);
+}
+
 .model-discovery-summary-model {
   align-items: center;
   display: flex;

@@ -143,6 +143,7 @@ export default function LogsPage() {
       const p = new URLSearchParams(prev)
       if (next === 'async') p.set('record_type', 'async')
       else p.delete('record_type')
+      p.delete('task_id')
       return p
     }, { replace: true })
   }
@@ -181,6 +182,21 @@ export default function LogsPage() {
     () => Boolean(searchParams.get('request_id') || searchParams.get('guardrail_state')),
   )
   const [selectedLog, setSelectedLog] = useState<CallLogItem | null>(null)
+  // 任务产物下钻（需求方#954）：从同步日志详情跳到该任务的详情；初值兼容外部 ?task_id= 进入
+  const [asyncDrillTaskId, setAsyncDrillTaskId] = useState<string | undefined>(searchParams.get('task_id') ?? undefined)
+  function openAsyncTask(requestId: string) {
+    trackEvent('logs_task_artifact_jump', { request_id: requestId })
+    setSelectedLog(null)
+    clearFilters()
+    setAsyncDrillTaskId(requestId)
+    setRecordType('async')
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev)
+      p.set('record_type', 'async')
+      p.set('task_id', requestId)
+      return p
+    }, { replace: true })
+  }
   const [payloadView, setPayloadView] = useState<PayloadView>('parsed')
   const [page, setPage] = useState(1)
   const [cursorStack, setCursorStack] = useState<Array<string | null>>([null])
@@ -556,7 +572,7 @@ export default function LogsPage() {
       />
 
       {recordType === 'async' ? (
-        <AsyncTasksPanel view={view} currentAccountId={currentAccountId} initialTaskId={searchParams.get('task_id') ?? undefined} refreshRef={asyncRefreshRef} onFetchingChange={setAsyncFetching} />
+        <AsyncTasksPanel view={view} currentAccountId={currentAccountId} initialTaskId={asyncDrillTaskId} refreshRef={asyncRefreshRef} onFetchingChange={setAsyncFetching} />
       ) : forbidden ? (
         <div className="rounded-md border border-mg-border bg-mg-bg-0">
           <ForbiddenState resource={t('logs.title')} />
@@ -722,6 +738,7 @@ export default function LogsPage() {
         />
       )}
       <LogDetailSheet
+        onOpenTask={openAsyncTask}
         requestPayloadText={requestPayloadText}
         responsePayloadText={responsePayloadText}
         responseSSE={payloadView === 'parsed' ? responseSSE : null}

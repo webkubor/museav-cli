@@ -6,7 +6,7 @@
     "loading": "Loading logs...",
     "empty": "No matching records",
     "header": {
-      "asyncDesc": "Review multimodal async task status, artifacts, and download expiry.",
+      "asyncDesc": "Review multimodal task artifact status, artifacts, and download expiry.",
       "mineDesc": "Review my call records and troubleshooting details.",
       "spaceDesc": "Review calls from all members in the spaces I manage.",
       "enterpriseDesc": "Track enterprise calls by workspace, member, and API Key.",
@@ -15,8 +15,8 @@
       "enterpriseView": "Org View",
       "spaceView": "Space",
       "mineView": "My View",
-      "syncRecord": "Sync calls",
-      "asyncRecord": "Async tasks"
+      "syncRecord": "Logs",
+      "asyncRecord": "Task artifacts"
     },
     "timeRange": {
       "today": "Today",
@@ -201,7 +201,22 @@
       "payloadError": "Failed to load raw payload",
       "payloadEmpty": "No raw payload",
       "payloadTruncated": "Truncated",
-      "payloadCopied": "Payload copied"
+      "payloadCopied": "Payload copied",
+      "taskArtifact": {
+        "title": "Task artifact",
+        "taskStatus": "Task status",
+        "artifactState": "Artifact status",
+        "artifactCount": "Artifacts",
+        "viewTask": "View task artifact detail",
+        "guide": {
+          "available": "The artifact is ready — open the task artifact detail to view it.",
+          "failed": "Artifact generation failed — open the task artifact detail for the reason.",
+          "expired": "The artifact has expired — open the task artifact detail for task info.",
+          "generating": "The artifact is being generated — check the task artifact detail shortly."
+        },
+        "totalDuration": "Total duration",
+        "totalDurationHint": "From submission to completion"
+      }
     },
     "status": {
       "success": "Success",

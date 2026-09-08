@@ -53,6 +53,7 @@ import {
 } from './use-discovery-query'
 import { EMPTY, rankBarWidth, specialtyRows, unitPriceDetail } from './discovery-data'
 import type { DiscoveryIntegrationStatus, DiscoveryUnitPrices } from '@/types'
+import { getMarketConfig, isTestOrDev } from "@/config/market"
 import {
   AnalysisScatterChart,
   DiscoveryAgentIcon,
@@ -194,9 +195,20 @@ function modelAccessLabel(model: DiscoveryModel) {
   return "暂未接入 ModelGo";
 }
 
+/**
+ * 未接入模型的「去别处看」链接。
+ *
+ * 原来这里写死 `https://console.modelgo.ai`，于是在测试环境点「查看详情」会跳到
+ * **生产的国外站**（2026-09-08 owner 实测报的问题）。跨环境跳转不只是体验问题：
+ * 测试数据里的模型名跳到生产站大概率搜不到，用户会以为功能坏了。
+ */
 function modelGoAiModelUrl(model: Pick<DiscoveryModel, "name">) {
   const query = new URLSearchParams({ search: model.name });
-  return `https://console.modelgo.ai/models?${query.toString()}`;
+  // **先判环境，再判市场域名**：测试环境没配 VITE_GLOBAL_CONSOLE（只有生产配），
+  // 而 market.ts 的 requireEnv 对它是必需项 —— 先取域名会直接抛错。
+  // 测试/本地只有一套控制台，留在当前站内搜索即可。
+  if (isTestOrDev()) return `/models?${query.toString()}`;
+  return `${getMarketConfig("global").consoleUrl}/models?${query.toString()}`;
 }
 
 const modalityOptions: Array<{ key: ModalityKey; label: string }> = [

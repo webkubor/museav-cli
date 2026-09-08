@@ -766,14 +766,18 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       // 已过 scope 的 visibleModels；此前这里直接用 allModelOptions 全量，导致切到
       // 「仅看已接入」后触发器仍显示 7 / 634、可选项里还混着没接入的模型
       // （2026-09-03 需求方指出）。
-      .filter((option) => scope === "all" || option.integration_status === "MODELGO")
+      // 接入态只认 is_integrated。此前这三处用的是 integration_status === "MODELGO"，
+      // 那是「接在哪个站」（国内站/国外站）不是「有没有接入」，于是国外站已接入的模型
+      // 被判成未接入、从未接入的国内站模型被判成已接入 —— prd#969 第 7 条就是它。
+      // 当时 model-options 不下发 is_integrated，只能这么将就；后端 2026-09-08 补齐，改回。
+      .filter((option) => scope === "all" || option.is_integrated === true)
       .map((option) => ({
         // 只有已接入且有 modelgo_id 的才给 id——canOpenModelDetail 据此判断能不能跳
-        id: option.integration_status === "MODELGO" && option.modelgo_id ? option.modelgo_id : undefined,
+        id: option.is_integrated === true && option.modelgo_id ? option.modelgo_id : undefined,
         sourceModelId: option.source_model_id,
         name: option.model_name,
         provider: option.creator_name ?? "",
-        supported: option.integration_status === "MODELGO",
+        supported: option.is_integrated === true,
       })),
     [allModelOptions, scope],
   );

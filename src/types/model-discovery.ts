@@ -207,6 +207,19 @@ export interface DiscoveryModelOption {
   model_name: string
   creator_name: string | null
   integration_status: DiscoveryIntegrationStatus
+  /**
+   * 是否已接入 —— **判接入态只认这个字段**。
+   *
+   * `integration_status` 是「接在哪个站」（MODELGO 国内站 / MODELGO_AI 国外站），
+   * 与「有没有接入」是两个维度，拿它当接入态会把从未接入的模型标成已接入
+   * （与 rankings 的同名字段同一口径，见 model-discovery.ts 上方 is_integrated 的说明）。
+   *
+   * 2026-09-08：本字段此前 model-options 未下发，前端只能退而用 integration_status
+   * （prd#969 第 7 条的成因）；后端当天补齐后改回这里。
+   */
+  is_integrated: boolean
+  /** 接入站点（后端 2026-09-08 随 is_integrated 一起新增），当前前端未消费 */
+  integrated_site?: string | null
   is_open_source: boolean
 }
 

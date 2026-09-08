@@ -20,6 +20,9 @@ import type {
   DiscoveryUnitPrices,
 } from '@/types'
 
+/** 文案随界面语言变，data 层不持有 hook —— 由调用方把 t 传进来。 */
+type TFn = (key: string, options?: Record<string, unknown>) => string
+
 export type ModalityKey = 'agent' | 'text' | 'image' | 'video' | 'audio'
 
 /** 原型的 `modality|task` → 接口的业务类型。九个 task 精确对应九种 type。 */
@@ -72,16 +75,16 @@ export function formatScore(card: Pick<DiscoveryModelCard, 'primary_score' | 'pr
  * 价格串。原型的 metricValue() 会把 "/M" 里的 M 当成百万倍率，所以价格一律走
  * plainMetricValue 解析 —— 这里只负责展示，单位后缀由业务类型决定。
  */
-export function formatPrice(value: number | null, type: DiscoveryType): string {
+export function formatPrice(t: TFn, value: number | null, type: DiscoveryType): string {
   if (value === null) return EMPTY
   // 0 是"免费"，不是"$0.0000"。后者读起来像精度丢失，柱图上还会标出一串没有信息量的零
   // （单次任务成本榜首位实测就是 $0.0000，2026-09-03）。
-  if (value === 0) return '免费'
-  if (isLanguageType(type)) return `$${value.toFixed(4)}/次`
-  if (type === 'TEXT_TO_IMAGE' || type === 'IMAGE_EDITING') return `$${value}/1K 张`
-  if (type === 'TEXT_TO_VIDEO' || type === 'IMAGE_TO_VIDEO') return `$${value}/分钟`
-  if (type === 'TTS') return `$${value}/1M 字符`
-  return `$${value}/1K 分钟`
+  if (value === 0) return t('modelsDiscovery.unit.free')
+  if (isLanguageType(type)) return t('modelsDiscovery.price.perCall', { value: value.toFixed(4) })
+  if (type === 'TEXT_TO_IMAGE' || type === 'IMAGE_EDITING') return t('modelsDiscovery.price.perKImages', { value })
+  if (type === 'TEXT_TO_VIDEO' || type === 'IMAGE_TO_VIDEO') return t('modelsDiscovery.price.perMinute', { value })
+  if (type === 'TTS') return t('modelsDiscovery.price.perMChars', { value })
+  return t('modelsDiscovery.price.perKMinutes', { value })
 }
 
 /** 原型的 DiscoveryModel 形状（与 ModelDiscoveryPagePrototype 内的类型一致）。 */
@@ -126,7 +129,7 @@ export interface PrototypeModel {
  * `supported` 用 integration_status 判定：MODELGO 才是本平台已接入、可跳详情的模型；
  * MODELGO_AI 只在榜单里展示，没有详情页，所以不给 id。
  */
-export function toPrototypeModel(item: DiscoveryRankingItem, type: DiscoveryType): PrototypeModel {
+export function toPrototypeModel(t: TFn, item: DiscoveryRankingItem, type: DiscoveryType): PrototypeModel {
   // 「已接入」只认 is_integrated（目录里有 + 上架 + 未删除）。
   // 此前用的 integration_status === 'MODELGO' 说的是**接在哪个站**，不是当前站有没有，
   // 于是国内站没上架的模型也被标成已接入 —— 2026-09-07 实测九个类型合计 217 个假
@@ -155,8 +158,8 @@ export function toPrototypeModel(item: DiscoveryRankingItem, type: DiscoveryType
       ? item.output_tps === null
         ? EMPTY
         : `${Math.round(item.output_tps)} tok/s`
-      : formatPrice(item.cost_value, type),
-    price: formatPrice(item.cost_value, type),
+      : formatPrice(t, item.cost_value, type),
+    price: formatPrice(t, item.cost_value, type),
     usage: compactAmount(item.usage_value),
     release: item.release_date ?? undefined,
     valueScore: item.value_score === null ? EMPTY : item.value_score.toFixed(1),
@@ -174,22 +177,31 @@ export function toPrototypeModel(item: DiscoveryRankingItem, type: DiscoveryType
   }
 }
 
-/** 专项榜的取数字段与排序方向。按榜单标题匹配 —— 标题是产品文案，字段是数据口径。 */
+/**
+ * 专项榜的取数字段与排序方向。
+ *
+ * 入参是语义标识而不是榜单标题 —— 标题是产品文案，会随界面语言变，
+ * 拿它 includes 匹配的话英文界面下会全部匹配不上、榜单静默变空。
+ * 「单次任务成本」与「API 价格」是同一个字段的两种叫法（语言类按次计费、媒体类按量计费），
+ * 统一归到 price。
+ */
 type SpecialtyField = 'valueScore' | 'tps' | 'latencyMs' | 'usage' | 'price'
+export type SpecialtyKind = 'value' | 'tps' | 'latency' | 'usage' | 'price' | 'score'
 
 function specialtyFieldFor(
-  title: string,
+  kind: SpecialtyKind,
   scoreAscending: boolean,
 ): { field: SpecialtyField | 'score'; ascending: boolean } | undefined {
-  if (title.includes('性价比')) return { field: 'valueScore', ascending: false }
-  if (title.includes('TPS')) return { field: 'tps', ascending: false }
-  if (title.includes('时延')) return { field: 'latencyMs', ascending: true }
-  if (title.includes('热度') || title.includes('使用量')) return { field: 'usage', ascending: false }
-  // 「单次任务成本」与「API 价格」是同一个字段的两种叫法（语言类按次计费、媒体类按量计费）
-  if (title.includes('价格') || title.includes('成本')) return { field: 'price', ascending: true }
-  // STT 的主指标是 WER，越低越好，所以方向要由调用方按业务类型给
-  if (title.includes('评分') || title.includes('Elo')) return { field: 'score', ascending: scoreAscending }
-  return undefined
+  switch (kind) {
+    case 'value': return { field: 'valueScore', ascending: false }
+    case 'tps': return { field: 'tps', ascending: false }
+    case 'latency': return { field: 'latencyMs', ascending: true }
+    case 'usage': return { field: 'usage', ascending: false }
+    case 'price': return { field: 'price', ascending: true }
+    // STT 的主指标是 WER，越低越好，所以方向要由调用方按业务类型给
+    case 'score': return { field: 'score', ascending: scoreAscending }
+    default: return undefined
+  }
 }
 
 /**
@@ -207,12 +219,12 @@ function specialtyFieldFor(
  * 只对用量字段这么做：成本类指标的 0 是"免费"，是有效信息，不能一起排除。
  */
 export function specialtyRows(
-  title: string,
+  kind: SpecialtyKind,
   models: readonly PrototypeModel[],
   options: { limit?: number; scoreAscending?: boolean } = {},
 ): Array<{ model: string; value: string; provider: string; short: string; numeric: number }> {
   const { limit = 10, scoreAscending = false } = options
-  const spec = specialtyFieldFor(title, scoreAscending)
+  const spec = specialtyFieldFor(kind, scoreAscending)
   if (!spec) return []
   const picked = models
     .filter((model) => model.raw[spec.field] !== null)
@@ -332,24 +344,24 @@ const MEDIA_ELO_TYPES: ReadonlySet<DiscoveryType> = new Set([
   'TEXT_TO_IMAGE', 'IMAGE_EDITING', 'TEXT_TO_VIDEO', 'IMAGE_TO_VIDEO',
 ])
 
-function highlightLabel(key: HighlightKey, type: DiscoveryType): string {
+function highlightLabel(t: TFn, key: HighlightKey, type: DiscoveryType): string {
   switch (key) {
     case 'highest_score':
-      if (isLanguageType(type)) return '综合评分最高'
-      if (type === 'TTS') return '语音质量最高'
+      if (isLanguageType(type)) return t('modelsDiscovery.highlight.highestScore')
+      if (type === 'TTS') return t('modelsDiscovery.highlight.highestVoice')
       // AA-WER 越低越好，所以是「最低」；写成「最高」会把指标方向说反
-      if (type === 'STT') return '识别错误率最低'
-      return 'Elo 评分最高'
+      if (type === 'STT') return t('modelsDiscovery.highlight.lowestWer')
+      return t('modelsDiscovery.highlight.highestElo')
     case 'highest_open_source_score':
-      return MEDIA_ELO_TYPES.has(type) ? '开源模型 Elo 最高' : '开源模型评分最高'
+      return MEDIA_ELO_TYPES.has(type) ? t('modelsDiscovery.highlight.highestOpenElo') : t('modelsDiscovery.highlight.highestOpenScore')
     case 'highest_value':
-      return '性价比最高'
+      return t('modelsDiscovery.highlight.highestValue')
     case 'lowest_price':
-      return 'API 价格最低'
+      return t('modelsDiscovery.highlight.lowestPrice')
     case 'highest_output_tps':
-      return '输出 TPS 最高'
+      return t('modelsDiscovery.highlight.highestTps')
     case 'highest_usage':
-      return '近 7 日 ModelGo 使用量最高'
+      return t('modelsDiscovery.highlight.highestUsage')
   }
 }
 
@@ -383,26 +395,26 @@ const SUMMARY_KEYS_BY_TYPE: Record<DiscoveryType, readonly HighlightKey[]> = {
  * （该类型下没有符合条件的模型时前端保留卡位）。卡片总数只由 SUMMARY_KEYS_BY_TYPE
  * 决定，不随数据有无变化，否则同一个 tab 会因为当天数据缺失而少一张卡、整排跳版。
  */
-export function toSummaryCards(overview: DiscoveryOverview | undefined, type: DiscoveryType): PrototypeSummaryCard[] {
+export function toSummaryCards(t: TFn, overview: DiscoveryOverview | undefined, type: DiscoveryType): PrototypeSummaryCard[] {
   return SUMMARY_KEYS_BY_TYPE[type].map((key) => {
-    const label = highlightLabel(key, type)
+    const label = highlightLabel(t, key, type)
     const highlight = overview?.highlights?.[key]
     if (!highlight) return { label, model: '', value: '', unit: '', provider: '', empty: true }
     return {
       label,
       model: highlight.model.model_name,
-      value: formatHighlightValue(highlight.value, key, type),
-      unit: highlightUnit(key, type),
+      value: formatHighlightValue(t, highlight.value, key, type),
+      unit: highlightUnit(t, key, type),
       provider: highlight.model.creator_name ?? '',
       empty: false,
     }
   })
 }
 
-function formatHighlightValue(value: number | null, key: HighlightKey, type: DiscoveryType): string {
+function formatHighlightValue(t: TFn, value: number | null, key: HighlightKey, type: DiscoveryType): string {
   if (value === null) return EMPTY
   if (key === 'highest_usage') return compactAmount(value)
-  if (key === 'lowest_price') return formatPrice(value, type)
+  if (key === 'lowest_price') return formatPrice(t, value, type)
   if (key === 'highest_output_tps') return `${Math.round(value)}`
   if (key === 'highest_value') return value.toFixed(1)
   return isLanguageType(type) ? value.toFixed(1) : `${Math.round(value)}`
@@ -415,27 +427,29 @@ function formatHighlightValue(value: number | null, key: HighlightKey, type: Dis
  * 值同样照抄原型各 task 的 summary。
  */
 const VALUE_UNIT: Partial<Record<DiscoveryType, string>> = {
-  TEXT_TO_IMAGE: 'Elo / ($/1K 张)',
-  IMAGE_EDITING: 'Elo / ($/1K 张)',
+  TEXT_TO_IMAGE: 'modelsDiscovery.unit.eloPerKImage',
+  IMAGE_EDITING: 'modelsDiscovery.unit.eloPerKImage',
   TEXT_TO_VIDEO: 'Elo / ($/min)',
   IMAGE_TO_VIDEO: 'Elo / ($/min)',
   TTS: 'Elo / USD',
 }
 
 const PRICE_UNIT: Partial<Record<DiscoveryType, string>> = {
-  TEXT_TO_IMAGE: '$/1K 张',
-  IMAGE_EDITING: '$/1K 张',
+  TEXT_TO_IMAGE: 'modelsDiscovery.unit.perKImagePrice',
+  IMAGE_EDITING: 'modelsDiscovery.unit.perKImagePrice',
   TEXT_TO_VIDEO: '$/min',
   IMAGE_TO_VIDEO: '$/min',
-  TTS: '/ 1M 字符',
-  STT: '/ 1K 分钟',
+  TTS: 'modelsDiscovery.unit.perMCharSuffix',
+  STT: 'modelsDiscovery.unit.perKMinSuffix',
 }
 
-function highlightUnit(key: HighlightKey, type: DiscoveryType): string {
-  if (key === 'highest_output_tps') return 'Tokens / 秒'
-  if (key === 'lowest_price') return PRICE_UNIT[type] ?? ''
-  if (key === 'highest_usage') return USAGE_UNIT_LABEL[type]
-  if (key === 'highest_value') return VALUE_UNIT[type] ?? 'Index / USD'
+function highlightUnit(t: TFn, key: HighlightKey, type: DiscoveryType): string {
+  if (key === 'highest_output_tps') return t('modelsDiscovery.unit.tokensPerSecond')
+  const priceUnitKey = PRICE_UNIT[type]
+  if (key === 'lowest_price') return priceUnitKey ? t(priceUnitKey) : ''
+  if (key === 'highest_usage') return t(USAGE_UNIT_LABEL[type])
+  const valueUnitKey = VALUE_UNIT[type]
+  if (key === 'highest_value') return valueUnitKey ? t(valueUnitKey) : 'Index / USD'
   // STT 的质量指标是 AA-WER，单看「%」不知道是什么率，原型把指标名带在单位里
   if (type === 'STT') return '% AA-WER'
   return isLanguageType(type) ? 'Index' : 'Elo'
@@ -480,17 +494,17 @@ export function rankBarWidth(
   return Math.round(Math.max(0, Math.min(100, ratio * 100)) * 100) / 100
 }
 
-/** 用量单位的中文展示名。 */
+/** 用量单位的 i18n key（取用处必须过 t）。 */
 export const USAGE_UNIT_LABEL: Record<DiscoveryType, string> = {
-  AGENT: '成功任务',
+  AGENT: 'modelsDiscovery.unit.successfulTasks',
   TEXT_CHAT: 'Tokens',
   CODE_GENERATION: 'Tokens',
-  TEXT_TO_IMAGE: '成功任务',
-  IMAGE_EDITING: '成功任务',
-  TEXT_TO_VIDEO: '成功任务',
-  IMAGE_TO_VIDEO: '成功任务',
-  TTS: '字符',
-  STT: '音频分钟',
+  TEXT_TO_IMAGE: 'modelsDiscovery.unit.successfulTasks',
+  IMAGE_EDITING: 'modelsDiscovery.unit.successfulTasks',
+  TEXT_TO_VIDEO: 'modelsDiscovery.unit.successfulTasks',
+  IMAGE_TO_VIDEO: 'modelsDiscovery.unit.successfulTasks',
+  TTS: 'modelsDiscovery.unit.characters',
+  STT: 'modelsDiscovery.unit.audioMinutes',
 }
 
 /**
@@ -508,15 +522,15 @@ export const USAGE_UNIT_LABEL: Record<DiscoveryType, string> = {
  *
  * 返回 undefined 表示没有可展示的单价，调用方不挂 tooltip。
  */
-export function unitPriceDetail(prices: DiscoveryUnitPrices | null | undefined): string | undefined {
+export function unitPriceDetail(t: TFn, prices: DiscoveryUnitPrices | null | undefined): string | undefined {
   if (!prices) return undefined
   // 目前实测 unit 只有 USD_PER_1M_TOKENS 一种；出现别的取值时原样显示单位，不猜换算
   const suffix = prices.unit === 'USD_PER_1M_TOKENS' ? '/M tokens' : ` ${prices.unit}`
   const rows: Array<[string, number | null | undefined]> = [
-    ['输入', prices.input_tokens],
-    ['输出', prices.output_tokens],
-    ['缓存命中', prices.cache_hit_tokens],
-    ['缓存写入', prices.cache_write_tokens],
+    [t('modelsDiscovery.unitPrice.input'), prices.input_tokens],
+    [t('modelsDiscovery.unitPrice.output'), prices.output_tokens],
+    [t('modelsDiscovery.unitPrice.cacheHit'), prices.cache_hit_tokens],
+    [t('modelsDiscovery.unitPrice.cacheWrite'), prices.cache_write_tokens],
   ]
   const parts = rows
     .filter((row): row is [string, number] => typeof row[1] === 'number')

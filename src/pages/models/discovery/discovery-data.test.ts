@@ -26,6 +26,18 @@ import {
 import type { PrototypeModel } from './discovery-data'
 import type { DiscoveryOverview, DiscoveryRankingItem } from '@/types'
 
+/**
+ * data 层现在接收 t（文案随语言变，见 discovery-data.ts 的 TFn 注释）。
+ * 测试要断言的是取数与格式化逻辑，不是翻译本身，所以直接喂真实的 zh 文案表。
+ */
+import zhDiscovery from '@/locales/zh/modelsDiscovery.json'
+const t = (key: string, options?: Record<string, unknown>) => {
+  const raw = key.split('.').reduce<unknown>((node, part) => (node as Record<string, unknown>)?.[part], { modelsDiscovery: zhDiscovery.modelsDiscovery })
+  if (typeof raw !== 'string') return key
+  return raw.replace(/\{\{(\w+)\}\}/g, (_, name) => String(options?.[name] ?? ''))
+}
+
+
 const ALL_TASKS: Array<[string, string]> = [
   ['agent', 'Agent'],
   ['text', '文本对话'],
@@ -86,12 +98,12 @@ describe('业务类型映射', () => {
 describe('空值一律转「—」，不补 0', () => {
   it('数值字段为 null 时给「—」', () => {
     expect(compactAmount(null)).toBe(EMPTY)
-    expect(formatPrice(null, 'TEXT_CHAT')).toBe(EMPTY)
+    expect(formatPrice(t, null, 'TEXT_CHAT')).toBe(EMPTY)
     expect(formatScore({ primary_score: null, primary_metric: 'ELO' })).toBe(EMPTY)
   })
 
   it('缺速度的模型不会被写成 0 tok/s', () => {
-    const model = toPrototypeModel(card({ output_tps: null }), 'TEXT_CHAT')
+    const model = toPrototypeModel(t, card({ output_tps: null }), 'TEXT_CHAT')
     expect(model.performance).toBe(EMPTY)
     expect(model.performance).not.toContain('0')
   })
@@ -117,27 +129,27 @@ describe('质量分按指标口径格式化', () => {
 
 describe('模型卡转换', () => {
   it('id 与接入态解耦：有 modelgo_id 就带上，接入态另看 is_integrated', () => {
-    expect(toPrototypeModel(card(), 'TEXT_CHAT').id).toBe('glm-5-2')
+    expect(toPrototypeModel(t, card(), 'TEXT_CHAT').id).toBe('glm-5-2')
     // 境外厂商但我们上架了：照样给 id（原先按国别判会误判成不可跳）
-    expect(toPrototypeModel(card({ integration_status: 'MODELGO_AI' }), 'TEXT_CHAT').id).toBe('glm-5-2')
-    expect(toPrototypeModel(card({ integration_status: 'MODELGO_AI' }), 'TEXT_CHAT').supported).toBe(true)
+    expect(toPrototypeModel(t, card({ integration_status: 'MODELGO_AI' }), 'TEXT_CHAT').id).toBe('glm-5-2')
+    expect(toPrototypeModel(t, card({ integration_status: 'MODELGO_AI' }), 'TEXT_CHAT').supported).toBe(true)
     // 未接入也给 id —— 详情页该能点开；接入态照旧为 false，两件事分开
     // （owner 2026-09-08：「点击看到的应该是模型详情的页面」）
-    const notIntegrated = toPrototypeModel(card({ is_integrated: false }), 'TEXT_CHAT')
+    const notIntegrated = toPrototypeModel(t, card({ is_integrated: false }), 'TEXT_CHAT')
     expect(notIntegrated.id).toBe('glm-5-2')
     expect(notIntegrated.supported).toBe(false)
   })
 
   it('modelgo_id 为空时不给 id，避免点出 404', () => {
-    expect(toPrototypeModel(card({ modelgo_id: null }), 'TEXT_CHAT').id).toBeUndefined()
+    expect(toPrototypeModel(t, card({ modelgo_id: null }), 'TEXT_CHAT').id).toBeUndefined()
   })
 
   it('语言类型的 performance 是输出 TPS', () => {
-    expect(toPrototypeModel(card(), 'TEXT_CHAT').performance).toBe('55 tok/s')
+    expect(toPrototypeModel(t, card(), 'TEXT_CHAT').performance).toBe('55 tok/s')
   })
 
   it('媒体类型没有速度指标，performance 承载 API 价格（PRD 73cbb28）', () => {
-    const model = toPrototypeModel(card({ primary_metric: 'ELO', primary_score: 1370, cost_value: 2.25 }), 'TEXT_TO_IMAGE')
+    const model = toPrototypeModel(t, card({ primary_metric: 'ELO', primary_score: 1370, cost_value: 2.25 }), 'TEXT_TO_IMAGE')
     expect(model.performance).toBe('$2.25/1K 张')
     expect(model.performance).toBe(model.price)
   })
@@ -158,7 +170,7 @@ describe('总览卡', () => {
       },
     } as unknown as DiscoveryOverview
 
-    const cards = toSummaryCards(overview, 'TEXT_TO_IMAGE')
+    const cards = toSummaryCards(t, overview, 'TEXT_TO_IMAGE')
     expect(cards).toHaveLength(5)
     // 卡位保留但标记成空态；**不再拿 '—' 去填模型名和数值**——灰圆点加两条短横
     // 看着像没加载完的骨架屏，渲染侧要据此走「暂无数据」分支。
@@ -168,11 +180,11 @@ describe('总览卡', () => {
   })
 
   it('卡片数量与顺序按业务类型固定，不随数据有无变化', () => {
-    expect(toSummaryCards(undefined, 'TEXT_CHAT')).toHaveLength(5)
-    expect(toSummaryCards(undefined, 'TTS')).toHaveLength(4)
+    expect(toSummaryCards(t, undefined, 'TEXT_CHAT')).toHaveLength(5)
+    expect(toSummaryCards(t, undefined, 'TTS')).toHaveLength(4)
     // STT 不计算性价比（产品口径），少一张卡
-    expect(toSummaryCards(undefined, 'STT')).toHaveLength(3)
-    expect(toSummaryCards(undefined, 'STT').map((c) => c.label)).not.toContain('性价比最高')
+    expect(toSummaryCards(t, undefined, 'STT')).toHaveLength(3)
+    expect(toSummaryCards(t, undefined, 'STT').map((c) => c.label)).not.toContain('性价比最高')
   })
 
   it('厂商取 highlight 自带的 creator_name，不从本地列表反查', () => {
@@ -187,12 +199,12 @@ describe('总览卡', () => {
         },
       },
     } as unknown as DiscoveryOverview
-    expect(toSummaryCards(overview, 'AGENT')[0].provider).toBe('Anthropic')
+    expect(toSummaryCards(t, overview, 'AGENT')[0].provider).toBe('Anthropic')
   })
 
   it('语言类展示速度卡，媒体类换成价格卡', () => {
-    const text = toSummaryCards(undefined, 'TEXT_CHAT').map((c) => c.label)
-    const image = toSummaryCards(undefined, 'TEXT_TO_IMAGE').map((c) => c.label)
+    const text = toSummaryCards(t, undefined, 'TEXT_CHAT').map((c) => c.label)
+    const image = toSummaryCards(t, undefined, 'TEXT_TO_IMAGE').map((c) => c.label)
     // 文案照原型：「输出 TPS 最高」。此前实现写成「输出速度最快」，这条断言把它固化了
     expect(text).toContain('输出 TPS 最高')
     expect(text).not.toContain('API 价格最低')
@@ -201,20 +213,20 @@ describe('总览卡', () => {
   })
 
   it('总览卡文案按 type 分歧，不共用一个常量', () => {
-    const first = (type: Parameters<typeof toSummaryCards>[1]) => toSummaryCards(undefined, type)[0].label
+    const first = (type: Parameters<typeof toSummaryCards>[2]) => toSummaryCards(t, undefined, type)[0].label
     // STT 的主指标是 AA-WER，越低越好 —— 说成「最高」就是把指标方向讲反了
     expect(first('STT')).toBe('识别错误率最低')
     expect(first('TTS')).toBe('语音质量最高')
     expect(first('TEXT_TO_IMAGE')).toBe('Elo 评分最高')
     expect(first('AGENT')).toBe('综合评分最高')
     // 开源卡在媒体类是「开源模型 Elo 最高」，语言类是「开源模型评分最高」
-    const imageLabels = toSummaryCards(undefined, 'TEXT_TO_IMAGE').map((c) => c.label)
+    const imageLabels = toSummaryCards(t, undefined, 'TEXT_TO_IMAGE').map((c) => c.label)
     expect(imageLabels).toContain('开源模型 Elo 最高')
   })
 
   it('性价比与价格的单位带计价载体，不统一成 USD', () => {
     // 单位只在拿到 highlight 数据时才填（无数据整卡是「—」），所以要造带值的 overview
-    const withValue = (type: Parameters<typeof toSummaryCards>[1]) => ({
+    const withValue = (type: Parameters<typeof toSummaryCards>[2]) => ({
       snapshot_date: '2026-09-02',
       type,
       highlights: {
@@ -226,8 +238,8 @@ describe('总览卡', () => {
         highest_usage: { value: 1, model: { model_name: 'A', creator_name: 'X' } },
       },
     } as unknown as DiscoveryOverview)
-    const unitOf = (type: Parameters<typeof toSummaryCards>[1], label: string) =>
-      toSummaryCards(withValue(type), type).find((c) => c.label === label)?.unit
+    const unitOf = (type: Parameters<typeof toSummaryCards>[2], label: string) =>
+      toSummaryCards(t, withValue(type), type).find((c) => c.label === label)?.unit
     // 抹成 Elo / USD 会让图像与视频的性价比看起来同口径
     expect(unitOf('TEXT_TO_IMAGE', '性价比最高')).toBe('Elo / ($/1K 张)')
     expect(unitOf('TEXT_TO_VIDEO', '性价比最高')).toBe('Elo / ($/min)')
@@ -237,7 +249,7 @@ describe('总览卡', () => {
 
 describe('Top 5 进度条宽度', () => {
   const make = (name: string, score: number | null): PrototypeModel =>
-    toPrototypeModel(card({ model_name: name, primary_score: score }), 'TEXT_CHAT')
+    toPrototypeModel(t, card({ model_name: name, primary_score: score }), 'TEXT_CHAT')
 
   it('与柱图同一把尺：带地板的 min-max，不是 value/max，更不是名次', () => {
     const models = [make('A', 100), make('B', 50), make('C', 25)]
@@ -279,12 +291,12 @@ describe('Top 5 进度条宽度', () => {
 
 describe('专项榜柱图', () => {
   const make = (name: string, score: number | null): PrototypeModel =>
-    toPrototypeModel(card({ model_name: name, primary_score: score }), 'TEXT_CHAT')
+    toPrototypeModel(t, card({ model_name: name, primary_score: score }), 'TEXT_CHAT')
 
   it('柱高用 min-max 归一化，窄值域也能拉开', () => {
     // 真实数据：61.3 / 59.8 / 57.1，按 value/max 算是 100%/97.6%/93.1%，肉眼等高。
     // 归一化后最高的占满、最低的留 28% 底线、中间的落在两者之间。
-    const rows = specialtyRows('综合评分', [make('A', 61.3), make('B', 59.8), make('C', 57.1)])
+    const rows = specialtyRows('score', [make('A', 61.3), make('B', 59.8), make('C', 57.1)])
     const [lower, upper] = specialtyBarDomain(rows.map((row) => row.numeric))
     const height = (value: number) => (value - lower) / (upper - lower)
     expect(height(rows[0].numeric)).toBeCloseTo(1)
@@ -294,7 +306,7 @@ describe('专项榜柱图', () => {
   })
 
   it('全部同值时给满格，不出现除零', () => {
-    const rows = specialtyRows('综合评分', [make('A', 50), make('B', 50)])
+    const rows = specialtyRows('score', [make('A', 50), make('B', 50)])
     const [lower, upper] = specialtyBarDomain(rows.map((row) => row.numeric))
     expect(lower).toBe(0)
     expect(upper).toBe(50)
@@ -305,8 +317,8 @@ describe('专项榜柱图', () => {
   })
 
   it('柱内标签保留货币符号与单位', () => {
-    const rows = specialtyRows('单次任务成本', [
-      toPrototypeModel(card({ model_name: 'A', cost_value: 0.0656 }), 'TEXT_CHAT'),
+    const rows = specialtyRows('price', [
+      toPrototypeModel(t, card({ model_name: 'A', cost_value: 0.0656 }), 'TEXT_CHAT'),
     ])
     expect(rows[0].value).toBe('$0.0656/次')
     // 原型柱标签实测是 `$0.05` / `245 tok/s`。此前只取数字，理由是「单位写在副标题里」——
@@ -315,8 +327,8 @@ describe('专项榜柱图', () => {
   })
 
   it('紧凑数量后缀保留（50K 不能被切成 50）', () => {
-    const rows = specialtyRows('近 7 日热度', [
-      toPrototypeModel(card({ model_name: 'A', usage_value: 50_000 }), 'TEXT_CHAT'),
+    const rows = specialtyRows('usage', [
+      toPrototypeModel(t, card({ model_name: 'A', usage_value: 50_000 }), 'TEXT_CHAT'),
     ])
     expect(rows[0].short).toBe('50K')
   })
@@ -326,92 +338,92 @@ describe('计费单价（不是成本构成拆解）', () => {
   const unit = 'USD_PER_1M_TOKENS'
 
   it('四档齐全时逐行列出，按输入/输出/缓存命中/缓存写入的顺序', () => {
-    expect(unitPriceDetail({ unit, input_tokens: 10, output_tokens: 50, cache_hit_tokens: 0.25, cache_write_tokens: 12.5 }))
+    expect(unitPriceDetail(t, { unit, input_tokens: 10, output_tokens: 50, cache_hit_tokens: 0.25, cache_write_tokens: 12.5 }))
       .toBe('输入 $10/M tokens\n输出 $50/M tokens\n缓存命中 $0.25/M tokens\n缓存写入 $12.5/M tokens')
   })
 
   it('缺项直接不列，不补 0 —— 实测 TEXT_CHAT 前 100 名有 49 个缺 cache_write_tokens', () => {
-    const detail = unitPriceDetail({ unit, input_tokens: 3, output_tokens: 15, cache_hit_tokens: 0.3, cache_write_tokens: null })
+    const detail = unitPriceDetail(t, { unit, input_tokens: 3, output_tokens: 15, cache_hit_tokens: 0.3, cache_write_tokens: null })
     expect(detail).toBe('输入 $3/M tokens\n输出 $15/M tokens\n缓存命中 $0.3/M tokens')
     expect(detail).not.toContain('缓存写入')
     expect(detail).not.toContain('$0/M')
   })
 
   it('价格真的是 0 时照常列出（0 是价格，不是缺失）', () => {
-    expect(unitPriceDetail({ unit, input_tokens: 0, output_tokens: 0 })).toBe('输入 $0/M tokens\n输出 $0/M tokens')
+    expect(unitPriceDetail(t, { unit, input_tokens: 0, output_tokens: 0 })).toBe('输入 $0/M tokens\n输出 $0/M tokens')
   })
 
   it('整块缺失或四档全空时返回 undefined，调用方据此不挂 tooltip', () => {
-    expect(unitPriceDetail(null)).toBeUndefined()
-    expect(unitPriceDetail(undefined)).toBeUndefined()
-    expect(unitPriceDetail({ unit })).toBeUndefined()
+    expect(unitPriceDetail(t, null)).toBeUndefined()
+    expect(unitPriceDetail(t, undefined)).toBeUndefined()
+    expect(unitPriceDetail(t, { unit })).toBeUndefined()
   })
 
   it('未知计价单位原样展示，不猜换算', () => {
-    expect(unitPriceDetail({ unit: 'USD_PER_TASK', input_tokens: 2 })).toBe('输入 $2 USD_PER_TASK')
+    expect(unitPriceDetail(t, { unit: 'USD_PER_TASK', input_tokens: 2 })).toBe('输入 $2 USD_PER_TASK')
   })
 
   it('rankings 的 unit_prices 能经 toPrototypeModel 带到页面模型上', () => {
-    const model = toPrototypeModel(
+    const model = toPrototypeModel(t, 
       card({ unit_prices: { unit, input_tokens: 10, output_tokens: 50 } }),
       'TEXT_CHAT',
     )
-    expect(unitPriceDetail(model.unitPrices)).toBe('输入 $10/M tokens\n输出 $50/M tokens')
+    expect(unitPriceDetail(t, model.unitPrices)).toBe('输入 $10/M tokens\n输出 $50/M tokens')
   })
 
   it('媒体类型不下发该字段时页面模型上是 null', () => {
-    expect(toPrototypeModel(card({}), 'TEXT_TO_IMAGE').unitPrices).toBeNull()
+    expect(toPrototypeModel(t, card({}), 'TEXT_TO_IMAGE').unitPrices).toBeNull()
   })
 })
 
 describe('接入态只认 is_integrated', () => {
   it('is_integrated=true → supported，无论接在哪个站', () => {
-    expect(toPrototypeModel(card({ is_integrated: true, integration_status: 'MODELGO_AI' }), 'TEXT_CHAT').supported).toBe(true)
-    expect(toPrototypeModel(card({ is_integrated: true, integration_status: 'MODELGO' }), 'TEXT_CHAT').supported).toBe(true)
+    expect(toPrototypeModel(t, card({ is_integrated: true, integration_status: 'MODELGO_AI' }), 'TEXT_CHAT').supported).toBe(true)
+    expect(toPrototypeModel(t, card({ is_integrated: true, integration_status: 'MODELGO' }), 'TEXT_CHAT').supported).toBe(true)
   })
 
   it('is_integrated=false → 不 supported，即使 integration_status 是 MODELGO（国产）', () => {
     // 这正是 qa#718 的病根：拿国别当接入态，把 161 个从未上架的国产模型标成已接入
-    const model = toPrototypeModel(card({ is_integrated: false, integration_status: 'MODELGO' }), 'TEXT_CHAT')
+    const model = toPrototypeModel(t, card({ is_integrated: false, integration_status: 'MODELGO' }), 'TEXT_CHAT')
     expect(model.supported).toBe(false)
     expect(model.integrationStatus).toBe('MODELGO')
   })
 
   it('字段缺失（后端旧版本）按未接入处理，不猜', () => {
     const item = { ...card(), is_integrated: undefined as unknown as boolean }
-    expect(toPrototypeModel(item, 'TEXT_CHAT').supported).toBe(false)
+    expect(toPrototypeModel(t, item, 'TEXT_CHAT').supported).toBe(false)
   })
 
   it('国别原样带到页面模型上，供「ModelGo.ai 已接入」分支判断', () => {
-    expect(toPrototypeModel(card({ integration_status: 'MODELGO_AI' }), 'TEXT_CHAT').integrationStatus).toBe('MODELGO_AI')
+    expect(toPrototypeModel(t, card({ integration_status: 'MODELGO_AI' }), 'TEXT_CHAT').integrationStatus).toBe('MODELGO_AI')
   })
 
   it('未接入的模型照样带 id —— 点击要能进详情页，不是静默点不动', () => {
-    const m = toPrototypeModel(card({ is_integrated: false, modelgo_id: 'glm-5-2' }), 'TEXT_CHAT')
+    const m = toPrototypeModel(t, card({ is_integrated: false, modelgo_id: 'glm-5-2' }), 'TEXT_CHAT')
     expect(m.id).toBe('glm-5-2')
     expect(m.supported).toBe(false)
   })
 
   it('modelgo_id 真的为空时才没有 id —— 由点击处给提示，不静默', () => {
-    expect(toPrototypeModel(card({ is_integrated: false, modelgo_id: null }), 'TEXT_CHAT').id).toBeUndefined()
+    expect(toPrototypeModel(t, card({ is_integrated: false, modelgo_id: null }), 'TEXT_CHAT').id).toBeUndefined()
   })
 })
 
 describe('成本为 null 不能渲染成 0（需求方#969 缺陷 1）', () => {
   it('cost_value=null → price 是「—」、raw.price 是 null', () => {
-    const m = toPrototypeModel(card({ cost_value: null }), 'AGENT')
+    const m = toPrototypeModel(t, card({ cost_value: null }), 'AGENT')
     expect(m.price).toBe(EMPTY)
     expect(m.raw.price).toBeNull()
   })
 
   it('cost_value=0 是真免费，与「没数据」必须区分', () => {
-    const m = toPrototypeModel(card({ cost_value: 0 }), 'AGENT')
+    const m = toPrototypeModel(t, card({ cost_value: 0 }), 'AGENT')
     expect(m.price).toBe('免费')
     expect(m.raw.price).toBe(0)
   })
 
   it('有值时 raw.price 保留原始数值，不是展示串', () => {
-    const m = toPrototypeModel(card({ cost_value: 6.1169 }), 'AGENT')
+    const m = toPrototypeModel(t, card({ cost_value: 6.1169 }), 'AGENT')
     expect(m.raw.price).toBe(6.1169)
     expect(m.price).toBe('$6.1169/次')
   })

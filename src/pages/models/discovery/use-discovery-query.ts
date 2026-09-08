@@ -3,6 +3,7 @@
  *
  * 每日快照，同一天内切来切去不必反复请求，故 staleTime 给 5 分钟。
  */
+import { useTranslation } from 'react-i18next'
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -72,6 +73,7 @@ export function useDiscoveryQuery(
   /** 'supported' = 仅看已接入：总览六张卡与 Top 榜都只在已接入模型里选 */
   scope: 'all' | 'supported' = 'all',
 ): DiscoveryQueryResult {
+  const { t } = useTranslation()
   const type = discoveryTypeFor(modality, task)
   const metric = type ? DISCOVERY_PRIMARY_METRIC[type] : undefined
 
@@ -101,13 +103,13 @@ export function useDiscoveryQuery(
 
   // 必须 memo：这个数组是页面上十几个 useMemo 的依赖，每次渲染重建会让它们全部失效
   const models = useMemo(
-    () => (type && rankings.data ? rankings.data.items.map((item) => toPrototypeModel(item, type)) : []),
-    [type, rankings.data],
+    () => (type && rankings.data ? rankings.data.items.map((item) => toPrototypeModel(t, item, type)) : []),
+    [type, rankings.data, t],
   )
 
   return {
     models,
-    summaryCards: type ? toSummaryCards(overview.data, type) : [],
+    summaryCards: type ? toSummaryCards(t, overview.data, type) : [],
     total: rankings.data?.total ?? 0,
     snapshotDate: rankings.data?.snapshot_date ?? overview.data?.snapshot_date ?? '',
     dataType: rankings.data?.type,
@@ -219,6 +221,7 @@ export function useDiscoveryTable(
     tableAccess: 'all' | 'supported' | 'pending'
   },
 ): DiscoveryTableResult {
+  const { t } = useTranslation()
   const type = discoveryTypeFor(modality, task)
   const metric = type ? tableMetricFor(type, options.metric) : undefined
   const filter = integrationFilterFor(options.scope, options.tableAccess)
@@ -248,10 +251,10 @@ export function useDiscoveryTable(
     if (!type) return { models: [], total: 0 }
     const data = query.data
     return {
-      models: data ? data.items.map((item) => toPrototypeModel(item, type)) : [],
+      models: data ? data.items.map((item) => toPrototypeModel(t, item, type)) : [],
       total: data?.total ?? 0,
     }
-  }, [type, query.data])
+  }, [type, query.data, t])
 
   return { ...merged, isLoading: query.isLoading, isError: query.isError, refetch: () => void query.refetch() }
 }

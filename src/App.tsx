@@ -83,6 +83,8 @@ const NotFoundPage = lazy(() => import('@/pages/not-found'))
 
 const DASHBOARD_NAMESPACES = ['dashboard', 'dashboardTop', 'billing', 'logs'] satisfies LocaleNamespace[]
 const MODEL_NAMESPACES = ['models', 'modelsCatalog', 'modelsCompare', 'modelsExperience', 'modelsChat', 'modelsHistory', 'apiKeys'] satisfies LocaleNamespace[]
+// 模型发现页文案量大且只此一页用，单独一个 ns，不让其它模型页跟着下载
+const DISCOVERY_NAMESPACES = [...MODEL_NAMESPACES, 'modelsDiscovery'] satisfies LocaleNamespace[]
 
 const CONSOLE_NAMESPACES: Record<string, readonly LocaleNamespace[]> = {
   dashboard: DASHBOARD_NAMESPACES,
@@ -329,7 +331,7 @@ export default function App() {
             <Route index element={withLocaleNamespaces(<ModelsCatalogPage />, MODEL_NAMESPACES)} />
             {/* discovery 必须声明在 :modelId **之前** —— 否则会被参数路由吃掉，
                 当成一个叫 "discovery" 的模型 ID 去请求详情。 */}
-            <Route path="discovery" element={withLocaleNamespaces(<ModelDiscoveryPage />, MODEL_NAMESPACES)} />
+            <Route path="discovery" element={withLocaleNamespaces(<ModelDiscoveryPage />, DISCOVERY_NAMESPACES)} />
             <Route path=":modelId" element={withLocaleNamespaces(<ModelDetailPage />, MODEL_NAMESPACES)} />
           </Route>
 

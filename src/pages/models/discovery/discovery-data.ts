@@ -132,8 +132,18 @@ export function toPrototypeModel(item: DiscoveryRankingItem, type: DiscoveryType
   // modelgo_id 都没有，页面上「已接入」徽标配着禁用的「待支持」按钮（qa#718）。
   const supported = item.is_integrated === true
   return {
-    // 只有已接入的模型能跳详情；modelgo_id 为空时也不给 id，避免点出 404
-    id: supported && item.modelgo_id ? item.modelgo_id : undefined,
+    /**
+     * 有 modelgo_id 就带上 —— **不再因「未接入」丢弃**。
+     *
+     * 原先是 `supported && modelgo_id`，未接入的模型一律不给 id，于是它的「查看详情」
+     * 按钮静默不可点，用户不知道为什么点不动（2026-09-08 owner：「点击看到的应该是
+     * 模型详情的页面」「ID 不存在的话要提示」）。
+     *
+     * 接入态判据不受影响：supported 仍然只看 is_integrated（#969 第 7 条），
+     * 这里改的只是「能不能进详情页」，两件事分开。
+     * id 为空时由点击处给明确提示，不静默。
+     */
+    id: item.modelgo_id || undefined,
     sourceModelId: item.source_model_id,
     name: item.model_name,
     provider: item.creator_name ?? '',

@@ -116,13 +116,16 @@ describe('质量分按指标口径格式化', () => {
 })
 
 describe('模型卡转换', () => {
-  it('已接入才给 id（能跳详情）—— 判据是 is_integrated 不是国别', () => {
+  it('id 与接入态解耦：有 modelgo_id 就带上，接入态另看 is_integrated', () => {
     expect(toPrototypeModel(card(), 'TEXT_CHAT').id).toBe('glm-5-2')
-    // 境外厂商但我们上架了：照样给 id，能跳站内详情（原先按国别判会误判成不可跳）
+    // 境外厂商但我们上架了：照样给 id（原先按国别判会误判成不可跳）
     expect(toPrototypeModel(card({ integration_status: 'MODELGO_AI' }), 'TEXT_CHAT').id).toBe('glm-5-2')
     expect(toPrototypeModel(card({ integration_status: 'MODELGO_AI' }), 'TEXT_CHAT').supported).toBe(true)
-    // 没上架：不给 id
-    expect(toPrototypeModel(card({ is_integrated: false }), 'TEXT_CHAT').id).toBeUndefined()
+    // 未接入也给 id —— 详情页该能点开；接入态照旧为 false，两件事分开
+    // （owner 2026-09-08：「点击看到的应该是模型详情的页面」）
+    const notIntegrated = toPrototypeModel(card({ is_integrated: false }), 'TEXT_CHAT')
+    expect(notIntegrated.id).toBe('glm-5-2')
+    expect(notIntegrated.supported).toBe(false)
   })
 
   it('modelgo_id 为空时不给 id，避免点出 404', () => {
@@ -379,8 +382,14 @@ describe('接入态只认 is_integrated', () => {
     expect(toPrototypeModel(card({ integration_status: 'MODELGO_AI' }), 'TEXT_CHAT').integrationStatus).toBe('MODELGO_AI')
   })
 
-  it('未接入的模型不给 id —— 点不进站内详情', () => {
-    expect(toPrototypeModel(card({ is_integrated: false, modelgo_id: 'glm-5-2' }), 'TEXT_CHAT').id).toBeUndefined()
+  it('未接入的模型照样带 id —— 点击要能进详情页，不是静默点不动', () => {
+    const m = toPrototypeModel(card({ is_integrated: false, modelgo_id: 'glm-5-2' }), 'TEXT_CHAT')
+    expect(m.id).toBe('glm-5-2')
+    expect(m.supported).toBe(false)
+  })
+
+  it('modelgo_id 真的为空时才没有 id —— 由点击处给提示，不静默', () => {
+    expect(toPrototypeModel(card({ is_integrated: false, modelgo_id: null }), 'TEXT_CHAT').id).toBeUndefined()
   })
 })
 

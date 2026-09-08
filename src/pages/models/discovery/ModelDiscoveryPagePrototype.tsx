@@ -54,6 +54,7 @@ import {
 import { EMPTY, rankBarWidth, specialtyRows, unitPriceDetail } from './discovery-data'
 import type { DiscoveryIntegrationStatus, DiscoveryUnitPrices } from '@/types'
 import { getMarketConfig, isTestOrDev } from "@/config/market"
+import { appToast } from "@/lib/app-toast"
 import {
   AnalysisScatterChart,
   DiscoveryAgentIcon,
@@ -202,13 +203,13 @@ function modelAccessLabel(model: DiscoveryModel) {
  * **生产的国外站**（2026-09-08 owner 实测报的问题）。跨环境跳转不只是体验问题：
  * 测试数据里的模型名跳到生产站大概率搜不到，用户会以为功能坏了。
  */
-function modelGoAiModelUrl(model: Pick<DiscoveryModel, "name">) {
-  const query = new URLSearchParams({ search: model.name });
+function modelGoAiModelUrl(model: Pick<DiscoveryModel, "name"> & { id?: string }) {
+  const path = model.id ? `/models/${encodeURIComponent(model.id)}` : `/models?${new URLSearchParams({ search: model.name }).toString()}`;
   // **先判环境，再判市场域名**：测试环境没配 VITE_GLOBAL_CONSOLE（只有生产配），
   // 而 market.ts 的 requireEnv 对它是必需项 —— 先取域名会直接抛错。
-  // 测试/本地只有一套控制台，留在当前站内搜索即可。
-  if (isTestOrDev()) return `/models?${query.toString()}`;
-  return `${getMarketConfig("global").consoleUrl}/models?${query.toString()}`;
+  // 测试/本地只有一套控制台，留在当前站。
+  if (isTestOrDev()) return path;
+  return `${getMarketConfig("global").consoleUrl}${path}`;
 }
 
 const modalityOptions: Array<{ key: ModalityKey; label: string }> = [
@@ -979,10 +980,14 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   /** 跳详情只需要这四个字段，散点用的轻量模型对象同样适用。 */
   type DetailShape = Pick<DiscoveryModel, "id" | "name" | "provider" | "supported" | "integrationStatus">;
 
+  /**
+   * 一律可点：有 id 就跳详情，没有 id 也要能点出提示，不能静默不响应
+   * （owner 2026-09-08：「ID 不存在的话要提示」）。
+   * 参数保留是为了调用处语义不变，也便于将来需要时收紧条件。
+   */
   function canOpenModelDetail(model: DetailShape) {
-    // 已接入 → 需要 modelgo_id 才能跳站内详情；未接入的境外模型 → 走 ModelGo.ai 外链
-    const hasDestination = model.supported ? Boolean(model.id) : !isDomesticModel(model);
-    return isModelConnected(model) && hasDestination;
+    void model;
+    return true;
   }
 
   function modelDetailAriaLabel(model: DetailShape) {
@@ -991,16 +996,23 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       : `在 ModelGo.ai 查看 ${model.name} 模型`;
   }
 
+  /**
+   * 点「查看详情」的落点判断，顺序固定：**先环境 → 再域名 → 再情况**。
+   *
+   * ① 本平台已接入且有 id → 站内详情（同环境同站，不跨环境）
+   * ② 未接入但有 id → 目标站详情页；测试/本地只有一套控制台，仍留在当前站
+   * ③ 没有 id → **明确提示**，不静默不可点（owner 2026-09-08 要求）
+   */
   function openModelDetail(model: DetailShape) {
-    if (!canOpenModelDetail(model)) return;
-    // 本平台已接入优先走站内详情 —— 境外厂商只要我们上架了也算（判据是 supported 不是国别）
     if (model.supported && model.id) {
       onOpenModel(model.id);
       return;
     }
-    if (!isDomesticModel(model)) {
+    if (model.id) {
       window.open(modelGoAiModelUrl(model), "_blank", "noopener,noreferrer");
+      return;
     }
+    appToast.info("该模型暂无详情页", "数据源未提供 ModelGo 模型 ID，无法定位详情");
   }
 
   // Top 5 卡的行是 div、完整榜单的行是 tr（Table 组件），故取二者共同的 HTMLElement

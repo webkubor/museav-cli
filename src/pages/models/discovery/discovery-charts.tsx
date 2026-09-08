@@ -255,7 +255,9 @@ export function SpecialtyBarChart({ rows, description, hoveredModel, onHoverMode
           固定 210px 在宽屏上显得扁、窄屏上又压不下十根柱子。min/max 只做安全边界，
           防止超宽屏把图拉得过高。 */}
       <ResponsiveContainer aspect={2.4} maxHeight={280} minHeight={170} width="100%">
-        <BarChart data={rows} margin={{ bottom: 0, left: 0, right: 0, top: 10 }} onMouseLeave={() => onHoverModel(null)}>
+        {/* top 留 30 而不是 10：数值标签在柱外顶部，最高那根柱子的标签需要这段空间，
+            否则会被图表上边界裁掉（TPS 榜的「342 tok/s」是两行，实测最占地方）。 */}
+        <BarChart data={rows} margin={{ bottom: 0, left: 0, right: 0, top: 30 }} onMouseLeave={() => onHoverModel(null)}>
           <CartesianGrid stroke="var(--line)" vertical={false} />
           {/* 轴本身不画：柱内已标真实数值，再放一条刻度轴只会在 34px 宽的卡片里抢地方。
               domain 承接原先数据层的 min-max 归一化，见 specialtyBarDomain。 */}
@@ -276,8 +278,8 @@ export function SpecialtyBarChart({ rows, description, hoveredModel, onHoverMode
             animationDuration={ENTER_DURATION}
             dataKey="numeric"
             isAnimationActive={!prefersReducedMotion()}
-            /* 柱内还要放数值标签，太矮就放不下也点不中 */
-            minPointSize={22}
+            /* 柱子按厂牌色上色后，柱内不再压文字，只需保证矮柱还点得中 */
+            minPointSize={6}
             shape={
               <SpecialtyBarShape
                 hoveredModel={hoveredModel}
@@ -288,9 +290,14 @@ export function SpecialtyBarChart({ rows, description, hoveredModel, onHoverMode
               />
             }
           >
-            {/* 柱内只放数字：单位已写在副标题（如「（USD / Task）」），
-                "$0.0656/次" 这种带单位的串在柱子里必然换行截断。完整值在 tooltip 里给。 */}
-            <LabelList className="model-discovery-bar-label" dataKey="short" position="insideTop" />
+            {/* 数值标签放**柱外顶部**，与同页「近 7 日使用趋势」一致。
+                原先压在柱内（白字 insideTop），柱子统一品牌色时勉强能读；改成厂牌色后
+                必然翻车——实测 10 种厂牌色里只有 3 种能让白字达到 AA 4.5，最差的
+                rgb(255,105,0) 只有 2.89（连原来的品牌蓝也只有 3.51，本就不达标）。
+                挪到柱外后前景走正文色、背景是卡片底，对比度由既有 token 保证，
+                也让柱高不再被 minPointSize 撑高、真实反映数据比例。
+                只放数字：单位写在副标题（如「（USD / Task）」），完整值在 tooltip。 */}
+            <LabelList className="model-discovery-bar-label" dataKey="short" position="top" />
           </Bar>
         </BarChart>
       </ResponsiveContainer>

@@ -44,8 +44,10 @@
 }
 
 /* 柱内数值标签（recharts <LabelList> 渲染成 SVG text） */
+/* 柱外顶部标签，与 .model-discovery-trend-label 同一套（见 discovery-charts.tsx
+   里 position="top" 的说明）。原先是柱内白字(--discovery-on-dark)。 */
 .model-discovery-bar-label {
-  fill: var(--discovery-on-dark);
+  fill: var(--text-soft);
   font-size: var(--discovery-fs-micro);
   font-variant-numeric: tabular-nums;
 }

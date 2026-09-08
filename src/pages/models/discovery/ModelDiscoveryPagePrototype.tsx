@@ -54,6 +54,7 @@ import {
 import { EMPTY, rankBarWidth, specialtyRows, unitPriceDetail } from './discovery-data'
 import type { DiscoveryIntegrationStatus, DiscoveryUnitPrices } from '@/types'
 import { getMarketConfig, isTestOrDev } from "@/config/market"
+import { getMarket, type Market } from "@/lib/market"
 import { appToast } from "@/lib/app-toast"
 import {
   AnalysisScatterChart,
@@ -203,13 +204,26 @@ function modelAccessLabel(model: DiscoveryModel) {
  * **生产的国外站**（2026-09-08 owner 实测报的问题）。跨环境跳转不只是体验问题：
  * 测试数据里的模型名跳到生产站大概率搜不到，用户会以为功能坏了。
  */
-function modelGoAiModelUrl(model: Pick<DiscoveryModel, "name"> & { id?: string }) {
+function modelDetailUrl(model: Pick<DiscoveryModel, "name"> & { id?: string; integrationStatus?: DiscoveryIntegrationStatus }) {
   const path = model.id ? `/models/${encodeURIComponent(model.id)}` : `/models?${new URLSearchParams({ search: model.name }).toString()}`;
-  // **先判环境，再判市场域名**：测试环境没配 VITE_GLOBAL_CONSOLE（只有生产配），
-  // 而 market.ts 的 requireEnv 对它是必需项 —— 先取域名会直接抛错。
-  // 测试/本地只有一套控制台，留在当前站。
+
+  // ① 先判环境：测试与本地只有一套控制台，任何跨站都没有意义，留在当前站。
+  //    顺序也必须如此 —— 测试环境没配 VITE_GLOBAL_CONSOLE（只有 .env.production 配），
+  //    而 market.ts 的 requireEnv 对它是必需项，先取域名会直接抛错。
   if (isTestOrDev()) return path;
-  return `${getMarketConfig("global").consoleUrl}${path}`;
+
+  // ② 再判**这个模型被哪个市场支持** —— 落点只由模型决定，**与当前访问的域名无关**。
+  //    owner 2026-09-08 原话：「我们展示的模型-国内不支持-国外有，那就要跳转国外，
+  //    即便是现在访问的域名是国内」。
+  //    判据用接口的 integration_status（MODELGO = 国产 / MODELGO_AI = 境外）。
+  //    原来这里硬编码 getMarketConfig("global")，等于假定「跨站一定是去国外」：
+  //    在国外站点一个国产模型会跳回它自己，而不是回国内站。
+  const targetMarket: Market = model.integrationStatus === "MODELGO" ? "china" : "global";
+
+  // ③ 最后只决定**怎么去**，不改变去哪：目标站正好是当前站就走 SPA 路由（不整页刷新），
+  //    否则拼目标站域名。注意这一步不参与「跳哪个市场」的判断 —— 那已经由 ② 定死了。
+  if (targetMarket === getMarket()) return path;
+  return `${getMarketConfig(targetMarket).consoleUrl}${path}`;
 }
 
 const modalityOptions: Array<{ key: ModalityKey; label: string }> = [
@@ -1023,7 +1037,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       return;
     }
     if (model.id) {
-      window.open(modelGoAiModelUrl(model), "_blank", "noopener,noreferrer");
+      window.open(modelDetailUrl(model), "_blank", "noopener,noreferrer");
       return;
     }
     // 文案要说实话：不是「数据源没给 ID」，而是**这个模型我们没上架**，所以没有详情页。

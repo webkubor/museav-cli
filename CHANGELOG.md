@@ -1,5 +1,28 @@
 # Changelog
 
+## 3.1.0 (2026-09-08)
+
+### 发布 Skill 到小红书 SkillHub：`museav skillhub`
+
+本地写好的 Agent Skill 现在可以一条命令发到小红书 SkillHub，不用再单独记一套官方 CLI：
+
+```bash
+museav skillhub tags                                          # 查可选内容标签
+museav skillhub publish ./my-skill --tag 效率工具,编程开发       # 预演，不外发
+museav skillhub publish ./my-skill --tag 效率工具 --yes         # 真提交（扫码授权）
+```
+
+- 打包、设备码授权、上传、提交全部委托小红书官方 `redskillhub-upload`（已作为依赖内置），
+  **不重写平台协议**，平台改版跟着升依赖即可
+- **不带 `--yes` 一定不外发**：默认只跑 dry-run，把名称 / Skill ID / 版本 / 简介 / 来源 / 标签
+  摊出来给人核对。提交不可逆——Skill ID 是平台主键，跨版本不可改名
+- `--tag` 强制必填（平台要求且无合理默认），`--source` 默认 `original`；转载必须带
+  `--repost-source`，原创带了会被拒
+- 跟 `museav skills` 是两件事：那个查中台出图技能，这个发 Agent Skill
+
+> 注意平台只收文本类扩展名（`.md` / `.js` / `.py` / `.json` / `.sh` 等），`.mjs`、`.ts`、
+> `.yaml` 一律被拒；单文件 10MB、整包 30MB。
+
 ## 3.0.3 (2026-08-29)
 
 ### 批量出图：`gen --batch`，一次提交一批，不用再写循环

@@ -21,6 +21,7 @@ import { imageToTemplate } from './commands/image-to-template.js'
 import { upload } from './commands/upload.js'
 import { models } from './commands/models.js'
 import { skills } from './commands/skills.js'
+import { skillhubTags, skillhubPublish, skillhubPassthrough } from './commands/skillhub.js'
 import { templates, createTemplate } from './commands/templates.js'
 import { videoTemplates, createVideoTemplate } from './commands/video-templates.js'
 import { balance } from './commands/balance.js'
@@ -338,6 +339,45 @@ program
   .description('查可用技能：自己的私有技能 + 所属租户专属模板 + 公共技能库')
   .option('--genre <name>', '按分类过滤，如 电商 / 人像写真')
   .action(withClient((client: StudioClient, opts: any) => skills(client, opts)))
+
+// skillhub 跟上面的 skills 是两回事：skills 查的是中台出图技能，skillhub 是把
+// 本地 Agent Skill 发到小红书 SkillHub。打包/授权/上传/提交全由官方
+// redskillhub-upload 完成，这里只是入口 + 提交护栏，见 commands/skillhub.ts 顶部注释。
+const skillhubCmd = program
+  .command('skillhub')
+  .description('把本地 Skill 发布到小红书 SkillHub（不带子命令时列可选内容标签）')
+  .action(asyncRun(() => skillhubTags()))
+
+skillhubCmd
+  .command('tags')
+  .description('列平台实时内容标签（发布必须带 --tag，没有默认值）')
+  .action(asyncRun(() => skillhubTags()))
+
+skillhubCmd
+  .command('publish <path>')
+  .description('发布本地 Skill 目录或 .zip 源包。默认只预演（dry-run，不登录不上传），加 --yes 才真提交')
+  .requiredOption('--tag <中文名>', '内容标签，多个用逗号分隔；清单见 museav skillhub tags')
+  .option('--source <type>', '内容来源：original（原创，默认） / repost（转载）', 'original')
+  .option('--repost-source <来源>', '转载来源平台名（15 字以内），--source repost 时必填')
+  .option('--identifier <id>', 'Skill ID（kebab-case，平台主键，跨版本不可改）；不传由官方 CLI 从名称/目录名派生')
+  .option('--yes', '真提交（会要求用小红书 App 扫码授权）；不带则只预演')
+  .action(asyncRun((path: string, opts: any) => skillhubPublish(path, opts)))
+
+skillhubCmd
+  .command('whoami')
+  .description('查 SkillHub 登录态（脱敏）')
+  .action(asyncRun(() => skillhubPassthrough('whoami')))
+
+skillhubCmd
+  .command('login')
+  .description('显式预登录（正常发布会自动登录，这条只用于诊断）')
+  .option('--cancel', '取消等待中的授权，并清理待授权状态与二维码')
+  .action(asyncRun((opts: any) => skillhubPassthrough('login', opts)))
+
+skillhubCmd
+  .command('logout')
+  .description('退出 SkillHub 登录（清除本地凭证）')
+  .action(asyncRun(() => skillhubPassthrough('logout')))
 
 const templatesCmd = program
   .command('templates')

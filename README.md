@@ -105,6 +105,7 @@
 | **语音**（直连小米 MiMo，需 `MIMO_API_KEY`） | 文字转语音 / 音色设计 / 音色克隆 | `speak` |
 | | 语音转文字 | `transcribe` |
 | **素材与统计** | 上传素材 / 查任务 / 查余额 / 查模型 / 查身份 | `upload` / `jobs` / `balance` / `models` / `whoami` |
+| **发布**（小红书 SkillHub） | 把本地 Agent Skill 发到小红书 SkillHub | `skillhub publish` |
 
 > 本地工具（`compress` / `remove-bg` / `upscale` / `remove-watermark`）**不用登录、不花一分钱**，装了就能用；其余命令需要一个凭证（个人 `login` 或租户 apiKey）。
 >
@@ -553,6 +554,56 @@ IMG=$(museav products | node -e "process.stdin.once('data',d=>console.log(JSON.p
 museav gen --template <模板id> --ref "$IMG"
 ```
 
+### 发布 Skill 到小红书 SkillHub `skillhub`
+
+> 2026-09-08 新增。跟 `museav skills` **不是一回事**：`skills` 查的是中台的出图技能，
+> `skillhub` 是把本地写好的 Agent Skill（`SKILL.md` 那种）发到小红书 SkillHub。
+
+打包、扫码授权、上传、提交全部由小红书官方 CLI [`redskillhub-upload`](https://www.npmjs.com/package/redskillhub-upload)
+完成（它是本包的依赖，装 museav 就带上了，不用另外全局装）。这里只做入口和护栏，
+**不重写平台协议**——平台改版跟着升依赖就行。
+
+```bash
+# 1. 先看可选内容标签（发布必须带，没有默认值）
+museav skillhub tags
+
+# 2. 预演：只本地打包 + 校验，不登录、不上传、不提交
+museav skillhub publish ./my-skill --tag 效率工具,编程开发
+
+# 3. 核对无误再真提交（未登录会出二维码，用小红书 App 扫）
+museav skillhub publish ./my-skill --tag 效率工具,编程开发 --yes
+```
+
+**不带 `--yes` 一定不会外发**——它只跑 dry-run 把待提交内容摊给你看：
+
+```
+待提交内容：
+  名称       museav-gen
+  Skill ID   museav-gen   ← 平台主键，提交后跨版本不可改
+  版本       0.1.0
+  简介       用 museav CLI 在命令行出图、出视频、读图逆向提示词。
+  来源       原创
+  标签       效率工具,编程开发
+```
+
+转载稿要多带一个来源，原创稿不许带：
+
+```bash
+museav skillhub publish ./my-skill --tag 内容创作 --source repost --repost-source 知乎 --yes
+```
+
+其他：`--identifier <kebab-case>` 显式指定 Skill ID（不传由官方 CLI 从名称/目录名派生，
+派生不出来会报错）；`museav skillhub whoami` 查登录态，`skillhub logout` 清凭证，
+`skillhub login --cancel` 取消等待中的扫码。
+
+几个平台限制，踩之前先知道：
+
+- **只收文本类文件**：`.md` / `.js` / `.py` / `.json` / `.sh` / `.html` / `.css` 等；
+  `.mjs`、`.ts`、`.yaml`、图片都会被拒（报「目录中包含不支持上传的文件」）
+- 单文件 10MB、整包 30MB 上限
+- 目录里必须有 `SKILL.md`
+- **Skill ID 是平台主键，提交后跨版本不可改名**，第一次提交前想清楚
+
 ## 编程调用
 
 CLI 背后是一个干净的 `StudioClient` class，也可以当库用：
@@ -593,6 +644,8 @@ console.log(r.sculpt.light)  // 光影分析
 | `whoami` | 查当前账户 + 租户归属（仅个人 login） | JSON |
 | `gen` | 出图 / 出视频（`--prompt` / `--skill` / `--template` 三选一；`--video` 切视频，`--image` 图生视频） | 图片/视频 URL |
 | `skills` | 查可用技能：私有 + 租户专属 + 公共库（配合 `gen --skill`） | slug 列表（每行一个） |
+| `skillhub tags` | 查小红书 SkillHub 的内容标签（发布必须带 `--tag`） | 中文标签名（每行一个） |
+| `skillhub publish <path>` | 发布本地 Skill 到小红书 SkillHub；默认只预演，`--yes` 才真提交 | 待提交载荷 JSON |
 | `templates` | 查可用图片模板（配合 `gen --template`） | JSON |
 | `templates create` | 新建图片模板，归属按账号身份自动关联租户 | 新模板 id |
 | `products` | 查所属租户自己的产品目录（数据在租户自己后台，非中台；仅租户 apiKey） | JSON |

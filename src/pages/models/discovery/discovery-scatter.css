@@ -132,3 +132,29 @@
   justify-content: center;
   min-height: 160px;
 }
+
+/* 加载失败态：沿用空态的排版，只把「重试」做成可点。
+   与空态共用一个块是刻意的 —— 两者占位一致，接口从「挂」恢复到「空」时不会跳版。
+   本页 6 个数据 hook 原先只有一个吐 isError 且无人消费，接口挂了就永久停在骨架屏，
+   用户分不清「没数据」和「坏了」（2026-09-08 审计）。 */
+.model-discovery-load-error {
+  gap: 8px;
+}
+
+.model-discovery-load-error button {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: var(--discovery-radius-circle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: var(--discovery-fs-micro);
+  padding: 2px 10px;
+  transition: background var(--discovery-dur-swift) ease, border-color var(--discovery-dur-swift) ease,
+    color var(--discovery-dur-swift) ease;
+}
+
+.model-discovery-load-error button:hover {
+  background: var(--panel-soft);
+  border-color: var(--line-strong);
+  color: var(--text);
+}

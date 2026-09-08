@@ -62,6 +62,8 @@ export interface DiscoveryQueryResult {
   dataType: DiscoveryType | undefined
   isLoading: boolean
   isError: boolean
+  /** 两个子查询一起重拉 —— 榜单与总览共用一个错误态，重试也该一起。 */
+  refetch: () => void
 }
 
 export function useDiscoveryQuery(
@@ -111,6 +113,10 @@ export function useDiscoveryQuery(
     dataType: rankings.data?.type,
     isLoading: rankings.isLoading || overview.isLoading,
     isError: rankings.isError || overview.isError,
+    refetch: () => {
+      void rankings.refetch()
+      void overview.refetch()
+    },
   }
 }
 
@@ -128,7 +134,7 @@ export function useDiscoveryTrends(
   modality: ModalityKey,
   task: string,
   sourceModelIds: readonly string[],
-): { data: DiscoveryUsageTrends | undefined; isLoading: boolean } {
+): { data: DiscoveryUsageTrends | undefined; isLoading: boolean; isError: boolean; refetch: () => void } {
   const type = discoveryTypeFor(modality, task)
   const ids = joinSourceModelIds([...sourceModelIds].sort())
 
@@ -140,7 +146,7 @@ export function useDiscoveryTrends(
     placeholderData: keepPrevious,
   })
 
-  return { data: query.data, isLoading: query.isLoading }
+  return { data: query.data, isLoading: query.isLoading, isError: query.isError, refetch: () => void query.refetch() }
 }
 
 /** 表格的「指标类型」下拉 → 接口的 metric。四个选项与接口一一对应。 */
@@ -185,6 +191,8 @@ export interface DiscoveryTableResult {
   models: PrototypeModel[]
   total: number
   isLoading: boolean
+  isError: boolean
+  refetch: () => void
 }
 
 /**
@@ -245,7 +253,7 @@ export function useDiscoveryTable(
     }
   }, [type, query.data])
 
-  return { ...merged, isLoading: query.isLoading }
+  return { ...merged, isLoading: query.isLoading, isError: query.isError, refetch: () => void query.refetch() }
 }
 
 export interface DiscoveryOptionsResult {
@@ -254,6 +262,8 @@ export interface DiscoveryOptionsResult {
   /** 全量厂商，用于厂商筛选下拉的候选。 */
   vendors: string[]
   isLoading: boolean
+  isError: boolean
+  refetch: () => void
 }
 
 /**
@@ -278,7 +288,7 @@ export function useDiscoveryModelOptions(modality: ModalityKey, task: string): D
     [options],
   )
 
-  return { options, vendors, isLoading: query.isLoading }
+  return { options, vendors, isLoading: query.isLoading, isError: query.isError, refetch: () => void query.refetch() }
 }
 
 /** 散点 X 轴的取数来源 → 接口 metric。 */
@@ -295,6 +305,8 @@ function analysisMetricFor(
 export interface DiscoveryAnalysisResult {
   points: Map<string, { x: number; y: number }>
   isLoading: boolean
+  isError: boolean
+  refetch: () => void
 }
 
 /**
@@ -340,7 +352,7 @@ export function useDiscoveryAnalysis(
     return map
   }, [query.data])
 
-  return { points, isLoading: query.isLoading }
+  return { points, isLoading: query.isLoading, isError: query.isError, refetch: () => void query.refetch() }
 }
 
 /**
@@ -364,5 +376,7 @@ export function useHotAgents(period: HotAgentPeriod, enabled: boolean) {
     source: query.data?.source,
     snapshotDate: query.data?.snapshot_date,
     isLoading: query.isLoading,
+    isError: query.isError,
+    refetch: () => void query.refetch(),
   }
 }

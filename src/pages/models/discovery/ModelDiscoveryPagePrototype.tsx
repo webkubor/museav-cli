@@ -584,10 +584,29 @@ function useProviderColor() {
  *   3. `description` 是英文原文（产品确认不翻译），空值率约 75%；`favicon_url` 约 97%
  *      为空 —— 都按空隐藏，不占位。
  */
+/**
+ * 区块级加载失败提示。
+ *
+ * 补这个的原因：本页 6 个数据 hook 里原先只有 useDiscoveryQuery 吐 isError，而**没有任何
+ * 消费端接它**——接口挂了页面就永久停在骨架屏或空态，用户分不清「没数据」和「坏了」
+ * （2026-09-08 审计发现）。
+ *
+ * 视觉跟随本页自有语言（model-discovery-chart-empty-block），不套 mg 体系的 EmptyState：
+ * 本页是「1:1 复刻原型」的显式例外，有自己的一套 class 与间距，混进另一套 token 会打架。
+ */
+function DiscoveryLoadError({ onRetry, text = "数据加载失败" }: { onRetry: () => void; text?: string }) {
+  return (
+    <p className="model-discovery-chart-empty-block model-discovery-load-error">
+      {text}
+      <button onClick={onRetry} type="button">重试</button>
+    </p>
+  );
+}
+
 function AgentPopularityLeaderboard() {
   const [period, setPeriod] = useState<AgentPopularityPeriod>("day");
   const [expanded, setExpanded] = useState(false);
-  const { apps, total, source, isLoading } = useHotAgents(period, true);
+  const { apps, total, source, isLoading, isError, refetch } = useHotAgents(period, true);
   const visibleAgents = apps.slice(0, expanded ? 20 : 10);
   const columnSize = Math.ceil(visibleAgents.length / 2);
   const agentColumns = [visibleAgents.slice(0, columnSize), visibleAgents.slice(columnSize)];
@@ -619,6 +638,8 @@ function AgentPopularityLeaderboard() {
             </div>
           ))}
         </div>
+      ) : isError ? (
+        <DiscoveryLoadError onRetry={refetch} text="应用榜加载失败" />
       ) : apps.length === 0 ? (
         <p className="model-discovery-chart-empty-block">当前周期暂无应用榜数据</p>
       ) : (
@@ -672,6 +693,8 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
     snapshotDate,
     dataType: discoveryDataType,
     isLoading: discoveryLoading,
+    isError: discoveryError,
+    refetch: refetchDiscovery,
   } = useDiscoveryQuery(modality, task, scope);
   const configuredModels = apiModels;
   const [yMetric, setYMetric] = useState(0);
@@ -946,6 +969,8 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
     models: tableModels,
     total: tableTotal,
     isLoading: tableLoading,
+    isError: tableError,
+    refetch: refetchTable,
   } = useDiscoveryTable(modality, task, {
     metric: rankingMetric,
     page: tablePage,
@@ -1067,7 +1092,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
    * mock 的十来个点摊开、并伪造出「切换 Y 指标」的效果，会让图上坐标对不上榜单
    * （61.3 显示成 60.9），已删除。
    */
-  const { points: analysisPoints } = useDiscoveryAnalysis(
+  const { points: analysisPoints, isError: analysisError, refetch: refetchAnalysis } = useDiscoveryAnalysis(
     modality,
     task,
     chartModels.map((model) => model.sourceModelId),
@@ -1116,7 +1141,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
    */
   // 用量筛选交给接口：没有快照数据的模型本就不会出现在 usage-trends 的返回里
   const trendModels = chartModels.filter((model) => isModelConnected(model));
-  const { data: trendData } = useDiscoveryTrends(modality, task, trendModels.map((model) => model.sourceModelId));
+  const { data: trendData, isError: trendError, refetch: refetchTrend } = useDiscoveryTrends(modality, task, trendModels.map((model) => model.sourceModelId));
   const trendSeries = trendModels
     .map((model) => {
       const remote = trendData?.models.find((item) => item.source_model_id === model.sourceModelId);
@@ -1255,6 +1280,9 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
         <article className="mg-tile model-discovery-rank-card">
           <div className="model-discovery-card-head"><div><h2>{task} Top 5</h2><span>{taskProfile.qualityBasis}</span></div></div>
           <div className="model-discovery-rank-head"><span>#</span><span>模型</span><span>接入状态</span><span>{taskProfile.qualityLabel}<em className="model-discovery-source-tag">{metricSource}</em></span></div>
+          {!discoveryLoading && discoveryError && visibleModels.length === 0 && (
+            <DiscoveryLoadError onRetry={refetchDiscovery} text="榜单加载失败" />
+          )}
           {discoveryLoading && visibleModels.length === 0 && [0, 1, 2, 3, 4].map((i) => (
             <div className="model-discovery-rank-row" key={`skeleton-${i}`}>
               <span className="animate-pulse bg-mg-fill-2 rounded-sm h-3 w-3" />
@@ -1329,6 +1357,9 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                 {chartProviders.map((provider) => <span key={provider}><i style={{ "--legend-color": providerColor(provider) } as CSSProperties} />{provider}</span>)}
                 <em>实心：已接入 · 空心：暂未接入</em>
               </div>
+              {analysisError && scatterPoints.length === 0 ? (
+                <DiscoveryLoadError onRetry={refetchAnalysis} text="分析数据加载失败" />
+              ) : (
               <AnalysisScatterChart
                 formatX={formatXAxisTick}
                 formatY={formatYAxisTick}
@@ -1348,6 +1379,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                 yTicks={yTicks}
                 yUnit={yUnit}
               />
+              )}
             </div>
             <aside className="model-discovery-analysis-aside">
               <div className="mg-tile model-discovery-model-filter">
@@ -1391,7 +1423,9 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
               <div className="mg-tile model-discovery-trend"><h3><LuTrendingUp size={14} />近 7 日 ModelGo 使用趋势</h3><p>按增长率从高到低排列</p>
                 {trendSeries.length > 0
                   ? <><TrendBarChart points={trendPoints} usageLabel={trendUsageLabel} /><div className="model-discovery-trend-legend">{trendSeries.map((series) => <span key={series.model.name}><i style={{ "--trend-color": series.color } as CSSProperties} /><strong title={series.model.name}>{series.model.name}</strong><b>{formatGrowth(series.growth)}</b></span>)}</div></>
-                  : <div className="model-discovery-trend-empty">{trendEmptyHint}</div>}
+                  : trendError
+                    ? <div className="model-discovery-trend-empty"><DiscoveryLoadError onRetry={refetchTrend} text="趋势数据加载失败" /></div>
+                    : <div className="model-discovery-trend-empty">{trendEmptyHint}</div>}
               </div>
             </aside>
           </div>
@@ -1476,7 +1510,14 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                   </TableCell>
                 </TableRow>
               ))}
-              {tableModels.length === 0 && !tableLoading && (
+              {tableModels.length === 0 && !tableLoading && tableError && (
+                <TableRow>
+                  <TableCell align="center" colSpan={8}>
+                    <DiscoveryLoadError onRetry={refetchTable} text="榜单数据加载失败" />
+                  </TableCell>
+                </TableRow>
+              )}
+              {tableModels.length === 0 && !tableLoading && !tableError && (
                 <TableRow>
                   <TableCell align="center" colSpan={8}>当前筛选条件下没有模型</TableCell>
                 </TableRow>

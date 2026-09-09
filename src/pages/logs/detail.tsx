@@ -145,8 +145,14 @@ export function LogDetailSheet({
     enabled: !!wsId,
     staleTime: 60_000,
   })
-  // qa#719 优先使用明确任务 ID；缺失保留旧 request_id 探测兼容历史日志。
-  // 探测 404 静默处理，不伪造任务数据。
+  // 任务产物探测（需求方#954）：多模态异步任务的提交日志与任务共用 request_id，
+  // 打开详情时对 GET /async-tasks/{id} 打一枪，命中才渲染「任务产物」模块；
+  // 纯同步调用后端回 404 → query error → 模块不出现，无需前端硬编码 call_type 名单。
+  // meta.silentError：404 是探测的常态结果而非故障，禁止全局 toast 弹「请求失败」
+  //（否则每次打开同步日志详情都会闪一条错误提示）。
+  //
+  // qa#719 起**优先用后端明确给的 async_task_id**，缺失才回落到 request_id 探测
+  // （历史日志没有该字段）。两者都拿不到就不发请求，不伪造任务数据。
   const taskId = row?.async_task_id || row?.request_id
   const { data: asyncTask } = useQuery({
     queryKey: ['log-async-task', taskId],
@@ -268,6 +274,8 @@ export function LogDetailSheet({
                   )
                 })()}
               </DetailGrid>
+              {/* 跳转用与探测同一个 taskId：若这里退回 request_id，探到的任务和跳过去的
+                  可能不是同一个（后端 async_task_id 与 request_id 不保证相等，见 qa#719）。 */}
               {onOpenTask && (
                 <Button variant="outline" size="sm" onClick={() => onOpenTask(taskId!)}>
                   {t('logs.detail.taskArtifact.viewTask')}

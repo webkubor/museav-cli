@@ -177,7 +177,15 @@ export function PlaygroundComposer({
             placeholder={effectiveTask === 'image_to_image' ? t('modelsExperience.taskPlaceholder.image_to_image') : categoryPlaceholder(category)}
             sendLabel={t('modelsExperience.send')}
             className="models-experience-composer-wrap"
-            sendEnabled={effectiveTask === 'audio_to_text' ? !!attachment : undefined}
+            sendEnabled={
+              effectiveTask === 'audio_to_text'
+                ? !!attachment
+                // 图生图/图生视频/视频生视频等 needs-file 任务：没附件发送不可点（prd#980 验收口径），
+                // sendPrompt 里的预检提示仍保留兜底
+                : needsFileTask
+                  ? !!attachment && input.trim().length > 0
+                  : undefined
+            }
             textareaSlot={effectiveTask === 'audio_to_text' ? (
               <div className="models-task-transcribe-ready">{t('modelsExperience.transcribeReady')}</div>
             ) : undefined}

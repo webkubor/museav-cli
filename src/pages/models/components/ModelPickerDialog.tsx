@@ -50,7 +50,7 @@ import {
   modelCategoryTasks,
   modelExperienceTasks,
   EXPERIENCE_CATEGORY_ORDER,
-  EXPERIENCE_CATEGORY_DEFAULT_TASK,
+  modelEntryTask,
   experienceCategoryLabel,
   experienceTaskLabel,
   type ExperienceCategoryKey,
@@ -599,10 +599,9 @@ export function ModelPickerDialog({
                   const detailCategory = resolveCategory(detailModel)
                   const detailTasks = modelCategoryTasks(detailModel, detailCategory)
                   if (detailTasks.length < 2) return null
-                  const fallback = EXPERIENCE_CATEGORY_DEFAULT_TASK[detailCategory]
-                  const previewTask = (currentTask && detailTasks.includes(currentTask as ExperienceTaskType))
-                    ? (currentTask as ExperienceTaskType)
-                    : (detailTasks.includes(fallback) ? fallback : detailTasks[0])
+                  // 与 handlePick 不带显式任务时的落点保持一致（modelEntryTask），否则预览显示
+                  // text_to_video、点过去却落 image_to_video（prd#980 视频类硬约束）
+                  const previewTask = modelEntryTask(detailModel, detailCategory, currentTask as ExperienceTaskType | undefined)
                   return (
                     <div className="pt-1">
                       <div className="text-xs text-mg-text-3 font-semibold mb-1.5">{t('modelsExperience.taskSwitchLabel')}</div>

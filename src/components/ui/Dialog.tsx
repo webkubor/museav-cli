@@ -56,7 +56,7 @@ const DialogContent = React.forwardRef<
         // max-height 走 --mg-dialog-max-height：0.10.0 起 = 90dvh，与原硬编码同值，#458 已验收行为不变
         // （0.9.0 那版是 min(720px, 100dvh-128px)，会把高弹窗压低，所以本次接入与依赖升级必须同步）。
         // padding 走 --mg-dialog-pad（= --mg-space-6 24px，与原 mg-panel-roomy 同值）。
-        "fixed left-[50%] top-[50%] z-[var(--mg-z-modal)] grid min-w-[var(--mg-dialog-min-width)] max-w-[var(--mg-dialog-max-width)] max-h-[var(--mg-dialog-max-height)] overflow-y-auto translate-x-[-50%] translate-y-[-50%] gap-[var(--mg-dialog-gap)] mg-float p-[var(--mg-dialog-pad)] rounded-[var(--mg-dialog-radius)] duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-1/2 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-1/2 focus:outline-none",
+        "fixed left-[50%] top-[50%] z-[var(--mg-z-modal)] grid min-w-[var(--mg-dialog-min-width)] max-w-[var(--mg-dialog-max-width)] max-h-[var(--mg-dialog-max-height)] overflow-y-auto translate-x-[-50%] translate-y-[-50%] gap-[var(--mg-dialog-gap)] border border-mg-border bg-mg-bg-3 p-[var(--mg-dialog-pad)] shadow-xl shadow-black/10 rounded-[var(--mg-dialog-radius)] duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-1/2 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-1/2 focus:outline-none",
         className
       )}
       {...props}

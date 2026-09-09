@@ -197,7 +197,7 @@
     "detail.title": "Model Detail",
     "detail": {
       "backToCatalog": "Back to models",
-      "notFound": "This model is not listed on this site",
+      "notFound": "This model does not exist or has been removed",
       "viewApiGuide": "View API integration guide",
       "relatedModels": "Related models",
       "limitedFree": "Free",
@@ -226,19 +226,9 @@
       "ruleDimOther": "Tiered pricing",
       "ruleRangeOther": "Range",
       "gradientFootnote": "Prices are tiered by context and output length; final billing follows actual metered usage.",
-      "mainSpec": "Main specs",
-      "notFoundHint": "It may have been removed, or it is only available on the other site.",
-      "notFoundCrossSite": "View on ModelGo.ai"
+      "mainSpec": "Main specs"
     },
     "error.loadDetail": "Failed to load model detail. Please try again.",
-    "discovery": {
-      "title": "Model Discovery",
-      "subtitle": "Compare performance, cost and speed across models by output type and task.",
-      "backToCatalog": "Back to Marketplace",
-      "entry": "Model Discovery",
-      "placeholder": "Analysis modules are being wired up.",
-      "backToDiscovery": "Back to Discovery"
-    },
     "outputModality": {
       "label": "Output modality",
       "all": "All"

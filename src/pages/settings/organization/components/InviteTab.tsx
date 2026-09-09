@@ -167,14 +167,14 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
           <div className="flex gap-3 flex-wrap items-center">
             <div className="flex items-center gap-2">
               <span className={fieldLabel}>{t('enterprise.invite.defaultRole')}</span>
-              <Select value={inviteRole} onChange={handleRoleChange} className="w-28" data-track="invitations:field_role">
+              <Select value={inviteRole} onChange={handleRoleChange} className="h-8 w-28 text-xs rounded-lg" data-track="invitations:field_role">
                 <Select.Option value="tenant_member">Member</Select.Option>
                 <Select.Option value="tenant_admin">Admin</Select.Option>
               </Select>
             </div>
             <div className="flex items-center gap-2">
               <span className={fieldLabel}>{t('enterprise.invite.expiry')}</span>
-              <Select value={String(expiresInHours)} onChange={(v) => setExpiresInHours(Number(v))} className="w-28">
+              <Select value={String(expiresInHours)} onChange={(v) => setExpiresInHours(Number(v))} className="h-8 w-28 text-xs rounded-lg">
                 <Select.Option value="24">{t('enterprise.invite.expiry24')}</Select.Option>
                 <Select.Option value="72">{t('enterprise.invite.expiry72')}</Select.Option>
                 <Select.Option value="168">{t('enterprise.invite.expiry168')}</Select.Option>
@@ -255,7 +255,7 @@ export function InviteTab({ tenantId }: { tenantId: string }) {
             </div>
             <div className="w-full md:w-56 space-y-1">
               <label className="text-xs font-bold text-mg-text-2 uppercase tracking-wider block">{t('enterprise.invite.targetWorkspace')}</label>
-              <Select value={targetWorkspaceId} onChange={setTargetWorkspaceId} className="w-full" data-track="invitations:field_workspace">
+              <Select value={targetWorkspaceId} onChange={setTargetWorkspaceId} className="h-9 text-xs rounded-lg" data-track="invitations:field_workspace">
                 <Select.Option value={NONE_WORKSPACE}>{t('enterprise.invite.targetWorkspaceNone')}</Select.Option>
                 {workspaces.map((ws) => (
                   <Select.Option key={ws.workspace_id} value={ws.workspace_id}>{ws.name}</Select.Option>

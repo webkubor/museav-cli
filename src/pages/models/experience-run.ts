@@ -16,7 +16,6 @@
  * 那部分是两页真正不同的地方，摊开写比参数化更好读。
  */
 import { getExperienceMessage, type ExperienceStatsEvent, type SendMediaMessageResult } from '@/services/experience-sessions'
-import { reportOnboardingStep } from '@/store/use-onboarding-store'
 import { trackEvent } from '@/lib/track'
 import {
   formatPlaygroundLatency,
@@ -53,13 +52,6 @@ export function trackModelRun(params: {
     },
     failed ? { result: 'fail', ...(errorCode ? { error_code: errorCode } : {}) } : { result: 'success' },
   )
-
-  // 新手指南第 2 步「选择模型并完成体验」：只认**成功**结果，进页面/选模型/失败重试都不算
-  // （规格 §7 表 + §12「体验失败不完成对应步骤」）。体验页与对比页共用本函数，所以挂在这里
-  // 而不是各自的 send 里，避免漏一条路径。
-  // ⚠️ evidenceId 用 modelId 是 Mock 阶段的替代：这一层拿不到体验运行结果 ID，
-  // 后端契约（store/use-onboarding-store.ts 末尾）要的是「成功的体验运行结果 ID」。
-  if (!failed) reportOnboardingStep('playground', 'playground_success', modelId)
 }
 
 /** stats 帧缺失时的本地兜底值（各页按自己的口径算好后传进来） */

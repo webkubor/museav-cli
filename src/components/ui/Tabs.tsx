@@ -5,14 +5,10 @@ import { cn } from "@/lib/utils"
 
 const Tabs = TabsPrimitive.Root
 
-// 两种变体都 max-w-full + overflow-x-auto：Tab 项 whitespace-nowrap 不可压缩，窄屏（移动端）
-// 下 Tab 总宽超过容器时改为横向滑动而不是溢出卡片边界（模型详情页「API 接入」协议 pills 与
-// 代码语言 underline Tab 在 375px 下都曾越出卡片）。滚动条用 no-scrollbar 隐藏，靠被裁切的
-// 末尾 Tab 提示可滑。
-const tabsListVariants = cva("select-none max-w-full overflow-x-auto no-scrollbar", {
+const tabsListVariants = cva("select-none", {
   variants: {
     variant: {
-      underline: "flex items-center justify-start border-b border-mg-border/60 w-full gap-6",
+      underline: "inline-flex items-center justify-start border-b border-mg-border/60 w-full gap-6",
       pills: "inline-flex items-center gap-1 bg-mg-fill-0 p-1 rounded-lg border border-mg-border",
     },
   },
@@ -20,7 +16,7 @@ const tabsListVariants = cva("select-none max-w-full overflow-x-auto no-scrollba
 })
 
 const tabsTriggerVariants = cva(
-  "inline-flex shrink-0 items-center justify-center whitespace-nowrap mg-text-body font-semibold transition-all duration-200 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 outline-none cursor-pointer",
+  "inline-flex items-center justify-center whitespace-nowrap mg-text-body font-semibold transition-all duration-200 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 outline-none cursor-pointer",
   {
     variants: {
       variant: {

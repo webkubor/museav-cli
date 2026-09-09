@@ -26,7 +26,6 @@ import {
 } from 'react-icons/lu'
 import type { IconType } from 'react-icons'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
-import { modelDetailPath } from '../model-detail-path'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { OverflowTip } from '@/components/ui/OverflowTip'
 import { Button } from '@/components/ui/Button'
@@ -38,8 +37,8 @@ import {
   PROTOCOL_LABEL_ZH, PROTOCOL_LABEL_EN, mergeProtocolLabels,
 } from '@/features/models/model-format'
 import { ExperienceTaskTags } from '@/features/models/components/ExperienceTaskTags'
-import { ModalityMark } from '@/features/models/components/ModalityMark'
 import { CardProtocolTags } from './CardProtocolTags'
+import { ModalityMark } from '@/features/models/components/ModalityMark'
 import { usePublicProtocolsStore } from '@/store/use-public-protocols-store'
 import { modelExperienceTasks, resolveModelCategory } from '../model-experience-data'
 import type { CatalogModelItem } from '@/types'
@@ -88,7 +87,7 @@ export function CatalogCard({
     isZh ? 'label' : 'label_en',
   )
 
-  const detailHref = modelDetailPath(model)
+  const detailHref = `/models/${model.slug || model.id}`
   const symbol = currencySymbol(model.pricing?.currency, isZh)
   const ctxValue = (model.context_length ?? 0) > 0 ? formatContextLength(model.context_length) : '—'
   // 传 vendor 才会剥「DeepSeek: DeepSeek V4 Pro」这类厂商前缀（原型卡片只写模型名，

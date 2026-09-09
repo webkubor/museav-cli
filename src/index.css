@@ -112,11 +112,3 @@ aside,
 .recharts-surface:focus-visible {
   outline: none;
 }
-
-/* 隐藏滚动条但保留滚动能力（横向 Tab 列、侧栏、对比弹窗列表）。
-   此前 DashboardSidebar / ModelsCompareModal 已在用 no-scrollbar 却没有任何定义，这里补齐。 */
-@utility no-scrollbar {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  &::-webkit-scrollbar { display: none; }
-}

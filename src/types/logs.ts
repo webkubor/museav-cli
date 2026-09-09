@@ -1,4 +1,3 @@
-/** 调用日志字段契约；路由：/logs。 */
 import type { Money } from './account'
 
 export interface HistogramBucket {
@@ -64,14 +63,6 @@ export interface CallLogItem {
   upstream_model: string
   path: string
   call_type: string
-  /** 调用类别；契约来源 qa#719，本地未实测。缺失按同步分支降级。 */
-  call_kind?: 'model_call' | 'async_task' | 'mcp_tool_call' | null
-  /** 调用模式；契约来源 qa#719，本地未实测。缺失时仍检查 call_kind。 */
-  call_mode?: 'sync' | 'async' | null
-  /** 异步任务 ID；契约来源 qa#719，本地未实测。缺失不伪造任务关联。 */
-  async_task_id?: string | null
-  /** 原有派生响应模式（如 blocking）；契约来源 qa#719，本地未实测。不用于异步判据。 */
-  response_mode?: string | null
   http_status: number
   tpot_ms: number
   /** 回退次数（原型 Fallback 卡）：后端 runtime_detail 内派生，无则 0 */

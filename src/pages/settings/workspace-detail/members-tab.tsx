@@ -229,7 +229,7 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
           <div className="p-3 space-y-2">
             <Input
               prefix={<LuSearch className="w-3.5 h-3.5 text-mg-text-3" />}
-              size="sm"
+              className="h-9 rounded-lg text-xs"
               placeholder={t('workspaces.detail.members.addSearchPlaceholder')}
               value={addSearch}
               onChange={(e) => setAddSearch(e.target.value)}

@@ -295,25 +295,6 @@ export interface CatalogRelatedModel {
   pricing_mode?: 'token' | 'per_call' | '' | string
   /** 每张/每次价（#852，恒下发；token 模型为 "0"）。单位渲染走 priceUnitSuffix(undefined, 'per_call')。 */
   per_call_price?: string
-  /**
-   * 以下六项是列表卡片同名字段在相关模型扁平结构下的镜像（shared/modelgo_prd#871，
-   * 后端 release-20260828-1 起下发）。此前 /related 是一份独立窄投影：没有媒体判别位、
-   * 没有档位价、价格取最低档且为折前价 —— Seedance 系相关模型条渲染成
-   * 「¥0 / ¥14 每M + 128K 上下文」而同页卡片是 ¥77（#861）。
-   *
-   * output_modalities 是媒体判别位：输出为 video/image/audio 的模型按 price_tiers
-   * 最高档渲染主价格（#853 口径）并隐藏上下文行；文本模型仍渲染 input/output_price。
-   * 老后端不下发时为 undefined → 退回文本形态（与升级前行为一致，不误伤）。
-   */
-  output_modalities?: string[]
-  /** 档位矩阵（与卡片 price_tiers 逐字同源）；普通每 M token 模型缺省。 */
-  price_tiers?: CatalogPriceTier[]
-  price_unit?: string
-  price_unit_en?: string
-  /** input_price / output_price 已是折后现价；promotion 只带角标文案与划线原价。 */
-  promotion?: CatalogPromotion | null
-  text_input_price?: string
-  text_output_price?: string
 }
 
 /** 相关模型。curated 标明来源（运营配置 vs 回退算法），两者渲染一致。 */

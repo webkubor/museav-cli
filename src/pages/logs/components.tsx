@@ -1,4 +1,3 @@
-/** 调用日志列表与筛选组件；路由：/logs。 */
 import { LuInbox, LuSearch } from 'react-icons/lu'
 import { currencySymbol, isZhLang } from '@/features/models/model-format'
 import type { ReactNode } from 'react'
@@ -22,7 +21,6 @@ import { cn } from '@/lib/utils'
 import type { CallLogItem } from '@/types'
 import { deriveLogStatus, isModelNotStarted } from './guardrail'
 import { TokenUsageCell } from '@/features/logs/TokenUsageCell'
-import { isAsyncCall } from './async-call'
 import { buildStatusMap } from './status-map'
 
 function formatMaybeDuration(ms: number | null | undefined) {
@@ -196,7 +194,7 @@ export function LogsTable({
               <TableCell>
                 {(() => {
                   const val = Number(row.cost.amount)
-                  const shown = isModelNotStarted(row) && !isAsyncCall(row) ? null : val > 0 ? row.cost.amount : null
+                  const shown = isModelNotStarted(row) ? null : val > 0 ? row.cost.amount : null
                   // 仅极小额(显示为「< 0.0001」的近似值)才 hover 提示精确原值，普通费用保持干净（需求方·细节）
                   const tiny = shown != null && val > 0 && val < 0.0001
                   const sym = currencySymbol(row.cost.currency, isZhLang())
@@ -210,16 +208,7 @@ export function LogsTable({
                 })()}
               </TableCell>
               <TableCell className="whitespace-nowrap">
-                {isAsyncCall(row) ? (
-                  <div className="min-w-0">
-                    <strong className="block text-mg-text-3">{t('logs.metrics.asyncNotCounted')}</strong>
-                    {row.duration_ms > 0 && (
-                      <span className="block font-mono tabular-nums mg-text-caption text-mg-text-3">
-                        {t('logs.detail.diagnostics.totalDuration')}: {formatMaybeDuration(row.duration_ms)}
-                      </span>
-                    )}
-                  </div>
-                ) : isModelNotStarted(row) ? (
+                {isModelNotStarted(row) ? (
                   <div className="min-w-0">
                     <strong className="block text-mg-text-3">—</strong>
                     <span className="block mg-text-caption text-mg-text-3">{t('logs.metrics.noResponse')}</span>

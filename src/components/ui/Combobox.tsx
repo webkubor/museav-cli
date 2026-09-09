@@ -4,17 +4,12 @@ import { IoChevronDown, IoCheckmark } from 'react-icons/io5'
 import { LuSearch } from 'react-icons/lu'
 import Popover from '@/components/ui/Popover'
 import { cn } from '@/lib/utils'
-import type { SelectSize } from '@/components/ui/Select'
 
 /**
  * 可搜索单选下拉（需求方#663：调用日志筛选框支持搜索）
  * 职责：视觉对齐 Select（触发器/选项样式同源 token），面板顶部带搜索框实时过滤选项。
  * 不基于 Radix Select 扩展：其 typeahead 会抢占面板内输入框键盘事件，且过滤卸载选中项后
  * SelectValue 会丢失回显文本，故用自研 Popover 组合实现。
- *
- * ── 尺寸即格式约束（2026-09-04 控件统一）──
- * 触发器与 ui/Select 同一套档位（.mg-select-trigger-{sm,md}）；面板内搜索行
- * 高度统一 --mg-control-h-sm(32px)、字号 mg-text-body(13px)，与全站面板内搜索同规格。
  */
 
 export interface ComboboxOption {
@@ -31,19 +26,12 @@ interface ComboboxProps {
   placeholder?: string
   disabled?: boolean
   className?: string
-  /** 尺寸档位：sm(32) 面板内 / md(40) 默认。与 ui/Select 同一套 token */
-  size?: SelectSize
   /** 埋点/可测性：透传到触发器（值 = 埋点 event key），供自动化定位 */
   'data-track'?: string
 }
 
-const selectSizeClasses: Record<SelectSize, string> = {
-  sm: 'mg-select-trigger-sm',
-  md: 'mg-select-trigger-md',
-}
-
 const triggerClass =
-  'mg-select-trigger flex w-full items-center justify-between rounded-[var(--mg-control-radius)] border border-mg-border bg-mg-fill-0 px-[var(--mg-control-pad-x-sm)] mg-text-body outline-none transition-all duration-200 text-mg-text-1 hover:border-brand-mid/50 focus:border-brand-base focus:shadow-[var(--mg-focus-ring)] disabled:cursor-not-allowed disabled:opacity-50'
+  'flex h-[var(--mg-control-h-md)] w-full items-center justify-between rounded-[var(--mg-control-radius)] border border-mg-border bg-mg-fill-0 px-[var(--mg-control-pad-x-sm)] mg-text-body outline-none transition-all duration-200 text-mg-text-1 hover:border-brand-mid/50 focus:border-brand-base focus:shadow-[var(--mg-focus-ring)] disabled:cursor-not-allowed disabled:opacity-50'
 
 function ComboboxPanel({
   options,
@@ -104,7 +92,7 @@ function ComboboxPanel({
           onChange={(event) => { setQuery(event.target.value); setActiveIndex(0) }}
           onKeyDown={handleKeyDown}
           placeholder={t('common.combobox.searchPlaceholder')}
-          className="min-h-[var(--mg-control-h-sm)] w-full bg-transparent mg-text-body text-mg-text-1 outline-none placeholder:text-mg-text-3/70"
+          className="h-7 w-full bg-transparent mg-text-body text-mg-text-1 outline-none placeholder:text-mg-text-3/70"
         />
       </div>
       <div ref={listRef} className="mt-1 max-h-60 overflow-y-auto">
@@ -143,14 +131,13 @@ const Combobox: React.FC<ComboboxProps> = ({
   placeholder,
   disabled,
   className,
-  size = 'md',
   'data-track': dataTrack,
 }) => {
   const wrapRef = React.useRef<HTMLDivElement>(null)
   const selected = options.find((option) => option.value === value)
 
   const triggerButton = (isDisabled?: boolean) => (
-    <button type="button" disabled={isDisabled} className={cn(triggerClass, selectSizeClasses[size], className)} data-track={dataTrack}>
+    <button type="button" disabled={isDisabled} className={cn(triggerClass, className)} data-track={dataTrack}>
       <span className={cn('line-clamp-1 text-left', !selected && 'text-mg-text-3/70')}>
         {selected?.label ?? placeholder}
       </span>

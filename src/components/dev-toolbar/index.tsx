@@ -1,14 +1,11 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { LuWrench } from 'react-icons/lu'
-import { Popover } from '@/components/ui/Popover'
 import type { PlatformConfig } from '@/services/platform'
 import { cn } from '@/lib/utils'
 import { useLangStore } from '@/store/use-brand-store'
-import { useAuthStore } from '@/store/auth'
-import { applyBrandTheme, applyTheme, saveBrandTheme, saveTheme } from '@/lib/theme'
-import { useActiveTheme } from '@/hooks/use-active-theme'
+import { applyBrandTheme, applyTheme, getSavedTheme, resolveTheme, saveBrandTheme, saveTheme } from '@/lib/theme'
 import type { Market, Lang } from '@/lib/market'
 
 interface SegOption<T extends string> {
@@ -45,7 +42,7 @@ function Seg<T extends string>({
 }
 
 /**
- * 开发者工具栏（仅 DEV 环境，顶栏内一枚扳手图标，点开才展开面板）。
+ * 开发者工具栏（仅 DEV 环境，悬浮底部居中）。
  * 切换国内/海外、语言——市场切换一把带动 logo / 品牌 / 主题色（主题色按 data-market 走 CSS）。
  * 另含黑/白主题快速切换，方便本地调样式。
  * 「开发菜单」跳转平台配置调试页（原侧栏「开发者菜单」移入此处，不侵入业务侧栏）。
@@ -58,9 +55,7 @@ export function DevToolbar() {
   const setMarket = useLangStore((s) => s.setMarket)
   const setLang = useLangStore((s) => s.setLang)
   const qc = useQueryClient()
-  const account = useAuthStore((s) => s.account)
-  // 读 DOM 真值而不是 localStorage：匿名 key 与用户 key 可能不一致，按钮高亮必须跟随实际渲染。
-  const theme = useActiveTheme()
+  const [theme, setThemeState] = useState<'light' | 'dark'>(() => resolveTheme(getSavedTheme()))
 
   const switchMarket = (m: Market) => {
     setMarket(m)
@@ -87,15 +82,13 @@ export function DevToolbar() {
   }
 
   const switchTheme = (next: 'light' | 'dark') => {
+    setThemeState(next)
     applyTheme(next)
-    // 必须带 account_id：saveTheme 不传 userId 只写匿名 key，而 DashboardHeader 的
-    // useEffect([account]) 会用 getUserTheme(account_id) 重新 applyTheme —— 用户 key
-    // 里的旧值会把这里的切换翻回去，表现成「点了没反应」。
-    saveTheme(next, account?.account_id)
+    saveTheme(next)
   }
 
-  const panel = (
-    <div className="flex items-center gap-2.5 px-3 py-2">
+  return (
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[var(--mg-z-devtool)] flex items-center gap-3 px-4 py-2 rounded-full bg-mg-bg-2 backdrop-blur border border-mg-border shadow-lg shadow-black/5 select-none">
       <Seg
         value={theme}
         options={[
@@ -122,46 +115,13 @@ export function DevToolbar() {
         onChange={switchLang}
       />
       <div className="h-4 w-px bg-mg-border" />
-      {/* 当前分支：核对「页面上跑的是哪个分支的产物」。CI 上取自 Jenkins 注入的 GIT_BRANCH，
-          本地取 git rev-parse；dev server 只在启动时求值，切分支要重启才更新（见 vite.config.ts）。 */}
-      {__BUILD_BRANCH__ && (
-        <span
-          title={t('common.devToolbar.branch')}
-          className="whitespace-nowrap rounded-full bg-mg-fill-0 px-3 py-1 font-mono text-xs font-bold text-mg-text-2"
-        >
-          {__BUILD_BRANCH__}
-        </span>
-      )}
       <button
         type="button"
         onClick={() => navigate('/dev-config')}
-        className="whitespace-nowrap rounded-full bg-mg-fill-0 px-3 py-1 text-xs font-bold text-mg-text-2 transition-colors hover:text-mg-text-1"
+        className="rounded-full bg-mg-fill-0 px-3 py-1 text-xs font-bold text-mg-text-2 transition-colors hover:text-mg-text-1"
       >
         {t('common.devToolbar.menu')}
       </button>
-    </div>
-  )
-
-  /* 只在顶栏占一枚 36px 图标，展开的面板走 Popover 浮层。
-     历史：先是 fixed 吸底盖住页面图表 → 挪右下角又和智能助手悬浮球撞 → 平铺进顶栏后
-     宽 378px，在 lg~1230px 区间把「快速接入」挤到只剩 39px、文字全没（2026-09-03 实测）。
-     开发工具不该跟产品内容抢横向空间，收成图标后无论多窄都只占一枚按钮。 */
-  return (
-    <div className="hidden lg:block w-9 shrink-0 select-none">
-      <Popover
-        position="bottom"
-        content={panel}
-        trigger={
-          <button
-            type="button"
-            title={t('common.devToolbar.title')}
-            aria-label={t('common.devToolbar.title')}
-            className="inline-flex h-8 w-9 items-center justify-center rounded-full border border-mg-border text-mg-text-3 transition-colors hover:text-mg-text-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-base/40"
-          >
-            <LuWrench size={14} />
-          </button>
-        }
-      />
     </div>
   )
 }

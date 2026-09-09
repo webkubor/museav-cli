@@ -227,7 +227,9 @@
       "noData": "暂无数据",
       "noMatchModel": "未找到匹配模型",
       "noModelUnderFilter": "当前筛选条件下没有模型",
-      "noMetricData": "暂无该指标的数据"
+      "noMetricData": "暂无该指标的数据",
+      "notOnThisSite": "该模型未在本站上架",
+      "onOtherSite": "它接在 {{site}}，当前站没有它的详情页"
     },
     "a11y": {
       "modality": "模型模态",
@@ -319,9 +321,5 @@
       "cacheHit": "缓存命中",
       "cacheWrite": "缓存写入"
     }
-  },
-  "empty": {
-    "notOnThisSite": "该模型未在本站上架",
-    "onOtherSite": "它接在 {{site}}，当前站没有它的详情页"
   }
 }

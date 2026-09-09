@@ -227,7 +227,9 @@
       "noData": "No data",
       "noMatchModel": "No matching models",
       "noModelUnderFilter": "No models match the current filters",
-      "noMetricData": "No data for this metric"
+      "noMetricData": "No data for this metric",
+      "notOnThisSite": "Not listed on this site",
+      "onOtherSite": "It is available on {{site}}; no detail page here"
     },
     "a11y": {
       "modality": "Model modality",
@@ -319,9 +321,5 @@
       "cacheHit": "Cache hit",
       "cacheWrite": "Cache write"
     }
-  },
-  "empty": {
-    "notOnThisSite": "Not listed on this site",
-    "onOtherSite": "It is available on {{site}}; no detail page here"
   }
 }

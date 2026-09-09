@@ -72,14 +72,16 @@
 }
 
 /* 二级任务 + 范围筛选。这行始终渲染：它的 margin-bottom 是与首个卡片之间
-   唯一的间距来源，Agent 模态下若整行不渲染，tab 会直接贴死卡片。 */
+   唯一的间距来源，Agent 模态下若整行不渲染，tab 会直接贴死卡片。
+   min-height 对齐 underline 任务 tabs 的 49px：Agent 模态左侧任务 tabs 不渲染，
+   行内只剩 44px 的范围 pills，若不锁高，切模态时下方内容会随行高 49↔44 微跳 5px。 */
 .model-discovery-taskbar {
   align-items: center;
   display: flex;
   gap: 12px;
   justify-content: space-between;
   margin: 12px 0 14px;
-  min-height: 30px;
+  min-height: 49px;
 }
 
 .model-discovery-presets,

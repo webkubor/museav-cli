@@ -1,0 +1,42 @@
+/**
+ * 图表 tooltip 外壳（散点 / 柱图 / 趋势共用）与图表内空态。
+ *
+ * discovery.css 的分片之一。入口按顺序 @import，**顺序即层叠顺序**。
+ * 再拆分请用选择器锚点定位，不要用行号（见入口文件里的说明）。
+ */
+
+/* ── 图表 tooltip ───────────────────────────────────────────
+   三张图共用一份：Recharts 的 <Tooltip content> 渲染进图表容器，位置由它自己算，
+   不再需要原先那三套 `top: clamp(...)` / `nth-child` 的手工避让规则。 */
+/* 表面（底色/描边/模糊/阴影）全部交给 .mg-float —— 与全站浮层同一套玻璃，
+   这里只留排布与圆角。别在这里重写 background：--panel 是 --mg-bg-0，
+   已并入玻璃系统是半透明的，没有 backdrop-filter 兜着就是漏字。 */
+.model-discovery-chart-tooltip {
+  border-radius: var(--mg-radius-sm);
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 9px 11px;
+}
+
+.model-discovery-chart-tooltip strong {
+  align-items: center;
+  color: var(--text);
+  display: flex;
+  font-size: var(--discovery-fs-body);
+  gap: 6px;
+}
+
+.model-discovery-chart-tooltip span,
+.model-discovery-chart-tooltip em {
+  color: var(--text-tertiary);
+  font-size: var(--discovery-fs-micro);
+  font-style: normal;
+  line-height: 1.35;
+}
+
+.model-discovery-chart-tooltip > b {
+  color: var(--text);
+  font-size: var(--discovery-fs-title);
+  font-variant-numeric: tabular-nums;
+}

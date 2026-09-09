@@ -244,7 +244,7 @@ function ScopeSection({
         <div className="flex flex-wrap items-center gap-2">
           <Input
             variant="search"
-            prefix={<LuSearch className="w-3.5 h-3.5" />}
+            prefix={<LuSearch className="w-4 h-4" />}
             placeholder={t('guardrails.table.searchPlaceholder')}
             aria-label={t('guardrails.table.searchAria', { title })}
             className="w-56"

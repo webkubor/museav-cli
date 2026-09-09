@@ -9,11 +9,18 @@ export function InfoTip({
   text,
   className,
   side = 'top',
+  align = 'center',
 }: {
   text: string
   className?: string
   /** 气泡方位：默认 top */
   side?: 'top' | 'bottom'
+  /**
+   * 气泡横向对齐：默认 center（相对触发器居中）。
+   * 触发器贴近视口/容器右边缘时用 'end' 右对齐，否则居中气泡的右半边会溢出，
+   * 把整页撑出横向滚动条（模型发现页最右列摘要卡实测溢出 26px）。
+   */
+  align?: 'center' | 'end'
 }) {
   return (
     <span className={cn('group relative inline-flex align-middle', className)}>
@@ -31,8 +38,10 @@ export function InfoTip({
       <span
         role="tooltip"
         className={cn(
-          'pointer-events-none absolute left-1/2 z-[var(--mg-z-tooltip)] w-max max-w-[260px] -translate-x-1/2 rounded-[var(--mg-tooltip-radius)] border border-mg-border bg-mg-bg-3 px-[var(--mg-tooltip-pad-x)] py-[var(--mg-tooltip-pad-y)] text-left mg-text-caption font-medium leading-snug text-mg-text-2 opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100',
+          // 表面统一走 mg-float（同 Popover / Dialog 一档玻璃），不再单写 bg-mg-bg-3 + shadow-lg
+          'pointer-events-none absolute z-[var(--mg-z-tooltip)] w-max max-w-[260px] rounded-[var(--mg-tooltip-radius)] mg-float px-[var(--mg-tooltip-pad-x)] py-[var(--mg-tooltip-pad-y)] text-left mg-text-caption font-medium leading-snug text-mg-text-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100',
           side === 'top' ? 'bottom-6' : 'top-6',
+          align === 'center' ? 'left-1/2 -translate-x-1/2' : 'right-0',
         )}
       >
         {text}

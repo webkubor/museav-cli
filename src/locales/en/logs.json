@@ -227,6 +227,7 @@
     "metrics": {
       "notStarted": "Not sent",
       "noResponse": "No response sent",
+      "asyncNotCounted": "Metrics are not yet available for async tasks",
       "noTokens": "No tokens"
     },
     "guardrail": {

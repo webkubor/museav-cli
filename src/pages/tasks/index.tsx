@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import Select from '@/components/ui/Select'
+import { Input } from '@/components/ui/Input'
 import {
   Table,
   TableBody,
@@ -218,32 +219,32 @@ export function AsyncTasksPanel({ view, currentAccountId, initialTaskId, refresh
     <div className="space-y-4">
       {/* 筛选区白卡：与同步调用一致的卡片底色/容器（需求方#166），不再让筛选裸露在页面灰底上 */}
       <section className="space-y-4 rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-md)]">
-      {/* 筛选栏（记录类型=异步任务：首屏筛选 搜索/类型/状态 + 右侧计数；刷新按钮在页头） */}
+      {/* 筛选栏（记录类型=异步任务：首屏筛选 搜索/类型/状态 + 右侧计数；刷新按钮在页头）
+          2026-09-04 控件统一：搜索/下拉全站同一套组件与档位，不再手写 input + 绝对定位图标 */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative">
-          <LuSearch size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-mg-text-3 pointer-events-none" />
-          <input
-            value={search}
-            onChange={(e) => handleSearch(e.target.value)}
-            placeholder={t('filters.searchPlaceholder')}
-            className="mg-control-md w-60 rounded-lg border border-mg-border bg-mg-fill-0 pl-8 pr-3 mg-text-body focus:border-brand-base focus:outline-none focus:ring-1 focus:ring-brand-glow/30 text-mg-text-1 placeholder:text-mg-text-3"
-          />
-        </div>
+        <Input
+          variant="search"
+          prefix={<LuSearch className="w-4 h-4" />}
+          value={search}
+          onChange={(e) => handleSearch(e.target.value)}
+          placeholder={t('filters.searchPlaceholder')}
+          className="w-60"
+        />
 
-        <Select value={presetFilter} onChange={handlePreset} className="mg-control-md w-32 mg-text-body">
+        <Select value={presetFilter} onChange={handlePreset} className="w-32">
           {presetOptions.map((option) => (
             <Select.Option key={option.value} value={option.value}>{option.label}</Select.Option>
           ))}
         </Select>
 
-        <Select value={kindFilter} onChange={handleKind} className="mg-control-md w-32 mg-text-body">
+        <Select value={kindFilter} onChange={handleKind} className="w-32">
           <Select.Option value="all">{t('filters.allKinds')}</Select.Option>
           <Select.Option value="video">{t('kind.video')}</Select.Option>
           <Select.Option value="image">{t('kind.image')}</Select.Option>
           <Select.Option value="audio">{t('kind.audio')}</Select.Option>
         </Select>
 
-        <Select value={statusFilter} onChange={handleStatus} className="mg-control-md w-32 mg-text-body">
+        <Select value={statusFilter} onChange={handleStatus} className="w-32">
           <Select.Option value="all">{t('filters.allStatuses')}</Select.Option>
           <Select.Option value="queued">{t('status.queued')}</Select.Option>
           <Select.Option value="running">{t('status.running')}</Select.Option>

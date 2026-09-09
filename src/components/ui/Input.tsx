@@ -2,10 +2,23 @@
  * 极简现代高颜值 Input 组件
  * 职责：提供高度自适应、带 Focus 品牌环发光的标准 Input，高阶支持前缀与后缀元素
  * 依赖：cn 工具函数
+ *
+ * ── 尺寸即格式约束（2026-09-04 控件统一）──────────────────────────────────
+ * size 是高度/字号/图标/内距的**成套档位**（同 Button 的 size 体系）：
+ *   sm(32px) 面板内搜索（下拉面板/侧栏/弹窗内）
+ *   md(40px) 默认；页面工具栏的搜索/筛选
+ *   lg(48px) 公共主搜索（模型广场 hero 搜索）
+ * 高度由 components.css 的 .modern-input-{size}（未分层 CSS + min-height）钉死，
+ * 页面传 h-8/h-9 等高度类**不会**生效——要改尺寸只能传 size。
+ * 字号一律 mg-text-body(13px)：内层 input 自带 mg-text-body，text-xs 等字号类
+ * 覆盖 wrapper 也不影响正文。禁止在页面给本组件加高度/字号/圆角覆盖类
+ * （ui-guard BLOCK 11 拦截），要例外用 ui-guard-ignore 并写理由。
  */
 
 import * as React from "react"
 import { cn } from "@/lib/utils"
+
+export type InputSize = "sm" | "md" | "lg"
 
 export interface InputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'prefix' | 'onChange' | 'size' | 'onKeyDown'> {
@@ -13,6 +26,8 @@ export interface InputProps
   suffix?: React.ReactNode
   mode?: string // 兼容 Semi UI 的 mode 属性 (如 mode="password")
   variant?: "default" | "search" // 样式变体类型
+  /** 尺寸档位：sm(32) 面板内 / md(40) 工具栏默认 / lg(48) 公共主搜索。高度+内距成套，页面不可覆盖 */
+  size?: InputSize
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
   onEnterPress?: (e: React.KeyboardEvent<HTMLInputElement>) => void // 兼容 Semi UI 的回车事件属性
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void
@@ -24,7 +39,7 @@ export interface InputProps
  * 统一的高阶 Input 输入组件
  */
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, prefix, suffix, mode, variant, onChange, onEnterPress, onKeyDown, onBlur, onClick, error, success, ...props }, ref) => {
+  ({ className, type, prefix, suffix, mode, variant, size = "md", onChange, onEnterPress, onKeyDown, onBlur, onClick, error, success, ...props }, ref) => {
     // 智能属性映射：mode="password" 自动解析为 type="password"
     const resolvedType = type || (mode === "password" ? "password" : "text")
     // date/datetime/time 等原生控件默认只有点日历小图标才弹选择器，点输入框文字区不弹。
@@ -34,6 +49,11 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const variantClasses = variant === "search"
       ? "modern-input-search rounded-full mg-flow-input"
       : ""
+    const sizeClasses = size === "sm"
+      ? "modern-input-sm"
+      : size === "lg"
+        ? "modern-input-lg"
+        : ""
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       if (resolvedType === 'email') {
@@ -80,6 +100,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       <div
         className={cn(
           "modern-input-wrapper modern-input-field flex items-center gap-2",
+          sizeClasses,
           variantClasses,
           error && "is-error",
           success && "is-success",

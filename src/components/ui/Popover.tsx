@@ -102,10 +102,12 @@ export const Popover: React.FC<PopoverProps> = ({
           className={cn(
             // pointer-events-auto: Radix Dialog(modal) 打开时会把 body 设为 pointer-events:none，
             // 而本组件 portal 到 body，必须显式恢复，否则弹层内（如日期选择）全部无法点击
-            // 不透明实底：bg-mg-bg-0 对应 --mg-surface 已并入玻璃系统（暗色下 color-mix 到 7% 透明），
-            // 换成类名并不能换掉透明度；bg-mg-bg-2 对应 --mg-surface-2，语义即「悬浮卡片 / Dropdown」，
-            // 两套主题都是实色 hex，下拉面板必须完整遮挡背景（需求方#504，同源#449）
-            "pointer-events-auto mg-panel rounded-md bg-mg-bg-2 border border-mg-border shadow-xl select-none",
+            // 表面走 mg-float（磨砂玻璃 + 品牌微染 + 微光）。
+            // 「下拉面板必须完整遮挡背景」这条结论（需求方#504，同源#449）继续有效，只是实现方式变了：
+            // 原先靠 bg-mg-bg-2 这种实色 hex 顶住，代价是浮层和玻璃画布看着是两套语言；
+            // 现在靠 --mg-float-opacity(92%/深色90%) + 24px 模糊顶住 —— 遮挡力不降，质感回来。
+            // 不能退回 bg-mg-bg-0：它对应 --mg-surface，已并入玻璃系统（深色下只有白 7%），会透字。
+            "pointer-events-auto mg-float mg-panel rounded-md select-none",
             "animate-in zoom-in-95 fade-in-0 duration-150",
             className
           )}

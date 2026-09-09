@@ -7,7 +7,20 @@ import { cn } from "@/lib/utils"
 /**
  * 现代高颜值 Select 选择器组件 (基于 Radix UI Select Primitive)
  * 职责：替代原有的 Select 组件，支持优雅的定位、带品牌轮廓高亮的获焦边框以及平滑渐变
+ *
+ * ── 尺寸即格式约束（2026-09-04 控件统一，同 Button/Input 的 size 体系）────────
+ * size 档位钉高度与图标：sm(32px) 面板内、md(40px) 默认（页面工具栏）。
+ * 高度写在 components.css 的 .mg-select-trigger-{size}（未分层 CSS），页面传
+ * h-8/h-9 等高度类不会生效——要改尺寸只能传 size（ui-guard BLOCK 11 拦截覆盖类）。
+ * 字号一律 mg-text-body(13px)，不随档位变。
  */
+
+export type SelectSize = "sm" | "md"
+
+const selectSizeClasses: Record<SelectSize, string> = {
+  sm: "mg-select-trigger-sm",
+  md: "mg-select-trigger-md",
+}
 
 const SelectRoot = SelectPrimitive.Root
 
@@ -17,12 +30,13 @@ const SelectValue = SelectPrimitive.Value
 
 const SelectTrigger = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>
->(({ className, children, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger> & { triggerSize?: SelectSize }
+>(({ className, children, triggerSize = "md", ...props }, ref) => (
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-[var(--mg-control-h-md)] w-full items-center justify-between rounded-[var(--mg-control-radius)] border border-mg-border bg-mg-fill-0 px-[var(--mg-control-pad-x-sm)] mg-text-body outline-none transition-all duration-200 placeholder:text-mg-text-3/70 text-mg-text-1 hover:border-brand-mid/50 focus:border-brand-base focus:shadow-[var(--mg-focus-ring)] disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+      "mg-select-trigger flex w-full items-center justify-between rounded-[var(--mg-control-radius)] border border-mg-border bg-mg-fill-0 px-[var(--mg-control-pad-x-sm)] mg-text-body outline-none transition-all duration-200 placeholder:text-mg-text-3/70 text-mg-text-1 hover:border-brand-mid/50 focus:border-brand-base focus:shadow-[var(--mg-focus-ring)] disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+      selectSizeClasses[triggerSize],
       className
     )}
     {...props}
@@ -78,7 +92,8 @@ const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-        "relative z-[var(--mg-z-dropdown)] max-h-96 min-w-[8rem] overflow-hidden rounded-[var(--mg-popover-radius)] border border-mg-border bg-mg-bg-2 text-mg-text-1 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+        // 表面统一走 mg-float（磨砂玻璃 + 品牌微染 + 微光），不再各自写 bg-mg-bg-2 + shadow-lg
+        "relative z-[var(--mg-z-dropdown)] max-h-96 min-w-[8rem] overflow-hidden rounded-[var(--mg-popover-radius)] mg-float text-mg-text-1 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
         position === "popper" &&
           "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
         className
@@ -159,6 +174,8 @@ interface SelectProps {
   className?: string
   children?: React.ReactNode
   emptyText?: string
+  /** 尺寸档位：sm(32) 面板内 / md(40) 默认。高度+图标成套走 token，页面类覆盖不生效 */
+  size?: SelectSize
   /** 埋点/可测性：透传到触发器（值 = 埋点 event key），供自动化定位 */
   'data-track'?: string
 }
@@ -167,13 +184,13 @@ interface SelectComponent extends React.FC<SelectProps> {
   Option: typeof SelectItem
 }
 
-const Select = (({ value, defaultValue, onChange, placeholder, disabled, className, children, emptyText, 'data-track': dataTrack }: SelectProps) => {
+const Select = (({ value, defaultValue, onChange, placeholder, disabled, className, children, emptyText, size = "md", 'data-track': dataTrack }: SelectProps) => {
   const { t } = useTranslation()
   const isEmpty = React.Children.count(children) === 0
   const resolvedEmptyText = emptyText ?? t('common.select.empty')
   return (
     <SelectRoot value={value} defaultValue={defaultValue} onValueChange={onChange} disabled={disabled || isEmpty}>
-      <SelectTrigger className={className} data-track={dataTrack}>
+      <SelectTrigger className={className} triggerSize={size} data-track={dataTrack}>
         <SelectValue placeholder={isEmpty ? resolvedEmptyText : placeholder} />
       </SelectTrigger>
       {!isEmpty && (

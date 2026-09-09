@@ -15,6 +15,7 @@ import { appendCrossSiteParams } from '@/lib/cross-site-link'
 import { trackEvent } from '@/lib/track'
 import { useTrackContext } from '@/hooks/use-track-context'
 import { useAuthStore } from '@/store/auth'
+import { reportOnboardingStep } from '@/store/use-onboarding-store'
 import { LocaleNamespaces } from '@/components/i18n/LocaleNamespaces'
 import { CONNECT_ACTIONS, buildConnectSnippets, getConnectAction, MGC_CLIENT_OPTIONS, connectActionLabel, deriveRegionFromBaseUrl, buildMgcCommand, type ConnectParam } from './constants'
 import { buildConnectModelOptions, pickConnectModels } from './connect-models'
@@ -35,7 +36,7 @@ type Props = {
 /**
  * 本弹窗的文案全在 `apiKeys` 语言包里，而它是**路由级懒加载**的（App.tsx CONSOLE_NAMESPACES
  * 只给 api-keys / models 系路由加载）。但弹窗有三个渲染点，两个不在这些路由里：
- * 全局顶栏 DashboardHeader、总览页 QuickStartSection —— 在那些页面点开，文案会整片退化成
+ * 全局顶栏 DashboardHeader、新手指南气泡第 4 步 —— 在那些位置点开，文案会整片退化成
  * `apiKeys.connectModal.title` 这样的 raw key（需求方 shared/modelgo_prd#375，国际站生产复现）。
  *
  * 所以 namespace 由弹窗自己兜底，而不是要求每个调用方记得在路由上挂 `apiKeys`——调用点会越加越多，
@@ -404,7 +405,12 @@ function ConnectModalContent({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
                   variant="labeled"
                   buttonVariant="brand"
                   label={t('apiKeys.connectModal.copyCommand')}
-                  onCopied={() => trackEvent('copy_connect_params', { ...trackCtx, method: 'mgc' })}
+                  onCopied={() => {
+                    trackEvent('copy_connect_params', { ...trackCtx, method: 'mgc' })
+                    // 新手指南第 4 步：只认「复制完整配置/代码」，单独复制 Key / 模型 / BaseUrl
+                    // 都不算（规格 §7 表 + §7.3「打开弹窗、切换方式、选模型本身不完成」）
+                    reportOnboardingStep('quick_connect', 'quick_connect_copied', 'mgc')
+                  }}
                 />
               </div>
             </div>
@@ -465,7 +471,11 @@ function ConnectModalContent({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
                         }}
                         variant="labeled"
                         label={item.copyLabel}
-                        onCopied={() => trackEvent('copy_connect_params', { ...trackCtx, method: item.id })}
+                        onCopied={() => {
+                          trackEvent('copy_connect_params', { ...trackCtx, method: item.id })
+                          // 新手指南第 4 步：这条复制的是含模型与 Key 的完整接入配置
+                          reportOnboardingStep('quick_connect', 'quick_connect_copied', item.id)
+                        }}
                       />
                     </div>
                   </div>

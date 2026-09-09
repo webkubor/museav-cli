@@ -3,6 +3,7 @@ import { LuChevronLeft, LuChevronRight } from 'react-icons/lu'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { SidebarPromoCarousel } from './SidebarPromoCarousel'
+import { OnboardingGuideSidebarEntry } from '@/features/onboarding/OnboardingGuideEntry'
 import { WorkspaceSwitcher } from './WorkspaceSwitcher'
 import type { NavItem, NavGroup } from '@/config/nav'
 
@@ -259,8 +260,13 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         ))}
       </div>
 
-      {/* 底部促销轮播 */}
-      <SidebarPromoCarousel collapsed={collapsed} />
+      {/* 侧栏底部模块（新手指南规格 §5.1）：活动运营位 + 新手指南同属一个模块，
+          顶部一条细分隔线与上方导航分区。它在可滚动导航区之外，所以导航内容再长
+          也压不到它，也不跟着滚。 */}
+      <div className="shrink-0 border-t border-mg-border/60 bg-[var(--mg-surface-3)] pt-3 dark:bg-mg-bg-0">
+        <SidebarPromoCarousel collapsed={collapsed} />
+        <OnboardingGuideSidebarEntry collapsed={collapsed} />
+      </div>
     </aside>
   )
 }

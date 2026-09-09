@@ -23,7 +23,6 @@ import { useMarket } from '@/hooks/useMarket'
 import { getMarketConfig } from '@/config/market'
 import { useTenantRole } from '@/hooks/use-tenant-role'
 import { useDebouncedValue } from '@/hooks/use-debounced-value'
-import { reportOnboardingStep } from '@/store/use-onboarding-store'
 import { trackEvent, trackPageView } from '@/lib/track'
 import { SegmentedToggle } from '@/features/dashboard/workbench/SegmentedToggle'
 import type { CallLogListParams } from '@/interfaces/logs'
@@ -404,22 +403,6 @@ export default function LogsPage() {
 
   // Request ID 精确检索命中唯一 → 自动展开详情（每个检索值只自动开一次；用户手动关掉后不再弹）
   const autoOpenedRef = useRef<string | null>(null)
-  /**
-   * 新手指南第 5 步「完成 API 调用并查看日志」。
-   *
-   * 规格 §7.2 要求「成功调用 + 打开该 Request 对应的日志详情」，且**只打开列表不算**。
-   * ⚠️ 与原型的实现方式不同，这是刻意的：原型没有真网关，靠「复制快速接入配置」凭空
-   * 生成一条 Mock 成功 Request 塞进日志列表，用户再点开它。控制台有真实日志接口，
-   * 往真表里插一条并不存在的调用（还带假花费）会让日志页对不上账 —— 那不是 Mock UI，
-   * 是伪造数据。所以证据换成**用户自己那次真实成功调用的日志详情被打开**：
-   * 语义与 §7.2 一致（成功 Request + 看了它的详情），且没有一条假数据。
-   * request_id 就是天然的 evidenceId，后端契约要的也是它。
-   */
-  function reportOnboardingLogOpened(row: CallLogItem) {
-    if (row.status !== 'succeeded') return
-    reportOnboardingStep('request_log', 'request_log_opened', row.request_id)
-  }
-
   useEffect(() => {
     if (!isRequestIdSearch || !data) return
     const list = data?.items ?? []
@@ -428,7 +411,6 @@ export default function LogsPage() {
       setSelectedLog(list[0])
       setPayloadView('parsed')
       trackEvent('logs_detail_view', { record_type: 'sync', source: 'request_id_autoopen' })
-      reportOnboardingLogOpened(list[0])
     }
   }, [data, isRequestIdSearch, debouncedSearch])
 
@@ -446,7 +428,6 @@ export default function LogsPage() {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- URL 带 request_id 时数据到位后一次性打开详情（urlAutoOpenedRef 幂等）
       setPayloadView('parsed')
       trackEvent('logs_detail_view', { record_type: 'sync', source: 'url_request_id' })
-      reportOnboardingLogOpened(match)
     }
   }, [data, urlRequestId])
 
@@ -522,9 +503,7 @@ export default function LogsPage() {
     setSelectedLog(row)
     setPayloadView('parsed')
     trackEvent('logs_detail_view', { record_type: 'sync', status: row.status })
-    reportOnboardingLogOpened(row)
   }
-
 
   return (
     // space-y-6（非 flex gap）：让 PageHeader 的 mb-6 与容器间距折叠为单档 24px，

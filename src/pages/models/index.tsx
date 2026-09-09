@@ -48,7 +48,6 @@ export default function ModelsPage() {
     sessionStats,
     isBalanceZero,
     isBlockedByBalance,
-    freeModelGate,
     composerEstimatedSpend,
     historyCollapsed,
     setHistoryCollapsed,
@@ -166,7 +165,6 @@ export default function ModelsPage() {
                 isSelectedModelOffline={isSelectedModelOffline}
                 needsFileTask={needsFileTask}
                 isBlockedByBalance={isBlockedByBalance}
-                freeModelGate={freeModelGate}
                 isStreaming={isStreaming}
                 allowedAttachmentKinds={allowedAttachmentKinds}
                 attachment={attachment}

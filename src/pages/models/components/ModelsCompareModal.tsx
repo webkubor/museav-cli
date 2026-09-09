@@ -305,10 +305,9 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
             {/* 搜索框 */}
             <div className="p-3 border-b border-mg-border shrink-0">
               <Input
-                variant="search"
                 prefix={<LuSearch size={14} className="text-mg-text-3" />}
                 placeholder={t('modelsCompare.searchDetailed')}
-                size="sm"
+                className="h-8 text-xs rounded-lg bg-mg-fill-0"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus

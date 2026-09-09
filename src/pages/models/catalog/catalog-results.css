@@ -8,7 +8,7 @@
   min-height: var(--mg-control-height-sm, 32px);
   border: 1px solid var(--mg-border); border-radius: var(--radius-full);
   background: var(--plaza-input-bg);
-  font-size: var(--mg-font-size-caption); font-weight: 500; color: var(--mg-text-2); cursor: pointer;
+  font-size: 12.5px; font-weight: 500; color: var(--mg-text-2); cursor: pointer;
   transition: background var(--mg-duration-fast) ease, color var(--mg-duration-fast) ease, border-color var(--mg-duration-fast) ease;
 }
 .mg-output-tabs > button:hover { background: var(--plaza-row-hover-bg); color: var(--mg-text-1); }
@@ -16,7 +16,7 @@
   background: var(--plaza-row-active-bg); border-color: transparent;
   color: var(--plaza-row-active-fg); font-weight: 700;
 }
-.mg-output-tabs > button > i { font-style: normal; font-size: var(--mg-font-size-meta); color: var(--mg-text-4); }
+.mg-output-tabs > button > i { font-style: normal; font-size: 11px; color: var(--mg-text-4); }
 .mg-output-tabs > button.is-active > i { color: var(--plaza-row-active-fg); }
 /* 结果区占满整行（已移除模型洞察侧栏） */
 .models-catalog-layout {
@@ -39,7 +39,7 @@
 .models-catalog-results-head h2 {
   margin: 0;
   color: var(--mg-text-1);
-  font-size: var(--mg-font-size-value);
+  font-size: 16px;
   font-weight: 900;
   line-height: 1.2;
 }
@@ -47,7 +47,7 @@
 .models-catalog-results-head p {
   margin: 5px 0 0;
   color: var(--mg-text-3);
-  font-size: var(--mg-font-size-caption);
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -60,7 +60,7 @@
   border-radius: var(--mg-radius-pill);
   background: var(--mg-fill-0);
   color: var(--mg-text-2);
-  font-size: var(--mg-font-size-caption);
+  font-size: 12px;
   font-weight: 800;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -109,7 +109,7 @@
 .catalog-insight-section h3 {
   margin: 0 0 10px;
   color: var(--mg-text-1);
-  font-size: var(--mg-font-size-body);
+  font-size: 13px;
   font-weight: 900;
   line-height: 1.2;
 }

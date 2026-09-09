@@ -43,16 +43,19 @@ function MessageBubble({ msg }: { msg: Message }) {
   const isUser = msg.role === 'user'
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: isUser ? 'flex-end' : 'flex-start', marginBottom: 16 }}>
-      <div
-        className={cn(
-          'max-w-[80%] px-3.5 py-2.5 text-[13px] leading-relaxed break-words border',
-          isUser ? 'bg-mg-fill-1 border-mg-fill-1 whitespace-pre-wrap' : 'bg-mg-fill-0 border-mg-border',
-          'text-mg-text-1',
-          msg.isError && 'opacity-70',
-        )}
-        // 气泡的不对称圆角（指向发言方的那个小角）没有对应 token 档位，留内联
-        style={{ borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px' }}
-      >
+      <div style={{
+        maxWidth: '80%',
+        padding: '10px 14px',
+        borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+        background: isUser ? 'var(--mg-fill-1)' : 'var(--mg-fill-0)',
+        color: 'var(--mg-text-1)',
+        fontSize: 13,
+        lineHeight: '1.6',
+        wordBreak: 'break-word',
+        whiteSpace: isUser ? 'pre-wrap' : undefined,
+        border: isUser ? '1px solid var(--mg-fill-1)' : '1px solid var(--mg-border)',
+        opacity: msg.isError ? 0.7 : 1,
+      }}>
         {msg.content
           ? (isUser
             ? msg.content
@@ -72,11 +75,12 @@ function ThinkingDots() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '8px 14px', marginBottom: 16 }}>
       {[0, 1, 2].map((i) => (
-        <span
-          key={i}
-          className="w-1.5 h-1.5 rounded-full bg-mg-fill-2 opacity-60"
-          style={{ animation: `cs-bounce 1.2s ${i * 0.2}s ease-in-out infinite` }}
-        />
+        <span key={i} style={{
+          width: 6, height: 6, borderRadius: '50%',
+          backgroundColor: 'var(--mg-fill-2)',
+          opacity: 0.6,
+          animation: `cs-bounce 1.2s ${i * 0.2}s ease-in-out infinite`,
+        }} />
       ))}
     </div>
   )
@@ -168,10 +172,25 @@ export function CustomerService() {
       <div
         onMouseDown={handleMouseDown}
         onClick={handleTriggerClick}
-        // 浮层必须实底：--mg-bg-0 已并入玻璃（半透明），悬浮层用 --mg-bg-2（需求方#529/#559）
-        className="fixed z-[1000] w-13 h-13 rounded-full bg-mg-bg-2 border border-mg-border shadow-[0_4px_20px_rgba(0,0,0,0.2)] flex items-center justify-center cursor-grab select-none transition-shadow duration-200"
-        // 拖拽后的落点是运行时算出来的坐标，不是设计 token
-        style={{ right: 24 - pos.x, bottom: 24 - pos.y }}
+        style={{
+          position: 'fixed',
+          right: 24 - pos.x,
+          bottom: 24 - pos.y,
+          zIndex: 1000,
+          width: 52,
+          height: 52,
+          borderRadius: '50%',
+          // 浮层必须实底：--mg-bg-0 已并入玻璃（半透明），悬浮层用 --mg-bg-2（需求方#529/#559）
+          background: 'var(--mg-bg-2)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'grab',
+          userSelect: 'none',
+          transition: 'box-shadow 0.2s',
+          border: '1px solid var(--mg-border)',
+        }}
       >
         {isOpen
           ? <LuX className="text-mg-text-2" size={20} />
@@ -189,11 +208,33 @@ export function CustomerService() {
         }
       </div>
 
-      {/* Chat window —— 悬浮在页面内容上，玻璃 bg-0 会把下层内容透出来叠字（需求方#559），改实底 bg-2 */}
+      {/* Chat window */}
       {isOpen && (
-        <div className="fixed right-6 bottom-22 w-95 h-140 z-[999] rounded-lg bg-mg-bg-2 border border-mg-border shadow-[0_20px_60px_-10px_rgba(15,23,42,0.2)] flex flex-col overflow-hidden">
+        <div style={{
+          position: 'fixed',
+          right: 24,
+          bottom: 88,
+          width: 380,
+          height: 560,
+          zIndex: 999,
+          borderRadius: 20,
+          // 聊天窗悬浮在页面内容上，玻璃 bg-0 会把下层内容透出来叠字（需求方#559），改实底 bg-2
+          background: 'var(--mg-bg-2)',
+          border: '1px solid var(--mg-border)',
+          boxShadow: '0 20px 60px -10px rgba(15,23,42,0.2)',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}>
           {/* Header */}
-          <div className="px-5 py-4 border-b border-mg-fill-0 bg-mg-bg-1 flex items-center justify-between">
+          <div style={{
+            padding: '16px 20px',
+            borderBottom: '1px solid var(--mg-fill-0)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'var(--mg-bg-1)',
+          }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <img src={logoSrc} alt="Logo" style={{ width: 28, height: 28, objectFit: 'contain' }} />
               <div>
@@ -208,10 +249,12 @@ export function CustomerService() {
               {status === 'offline' && (
                 <Button size="small"  variant="ghost" icon={<LuRefreshCw />} onClick={reconnect} />
               )}
-              <span className={cn(
-                'text-[10px] text-mg-text-3 px-2 py-0.5 rounded-full border',
-                conversationId ? 'bg-mg-fill-0 border-mg-border' : 'bg-mg-primary-light border-mg-primary',
-              )}>
+              <span style={{
+                fontSize: 10, color: 'var(--mg-text-3)',
+                padding: '2px 8px', borderRadius: 100,
+                background: conversationId ? 'var(--mg-fill-0)' : 'var(--mg-primary-light)',
+                border: `1px solid ${conversationId ? 'var(--mg-border)' : 'var(--mg-primary)'}`,
+              }}>
                 {conversationId ? 'Resumed' : 'New'}
               </span>
             </div>
@@ -232,8 +275,16 @@ export function CustomerService() {
           </div>
 
           {/* Input */}
-          <div className="px-4 py-3 border-t border-mg-fill-0">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-mg-fill-0 border border-mg-border">
+          <div style={{ padding: '12px 16px', borderTop: '1px solid var(--mg-fill-0)' }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              background: 'var(--mg-fill-0)',
+              border: '1px solid var(--mg-border)',
+              borderRadius: 12,
+              padding: '8px 12px',
+            }}>
               <textarea
                 ref={textareaRef}
                 rows={1}
@@ -242,17 +293,28 @@ export function CustomerService() {
                 onKeyDown={handleKeyDown}
                 disabled={isLoading}
                 placeholder={isLoading ? t('common.customerService.placeholderLoading') : t('common.customerService.placeholder')}
-                className="flex-1 border-none outline-none bg-transparent resize-none text-[13px] leading-normal text-mg-text-1 max-h-25 overflow-y-auto font-[inherit] p-0 m-0"
+                style={{
+                  flex: 1, border: 'none', outline: 'none', background: 'transparent',
+                  resize: 'none', fontSize: 13, lineHeight: '1.5', color: 'var(--mg-text-1)',
+                  maxHeight: 100, overflowY: 'auto', fontFamily: 'inherit',
+                  padding: 0, margin: 0,
+                }}
               />
-              <Button
-                size="small"
-                variant={isLoading || inputValue.trim() ? 'brand' : 'secondary'}
+              <button
                 onClick={isLoading ? stopMessage : handleSend}
                 disabled={!isLoading && !inputValue.trim()}
                 aria-label={isLoading ? t('common.customerService.stop') : t('common.customerService.send')}
-                className="w-8 h-8 shrink-0 p-0"
-                icon={isLoading ? <LuSquare size={13} /> : <LuSendHorizontal size={14} />}
-              />
+                style={{
+                  width: 32, height: 32, borderRadius: 8, border: 'none',
+                  background: isLoading || inputValue.trim() ? 'var(--brand-base)' : 'var(--mg-fill-1)',
+                  color: isLoading || inputValue.trim() ? '#ffffff' : 'var(--mg-text-3)',
+                  cursor: isLoading || inputValue.trim() ? 'pointer' : 'not-allowed',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0, transition: 'all 0.2s',
+                }}
+              >
+                {isLoading ? <LuSquare size={13} /> : <LuSendHorizontal size={14} />}
+              </button>
             </div>
           </div>
         </div>

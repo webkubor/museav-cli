@@ -1,7 +1,6 @@
 /**
  * 申请开票（PRD 1.0.4 §8.7.2，单页流程）
  * 勾选可开票充值单（全选/单选）→ 选发票抬头 → 提交申请；无抬头时按钮置灰并引导去新增。
- * 需求方 #836：所选充值单合计 ≥ ¥50 才可提交（后端需同口径校验防直调绕过）。
  */
 import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -20,9 +19,6 @@ import type { RechargeInvoiceStatus } from '@/types'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { amountBand, countBand } from '../billing-tracking'
-
-// 开票最低门槛（需求方 #836）：所选充值单合计 ≥ 50 元
-const MIN_INVOICE_AMOUNT = 50
 
 const RECHARGE_INVOICE_STATUS_CLASS: Record<RechargeInvoiceStatus, string> = {
   billable: 'bg-brand-base/10 text-brand-base',
@@ -82,7 +78,6 @@ export function ApplyInvoiceTab({
     [selectedRecharges]
   )
   const activeTitle = useMemo(() => titles.find((t) => t.id === titleId), [titles, titleId])
-  const belowMinAmount = selected.length > 0 && selectedTotal < MIN_INVOICE_AMOUNT
 
   const toggle = (id: string) =>
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
@@ -221,19 +216,11 @@ export function ApplyInvoiceTab({
         )}
       </div>
 
-      {canApplyInvoice && belowMinAmount && (
-        <p className="text-xs text-mg-warning">
-          {t('billing.invoice.minAmountHint', {
-            min: `${currencySymbol}${MIN_INVOICE_AMOUNT}`,
-            selected: `${currencySymbol}${selectedTotal.toFixed(2)}`,
-          })}
-        </p>
-      )}
       {canApplyInvoice && (
         <Button
           variant="brand"
           className="w-full"
-          disabled={selected.length === 0 || titles.length === 0 || belowMinAmount}
+          disabled={selected.length === 0 || titles.length === 0}
           loading={submit.isPending}
           onClick={() => {
             if (!titleId) return appToast.warning(t('billing.invoice.selectTitleWarning'))

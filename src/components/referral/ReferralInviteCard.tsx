@@ -121,7 +121,7 @@ export function ReferralInviteCard({
           </div>
           <a
             href={rulesHref}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-brand-base transition-colors hover:text-brand-mid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-glow"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-brand-base transition-colors hover:text-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-glow"
           >
             {resolvedRulesLinkLabel}
             <LuArrowRight size={13} />

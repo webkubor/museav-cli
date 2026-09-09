@@ -455,18 +455,11 @@ function taskToCategory(task: string): ExperienceCategoryKey | undefined {
 // ⚠️ 前提是模态数据准确（embedding 类模型 output 不得错标成 text，否则会被推导成
 // 对话模型出假入口）——数据准确性要求已落 qa#581。
 
-/**
- * 模态推导只读这三个字段。参数收窄成 Pick 是为了让相关模型条（CatalogRelatedModel，
- * 只有 output_modalities、没有 input 侧）也能走同一套类别判定（shared/modelgo_prd#861）
- * —— 媒体判别若在别处再写一份，audio+text omni 归对话这类细则迟早分叉。
- */
-export type ModalitySource = Partial<Pick<CatalogModelItem, 'input_modalities' | 'output_modalities' | 'modalities'>>
-
-function inputMods(model: ModalitySource): string[] {
+function inputMods(model: CatalogModelItem): string[] {
   return model.input_modalities ?? model.modalities ?? []
 }
 
-function outputMods(model: ModalitySource): string[] {
+function outputMods(model: CatalogModelItem): string[] {
   return model.output_modalities ?? model.modalities ?? []
 }
 
@@ -485,7 +478,7 @@ function outputMods(model: ModalitySource): string[] {
  * 上线以来 0 成功，两个上游都没有 audio_speech 接口）。专职 TTS 模型输出只有
  * audio，不受影响。
  */
-export function resolveModelCategory(model: ModalitySource): ExperienceCategoryKey {
+export function resolveModelCategory(model: CatalogModelItem): ExperienceCategoryKey {
   const out = outputMods(model)
   const inp = inputMods(model)
   if (out.includes('video')) return 'video'
@@ -669,15 +662,6 @@ export function dualPriceText(model: CatalogModelItem): string {
 }
 
 /** 是否付费模型：只认服务端显式限免标记 + 价格字段，不做其它推断（§9.1：价格为 0 但未标 free 的仍按付费处理） */
-/**
- * 余额拦截条文案用：只有明确标了免费角标的模型才走「免费模型」场景文案。
- * 与 isPaidModel 的区别：未配价（无 pricing / price_tiers）的模型 isPaidModel 返回 false，
- * 但它并不是免费模型，套「免费模型需先充值」文案会误导（shared/modelgo_prd#833 复验 INFO-3）。
- */
-export function isFreeModel(model: CatalogModelItem): boolean {
-  return Boolean(model.promotion?.free)
-}
-
 export function isPaidModel(model: CatalogModelItem): boolean {
   if (model.promotion?.free) return false
   if ((model.price_tiers ?? []).some((tier) => parseFloat(tier.price) > 0)) return true

@@ -31,14 +31,6 @@ const buttonVariants = cva(
           "bg-white/10 dark:bg-black/20 backdrop-blur-md border border-white/20 dark:border-white/10 text-mg-text-1 hover:bg-white/20 dark:hover:bg-black/30 shadow-sm",
         brand:
           "modern-btn-brand",
-        /**
-         * 品牌色描边 + 浅底 + 品牌色文字。给「引流去别处的次级入口」用
-         * （模型广场 →「模型发现」是第一处）：它不是页面主操作，用 brand 实底会
-         * 抢掉真正的主操作；但也不能用中性 outline —— PRD 里这类入口是品牌色强调的，
-         * 降成灰边灰字会让它在一屏里消失。
-         */
-        'brand-outline':
-          "modern-btn-brand-outline",
       },
       size: {
         default: "h-[var(--mg-control-h-md)] px-[var(--mg-control-pad-x-md)]",

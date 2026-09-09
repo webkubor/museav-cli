@@ -227,9 +227,7 @@ function CropModal({
   return (
     <div className="fixed inset-0 z-[var(--mg-z-modal)] flex items-center justify-center mg-panel">
       <div className="absolute inset-0 bg-[var(--mg-overlay-bg)] backdrop-blur-[var(--mg-overlay-blur)]" onClick={onCancel} />
-      {/* 表面统一走 mg-float：原来是 bg-card-bg（= --mg-surface，已并入玻璃系统，深色下只有白 7%），
-          裁剪弹窗实际是半透明的、能看穿到下面的页面 —— 顺手一并收编 */}
-      <div className="relative mg-float rounded-lg overflow-hidden animate-in fade-in zoom-in duration-200 w-[380px]">
+      <div className="relative bg-card-bg border border-mg-border rounded-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 w-[380px]">
         {/* 标题 */}
         <div className="px-[var(--mg-panel-padding-lg)] py-[var(--mg-space-3)] border-b border-mg-border mg-text-body font-bold text-mg-text-1">
           {t('account.info.avatarCropTitle')}

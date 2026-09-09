@@ -159,34 +159,3 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-
-/* ── 新手奖励入账记录定位高亮（新手指南规格 2026-08-13 §交互流程 5）──────────
-   从领取成功弹框点「查看赠金」进来时，目标行淡金色闪动一次，约 2 秒后自然淡出为
-   普通样式。放在 billing.css 而不是新手指南的样式表里：这条规则的宿主是账单表格，
-   指南入口领完就隐藏了，样式不该跟着它的模块走。 */
-.billing-transaction-highlight > td {
-  animation: billing-onboarding-reward-highlight 2.2s ease-out both;
-}
-
-@keyframes billing-onboarding-reward-highlight {
-  0%,
-  24% {
-    background: var(--mg-warning-border);
-  }
-
-  12%,
-  38% {
-    background: var(--mg-warning-bg);
-  }
-
-  100% {
-    background: transparent;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .billing-transaction-highlight > td {
-    animation: none;
-    background: var(--mg-warning-bg);
-  }
-}

@@ -264,7 +264,6 @@
       "selectRechargesTitle": "选择充值单（勾选后合并开具一张发票）",
       "selectAll": "全选",
       "selectedCount": "已选 {{selected}}/{{total}} 笔",
-      "minAmountHint": "所选充值单合计需满 {{min}} 才可开票，当前合计 {{selected}}",
       "loading": "加载中…",
       "noInvoiceableRecharges": "暂无可开票充值",
       "invoiceTitle": "发票抬头",

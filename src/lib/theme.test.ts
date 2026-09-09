@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { getMarketDefaultTheme, getUserTheme, isThemeLockedToDark, resolveTheme, saveTheme } from '@/lib/theme'
+import { getMarketDefaultTheme, isThemeLockedToDark, resolveTheme, saveTheme } from '@/lib/theme'
 import { storageKeys } from '@/lib/storage'
 
 // qa：国外(global)控制台产品决策——不提供主题选择，写死深色。resolveTheme/saveTheme
@@ -44,30 +44,5 @@ describe('theme lock for global market', () => {
     setMarketViaQuery('china')
     saveTheme('light')
     expect(localStorage.getItem(storageKeys.theme())).toBe('light')
-  })
-})
-
-// dev-toolbar 曾经 saveTheme(next) 不传 userId，只写匿名 key；而 DashboardHeader 的
-// useEffect([account]) 用 getUserTheme(account_id) 重新 applyTheme，用户 key 里的旧值
-// 会把切换翻回去，表现成「点了没反应」。这两条钉住「匿名 key 不得遮蔽用户 key」的口径。
-describe('匿名 key 与用户 key 的优先级', () => {
-  afterEach(() => {
-    setMarketViaQuery(null)
-    localStorage.clear()
-  })
-
-  it('用户 key 存在时，只写匿名 key 改不动该用户的主题', () => {
-    setMarketViaQuery('china')
-    saveTheme('dark', 'u1')
-    saveTheme('light') // 不带 userId：只落匿名 key
-    expect(getUserTheme('u1')).toBe('dark')
-    expect(localStorage.getItem(storageKeys.theme())).toBe('light')
-  })
-
-  it('带上 userId 才能真正改掉该用户的主题', () => {
-    setMarketViaQuery('china')
-    saveTheme('dark', 'u1')
-    saveTheme('light', 'u1')
-    expect(getUserTheme('u1')).toBe('light')
   })
 })

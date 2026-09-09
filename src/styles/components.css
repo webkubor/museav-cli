@@ -1,14 +1,4 @@
 /* ── 💎 通用元组件样式抽离与大厂极简现代美学（硅谷风格） ── */
-.mg-text-micro {
-  font-size: var(--mg-font-size-micro);
-  line-height: var(--mg-line-height-micro);
-}
-
-.mg-text-meta {
-  font-size: var(--mg-font-size-meta);
-  line-height: var(--mg-line-height-meta);
-}
-
 .mg-text-caption {
   font-size: var(--mg-font-size-caption);
   line-height: var(--mg-line-height-caption);
@@ -177,27 +167,6 @@
   border-color: var(--mg-btn-outline-border-hover) !important;
 }
 
-/* 品牌色次级入口。配比取 PRD 原型实测（底 8% / 边 38%），但用 --brand-base
-   与 --mg-* 表达而不是原型的字面色值 —— 国内靛紫 / 海外翠绿、明暗四象限自动跟随。 */
-.modern-btn-brand-outline {
-  @apply border;
-  transition: var(--mg-btn-transition);
-  font-weight: 650;
-  background-color: color-mix(in oklab, var(--brand-base) 8%, var(--mg-bg-0)) !important;
-  border-color: color-mix(in oklab, var(--brand-base) 38%, var(--mg-border)) !important;
-  color: var(--brand-base) !important;
-}
-
-.modern-btn-brand-outline:hover {
-  transform: translateY(var(--mg-btn-hover-y));
-  background-color: color-mix(in oklab, var(--brand-base) 13%, var(--mg-bg-0)) !important;
-  border-color: var(--brand-base) !important;
-}
-
-.modern-btn-brand-outline:active {
-  transform: translateY(0);
-}
-
 .modern-btn-secondary {
   @apply transition-all;
   transition: var(--mg-btn-transition);
@@ -285,33 +254,6 @@
   transform: translateY(0) scale(var(--mg-btn-press-scale)) !important;
   background: var(--mg-btn-primary-bg-active) !important;
   filter: brightness(0.97);
-}
-
-/* 浮层统一表面（Popover / DropdownMenu / Select / Dialog / Sheet / Tooltip 全挂这一个类）
-   —— 配方（模糊、主题色、微光、阴影、描边）收在 --mg-float-*（tokens.css），组件侧只写 `mg-float`。
-   为什么收成一个类：此前 8 个浮层组件各写一套底色（bg-mg-bg-2 / bg-mg-bg-3 /
-   rgba(--mg-bg-0-rgb,.88) + backdrop-blur-md 三种都有），同一个下拉换个页面就换脸，
-   而且每加一个浮层就要重新猜「该用哪一档背景」。
-   ⚠️ 底线是遮挡不是效果：不透明度由 --mg-float-opacity 保证（见该 token 注释里的 #504 由来），
-   谁要调低它必须先做「浮层压在正文上截图看能不能读出字」这一步验证。 */
-.mg-float {
-  background: var(--mg-float-bg);
-  border: 1px solid var(--mg-float-line);
-  -webkit-backdrop-filter: blur(var(--mg-float-blur)) saturate(var(--mg-float-saturate));
-  backdrop-filter: blur(var(--mg-float-blur)) saturate(var(--mg-float-saturate));
-  /* 三层叠加：inset 顶部亮边（玻璃厚度）+ 品牌微光晕 + 分层柔和投影（浮起） */
-  box-shadow:
-    inset 0 1px 0 var(--mg-float-sheen),
-    var(--mg-float-glow),
-    var(--mg-float-shadow);
-}
-
-/* 不支持 backdrop-filter 的浏览器直接退回完全实色 —— 没有模糊时那 8% 的透明就是纯粹的漏字，
-   宁可丢玻璃质感也不能丢遮挡（这条是 #504 的下限，不是渐进增强的可选项）。 */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .mg-float {
-    background: var(--mg-float-surface);
-  }
 }
 
 /* 内容瓦片 —— Apple 风卡片语言（2026-07-23）：淡边框(hairline) + 柔和扩散阴影撑层次，
@@ -408,38 +350,6 @@
   box-sizing: border-box !important;
 }
 
-/* ── Input 尺寸档位（2026-09-04 控件统一，同 Button 的 size 体系）─────────
-   高度/内距成套走 token，写在未分层 CSS：页面的 h-8/h-9 等高度类（分层
-   utilities）盖不过这里的 min-height，控件不再被各页面拉长压扁。
-   sm(32px)=面板内搜索（下拉面板/侧栏/弹窗内），lg(48px)=公共主搜索（模型广场）。
-   字号不随档位变：控件正文一律 --mg-font-size-body(13px)，档位只调高度与内距。 */
-.modern-input-sm {
-  min-height: var(--mg-control-h-sm);
-  /* 32px 档位收窄纵向内距（space-1=4px）：默认的 pad-y-sm(8px)×2 + 22px 行高
-     会把内容撑到 38px，min-height 拦不住内容扩张，sm 档必须配套减内距 */
-  padding-top: var(--mg-space-1);
-  padding-bottom: var(--mg-space-1);
-}
-
-.modern-input-lg {
-  min-height: var(--mg-control-h-lg);
-}
-
-/* ── Select 触发器尺寸档位（2026-09-04 控件统一）──────────────────────────
-   与 Input 的档位同一套刻度：sm(32)=面板内，md(40)=页面工具栏默认。
-   未分层 CSS 钉 height + min-height 双保险：页面传 h-8/h-9（分层 utilities）
-   既盖不过未分层规则，tailwind-merge 也不会把组件类合并掉——高度只认档位。
-   sm 档同步收窄箭头图标，md 档保持 16px。 */
-.mg-select-trigger-sm {
-  height: var(--mg-control-h-sm);
-  min-height: var(--mg-control-h-sm);
-}
-
-.mg-select-trigger-md {
-  height: var(--mg-control-h-md);
-  min-height: var(--mg-control-h-md);
-}
-
 .modern-input-field::placeholder {
   color: var(--mg-text-3) !important;
   opacity: 0.7;
@@ -469,10 +379,6 @@
   -webkit-backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.5);
   backdrop-filter: blur(var(--mg-glass-blur)) saturate(1.5);
   border-color: var(--mg-border) !important;
-  /* 搜索变体的圆角是 pill（组件里的 rounded-full 因上方 base 规则的 !important
-     一直没生效，搜索框实际渲染 14px、与模型广场的 pill 搜索两副面孔——
-     2026-09-04 控件统一时补上）：搜索=胶囊、普通输入/下拉=radius-control。 */
-  border-radius: var(--mg-radius-pill) !important;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.07),
     0 4px 18px -6px rgba(0, 0, 0, 0.14) !important;
@@ -688,141 +594,43 @@ body:not([theme-mode='dark']) header.mg-glass-bar-strong {
   background: var(--mg-surface-3);
 }
 
-/* token-check-ignore: sonner toast optical glassmorphism multi-layer micro-glow */
-/* Toast 通知：先锋级光纤内透毛玻璃 + 双主题微光体系（由 <Toaster toastOptions.classNames> 绑定） */
+/* Toast 通知：通过 <Toaster toastOptions.classNames> 绑定，所有 appToast/sonner 调用同源。 */
 .mg-toast {
-  width: min(420px, calc(100vw - 32px)) !important;
-  gap: 12px !important;
-  padding: 10px 18px 10px 14px !important;
-  border-radius: var(--mg-radius-pill, 999px) !important;
-  border: 0 !important; /* 彻底去除机械硬边框 */
-  -webkit-backdrop-filter: blur(28px) saturate(2) !important;
-  backdrop-filter: blur(28px) saturate(2) !important;
-  transition: transform var(--mg-duration-fast, 0.2s) var(--mg-ease-emphasized, cubic-bezier(0.16, 1, 0.3, 1)), box-shadow var(--mg-duration-fast, 0.2s), background var(--mg-duration-base, 0.3s) !important;
-}
-
-/* 浅色主题：白昼水晶高透毛玻璃 + 内部漫射 */
-:root:not([data-theme='dark']):not([theme-mode='dark']) .mg-toast {
-  background: radial-gradient(ellipse 160px 80px at 0% 50%, rgba(37, 99, 235, 0.12), transparent 75%), rgba(255, 255, 255, 0.92) !important;
-  box-shadow: 
-    inset 0 1px 0.5px rgba(255, 255, 255, 1),
-    inset 0 -1px 0.5px rgba(0, 0, 0, 0.04),
-    0 0 28px -2px rgba(37, 99, 235, 0.18),
-    0 12px 30px -4px rgba(15, 23, 42, 0.08) !important;
-  color: #0f172a !important;
-}
-
-/* 深色主题：深邃黑曜石毛玻璃 + 极光顶光 */
-[data-theme='dark'] .mg-toast,
-[theme-mode='dark'] .mg-toast,
-.dark .mg-toast {
-  background: radial-gradient(ellipse 180px 90px at 0% 50%, rgba(59, 130, 246, 0.25), transparent 75%), rgba(11, 15, 23, 0.85) !important;
-  box-shadow: 
-    inset 0 1px 0.5px rgba(255, 255, 255, 0.35),
-    inset 0 0 18px rgba(59, 130, 246, 0.1),
-    0 0 36px -2px rgba(59, 130, 246, 0.35),
-    0 20px 48px -6px rgba(0, 0, 0, 0.75) !important;
-  color: #ffffff !important;
-}
-
-/* 1. 成功通知 (Success) 微光内透 */
-:root:not([data-theme='dark']):not([theme-mode='dark']) .mg-toast-success {
-  background: radial-gradient(ellipse 160px 80px at 0% 50%, rgba(16, 185, 129, 0.22), transparent 75%), rgba(255, 255, 255, 0.92) !important;
-  box-shadow: 
-    inset 0 1px 0.5px rgba(255, 255, 255, 1),
-    inset 0 -1px 0.5px rgba(0, 0, 0, 0.04),
-    0 0 30px -2px rgba(16, 185, 129, 0.28),
-    0 12px 30px -4px rgba(15, 23, 42, 0.08) !important;
-}
-[data-theme='dark'] .mg-toast-success,
-[theme-mode='dark'] .mg-toast-success,
-.dark .mg-toast-success {
-  background: radial-gradient(ellipse 180px 90px at 0% 50%, rgba(29, 195, 155, 0.35), transparent 75%), rgba(11, 15, 23, 0.85) !important;
-  box-shadow: 
-    inset 0 1px 0.5px rgba(255, 255, 255, 0.35),
-    inset 0 0 18px rgba(29, 195, 155, 0.15),
-    0 0 38px -2px rgba(29, 195, 155, 0.45),
-    0 20px 48px -6px rgba(0, 0, 0, 0.75) !important;
-}
-
-/* 2. 错误通知 (Error) 微光内透 */
-:root:not([data-theme='dark']):not([theme-mode='dark']) .mg-toast-error {
-  background: radial-gradient(ellipse 160px 80px at 0% 50%, rgba(244, 63, 94, 0.22), transparent 75%), rgba(255, 245, 245, 0.95) !important;
-  box-shadow: 
-    inset 0 1px 0.5px rgba(255, 255, 255, 1),
-    inset 0 -1px 0.5px rgba(0, 0, 0, 0.04),
-    0 0 32px -2px rgba(244, 63, 94, 0.32),
-    0 12px 30px -4px rgba(15, 23, 42, 0.12) !important;
-}
-[data-theme='dark'] .mg-toast-error,
-[theme-mode='dark'] .mg-toast-error,
-.dark .mg-toast-error {
-  background: radial-gradient(ellipse 180px 90px at 0% 50%, rgba(244, 63, 94, 0.35), transparent 75%), rgba(20, 11, 15, 0.88) !important;
-  box-shadow: 
-    inset 0 1px 0.5px rgba(255, 255, 255, 0.35),
-    inset 0 0 18px rgba(244, 63, 94, 0.15),
-    0 0 38px -2px rgba(244, 63, 94, 0.5),
-    0 20px 48px -6px rgba(0, 0, 0, 0.8) !important;
-}
-
-/* 3. 警告通知 (Warning) 微光内透 */
-:root:not([data-theme='dark']):not([theme-mode='dark']) .mg-toast-warning {
-  background: radial-gradient(ellipse 160px 80px at 0% 50%, rgba(245, 158, 11, 0.22), transparent 75%), rgba(255, 251, 235, 0.95) !important;
-  box-shadow: 
-    inset 0 1px 0.5px rgba(255, 255, 255, 1),
-    0 0 30px -2px rgba(245, 158, 11, 0.28),
-    0 12px 30px -4px rgba(15, 23, 42, 0.08) !important;
-}
-[data-theme='dark'] .mg-toast-warning,
-[theme-mode='dark'] .mg-toast-warning,
-.dark .mg-toast-warning {
-  background: radial-gradient(ellipse 180px 90px at 0% 50%, rgba(245, 158, 11, 0.35), transparent 75%), rgba(23, 16, 8, 0.88) !important;
-  box-shadow: 
-    inset 0 1px 0.5px rgba(255, 255, 255, 0.35),
-    inset 0 0 18px rgba(245, 158, 11, 0.15),
-    0 0 38px -2px rgba(245, 158, 11, 0.45),
-    0 20px 48px -6px rgba(0, 0, 0, 0.8) !important;
+  width: min(var(--mg-toast-width), calc(100vw - 32px)) !important;
+  gap: var(--mg-toast-gap) !important;
+  padding: var(--mg-toast-pad-y) var(--mg-toast-pad-x) !important;
+  border-radius: var(--mg-toast-radius) !important;
+  border: 1px solid var(--mg-toast-border) !important;
+  background: var(--mg-toast-bg) !important;
+  color: var(--mg-toast-title) !important;
+  box-shadow: var(--mg-toast-shadow) !important;
 }
 
 .mg-toast-title {
-  color: inherit !important;
-  font-size: 13.5px !important;
-  line-height: 1.4 !important;
-  font-weight: 600 !important;
+  color: var(--mg-toast-title) !important;
+  font-size: var(--mg-text-sm) !important;
+  line-height: var(--mg-text-sm-line) !important;
+  font-weight: var(--mg-weight-bold) !important;
 }
 
 .mg-toast-description {
-  color: inherit !important;
-  opacity: 0.75 !important;
-  font-size: 12px !important;
-  line-height: 1.4 !important;
+  color: var(--mg-toast-description) !important;
+  font-size: var(--mg-text-xs) !important;
+  line-height: var(--mg-text-xs-line) !important;
 }
 
-/* .mg-toast-close 已随 closeButton 一起移除（2026-09-08）：只改配色不管定位，
-   按钮会被甩到卡片外左上角。见 App.tsx 的 Toaster 注释。 */
+.mg-toast-close {
+  color: var(--mg-toast-close-color) !important;
+  border-color: var(--mg-border) !important;
+  background: var(--mg-bg-3) !important;
+}
+
 .mg-toast-icon {
-  width: 18px !important;
-  height: 18px !important;
-  filter: drop-shadow(0 0 8px currentColor) !important;
+  width: var(--mg-icon-sm);
+  height: var(--mg-icon-sm);
 }
 
-/* Toast 图标色走 --mg-toast-*-icon（token 包里已指向 --mg-success-text 等，
-   按主题自动切）。合并时丢弃了本地那版 `var(--mg-success-text, #10b981)` 的写法：
-   裸 hex 兜底会被硬编码门禁拦，而且它另写的深色特例在 token 已按主题切的前提下是多余的。 */
 .mg-toast-success .mg-toast-icon { color: var(--mg-toast-success-icon) !important; }
 .mg-toast-warning .mg-toast-icon { color: var(--mg-toast-warning-icon) !important; }
 .mg-toast-error .mg-toast-icon { color: var(--mg-toast-error-icon) !important; }
 .mg-toast-info .mg-toast-icon { color: var(--mg-toast-info-icon) !important; }
-
-/* ── 智能助手：回答生成中的三点动画 ────────────────────────────
-   旧实现把 @keyframes 写在组件里的内联 <style> 标签里，每次挂载都往
-   文档插一遍。挪到这里由样式表统一收口；每个点的 animation-delay 仍在
-   组件上按序号给（那是逐元素的编排值，不是设计 token）。 */
-.mg-cs-dot {
-  animation: mg-cs-dot-bounce 1.2s ease-in-out infinite;
-}
-
-@keyframes mg-cs-dot-bounce {
-  0%, 80%, 100% { transform: scale(1); opacity: 0.4; }
-  40% { transform: scale(1.4); opacity: 1; }
-}

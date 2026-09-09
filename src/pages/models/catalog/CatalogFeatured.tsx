@@ -23,7 +23,6 @@ import { OverflowTip } from '@/components/ui/OverflowTip'
 import { useAuthStore } from '@/store/auth'
 import { trackEvent } from '@/lib/track'
 import type { CatalogFeaturedSlide } from '@/types'
-import { modelDetailPath } from '../model-detail-path'
 
 const AUTOPLAY_MS = 5000
 
@@ -129,7 +128,7 @@ export function CatalogFeatured({ slides, isZh, onTry }: Props) {
             ? promo?.discount_label
             : promo?.discount_label_en || promo?.discount_label
           const symbol = currencySymbol(slide.currency, isZhLang())
-          const detailHref = modelDetailPath(slide)
+          const detailHref = `/models/${slide.slug || slide.model_id}`
           return (
             <article
               key={slide.carousel_item_id}

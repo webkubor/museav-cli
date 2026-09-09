@@ -33,9 +33,7 @@ const SheetOverlay = React.forwardRef<
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName
 
 const sheetVariants = cva(
-  // 表面统一走 mg-float；下面各 side 的 border-b/t/l/r 只是保留「靠哪边」的语义，
-  // 宽度与颜色都由 mg-float 的 1px 描边给（贴视口的三条边本来就看不见）
-  "fixed z-[var(--mg-z-sheet)] gap-[var(--mg-dialog-gap)] mg-float mg-panel-roomy transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-300 focus:outline-none",
+  "fixed z-[var(--mg-z-sheet)] gap-[var(--mg-dialog-gap)] bg-mg-bg-3 mg-panel-roomy border-mg-border shadow-xl transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-300 focus:outline-none",
   {
     variants: {
       side: {

@@ -11,7 +11,6 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { FreeModelGate } from '../models/free-model-gate'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useModels } from '@/features/models/hooks/useModels'
@@ -72,18 +71,6 @@ export function useModelsCompareState() {
     balanceBreakdown?.reward?.amount,
   )
   const isBalanceZero = spendableBalance !== undefined && spendableBalance <= 0
-  // 需求方 #833（1.0.6）：各列上次发送被后端免费模型门槛（4032/4291）拒绝的场景，按列会话 id 记；
-  // 该列再次发送时清掉。不进持久化 store——是一次发送的即时反馈，不该跨路由留存。
-  const [columnFreeGates, setColumnFreeGates] = useState<Record<string, FreeModelGate>>({})
-  function setColumnFreeGate(conversationId: string, gate: FreeModelGate | null) {
-    setColumnFreeGates((prev) => {
-      if (gate) return { ...prev, [conversationId]: gate }
-      if (!(conversationId in prev)) return prev
-      const next = { ...prev }
-      delete next[conversationId]
-      return next
-    })
-  }
 
   // 会话/列/统计跨路由持久化（qa#544）：改走模块级 zustand store，SPA 内路由切走（比如
   // 切去看账单）再切回不再清空；变量名保持不变，后续几十处引用几乎不用改。
@@ -410,8 +397,6 @@ export function useModelsCompareState() {
     pendingByDispatch,
     allModels,
     isBalanceZero,
-    columnFreeGates,
-    setColumnFreeGate,
     updateColumn,
     applyAssistant,
     patchAssistant,

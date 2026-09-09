@@ -316,10 +316,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
     <button
       type="button"
       className={cn(
-        // 高度与同排 Select/搜索框同档（--mg-control-h-md=40px，2026-09-04 控件统一：
-        // 此前靠 py 撑高 ≈36px，与 40px 的 Select 排在一起高低不齐）。
-        // 圆角走 pill——它是「带日历图标的筛选芯片」语义，与搜索变体同一语言。
-        "group flex items-center gap-2 min-h-[var(--mg-control-h-md)] px-[var(--mg-control-pad-x-md)] border border-mg-border rounded-full bg-mg-fill-0/50 hover:bg-mg-fill-0/70 mg-text-body font-bold text-mg-text-1 hover:text-mg-text-1 hover:border-brand-mid transition-all duration-300 shadow-inner select-none active:scale-[0.97]",
+        "group flex items-center gap-2 px-[var(--mg-control-pad-x-md)] py-[var(--mg-control-py-sm)] border border-mg-border rounded-full bg-mg-fill-0/50 hover:bg-mg-fill-0/70 mg-text-body font-bold text-mg-text-1 hover:text-mg-text-1 hover:border-brand-mid transition-all duration-300 shadow-inner select-none active:scale-[0.97]",
         className
       )}
     >

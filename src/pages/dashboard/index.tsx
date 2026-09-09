@@ -10,7 +10,7 @@ import { useTrackContext } from '@/hooks/use-track-context'
 import { trackEvent, trackPageView } from '@/lib/track'
 import { useAuthStore } from '@/store/auth'
 import { GreetingHeader } from '@/features/dashboard/workbench/GreetingHeader'
-import { CliRecommendCard } from '@/features/dashboard/workbench/CliRecommendCard'
+import { QuickStartSection } from '@/features/dashboard/workbench/QuickStartSection'
 import { MetricsSection } from '@/features/dashboard/workbench/MetricsSection'
 import { UsageTrendSection } from '@/features/dashboard/workbench/UsageTrendSection'
 import { WorkspaceBreakdownSection } from '@/features/dashboard/workbench/WorkspaceBreakdownSection'
@@ -62,7 +62,7 @@ export default function DashboardPage() {
         onGranularityChange={handleGranularityChange}
       />
 
-      <CliRecommendCard />
+      <QuickStartSection />
 
       <MetricsSection view={view} granularity={granularity} accountId={scopedAccountId} />
 

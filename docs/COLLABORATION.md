@@ -26,12 +26,11 @@ cd ../wt-my-branch && ln -s ../modelgo-console-web/node_modules .
 ### 收工
 
 ```bash
-# 版本功能：推回版本分支（不是 test，见 CLAUDE.md 入场第 3 条），然后自己清三步
-git push origin HEAD:feature/v1.0.x-<当期版本分支>
-git worktree remove ../wt-my-branch      # 详见 §4「手动合并」
+# 用 cs land 合入的话，worktree + 分支已被自动回收，这里不用做任何事
+cs land --base test
 
-# cs land 只用于确实要直接落到某个集成分支的场合（它会自动回收 worktree + 分支）
-# ——版本迭代期不要 land 到 test，那会绕过版本节奏
+# 手动合并的才需要自己清（详见 §4 步骤 5）
+git worktree remove ../wt-my-branch
 ```
 
 ## 2. 任务互斥：看板认领锁（任务层）
@@ -376,20 +375,11 @@ git merge-base --is-ancestor origin/main origin/test && echo "可快进"
 
 > ⚠️ **`test` 是集成/部署来源分支，不是开发地**。别 `git checkout test` 直接在上面写代码——多个 session 共用同一工作树 + 同分支会互相踩（未提交改动串台、被迫 autostash rebase）。开发一律在隔离 worktree（见第 1 节），`test` 只接受**合并**。这与顶部「代码隔离 > 任务互斥」原则一致。
 
-> ⚠️ **2026-09-03 owner 拍板的分支定位**（覆盖本节以下流程里「一律 base test / land 到 test」的老写法）：
-> `main` 生产 · `test` 测试环境（**当前版本 1.0.6 在这里迭代**）· `feature/v1.0.x-*` 版本集成分支 · `hotfix/*` 临时需求。
-> 版本功能走 **worktree → 版本分支 → 合入 test → 整批上线合 main**；
-> **何时把版本分支合进 `test` 由 owner 按版本节奏决定，agent 不要自己 land 到 test**。
-> 临时 / 紧急需求走 `hotfix/*`：从 `main` 分出、验完合 `main`、再回流 `test` 与当期版本分支。
-> 详见 `CLAUDE.md` 入场第 3 条。
-
-**日常开发流程（版本功能）：**
-1. 开隔离 worktree + 分支：`cs wt fix/<名> --base origin/feature/v1.0.x-<当期版本分支>`
-   （`--base` 取的是**本地**分支、会落后远端，所以显式带 `origin/`；2026-09-03 因此在旧基线上白改一轮）
+**日常开发流程：**
+1. 开隔离 worktree + 分支：`cs wt fix/<名>`（或 `git worktree add -b fix/<名> ../wt-<名> origin/test`）
 2. 在 worktree 里开发、提交（与其他 session 物理隔离，互不看见对方未提交改动）
-3. 推回版本分支：`git push origin HEAD:feature/v1.0.x-<当期版本分支>`
-   —— **不要 `cs land --base test`**，那会绕过版本节奏直接进测试环境分支
-4. 触发测试环境部署：由 owner 把版本分支合进 `test` 后再部署 `test/modelgo-console-web`
+3. 合并进 test：**`cs land --base test`**（fetch→rebase→push HEAD:test，push 撞并行提交会自动 refetch+rebase 重试）
+4. 触发测试环境部署：`test/modelgo-console-web`
 5. **清理已由 `cs land` 自动完成，不用再手动跑**（2026-08-21 起）：land 成功后它会自动
    `worktree remove` + 删本地分支 + 删远端同名分支（存在才删）+ `fetch --prune`。
    - 删前强制校验 `merge-base --is-ancestor <分支> origin/<base>`，**未合入一律不删**
@@ -402,9 +392,6 @@ git merge-base --is-ancestor origin/main origin/test && echo "可快进"
    （2026-07-28 一次清理攒了 60+ 个已合并分支；2026-08-21 又发现早已合入 test 的
    `fix/617-usage-link-params`，worktree 和分支都还挂着。）
 
-   ⚠️ 新流程（推版本分支）**不走 `cs land`**，所以这份自动清理不会发生，
-   要自己走下面「手动合并」的三步。
-
    手动合并（不用 `cs land`）时，仍要自己走完三步：`git worktree remove ../wt-<名>`
    → `git branch -d <名>` → `git push origin --delete <名>`。功能分支的生命周期到
    「进了 test」就结束，没有理由留到合并 main 前。
@@ -414,22 +401,12 @@ git merge-base --is-ancestor origin/main origin/test && echo "可快进"
 2. 合并到 main：`git checkout main && git merge test && git push origin main`
 3. 触发线上部署：`prod/modelgo-console-web`
 
-**线上 hotfix 流程：**（临时 / 紧急需求也走这条，不等版本节奏）
-1. 从 main 开隔离 worktree 修复：`cs wt hotfix/<名> --base origin/main`
-   （别 `git checkout main` 直接在主检出上改——同一条「test 不是开发地」的理由，见本节开头）
-2. 提交并合进 main、推送
+**线上 hotfix 流程：**
+1. 在 main 分支修复问题
+2. 提交并推送 main
 3. 触发线上部署（`prod/modelgo-console-web`）
-4. 回流 `test`：`git checkout test && git merge main && git push origin test`
-5. **回流当期版本分支**（2026-09-03 补：版本在 test 迭代，只回流 test 不回流版本分支，
-   下次版本合 test 时必在同一处冲突）：
-   `git push origin main:feature/v1.0.x-<当期版本分支>` 打不过去时用 merge，别 force
-6. 触发测试环境部署（`test/modelgo-console-web`）
-
-**临时 / 紧急需求**走 `hotfix/*`，见上面「线上 hotfix 流程」——它的意义就是绕开版本节奏，
-所以不要挂在版本分支上做。
-
-**本节以下凡写「base test」「land 到 test」的，按新流程替换目标分支；**`cs land` 的自动清理、
-分叉判定、冲突处理等机制本身仍然适用，只是 base 换成版本分支。
+4. 同步到 test 分支：`git checkout test && git merge main && git push origin test`
+5. 触发测试环境部署（`test/modelgo-console-web`）
 
 **分支清理：** 见上面「日常开发流程」步骤 5——分支合并进 test 就应清理，不用等到合并上线。
 
@@ -684,8 +661,6 @@ git worktree list
 
 # ② 判断哪些是真残留：已合入 test 却还在的分支
 git fetch origin --prune                 # 先 prune，否则会把远端已删的分支误判成僵尸
-# 版本迭代期功能推的是版本分支，两个基线都要查一遍
-git branch --merged origin/feature/v1.0.x-<当期版本分支> | grep -vE '^\*|test|main'
 git branch --merged origin/test | grep -vE '^\*|test|main'
 
 # ③ 上一步列出来的，按 §4 补做（不是可选项）：

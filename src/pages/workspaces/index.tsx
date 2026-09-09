@@ -154,7 +154,7 @@ export default function WorkspacesPage() {
           <Input
             variant="search"
             placeholder={t('workspaces.searchPlaceholder')}
-            prefix={<LuSearch className="w-4 h-4 opacity-50" />}
+            prefix={<LuSearch className="opacity-50" />}
             className="w-full"
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}

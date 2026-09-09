@@ -24,7 +24,6 @@ import {
   LuBuilding2,
 } from 'react-icons/lu'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
-import { OnboardingRewardDialog } from '@/features/onboarding/OnboardingGuideEntry'
 import { useTranslation } from 'react-i18next'
 import { DashboardHeader } from './DashboardHeader'
 import { DashboardSidebar } from './DashboardSidebar'
@@ -34,8 +33,6 @@ import { CustomerService } from '@/components/customer-service'
 import { PhoneBindingGuard } from '@/components/auth/PhoneBindingGuard'
 import { TopUpModal } from '@/pages/billing/TopUpModal'
 import { useRechargeStore } from '@/store/use-recharge-store'
-import { LocaleNamespaces } from '@/components/i18n/LocaleNamespaces'
-import type { LocaleNamespace } from '@/i18n'
 import { navConfig } from '@/config/nav'
 import type { NavItem } from '@/config/nav'
 import { installAgentTools } from '@/lib/dev-agent-tools'
@@ -49,14 +46,6 @@ import { listWorkspaces } from '@/services/workspaces'
 import { cn } from '@/lib/utils'
 import { ParticleLinesBackground } from './ParticleLinesBackground'
 import './layout.css'
-
-/**
- * 全局充值弹框依赖 billing 语言包，但它挂在布局层、任意路由都能弹出（模型体验/对比页的
- * 「去充值」）。语言包按路由懒加载，模型页不带 billing，直接弹会显示 i18n key
- * （shared/modelgo_prd#833 复验 BUG-1）。在布局层为弹框单独兜一次 billing 加载，
- * 与页面路由解耦；数组放模块级，避免每次渲染新引用触发重复加载。
- */
-const RECHARGE_MODAL_NAMESPACES: readonly LocaleNamespace[] = ['billing']
 
 
 const isDevTools = import.meta.env.VITE_SHOW_DEV_TOOLS === 'true'
@@ -314,19 +303,13 @@ export function DashboardLayout() {
           {/* 高阶极简自定义 Breadcrumbs */}
           <Breadcrumb items={getBreadcrumbs()} />
 
-          {/* 平台助手：只解答平台功能怎么用，不承接客服反馈。挂在 Console 内，
-              登录后才可见（V1.0.6 那版全局挂 App.tsx、未登录也弹的形态已随
-              智能客服一起回退，代码在 feature/customer-service 分支）。 */}
           <CustomerService />
 
           {/* 国内环境强制绑定手机号守卫（#366）：无手机号时弹不可跳过的绑定弹窗，挂一次即可 */}
           <PhoneBindingGuard />
 
-          {/* 全局充值弹框：任意入口经 useRechargeStore.open() 就地弹出，挂一次即可。
-              billing 语言包由 LocaleNamespaces 兜底加载（见 RECHARGE_MODAL_NAMESPACES 说明） */}
-          <LocaleNamespaces namespaces={RECHARGE_MODAL_NAMESPACES} fallback={null}>
-            <TopUpModal visible={rechargeOpen} onClose={closeRecharge} tenantId={activeTenantId ?? ''} />
-          </LocaleNamespaces>
+          {/* 全局充值弹框：任意入口经 useRechargeStore.open() 就地弹出，挂一次即可 */}
+          <TopUpModal visible={rechargeOpen} onClose={closeRecharge} tenantId={activeTenantId ?? ''} />
 
           {/* 渲染主视图区域 */}
           <div className={cn(
@@ -361,9 +344,6 @@ export function DashboardLayout() {
           </div>
         </main>
       </div>
-
-      {/* 新手奖励领取成功弹框：全局挂一次（领取入口在侧栏气泡里，跟随路由挂会被卸载） */}
-      <OnboardingRewardDialog />
     </div>
   )
 }

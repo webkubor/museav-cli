@@ -222,13 +222,13 @@ function giftChannelCode(source: string | undefined, type: IncomeRecordType): st
 }
 
 /**
- * 充值订单 → 入账记录。需求方 #835（1.0.6）：入账记录只体现实际入账，
- * 未支付完成（pending）与支付失败（failed）的充值单不展示（覆盖 PRD 1.0.4 §8.6.1
- * 「failed 可见」的旧口径）；取消/退款同样排除。后端 income-records 接口上线时需同口径过滤。
+ * 充值订单 → 入账记录。paid/pending/failed 三态纳入（PRD 1.0.4 §8.6.1 状态枚举含 failed，
+ * 失败的充值尝试也需要在账本里可见）；取消/退款不是"入账"事件本身，仍然排除。
  */
 function rechargeToIncome(o: RechargeOrder): IncomeRecord | null {
-  if (o.status !== 'paid') return null
-  const status: IncomeRecordStatus = 'completed'
+  if (o.status === 'cancelled' || o.status === 'refunded') return null
+  const status: IncomeRecordStatus =
+    o.status === 'paid' ? 'completed' : o.status === 'failed' ? 'failed' : 'processing'
   return {
     id: o.order_no,
     type: 'recharge',

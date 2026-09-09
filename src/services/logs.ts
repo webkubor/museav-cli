@@ -50,10 +50,6 @@ type ModelLogRow = {
   currency?: string
   path?: string
   call_type?: string
-  call_kind?: CallLogItem['call_kind']
-  call_mode?: CallLogItem['call_mode']
-  async_task_id?: CallLogItem['async_task_id']
-  response_mode?: CallLogItem['response_mode']
   upstream_model?: string
   request_ctx?: Record<string, unknown>
   runtime_detail?: Record<string, unknown>
@@ -203,11 +199,6 @@ function toCallLogItem(row: ModelLogRow): CallLogItem {
     upstream_model: row.upstream_model || '',
     path: row.path || '',
     call_type: row.call_type || '',
-    // qa#719 契约透传；本地未实测，缺失保持缺失，不填 sync/false/0。
-    call_kind: row.call_kind,
-    call_mode: row.call_mode,
-    async_task_id: row.async_task_id,
-    response_mode: row.response_mode,
     http_status: numberOrZero(row.http_status),
     fallback_count: fallbackCount(row.runtime_detail),
     tpot_ms: numberOrZero(row.tpot_ms),

@@ -5,7 +5,7 @@
  */
 import { useTranslation } from 'react-i18next'
 import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQueries, useQuery } from '@tanstack/react-query'
 import {
   getDiscoveryAnalysis,
   getHotAgents,
@@ -22,10 +22,12 @@ import type { DiscoveryMetric, DiscoveryModelOption, DiscoveryType, DiscoveryUsa
 import {
   discoveryTypeFor,
   isLanguageType,
+  specialtyMetricFor,
   toPrototypeModel,
   toSummaryCards,
   type ModalityKey,
   type PrototypeModel,
+  type SpecialtyKind,
   type PrototypeSummaryCard,
 } from './discovery-data'
 
@@ -122,6 +124,69 @@ export function useDiscoveryQuery(
   }
 }
 
+
+
+/** PRD（modelgo_prd `ModelDiscoveryPage.tsx` 的 completeSpecialtyRows）：专项榜取前 10。 */
+const SPECIALTY_LIMIT = 10
+
+/**
+ * 专项榜的模型列表 —— **每张榜按自己的 metric 各向服务端要前 10**。
+ *
+ * 为什么不共用主榜那 100 条：那是「按主指标排序的前 100」，从里面再挑出的
+ * Top N 不是全量 Top N。实测 TEXT_CHAT 的 `metric=USAGE` 有 261 个模型可排序，
+ * 而页面池子只有 100 条、其中用量 > 0 的仅 6 条 —— 用量榜只渲染 6 条，
+ * 第 6 名起与服务端权威榜错位，漏掉 4 个该上榜的模型。TPS 榜与时延榜
+ * （各 189 个候选）同样漏。表格早就改成服务端排序分页了，专项榜漏了这一处。
+ *
+ * 跟随「全部 / 仅看已接入」（服务端 `integrated` 参数），**不跟随厂商筛选** ——
+ * 与改造前用 visibleModels 的口径一致（厂商筛选只作用于完整榜单）。
+ *
+ * 排序与方向全归服务端：STT 的 AA_WER、时延都是越低越好，前端不传方向；
+ * 「指标值为空的模型不参与排序」也由服务端处理。
+ */
+export function useDiscoverySpecialtyModels(
+  modality: ModalityKey,
+  task: string,
+  kinds: readonly SpecialtyKind[],
+  scope: 'all' | 'supported',
+): { byKind: Partial<Record<SpecialtyKind, PrototypeModel[]>>; isLoading: boolean } {
+  const { t } = useTranslation()
+  const type = discoveryTypeFor(modality, task)
+  const integratedOnly = scope === 'supported'
+
+  // 不 memo：只是把 kinds 映射成 (kind, metric)，稳定性由 queryKey 保证
+  const specs = type
+    ? kinds
+        .map((kind) => ({ kind, metric: specialtyMetricFor(kind, type) }))
+        .filter((spec): spec is { kind: SpecialtyKind; metric: DiscoveryMetric } => Boolean(spec.metric))
+    : []
+
+  const results = useQueries({
+    queries: specs.map(({ kind, metric }) => ({
+      queryKey: ['discovery-specialty', type, kind, metric, integratedOnly],
+      queryFn: () =>
+        listDiscoveryRankings({
+          type: type!,
+          metric,
+          page_size: SPECIALTY_LIMIT,
+          ...(integratedOnly ? { integrated: true } : {}),
+        }),
+      enabled: Boolean(type),
+      staleTime: STALE_TIME,
+      placeholderData: keepPrevious,
+    })),
+  })
+
+  const byKind: Partial<Record<SpecialtyKind, PrototypeModel[]>> = {}
+  if (type) {
+    specs.forEach((spec, index) => {
+      const data = results[index]?.data
+      if (data) byKind[spec.kind] = data.items.map((item) => toPrototypeModel(t, item, type))
+    })
+  }
+
+  return { byKind, isLoading: results.some((result) => result.isLoading) }
+}
 
 /**
  * 选中模型的近 7 日用量趋势。

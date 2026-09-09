@@ -12,6 +12,7 @@
  *   （该批把不可靠的生成耗时撤下，媒体类型不再展示速度）
  */
 import type {
+  DiscoveryMetric,
   DiscoveryModelCard,
   DiscoveryOverview,
   DiscoveryIntegrationStatus,
@@ -19,6 +20,7 @@ import type {
   DiscoveryType,
   DiscoveryUnitPrices,
 } from '@/types'
+import { DISCOVERY_METRICS_BY_TYPE, DISCOVERY_PRIMARY_METRIC } from '@/constants/model-discovery'
 
 /** 文案随界面语言变，data 层不持有 hook —— 由调用方把 t 传进来。 */
 type TFn = (key: string, options?: Record<string, unknown>) => string
@@ -187,6 +189,33 @@ export function toPrototypeModel(t: TFn, item: DiscoveryRankingItem, type: Disco
  */
 type SpecialtyField = 'valueScore' | 'tps' | 'latencyMs' | 'usage' | 'price'
 export type SpecialtyKind = 'value' | 'tps' | 'latency' | 'usage' | 'price' | 'score'
+
+/**
+ * 专项榜 → 服务端排序用的 metric。
+ *
+ * 为什么要这个映射：专项榜原先是从「按主指标排序的前 100 条」里前端再排一次，
+ * 那不是全量 Top N —— 实测 TEXT_CHAT 的 `metric=USAGE` 有 261 个模型可排序，
+ * 而主指标 `INTELLIGENCE_INDEX` 只有 255 个、页面又只取前 100，用量榜实际只渲染
+ * 6 条，且第 6 名之后与服务端权威榜错位（漏掉 4 个该上榜的）。
+ * PRD（modelgo_prd `ModelDiscoveryPage.tsx` 的 completeSpecialtyRows）要 10 条，
+ * 所以每张榜各自按自己的 metric 向服务端要前 10。
+ *
+ * 「指标值为空的模型不参与排序」由服务端处理，所以各 metric 的 total 天然不同。
+ * 排序方向也归服务端（STT 的 AA_WER 越低越好、时延越低越好都不用前端传）。
+ *
+ * `price` 分两套：语言类按次计费（COST_PER_TASK），媒体类按量计费（API_PRICE）。
+ * 返回 undefined = 该类型没有这张榜（如 STT 没有性价比榜），调用方不要发请求。
+ */
+export function specialtyMetricFor(kind: SpecialtyKind, type: DiscoveryType): DiscoveryMetric | undefined {
+  const metric: DiscoveryMetric =
+    kind === 'value' ? 'VALUE_SCORE'
+    : kind === 'tps' ? 'OUTPUT_TPS'
+    : kind === 'latency' ? 'END_TO_END_LATENCY'
+    : kind === 'usage' ? 'USAGE'
+    : kind === 'price' ? (isLanguageType(type) ? 'COST_PER_TASK' : 'API_PRICE')
+    : DISCOVERY_PRIMARY_METRIC[type]
+  return DISCOVERY_METRICS_BY_TYPE[type].includes(metric) ? metric : undefined
+}
 
 function specialtyFieldFor(
   kind: SpecialtyKind,

@@ -22,7 +22,7 @@ import {
   toPrototypeModel,
   toSummaryCards,
   unitPriceDetail,
-} from './discovery-data'
+  specialtyMetricFor,} from './discovery-data'
 import type { PrototypeModel } from './discovery-data'
 import type { DiscoveryOverview, DiscoveryRankingItem } from '@/types'
 
@@ -426,5 +426,41 @@ describe('成本为 null 不能渲染成 0（需求方#969 缺陷 1）', () => {
     const m = toPrototypeModel(t, card({ cost_value: 6.1169 }), 'AGENT')
     expect(m.raw.price).toBe(6.1169)
     expect(m.price).toBe('$6.1169/次')
+  })
+})
+
+// 专项榜改成服务端排序后，kind → metric 的映射是唯一的接缝：映错就整张榜取错指标，
+// 而页面上照样画得出柱子（数值来自另一个字段），肉眼很难发现。
+describe('specialtyMetricFor', () => {
+  it('语言类的价格榜按次计费，媒体类按量计费', () => {
+    expect(specialtyMetricFor('price', 'TEXT_CHAT')).toBe('COST_PER_TASK')
+    expect(specialtyMetricFor('price', 'AGENT')).toBe('COST_PER_TASK')
+    expect(specialtyMetricFor('price', 'CODE_GENERATION')).toBe('COST_PER_TASK')
+    expect(specialtyMetricFor('price', 'TEXT_TO_IMAGE')).toBe('API_PRICE')
+    expect(specialtyMetricFor('price', 'TTS')).toBe('API_PRICE')
+  })
+
+  it('质量榜取该类型的主指标 —— STT 是越低越好的 AA_WER，方向归服务端', () => {
+    expect(specialtyMetricFor('score', 'TEXT_CHAT')).toBe('INTELLIGENCE_INDEX')
+    expect(specialtyMetricFor('score', 'AGENT')).toBe('AGENTIC_INDEX')
+    expect(specialtyMetricFor('score', 'CODE_GENERATION')).toBe('CODING_INDEX')
+    expect(specialtyMetricFor('score', 'TEXT_TO_IMAGE')).toBe('ELO')
+    expect(specialtyMetricFor('score', 'TTS')).toBe('VOICE_ELO')
+    expect(specialtyMetricFor('score', 'STT')).toBe('AA_WER')
+  })
+
+  it('用量、TPS、时延各对应自己的 metric', () => {
+    expect(specialtyMetricFor('usage', 'TEXT_CHAT')).toBe('USAGE')
+    expect(specialtyMetricFor('usage', 'STT')).toBe('USAGE')
+    expect(specialtyMetricFor('tps', 'TEXT_CHAT')).toBe('OUTPUT_TPS')
+    expect(specialtyMetricFor('latency', 'TEXT_CHAT')).toBe('END_TO_END_LATENCY')
+  })
+
+  it('该类型没有这张榜就返回 undefined —— 调用方据此不发请求', () => {
+    // STT 的可排序指标只有 AA_WER / API_PRICE / USAGE，没有性价比与 TPS
+    expect(specialtyMetricFor('value', 'STT')).toBeUndefined()
+    expect(specialtyMetricFor('tps', 'STT')).toBeUndefined()
+    expect(specialtyMetricFor('tps', 'TEXT_TO_IMAGE')).toBeUndefined()
+    expect(specialtyMetricFor('latency', 'TTS')).toBeUndefined()
   })
 })

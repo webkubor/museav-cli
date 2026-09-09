@@ -319,5 +319,9 @@
       "cacheHit": "缓存命中",
       "cacheWrite": "缓存写入"
     }
+  },
+  "empty": {
+    "notOnThisSite": "该模型未在本站上架",
+    "onOtherSite": "它接在 {{site}}，当前站没有它的详情页"
   }
 }

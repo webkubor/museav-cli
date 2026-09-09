@@ -319,5 +319,9 @@
       "cacheHit": "Cache hit",
       "cacheWrite": "Cache write"
     }
+  },
+  "empty": {
+    "notOnThisSite": "Not listed on this site",
+    "onOtherSite": "It is available on {{site}}; no detail page here"
   }
 }

@@ -63,6 +63,7 @@ import {
   useDiscoveryAnalysis,
   useDiscoveryModelOptions,
   useDiscoveryQuery,
+  useDiscoverySpecialtyModels,
   useDiscoveryTable,
   useDiscoveryTrends,
 } from './use-discovery-query'
@@ -603,6 +604,18 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
         ? audioBenchmarkRankings
         : textBenchmarkRankings;
   /**
+   * 专项榜的行数据 —— 每张榜按自己的 metric 向服务端要前 10，不再从主榜那 100 条里挑。
+   * 口径与实测依据见 useDiscoverySpecialtyModels 的注释（用量榜原先只出 6 条且错位）。
+   *
+   * 不 memo kinds：queryKey 由 type/kind/metric 决定，每次渲染重建这个小数组不会让
+   * react-query 重新请求，而 useMemo + 字符串键那版会被 React Compiler 判为
+   * 「manual memoization could not be preserved」直接拒掉整个组件的优化。
+   */
+  const specialtyKinds = rankingCards.map((card) => card.kind);
+  const { byKind: specialtyModels } = useDiscoverySpecialtyModels(modality, task, specialtyKinds, scope);
+  /** 某张榜的服务端结果还没到时，先用主榜池子垫着，避免整块空白闪一下。 */
+  const specialtyModelsFor = (kind: SpecialtyKind) => specialtyModels[kind] ?? visibleModels;
+  /**
    * 模型选择器与厂商筛选的候选来自 model-options（该类型的**全部**模型，不分页）。
    * 之前用的是榜单前 100 条，导致选择器只有 100 个模型、厂商下拉只有二十来家——
    * 实测 TEXT_CHAT 全量是 631 个模型 / 59 家厂商。
@@ -615,7 +628,9 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       : [{ key: "overall", label: modality === "audio" ? t("modelsDiscovery.metric.voiceQuality") : t("modelsDiscovery.metric.eloScore") }, { key: "value", label: t("modelsDiscovery.metric.valueForMoney"), specialtyIndex: 0 }, { key: "price", label: t("modelsDiscovery.metric.apiPrice"), specialtyIndex: 1 }, { key: "usage", label: t("modelsDiscovery.metric.usage"), specialtyIndex: 2 }] satisfies typeof rankingMetricOptions;
   const selectedRankingOption = availableRankingMetricOptions.find((option) => option.key === rankingMetric) ?? availableRankingMetricOptions[0];
   const selectedSpecialty = selectedRankingOption.specialtyIndex === undefined ? undefined : specialties[selectedRankingOption.specialtyIndex];
-  const selectedMetricRows = selectedSpecialty ? specialtyRows(selectedSpecialty.kind, taskModels, { scoreAscending }) : [];
+  const selectedMetricRows = selectedSpecialty
+    ? specialtyRows(selectedSpecialty.kind, specialtyModelsFor(selectedSpecialty.kind), { scoreAscending })
+    : [];
   const selectedMetricValues = new Map(selectedMetricRows.map((row) => [row.model, row.value]));
   const specialtyDescriptions = isTextAgent
     ? [taskProfile.valueLabel, taskProfile.speedLabel, taskProfile.latencyLabel, taskProfile.usageLabel]
@@ -694,8 +709,28 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
    * ③ 没有 id → **明确提示**，不静默不可点（owner 2026-09-08 要求）
    */
   function openModelDetail(model: DetailShape) {
-    if (model.supported && model.id) {
+    // 站内跳转要同时满足两件事：**已接入** 且 **接在当前这个站**。
+    //
+    // 2026-09-09 踩过：prd#969 第 7 条把 supported 从 `integration_status === "MODELGO"`
+    // 改成 `is_integrated`（那是对的，前者是「接在哪个站」不是「有没有接入」），
+    // 但站内跳转的条件直接吃 supported，于是**接在国外站的模型也走站内跳转**，
+    // 在国内站查 catalog 必然 404 报错。实测 model-options 里 37 个已接入模型的
+    // integrated_site 全是 MODELGO_AI —— 等于「已接入」的详情全都点不开。
+    // 教训：`is_integrated` 只回答「有没有接入」，落点还得看 integrationStatus。
+    const modelSite: Market = model.integrationStatus === "MODELGO" ? "china" : "global";
+    const onCurrentSite = modelSite === getMarket();
+
+    if (model.supported && model.id && onCurrentSite) {
       onOpenModel(model.id);
+      return;
+    }
+    // 已接入但接在另一个站：测试/本地只有一套控制台，跳过去也是 404，
+    // 所以明说「在哪个站」而不是把人送到一个查不到的地址（owner 2026-09-09 报的就是这个）。
+    if (model.supported && model.id && isTestOrDev()) {
+      appToast.info(
+        t("modelsDiscovery.empty.notOnThisSite"),
+        t("modelsDiscovery.empty.onOtherSite", { site: modelSite === "china" ? "modelgo.com" : "modelgo.ai" }),
+      );
       return;
     }
     if (model.id) {
@@ -778,6 +813,9 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
         name: option.model_name,
         provider: option.creator_name ?? "",
         supported: option.is_integrated === true,
+        // 落点判据：supported 只说「有没有接入」，跳哪个站要看它接在哪个站。
+        // 不带这个字段，model-options 这条线的详情跳转就会退化成「一律站内」。
+        integrationStatus: option.integration_status,
       })),
     [allModelOptions, scope],
   );
@@ -1049,10 +1087,13 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       <section className="model-discovery-section">
         <div className="model-discovery-section-head"><div><h2>{t("modelsDiscovery.section.specialtyRank")}</h2></div></div>
         <div className="model-discovery-specialties">{rankingCards.map((item) => {
-          const rows = specialtyRows(item.kind, visibleModels, { scoreAscending });
+          const specialtySource = specialtyModelsFor(item.kind);
+          const rows = specialtyRows(item.kind, specialtySource, { scoreAscending });
           // 柱子此前有 hover 效果和 tabIndex，却没有任何点击行为——看着可点其实是死的。
-          // 从当前榜单里找回完整模型对象后接上跳详情，跳不了的就不给可点的样子。
-          const barModelOf = (name: string) => visibleModels.find((model) => model.name === name);
+          // 从**本榜自己那批模型**里找回完整对象后接上跳详情（改服务端排序后，
+          // 榜上的模型可能不在主榜那 100 条里，只查 visibleModels 会找不到而变成死柱子）。
+          const barModelOf = (name: string) =>
+            specialtySource.find((model) => model.name === name) ?? visibleModels.find((model) => model.name === name);
           return <article className="mg-tile" key={item.title}>
             <header><div><h3>{item.title}</h3><p title={item.description}>{item.description}<em className="model-discovery-source-tag">{item.source}</em></p></div><span>Top {rows.length}</span></header>
             <SpecialtyBarChart

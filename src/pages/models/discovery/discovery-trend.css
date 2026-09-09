@@ -77,22 +77,28 @@
 }
 
 .model-discovery-specialties article {
-  --specialty-color: var(--accent);
+  --specialty-color: var(--discovery-specialty-1);
   overflow: visible;
   padding: 16px 18px 15px;
 }
 
-/* 柱子按**模型厂牌色**上色（owner 2026-09-08 拍板），与散点图、近 7 日使用趋势
-   同一个来源：@model-go/icons 的 brandColor(vendor, theme)，在 SpecialtyBarShape
-   里以 --specialty-color 逐柱覆盖。
+/* 柱色按**维度（卡片）**区分，不按厂牌（qa#724，owner 2026-09-09 按 PRD 原型
+   推翻 2026-09-08 的厂牌色方案）：每张卡一色、卡内十根柱同色，厂牌语义只留在
+   轴刻度图标与 tooltip 的厂牌 mark。focus 光圈（discovery-specialty.css）同样
+   吃 --specialty-color，自动跟随维度色，与原型 :15159 一致。
+   nth-child 只数渲染出来的 article——部分模态隐藏若干卡时，第 N 张渲染出的卡
+   取第 N 色，与原型 nth-child 行为一致。 */
+.model-discovery-specialties article:nth-child(2) {
+  --specialty-color: var(--discovery-specialty-2);
+}
 
-   这里推翻了 2026-09-03 的「四张榜统一品牌色」——那次的理由是"颜色不承载信息"，
-   按 article 分色确实如此（四张图是并列维度，靠标题区分就够）。但按**厂牌**分色
-   不一样：颜色此时承载的是"这根柱子是谁家的模型"，和图例、散点、趋势图是同一套
-   语义，页面内三处用同一套厂牌色才叫统一。所以下面 article 级的
-   `--specialty-color: var(--accent)` 只作**无品牌色厂牌的回落**（brandColor 返回
-   null 的单色标识厂牌，实测 TEXT_CHAT 59 家里 35 家）。
-   ⚠️ 回落不能用 --mg-text-2：暗色主题下它是浅灰(212,212,216)，柱内白字直接消失。 */
+.model-discovery-specialties article:nth-child(3) {
+  --specialty-color: var(--discovery-specialty-3);
+}
+
+.model-discovery-specialties article:nth-child(4) {
+  --specialty-color: var(--discovery-specialty-4);
+}
 
 .model-discovery-specialties article:last-child:nth-child(odd) {
   grid-column: 1 / -1;

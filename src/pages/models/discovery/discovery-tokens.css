@@ -67,6 +67,14 @@
   --accent-soft: var(--mg-fill-1);
   --success: var(--mg-success);
 
+  /* 专项榜四卡的维度色（qa#724，语义对应原型 品牌/青/紫/绿）：第 1 卡吃品牌色，
+     其余取全局图表分类色 —— 不照抄原型 hex，明暗双主题与双市场品牌切换由
+     token 层保证。取用点在 discovery-trend.css 的 article nth-child。 */
+  --discovery-specialty-1: var(--accent);
+  --discovery-specialty-2: var(--mg-chart-cat-2);
+  --discovery-specialty-3: var(--mg-chart-cat-5);
+  --discovery-specialty-4: var(--mg-chart-cat-4);
+
   /* ── 原型专属尺度 ─────────────────────────────────────────────
      这些圆角值来自 PRD 原型且**不在控制台 radius 刻度上**（刻度只有
      xs=6 / sm=8 / md=14 / lg=18 / pill=999）。1:1 复刻要求值不变，

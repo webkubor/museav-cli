@@ -135,8 +135,6 @@ export interface SpecialtyChartRow {
 }
 
 interface SpecialtyBarChartProps {
-  /** 厂牌主色取色函数。柱子按模型厂牌上色，与散点图、近 7 日趋势同一套色。 */
-  providerColor: (provider: string) => string
   rows: SpecialtyChartRow[]
   /** 榜单副标题，进 tooltip 的第二行 */
   description: string
@@ -156,8 +154,6 @@ function normalizeRect(y: number, height: number): { y: number; height: number }
 }
 
 interface BarShapeProps {
-  /** 厂牌主色，与散点图/趋势图同一个来源（brandColor），由调用方传入 */
-  providerColor?: (provider: string) => string
   x?: number
   y?: number
   width?: number
@@ -175,10 +171,12 @@ interface BarShapeProps {
  * 柱子本体。用自定义 shape 而不是默认 Rectangle，是为了保住手写版已有的可达性：
  * 默认 shape 渲染出来的 path 拿不到 role / tabIndex / onKeyDown，键盘用户就点不开
  * 详情了。颜色与圆角都交给 CSS（`.model-discovery-specialty-bar`），这里只出几何量。
+ * 柱色按维度（卡片）区分：--specialty-color 由 article 级 nth-child 提供
+ * （discovery-trend.css，qa#724），本组件不再逐柱覆盖。
  */
 function SpecialtyBarShape(props: BarShapeProps) {
   const { t } = useTranslation()
-  const { x = 0, y = 0, width = 0, height = 0, index = 0, payload, hoveredModel, onHoverModel, isClickable, onOpenModel, providerColor } = props
+  const { x = 0, y = 0, width = 0, height = 0, index = 0, payload, hoveredModel, onHoverModel, isClickable, onOpenModel } = props
   if (!payload) return null
   const clickable = isClickable?.(payload.model) ?? false
   const linked = hoveredModel === payload.model
@@ -197,7 +195,6 @@ function SpecialtyBarShape(props: BarShapeProps) {
       onMouseEnter={() => onHoverModel?.(payload.model)}
       onMouseLeave={() => onHoverModel?.(null)}
       role={clickable ? 'link' : undefined}
-      style={providerColor ? ({ '--specialty-color': providerColor(payload.provider) } as React.CSSProperties) : undefined}
       tabIndex={0}
     >
       <rect className="model-discovery-specialty-bar" width={width} x={x} {...normalizeRect(y, height)} />
@@ -255,7 +252,7 @@ function SpecialtyTooltip({ active, payload, rows = [], description }: Specialty
   )
 }
 
-export function SpecialtyBarChart({ rows, description, hoveredModel, onHoverModel, isClickable, onOpenModel, providerColor }: SpecialtyBarChartProps) {
+export function SpecialtyBarChart({ rows, description, hoveredModel, onHoverModel, isClickable, onOpenModel }: SpecialtyBarChartProps) {
   const { t } = useTranslation()
   const domain = useMemo(() => specialtyBarDomain(rows.map((row) => row.numeric)), [rows])
   if (rows.length === 0) return <div className="model-discovery-chart-empty-block">{t('modelsDiscovery.empty.noMetricData')}</div>
@@ -288,7 +285,7 @@ export function SpecialtyBarChart({ rows, description, hoveredModel, onHoverMode
             animationDuration={ENTER_DURATION}
             dataKey="numeric"
             isAnimationActive={!prefersReducedMotion()}
-            /* 柱子按厂牌色上色后，柱内不再压文字，只需保证矮柱还点得中 */
+            /* 柱内不压文字（数值标签在柱外顶部），minPointSize 只保证矮柱还点得中 */
             minPointSize={6}
             shape={
               <SpecialtyBarShape
@@ -296,7 +293,6 @@ export function SpecialtyBarChart({ rows, description, hoveredModel, onHoverMode
                 isClickable={isClickable}
                 onHoverModel={onHoverModel}
                 onOpenModel={onOpenModel}
-                providerColor={providerColor}
               />
             }
           >

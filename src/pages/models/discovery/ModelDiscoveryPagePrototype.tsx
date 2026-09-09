@@ -387,14 +387,6 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
    */
   const [hoveredModel, setHoveredModel] = useState<string | null>(null);
   const providerColor = useProviderColor();
-  /**
-   * 专项排行柱子的取色：同一套 brandColor，但**回落色不同**。
-   *
-   * 散点/图例是小圆点，无品牌色时回落浅灰(--mg-text-2)没问题；柱子是大色块且
-   * 柱内压着白色数值标签，暗色主题下 --mg-text-2 是 rgb(212,212,216)，白字直接
-   * 消失。所以这里回落到品牌色——即 2026-09-03 之前四张榜的统一色。
-   */
-  const specialtyBarColor = useProviderColor('var(--accent)');
 
   /**
    * 接口已按该类型的主指标排好序（rankings 的 direction 决定升降序，STT 的 WER
@@ -1092,7 +1084,6 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                 const model = barModelOf(name);
                 if (model) openModelDetail(model);
               }}
-              providerColor={specialtyBarColor}
               rows={rows}
             />
           </article>;

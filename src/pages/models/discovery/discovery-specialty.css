@@ -52,6 +52,13 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* 首根柱的顶标签居中锚定时会向左越出 svg 5–7px，overflow:hidden 把
+   「1252 tok/s」裁成「252 tok/s」、「$0.0060」裁掉 $（1024 档实测）——数值被
+   裁是误读，放开裁剪让标签落进卡片 padding；柱体本身不会越界，无泄漏风险。 */
+.model-discovery-specialty-chart svg.recharts-surface {
+  overflow: visible;
+}
+
 /* X 轴刻度里的厂牌图标：装在 <foreignObject> 里，所以仍是普通 HTML 盒子。
    语义档位最小是 dense=18px，与原先轴标签一致。 */
 .model-discovery-axis-icon {

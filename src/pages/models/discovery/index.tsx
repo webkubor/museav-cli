@@ -25,6 +25,7 @@ import { useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { trackEvent, trackPageView } from '@/lib/track'
 import ModelDiscoveryPagePrototype from './ModelDiscoveryPagePrototype'
+import { modelDetailPath } from '../model-detail-path'
 import './discovery.css'
 
 export default function ModelDiscoveryPage() {
@@ -40,7 +41,7 @@ export default function ModelDiscoveryPage() {
     <ModelDiscoveryPagePrototype
       onOpenModel={(modelId) => {
         // 带来源与滚动位置，详情页返回时恢复现场（§2.2）
-        navigate(`/models/${modelId}`, {
+        navigate(modelDetailPath({ model_id: modelId }), {
           state: {
             source: 'discovery',
             fromDiscoverySearch: location.search,

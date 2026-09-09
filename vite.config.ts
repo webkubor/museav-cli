@@ -19,8 +19,30 @@ function resolveBranch(): string {
   } catch { return '' }
 }
 
-// 构建时产出 /version.json：供「新版本强制更新弹窗」拉取最新部署的版本号做「当前→最新」对比。
-// package version 很少 bump，真正区分每次部署的是 commit + 构建时间，故三者都带上。
+// 发版版本号的真源是**发版分支名**（班车制的 `release/vX.Y.Z`），不是 package.json。
+// package.json 的 version 靠人手 bump，实测跨三个版本只同步过一次（854f1486「版本同步
+// V1.0.3」），到 1.0.6 时仍停在 1.0.4——从它取值，version.json 就会对外报错版本。
+// 分支名则由发版流程本身决定，不需要任何人记得改。
+//
+// 非发版分支（test / hotfix/* / feature/*）拿不到版本号，回落 package.json：那些产物
+// 不用于对外声明版本，所以回落值不准也无妨，**不必为此手动维护 package.json**。
+function releaseVersion(branch: string): string {
+  const matched = /^release\/v?(\d+\.\d+\.\d+)/.exec(branch)
+  if (matched) return matched[1]
+  // 是发版分支却取不出版本号 ⇒ 分支名不合班车制命名，就地拦住。
+  // 与下面 REQUIRED_URL_ENV 同一个原则：宁可不让过，也不产出一个错的版本号悄悄上线。
+  if (branch.startsWith('release/')) {
+    throw new Error(
+      `[emit-version-json] 发版分支 "${branch}" 取不出版本号，期望 release/vX.Y.Z（班车制命名）`,
+    )
+  }
+  return ''
+}
+
+// 构建时产出 /version.json：记录这次部署到底是哪个版本、哪个 commit、什么时候构建的。
+// 目前前端没有代码读它（注释里曾提到的「强制更新弹窗」并未落地），它的实际用途是
+// **人和 agent 核对某个环境上跑的是什么**——构建绿灯只说明打包成功，这份文件才证明
+// 产物真的上了那台机器。
 function emitVersionJson(): Plugin {
   return {
     name: 'emit-version-json',
@@ -28,12 +50,14 @@ function emitVersionJson(): Plugin {
     generateBundle() {
       let commit = ''
       try { commit = execSync('git rev-parse --short HEAD').toString().trim() } catch { /* 无 git 环境时留空 */ }
-      let version = ''
-      try { version = JSON.parse(readFileSync('package.json', 'utf-8')).version } catch { /* ignore */ }
+      let pkgVersion = ''
+      try { pkgVersion = JSON.parse(readFileSync('package.json', 'utf-8')).version } catch { /* ignore */ }
+      const branch = resolveBranch()
+      const version = releaseVersion(branch) || pkgVersion
       this.emitFile({
         type: 'asset',
         fileName: 'version.json',
-        source: JSON.stringify({ version, commit, time: new Date().toISOString() }),
+        source: JSON.stringify({ version, commit, branch, time: new Date().toISOString() }),
       })
     },
   }

@@ -46,14 +46,14 @@ export function TaskMoreFilters({
     <div className="flex items-end gap-3 flex-wrap border-t border-mg-border pt-4">
       <label className="flex flex-col gap-1.5">
         <span className="mg-text-label text-mg-text-3">{t('artifactState.label')}</span>
-        <Select value={artifactFilter} onChange={onArtifactChange} className="mg-control-md w-32 mg-text-body">
+        <Select value={artifactFilter} onChange={onArtifactChange} className="w-32">
           <Select.Option value="all">{t('artifactState.all')}</Select.Option>
           {artifactOptions.map((option) => <Select.Option key={option.value} value={option.value}>{option.label}</Select.Option>)}
         </Select>
       </label>
       <label className="flex flex-col gap-1.5">
         <span className="mg-text-label text-mg-text-3">{t('billingState.label')}</span>
-        <Select value={billingFilter} onChange={onBillingChange} className="mg-control-md w-32 mg-text-body">
+        <Select value={billingFilter} onChange={onBillingChange} className="w-32">
           <Select.Option value="all">{t('billingState.all')}</Select.Option>
           <Select.Option value="settled">{t('billingState.settled')}</Select.Option>
           <Select.Option value="pending">{t('billingState.pending')}</Select.Option>
@@ -63,7 +63,7 @@ export function TaskMoreFilters({
       </label>
       <label className="flex flex-col gap-1.5">
         <span className="mg-text-label text-mg-text-3">{t('filters.workspace')}</span>
-        <Select value={workspaceFilter} onChange={onWorkspaceChange} className="mg-control-md w-44 mg-text-body">
+        <Select value={workspaceFilter} onChange={onWorkspaceChange} className="w-44">
           <Select.Option value="all">{t('filters.allWorkspaces')}</Select.Option>
           {workspaces.map((w) => (
             <Select.Option key={w.workspace_id} value={w.workspace_id}>{w.name}</Select.Option>
@@ -72,7 +72,7 @@ export function TaskMoreFilters({
       </label>
       <label className="flex flex-col gap-1.5">
         <span className="mg-text-label text-mg-text-3">{t('filters.apiKey')}</span>
-        <Select value={apiKeyFilter} disabled={!apiKeyWorkspaceId} onChange={onApiKeyChange} className="mg-control-md w-44 mg-text-body">
+        <Select value={apiKeyFilter} disabled={!apiKeyWorkspaceId} onChange={onApiKeyChange} className="w-44">
           <Select.Option value="all">{apiKeyWorkspaceId ? t('filters.allApiKeys') : t('filters.selectWorkspaceFirst')}</Select.Option>
           {apiKeys.map((k) => (
             <Select.Option key={k.api_key_id} value={k.api_key_id}>{k.name}</Select.Option>
@@ -82,7 +82,7 @@ export function TaskMoreFilters({
       {view !== 'mine' && (
         <label className="flex flex-col gap-1.5">
           <span className="mg-text-label text-mg-text-3">{t('filters.member')}</span>
-          <Select value={memberFilter} onChange={onMemberChange} className="mg-control-md w-44 mg-text-body">
+          <Select value={memberFilter} onChange={onMemberChange} className="w-44">
             <Select.Option value="all">{t('filters.allMembers')}</Select.Option>
             {members.map((m) => (
               <Select.Option key={m.account.account_id} value={m.account.account_id}>

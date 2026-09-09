@@ -378,7 +378,8 @@ export function ModelPickerDialog({
       aria-label={title}
       style={isCentered ? undefined : panelStyle}
       className={cn(
-        'model-picker-dialog__panel mg-panel rounded-lg border border-mg-border bg-mg-bg-3 shadow-xl',
+        // 表面走全局浮层类 mg-float，与 Dialog / Sheet 同一档
+        'model-picker-dialog__panel mg-panel rounded-lg mg-float',
         'animate-in zoom-in-95 fade-in-0 duration-150',
         // 宽度用本仓 Modal 的既有刻度（sm 400 / md 520 / lg 720），但只在 lg 断点
         // (≥1024px) 才用满 720——之前不管视口多窄都死守 720，只有 <736px 那个
@@ -404,7 +405,7 @@ export function ModelPickerDialog({
             placeholder={t('modelsExperience.picker.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-8 text-xs"
+            size="sm"
             autoFocus
           />
 

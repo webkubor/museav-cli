@@ -1,0 +1,51 @@
+{
+  "onboarding": {
+    "title": "Getting started",
+    "quickStartTag": "Quick start",
+    "subtitle": "Finish {{count}} tasks to claim {{reward}} in bonus credit",
+    "close": "Close",
+    "closeGuide": "Close getting started",
+    "entryTooltip": "Getting started · {{completed}}/{{total}} done",
+    "stepCompleted": "Done",
+    "stepDone": "Done",
+    "steps": {
+      "marketplace": {
+        "title": "Browse the model catalog",
+        "description": "Find models that fit your use case",
+        "action": "Browse"
+      },
+      "playground": {
+        "title": "Pick a model and run it",
+        "description": "Generate one successful response",
+        "action": "Try it"
+      },
+      "api_key": {
+        "title": "Create an API key",
+        "description": "Issue a credential for your workspace",
+        "action": "Create"
+      },
+      "quick_connect": {
+        "title": "Copy a quick connect config",
+        "description": "Pick a method and copy the full config",
+        "action": "Connect"
+      },
+      "request_log": {
+        "title": "Open the matching request log",
+        "description": "View the log detail for that successful call",
+        "action": "View"
+      }
+    },
+    "reward": {
+      "title": "Claim your reward",
+      "claimable": "{{reward}} ready to claim",
+      "remaining": "{{count}} more to unlock",
+      "claim": "Claim {{reward}}"
+    },
+    "rewardSuccess": {
+      "title": "Reward claimed",
+      "credited": "added to your bonus balance",
+      "later": "Later",
+      "viewCredit": "View bonus credit"
+    }
+  }
+}

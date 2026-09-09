@@ -4,47 +4,34 @@
  */
 
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
 import { LuPaperclip, LuTriangleAlert, LuX } from 'react-icons/lu'
 import { Composer } from '@/components/ui/Composer'
-import { trackEvent } from '@/lib/track'
 import {
   categoryPlaceholder,
   attachmentKindFromMime,
   attachmentLimitLabel,
   modelSupportsAttachment,
   ATTACHMENT_LIMITS,
-  isPaidModel,
+  isFreeModel,
 } from '../models/model-experience-data'
+import { ExperienceBalanceNotice } from '../models/ExperienceBalanceNotice'
 import { TaskFileDropZone } from '../models/components/TaskFileDropZone'
 import type { ModelsCompareContext } from './use-models-compare'
 
 /** 共享输入区：仅同步输入模式渲染主体，独立模式这里只保留历史错误提示条 */
 export function CompareSharedComposer({ ctx }: { ctx: ModelsCompareContext }) {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const columns = ctx.columns ?? []
   const { fileInputRef, stream } = ctx
 
   return (
     <>
-      {ctx.syncInput && ctx.isBalanceZero && columns.some((c) => isPaidModel(c.model)) && (
-        <div className="playground-balance-notice" role="alert">
-          <LuTriangleAlert size={15} />
-          <span>
-            <strong>{t('modelsExperience.balanceInsufficientTitle')}</strong>
-            {t('modelsExperience.balanceInsufficientHint')}
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              trackEvent('playground_recharge_click', { locked_model_count: columns.filter((c) => isPaidModel(c.model)).length })
-              navigate('/billing', { state: { entrySource: 'recharge_cta' } })
-            }}
-          >
-            {t('modelsExperience.recharge')}
-          </button>
-        </div>
+      {/* 需求方 #833（1.0.6）：余额为 0 时免费/付费模型一律锁定；全列免费才用免费模型场景文案 */}
+      {ctx.syncInput && ctx.isBalanceZero && columns.length > 0 && (
+        <ExperienceBalanceNotice
+          free={columns.every((c) => isFreeModel(c.model))}
+          lockedModelCount={columns.length}
+        />
       )}
 
       {/* 共享附件预览/校验错误（qa#545 §7.4/7.5，仅 dialogue 类走通用回形针）：只在同步
@@ -107,7 +94,7 @@ export function CompareSharedComposer({ ctx }: { ctx: ModelsCompareContext }) {
             onChange={ctx.setSharedDraft}
             onSend={ctx.handleSyncSend}
             isStreaming={columns.some((c) => c.streaming)}
-            disabled={ctx.isBalanceZero && columns.some((c) => isPaidModel(c.model))}
+            disabled={ctx.isBalanceZero}
             onStop={() => stream.abortAll()}
             placeholder={ctx.compareTask === 'image_to_image'
               ? t('modelsExperience.taskPlaceholder.image_to_image')

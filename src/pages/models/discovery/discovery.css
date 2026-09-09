@@ -1,0 +1,52 @@
+/**
+ * 模型发现页样式入口。
+ *
+ * 原先是单文件 1917 行（体积阈值 300），agent-eyes 一直在报告警却没人处理，
+ * 直到 2026-09-03 被需求方点名「怎么警告都不看」才回头收拾——这和今天治的
+ * 「规则写了但机器不执行」是同一类病：**报了没人看的告警，等于没报**。
+ *
+ * 按职责拆成 8 片：
+ *
+ *   tokens       变量层（字阶 / 动效 / 阴影 / 圆角别名）
+ *   layout       页面骨架：标题区、模态 tab、任务条
+ *   rank         总览栅格、卡片外壳、表格外观校准、详情按钮
+ *   rankrow      Top 5 排名行与进度条
+ *   summary      总览摘要卡
+ *   agent        热门 Agent 排行
+ *   analysis     多维分析工具条（预设、轴选择器）
+ *   scatter      散点图与图表联动
+ *   tooltip      图表 tooltip 外壳与图内空态
+ *   modelfilter  侧栏模型筛选面板
+ *   trend        近 7 日使用趋势柱图
+ *   specialty    专项指标柱图
+ *   table        榜单筛选条与指标类型选择器
+ *   tablefilter  厂商筛选面板与接入状态选择器
+ *   responsive   断点与收尾
+ *
+ * 每片都控制在 300 行以内（agent-eyes 的 CSS 体积阈值）。
+ *
+ * ⚠️ **@import 顺序就是层叠顺序，不要调整**：tokens 必须最先（其余都引用它的变量），
+ * responsive 必须最后（它的媒体查询要覆盖前面的同名规则）。
+ *
+ * ⚠️ 再拆分时**用选择器锚点定位，不要用行号**：第一次拆分就是按行号切的，差 1 行
+ * 把 `.model-discovery-overview {` 的规则头留在了上一个文件、body 落到下一个，
+ * 整个页面白屏（Tailwind 报 "Missing closing }"）。锚点跟着内容走，行号不跟。
+ *
+ * 拆分前后用 computed style 基线对 28 个选择器逐属性比对过，渲染完全一致。
+ */
+
+@import './discovery-tokens.css';
+@import './discovery-layout.css';
+@import './discovery-rank.css';
+@import './discovery-rankrow.css';
+@import './discovery-summary.css';
+@import './discovery-agent.css';
+@import './discovery-analysis.css';
+@import './discovery-scatter.css';
+@import './discovery-tooltip.css';
+@import './discovery-modelfilter.css';
+@import './discovery-trend.css';
+@import './discovery-specialty.css';
+@import './discovery-table.css';
+@import './discovery-tablefilter.css';
+@import './discovery-responsive.css';

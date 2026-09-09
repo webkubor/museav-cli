@@ -26,7 +26,9 @@ initDeviceFingerprint()
 if (import.meta.env.DEV) installDevAuth()
 
 // 当前 PRD 累积基线（见「PRD by Release」发布基线树），随 PRD 发版节奏手动 bump，供埋点 A/B 对比（#423）
-const PRD_VERSION = 'v1.0.3'
+// 2026-09-03 bump 到 v1.0.6：此前停在 v1.0.3，导致 1.0.4/1.0.5/1.0.6 三个版本的埋点
+// 全部归因到 1.0.3，A/B 对比失去意义。改这里时同步 PROJECT-BRIEF.md §6 的基线说明。
+const PRD_VERSION = 'v1.0.6'
 
 // 埋点 SDK 初始化（@model-go/track，替代 Umami）：app=console_web，区域按域名判定；
 // baseURL 与普通接口统一走 apiBaseUrl()（web-api 域名，SDK 自己拼 /api/v1/events:batch），

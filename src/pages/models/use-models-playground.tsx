@@ -28,7 +28,6 @@ import type { CatalogModelItem } from '@/types'
 import {
   estimateTokens,
   estimateComposerSpend,
-  isPaidModel,
   hashId,
   sizeBucket,
   experienceTaskLabel,
@@ -58,6 +57,7 @@ import {
 import { resolveExperienceMessageMedia } from './experience-message-attachments'
 import { useExperienceHistorySidebar } from './use-experience-history-sidebar'
 import { isAbortError, patchLastAssistant } from 'ai-sse-kit'
+import { detectFreeModelGate, freeModelGateMessage, type FreeModelGate } from './free-model-gate'
 import { useStreamingController } from 'ai-sse-kit/react'
 import { trackModelRun, buildDialogueMetrics, buildMediaMetrics, pollMediaTask } from './experience-run'
 import {
@@ -92,6 +92,9 @@ export function useModelsPlayground() {
   const selectedId = single.selectedId
   // useCallback：这个 setter 进了下面某个 useEffect 的依赖数组，保持引用稳定避免每次渲染都重跑
   const setSelectedId = useCallback((id: string | null) => setSingle({ selectedId: id, offlineModel: null }), [setSingle])
+  useEffect(() => {
+    setFreeModelGate(null)
+  }, [selectedId])
   // 历史会话引用的模型已不在目录（下线/删除）时的占位（PRD §AC-18），非空时优先于 selectedId
   const offlineModel = single.offlineModel
   const messages = single.messages
@@ -123,6 +126,9 @@ export function useModelsPlayground() {
   const [attachment, setAttachment] = useState<PlaygroundPendingAttachment | null>(null)
   const [attachmentUploading, setAttachmentUploading] = useState(false)
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
+  // 需求方 #833（1.0.6）：后端免费模型门槛（4032 余额门槛 / 4291 日限额）——发送被拒后
+  // 在 composer 上方展示对应场景提示；换模型或再次发送即清掉，不锁输入框（文案引导切模型继续）
+  const [freeModelGate, setFreeModelGate] = useState<FreeModelGate | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const transientPreviewUrlsRef = useRef(new Set<string>())
   const viewTrackedRef = useRef(false)
@@ -164,7 +170,8 @@ export function useModelsPlayground() {
         : categoryTasks[0]
   const needsFileTask = !isDialogue && taskNeedsFile(effectiveTask)
 
-  // §9.1 余额资格状态机：可消费合计（主+赠送+奖励）为 0 时，付费模型禁止发送，只能体验限免模型。
+  // §9.1 余额资格状态机 + 需求方 #833（1.0.6）：可消费合计（主+赠送+奖励）为 0 时，
+  // 付费与免费模型一律禁止发送（免费模型也要求余额 > 0，防脚本薅羊毛），文案按免费/付费分场景。
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
   const { data: balance } = useBalance(tenantId)
   const { data: balanceBreakdown } = useBalanceBreakdown(tenantId)
@@ -174,7 +181,7 @@ export function useModelsPlayground() {
     balanceBreakdown?.reward?.amount,
   )
   const isBalanceZero = spendableBalance !== undefined && spendableBalance <= 0
-  const isBlockedByBalance = isBalanceZero && !!selectedModel && isPaidModel(selectedModel)
+  const isBlockedByBalance = isBalanceZero && !!selectedModel
   /** dialogue 类允许附哪种附件（§7.5）。对话类的音频附件在真实 task 枚举里没有对应的子任务
    *  （image_to_text/video_to_text 之外没有 audio 版本），先不开放，只开放能对应到真实
    *  任务枚举的图片/视频。image/audio/video 类不走这条通用回形针路径，改用 needsFileTask
@@ -558,6 +565,7 @@ export function useModelsPlayground() {
     // 语音识别没有文本框（内容看有没有上传音频），其余任务必须有文本才能发
     if (!selectedModel || isStreaming || isBlockedByBalance || isOfflineModel(selectedModel)) return
     if (effectiveTask !== 'audio_to_text' && !prompt) return
+    setFreeModelGate(null)
     // needs-file 任务前端预检（PRD App.tsx:18407-18410 逐字对齐）：没附件直接拦，不用等
     // 后端 PLAYGROUND_ATTACHMENT_REQUIRED 才提示，下面 catch 里的兜底仍保留
     if (needsFileTask && !attachment) {
@@ -651,9 +659,13 @@ export function useModelsPlayground() {
     } catch (err) {
       if (isAbortError(err)) return
       const errorCode = (err as { data?: { code?: string } } | undefined)?.data?.code
-      // 已流出的半截内容清掉，只留报错气泡（原有行为：先清 content 再写 error）
+      const gate = detectFreeModelGate(err)
+      setFreeModelGate(gate)
+      // 已流出的半截内容清掉，只留报错气泡（原有行为：先清 content 再写 error）；
+      // 命中免费模型门槛（#833）时气泡改用本地化文案且不给重试入口——网关透传的是英文原话，且重试必败
       const display = resolveApiErrorDisplay(err)
-      patchAssistant({ content: '', ...errorDisplayFields(display), error: `${t('modelsExperience.requestFailed')}${display.message}` })
+      const bubble = gate ? { message: freeModelGateMessage(gate), retryable: false } : display
+      patchAssistant({ content: '', ...errorDisplayFields({ ...display, ...bubble }), error: `${t('modelsExperience.requestFailed')}${bubble.message}` })
       trackModelRun({ modelId: selectedModel.model_id, failed: true, totalMs: Date.now() - startedAt, errorCode })
     } finally {
       setIsStreaming(false)
@@ -733,8 +745,11 @@ export function useModelsPlayground() {
         free: spend === 0,
       })
     } catch (err) {
+      const gate = detectFreeModelGate(err)
+      setFreeModelGate(gate)
       const display = resolveApiErrorDisplay(err)
-      patchAssistant({ ...errorDisplayFields(display), error: `${t('modelsExperience.requestFailed')}${display.message}` })
+      const bubble = gate ? { message: freeModelGateMessage(gate), retryable: false } : display
+      patchAssistant({ ...errorDisplayFields({ ...display, ...bubble }), error: `${t('modelsExperience.requestFailed')}${bubble.message}` })
       const errorCode = (err as { data?: { field_errors?: Array<{ code?: string }> } } | undefined)?.data?.field_errors?.[0]?.code
       trackModelRun({ modelId: selectedModel.model_id, failed: true, totalMs: Date.now() - startedAt, errorCode })
     } finally {
@@ -833,6 +848,7 @@ export function useModelsPlayground() {
     sessionStats,
     isBalanceZero,
     isBlockedByBalance,
+    freeModelGate,
     composerEstimatedSpend,
     // 布局状态
     historyCollapsed,

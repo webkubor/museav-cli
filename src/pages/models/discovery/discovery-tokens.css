@@ -69,9 +69,12 @@
 
   /* 专项榜四卡的维度色（qa#724，语义对应原型 品牌/青/紫/绿）：第 1 卡吃品牌色，
      其余取全局图表分类色 —— 不照抄原型 hex，明暗双主题与双市场品牌切换由
-     token 层保证。取用点在 discovery-trend.css 的 article nth-child。 */
+     token 层保证。取用点在 discovery-trend.css 的 article nth-child。
+     卡 2 的青：全局色板六色没有 cyan（cat-2 实为绿系，与卡 4 的 green 肉眼难分，
+     owner 2026-09-09 验收打回），从蓝 cat-1 与绿 cat-2 按 oklab 混出，
+     两个来源色都有明暗双档，派生值自动跟随主题。 */
   --discovery-specialty-1: var(--accent);
-  --discovery-specialty-2: var(--mg-chart-cat-2);
+  --discovery-specialty-2: color-mix(in oklab, var(--mg-chart-cat-1) 55%, var(--mg-chart-cat-2));
   --discovery-specialty-3: var(--mg-chart-cat-5);
   --discovery-specialty-4: var(--mg-chart-cat-4);
 

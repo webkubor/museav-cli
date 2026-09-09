@@ -252,6 +252,34 @@ function SpecialtyTooltip({ active, payload, rows = [], description }: Specialty
   )
 }
 
+interface SpecialtyBarLabelProps {
+  x?: number | string
+  y?: number | string
+  width?: number | string
+  value?: number | string
+  index?: number
+}
+
+/**
+ * 柱顶数值标签，带防重叠（qa#724 返工点 3）：成本卡的「$0.0718」这类长标签在
+ * 10 列平铺下宽过柱槽，右端相邻标签实测几乎相连。标签宽按 fs-micro(10px)
+ * tabular 数字估 6.2px/字符，超过柱槽（柱宽 ÷0.8 得 band）的 72% 就隔柱显示——
+ * 只在真的放不下时才隔，热度卡「2K/772」这类短标签不受影响；被隐藏的值
+ * tooltip 里有完整展示。缩字号已到底（fs-micro 是最小档），旋转在 30px 的
+ * top margin 里放不下斜排长标签，故三选一取隔柱。
+ */
+function SpecialtyBarLabel({ x = 0, y = 0, width = 0, value, index = 0 }: SpecialtyBarLabelProps) {
+  if (value == null) return null
+  const w = Number(width)
+  const crowded = String(value).length * 6.2 > (w / 0.8) * 0.72
+  if (crowded && index % 2 === 1) return null
+  return (
+    <text className="model-discovery-bar-label" textAnchor="middle" x={Number(x) + w / 2} y={Number(y) - 6}>
+      {value}
+    </text>
+  )
+}
+
 export function SpecialtyBarChart({ rows, description, hoveredModel, onHoverModel, isClickable, onOpenModel }: SpecialtyBarChartProps) {
   const { t } = useTranslation()
   const domain = useMemo(() => specialtyBarDomain(rows.map((row) => row.numeric)), [rows])
@@ -285,8 +313,12 @@ export function SpecialtyBarChart({ rows, description, hoveredModel, onHoverMode
             animationDuration={ENTER_DURATION}
             dataKey="numeric"
             isAnimationActive={!prefersReducedMotion()}
-            /* 柱内不压文字（数值标签在柱外顶部），minPointSize 只保证矮柱还点得中 */
-            minPointSize={6}
+            /* 值域宽的卡（热度榜 2K vs 2，跨三个数量级）domain 落到真实零基线，
+               尾柱高≈0.1% —— 6px 保底在截图上仍是「塌地」（owner 2026-09-09 打回）。
+               对齐原型 Math.max(18, value/max*100) 的 18% 保底：plot 高约 112–222px，
+               30px 居中落在这个区间的 18% 上。验收口径是每根柱肉眼可见且可点；
+               柱顶标着真实数值，不会误读绝对量。 */
+            minPointSize={30}
             shape={
               <SpecialtyBarShape
                 hoveredModel={hoveredModel}
@@ -300,10 +332,10 @@ export function SpecialtyBarChart({ rows, description, hoveredModel, onHoverMode
                 原先压在柱内（白字 insideTop），柱子统一品牌色时勉强能读；改成厂牌色后
                 必然翻车——实测 10 种厂牌色里只有 3 种能让白字达到 AA 4.5，最差的
                 rgb(255,105,0) 只有 2.89（连原来的品牌蓝也只有 3.51，本就不达标）。
-                挪到柱外后前景走正文色、背景是卡片底，对比度由既有 token 保证，
-                也让柱高不再被 minPointSize 撑高、真实反映数据比例。
-                只放数字：单位写在副标题（如「（USD / Task）」），完整值在 tooltip。 */}
-            <LabelList className="model-discovery-bar-label" dataKey="short" position="top" />
+                挪到柱外后前景走正文色、背景是卡片底，对比度由既有 token 保证。
+                只放数字：单位写在副标题（如「（USD / Task）」），完整值在 tooltip。
+                content 自定义只为防重叠（SpecialtyBarLabel），定位与默认 top 一致。 */}
+            <LabelList content={<SpecialtyBarLabel />} dataKey="short" />
           </Bar>
         </BarChart>
       </ResponsiveContainer>

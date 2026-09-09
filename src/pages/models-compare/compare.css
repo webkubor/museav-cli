@@ -101,6 +101,17 @@
   margin: 14px 0 0;
 }
 
+/* 余额提示条（#833）同理与三栏网格 / 共享输入框等宽：单栏页的 18px 侧边距在这里会比
+   上下两块窄一圈、且贴着列区，看起来像游离的一条。对齐单栏页观感：与列区留同款 14px，
+   与输入框贴 8px。只匹配紧跟列区的共享态提示条，独立输入态每列自己的那条不受影响。 */
+.models-compare-columns ~ .playground-balance-notice {
+  margin: 14px 0 0;
+}
+
+.playground-balance-notice + .models-compare-shared-composer.models-experience-composer-wrap {
+  margin-top: 8px;
+}
+
 /* 彩虹流光边框是单栏体验页的装饰效果，在对比页与上方三栏纯色边框并排时显得边框
    忽明忽暗、风格不统一（用户反馈"浅色边框不明显不好看"）。改用与
    .models-compare-column 一致的实色描边，视觉上与三栏对齐、观感统一。 */

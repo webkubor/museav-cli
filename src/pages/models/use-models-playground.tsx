@@ -46,7 +46,8 @@ import {
   taskNeedsFile,
   taskAttachmentKind,
   EXPERIENCE_CATEGORY_TASKS,
-  EXPERIENCE_CATEGORY_DEFAULT_TASK,
+  modelDefaultTask,
+  modelEntryTask,
   offlineModelPlaceholder,
   isOfflineModel,
   modelSupportsAttachment,
@@ -156,14 +157,16 @@ export function useModelsPlayground() {
    *  一个任务的模型）就退化到该类别默认任务。dialogue 类两个子任务仍按有没有附件反推
    *  （resolveDialogueTask 上有说明为什么这俩不用改）。 */
   const categoryTasks = selectedModel ? modelCategoryTasks(selectedModel, selectedCategory) : EXPERIENCE_CATEGORY_TASKS[selectedCategory]
-  const categoryDefaultTask = EXPERIENCE_CATEGORY_DEFAULT_TASK[selectedCategory]
   const storedTask = single.task
+  // 没有已选任务（广场/详情页「试用」带 selectedModelId 进来、恢复历史、换类别）时按模型定默认任务：
+  // 声明图片输入的视频模型直接落 image_to_video（prd#980：wan2.7-i2v 这类模型不带图上游必 400，
+  // 原来一律落类别默认 text_to_video，页面上连图片入口都没有，请求裸奔到上游才被打回）
   const effectiveTask: ExperienceTaskType = isDialogue
     ? resolveDialogueTask(attachment ? attachmentKindFromMime(attachment.uploaded.mime) : null)
     : storedTask && categoryTasks.includes(storedTask)
       ? storedTask
-      : categoryTasks.includes(categoryDefaultTask)
-        ? categoryDefaultTask
+      : selectedModel
+        ? modelDefaultTask(selectedModel, selectedCategory)
         : categoryTasks[0]
   const needsFileTask = !isDialogue && taskNeedsFile(effectiveTask)
 
@@ -289,17 +292,16 @@ export function useModelsPlayground() {
   })
 
   /** 选模型（+ 可选显式选定的任务，来自 ModelPickerDialog「可体验任务」按钮组）。
-   *  没传 task 时（直接点模型行）沿用 PRD selectModelTask 的默认规则：新模型如果还支持
-   *  当前任务就沿用，否则退化到新模型所在类别的第一个任务。 */
+   *  没传 task 时（直接点模型行）走 modelEntryTask：声明图片/视频输入的视频模型先落需要附件的
+   *  任务（prd#980），其余沿用 PRD selectModelTask 的规则——新模型还支持当前任务就沿用，
+   *  否则退化到该模型的默认任务。 */
   function handlePick(model: CatalogModelItem, task?: ExperienceTaskType) {
     trackEvent('playground_model_select', { from_model_id: selectedModel?.model_id ?? '', to_model_id: model.model_id }, { result: 'success' })
     const nextCategory = resolveModelCategory(model)
     const nextTasks = modelCategoryTasks(model, nextCategory)
     const nextTask = task && nextTasks.includes(task)
       ? task
-      : nextTasks.includes(effectiveTask)
-        ? effectiveTask
-        : nextTasks[0]
+      : modelEntryTask(model, nextCategory, effectiveTask)
     setSingle({ selectedId: model.id, offlineModel: null, task: nextTask })
     setPickerOpen(false)
     // 换模型 = 当前列绑定的模型变了，旧会话的列已经对不上——开新会话，而不是复用旧 conversationId
@@ -307,8 +309,9 @@ export function useModelsPlayground() {
     window.setTimeout(() => inputRef.current?.focus(), 80)
   }
 
-  /** 页面级「可体验任务」切换：广场标着图片输入的生成类模型（如 gemini-3.1-flash-lite-image）
-   *  进来默认 text_to_*，此前任务切换只藏在 ModelPickerDialog 里，页面上没有任何入口能切到
+  /** 页面级「可体验任务」切换：广场标着图片输入的图像类模型（如 gemini-3.1-flash-lite-image）
+   *  进来默认 text_to_image（视频类自 prd#980 起进来就落 image_to_video，见 modelPreferredTask），
+   *  此前任务切换只藏在 ModelPickerDialog 里，页面上没有任何入口能切到
    *  image_to_image/image_to_video，用户会误以为"标签支持图片却传不了图"。task 建会话时已
    *  写死（ensureConversation），切任务必须开新会话（与选择器路径 handlePick 语义一致）；
    *  附件的类型校验按 task 走，一并清掉；输入草稿最值钱，保留。 */

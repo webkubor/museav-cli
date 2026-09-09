@@ -70,6 +70,8 @@ import {
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { detailTarget, EMPTY, rankBarWidth, specialtyRows, unitPriceDetail } from './discovery-data'
 import type { DiscoveryIntegrationStatus, DiscoveryUnitPrices } from '@/types'
+import { getMarketConfig, isTestOrDev } from "@/config/market"
+import { getMarket, type Market } from "@/lib/market"
 import { appToast } from "@/lib/app-toast"
 import {
 
@@ -174,6 +176,28 @@ function modelAccessLabel(t: TFn, model: DiscoveryModel) {
   if (model.supported) return t("modelsDiscovery.status.integratedCn");
   if (!isDomesticModel(model)) return t("modelsDiscovery.status.integratedCom");
   return t("modelsDiscovery.status.notIntegrated");
+}
+
+/**
+ * 第二态（ModelGo.ai 已接入）的落点 —— PRD 第 8 节：「新页面打开 modelgo.ai
+ * 对应模型详情页」。
+ *
+ * ① 先判环境：测试与本地只有一套控制台（两个市场的 VITE_*_CONSOLE 都指
+ *    console.test.modelgo.com），跨站没有意义，留在当前站；跳进去查不到时由详情页的
+ *    40401 空态 + crossSiteModelUrl 给出路。此前写死 https://console.modelgo.ai，
+ *    测试环境点详情会跳到**生产国外站**，测试数据的模型名在那儿搜不到
+ *    （2026-09-08 owner 实测报的问题）。
+ * ② 再判**这个模型接在哪个站** —— 落点只由模型决定，与当前访问的域名无关。
+ *    owner 2026-09-08 原话：「我们展示的模型-国内不支持-国外有，那就要跳转国外，
+ *    即便是现在访问的域名是国内」。
+ * ③ 最后只决定**怎么去**：目标站正好是当前站就走站内路径，否则拼目标站域名。
+ */
+function modelDetailUrl(model: Pick<DiscoveryModel, "name"> & { id?: string; integrationStatus?: DiscoveryIntegrationStatus }) {
+  const path = model.id ? `/models/${encodeURIComponent(model.id)}` : `/models?${new URLSearchParams({ search: model.name }).toString()}`;
+  if (isTestOrDev()) return path;
+  const targetMarket: Market = model.integrationStatus === "MODELGO" ? "china" : "global";
+  if (targetMarket === getMarket()) return path;
+  return `${getMarketConfig(targetMarket).consoleUrl}${path}`;
 }
 
 const buildModalityOptions = (t: TFn): Array<{ key: ModalityKey; label: string }> => [
@@ -654,13 +678,15 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   type DetailShape = Pick<DiscoveryModel, "id" | "name" | "provider" | "supported" | "integrationStatus">;
 
   /**
-   * 一律可点：有 id 就跳详情，没有 id 也要能点出提示，不能静默不响应
-   * （owner 2026-09-08：「ID 不存在的话要提示」）。
-   * 参数保留是为了调用处语义不变，也便于将来需要时收紧条件。
+   * 能不能点 —— 与状态标签**同一个判据**（isModelConnected）。
+   *
+   * PRD 第 8 节：前两态（ModelGo 已接入 / ModelGo.ai 已接入）可点，第三态
+   * （国产未接入）「按钮禁用，显示待支持」；10.2 表格操作列同此。所以标签写
+   * 「暂未接入」的行必须点不动 —— 一律返回 true 那版让它既标着未接入又点得进
+   * 详情页，自相矛盾（owner 2026-09-09 报的就是这个）。
    */
   function canOpenModelDetail(model: DetailShape) {
-    void model;
-    return true;
+    return isModelConnected(model);
   }
 
   function modelDetailAriaLabel(model: DetailShape) {
@@ -670,17 +696,27 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   }
 
   /**
-   * 点「查看详情」：有 model_id 就进站内详情页，没有就明确提示。
-   * 判据与「跳进去查不到怎么办」都在 detailTarget 的注释里，这里不重复推断。
+   * 点「查看详情」：按 PRD 第 8 节三态分流，判据见 detailTarget。
+   * 这里只做动作，不重新推断落点——三次返工都是因为在这里另立判据。
    */
   function openModelDetail(model: DetailShape) {
-    if (detailTarget(model) === "none") {
-      // 文案要说实话：不是「数据源没给 ID」，而是**这个模型我们没上架**，所以没有详情页。
-      // 实测未接入且无 modelgo_id 的模型拿 source_slug 查 catalog 一律 40401（2026-09-08）。
-      appToast.info(t("modelsDiscovery.empty.notOnModelGo"), t("modelsDiscovery.empty.noDetailPage"));
-      return;
+    switch (detailTarget({ id: model.id, supported: model.supported, domestic: isDomesticModel(model) })) {
+      case "inside":
+        onOpenModel(model.id!);
+        return;
+      case "external":
+        window.open(modelDetailUrl(model), "_blank", "noopener,noreferrer");
+        return;
+      case "no-id":
+        // 已接入却没给 modelgo_id：说不出详情页在哪，但不能静默
+        // （owner 2026-09-08：「ID 不存在的话要提示」）。
+        appToast.info(t("modelsDiscovery.empty.notOnModelGo"), t("modelsDiscovery.empty.noDetailPage"));
+        return;
+      default:
+        // disabled：第三态本来就点不动（canOpenModelDetail 已挡住），
+        // 键盘/程序化调用兜底一句提示，不静默。
+        appToast.info(t("modelsDiscovery.empty.notOnModelGo"), t("modelsDiscovery.empty.noDetailPage"));
     }
-    onOpenModel(model.id!);
   }
 
   // Top 5 卡的行是 div、完整榜单的行是 tr（Table 组件），故取二者共同的 HTMLElement

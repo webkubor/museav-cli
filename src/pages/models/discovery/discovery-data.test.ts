@@ -466,18 +466,27 @@ describe('specialtyMetricFor', () => {
   })
 })
 
-describe('detailTarget（查看详情落点）', () => {
-  it('有 model_id → 站内详情，不看接入态也不看接在哪个站', () => {
-    // 这三条覆盖 2026-09-08~09 被改错两次的场景：已接入/未接入、国内站/国外站，
-    // 只要接口给了 modelgo_id 就一律站内跳（owner 拍板），查不到由详情页兜底
-    expect(detailTarget({ id: 'kimi-k2.6' })).toBe('inside')
-    expect(detailTarget({ id: 'gemini-3.1-flash-lite' })).toBe('inside')
-    expect(detailTarget({ id: 'gpt-5.4' })).toBe('inside')
+describe('detailTarget（查看详情落点，PRD 第 8 节三态）', () => {
+  it('第一态 ModelGo 已接入 → 站内详情', () => {
+    expect(detailTarget({ id: 'kimi-k2.6', supported: true, domestic: true })).toBe('inside')
+    // 已接入但接在国外站的也走站内跳：本站 catalog 实测有（gemini/mimo 那 6 个）
+    expect(detailTarget({ id: 'gemini-3.1-flash-lite', supported: true, domestic: false })).toBe('inside')
   })
 
-  it('没有 model_id → 明确提示，不静默', () => {
-    expect(detailTarget({ id: '' })).toBe('none')
-    expect(detailTarget({ id: null })).toBe('none')
-    expect(detailTarget({})).toBe('none')
+  it('第一态但接口没给 modelgo_id → 提示，不静默', () => {
+    expect(detailTarget({ id: '', supported: true, domestic: true })).toBe('no-id')
+    expect(detailTarget({ supported: true, domestic: true })).toBe('no-id')
+  })
+
+  it('第二态 ModelGo.ai 已接入（非国产）→ 外链目标站，不看 supported 也不看有没有 id', () => {
+    expect(detailTarget({ id: 'gpt-5.4', supported: false, domestic: false })).toBe('external')
+    expect(detailTarget({ id: '', supported: false, domestic: false })).toBe('external')
+  })
+
+  it('第三态 国产未接入 → 禁用，即使接口给了 modelgo_id', () => {
+    // glm-5 / kimi-k3 / qwen3.5-27b 就是这批：有 modelgo_id 但 is_integrated=false，
+    // 标签写「暂未接入 ModelGo」，PRD 10.2 要求操作列显示禁用的「待支持」
+    expect(detailTarget({ id: 'glm-5', supported: false, domestic: true })).toBe('disabled')
+    expect(detailTarget({ id: '', supported: false, domestic: true })).toBe('disabled')
   })
 })

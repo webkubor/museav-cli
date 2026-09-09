@@ -568,19 +568,34 @@ export function unitPriceDetail(t: TFn, prices: DiscoveryUnitPrices | null | und
 }
 
 /**
- * 「查看详情」的落点：有 model_id 就进站内详情页，没有就说明没上架。
+ * 「查看详情」的落点 —— 真源是 PRD 第 8 节「模型接入状态」的三态表，一一对应：
  *
- * **不预判「本站 catalog 有没有」** —— owner 2026-09-09 拍板：「你只要返回字段
- * 你就给我跳转」。前端拿现有字段推不准，实测依据：
- * - `is_integrated=true` 不蕴含「本站有」（qa#718：21 个已接入里 9 个 catalog 取不到）
- * - `integrated_site=MODELGO_AI` 也不蕴含「本站没有」（6 个 gemini/mimo 在国内 catalog 里就有）
- * - `integration_status` 对未接入模型也有值（182 MODELGO_AI + 62 MODELGO），
- *   那是「该接哪个站」不是「接在哪」
+ * | 标签              | 厂商归属 | supported | 行为                                    |
+ * |-------------------|---------|-----------|-----------------------------------------|
+ * | ModelGo 已接入     | 国产     | true      | 站内详情页（PRD 原话「需有 model.id」）   |
+ * | ModelGo.ai 已接入  | 非国产   | —         | 新页面打开 modelgo.ai 对应详情页          |
+ * | 暂未接入 ModelGo   | 国产     | false     | 按钮禁用、显示「待支持」（PRD 10.2 同此） |
  *
- * 所以判据只剩 `modelgo_id` 有没有（AGENT 模态 261 个里 44 个有）。跳进去查不到时
- * 由详情页的 40401 空态 + crossSiteModelUrl 给出路——与详情页「不猜、404 了再兜底」
- * 同一套策略，两处别再各自推断一遍。
+ * **落点由标签决定，标签与可点性同源** —— 这是踩了三次才收住的：
+ * - 2026-09-08：站内跳转条件吃 supported，接在国外站的也走站内 → 国内站 catalog 404
+ * - 2026-09-09 ①：改成按 integration_status 判「接在哪个站」拦截，把 6 个
+ *   MODELGO_AI 的已接入模型（gemini/mimo）拦死在 toast 上
+ * - 2026-09-09 ②：一刀切「有 modelgo_id 就跳」，把第三态（国产未接入）也放开，
+ *   于是标签写着「暂未接入」却点得进详情页，与 PRD 10.2 的禁用按钮直接冲突
+ *
+ * `domestic` 由调用方给（原型侧 isDomesticModel：优先看 integration_status，
+ * 缺省才退回厂商白名单），这里只做三态映射，保持可测。
  */
-export function detailTarget(model: { id?: string | null }): 'inside' | 'none' {
-  return model.id ? 'inside' : 'none'
+export function detailTarget(model: {
+  id?: string | null
+  supported: boolean
+  domestic: boolean
+}): 'inside' | 'external' | 'disabled' | 'no-id' {
+  // 第一态：本站已接入 → 站内详情。PRD 括号里的「需有 model.id」由 no-id 兜住，
+  // 不静默（owner 2026-09-08：「ID 不存在的话要提示」）。
+  if (model.supported) return model.id ? 'inside' : 'no-id'
+  // 第二态：非国产一律「视为已接入 ModelGo.ai」→ 外链目标站，不看 supported
+  if (!model.domestic) return 'external'
+  // 第三态：国产未接入 → 禁用，连点击都不该发生
+  return 'disabled'
 }

@@ -568,25 +568,19 @@ export function unitPriceDetail(t: TFn, prices: DiscoveryUnitPrices | null | und
 }
 
 /**
- * 「查看详情」的落点：站内详情 / 跳目标站 / 没详情页。
+ * 「查看详情」的落点：有 model_id 就进站内详情页，没有就说明没上架。
  *
- * 抽成纯函数是因为这段判断在 2026-09-08~09 两天里被改错两次，都是把
- * `is_integrated`（有没有接入）和 `integration_status`（该接哪个站）当成一回事：
+ * **不预判「本站 catalog 有没有」** —— owner 2026-09-09 拍板：「你只要返回字段
+ * 你就给我跳转」。前端拿现有字段推不准，实测依据：
+ * - `is_integrated=true` 不蕴含「本站有」（qa#718：21 个已接入里 9 个 catalog 取不到）
+ * - `integrated_site=MODELGO_AI` 也不蕴含「本站没有」（6 个 gemini/mimo 在国内 catalog 里就有）
+ * - `integration_status` 对未接入模型也有值（182 MODELGO_AI + 62 MODELGO），
+ *   那是「该接哪个站」不是「接在哪」
  *
- * - 未接入的模型 integration_status 也有值（实测 261 个里 182 MODELGO_AI +
- *   62 MODELGO），所以它只在 integrated=true 时才等于「实际接在哪个站」。
- * - test/dev 只有一套控制台，catalog 同时放着两站的模型 —— 实测 17 个已接入模型
- *   （11 MODELGO + 6 MODELGO_AI）的 modelgo_id 在 test catalog 里全都查得到，
- *   所以非生产环境**不做站点判断**，否则 6 个 MODELGO_AI 的详情会被拦死。
- * - 生产是两套控制台，各自 catalog 只有本站接入的模型，跨站必须走外链。
+ * 所以判据只剩 `modelgo_id` 有没有（AGENT 模态 261 个里 44 个有）。跳进去查不到时
+ * 由详情页的 40401 空态 + crossSiteModelUrl 给出路——与详情页「不猜、404 了再兜底」
+ * 同一套策略，两处别再各自推断一遍。
  */
-export function detailTarget(model: {
-  id?: string | null
-  integrated: boolean
-  integrationStatus?: DiscoveryIntegrationStatus
-}, ctx: { market: 'china' | 'global'; singleSite: boolean }): 'inside' | 'external' | 'none' {
-  if (!model.id) return 'none'
-  if (!model.integrated) return 'external'
-  const modelSite = model.integrationStatus === 'MODELGO' ? 'china' : 'global'
-  return ctx.singleSite || modelSite === ctx.market ? 'inside' : 'external'
+export function detailTarget(model: { id?: string | null }): 'inside' | 'none' {
+  return model.id ? 'inside' : 'none'
 }

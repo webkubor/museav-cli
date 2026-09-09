@@ -70,8 +70,6 @@ import {
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { detailTarget, EMPTY, rankBarWidth, specialtyRows, unitPriceDetail } from './discovery-data'
 import type { DiscoveryIntegrationStatus, DiscoveryUnitPrices } from '@/types'
-import { getMarketConfig, isTestOrDev } from "@/config/market"
-import { getMarket, type Market } from "@/lib/market"
 import { appToast } from "@/lib/app-toast"
 import {
 
@@ -176,36 +174,6 @@ function modelAccessLabel(t: TFn, model: DiscoveryModel) {
   if (model.supported) return t("modelsDiscovery.status.integratedCn");
   if (!isDomesticModel(model)) return t("modelsDiscovery.status.integratedCom");
   return t("modelsDiscovery.status.notIntegrated");
-}
-
-/**
- * 未接入模型的「去别处看」链接。
- *
- * 原来这里写死 `https://console.modelgo.ai`，于是在测试环境点「查看详情」会跳到
- * **生产的国外站**（2026-09-08 owner 实测报的问题）。跨环境跳转不只是体验问题：
- * 测试数据里的模型名跳到生产站大概率搜不到，用户会以为功能坏了。
- */
-function modelDetailUrl(model: Pick<DiscoveryModel, "name"> & { id?: string; integrationStatus?: DiscoveryIntegrationStatus }) {
-  const path = model.id ? `/models/${encodeURIComponent(model.id)}` : `/models?${new URLSearchParams({ search: model.name }).toString()}`;
-
-  // ① 先判环境：测试与本地只有一套控制台，任何跨站都没有意义，留在当前站。
-  //    顺序也必须如此 —— 测试环境没配 VITE_GLOBAL_CONSOLE（只有 .env.production 配），
-  //    而 market.ts 的 requireEnv 对它是必需项，先取域名会直接抛错。
-  if (isTestOrDev()) return path;
-
-  // ② 再判**这个模型接在哪个站** —— 落点只由模型决定，**与当前访问的域名无关**。
-  //    owner 2026-09-08 原话：「我们展示的模型-国内不支持-国外有，那就要跳转国外，
-  //    即便是现在访问的域名是国内」。
-  //    判据就是接口的 integration_status：MODELGO = 国内 modelgo.com /
-  //    MODELGO_AI = 国外 modelgo.ai。字段直接说了落点，不需要另外推断。
-  //    原来这里硬编码 getMarketConfig("global")，等于假定「跨站一定是去国外」：
-  //    在国外站点一个国产模型会跳回它自己，而不是回国内站。
-  const targetMarket: Market = model.integrationStatus === "MODELGO" ? "china" : "global";
-
-  // ③ 最后只决定**怎么去**，不改变去哪：目标站正好是当前站就走 SPA 路由（不整页刷新），
-  //    否则拼目标站域名。注意这一步不参与「跳哪个市场」的判断 —— 那已经由 ② 定死了。
-  if (targetMarket === getMarket()) return path;
-  return `${getMarketConfig(targetMarket).consoleUrl}${path}`;
 }
 
 const buildModalityOptions = (t: TFn): Array<{ key: ModalityKey; label: string }> => [
@@ -702,28 +670,17 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   }
 
   /**
-   * 点「查看详情」的三种落点，判据见 detailTarget：
-   *
-   * ① inside   → 站内详情（已接入，且本站 catalog 查得到）
-   * ② external → 目标站详情页（已接入但接在另一个站）
-   * ③ none     → **明确提示**，不静默不可点（owner 2026-09-08 要求）
+   * 点「查看详情」：有 model_id 就进站内详情页，没有就明确提示。
+   * 判据与「跳进去查不到怎么办」都在 detailTarget 的注释里，这里不重复推断。
    */
   function openModelDetail(model: DetailShape) {
-    // 落点判断的唯一真源是 detailTarget（discovery-data.ts），别在这里重写条件 ——
-    // 这段在 2026-09-08~09 被改错两次，原因都是混淆 is_integrated 与 integration_status。
-    switch (detailTarget({ id: model.id, integrated: model.supported, integrationStatus: model.integrationStatus }, { market: getMarket(), singleSite: isTestOrDev() })) {
-      case "inside":
-        onOpenModel(model.id!);
-        return;
-      case "external":
-        window.open(modelDetailUrl(model), "_blank", "noopener,noreferrer");
-        return;
-      default:
-        // 文案要说实话：不是「数据源没给 ID」，而是**这个模型我们没上架**，所以没有详情页。
-        // 实测未接入模型拿 source_slug 查 catalog 一律 40401 not found（2026-09-08）。
-        // 把责任说成数据缺失会让用户以为是系统故障。
-        appToast.info(t("modelsDiscovery.empty.notOnModelGo"), t("modelsDiscovery.empty.noDetailPage"));
+    if (detailTarget(model) === "none") {
+      // 文案要说实话：不是「数据源没给 ID」，而是**这个模型我们没上架**，所以没有详情页。
+      // 实测未接入且无 modelgo_id 的模型拿 source_slug 查 catalog 一律 40401（2026-09-08）。
+      appToast.info(t("modelsDiscovery.empty.notOnModelGo"), t("modelsDiscovery.empty.noDetailPage"));
+      return;
     }
+    onOpenModel(model.id!);
   }
 
   // Top 5 卡的行是 div、完整榜单的行是 tr（Table 组件），故取二者共同的 HTMLElement
@@ -790,8 +747,11 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       // 当时 model-options 不下发 is_integrated，只能这么将就；后端 2026-09-08 补齐，改回。
       .filter((option) => scope === "all" || option.is_integrated === true)
       .map((option) => ({
-        // 只有已接入且有 modelgo_id 的才给 id——canOpenModelDetail 据此判断能不能跳
-        id: option.is_integrated === true && option.modelgo_id ? option.modelgo_id : undefined,
+        // 有 modelgo_id 就给 id，**不要求已接入** —— owner 2026-09-09：「你只要返回字段
+        // 你就给我跳转」。此前这里要求 is_integrated，把 27 个有 modelgo_id 但未接入的
+        // 模型（gpt-5.4 / claude-opus-4.8 / glm-5 …）的 id 丢掉了，点它们只能弹提示。
+        // 与 toPrototypeModel 的口径对齐（那条线早就是 `item.modelgo_id || undefined`）。
+        id: option.modelgo_id || undefined,
         sourceModelId: option.source_model_id,
         name: option.model_name,
         provider: option.creator_name ?? "",

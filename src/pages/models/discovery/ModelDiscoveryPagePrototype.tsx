@@ -68,7 +68,7 @@ import {
   useDiscoveryTrends,
 } from './use-discovery-query'
 import { ProgressBar } from '@/components/ui/ProgressBar'
-import { EMPTY, rankBarWidth, specialtyRows, unitPriceDetail } from './discovery-data'
+import { detailTarget, EMPTY, rankBarWidth, specialtyRows, unitPriceDetail } from './discovery-data'
 import type { DiscoveryIntegrationStatus, DiscoveryUnitPrices } from '@/types'
 import { getMarketConfig, isTestOrDev } from "@/config/market"
 import { getMarket, type Market } from "@/lib/market"
@@ -702,45 +702,28 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   }
 
   /**
-   * 点「查看详情」的落点判断，顺序固定：**先环境 → 再域名 → 再情况**。
+   * 点「查看详情」的三种落点，判据见 detailTarget：
    *
-   * ① 本平台已接入且有 id → 站内详情（同环境同站，不跨环境）
-   * ② 未接入但有 id → 目标站详情页；测试/本地只有一套控制台，仍留在当前站
-   * ③ 没有 id → **明确提示**，不静默不可点（owner 2026-09-08 要求）
+   * ① inside   → 站内详情（已接入，且本站 catalog 查得到）
+   * ② external → 目标站详情页（已接入但接在另一个站）
+   * ③ none     → **明确提示**，不静默不可点（owner 2026-09-08 要求）
    */
   function openModelDetail(model: DetailShape) {
-    // 站内跳转要同时满足两件事：**已接入** 且 **接在当前这个站**。
-    //
-    // 2026-09-09 踩过：prd#969 第 7 条把 supported 从 `integration_status === "MODELGO"`
-    // 改成 `is_integrated`（那是对的，前者是「接在哪个站」不是「有没有接入」），
-    // 但站内跳转的条件直接吃 supported，于是**接在国外站的模型也走站内跳转**，
-    // 在国内站查 catalog 必然 404 报错。实测 model-options 里 37 个已接入模型的
-    // integrated_site 全是 MODELGO_AI —— 等于「已接入」的详情全都点不开。
-    // 教训：`is_integrated` 只回答「有没有接入」，落点还得看 integrationStatus。
-    const modelSite: Market = model.integrationStatus === "MODELGO" ? "china" : "global";
-    const onCurrentSite = modelSite === getMarket();
-
-    if (model.supported && model.id && onCurrentSite) {
-      onOpenModel(model.id);
-      return;
+    // 落点判断的唯一真源是 detailTarget（discovery-data.ts），别在这里重写条件 ——
+    // 这段在 2026-09-08~09 被改错两次，原因都是混淆 is_integrated 与 integration_status。
+    switch (detailTarget({ id: model.id, integrated: model.supported, integrationStatus: model.integrationStatus }, { market: getMarket(), singleSite: isTestOrDev() })) {
+      case "inside":
+        onOpenModel(model.id!);
+        return;
+      case "external":
+        window.open(modelDetailUrl(model), "_blank", "noopener,noreferrer");
+        return;
+      default:
+        // 文案要说实话：不是「数据源没给 ID」，而是**这个模型我们没上架**，所以没有详情页。
+        // 实测未接入模型拿 source_slug 查 catalog 一律 40401 not found（2026-09-08）。
+        // 把责任说成数据缺失会让用户以为是系统故障。
+        appToast.info(t("modelsDiscovery.empty.notOnModelGo"), t("modelsDiscovery.empty.noDetailPage"));
     }
-    // 已接入但接在另一个站：测试/本地只有一套控制台，跳过去也是 404，
-    // 所以明说「在哪个站」而不是把人送到一个查不到的地址（owner 2026-09-09 报的就是这个）。
-    if (model.supported && model.id && isTestOrDev()) {
-      appToast.info(
-        t("modelsDiscovery.empty.notOnThisSite"),
-        t("modelsDiscovery.empty.onOtherSite", { site: modelSite === "china" ? "modelgo.com" : "modelgo.ai" }),
-      );
-      return;
-    }
-    if (model.id) {
-      window.open(modelDetailUrl(model), "_blank", "noopener,noreferrer");
-      return;
-    }
-    // 文案要说实话：不是「数据源没给 ID」，而是**这个模型我们没上架**，所以没有详情页。
-    // 实测未接入模型拿 source_slug 查 catalog 一律 40401 not found（2026-09-08）。
-    // 把责任说成数据缺失会让用户以为是系统故障。
-    appToast.info(t("modelsDiscovery.empty.notOnModelGo"), t("modelsDiscovery.empty.noDetailPage"));
   }
 
   // Top 5 卡的行是 div、完整榜单的行是 tr（Table 组件），故取二者共同的 HTMLElement

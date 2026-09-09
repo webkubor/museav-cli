@@ -12,6 +12,7 @@ import {
   EMPTY,
   MODALITY_TASK_TO_TYPE,
   compactAmount,
+  detailTarget,
   discoveryTypeFor,
   formatPrice,
   formatScore,
@@ -462,5 +463,35 @@ describe('specialtyMetricFor', () => {
     expect(specialtyMetricFor('tps', 'STT')).toBeUndefined()
     expect(specialtyMetricFor('tps', 'TEXT_TO_IMAGE')).toBeUndefined()
     expect(specialtyMetricFor('latency', 'TTS')).toBeUndefined()
+  })
+})
+
+describe('detailTarget（查看详情落点）', () => {
+  const china = { market: 'china' as const, singleSite: false }
+  const global = { market: 'global' as const, singleSite: false }
+  const test = { market: 'china' as const, singleSite: true }
+
+  it('没有 id → 没详情页', () => {
+    expect(detailTarget({ id: '', integrated: true, integrationStatus: 'MODELGO' }, china)).toBe('none')
+  })
+
+  it('未接入 → 走目标站外链，integration_status 不影响', () => {
+    expect(detailTarget({ id: 'x', integrated: false, integrationStatus: 'MODELGO' }, china)).toBe('external')
+    expect(detailTarget({ id: 'x', integrated: false, integrationStatus: 'MODELGO_AI' }, china)).toBe('external')
+  })
+
+  it('生产：已接入且接在本站 → 站内', () => {
+    expect(detailTarget({ id: 'x', integrated: true, integrationStatus: 'MODELGO' }, china)).toBe('inside')
+    expect(detailTarget({ id: 'x', integrated: true, integrationStatus: 'MODELGO_AI' }, global)).toBe('inside')
+  })
+
+  it('生产：已接入但在另一个站 → 外链', () => {
+    expect(detailTarget({ id: 'x', integrated: true, integrationStatus: 'MODELGO_AI' }, china)).toBe('external')
+    expect(detailTarget({ id: 'x', integrated: true, integrationStatus: 'MODELGO' }, global)).toBe('external')
+  })
+
+  it('test/dev 只有一套控制台：已接入一律站内（这是 2026-09-09 被拦死的那批）', () => {
+    expect(detailTarget({ id: 'gemini-3.1-flash-lite', integrated: true, integrationStatus: 'MODELGO_AI' }, test)).toBe('inside')
+    expect(detailTarget({ id: 'kimi-k2.6', integrated: true, integrationStatus: 'MODELGO' }, test)).toBe('inside')
   })
 })

@@ -566,3 +566,27 @@ export function unitPriceDetail(t: TFn, prices: DiscoveryUnitPrices | null | und
     .map(([label, value]) => `${label} $${value}${suffix}`)
   return parts.length ? parts.join('\n') : undefined
 }
+
+/**
+ * 「查看详情」的落点：站内详情 / 跳目标站 / 没详情页。
+ *
+ * 抽成纯函数是因为这段判断在 2026-09-08~09 两天里被改错两次，都是把
+ * `is_integrated`（有没有接入）和 `integration_status`（该接哪个站）当成一回事：
+ *
+ * - 未接入的模型 integration_status 也有值（实测 261 个里 182 MODELGO_AI +
+ *   62 MODELGO），所以它只在 integrated=true 时才等于「实际接在哪个站」。
+ * - test/dev 只有一套控制台，catalog 同时放着两站的模型 —— 实测 17 个已接入模型
+ *   （11 MODELGO + 6 MODELGO_AI）的 modelgo_id 在 test catalog 里全都查得到，
+ *   所以非生产环境**不做站点判断**，否则 6 个 MODELGO_AI 的详情会被拦死。
+ * - 生产是两套控制台，各自 catalog 只有本站接入的模型，跨站必须走外链。
+ */
+export function detailTarget(model: {
+  id?: string | null
+  integrated: boolean
+  integrationStatus?: DiscoveryIntegrationStatus
+}, ctx: { market: 'china' | 'global'; singleSite: boolean }): 'inside' | 'external' | 'none' {
+  if (!model.id) return 'none'
+  if (!model.integrated) return 'external'
+  const modelSite = model.integrationStatus === 'MODELGO' ? 'china' : 'global'
+  return ctx.singleSite || modelSite === ctx.market ? 'inside' : 'external'
+}

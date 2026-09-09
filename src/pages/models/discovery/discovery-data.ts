@@ -296,6 +296,25 @@ export function specialtyRows(
 }
 
 /**
+ * 散点图默认选中（qa#723）：专项榜**实际渲染出的那几张卡**的行并集（每卡 Top 10）。
+ *
+ * 名字口径：散点候选来自 model-options、榜行来自 rankings，同一模型两接口的
+ * model_name 可能不一致（实测有「DeepSeek V4 Pro (Reasoning, Max Effort)」vs
+ * 「DeepSeek V4 Pro 0813 (...)」）——按 name 精确匹配，对不上的直接跳过，
+ * 不做模糊匹配。并集为空（数据全没到/全匹配不上）回退全选，别让散点图空白。
+ */
+export function defaultScatterSelection(
+  cardRows: ReadonlyArray<ReadonlyArray<{ model: string }>>,
+  candidateNames: readonly string[],
+): string[] {
+  const candidates = new Set(candidateNames)
+  const union = [...new Set(cardRows.flatMap((rows) => rows.map((row) => row.model)))].filter((name) =>
+    candidates.has(name),
+  )
+  return union.length > 0 ? union : [...candidateNames]
+}
+
+/**
  * 柱高的值域。
  *
  * **min-max 归一化**，不是 value/max：真实数据的值域常常很窄（综合评分

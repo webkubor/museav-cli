@@ -149,7 +149,16 @@ export function useDiscoverySpecialtyModels(
   task: string,
   kinds: readonly SpecialtyKind[],
   scope: 'all' | 'supported',
-): { byKind: Partial<Record<SpecialtyKind, PrototypeModel[]>>; isLoading: boolean } {
+): {
+  byKind: Partial<Record<SpecialtyKind, PrototypeModel[]>>
+  isLoading: boolean
+  /**
+   * 每张榜的数据都已是**当前类型**的（判据取响应里的 `type`，不是入参——placeholderData
+   * 会让旧类型数据挂着，见 DiscoveryQueryResult.dataType 的注释）；报错的榜视为已定，
+   * 卡片会用主榜垫底渲染。散点图默认选中（qa#723）要等它为 true 再取并集。
+   */
+  isSettled: boolean
+} {
   const { t } = useTranslation()
   const type = discoveryTypeFor(modality, task)
   const integratedOnly = scope === 'supported'
@@ -185,7 +194,11 @@ export function useDiscoverySpecialtyModels(
     })
   }
 
-  return { byKind, isLoading: results.some((result) => result.isLoading) }
+  return {
+    byKind,
+    isLoading: results.some((result) => result.isLoading),
+    isSettled: results.every((result) => result.isError || result.data?.type === type),
+  }
 }
 
 /**

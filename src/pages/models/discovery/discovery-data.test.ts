@@ -23,6 +23,7 @@ import {
   toPrototypeModel,
   toSummaryCards,
   unitPriceDetail,
+  defaultScatterSelection,
   specialtyMetricFor,} from './discovery-data'
 import type { PrototypeModel } from './discovery-data'
 import type { DiscoveryOverview, DiscoveryRankingItem } from '@/types'
@@ -488,5 +489,27 @@ describe('detailTarget（查看详情落点，PRD 第 8 节三态）', () => {
     // 标签写「暂未接入 ModelGo」，PRD 10.2 要求操作列显示禁用的「待支持」
     expect(detailTarget({ id: 'glm-5', supported: false, domestic: true })).toBe('disabled')
     expect(detailTarget({ id: '', supported: false, domestic: true })).toBe('disabled')
+  })
+})
+
+describe('散点图默认选中 = 专项榜四卡并集（qa#723）', () => {
+  const cards = [
+    [{ model: 'A' }, { model: 'B' }],
+    [{ model: 'B' }, { model: 'C' }],
+    [{ model: 'D' }],
+  ]
+
+  it('取各卡行的并集并去重', () => {
+    expect(defaultScatterSelection(cards, ['A', 'B', 'C', 'D', 'E'])).toEqual(['A', 'B', 'C', 'D'])
+  })
+
+  it('rankings 与 model-options 名字对不上的直接跳过，不做模糊匹配', () => {
+    // 实测差异：「DeepSeek V4 Pro (...)」vs「DeepSeek V4 Pro 0813 (...)」
+    expect(defaultScatterSelection([[{ model: 'DeepSeek V4 Pro 0813' }, { model: 'A' }]], ['DeepSeek V4 Pro', 'A'])).toEqual(['A'])
+  })
+
+  it('并集为空（数据没到/全匹配不上）回退全选，不让散点图空白', () => {
+    expect(defaultScatterSelection([], ['A', 'B'])).toEqual(['A', 'B'])
+    expect(defaultScatterSelection([[{ model: 'X' }]], ['A', 'B'])).toEqual(['A', 'B'])
   })
 })

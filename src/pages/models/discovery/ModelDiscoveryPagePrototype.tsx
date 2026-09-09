@@ -68,7 +68,7 @@ import {
   useDiscoveryTrends,
 } from './use-discovery-query'
 import { ProgressBar } from '@/components/ui/ProgressBar'
-import { detailTarget, EMPTY, rankBarWidth, specialtyRows, unitPriceDetail } from './discovery-data'
+import { defaultScatterSelection, detailTarget, EMPTY, rankBarWidth, specialtyRows, unitPriceDetail } from './discovery-data'
 import type { DiscoveryIntegrationStatus, DiscoveryUnitPrices } from '@/types'
 import { getMarketConfig, isTestOrDev } from "@/config/market"
 import { getMarket, type Market } from "@/lib/market"
@@ -604,7 +604,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
    * 「manual memoization could not be preserved」直接拒掉整个组件的优化。
    */
   const specialtyKinds = rankingCards.map((card) => card.kind);
-  const { byKind: specialtyModels } = useDiscoverySpecialtyModels(modality, task, specialtyKinds, scope);
+  const { byKind: specialtyModels, isSettled: specialtySettled } = useDiscoverySpecialtyModels(modality, task, specialtyKinds, scope);
   /** 某张榜的服务端结果还没到时，先用主榜池子垫着，避免整块空白闪一下。 */
   const specialtyModelsFor = (kind: SpecialtyKind) => specialtyModels[kind] ?? visibleModels;
   /**
@@ -799,15 +799,12 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
     [allModelOptions, scope],
   );
   /**
-   * 散点图默认**全选**当前候选（owner 2026-09-08 拍板）。不能放在 useState 初值里
-   * ——那时接口数据还没到；也不用 effect（本仓 eslint 禁 set-state-in-effect），
-   * 走「渲染期按上一次值调整状态」，与下方 tablePage 归位同一套写法。
-   *
-   * 为什么不是榜单前 N：PRD 没规定模型筛选的默认值（规定了默认值的是周期切换=本日、
-   * 热门榜=前 10 条、维度组合=质量×成本）。此前默认取质量榜前 7，而**质量榜前 7 在
-   * 多数模态拿不到 x 轴数据**，analysis 接口会把任一坐标为空的模型直接排除，于是
-   * 打开页面就是空图（2026-09-08 test 实测：文生图 7→1 个点、图像编辑 7→2、
-   * 文生视频/图生视频/TTS 全是 0；全选后文生图 1→13、图像编辑 2→4、文本 7→80）。
+   * 散点图默认选中 = 专项榜四卡（实际渲染的那几张）Top 10 的并集（qa#723，
+   * owner 2026-09-09 口头；取代 09-08 的「默认全选」——AGENT 模态全选 261 个，
+   * 散点密成一坨）。并集口径与空并集回退见 defaultScatterSelection 的注释。
+   * 不放 useState 初值（那时接口数据没到）、不用 effect（本仓 eslint 禁
+   * set-state-in-effect），走「渲染期按上一次值调整状态」，与上方 tablePage
+   * 归位同一套写法。
    *
    * ⚠️ 判据必须是**数据实际对应的类型**（接口响应里的 type），不能用当前选中的
    * `modality|task`。查询开了 placeholderData 保留旧数据，切 tab 的那一帧入参已经
@@ -815,14 +812,22 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
    * key 记成新值，等真数据到达时条件已不成立，于是散点图停在「上一个 tab 的模型名」
    * 上，在新候选里一个也匹配不到，图表空掉。
    *
-   * 判据用 chartCandidates 而不是榜单：候选来自 model-options（全量、不分页），
-   * 它到达才谈得上「全选」。
+   * 三个数据源各自的「到达」判据：候选 chartCandidates 来自 model-options
+   * （没开 placeholderData，非空即当前类型）；主榜垫底数据看 selectionKey
+   * （= 主榜响应的 type）；专项榜四个独立 query 看 specialtySettled
+   * （同样以各响应的 type 为准）——三者都到了才设默认值，否则会拿上一个 tab
+   * 的榜行算并集，一个都匹配不上、退化成全选后再也不纠正。
    */
+  const defaultSelection = () =>
+    defaultScatterSelection(
+      rankingCards.map((card) => specialtyRows(card.kind, specialtyModelsFor(card.kind), { scoreAscending })),
+      chartCandidates.map((model) => model.name),
+    );
   const selectionKey = discoveryDataType ?? "";
   const [lastSelectionKey, setLastSelectionKey] = useState("");
-  if (chartCandidates.length > 0 && lastSelectionKey !== selectionKey) {
+  if (chartCandidates.length > 0 && specialtySettled && lastSelectionKey !== selectionKey) {
     setLastSelectionKey(selectionKey);
-    setSelectedModelNames(chartCandidates.map((model) => model.name));
+    setSelectedModelNames(defaultSelection());
   }
   const chartModels = chartCandidates.filter((model) => selectedModelNames.includes(model.name));
   const filteredModelOptions = chartCandidates.filter((model) => model.name.toLowerCase().includes(modelFilterSearch.trim().toLowerCase()));
@@ -1174,7 +1179,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                         {filteredModelOptions.map((model) => <button className={selectedModelNames.includes(model.name) ? "selected" : ""} key={model.name} onClick={() => toggleChartModel(model.name)} type="button"><DiscoveryModelIcon model={model.name} provider={model.provider} /><span><strong title={model.name}>{model.name}</strong><small>{model.provider}</small></span>{selectedModelNames.includes(model.name) && <LuCheck size={14} />}</button>)}
                         {filteredModelOptions.length === 0 && <em>{t("modelsDiscovery.empty.noMatchModel")}</em>}
                       </div>
-                      <footer><button onClick={() => setSelectedModelNames([])} type="button"><LuX size={13} />{t("modelsDiscovery.action.clear")}</button><button onClick={() => setSelectedModelNames(chartCandidates.map((model) => model.name))} type="button"><LuCheckCheck size={13} />{t("modelsDiscovery.action.selectAll")}</button><button onClick={() => setSelectedModelNames(chartCandidates.map((model) => model.name))} type="button"><LuRotateCcw size={13} />恢复默认</button></footer>
+                      <footer><button onClick={() => setSelectedModelNames([])} type="button"><LuX size={13} />{t("modelsDiscovery.action.clear")}</button><button onClick={() => setSelectedModelNames(chartCandidates.map((model) => model.name))} type="button"><LuCheckCheck size={13} />{t("modelsDiscovery.action.selectAll")}</button><button onClick={() => setSelectedModelNames(defaultSelection())} type="button"><LuRotateCcw size={13} />恢复默认</button></footer>
                     </>
                   }
                 />

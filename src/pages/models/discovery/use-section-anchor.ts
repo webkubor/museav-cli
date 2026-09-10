@@ -40,33 +40,47 @@ export function useSectionAnchor(ready: boolean) {
 
     // 连续停留不重复上报：只记「上一个报过的」，离开再回来算新的一次到达。
     let lastReported = ''
+    // 观察器回调只带「状态发生变化」的那几个元素，不是全集；只看这批会选错当前区块
+    // （实测滚到完整榜单时 hash 还停在多维分析）。所以自己维护一份可见集合。
+    const visible = new Set<string>()
+
+    const sync = () => {
+      // 滚到底时最后一个区块可能整个矮于判定带、永远选不中，此时直接认最后一个可见的。
+      const atBottom =
+        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 8
+      const ordered = DISCOVERY_SECTIONS.filter((id) => visible.has(id))
+      const id = atBottom ? ordered[ordered.length - 1] : ordered[0]
+      if (!id || id === lastReported) return
+      lastReported = id
+
+      // replaceState 而不是改 location.hash：后者会往历史里塞一条，用户按返回得连按十几次
+      // 才退得出这个页面；也不能用 pushState，同理。
+      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#${id}`)
+      trackEvent('model_discovery_section_view', { section: id })
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {
-        const arrived = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0]
-        if (!arrived) return
-
-        const id = arrived.target.id
-        if (!id || id === lastReported) return
-        lastReported = id
-
-        // replaceState 而不是改 location.hash：后者会往历史里塞一条，用户按返回得连按十几次
-        // 才退得出这个页面；也不能用 pushState，同理。
-        window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#${id}`)
-        trackEvent('model_discovery_section_view', { section: id })
+        for (const e of entries) {
+          if (e.isIntersecting) visible.add(e.target.id)
+          else visible.delete(e.target.id)
+        }
+        sync()
       },
-      { rootMargin: '-12% 0px -80% 0px', threshold: 0 },
+      // 判定带取视口上半：顶部留 8% 余量，底部砍掉 55%。砍太狠（如 -80%）会让首屏区块
+      // 一进页面就落在带外，hash 迟迟不出现。
+      { rootMargin: '-8% 0px -55% 0px', threshold: 0 },
     )
 
     const observed = DISCOVERY_SECTIONS.map((id) => document.getElementById(id)).filter(
       (el): el is HTMLElement => Boolean(el),
     )
     observed.forEach((el) => observer.observe(el))
+    window.addEventListener('scroll', sync, { passive: true })
 
     return () => {
       observer.disconnect()
+      window.removeEventListener('scroll', sync)
       if (locateTimer) window.clearTimeout(locateTimer)
     }
   }, [ready])

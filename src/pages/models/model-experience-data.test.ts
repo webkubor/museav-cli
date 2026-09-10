@@ -100,8 +100,15 @@ describe('errorDisplayFields', () => {
 
 describe('MiniMax H3 视频体验默认参数（shared/modelgo_prd#990）', () => {
   it('文生视频缺省写入可被计费矩阵匹配的 768p，并允许用户选择 2k 覆盖', () => {
-    expect(defaultExperienceParams('minimax-h3', 'text_to_video')).toEqual({ resolution: '768p' })
-    expect(withDefaultExperienceParams('minimax-h3', 'text_to_video', { resolution: '2k' })).toEqual({ resolution: '2k' })
+    expect(defaultExperienceParams('minimax-h3', 'text_to_video')).toEqual({ resolution: '768p', ratio: '16:9' })
+    expect(withDefaultExperienceParams('minimax-h3', 'text_to_video', { resolution: '2k' })).toEqual({ resolution: '2k', ratio: '16:9' })
+    expect(withDefaultExperienceParams('minimax-h3', 'text_to_video', { aspect_ratio: '9:16' })).toEqual({
+      resolution: '768p', aspect_ratio: '9:16', ratio: '9:16',
+    })
+    expect(defaultExperienceParams('minimax-h3', 'image_to_video')).toEqual({ resolution: '768p' })
+    expect(withDefaultExperienceParams('minimax-h3', 'image_to_video', { ratio: '9:16' })).toEqual({
+      resolution: '768p', ratio: '9:16',
+    })
     expect(videoResolutionOptions('minimax-h3')).toEqual(['768p', '2k'])
   })
 

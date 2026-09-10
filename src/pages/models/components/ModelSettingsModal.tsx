@@ -352,7 +352,8 @@ function TranscribeParamsForm({ values, onChange }: { values: Record<string, unk
 function VideoParamsForm({ task, modelId, values, onChange, multipleModels = false }: { task: ModelTaskType; modelId: string; values: Record<string, unknown>; onChange: (key: string, value: unknown) => void; multipleModels?: boolean }) {
   const { t } = useTranslation()
   const duration = asString(values.duration, '5')
-  const aspectRatio = asString(values.aspect_ratio, '16:9')
+  const ratioKey = modelId === 'minimax-h3' ? 'ratio' : 'aspect_ratio'
+  const aspectRatio = asString(values[ratioKey], '16:9')
   const resolutionOptions = videoResolutionOptions(modelId)
   const resolution = asString(values.resolution, resolutionOptions[0])
   const count = multipleModels ? '1' : asString(values.count, '1')
@@ -367,7 +368,7 @@ function VideoParamsForm({ task, modelId, values, onChange, multipleModels = fal
         <span className="text-xs font-semibold text-mg-text-1">{experienceTaskLabel(task)}</span>
       </div>
       <SelectField label={t('modelsExperience.settings.videoDuration')} value={duration} options={['5', '8', '10']} suffix={t('modelsExperience.settings.seconds')} onChange={(v) => onChange('duration', v)} />
-      <SelectField label={t('modelsExperience.settings.aspectRatio')} value={aspectRatio} options={['16:9', '9:16', '1:1']} onChange={(v) => onChange('aspect_ratio', v)} />
+      <SelectField label={t('modelsExperience.settings.aspectRatio')} value={aspectRatio} options={['16:9', '9:16', '1:1']} onChange={(v) => onChange(ratioKey, v)} />
       <SelectField label={t('modelsExperience.settings.resolution')} value={resolution} options={resolutionOptions} onChange={(v) => onChange('resolution', v)} />
       <SelectField disabled={multipleModels} label={t('modelsExperience.settings.count')} value={count} options={multipleModels ? ['1'] : ['1', '2']} onChange={(v) => onChange('count', v)} />
       {multipleModels && <p className="model-settings-inline-note">{t('modelsExperience.settings.multiModelCountNoteVideo')}</p>}

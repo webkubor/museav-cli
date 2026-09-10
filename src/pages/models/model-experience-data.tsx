@@ -136,7 +136,7 @@ export function buildMediaArtifactDetail(task: ExperienceTaskType, chatParams: R
   if (task === 'text_to_video' || task === 'image_to_video') {
     const resolution = str('resolution', '720p')
     const duration = str('duration', '5')
-    const aspectRatio = str('aspect_ratio', '16:9')
+    const aspectRatio = str('ratio', str('aspect_ratio', '16:9'))
     return i18n.t('modelsExperience.artifactDetailVideo', { resolution, duration, aspectRatio, index: outputIndex + 1 })
   }
   return undefined
@@ -147,13 +147,15 @@ export function buildMediaArtifactDetail(task: ExperienceTaskType, chatParams: R
  * 传这些参数；因此这里的缺省值也必须在创建会话时写入配置，不能只用于设置弹窗展示。
  *
  * MiniMax H3 的计费矩阵以 input_mode + resolution 为键，缺少 resolution 会在预授权
- * 阶段拒绝请求（shared/modelgo_prd#990）。其有效枚举不是通用视频表单的 720p/1080p，
+ * 阶段拒绝请求；其文生视频 provider 同时要求 ratio 且不接受 adaptive。图生视频由
+ * 首帧决定画幅，不能强制写 16:9。其有效枚举不是通用视频表单的 720p/1080p，
  * 故显式选用目录中已配置价格的 768p 作为文生视频默认值。
  */
 export function defaultExperienceParams(modelId: string, task: ExperienceTaskType): Record<string, unknown> {
-  if (modelId === 'minimax-h3' && (task === 'text_to_video' || task === 'image_to_video')) {
-    return { resolution: '768p' }
+  if (modelId === 'minimax-h3' && task === 'text_to_video') {
+    return { resolution: '768p', ratio: '16:9' }
   }
+  if (modelId === 'minimax-h3' && task === 'image_to_video') return { resolution: '768p' }
   return {}
 }
 
@@ -163,7 +165,15 @@ export function withDefaultExperienceParams(
   task: ExperienceTaskType,
   params: Record<string, unknown>,
 ): Record<string, unknown> {
-  return { ...defaultExperienceParams(modelId, task), ...params }
+  const defaults = defaultExperienceParams(modelId, task)
+  const merged = { ...defaults, ...params }
+  if (modelId === 'minimax-h3' && (task === 'text_to_video' || task === 'image_to_video')) {
+    // 旧会话可能已经把通用设置键 aspect_ratio 存进 config；迁移为 H3 provider
+    // 使用的 ratio。新设置面板已直接写 ratio，避免用户的显式选择被默认值覆盖。
+    const aspectRatio = typeof params.aspect_ratio === 'string' ? params.aspect_ratio : undefined
+    if (aspectRatio) return { ...merged, ratio: aspectRatio }
+  }
+  return merged
 }
 
 /** 设置弹窗的 resolution 枚举与实际模型契约保持一致。 */

@@ -360,7 +360,13 @@ PRD 原型 > 飞书文档 > 现状控制台代码
 | 按修复粒度上线 | worktree（`fix/`·`feat/`） | main | 同一分支**分别**合进 test（验证）和 main（发布），各自产生一个 merge commit |
 | 线上 hotfix | main | main | main 分支修复 → 部署线上 → 同步到 test |
 
-**部署分支按环境定，不是按项目定**：测试 job 传 `GIT_BRANCH=test`，生产 job 传 `GIT_BRANCH=main` + `GIT_TAG`。抄命令前先核一眼 Jenkins 上次构建的实参（`job/<n>/api/json` 的 `parameters`）——**分支传错不报错**，构建照样 SUCCESS，只是把另一个分支发了出去（2026-08-25 踩过：部署卡把测试环境的分支渲染成 `main`，而当时 main 落后 test 16 个提交，照抄等于把测试环境回滚半个月）。
+**部署分支按环境定，不是按项目定**：测试 job 传 `GIT_BRANCH=<测试环境当前跟的分支>`，生产 job 传 `GIT_BRANCH=main` + `GIT_TAG`。
+
+> ⚠️ **测试环境当前跟的是版本分支，不是 `test`**（2026-09-10 实测 `version.json`：
+> `{"commit":"12f595b","branch":"release/v1.0.6"}`）。版本迭代期部署传
+> `GIT_BRANCH=release/v1.0.x`，**「更新测试环境」＝触发 Jenkins，不等于把版本分支合进 `test`**。
+> 代码回流（`test` → 版本分支）只动源码、不动环境，回流完必须再部一次，否则环境仍是旧 commit。
+> 部署前先读一眼 `curl -s https://console.test.modelgo.com/version.json` 确认它现在跟的哪条分支，别照抄本表。抄命令前先核一眼 Jenkins 上次构建的实参（`job/<n>/api/json` 的 `parameters`）——**分支传错不报错**，构建照样 SUCCESS，只是把另一个分支发了出去（2026-08-25 踩过：部署卡把测试环境的分支渲染成 `main`，而当时 main 落后 test 16 个提交，照抄等于把测试环境回滚半个月）。
 
 #### test / main 分叉：成因与处理
 
@@ -439,6 +445,35 @@ git merge-base --is-ancestor origin/main origin/test && echo "可快进"
 分叉判定、冲突处理等机制本身仍然适用，只是 base 换成版本分支。
 
 **分支清理：** 见上面「日常开发流程」步骤 5——分支合并进 test 就应清理，不用等到合并上线。
+
+### 冒烟用例：真源在 TestMgr，不在飞书也不在代码库
+
+**部署到测试环境后要跑的冒烟清单，唯一真源是 TestMgr**（`https://qa.ops.modelgo.com/testmgr/`）。
+2026-09-10 找这份清单时在飞书和 QA 代码库里绕了两圈才问出来，所以钉在这里：
+
+| 当期版本 | V1.0.6 冒烟（扩容 120 条） |
+|:---|:---|
+| 入口 | <https://qa.ops.modelgo.com/testmgr/test-tasks/task-01m1gmt456jy35cxwdrf2hc6fg> |
+| 用例集 | `set-01m0y0yqtjnznsxgv54s02dhr8` |
+| 口径 | 全部可执行 P0（51）+ 核心 P1（68）+ `TC-MINOR-031`（P2）＝120 条；**blocked 的一条不进**（后端未上线 / 原型未实现 / 日限额）。是旧 40 条冒烟的严格超集 |
+| 上一轮 | 2026-09-02～09-04 由 `george.j` 执行：120 条全执行，**passed 35 / failed 7 / blocked 67 / skipped 11**，通过率 29.17% —— blocked 占一多半，主因是后端与 Admin 前端未交付，看结论前先分清「没做」还是「做坏了」 |
+
+读取用 API（**只读 GET；本仓 skill 禁止任何 DELETE**，见 skill `testmgr-api`）：
+
+```bash
+curl -s "https://qa.ops.modelgo.com/api/testmgr/runs/<task-id>" | python3 -m json.tool   # 注意是 runs 不是 tasks
+```
+
+> ⚠️ 路径易错：页面 URL 是 `/testmgr/test-tasks/<id>`，但 API 端点是 `/api/testmgr/runs/<id>`；
+> 打到 `/api/testmgr/tasks/<id>` 会返回 `not_found`，别据此以为任务不存在。
+
+另外两处**不是**真源、只作参考：
+
+- 飞书《ModelGo P0 冒烟测试用例（V1.0.1–V1.0.3）》（30 条，于剑锋）——只到 1.0.3，**没有 1.0.6**：
+  <https://ocny5azjudjs.feishu.cn/wiki/BQK0wyKcfi595SksWGlcvs21nxe>
+- 自动化用例在 QA 仓 `qa/modelgo-api-tests`：后端冒烟 `tests/api/smoke/`（`-m p0` ≡ `-m smoke`，10 例 ~3s），
+  前端 `tests/ui/`（91 个用例，Playwright 直连 `console.test.modelgo.com`，与 p0/p1 分层正交）。
+  ⚠️ **1.0.6 的模型发现页 / benchmark / 新手指南在自动化库里一条用例都没有**，只能靠 TestMgr 人工执行。
 
 ## 5. UI 测试账户管理
 

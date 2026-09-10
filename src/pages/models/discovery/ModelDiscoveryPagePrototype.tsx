@@ -527,26 +527,28 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       rows: [...taskModels].sort((first, second) => metricValue(second.usage) - metricValue(first.usage)).map((model) => ({ model: model.name, value: model.usage })),
     },
   ];
+  /**
+   * 文本/Agent 专项榜四卡 —— 真源是 PRD 原型 `ModelDiscoveryPage.tsx` 的 `specialties`
+   * （性价比领先 / 输出 TPS / 首 Token 时延领先 / 近 7 日热度）。
+   *
+   * 曾经是「综合评分 / 单次任务成本 / 输出 TPS / 近 7 日热度」，两处偏离原型且没留理由：
+   * 综合评分与 Top 5 的主指标重复（同一列数据换个形状再排一遍），单次任务成本则把
+   * 「性价比」这个复合维度降级成了单价——PRD 文档 §5.1/§5.2 与设计文档也都写的是性价比。
+   * 时延这一项与散点图「质量 × 时延」预设同源（owner 2026-09-10 拍板保留 4 个含时延）。
+   */
   const textBenchmarkRankings = [
     {
-      kind: "score" as SpecialtyKind,
-      title: t("modelsDiscovery.metric.overallScore"),
-      description: taskProfile.qualityLabel,
+      kind: "value" as SpecialtyKind,
+      title: t("modelsDiscovery.metric.valueLeader"),
+      description: t("modelsDiscovery.summary.valueDesc"),
       source: "Artificial Analysis",
-      lowerIsBetter: Boolean(taskProfile.qualityLowerIsBetter),
-      rows: [...taskModels].map((model) => ({ model: model.name, value: model.score })),
-    },
-    {
-      kind: "price" as SpecialtyKind,
-      title: t("modelsDiscovery.metric.costPerTask"),
-      description: t("modelsDiscovery.summary.costDesc"),
-      source: "Artificial Analysis",
-      lowerIsBetter: true,
-      // 无成本数据的模型不进榜 —— 当 0 参与排序会霸占「成本最低」的首位（#969 缺陷 1）
+      lowerIsBetter: false,
+      // 分母缺失时接口给 value_score = null，这类模型不进榜也不补 0（设计文档 §13 同此，
+      // 与 #969 缺陷 1「无价格的模型不进榜」同一口径）
       rows: [...taskModels]
-        .filter((model) => taskCostFor(model) !== null)
-        .sort((first, second) => (taskCostFor(first) ?? 0) - (taskCostFor(second) ?? 0))
-        .map((model) => ({ model: model.name, value: formatTaskCost(t, taskCostFor(model)) })),
+        .filter((model) => model.raw?.valueScore !== null)
+        .sort((first, second) => (second.raw!.valueScore ?? 0) - (first.raw!.valueScore ?? 0))
+        .map((model) => ({ model: model.name, value: model.valueScore })),
     },
     {
       kind: "tps" as SpecialtyKind,
@@ -555,6 +557,18 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
       source: "Artificial Analysis",
       lowerIsBetter: false,
       rows: [...taskModels].sort((first, second) => metricValue(second.performance) - metricValue(first.performance)).map((model) => ({ model: model.name, value: model.performance })),
+    },
+    {
+      kind: "latency" as SpecialtyKind,
+      title: t("modelsDiscovery.metric.ttftLeader"),
+      description: t("modelsDiscovery.metric.ttftP50"),
+      source: "Artificial Analysis",
+      lowerIsBetter: true,
+      // 时延为空的模型不进榜（设计文档：AA 端到端响应时延为空则隐藏该项，不用 TTFT 代替）
+      rows: [...taskModels]
+        .filter((model) => model.raw?.latencyMs !== null)
+        .sort((first, second) => (first.raw!.latencyMs ?? 0) - (second.raw!.latencyMs ?? 0))
+        .map((model) => ({ model: model.name, value: model.latency })),
     },
     {
       kind: "usage" as SpecialtyKind,

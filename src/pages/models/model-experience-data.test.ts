@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { resolveApiErrorDisplay, errorDisplayFields, cleanErrorMessage, dualPriceText, estimateComposerSpend } from './model-experience-data'
+import {
+  resolveApiErrorDisplay,
+  errorDisplayFields,
+  cleanErrorMessage,
+  defaultExperienceParams,
+  dualPriceText,
+  estimateComposerSpend,
+  videoResolutionOptions,
+  withDefaultExperienceParams,
+} from './model-experience-data'
 import { ModelGoApiError } from '@/lib/request'
 import '@/i18n'
 
@@ -86,6 +95,19 @@ describe('errorDisplayFields', () => {
       errorRequestId: 'f31951e5-b46c-4963-9f73-adc1c0505e80',
       errorTraceId: 'b13d9c3ce5fa9431fe11223b74a12232',
     })
+  })
+})
+
+describe('MiniMax H3 视频体验默认参数（shared/modelgo_prd#990）', () => {
+  it('文生视频缺省写入可被计费矩阵匹配的 768p，并允许用户选择 2k 覆盖', () => {
+    expect(defaultExperienceParams('minimax-h3', 'text_to_video')).toEqual({ resolution: '768p' })
+    expect(withDefaultExperienceParams('minimax-h3', 'text_to_video', { resolution: '2k' })).toEqual({ resolution: '2k' })
+    expect(videoResolutionOptions('minimax-h3')).toEqual(['768p', '2k'])
+  })
+
+  it('不改变其他视频模型的既有默认值与枚举', () => {
+    expect(defaultExperienceParams('other-video', 'text_to_video')).toEqual({})
+    expect(videoResolutionOptions('other-video')).toEqual(['720p', '1080p'])
   })
 })
 

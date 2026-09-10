@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/Textarea'
 import { Switch } from '@/components/ui/Switch'
 import { Select } from '@/components/ui/Select'
 import { useCurrency } from '@/hooks/use-platform-config'
-import { experienceTaskLabel, formatSpendAmount, type ExperienceTaskType } from '../model-experience-data'
+import { experienceTaskLabel, formatSpendAmount, videoResolutionOptions, type ExperienceTaskType } from '../model-experience-data'
 import '../styles/model-settings-modal.css'
 
 export type ModelTaskType = ExperienceTaskType
@@ -32,6 +32,8 @@ export interface ModelSettingsModalProps {
   open: boolean
   onClose: () => void
   modelName: string
+  /** 影响部分媒体参数的真实模型标识。 */
+  modelId: string
   /** 弹窗副标题「厂商 · 任务」，逐字对齐原型 App.tsx:20223（playground-settings-modal-head） */
   vendor?: string
   task: ModelTaskType
@@ -347,11 +349,12 @@ function TranscribeParamsForm({ values, onChange }: { values: Record<string, unk
 }
 
 /** 文生视频/图生视频参数表单：生成方式(只读)+时长/比例/分辨率/数量 + 负面提示词/Seed/生成音频（PRD §7.9 逐字对齐） */
-function VideoParamsForm({ task, values, onChange, multipleModels = false }: { task: ModelTaskType; values: Record<string, unknown>; onChange: (key: string, value: unknown) => void; multipleModels?: boolean }) {
+function VideoParamsForm({ task, modelId, values, onChange, multipleModels = false }: { task: ModelTaskType; modelId: string; values: Record<string, unknown>; onChange: (key: string, value: unknown) => void; multipleModels?: boolean }) {
   const { t } = useTranslation()
   const duration = asString(values.duration, '5')
   const aspectRatio = asString(values.aspect_ratio, '16:9')
-  const resolution = asString(values.resolution, '720p')
+  const resolutionOptions = videoResolutionOptions(modelId)
+  const resolution = asString(values.resolution, resolutionOptions[0])
   const count = multipleModels ? '1' : asString(values.count, '1')
   const negativePrompt = asString(values.negative_prompt)
   const seed = asString(values.seed)
@@ -365,7 +368,7 @@ function VideoParamsForm({ task, values, onChange, multipleModels = false }: { t
       </div>
       <SelectField label={t('modelsExperience.settings.videoDuration')} value={duration} options={['5', '8', '10']} suffix={t('modelsExperience.settings.seconds')} onChange={(v) => onChange('duration', v)} />
       <SelectField label={t('modelsExperience.settings.aspectRatio')} value={aspectRatio} options={['16:9', '9:16', '1:1']} onChange={(v) => onChange('aspect_ratio', v)} />
-      <SelectField label={t('modelsExperience.settings.resolution')} value={resolution} options={['720p', '1080p']} onChange={(v) => onChange('resolution', v)} />
+      <SelectField label={t('modelsExperience.settings.resolution')} value={resolution} options={resolutionOptions} onChange={(v) => onChange('resolution', v)} />
       <SelectField disabled={multipleModels} label={t('modelsExperience.settings.count')} value={count} options={multipleModels ? ['1'] : ['1', '2']} onChange={(v) => onChange('count', v)} />
       {multipleModels && <p className="model-settings-inline-note">{t('modelsExperience.settings.multiModelCountNoteVideo')}</p>}
 
@@ -391,11 +394,13 @@ function VideoParamsForm({ task, values, onChange, multipleModels = false }: { t
 /** 按任务类型分发到对应参数表单（PRD §7.9） */
 function TaskParamsForm({
   task,
+  modelId,
   values,
   onChange,
   multipleModels,
 }: {
   task: ModelTaskType
+  modelId: string
   values: Record<string, unknown>
   onChange: (key: string, value: unknown) => void
   multipleModels: boolean
@@ -403,13 +408,14 @@ function TaskParamsForm({
   if (task === 'text_to_image' || task === 'image_to_image') return <ImageParamsForm values={values} onChange={onChange} multipleModels={multipleModels} />
   if (task === 'text_to_audio') return <TTSParamsForm values={values} onChange={onChange} />
   if (task === 'audio_to_text') return <TranscribeParamsForm values={values} onChange={onChange} />
-  return <VideoParamsForm task={task} values={values} onChange={onChange} multipleModels={multipleModels} />
+  return <VideoParamsForm task={task} modelId={modelId} values={values} onChange={onChange} multipleModels={multipleModels} />
 }
 
 export function ModelSettingsModal({
   open,
   onClose,
   modelName,
+  modelId,
   task,
   vendor,
   maxOutputTokens = 4096,
@@ -481,7 +487,7 @@ export function ModelSettingsModal({
       {isDialogue ? (
         <ChatParamsForm values={values} onChange={onChange} maxOutputTokens={maxOutputTokens} />
       ) : (
-        <TaskParamsForm task={task} values={values} onChange={onChange} multipleModels={multipleModels} />
+        <TaskParamsForm task={task} modelId={modelId} values={values} onChange={onChange} multipleModels={multipleModels} />
       )}
 
       {sessionSummary}

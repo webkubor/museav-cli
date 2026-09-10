@@ -51,6 +51,8 @@ import {
   offlineModelPlaceholder,
   isOfflineModel,
   modelSupportsAttachment,
+  defaultExperienceParams,
+  withDefaultExperienceParams,
   type ExperienceMessage,
   type ExperienceTaskType,
 } from './model-experience-data'
@@ -406,7 +408,13 @@ export function useModelsPlayground() {
         getExperienceSessionStats(sessionId),
       ])
       const savedConfig = configs.find((c) => matchesModelConfigId(c.model_id, selectedModel.model_id))
-      if (savedConfig) setChatParams(normalizeChatParams(savedConfig.config))
+      if (savedConfig) {
+        setChatParams(withDefaultExperienceParams(
+          selectedModel.model_id,
+          effectiveTask,
+          normalizeChatParams(savedConfig.config),
+        ))
+      }
       const modelStats = stats.find((s) => s.model_id === selectedModel.model_id)
       if (modelStats) {
         setSessionStats({
@@ -424,7 +432,9 @@ export function useModelsPlayground() {
     // 只记参数名，不记参数值（§10.3 备注：不记录参数文本值）
     trackEvent('playground_settings_action', { action: 'modify', parameter_name: key })
     setChatParams((prev) => {
-      const next = { ...prev, [key]: value }
+      const next = selectedModel
+        ? { ...withDefaultExperienceParams(selectedModel.model_id, effectiveTask, prev), [key]: value }
+        : { ...prev, [key]: value }
       // 会话未建好前（懒创建，见 ensureConversation）没有 sessionId 可挂载配置，
       // 本地 chatParams 已经生效（会用于下一次请求），这里静默跳过持久化即可，不算失败
       if (sessionId && selectedModel) {
@@ -438,9 +448,13 @@ export function useModelsPlayground() {
 
   function handleResetChatParams() {
     trackEvent('playground_settings_action', { action: 'reset' })
-    setChatParams({})
+    const next = selectedModel ? defaultExperienceParams(selectedModel.model_id, effectiveTask) : {}
+    setChatParams(next)
     if (sessionId && selectedModel) {
-      resetExperienceModelConfig(sessionId, selectedModel.model_id).catch((err) => {
+      const request = Object.keys(next).length > 0
+        ? saveExperienceModelConfig(sessionId, selectedModel.model_id, next)
+        : resetExperienceModelConfig(sessionId, selectedModel.model_id)
+      request.catch((err) => {
         appToast.requestError(err, t('modelsExperience.settings.resetFailed'))
       })
     }
@@ -529,8 +543,25 @@ export function useModelsPlayground() {
 
   /** 懒创建会话：按当前模型分类/任务建（对话/媒体走的是同一个会话创建接口，只是 category/task 不同） */
   async function ensureConversation(): Promise<string> {
-    if (conversationId) return conversationId
     if (!selectedModel) throw new Error(t('modelsExperience.noModelSelected'))
+    if (conversationId) {
+      // 历史会话恢复后本地 chatParams 是空的；若直接发送，会跳过新建会话时的配置回填。
+      // 对 H3 这会重新触发「缺少 resolution」的预授权失败，故先读已保存配置并补齐默认项。
+      const defaults = defaultExperienceParams(selectedModel.model_id, effectiveTask)
+      if (Object.keys(defaults).length > 0) {
+        if (!sessionId) throw new Error(t('modelsExperience.sessionCreateError'))
+        const { items } = await listExperienceModelConfigs(sessionId)
+        const saved = items.find((config) => matchesModelConfigId(config.model_id, selectedModel.model_id))
+        const params = withDefaultExperienceParams(
+          selectedModel.model_id,
+          effectiveTask,
+          saved ? normalizeChatParams(saved.config) : chatParams,
+        )
+        await saveExperienceModelConfig(sessionId, selectedModel.model_id, params)
+        setChatParams(params)
+      }
+      return conversationId
+    }
     const session = await createExperienceSession({
       // name 传空串：后端会在首条用户提问落库时用其前 15 字自动生成标题，
       // 传非空值会被判定为「已显式命名」，反而挡住自动标题
@@ -550,9 +581,11 @@ export function useModelsPlayground() {
     // 这里建完会话必须把暂存参数回填到后端，且要 await：参数（含 system_prompt）是
     // 后端从会话 config 读的、不随消息体走，首条消息打到模型前 config 必须已就位
     // （shared/modelgo_prd#315 的第二条失效路径）。回填失败不阻塞发送，提示用户即可。
-    if (Object.keys(chatParams).length > 0) {
+    const params = withDefaultExperienceParams(selectedModel.model_id, effectiveTask, chatParams)
+    if (Object.keys(params).length > 0) {
       try {
-        await saveExperienceModelConfig(session.id, selectedModel.model_id, chatParams)
+        await saveExperienceModelConfig(session.id, selectedModel.model_id, params)
+        setChatParams(params)
       } catch (err) {
         appToast.requestError(err, t('modelsExperience.settings.saveFailed'))
       }

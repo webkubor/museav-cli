@@ -13,6 +13,7 @@ import {
   MODALITY_TASK_TO_TYPE,
   compactAmount,
   detailTarget,
+  integratedSiteOf,
   discoveryTypeFor,
   formatPrice,
   formatScore,
@@ -467,28 +468,30 @@ describe('specialtyMetricFor', () => {
   })
 })
 
-describe('detailTarget（查看详情落点，PRD 第 8 节三态）', () => {
-  it('第一态 ModelGo 已接入 → 站内详情', () => {
-    expect(detailTarget({ id: 'kimi-k2.6', supported: true, domestic: true })).toBe('inside')
-    // 已接入但接在国外站的也走站内跳：本站 catalog 实测有（gemini/mimo 那 6 个）
-    expect(detailTarget({ id: 'gemini-3.1-flash-lite', supported: true, domestic: false })).toBe('inside')
+describe('detailTarget（查看详情落点，integrated_site 三态，qa#727）', () => {
+  it('MODELGO / MODELGO_AI（已接入）→ 站内详情', () => {
+    expect(detailTarget({ id: 'kimi-k2.6', site: 'MODELGO' })).toBe('inside')
+    expect(detailTarget({ id: 'gemini-3.1-flash-lite', site: 'MODELGO_AI' })).toBe('inside')
   })
-
-  it('第一态但接口没给 modelgo_id → 提示，不静默', () => {
-    expect(detailTarget({ id: '', supported: true, domestic: true })).toBe('no-id')
-    expect(detailTarget({ supported: true, domestic: true })).toBe('no-id')
+  it('已接入但没有 modelgo_id → no-id（提示，不静默）', () => {
+    expect(detailTarget({ id: '', site: 'MODELGO' })).toBe('no-id')
+    expect(detailTarget({ site: 'MODELGO_AI' })).toBe('no-id')
   })
-
-  it('第二态 ModelGo.ai 已接入（非国产）→ 外链目标站，不看 supported 也不看有没有 id', () => {
-    expect(detailTarget({ id: 'gpt-5.4', supported: false, domestic: false })).toBe('external')
-    expect(detailTarget({ id: '', supported: false, domestic: false })).toBe('external')
+  it('NOT_INTEGRATED → disabled，即使境外厂商（qa#727：87 条不再按国别猜成已接入）', () => {
+    expect(detailTarget({ id: 'gpt-5.4', site: 'NOT_INTEGRATED' })).toBe('disabled')
+    expect(detailTarget({ id: '', site: 'NOT_INTEGRATED' })).toBe('disabled')
   })
+})
 
-  it('第三态 国产未接入 → 禁用，即使接口给了 modelgo_id', () => {
-    // glm-5 / kimi-k3 / qwen3.5-27b 就是这批：有 modelgo_id 但 is_integrated=false，
-    // 标签写「暂未接入 ModelGo」，PRD 10.2 要求操作列显示禁用的「待支持」
-    expect(detailTarget({ id: 'glm-5', supported: false, domestic: true })).toBe('disabled')
-    expect(detailTarget({ id: '', supported: false, domestic: true })).toBe('disabled')
+describe('integratedSiteOf（三态判据，接口字段优先）', () => {
+  it('接口下发 integrated_site 时一律以它为准', () => {
+    expect(integratedSiteOf({ integratedSite: 'NOT_INTEGRATED', supported: true, domestic: false })).toBe('NOT_INTEGRATED')
+    expect(integratedSiteOf({ integratedSite: 'MODELGO_AI', supported: true, domestic: true })).toBe('MODELGO_AI')
+  })
+  it('字段缺失时按后端同一条规则本地推导：未接入一律 NOT_INTEGRATED', () => {
+    expect(integratedSiteOf({ supported: false, domestic: false })).toBe('NOT_INTEGRATED')
+    expect(integratedSiteOf({ supported: true, domestic: true })).toBe('MODELGO')
+    expect(integratedSiteOf({ integratedSite: null, supported: true, domestic: false })).toBe('MODELGO_AI')
   })
 })
 

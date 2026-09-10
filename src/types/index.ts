@@ -198,6 +198,7 @@ export type {
   DiscoveryOverview,
   DiscoveryRankingItem,
   DiscoveryRankings,
+  DiscoveryIntegratedSite,
   DiscoveryModelOption,
   DiscoveryModelOptions,
   DiscoveryAnalysisPoint,

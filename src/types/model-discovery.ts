@@ -49,6 +49,15 @@ export type DiscoveryUsageUnit = 'TOKENS' | 'TASKS' | 'CHARACTERS' | 'AUDIO_MINU
 /** 接入状态：MODELGO 已接入，MODELGO_AI 仅在榜单中展示。 */
 export type DiscoveryIntegrationStatus = 'MODELGO' | 'MODELGO_AI'
 
+/**
+ * 接入站点（后端 2026-09-08 新增，产品口径定稿见 qa#721）：
+ * 未接入 → NOT_INTEGRATED；已接入且国产厂商 → MODELGO；已接入且境外厂商 → MODELGO_AI。
+ * **徽标文案、可点性、详情落点一律以本字段为准**（qa#727）——
+ * `integration_status` 只是国别/站点归属标记，拿它当接入态会把从未上架的
+ * 境外模型标成「ModelGo.ai 已接入」（Agent 模态 test 环境 87 条，qa#727 实测）。
+ */
+export type DiscoveryIntegratedSite = 'MODELGO' | 'MODELGO_AI' | 'NOT_INTEGRATED'
+
 /** 排序方向，由后端给出，前端不必自己判断越高越好还是越低越好。 */
 export type DiscoveryDirection = 'asc' | 'desc'
 
@@ -94,6 +103,8 @@ export interface DiscoveryModelCard {
    * 那句是旧口径，已被第一节的本字段取代。
    */
   is_integrated: boolean
+  /** 接入站点，徽标/可点性/落点的唯一判据（见 DiscoveryIntegratedSite）。 */
+  integrated_site?: DiscoveryIntegratedSite | null
   is_open_source: boolean
   /** TTS / STT 无发布时间，恒为 null。 */
   release_date: string | null
@@ -218,8 +229,8 @@ export interface DiscoveryModelOption {
    * （prd#969 第 7 条的成因）；后端当天补齐后改回这里。
    */
   is_integrated: boolean
-  /** 接入站点（后端 2026-09-08 随 is_integrated 一起新增），当前前端未消费 */
-  integrated_site?: string | null
+  /** 接入站点，徽标/可点性/落点的唯一判据（见 DiscoveryIntegratedSite，qa#727 起消费）。 */
+  integrated_site?: DiscoveryIntegratedSite | null
   is_open_source: boolean
 }
 

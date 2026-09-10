@@ -69,10 +69,8 @@ import {
   useDiscoveryTrends,
 } from './use-discovery-query'
 import { ProgressBar } from '@/components/ui/ProgressBar'
-import { defaultScatterSelection, detailTarget, EMPTY, rankBarWidth, specialtyRows, unitPriceDetail } from './discovery-data'
-import type { DiscoveryIntegrationStatus, DiscoveryUnitPrices } from '@/types'
-import { getMarketConfig, isTestOrDev } from "@/config/market"
-import { getMarket, type Market } from "@/lib/market"
+import { defaultScatterSelection, detailTarget, EMPTY, integratedSiteOf, rankBarWidth, specialtyRows, unitPriceDetail } from './discovery-data'
+import type { DiscoveryIntegratedSite, DiscoveryIntegrationStatus, DiscoveryUnitPrices } from '@/types'
 import { appToast } from "@/lib/app-toast"
 import {
 
@@ -100,6 +98,8 @@ type DiscoveryModel = {
   unitPrices?: DiscoveryUnitPrices | null;
   /** 接在哪个站（接口 integration_status）：MODELGO=国内 modelgo.com / MODELGO_AI=国外 modelgo.ai。当前站有没有看 supported。 */
   integrationStatus?: DiscoveryIntegrationStatus;
+  /** 接入站点（接口 integrated_site）：徽标/可点性/落点的唯一判据（qa#727）。 */
+  integratedSite?: DiscoveryIntegratedSite | null;
   /**
    * 排序与格式化用的原始数值。**不要从展示串反解析** —— `price` 在无数据时是「—」，
    * 解析出来是 0，会把「没有成本数据」显示成「$0.00」，和真的 0（免费）分不开
@@ -143,8 +143,16 @@ function normalizeProviderName(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-/** 只依赖 provider / supported / integrationStatus，故对散点用的轻量模型对象同样适用。 */
-type AccessShape = Pick<DiscoveryModel, "provider" | "supported" | "integrationStatus">;
+/** 只依赖 provider / supported / integrationStatus / integratedSite，故对散点用的轻量模型对象同样适用。 */
+type AccessShape = Pick<DiscoveryModel, "provider" | "supported" | "integrationStatus" | "integratedSite">;
+
+/**
+ * 三态判据（qa#727）：徽标、可点性、落点全部从这里派生。优先接口下发的
+ * `integrated_site`；字段缺失时按后端同一条规则本地推导（is_integrated + 国别）。
+ */
+function accessSite(model: AccessShape) {
+  return integratedSiteOf({ integratedSite: model.integratedSite, supported: model.supported, domestic: isDomesticModel(model) });
+}
 
 /**
  * 这个模型接在哪个站：`integration_status === 'MODELGO'` → 国内站 modelgo.com，
@@ -165,41 +173,22 @@ function isDomesticModel(model: AccessShape) {
 }
 
 /**
- * 该模型在页面上是否算「有落点」：本平台已接入（站内详情），或境外模型（ModelGo.ai 外链）。
- * 国产但未接入的没有落点 —— 显示「暂未接入 ModelGo」+ 禁用按钮。
+ * 该模型在页面上是否算「有落点」= `integrated_site` 不是 NOT_INTEGRATED（qa#727）。
+ * 未接入的（含境外未接入）没有落点 —— 显示「暂未接入 ModelGo」+ 禁用按钮；
+ * 「按国别猜它在 ModelGo.ai 可用」的旧启发式已被产品否决（qa#721）。
  */
 function isModelConnected(model: AccessShape) {
-  return model.supported || !isDomesticModel(model);
+  return accessSite(model) !== "NOT_INTEGRATED";
 }
 
-/** 三态文案：本平台已接入 / 境外站已接入 / 国产未接入。判据顺序不能换。 */
+/** 三态文案 = integrated_site 查表（qa#727），与可点性/落点同源。 */
 function modelAccessLabel(t: TFn, model: DiscoveryModel) {
-  if (model.supported) return t("modelsDiscovery.status.integratedCn");
-  if (!isDomesticModel(model)) return t("modelsDiscovery.status.integratedCom");
+  const site = accessSite(model);
+  if (site === "MODELGO") return t("modelsDiscovery.status.integratedCn");
+  if (site === "MODELGO_AI") return t("modelsDiscovery.status.integratedCom");
   return t("modelsDiscovery.status.notIntegrated");
 }
 
-/**
- * 第二态（ModelGo.ai 已接入）的落点 —— PRD 第 8 节：「新页面打开 modelgo.ai
- * 对应模型详情页」。
- *
- * ① 先判环境：测试与本地只有一套控制台（两个市场的 VITE_*_CONSOLE 都指
- *    console.test.modelgo.com），跨站没有意义，留在当前站；跳进去查不到时由详情页的
- *    40401 空态 + crossSiteModelUrl 给出路。此前写死 https://console.modelgo.ai，
- *    测试环境点详情会跳到**生产国外站**，测试数据的模型名在那儿搜不到
- *    （2026-09-08 owner 实测报的问题）。
- * ② 再判**这个模型接在哪个站** —— 落点只由模型决定，与当前访问的域名无关。
- *    owner 2026-09-08 原话：「我们展示的模型-国内不支持-国外有，那就要跳转国外，
- *    即便是现在访问的域名是国内」。
- * ③ 最后只决定**怎么去**：目标站正好是当前站就走站内路径，否则拼目标站域名。
- */
-function modelDetailUrl(model: Pick<DiscoveryModel, "name"> & { id?: string; integrationStatus?: DiscoveryIntegrationStatus }) {
-  const path = model.id ? `/models/${encodeURIComponent(model.id)}` : `/models?${new URLSearchParams({ search: model.name }).toString()}`;
-  if (isTestOrDev()) return path;
-  const targetMarket: Market = model.integrationStatus === "MODELGO" ? "china" : "global";
-  if (targetMarket === getMarket()) return path;
-  return `${getMarketConfig(targetMarket).consoleUrl}${path}`;
-}
 
 const buildModalityOptions = (t: TFn): Array<{ key: ModalityKey; label: string }> => [
   { key: "agent", label: "Agent" },
@@ -685,7 +674,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   const safeTablePage = Math.min(tablePage, tablePageCount);
 
   /** 跳详情只需要这四个字段，散点用的轻量模型对象同样适用。 */
-  type DetailShape = Pick<DiscoveryModel, "id" | "name" | "provider" | "supported" | "integrationStatus">;
+  type DetailShape = Pick<DiscoveryModel, "id" | "name" | "provider" | "supported" | "integrationStatus" | "integratedSite">;
 
   /**
    * 能不能点 —— 与状态标签**同一个判据**（isModelConnected）。
@@ -710,12 +699,9 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
    * 这里只做动作，不重新推断落点——三次返工都是因为在这里另立判据。
    */
   function openModelDetail(model: DetailShape) {
-    switch (detailTarget({ id: model.id, supported: model.supported, domestic: isDomesticModel(model) })) {
+    switch (detailTarget({ id: model.id, site: accessSite(model) })) {
       case "inside":
         onOpenModel(model.id!);
-        return;
-      case "external":
-        window.open(modelDetailUrl(model), "_blank", "noopener,noreferrer");
         return;
       case "no-id":
         // 已接入却没给 modelgo_id：说不出详情页在哪，但不能静默
@@ -802,6 +788,8 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
         name: option.model_name,
         provider: option.creator_name ?? "",
         supported: option.is_integrated === true,
+        // 三态判据字段（qa#727）：不带它，model-options 这条线会退回本地推导。
+        integratedSite: option.integrated_site ?? null,
         // 落点判据：supported 只说「有没有接入」，跳哪个站要看它接在哪个站。
         // 不带这个字段，model-options 这条线的详情跳转就会退化成「一律站内」。
         integrationStatus: option.integration_status,

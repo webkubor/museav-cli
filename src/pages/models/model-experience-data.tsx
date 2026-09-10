@@ -143,6 +143,35 @@ export function buildMediaArtifactDetail(task: ExperienceTaskType, chatParams: R
 }
 
 /**
+ * 目录模型的请求缺省参数。模型体验把设置持久化在会话配置中，媒体消息本身不重复
+ * 传这些参数；因此这里的缺省值也必须在创建会话时写入配置，不能只用于设置弹窗展示。
+ *
+ * MiniMax H3 的计费矩阵以 input_mode + resolution 为键，缺少 resolution 会在预授权
+ * 阶段拒绝请求（shared/modelgo_prd#990）。其有效枚举不是通用视频表单的 720p/1080p，
+ * 故显式选用目录中已配置价格的 768p 作为文生视频默认值。
+ */
+export function defaultExperienceParams(modelId: string, task: ExperienceTaskType): Record<string, unknown> {
+  if (modelId === 'minimax-h3' && (task === 'text_to_video' || task === 'image_to_video')) {
+    return { resolution: '768p' }
+  }
+  return {}
+}
+
+/** 合并配置时永远保留模型必填默认项；用户已选值优先。 */
+export function withDefaultExperienceParams(
+  modelId: string,
+  task: ExperienceTaskType,
+  params: Record<string, unknown>,
+): Record<string, unknown> {
+  return { ...defaultExperienceParams(modelId, task), ...params }
+}
+
+/** 设置弹窗的 resolution 枚举与实际模型契约保持一致。 */
+export function videoResolutionOptions(modelId: string): string[] {
+  return modelId === 'minimax-h3' ? ['768p', '2k'] : ['720p', '1080p']
+}
+
+/**
  * 已知的 provider/网关英文报错关键词 → 用户可读文案。理论依据：模型调用直接报错的
  * 原始技术信息（如 `model is not allowed by policy`）不该原样甩给用户看（qa#576 追问）。
  * 命中不了任何已知模式时兜底展示通用文案，原始串打进 console.error 供排查，不再展示给用户。

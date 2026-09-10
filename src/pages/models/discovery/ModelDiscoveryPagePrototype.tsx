@@ -36,6 +36,7 @@ import { useMemo, useState, type CSSProperties, type KeyboardEvent } from "react
 import { useTranslation } from 'react-i18next'
 import { AgentPopularityLeaderboard, DiscoveryLoadError } from './discovery-agent-popularity'
 import { useProviderColor } from './discovery-colors'
+import { useSectionAnchor } from './use-section-anchor'
 import {
   buildRankingMetricOptions,
   buildTaskMetricProfiles,
@@ -370,6 +371,9 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
     isError: discoveryError,
     refetch: refetchDiscovery,
   } = useDiscoveryQuery(modality, task, scope);
+  // 区块锚点与到达上报（qa#726）：等首屏数据落地再观察，骨架屏阶段各区块高度还会变，
+  // 这时候绑 observer 会在重排里连报好几个区块。
+  useSectionAnchor(!discoveryLoading);
   const configuredModels = apiModels;
   const [yMetric, setYMetric] = useState(0);
   const [xMetric, setXMetric] = useState(0);
@@ -1017,7 +1021,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
         </Tabs>
       </div>
 
-      <section className="model-discovery-overview">
+      <section className="model-discovery-overview" id="model-discovery-overview">
         <article className="mg-tile model-discovery-rank-card">
           <div className="model-discovery-card-head"><div><h2>{taskLabel(t, task)} Top 5</h2><span>{taskProfile.qualityBasis}</span></div></div>
           <div className="model-discovery-rank-head"><span>#</span><span>{t("modelsDiscovery.table.model")}</span><span>{t("modelsDiscovery.metric.integrationStatus")}</span><span>{taskProfile.qualityLabel}<em className="model-discovery-source-tag">{metricSource}</em></span></div>
@@ -1060,7 +1064,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
         </div>
       </section>
 
-      <section className="model-discovery-section">
+      <section className="model-discovery-section" id="model-discovery-specialty-rank">
         <div className="model-discovery-section-head"><div><h2>{t("modelsDiscovery.section.specialtyRank")}</h2></div></div>
         <div className="model-discovery-specialties">{rankingCards.map((item) => {
           const specialtySource = specialtyModelsFor(item.kind);
@@ -1090,7 +1094,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
         })}</div>
       </section>
 
-      {(modality !== "audio" || task === "语音合成（TTS）") && <section className="model-discovery-section">
+      {(modality !== "audio" || task === "语音合成（TTS）") && <section className="model-discovery-section" id="model-discovery-multi-dim">
         <div className="model-discovery-section-head"><div><h2>{t("modelsDiscovery.section.multiDim")}</h2></div></div>
         <div className="mg-tile model-discovery-analysis-card">
           <div className="model-discovery-analysis-tools">

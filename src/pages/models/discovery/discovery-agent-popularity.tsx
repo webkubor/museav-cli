@@ -68,7 +68,7 @@ export function AgentPopularityLeaderboard() {
   const columnSize = Math.ceil(visibleAgents.length / 2);
   const agentColumns = [visibleAgents.slice(0, columnSize), visibleAgents.slice(columnSize)];
 
-  return <section className="model-discovery-section model-discovery-agent-popularity">
+  return <section className="model-discovery-section model-discovery-agent-popularity" id="model-discovery-agent-rank">
     <div className="model-discovery-section-head model-discovery-agent-popularity-head">
       <div>
         <h2>{t("modelsDiscovery.section.agentRank")}</h2>

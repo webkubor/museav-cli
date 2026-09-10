@@ -12,6 +12,7 @@
  *   （该批把不可靠的生成耗时撤下，媒体类型不再展示速度）
  */
 import type {
+  DiscoveryIntegratedSite,
   DiscoveryMetric,
   DiscoveryModelCard,
   DiscoveryOverview,
@@ -112,6 +113,8 @@ export interface PrototypeModel {
    * 详情落点由它决定；当前站有没有则看 `supported`（接口 `is_integrated`）。
    */
   integrationStatus?: DiscoveryIntegrationStatus
+  /** 接入站点（接口 `integrated_site`）：徽标/可点性/落点的唯一判据（qa#727）。 */
+  integratedSite?: DiscoveryIntegratedSite | null
   /** 单价构成，用于成本列的 tooltip。只有语言类有，且各档位可能缺项。 */
   unitPrices?: DiscoveryUnitPrices | null
   /** 排序用的原始数值，避免从展示串里反解析（"$0.34/M" 会被解析出 0.34 但丢单位）。 */
@@ -167,6 +170,7 @@ export function toPrototypeModel(t: TFn, item: DiscoveryRankingItem, type: Disco
     valueScore: item.value_score === null ? EMPTY : item.value_score.toFixed(1),
     latency: item.end_to_end_latency_ms === null ? EMPTY : `${Math.round(item.end_to_end_latency_ms)} ms`,
     integrationStatus: item.integration_status,
+    integratedSite: item.integrated_site ?? null,
     unitPrices: item.unit_prices ?? null,
     raw: {
       score: item.primary_score,
@@ -587,34 +591,44 @@ export function unitPriceDetail(t: TFn, prices: DiscoveryUnitPrices | null | und
 }
 
 /**
- * 「查看详情」的落点 —— 真源是 PRD 第 8 节「模型接入状态」的三态表，一一对应：
+ * 三态判据的唯一入口（qa#727，口径 owner 2026-09-08 拍板见 qa#721）：
+ * 徽标文案、可点性、详情落点都从这一个值派生，三者永远同源。
  *
- * | 标签              | 厂商归属 | supported | 行为                                    |
- * |-------------------|---------|-----------|-----------------------------------------|
- * | ModelGo 已接入     | 国产     | true      | 站内详情页（PRD 原话「需有 model.id」）   |
- * | ModelGo.ai 已接入  | 非国产   | —         | 新页面打开 modelgo.ai 对应详情页          |
- * | 暂未接入 ModelGo   | 国产     | false     | 按钮禁用、显示「待支持」（PRD 10.2 同此） |
+ * | integrated_site  | 徽标               | 行为                     |
+ * |------------------|--------------------|--------------------------|
+ * | MODELGO          | ModelGo 已接入      | 站内详情（需 model.id）   |
+ * | MODELGO_AI       | ModelGo.ai 已接入   | 站内详情（需 model.id）   |
+ * | NOT_INTEGRATED   | 暂未接入 ModelGo    | 按钮禁用、显示「待支持」   |
  *
- * **落点由标签决定，标签与可点性同源** —— 这是踩了三次才收住的：
- * - 2026-09-08：站内跳转条件吃 supported，接在国外站的也走站内 → 国内站 catalog 404
- * - 2026-09-09 ①：改成按 integration_status 判「接在哪个站」拦截，把 6 个
- *   MODELGO_AI 的已接入模型（gemini/mimo）拦死在 toast 上
- * - 2026-09-09 ②：一刀切「有 modelgo_id 就跳」，把第三态（国产未接入）也放开，
- *   于是标签写着「暂未接入」却点得进详情页，与 PRD 10.2 的禁用按钮直接冲突
+ * PRD §8 那张「非国产 → 始终视为已接入」的启发式表已被产品否决（qa#721/#718）：
+ * 没有任何字段能证明未上架模型在 modelgo.ai 可用，按国别猜出来的
+ * 「ModelGo.ai 已接入」在「仅看已接入」(integrated=true) 下一筛就消失
+ * （Agent 模态 test 环境 87 条，qa#727）。
  *
- * `domestic` 由调用方给（原型侧 isDomesticModel：优先看 integration_status，
- * 缺省才退回厂商白名单），这里只做三态映射，保持可测。
+ * 字段缺失时按后端同一条派生规则本地推导（`is_integrated` + 国别），
+ * 其中国别沿用调用方的 `domestic`（原型侧 isDomesticModel：优先 integration_status，
+ * 缺省退回厂商白名单）。
+ */
+export function integratedSiteOf(model: {
+  integratedSite?: DiscoveryIntegratedSite | null
+  supported: boolean
+  domestic: boolean
+}): DiscoveryIntegratedSite {
+  if (model.integratedSite) return model.integratedSite
+  if (!model.supported) return 'NOT_INTEGRATED'
+  return model.domestic ? 'MODELGO' : 'MODELGO_AI'
+}
+
+/**
+ * 「查看详情」的落点，由 integratedSiteOf 的三态派生 —— **落点由标签决定，
+ * 标签与可点性同源**（踩了三次才收住的原则，历史见 git log 本函数）。
+ * 已接入（两种徽标）都进站内详情；PRD 括号里的「需有 model.id」由 no-id 兜住，
+ * 不静默（owner 2026-09-08：「ID 不存在的话要提示」）。
  */
 export function detailTarget(model: {
   id?: string | null
-  supported: boolean
-  domestic: boolean
-}): 'inside' | 'external' | 'disabled' | 'no-id' {
-  // 第一态：本站已接入 → 站内详情。PRD 括号里的「需有 model.id」由 no-id 兜住，
-  // 不静默（owner 2026-09-08：「ID 不存在的话要提示」）。
-  if (model.supported) return model.id ? 'inside' : 'no-id'
-  // 第二态：非国产一律「视为已接入 ModelGo.ai」→ 外链目标站，不看 supported
-  if (!model.domestic) return 'external'
-  // 第三态：国产未接入 → 禁用，连点击都不该发生
-  return 'disabled'
+  site: DiscoveryIntegratedSite
+}): 'inside' | 'disabled' | 'no-id' {
+  if (model.site === 'NOT_INTEGRATED') return 'disabled'
+  return model.id ? 'inside' : 'no-id'
 }

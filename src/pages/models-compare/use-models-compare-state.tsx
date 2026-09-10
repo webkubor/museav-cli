@@ -20,6 +20,7 @@ import {
   createExperienceSession,
   getExperienceSession,
   getExperienceSessionMessages,
+  saveExperienceModelConfig,
   type ExperienceMessageView,
 } from '@/services/experience-sessions'
 import { useSidebarCollapseStore } from '@/store/use-sidebar-collapse-store'
@@ -38,6 +39,7 @@ import {
   resolveApiErrorDisplay,
   errorDisplayFields,
   offlineModelPlaceholder,
+  defaultExperienceParams,
   type ExperienceMessage,
   type ExperienceCategoryKey,
   type ExperienceTaskType,
@@ -302,8 +304,15 @@ export function useModelsCompareState() {
         history: [],
         streaming: false,
         draft: '',
-        chatParams: {},
+        chatParams: defaultExperienceParams(model.model_id, task),
       }))
+      // 媒体参数由后端从会话 config 读取、不随消息体传递。MiniMax H3 的价格矩阵
+      // 要求 resolution，必须在第一条消息之前写入（shared/modelgo_prd#990）。
+      await Promise.all(nextColumns.flatMap((column) => (
+        Object.keys(column.chatParams).length > 0
+          ? [saveExperienceModelConfig(session.id, column.model.model_id, column.chatParams)]
+          : []
+      )))
       // 换一整组列：旧列的在途请求连同句柄一起作废（原实现只丢句柄不中断，旧流仍会按
       // 索引写回新列，属于同一处的隐患，一并收敛到 abortAll）
       stream.abortAll()

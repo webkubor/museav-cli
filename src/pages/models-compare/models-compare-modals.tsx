@@ -71,6 +71,7 @@ export function CompareModals({ ctx }: { ctx: ModelsCompareContext }) {
           open
           onClose={() => ctx.setSettingsIndex(null)}
           modelName={prettyModelName(columns[settingsIndex].model.display_name, columns[settingsIndex].model.model_id)}
+          modelId={columns[settingsIndex].model.model_id}
           vendor={modelVendorLabel(columns[settingsIndex].model)}
           maxOutputTokens={Math.max(256, columns[settingsIndex].model.max_output_tokens || 4096)}
           task={ctx.compareTask}

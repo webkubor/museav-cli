@@ -224,6 +224,7 @@ export default function ModelsPage() {
           open={settingsOpen}
           onClose={() => setSettingsOpen(false)}
           modelName={prettyModelName(selectedModel.display_name, selectedModel.model_id, modelVendorLabel(selectedModel, ''))}
+          modelId={selectedModel.model_id}
           vendor={modelVendorLabel(selectedModel)}
           maxOutputTokens={Math.max(256, selectedModel.max_output_tokens || 4096)}
           task={effectiveTask}

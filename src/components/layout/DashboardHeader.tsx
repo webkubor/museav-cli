@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense, lazy } from 'react'
 import { LuMenu, LuZap } from 'react-icons/lu'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -24,6 +24,7 @@ import { trackEvent } from '@/lib/track'
 import { useTrackContext } from '@/hooks/use-track-context'
 import { toast } from 'sonner'
 import { ConnectModal } from '@/pages/api-keys/ConnectModal'
+import { useConnectModalStore } from '@/store/use-connect-modal-store'
 import { Modal } from '@/components/ui/Modal'
 import {
   buildSyncedNav,
@@ -40,6 +41,14 @@ import { LanguageSwitcher } from './LanguageSwitcher'
 /**
  * 重构后的 DashboardHeader
  */
+/** 开发工具条在 DEV 与测试环境加载，生产构建整块不打进包（与原先在 App.tsx 的写法一致）。
+    测试环境也要有：工具栏里的分支徽标就是用来核对「这个站跑的是哪个分支的产物」的，
+    只在本地 dev 显示等于核对不到。开关是 .env.test 里已有的 VITE_SHOW_DEV_TOOLS，
+    .env.production 不配即为关。 */
+const DevToolbar = import.meta.env.DEV || import.meta.env.VITE_SHOW_DEV_TOOLS === 'true'
+  ? lazy(() => import('@/components/dev-toolbar').then((m) => ({ default: m.DevToolbar })))
+  : null
+
 export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenuClick }) => {
   const navigate = useNavigate()
   const location = useLocation()
@@ -114,7 +123,11 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
   const [orgModalVisible, setOrgModalVisible] = useState(false)
   const [newOrgName, setNewOrgName] = useState('')
 
-  const [connectModalVisible, setConnectModalVisible] = useState(false)
+  // 开关提到 store：新手指南第 4 步「去接入」要打开的就是这一个弹窗（规格 §7.3
+  // 「不建设两套配置界面」），而气泡在侧栏、跟顶栏不在同一棵树里。
+  const connectModalVisible = useConnectModalStore((s) => s.isOpen)
+  const openConnectModal = useConnectModalStore((s) => s.open)
+  const closeConnectModal = useConnectModalStore((s) => s.close)
 
   const { data: tenantsData } = useQuery({
     queryKey: ['tenants'],
@@ -257,7 +270,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
   }
 
   function handleCreateApiKeyFromConnect() {
-    setConnectModalVisible(false)
+    closeConnectModal()
     navigate(activeWorkspaceId ? `/workspace/${activeWorkspaceId}/api-keys` : '/dashboard')
   }
 
@@ -356,7 +369,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
         )}
         {/* Logo 展现 */}
         <div
-          className="group flex items-center gap-2.5 cursor-pointer active:scale-[0.97] transition-transform duration-150 select-none"
+          className="group flex shrink-0 items-center gap-2.5 cursor-pointer active:scale-[0.97] transition-transform duration-150 select-none"
           onClick={() => navigate(isAuthenticated ? '/dashboard' : '/models')}
           title={t('nav.dashboard')}
         >
@@ -367,14 +380,18 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
         {isAuthenticated && (
           <button
             type="button"
-            onClick={() => setConnectModalVisible(true)}
+            onClick={openConnectModal}
             title={t('header.quickAccess')}
-            className="inline-flex items-center gap-1.5 rounded-full border border-brand-base/20 bg-brand-base/[0.06] px-2.5 py-1.5 text-xs font-bold text-brand-base transition-all duration-200 hover:border-brand-base/35 hover:bg-brand-base/[0.1] hover:shadow-sm active:scale-[0.97] md:px-3"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-brand-base/20 bg-brand-base/[0.06] px-2.5 py-1.5 text-xs font-bold text-brand-base transition-all duration-200 hover:border-brand-base/35 hover:bg-brand-base/[0.1] hover:shadow-sm active:scale-[0.97] md:px-3"
           >
             <LuZap size={12} className="shrink-0" />
             <span className="hidden md:inline">{t('header.quickAccess')}</span>
           </button>
         )}
+
+        {/* 开发工具条（仅 DEV）：主题 / 市场 / 语言切换 + 开发菜单。收成一枚扳手图标，
+            点开才展开面板——平铺时宽 378px，窄屏会把左边的「快速接入」挤没。 */}
+        {DevToolbar && <Suspense fallback={null}><DevToolbar /></Suspense>}
       </div>
 
       {/* 右侧：功能控制区 + 组织 Switcher + 用户头像 */}
@@ -448,7 +465,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
 
       <ConnectModal
         open={connectModalVisible}
-        onClose={() => setConnectModalVisible(false)}
+        onClose={closeConnectModal}
         openAIBaseUrl={gatewayEndpoints[0]?.baseUrl ?? ''}
         anthropicBaseUrl={gatewayEndpoints[1]?.baseUrl ?? gatewayEndpoints[0]?.baseUrl ?? ''}
         createdKeyText=""

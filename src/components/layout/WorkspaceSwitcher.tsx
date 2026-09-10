@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { LuFolderOpen, LuChevronsUpDown, LuCheck, LuSearch } from 'react-icons/lu'
 import { cn } from '@/lib/utils'
+import { Input } from '@/components/ui/Input'
 import { useAuthStore } from '@/store/auth'
 import { switchActiveWorkspace } from '@/lib/auth/refresh-session'
 import { useTrackContext } from '@/hooks/use-track-context'
@@ -79,17 +80,17 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
       </div>
       {showSearch && (
         <div className="px-2 pb-1.5">
-          <div className="flex items-center gap-1.5 rounded-md border border-mg-border bg-mg-fill-0/40 px-2 py-1.5 focus-within:border-brand-base/50">
-            <LuSearch size={12} className="text-mg-text-3 shrink-0" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={t('header.searchWorkspace')}
-              className="w-full bg-transparent text-[12px] text-mg-text-1 placeholder:text-mg-text-4 outline-none"
-              // 阻断 Radix 菜单的 typeahead / 方向键抢焦点，保证输入体验
-              onKeyDown={(e) => e.stopPropagation()}
-            />
-          </div>
+          {/* 面板内搜索统一走 ui/Input sm 档（2026-09-04 控件统一）：
+              32px 高度 + 13px 字号，与全站下拉面板内搜索同一规格 */}
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t('header.searchWorkspace')}
+            prefix={<LuSearch className="w-3.5 h-3.5" />}
+            size="sm"
+            // 阻断 Radix 菜单的 typeahead / 方向键抢焦点，保证输入体验
+            onKeyDown={(e) => e.stopPropagation()}
+          />
         </div>
       )}
       {/* 多空间场景限高滚动（截图反馈：无上限时列表穿出屏幕） */}

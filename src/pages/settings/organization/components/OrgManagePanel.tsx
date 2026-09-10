@@ -129,7 +129,7 @@ export function OrgManagePanel({
               type="button"
               onClick={() => { trackEvent('organization:tab_click', { tab: tb.key }); setActiveSubTab(tb.key) }}
               className={`flex min-h-[58px] flex-col items-start justify-center gap-0.5 border-mg-border px-3.5 py-2.5 text-left transition-colors cursor-pointer [&:not(:last-child)]:border-r ${
-                active ? 'bg-brand-soft' : 'bg-mg-bg-0 hover:bg-mg-fill-0/60'
+                active ? 'bg-brand-pale' : 'bg-mg-bg-0 hover:bg-mg-fill-0/60'
               }`}
             >
               <span className={`text-[13px] font-bold ${active ? 'text-brand-base' : 'text-mg-text-1'}`}>{tb.label}</span>

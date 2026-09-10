@@ -9,6 +9,7 @@ import { Outlet } from 'react-router-dom'
 import { useLangStore } from '@/store/use-brand-store'
 import { DashboardHeader } from './DashboardHeader'
 import { DecorStarField } from './DecorStarField'
+import { OnboardingRewardDialog } from '@/features/onboarding/OnboardingGuideEntry'
 import './public-shell.css'
 
 export function PublicShell() {
@@ -32,6 +33,9 @@ export function PublicShell() {
       <main className="mx-auto w-full max-w-[1600px] px-4 py-6 md:px-8">
         <Outlet />
       </main>
+
+      {/* 新手奖励领取成功弹框：广场的悬浮入口也能领取，公开壳同样挂一份 */}
+      <OnboardingRewardDialog />
     </div>
   )
 }

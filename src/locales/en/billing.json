@@ -264,6 +264,7 @@
       "selectRechargesTitle": "Select recharge orders (selected orders will be issued as one invoice)",
       "selectAll": "Select all",
       "selectedCount": "Selected {{selected}}/{{total}}",
+      "minAmountHint": "Selected recharge orders must total at least {{min}} to request an invoice. Current total: {{selected}}",
       "loading": "Loading…",
       "noInvoiceableRecharges": "No invoiceable recharges",
       "invoiceTitle": "Invoice Title",

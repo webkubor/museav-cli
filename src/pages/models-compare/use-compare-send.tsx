@@ -28,6 +28,7 @@ import {
   type ExperienceTaskType,
 } from '../models/model-experience-data'
 import { isAbortError } from 'ai-sse-kit'
+import { detectFreeModelGate, freeModelGateMessage } from '../models/free-model-gate'
 import { trackModelRun, buildDialogueMetrics, buildMediaMetrics, pollMediaTask } from '../models/experience-run'
 import type { DispatchAttachment } from './models-compare-utils'
 import type { CompareState } from './use-models-compare-state'
@@ -56,6 +57,7 @@ export function useCompareSend(state: CompareState) {
     patchAssistant,
     refreshHistorySessions,
     isBalanceZero,
+    setColumnFreeGate,
   } = state
 
   /** 单列发送——按该列模型的一级类别分叉（§6.2/§7.3/§7.9）：对话类走 SSE 流式，
@@ -65,6 +67,7 @@ export function useCompareSend(state: CompareState) {
     if (!columns) return
     const column = columns[idx]
     if (!column || column.streaming || !prompt) return
+    setColumnFreeGate(column.conversationId, null)
     const category = resolveModelCategory(column.model)
     if (category === 'dialogue') {
       await sendDialogueOne(idx, prompt, dispatchId, attachment)
@@ -123,8 +126,11 @@ export function useCompareSend(state: CompareState) {
     } catch (err) {
       if (isAbortError(err)) return
       const errorCode = (err as { data?: { code?: string } } | undefined)?.data?.code
+      const gate = detectFreeModelGate(err)
+      setColumnFreeGate(column.conversationId, gate)
       const display = resolveApiErrorDisplay(err)
-      patchAssistant(idx, { ...errorDisplayFields(display), error: `${t('modelsExperience.requestFailed')}${display.message}` })
+      const bubble = gate ? { message: freeModelGateMessage(gate), retryable: false } : display
+      patchAssistant(idx, { ...errorDisplayFields({ ...display, ...bubble }), error: `${t('modelsExperience.requestFailed')}${bubble.message}` })
       trackModelRun({ modelId: column.model.model_id, failed: true, totalMs: Date.now() - startedAt, errorCode })
     } finally {
       updateColumn(idx, { streaming: false })
@@ -192,8 +198,11 @@ export function useCompareSend(state: CompareState) {
         free: spend === 0,
       })
     } catch (err) {
+      const gate = detectFreeModelGate(err)
+      setColumnFreeGate(column.conversationId, gate)
       const display = resolveApiErrorDisplay(err)
-      patchAssistant(idx, { ...errorDisplayFields(display), error: `${t('modelsExperience.requestFailed')}${display.message}` })
+      const bubble = gate ? { message: freeModelGateMessage(gate), retryable: false } : display
+      patchAssistant(idx, { ...errorDisplayFields({ ...display, ...bubble }), error: `${t('modelsExperience.requestFailed')}${bubble.message}` })
       const errorCode = (err as { data?: { field_errors?: Array<{ code?: string }> } } | undefined)?.data?.field_errors?.[0]?.code
       trackModelRun({ modelId: column.model.model_id, failed: true, totalMs: Date.now() - startedAt, errorCode })
     } finally {
@@ -300,7 +309,8 @@ export function useCompareSend(state: CompareState) {
       return acc
     }, [])
     if (onlineIndexes.length === 0) return
-    if (isBalanceZero && columns.some((c, idx) => onlineIndexes.includes(idx) && isPaidModel(c.model))) return
+    // 需求方 #833（1.0.6）：余额为 0 时免费模型也一并拦截
+    if (isBalanceZero) return
     const dispatchId = crypto.randomUUID()
     pendingByDispatch.current.set(dispatchId, onlineIndexes.length)
     const currentAttachment = attachment
@@ -334,7 +344,7 @@ export function useCompareSend(state: CompareState) {
     if (!columns) return
     const prompt = columns[idx].draft.trim()
     if (compareTask !== 'audio_to_text' && !prompt) return
-    if (isBalanceZero && isPaidModel(columns[idx].model)) return
+    if (isBalanceZero) return
     const conversationId = columns[idx].conversationId
     const colAttachment = columnAttachments[conversationId]
     if (compareNeedsFileTask && !colAttachment) {
@@ -365,7 +375,7 @@ export function useCompareSend(state: CompareState) {
   /** 媒体结果失败重试（PRD §AC-13）：原样复用失败那条用户消息的文本与附件 resource_id */
   function retryMediaMessage(idx: number, userMessage: ExperienceMessage) {
     if (!columns || !userMessage.content || columns[idx]?.streaming) return
-    if (isBalanceZero && isPaidModel(columns[idx].model)) return
+    if (isBalanceZero) return
     const dispatchId = crypto.randomUUID()
     void sendOne(idx, userMessage.content, dispatchId, {
       resourceIds: userMessage.attachmentResourceIds ?? [],

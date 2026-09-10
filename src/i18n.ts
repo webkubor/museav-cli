@@ -10,11 +10,13 @@ import { getInitialLang } from '@/lib/market'
 import zhCommon from './locales/zh/common.json'
 import zhHeader from './locales/zh/header.json'
 import zhNav from './locales/zh/nav.json'
+import zhOnboarding from './locales/zh/onboarding.json'
 import zhPromo from './locales/zh/promo.json'
 import zhSidebarSettings from './locales/zh/sidebarSettings.json'
 import enCommon from './locales/en/common.json'
 import enHeader from './locales/en/header.json'
 import enNav from './locales/en/nav.json'
+import enOnboarding from './locales/en/onboarding.json'
 import enPromo from './locales/en/promo.json'
 import enSidebarSettings from './locales/en/sidebarSettings.json'
 
@@ -37,10 +39,12 @@ export const localeNamespaces = [
   'modelsCatalog',
   'modelsChat',
   'modelsCompare',
+  'modelsDiscovery',
   'modelsExperience',
   'modelsHistory',
   'nav',
   'observability',
+  'onboarding',
   'platformConfig',
   'promo',
   'quickAccess',
@@ -54,13 +58,15 @@ export const localeNamespaces = [
 
 export type LocaleNamespace = typeof localeNamespaces[number]
 
-const coreLocaleNamespaces = ['common', 'header', 'nav', 'promo', 'sidebarSettings'] satisfies LocaleNamespace[]
+// onboarding 进核心包：新手指南入口常驻侧栏底部，懒加载会先闪一帧 i18n key
+const coreLocaleNamespaces = ['common', 'header', 'nav', 'onboarding', 'promo', 'sidebarSettings'] satisfies LocaleNamespace[]
 
 const resources = {
   zh: {
     common: zhCommon,
     header: zhHeader,
     nav: zhNav,
+    onboarding: zhOnboarding,
     promo: zhPromo,
     sidebarSettings: zhSidebarSettings,
   },
@@ -68,6 +74,7 @@ const resources = {
     common: enCommon,
     header: enHeader,
     nav: enNav,
+    onboarding: enOnboarding,
     promo: enPromo,
     sidebarSettings: enSidebarSettings,
   }

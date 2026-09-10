@@ -12,17 +12,18 @@
  */
 import { useTranslation } from 'react-i18next'
 import { formatNumber } from '@/lib/utils'
+import { isAsyncCall } from '@/pages/logs/async-call'
 import { isModelNotStarted } from '@/pages/logs/guardrail'
 import type { CallLogItem } from '@/types'
 
 export function TokenUsageCell({ row }: { row: CallLogItem }) {
   const { t } = useTranslation()
 
-  if (isModelNotStarted(row) || row.usage.total_tokens <= 0) {
+  if (isModelNotStarted(row) || !(row.usage?.total_tokens > 0)) {
     return (
       <div className="min-w-0">
         <strong className="block text-mg-text-3">—</strong>
-        <span className="block mg-text-caption text-mg-text-3">{t('logs.metrics.noTokens')}</span>
+        <span className="block mg-text-caption text-mg-text-3">{t(isAsyncCall(row) ? 'logs.metrics.asyncNotCounted' : 'logs.metrics.noTokens')}</span>
       </div>
     )
   }

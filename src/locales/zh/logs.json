@@ -227,6 +227,7 @@
     "metrics": {
       "notStarted": "未发起",
       "noResponse": "未发起响应",
+      "asyncNotCounted": "异步任务暂不统计",
       "noTokens": "未产生 Token"
     },
     "guardrail": {

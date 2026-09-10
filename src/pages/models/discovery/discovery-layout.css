@@ -1,0 +1,112 @@
+/**
+ * 页面骨架：标题区、数据快照、模态 tab 与范围筛选、二级任务条。
+ *
+ * 由 discovery.css 拆分而来（原单文件 1917 行，远超 300 行阈值）。
+ * 入口是 discovery.css，只负责按顺序 @import——**顺序即层叠顺序，不要调整**。
+ */
+
+/* ===== Model discovery ===== */
+
+.model-discovery-page {
+  /* 控件圆角同样走全局档（原 7px，与 sm 差 1px） */
+  --discovery-control-radius: var(--mg-radius-sm);
+  color: var(--text);
+  margin: 0 auto;
+  max-width: 1480px;
+  padding: 26px 28px 48px;
+}
+
+/* 原生 button / select / input 默认用系统字体、不继承页面字体，所以这里要接回来。
+   ⚠️ 只能重置 font-family，**不能用 `font: inherit` 简写** —— 那会把 font-size /
+   font-weight / line-height 一起重置成继承值，而这条选择器的权重（类 + 元素）高于
+   控制台组件自带的 `.mg-text-body`（单类），结果把本页所有 Button / Select / Input
+   的字号击穿成继承来的 16px（2026-09-03 需求方在「完整指标榜单」的筛选条上发现：
+   两个 ui/Select 显示 16px，而显式写了 font-size 的自写筛选器是 12px，同一行三种脸。
+   实测本页 44 个控件里有 12 个被击穿）。字号交给各自的组件类与 --discovery-fs-* 档位。 */
+.model-discovery-page button,
+.model-discovery-page select,
+.model-discovery-page input {
+  font-family: inherit;
+  letter-spacing: inherit;
+}
+
+.model-discovery-head {
+  align-items: flex-start;
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+}
+
+.model-discovery-title-row {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.model-discovery-head h1 {
+  font-size: clamp(30px, 3vw, 36px);
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.model-discovery-head p {
+  color: var(--muted);
+  /* 页面副标题走全局 sm 档，不进本页四档：它跟的是 h1，不参与卡片内部那套层级 */
+  font-size: var(--mg-text-sm);
+  line-height: 1.55;
+  margin: 7px 0 0;
+  max-width: 680px;
+  text-wrap: pretty;
+}
+
+/* 模态 tab 独占一行（PRD .model-discovery-modalities）。
+   下边框由 tab 的 underline 变体自己画，这里不再补线，避免双线。 */
+.model-discovery-modality-bar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 22px 0 0;
+}
+
+/* 二级任务 + 范围筛选。这行始终渲染：它的 margin-bottom 是与首个卡片之间
+   唯一的间距来源，Agent 模态下若整行不渲染，tab 会直接贴死卡片。 */
+.model-discovery-taskbar {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin: 12px 0 14px;
+  min-height: 30px;
+}
+
+.model-discovery-presets,
+.model-discovery-selects,
+.model-discovery-table-tools,
+.model-discovery-table-tools > div {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.model-discovery-presets button {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--discovery-control-radius);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: var(--discovery-fs-body);
+  min-height: 32px;
+  padding: 6px 11px;
+  transition: background var(--discovery-dur-ease) ease, border-color var(--discovery-dur-ease) ease, color var(--discovery-dur-ease) ease;
+}
+
+.model-discovery-presets button.active {
+  background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+  color: var(--accent);
+  font-weight: 650;
+}

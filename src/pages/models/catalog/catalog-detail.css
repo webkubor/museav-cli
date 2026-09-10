@@ -14,20 +14,20 @@
 .mg-detail-title { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .mg-detail-meta {
   display: flex; align-items: center; gap: 6px; min-width: 0;
-  font-size: 12px; color: var(--mg-text-3);
+  font-size: var(--mg-font-size-caption); color: var(--mg-text-3);
 }
 .mg-detail-vendor { flex-shrink: 0; white-space: nowrap; }
 .mg-detail-api {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   padding: 1px 6px; border-radius: var(--radius-sm);
   /* text-4 在玻璃底上看不清（走查反馈），升到 text-2 */
-  background: var(--mg-fill-1); font-size: 11.5px; color: var(--mg-text-2);
+  background: var(--mg-fill-1); font-size: var(--mg-font-size-caption); color: var(--mg-text-2);
 }
 .mg-detail-desc {
   /* prd#822：去掉 76ch 上限（约 570px，宽屏下不到主信息列一半就换行）。
      描述铺满 hero 主信息列，右界天然由操作列（去体验/对比）挡住，窄屏随列缩。 */
   margin: 2px 0 0;
-  font-size: 12.5px; line-height: 1.6; color: var(--mg-text-3);
+  font-size: var(--mg-font-size-caption); line-height: 1.6; color: var(--mg-text-3);
 }
 .mg-detail-tags { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
 /* 详情页的协议标签不可点（广场卡片上才是反查筛选入口），用 span 渲染 → 补对齐 */
@@ -50,7 +50,7 @@
    原价整块折到下一行，不会像纯 nowrap 那样挤出格外。 */
 .mg-detail-specs .mg-metric-value {
   display: flex; flex-wrap: wrap; align-items: baseline; row-gap: 2px;
-  font-size: 15px;
+  font-size: var(--mg-font-size-value);
 }
 /* 长值格（主要规格/可体验任务）超出省略：值容器是 flex，text-overflow 对匿名
    文本项不生效，所以省略号打在 .mg-metric-value-main（Metric 里包住主文本的
@@ -58,7 +58,7 @@
 .mg-detail-specs .mg-metric { min-width: 0; }
 .mg-detail-specs .mg-metric-value-main { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 /* 次行价（媒体模型的文本分项价 / 缓存写入 1h） */
-.mg-metric-sub { font-size: 11.5px; color: var(--mg-text-4); }
+.mg-metric-sub { font-size: var(--mg-font-size-caption); color: var(--mg-text-4); }
 /* TTL / 计价口径小标签：5min·1h·文本·图片 */
 .mg-metric-ttl {
   margin-left: 4px; padding: 0 4px; border-radius: var(--radius-sm);
@@ -87,13 +87,13 @@
 .mg-related-head { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .mg-related-avatar { border: 1px solid var(--mg-border); background: var(--mg-bg-1); flex-shrink: 0; }
 .mg-related-name {
-  font-size: 13.5px; font-weight: 600; color: var(--mg-text-1);
+  font-size: var(--mg-font-size-body); font-weight: 600; color: var(--mg-text-1);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.mg-related-meta { font-size: 12px; color: var(--mg-text-3); }
+.mg-related-meta { font-size: var(--mg-font-size-caption); color: var(--mg-text-3); }
 /* 中性弱化色对齐原型 .marketplace-related-price（--text-soft）：prd#853 QA 复验
    全站唯一残留的品牌蓝价格就在这里，价格一律正文/中性色，不用品牌蓝。 */
-.mg-related-price { font-size: 12px; color: var(--mg-text-2); }
+.mg-related-price { font-size: var(--mg-font-size-caption); color: var(--mg-text-2); }
 
 /* .mg-proto / .mg-mcard-tag 样式回归 catalog-grid-card.css（卡片版面撤回旧版，
    协议/标签行重新在卡片上渲染），详情页 ModelDetailPanel 共用同一套。 */
@@ -101,7 +101,7 @@
 /* ── 顶部信任 chips（2026-08 视觉改版稿：白底描边 pill）───────────── */
 .mg-trust {
   display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
-  margin-top: 12px; font-size: 12.5px; color: var(--mg-text-2);
+  margin-top: 12px; font-size: var(--mg-font-size-caption); color: var(--mg-text-2);
 }
 .mg-trust > span {
   display: inline-flex; align-items: center; gap: 6px;
@@ -138,4 +138,36 @@
   border-radius: var(--radius-md);
   box-shadow: var(--mg-card-shadow);
   padding: 12px 10px;
+}
+
+/* ── Benchmark 摘要卡的分布图（PRD §11.3，需求方#969 缺陷 3）──────────────
+   19 根柱是**示意用的固定正态形状**（与 PRD 原型的 distributionBars 同一串），
+   接口的 distribution 实测恒为空数组；唯一数据驱动的是标记线位置 ahead_percent。
+   所以柱形只做参照背景，用 fill-1 的低对比表达「不承载数值」，标记线才上品牌色。 */
+.mg-benchmark-distribution {
+  height: 24px;
+  margin-top: 6px;
+  position: relative;
+}
+
+.mg-benchmark-distribution-bars {
+  align-items: flex-end;
+  display: flex;
+  gap: 1px;
+  height: 100%;
+}
+
+.mg-benchmark-distribution-bars > span {
+  background: var(--mg-fill-1);
+  flex: 1;
+  min-height: 2px;
+}
+
+.mg-benchmark-distribution-marker {
+  background: var(--brand-base);
+  border-radius: var(--radius-full);
+  bottom: 0;
+  position: absolute;
+  top: 0;
+  width: 2px;
 }

@@ -161,8 +161,9 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
             role="tooltip"
             className={cn(
               'pointer-events-none absolute right-0 top-[calc(100%+8px)] z-[var(--mg-z-tooltip)]',
-              'w-max max-w-[240px] truncate rounded-[var(--mg-tooltip-radius)] border border-mg-border bg-mg-bg-3',
-              'px-[var(--mg-tooltip-pad-x)] py-[var(--mg-tooltip-pad-y)] mg-text-caption font-medium text-mg-text-2 shadow-lg',
+              // 表面走全局浮层类 mg-float（同 InfoTip / OverflowTip 一档），不再单写 bg-mg-bg-3 + shadow-lg
+              'w-max max-w-[240px] truncate rounded-[var(--mg-tooltip-radius)] mg-float',
+              'px-[var(--mg-tooltip-pad-x)] py-[var(--mg-tooltip-pad-y)] mg-text-caption font-medium text-mg-text-2',
               'opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-hover:delay-300',
               'group-aria-expanded:hidden',
             )}

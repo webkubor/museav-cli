@@ -362,11 +362,20 @@ PRD 原型 > 飞书文档 > 现状控制台代码
 
 **部署分支按环境定，不是按项目定**：测试 job 传 `GIT_BRANCH=<测试环境当前跟的分支>`，生产 job 传 `GIT_BRANCH=main` + `GIT_TAG`。
 
-> ⚠️ **测试环境当前跟的是版本分支，不是 `test`**（2026-09-10 实测 `version.json`：
-> `{"commit":"12f595b","branch":"release/v1.0.6"}`）。版本迭代期部署传
-> `GIT_BRANCH=release/v1.0.x`，**「更新测试环境」＝触发 Jenkins，不等于把版本分支合进 `test`**。
-> 代码回流（`test` → 版本分支）只动源码、不动环境，回流完必须再部一次，否则环境仍是旧 commit。
-> 部署前先读一眼 `curl -s https://console.test.modelgo.com/version.json` 确认它现在跟的哪条分支，别照抄本表。抄命令前先核一眼 Jenkins 上次构建的实参（`job/<n>/api/json` 的 `parameters`）——**分支传错不报错**，构建照样 SUCCESS，只是把另一个分支发了出去（2026-08-25 踩过：部署卡把测试环境的分支渲染成 `main`，而当时 main 落后 test 16 个提交，照抄等于把测试环境回滚半个月）。
+> 🔴 **版本迭代期：测试环境跟当期版本分支，不跟 `test`**（owner 2026-09-10 拍板，
+> 实测佐证 `version.json`：`{"commit":"12f595b","branch":"release/v1.0.6"}`）。
+>
+> - **部署**传 `GIT_BRANCH=release/v1.0.x`（当期版本分支），不是 `test`。
+> - **验证/冒烟也按同一条分支来**：跑 TestMgr 冒烟、UI 回归、QA 复验前，先确认测试环境上
+>   跑的是版本分支的产物，别拿 `test` 分支的代码去对结论。
+> - **「更新测试环境」＝触发 Jenkins**，不等于把版本分支合进 `test`；合 `test` 是版本节奏的事
+>   （由 owner 定，见 `CLAUDE.md` 入场第 3 条），与能不能提测无关。
+> - 代码回流（`test` → 版本分支）只动源码、不动环境，**回流完必须再部一次**，否则环境仍是旧 commit。
+>
+> 每次部署前后各读一眼，别照抄上表：
+> ```bash
+> curl -s "https://console.test.modelgo.com/version.json?_=$(date +%s)"   # 看它现在跟哪条分支、哪个 commit
+> ```抄命令前先核一眼 Jenkins 上次构建的实参（`job/<n>/api/json` 的 `parameters`）——**分支传错不报错**，构建照样 SUCCESS，只是把另一个分支发了出去（2026-08-25 踩过：部署卡把测试环境的分支渲染成 `main`，而当时 main 落后 test 16 个提交，照抄等于把测试环境回滚半个月）。
 
 #### test / main 分叉：成因与处理
 

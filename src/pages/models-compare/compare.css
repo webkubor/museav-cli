@@ -108,8 +108,7 @@
   margin: 14px 0 0;
 }
 
-/* 提示条与输入框之间还夹着同步态共享的隐藏 file input，相邻选择符够不到，用通用兄弟选择符 */
-.playground-balance-notice ~ .models-compare-shared-composer.models-experience-composer-wrap {
+.playground-balance-notice + .models-compare-shared-composer.models-experience-composer-wrap {
   margin-top: 8px;
 }
 

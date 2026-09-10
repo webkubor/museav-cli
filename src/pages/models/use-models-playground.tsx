@@ -294,9 +294,7 @@ export function useModelsPlayground() {
   })
 
   /** 选模型（+ 可选显式选定的任务，来自 ModelPickerDialog「可体验任务」按钮组）。
-   *  没传 task 时（直接点模型行）走 modelEntryTask：声明图片/视频输入的视频模型先落需要附件的
-   *  任务（prd#980），其余沿用 PRD selectModelTask 的规则——新模型还支持当前任务就沿用，
-   *  否则退化到该模型的默认任务。 */
+   * 未显式选定时，视频模型统一从第一个文生视频任务进入；其他类别仅在兼容时沿用当前任务。 */
   function handlePick(model: CatalogModelItem, task?: ExperienceTaskType) {
     trackEvent('playground_model_select', { from_model_id: selectedModel?.model_id ?? '', to_model_id: model.model_id }, { result: 'success' })
     const nextCategory = resolveModelCategory(model)
@@ -312,7 +310,7 @@ export function useModelsPlayground() {
   }
 
   /** 页面级「可体验任务」切换：广场标着图片输入的图像类模型（如 gemini-3.1-flash-lite-image）
-   *  进来默认 text_to_image（视频类自 prd#980 起进来就落 image_to_video，见 modelPreferredTask），
+   *  进来默认 text_to_image，视频模型默认 text_to_video，
    *  此前任务切换只藏在 ModelPickerDialog 里，页面上没有任何入口能切到
    *  image_to_image/image_to_video，用户会误以为"标签支持图片却传不了图"。task 建会话时已
    *  写死（ensureConversation），切任务必须开新会话（与选择器路径 handlePick 语义一致）；

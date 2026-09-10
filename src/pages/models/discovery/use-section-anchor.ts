@@ -27,7 +27,6 @@ export type DiscoverySectionId = (typeof DISCOVERY_SECTIONS)[number]
 export function useSectionAnchor(ready: boolean) {
   useEffect(() => {
     if (!ready || typeof window === 'undefined') return
-    if (!('IntersectionObserver' in window)) return
 
     // 带 hash 进来先定位。区块是异步渲染出来的，等一帧再找，否则 getElementById 拿到 null。
     const initial = decodeURIComponent(window.location.hash.replace(/^#/, ''))
@@ -40,47 +39,53 @@ export function useSectionAnchor(ready: boolean) {
 
     // 连续停留不重复上报：只记「上一个报过的」，离开再回来算新的一次到达。
     let lastReported = ''
-    // 观察器回调只带「状态发生变化」的那几个元素，不是全集；只看这批会选错当前区块
-    // （实测滚到完整榜单时 hash 还停在多维分析）。所以自己维护一份可见集合。
-    const visible = new Set<string>()
+    let frame = 0
 
+    // 判定「当前区块」＝越过判定线的最后一个区块。
+    // 用几何量而不是 IntersectionObserver：完整榜单比视口还高，观察器口径下它和下一个
+    // 区块会同时 intersecting，取谁都错一半（实测 hash 会滞后一个区块）；而「谁的顶
+    // 越过了线」在任何区块高度下都唯一。
     const sync = () => {
-      // 滚到底时最后一个区块可能整个矮于判定带、永远选不中，此时直接认最后一个可见的。
+      const line = window.scrollY + window.innerHeight * 0.25
+      // 触底时最后一个区块可能整个还在线下方、永远选不中，这时直接认最后一个存在的。
       const atBottom =
         window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 8
-      const ordered = DISCOVERY_SECTIONS.filter((id) => visible.has(id))
-      const id = atBottom ? ordered[ordered.length - 1] : ordered[0]
-      if (!id || id === lastReported) return
-      lastReported = id
+
+      let current = ''
+      for (const id of DISCOVERY_SECTIONS) {
+        const el = document.getElementById(id)
+        if (!el) continue // 区块按模态条件渲染，缺席是正常的
+        if (atBottom || el.getBoundingClientRect().top + window.scrollY <= line) current = id
+      }
+      if (!current || current === lastReported) return
+      lastReported = current
 
       // replaceState 而不是改 location.hash：后者会往历史里塞一条，用户按返回得连按十几次
       // 才退得出这个页面；也不能用 pushState，同理。
-      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#${id}`)
-      trackEvent('model_discovery_section_view', { section: id })
+      window.history.replaceState(
+        null,
+        '',
+        `${window.location.pathname}${window.location.search}#${current}`,
+      )
+      trackEvent('model_discovery_section_view', { section: current })
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting) visible.add(e.target.id)
-          else visible.delete(e.target.id)
-        }
+    const onScroll = () => {
+      if (frame) return
+      frame = window.requestAnimationFrame(() => {
+        frame = 0
         sync()
-      },
-      // 判定带取视口上半：顶部留 8% 余量，底部砍掉 55%。砍太狠（如 -80%）会让首屏区块
-      // 一进页面就落在带外，hash 迟迟不出现。
-      { rootMargin: '-8% 0px -55% 0px', threshold: 0 },
-    )
+      })
+    }
 
-    const observed = DISCOVERY_SECTIONS.map((id) => document.getElementById(id)).filter(
-      (el): el is HTMLElement => Boolean(el),
-    )
-    observed.forEach((el) => observer.observe(el))
-    window.addEventListener('scroll', sync, { passive: true })
+    sync() // 首屏也算一次到达，别等用户滚了才有 hash
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
 
     return () => {
-      observer.disconnect()
-      window.removeEventListener('scroll', sync)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+      if (frame) window.cancelAnimationFrame(frame)
       if (locateTimer) window.clearTimeout(locateTimer)
     }
   }, [ready])

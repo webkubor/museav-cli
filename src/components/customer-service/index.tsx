@@ -59,6 +59,40 @@ function MessageBubble({ msg, onRate, onStartHandoff }: { msg: ChatItem; onRate:
     return <RatingCardBridge msg={msg} />
   }
 
+  if (msg.kind === 'async_ticket' && msg.asyncTicket) {
+    const a = msg.asyncTicket
+    // 照 PRD 原型 CustomerSupportAsyncTicket.tsx：标题「已转为异步问题单」+ 状态徽标，
+    // 正文是转异步原因，再 dl 两项（工单编号 / 预计联系），末尾是联系方式说明。
+    return (
+      <div
+        className="mb-4 mg-tile px-3 py-2.5 flex flex-col gap-1.5"
+        role="group"
+        aria-label={t('common.customerService.asyncTicket.ariaLabel', { id: a.ticketNo })}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <span className="mg-text-caption font-medium text-mg-text-1">
+            {t('common.customerService.asyncTicket.title')}
+          </span>
+          <span className="mg-compact-badge px-2 py-0.5 rounded-full bg-mg-primary-light text-brand-base shrink-0">{a.status}</span>
+        </div>
+        <p className="m-0 text-[11px] text-mg-text-3">{t('common.customerService.asyncTicket.reason')}</p>
+        <dl className="m-0 flex flex-col gap-0.5 text-[11px]">
+          <div className="flex gap-1.5">
+            <dt className="shrink-0 text-mg-text-3">{t('common.customerService.asyncTicket.idLabel')}</dt>
+            <dd className="m-0 min-w-0 truncate font-medium text-mg-text-2" title={a.ticketNo}>{a.ticketNo}</dd>
+          </div>
+          {a.slaText && (
+            <div className="flex gap-1.5">
+              <dt className="shrink-0 text-mg-text-3">{t('common.customerService.asyncTicket.etaLabel')}</dt>
+              <dd className="m-0 min-w-0 truncate text-mg-text-2" title={a.slaText}>{a.slaText}</dd>
+            </div>
+          )}
+        </dl>
+        <p className="m-0 text-[11px] text-mg-text-3">{t('common.customerService.asyncTicket.contact')}</p>
+      </div>
+    )
+  }
+
   if (msg.kind === 'feedback_receipt' && msg.feedbackReceipt) {
     const r = msg.feedbackReceipt
     return (

@@ -151,10 +151,38 @@ export function TicketDetailView({ detail, onBack, onReopen, onRate }: TicketDet
         {!detail && <p className="mg-text-caption text-mg-text-3">{t('common.customerService.tickets.loading')}</p>}
         {detail && (
           <div className="flex flex-col gap-3">
+            {detail.title && <p className="m-0 mg-text-body font-medium text-mg-text-1">{detail.title}</p>}
+            {/* 头部属性表照 PRD 原型 CustomerSupportTicketDetail.tsx：类型 / 编号 /
+                提交时间 / 最近更新（有客服再加一行）。原实现只渲染了描述和「客服名·工号」，
+                **编号、类型、时间三个字段全缺** —— 用户在详情里看不到自己的工单号，
+                没法拿去跟客服核对。 */}
+            <dl className="m-0 flex flex-col gap-1 text-[11px]">
+              <div className="flex gap-1.5">
+                <dt className="shrink-0 text-mg-text-3">{t('common.customerService.tickets.detail.typeLabel')}</dt>
+                <dd className="m-0 text-mg-text-2">
+                  {t(`common.customerService.tickets.types.${detail.type}`, { defaultValue: detail.type })}
+                </dd>
+              </div>
+              <div className="flex gap-1.5">
+                <dt className="shrink-0 text-mg-text-3">{t('common.customerService.tickets.detail.idLabel')}</dt>
+                <dd className="m-0 min-w-0 truncate font-medium text-mg-text-2" title={detail.ticket_no}>{detail.ticket_no}</dd>
+              </div>
+              <div className="flex gap-1.5">
+                <dt className="shrink-0 text-mg-text-3">{t('common.customerService.tickets.detail.createdLabel')}</dt>
+                <dd className="m-0 text-mg-text-2">{new Date(detail.created_at).toLocaleString()}</dd>
+              </div>
+              <div className="flex gap-1.5">
+                <dt className="shrink-0 text-mg-text-3">{t('common.customerService.tickets.detail.updatedLabel')}</dt>
+                <dd className="m-0 text-mg-text-2">{new Date(detail.updated_at).toLocaleString()}</dd>
+              </div>
+              {(detail.agent_name || detail.agent_no) && (
+                <div className="flex gap-1.5">
+                  <dt className="shrink-0 text-mg-text-3">{t('common.customerService.tickets.detail.agentLabel')}</dt>
+                  <dd className="m-0 min-w-0 truncate text-mg-text-2">{[detail.agent_name, detail.agent_no].filter(Boolean).join(' · ')}</dd>
+                </div>
+              )}
+            </dl>
             {detail.description && <p className="m-0 mg-text-body text-mg-text-1 whitespace-pre-wrap">{detail.description}</p>}
-            {(detail.agent_name || detail.agent_no) && (
-              <p className="m-0 mg-text-caption text-mg-text-3">{detail.agent_name} · {detail.agent_no}</p>
-            )}
             {detail.sla_text && <p className="m-0 mg-text-caption text-mg-text-3">{detail.sla_text}</p>}
             {typeof detail.rating === 'number' && (
               <p className="m-0 mg-text-caption text-mg-warning">{'★'.repeat(detail.rating)}{'☆'.repeat(5 - detail.rating)}</p>

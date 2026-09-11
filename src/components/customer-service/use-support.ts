@@ -48,9 +48,11 @@ export interface ChatItem {
   answerId?: string
   answerStatus?: SupportAnswerStatus
   rating?: SupportAnswerRating | null
-  kind?: 'feedback_receipt' | 'rating_card'
+  kind?: 'feedback_receipt' | 'rating_card' | 'async_ticket'
   feedbackReceipt?: { ticketNo: string; status: string; slaText?: string; category: string; description: string }
   ratingCard?: { ticketId: string; agentName?: string; agentNo?: string; submittedStars?: number; skipped?: boolean }
+  /** 转异步后的问题单回执（PRD 原型 CustomerSupportAsyncTicket.tsx 的 AsyncSupportTicketCard） */
+  asyncTicket?: { ticketNo: string; status: string; slaText?: string }
 }
 
 const HANDOFF_TRIGGER_RE = /转\s*人工|找\s*客服|人工\s*处理|human\s*(agent|support)/i
@@ -263,6 +265,22 @@ export function useSupport() {
         // 模式已由 modeFromServiceMode('async') 映射回 chat，排队人数/客服信息随之丢弃
         // —— 旧实现这里漏清 queuePosition，顶部还会显示「前方 N 人」。
         appendMessage({ id: crypto.randomUUID(), role: 'system', content: t('common.customerService.handoffAsync'), createdAt: Date.now() })
+        // 🔴 再出一张**带工单编号的回执卡**（PRD 原型 AsyncSupportTicketCard）：
+        // AC 第 3 条要的是「出现异步问题单回执（CS-）」，只发一句纯文本系统消息
+        // 用户拿不到编号、后续无从追踪。events 接口不带 ticket_no，从详情拉。
+        const asyncTicketId = ticketId
+        if (asyncTicketId) {
+          getSupportTicket(asyncTicketId).then((detail) => {
+            appendMessage({
+              id: crypto.randomUUID(),
+              role: 'system',
+              content: '',
+              createdAt: Date.now(),
+              kind: 'async_ticket',
+              asyncTicket: { ticketNo: detail.ticket_no, status: detail.status, slaText: detail.sla_text },
+            })
+          }).catch(() => { /* 拉不到就只留上面那条文本，不阻断 */ })
+        }
       }
     }
     if (event.has_new_messages && ticketId && mode.kind === 'human') {

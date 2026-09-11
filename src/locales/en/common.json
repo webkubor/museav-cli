@@ -302,7 +302,8 @@
         "ariaLabel": "Async ticket {{id}}",
         "idLabel": "Ticket number",
         "etaLabel": "Expected contact",
-        "contact": "An agent will reach out using the contact details on your account. Watch for the follow-up."
+        "contact": "An agent will reach out using the contact details on your account. Watch for the follow-up.",
+        "reason": "We are experiencing high volume and could not connect you to an agent."
       },
       "records": {
         "title": "Service records",
@@ -403,7 +404,14 @@
           "feedback": "Feedback",
           "handoff": "Agent service"
         },
-        "unread": "New"
+        "unread": "New",
+        "detail": {
+          "typeLabel": "Type",
+          "idLabel": "No.",
+          "createdLabel": "Submitted",
+          "updatedLabel": "Updated",
+          "agentLabel": "Agent"
+        }
       }
     },
     "referralInviteCard": {

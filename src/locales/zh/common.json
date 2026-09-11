@@ -302,7 +302,8 @@
         "ariaLabel": "异步问题单 {{id}}",
         "idLabel": "工单编号",
         "etaLabel": "预计联系",
-        "contact": "客服将通过账号预留联系方式主动联系你，请留意后续通知。"
+        "contact": "客服将通过账号预留联系方式主动联系你，请留意后续通知。",
+        "reason": "当前咨询量较大，暂时未能接入人工客服。"
       },
       "records": {
         "title": "服务记录",
@@ -403,7 +404,14 @@
           "feedback": "问题反馈",
           "handoff": "人工服务"
         },
-        "unread": "有新消息"
+        "unread": "有新消息",
+        "detail": {
+          "typeLabel": "类型",
+          "idLabel": "编号",
+          "createdLabel": "提交时间",
+          "updatedLabel": "最近更新",
+          "agentLabel": "客服"
+        }
       }
     },
     "referralInviteCard": {

@@ -63,7 +63,7 @@ function MessageBubble({ msg, onRate, onStartHandoff }: { msg: ChatItem; onRate:
   if (msg.kind === 'feedback_receipt' && msg.feedbackReceipt) {
     const r = msg.feedbackReceipt
     return (
-      <div className="mb-4 rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2.5 flex flex-col gap-1">
+      <div className="mb-4 mg-tile px-3 py-2.5 flex flex-col gap-1">
         <div className="flex items-center justify-between">
           <span className="mg-text-caption font-medium text-mg-text-1">{r.ticketNo}</span>
           <span className="mg-compact-badge px-2 py-0.5 rounded-full bg-mg-primary-light text-brand-base">{r.status}</span>
@@ -199,7 +199,7 @@ export function CustomerService() {
   }, [isOpen, setOpen])
 
   useEffect(() => {
-    if (isOpen) trackEvent('open')
+    if (isOpen) trackEvent('support_open')
   }, [isOpen])
 
   if (!activeTenantId) return null
@@ -361,7 +361,7 @@ export function CustomerService() {
                         key={key}
                         type="button"
                         onClick={() => handleFaqClick(key)}
-                        className="flex items-center gap-2.5 rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2.5 text-left hover:border-brand-mid/50 transition-colors min-h-[44px]"
+                        className="mg-tile flex items-center gap-2.5 px-3 py-2.5 text-left hover:border-brand-mid/50 transition-colors min-h-[44px]"
                       >
                         <Icon size={15} className="text-brand-base shrink-0" />
                         <span className="mg-text-caption text-mg-text-1 flex-1">{t(`common.customerService.faq.${key}`)}</span>
@@ -392,7 +392,7 @@ export function CustomerService() {
                   {t('common.customerService.feedback.entry')}
                 </button>
               )}
-              <div className="flex items-center gap-2 rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2">
+              <div className="mg-tile flex items-center gap-2 px-3 py-2">
                 <textarea
                   rows={1}
                   value={inputValue}

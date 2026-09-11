@@ -66,14 +66,15 @@ export function TicketsList({ onSelect, onClose }: TicketsListProps) {
         />
         <div className="flex gap-1">
           {FILTERS.map((f) => (
-            <button
+            // 选中态用 Button variant="brand"，不手写 bg-brand-*（DESIGN.md · Components）
+            <Button
               key={f}
-              type="button"
+              size="small"
+              variant={filter === f ? 'brand' : 'secondary'}
               onClick={() => setFilter(f)}
-              className={`px-2.5 py-1 rounded-md mg-text-caption ${filter === f ? 'bg-brand-base text-white' : 'bg-mg-fill-0 text-mg-text-2'}`}
             >
               {t(`common.customerService.tickets.filters.${f}`)}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -88,13 +89,13 @@ export function TicketsList({ onSelect, onClose }: TicketsListProps) {
               key={item.id}
               type="button"
               onClick={() => onSelect(item.id)}
-              className="text-left rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2 hover:border-brand-mid/50 transition-colors"
+              className="mg-tile text-left px-3 py-2 hover:border-brand-mid/50 transition-colors"
             >
               <div className="flex items-center justify-between">
-                <span className="mg-text-caption font-medium text-mg-text-1">{item.ticket_no}</span>
+                <span className="min-w-0 truncate mg-text-caption font-medium text-mg-text-1" title={item.ticket_no}>{item.ticket_no}</span>
                 <Badge variant="outline" size="sm">{item.status}</Badge>
               </div>
-              {item.title && <p className="m-0 mt-1 mg-text-caption text-mg-text-3 line-clamp-2">{item.title}</p>}
+              {item.title && <p className="m-0 mt-1 mg-text-caption text-mg-text-3 line-clamp-2" title={item.title}>{item.title}</p>}
               <p className="m-0 mt-1 text-[10px] text-mg-text-3">{new Date(item.updated_at).toLocaleString()}</p>
             </button>
           ))}

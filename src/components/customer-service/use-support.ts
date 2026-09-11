@@ -90,7 +90,7 @@ export function useSupport() {
   const startHandoff = useCallback(async () => {
     if (serviceMode !== 'idle') return
     setServiceMode('queueing')
-    trackEvent('handoff_request')
+    trackEvent('support_handoff_request')
     try {
       const resp = await requestHandoff({ page_path: currentPagePath() })
       setTicketId(resp.ticket_id)
@@ -148,7 +148,7 @@ export function useSupport() {
     const next = target.rating === rating ? null : rating
     setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, rating: next } : m)))
     if (next) {
-      trackEvent('answer_rating', { rating: next })
+      trackEvent('support_answer_rating', { rating: next })
       try {
         await rateAnswer(target.answerId, next)
       } catch (error) {
@@ -162,7 +162,7 @@ export function useSupport() {
     const isConnecting = serviceMode === 'connecting'
     try {
       await cancelHandoff(ticketId)
-      trackEvent('handoff_cancel')
+      trackEvent('support_handoff_cancel')
     } catch (error) {
       appToast.requestError(error)
     }
@@ -181,9 +181,9 @@ export function useSupport() {
     if (!ticketId) return
     try {
       await endHandoff(ticketId, { rating, skip })
-      trackEvent('handoff_end')
-      if (rating) trackEvent('human_rating', { rating })
-      else if (skip) trackEvent('human_rating', { skipped: true })
+      trackEvent('support_handoff_end')
+      if (rating) trackEvent('support_human_rating', { rating })
+      else if (skip) trackEvent('support_human_rating', { skipped: true })
     } catch (error) {
       appToast.requestError(error)
     }
@@ -258,7 +258,7 @@ export function useSupport() {
         client_submission_id: crypto.randomUUID(),
         page_path: currentPagePath(),
       })
-      trackEvent('feedback_submit', { category: fields.category })
+      trackEvent('support_feedback_submit', { category: fields.category })
       appendMessage({
         id: crypto.randomUUID(),
         role: 'system',

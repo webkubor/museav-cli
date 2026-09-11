@@ -33,7 +33,7 @@ export function FeedbackForm({ submitting, onCancel, onSubmit }: FeedbackFormPro
     setErrors(nextErrors)
     if (nextErrors.category || nextErrors.description) return
 
-    trackEvent('feedback_submit')
+    trackEvent('support_feedback_submit')
     const ok = await onSubmit({
       category,
       description: trimmedDescription,
@@ -87,7 +87,7 @@ export function FeedbackForm({ submitting, onCancel, onSubmit }: FeedbackFormPro
       <div className="flex flex-col gap-1">
         <label className="mg-text-caption font-medium text-mg-text-2">{t('common.customerService.feedback.attachment')}</label>
         {/* ponytail: 仅展示文件名，OSS 直传较重，先留 TODO；不阻断反馈提交主链路 */}
-        <label className="flex items-center justify-between rounded-md border border-mg-border bg-mg-fill-0 px-3 py-2 mg-text-caption text-mg-text-3 cursor-pointer hover:border-brand-mid/50">
+        <label className="mg-tile flex items-center justify-between px-3 py-2 mg-text-caption text-mg-text-3 cursor-pointer hover:border-brand-mid/50">
           <span className="truncate">{fileName || t('common.customerService.feedback.attachmentPlaceholder')}</span>
           <input
             type="file"

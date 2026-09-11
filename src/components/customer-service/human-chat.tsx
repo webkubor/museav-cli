@@ -55,21 +55,21 @@ export function RatingCard({ item, onSubmit, onSkip }: RatingCardProps) {
 
   if (card?.submittedStars) {
     return (
-      <div className="mb-4 rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2 mg-text-caption text-mg-text-2">
+      <div className="mb-4 mg-tile px-3 py-2 mg-text-caption text-mg-text-2">
         ✓ {t('common.customerService.handoff.ratingSubmitted', { stars: card.submittedStars })}
       </div>
     )
   }
   if (card?.skipped) {
     return (
-      <div className="mb-4 rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-2 mg-text-caption text-mg-text-3">
+      <div className="mb-4 mg-tile px-3 py-2 mg-text-caption text-mg-text-3">
         {t('common.customerService.handoff.ratingSkipped')}
       </div>
     )
   }
 
   return (
-    <div className="mb-4 rounded-lg border border-mg-border bg-mg-fill-0 px-3 py-3 flex flex-col gap-2">
+    <div className="mb-4 mg-tile px-3 py-3 flex flex-col gap-2">
       <p className="m-0 mg-text-caption font-medium text-mg-text-1">{t('common.customerService.handoff.rateService')}</p>
       {(card?.agentName || card?.agentNo) && (
         <p className="m-0 text-[11px] text-mg-text-3">{card.agentName} · {card.agentNo}</p>

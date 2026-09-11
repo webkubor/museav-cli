@@ -5,8 +5,8 @@ import { trackEvent } from '@/lib/track'
 /**
  * 模型发现页的区块锚点（qa#726 / TC-DISC-102）。
  *
- * 三件事：滚到某区块时把它的 id 同步进 URL hash、上报一次 `model_discovery_section_view`、
- * 带 hash 进页面时定位过去。
+ * 四件事：滚到某区块时把它的 id 同步进 URL hash、上报一次 `model_discovery_section_view`、
+ * 带 hash 进页面时定位过去、**hash 落不到区块时回退 `#overview` 并留痕**（PRD §13.3）。
  *
  * 判「当前区块」用的是 rootMargin 把视口压成顶部一条窄带（`-12% 0px -80% 0px`），
  * 谁的顶部先进这条带谁就是当前区块 —— 直接比 intersectionRatio 在这里没用：
@@ -24,18 +24,70 @@ export const DISCOVERY_SECTIONS = [
 
 export type DiscoverySectionId = (typeof DISCOVERY_SECTIONS)[number]
 
+/** 兜底落点：任何 hash 落不到区块都回这里（PRD §13.3）。 */
+const OVERVIEW_SECTION: DiscoverySectionId = 'model-discovery-overview'
+
+/**
+ * 回退原因。两个取值**必须分得开**（prd#1003）：下游要据此区分「用户乱输 / 外链过期」
+ * 和「产品结构问题——该区块在当前模态下根本不出」，后者是要去改产品的信号，前者不是。
+ */
+type RouteFallbackReason =
+  /** hash 不在 DISCOVERY_SECTIONS 白名单里 */
+  | 'invalid_hash'
+  /** hash 合法，但当前模态不渲染这个区块（如图像模态下的 #model-discovery-agent-rank） */
+  | 'section_unavailable'
+
 export function useSectionAnchor(ready: boolean) {
   useEffect(() => {
     if (!ready || typeof window === 'undefined') return
 
-    // 带 hash 进来先定位。区块是异步渲染出来的，等一帧再找，否则 getElementById 拿到 null。
-    const initial = decodeURIComponent(window.location.hash.replace(/^#/, ''))
-    let locateTimer = 0
-    if ((DISCOVERY_SECTIONS as readonly string[]).includes(initial)) {
-      locateTimer = window.setTimeout(() => {
-        document.getElementById(initial)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 120)
+    /** 回退到概览：改 hash + 定位 + 留痕，三件一起做，别只做其中一件。 */
+    const fallbackToOverview = (requestedHash: string, reason: RouteFallbackReason) => {
+      // 同样用 replaceState：回退不该在历史里留一条，否则用户按返回又回到坏 hash
+      window.history.replaceState(
+        null,
+        '',
+        `${window.location.pathname}${window.location.search}#${OVERVIEW_SECTION}`,
+      )
+      document.getElementById(OVERVIEW_SECTION)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      trackEvent('model_discovery_section_route_fallback', {
+        requested_hash: requestedHash,
+        fallback_reason: reason,
+      })
     }
+
+    /**
+     * 校验一个 hash 能不能落地，落不了就回退。
+     * 判据分两层，缺一层就会漏掉 prd#1003 的第 ② 发：白名单只能拦住拼错的 hash，
+     * 「合法但当前模态不渲染」得靠 getElementById 实际探一下 DOM。
+     */
+    const resolveHash = (raw: string) => {
+      const hash = decodeURIComponent(raw.replace(/^#/, ''))
+      if (!hash) return
+      if (!(DISCOVERY_SECTIONS as readonly string[]).includes(hash)) {
+        fallbackToOverview(hash, 'invalid_hash')
+        return
+      }
+      const el = document.getElementById(hash)
+      if (!el) {
+        fallbackToOverview(hash, 'section_unavailable')
+        return
+      }
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+
+    // 带 hash 进来先定位。区块是异步渲染出来的，等一帧再找，否则 getElementById 拿到 null
+    // ——这个延迟对回退同样关键：太早探 DOM 会把「还没渲染」误判成「当前模态不展示」。
+    let locateTimer = 0
+    if (window.location.hash) {
+      const initialHash = window.location.hash
+      locateTimer = window.setTimeout(() => resolveHash(initialHash), 120)
+    }
+
+    // 运行时被改 hash（外链、手输地址栏、切模态后旧 hash 失效）也要走同一套校验。
+    // 自己改 hash 走的是 replaceState，不触发 hashchange，不会和这里打架。
+    const onHashChange = () => resolveHash(window.location.hash)
+    window.addEventListener('hashchange', onHashChange)
 
     // 连续停留不重复上报：只记「上一个报过的」，离开再回来算新的一次到达。
     let lastReported = ''
@@ -85,6 +137,7 @@ export function useSectionAnchor(ready: boolean) {
     return () => {
       window.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', onScroll)
+      window.removeEventListener('hashchange', onHashChange)
       if (frame) window.cancelAnimationFrame(frame)
       if (locateTimer) window.clearTimeout(locateTimer)
     }

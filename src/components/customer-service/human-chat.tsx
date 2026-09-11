@@ -55,32 +55,50 @@ export function RatingCard({ item, onSubmit, onSkip }: RatingCardProps) {
   const [selected, setSelected] = useState(0)
   const card = item.ratingCard
 
+  // 三种状态的 aria-label 照 PRD 原型 CustomerSupportHumanRating.tsx：
+  // 「客服评价已提交」/「客服评价已跳过」/「客服评价」，星级组是 radiogroup
   if (card?.submittedStars) {
     return (
-      <div className="mb-4 mg-tile px-3 py-2 mg-text-caption text-mg-text-2">
+      <div
+        className="mb-4 mg-tile px-3 py-2 mg-text-caption text-mg-text-2"
+        role="status"
+        aria-label={t('common.customerService.handoff.ratingSubmittedAria')}
+      >
         ✓ {t('common.customerService.handoff.ratingSubmitted', { stars: card.submittedStars })}
       </div>
     )
   }
   if (card?.skipped) {
     return (
-      <div className="mb-4 mg-tile px-3 py-2 mg-text-caption text-mg-text-3">
+      <div
+        className="mb-4 mg-tile px-3 py-2 mg-text-caption text-mg-text-3"
+        role="status"
+        aria-label={t('common.customerService.handoff.ratingSkippedAria')}
+      >
         {t('common.customerService.handoff.ratingSkipped')}
       </div>
     )
   }
 
   return (
-    <div className="mb-4 mg-tile px-3 py-3 flex flex-col gap-2">
+    <div
+      className="mb-4 mg-tile px-3 py-3 flex flex-col gap-2"
+      role="group"
+      aria-label={t('common.customerService.handoff.ratingAria')}
+    >
       <p className="m-0 mg-text-caption font-medium text-mg-text-1">{t('common.customerService.handoff.rateService')}</p>
       {(card?.agentName || card?.agentNo) && (
         <p className="m-0 text-[11px] text-mg-text-3">{card.agentName} · {card.agentNo}</p>
       )}
-      <div className="flex items-center gap-1">
+      {/* 星级是单选组：原型用 role=radiogroup + 每颗星 aria-label「N 星」，
+          读屏用户才知道当前选了几星、总共几档 */}
+      <div className="flex items-center gap-1" role="radiogroup" aria-label={t('common.customerService.handoff.starsAria')}>
         {[1, 2, 3, 4, 5].map((star) => (
           <button
             key={star}
             type="button"
+            role="radio"
+            aria-checked={selected === star}
             aria-label={t('common.customerService.handoff.starAria', { star })}
             onClick={() => setSelected(star)}
             onMouseEnter={() => setHover(star)}

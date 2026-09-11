@@ -62,13 +62,43 @@ function MessageBubble({ msg, onRate, onStartHandoff }: { msg: ChatItem; onRate:
   if (msg.kind === 'feedback_receipt' && msg.feedbackReceipt) {
     const r = msg.feedbackReceipt
     return (
-      <div className="mb-4 mg-tile px-3 py-2.5 flex flex-col gap-1">
-        <div className="flex items-center justify-between">
-          <span className="mg-text-caption font-medium text-mg-text-1">{r.ticketNo}</span>
-          <span className="mg-compact-badge px-2 py-0.5 rounded-full bg-mg-primary-light text-brand-base">{r.status}</span>
+      // 字段与标签照 PRD 原型 CustomerSupportFeedback.tsx 的 FeedbackReceiptCard：
+      // 标题「反馈已提交」+ 状态徽标，正文是 dl 四项（反馈编号 / 预计响应 / 问题类型 /
+      // 问题描述）。原先只渲染了 4 个**裸值、无标签、且漏了问题类型**，用户看到一串
+      // 数字不知道哪个是编号。aria-label 也照原型给到「反馈 <编号> 已提交」。
+      <div
+        className="mb-4 mg-tile px-3 py-2.5 flex flex-col gap-1.5"
+        role="group"
+        aria-label={t('common.customerService.feedback.receipt.ariaLabel', { id: r.ticketNo })}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <span className="mg-text-caption font-medium text-mg-text-1">
+            {t('common.customerService.feedback.receipt.title')}
+          </span>
+          <span className="mg-compact-badge px-2 py-0.5 rounded-full bg-mg-primary-light text-brand-base shrink-0">{r.status}</span>
         </div>
-        {r.slaText && <p className="m-0 text-[11px] text-mg-text-3">{r.slaText}</p>}
-        <p className="m-0 text-[11px] text-mg-text-3 line-clamp-2">{r.description}</p>
+        <dl className="m-0 flex flex-col gap-0.5 text-[11px]">
+          <div className="flex gap-1.5">
+            <dt className="shrink-0 text-mg-text-3">{t('common.customerService.feedback.receipt.idLabel')}</dt>
+            <dd className="m-0 min-w-0 truncate font-medium text-mg-text-2" title={r.ticketNo}>{r.ticketNo}</dd>
+          </div>
+          {r.slaText && (
+            <div className="flex gap-1.5">
+              <dt className="shrink-0 text-mg-text-3">{t('common.customerService.feedback.receipt.etaLabel')}</dt>
+              <dd className="m-0 min-w-0 truncate text-mg-text-2" title={r.slaText}>{r.slaText}</dd>
+            </div>
+          )}
+          <div className="flex gap-1.5">
+            <dt className="shrink-0 text-mg-text-3">{t('common.customerService.feedback.receipt.issueTypeLabel')}</dt>
+            <dd className="m-0 min-w-0 truncate text-mg-text-2">
+              {t(`common.customerService.feedback.categoryOptions.${r.category}`, { defaultValue: r.category })}
+            </dd>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <dt className="text-mg-text-3">{t('common.customerService.feedback.receipt.summaryLabel')}</dt>
+            <dd className="m-0 text-mg-text-2 line-clamp-2" title={r.description}>{r.description}</dd>
+          </div>
+        </dl>
       </div>
     )
   }

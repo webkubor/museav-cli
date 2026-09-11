@@ -6,6 +6,16 @@ import { Input } from '@/components/ui/Input'
 import { Select, SelectItem } from '@/components/ui/Select'
 import { trackEvent } from '@/lib/track'
 
+/**
+ * `<input type="datetime-local">` 要的本地时间串：YYYY-MM-DDTHH:mm。
+ * 不能用 toISOString() —— 那是 UTC，会把用户填的时间平移时区。
+ * 口径照 PRD 原型 customerSupportDomain.ts 的 formatLocalDateTime。
+ */
+function localDateTimeValue(date: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}T${p(date.getHours())}:${p(date.getMinutes())}`
+}
+
 /** 问题类型枚举值：后端字段名 category，取值按 issue 契约的五类问题类型语义命名 */
 const CATEGORIES = ['bug', 'api_issue', 'billing', 'suggestion', 'other'] as const
 export type FeedbackCategory = typeof CATEGORIES[number]
@@ -20,7 +30,11 @@ export function FeedbackForm({ submitting, onCancel, onSubmit }: FeedbackFormPro
   const { t } = useTranslation()
   const [category, setCategory] = useState<string>('')
   const [description, setDescription] = useState('')
-  const [occurredAt, setOccurredAt] = useState('')
+  // PRD §8.5「发生时间 | 否 | **默认当前本地时间**，可修改」，原型
+  // createEmptyFeedbackDraft() 也是拿 new Date() 填的（customerSupportDomain.ts）。
+  // 原先初值是空串 —— 用户不点就不带发生时间，排查时少一个关键锚点。
+  // 格式对齐 <input type="datetime-local"> 要的 YYYY-MM-DDTHH:mm（本地时区，不是 ISO/UTC）。
+  const [occurredAt, setOccurredAt] = useState(() => localDateTimeValue(new Date()))
   const [requestId, setRequestId] = useState('')
   const [fileName, setFileName] = useState('')
   const [errors, setErrors] = useState<{ category?: string; description?: string }>({})
@@ -53,9 +67,18 @@ export function FeedbackForm({ submitting, onCancel, onSubmit }: FeedbackFormPro
     <div className="flex flex-col gap-3 p-4 overflow-y-auto flex-1">
       <p className="mg-text-caption text-mg-text-3">{t('common.customerService.feedback.hint')}</p>
 
+      {/* 每个控件都带 aria-label（照 PRD 原型 CustomerSupportFeedback.tsx）：
+          这里的 <label> 是游离的视觉标签、没有 htmlFor 关联，读屏靠 aria-label 才能
+          念出字段名。用 aria-label 而非 htmlFor+id，是因为 Select/Textarea/Input
+          都是封装组件、内部 id 不由本页控制。 */}
       <div className="flex flex-col gap-1">
         <label className="mg-text-caption font-medium text-mg-text-2">{t('common.customerService.feedback.category')}</label>
-        <Select value={category} onChange={setCategory} placeholder={t('common.customerService.feedback.categoryPlaceholder')}>
+        <Select
+          value={category}
+          onChange={setCategory}
+          placeholder={t('common.customerService.feedback.categoryPlaceholder')}
+          aria-label={t('common.customerService.feedback.category')}
+        >
           {CATEGORIES.map((c) => (
             <SelectItem key={c} value={c}>{t(`common.customerService.feedback.categoryOptions.${c}`)}</SelectItem>
           ))}
@@ -70,18 +93,29 @@ export function FeedbackForm({ submitting, onCancel, onSubmit }: FeedbackFormPro
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder={t('common.customerService.feedback.descriptionPlaceholder')}
+          aria-label={t('common.customerService.feedback.description')}
         />
         {errors.description && <span className="mg-text-caption text-mg-danger">{errors.description}</span>}
       </div>
 
       <div className="flex flex-col gap-1">
         <label className="mg-text-caption font-medium text-mg-text-2">{t('common.customerService.feedback.occurredAt')}</label>
-        <Input type="datetime-local" value={occurredAt} onChange={(e) => setOccurredAt(e.target.value)} />
+        <Input
+          type="datetime-local"
+          value={occurredAt}
+          onChange={(e) => setOccurredAt(e.target.value)}
+          aria-label={t('common.customerService.feedback.occurredAt')}
+        />
       </div>
 
       <div className="flex flex-col gap-1">
         <label className="mg-text-caption font-medium text-mg-text-2">{t('common.customerService.feedback.requestId')}</label>
-        <Input value={requestId} onChange={(e) => setRequestId(e.target.value)} placeholder={t('common.customerService.feedback.requestIdPlaceholder')} />
+        <Input
+          value={requestId}
+          onChange={(e) => setRequestId(e.target.value)}
+          placeholder={t('common.customerService.feedback.requestIdPlaceholder')}
+          aria-label={t('common.customerService.feedback.requestId')}
+        />
       </div>
 
       <div className="flex flex-col gap-1">
@@ -92,6 +126,7 @@ export function FeedbackForm({ submitting, onCancel, onSubmit }: FeedbackFormPro
           <input
             type="file"
             className="hidden"
+            aria-label={t('common.customerService.feedback.attachment')}
             onChange={(e) => setFileName(e.target.files?.[0]?.name ?? '')}
           />
         </label>

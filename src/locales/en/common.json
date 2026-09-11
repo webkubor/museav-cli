@@ -195,15 +195,6 @@
         "subtitle": "Please give as much detail as you can. The current page context is recorded with your report.",
         "required": "Required",
         "optional": "Optional",
-        "issueTypeLabel": "Issue type",
-        "issueTypePlaceholder": "Select an issue type",
-        "issueTypes": {
-          "functionality": "Feature problem",
-          "apiCall": "API call problem",
-          "billing": "Billing problem",
-          "suggestion": "Product suggestion",
-          "other": "Other"
-        },
         "descriptionLabel": "Description",
         "descriptionPlaceholder": "Describe the issue and what you expected",
         "occurredAtLabel": "Time of occurrence",
@@ -289,7 +280,11 @@
         "submitRating": "Submit rating",
         "skipRating": "Skip",
         "ratingSubmitted": "Submitted {{stars}}-star rating, thanks for your feedback",
-        "ratingSkipped": "No rating this time"
+        "ratingSkipped": "No rating this time",
+        "ratingAria": "Agent rating",
+        "ratingSubmittedAria": "Agent rating submitted",
+        "ratingSkippedAria": "Agent rating skipped",
+        "starsAria": "Star rating"
       },
       "humanRating": {
         "title": "Rate this agent session",
@@ -403,7 +398,12 @@
           "all": "All",
           "processing": "Processing",
           "ended": "Ended"
-        }
+        },
+        "types": {
+          "feedback": "Feedback",
+          "handoff": "Agent service"
+        },
+        "unread": "New"
       }
     },
     "referralInviteCard": {

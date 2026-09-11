@@ -195,15 +195,6 @@
         "subtitle": "请尽量补充完整信息，当前页面上下文会随反馈一并记录。",
         "required": "必填",
         "optional": "选填",
-        "issueTypeLabel": "问题类型",
-        "issueTypePlaceholder": "请选择问题类型",
-        "issueTypes": {
-          "functionality": "功能异常",
-          "apiCall": "调用问题",
-          "billing": "账单问题",
-          "suggestion": "产品建议",
-          "other": "其他"
-        },
         "descriptionLabel": "问题描述",
         "descriptionPlaceholder": "描述遇到的问题和期望结果",
         "occurredAtLabel": "发生时间",
@@ -289,7 +280,11 @@
         "submitRating": "提交评价",
         "skipRating": "暂不评价",
         "ratingSubmitted": "已提交 {{stars}} 星评价，感谢反馈",
-        "ratingSkipped": "本次暂未评价"
+        "ratingSkipped": "本次暂未评价",
+        "ratingAria": "客服评价",
+        "ratingSubmittedAria": "客服评价已提交",
+        "ratingSkippedAria": "客服评价已跳过",
+        "starsAria": "客服星级"
       },
       "humanRating": {
         "title": "请评价本次人工服务",
@@ -403,7 +398,12 @@
           "all": "全部",
           "processing": "处理中",
           "ended": "已结束"
-        }
+        },
+        "types": {
+          "feedback": "问题反馈",
+          "handoff": "人工服务"
+        },
+        "unread": "有新消息"
       }
     },
     "referralInviteCard": {

@@ -85,18 +85,33 @@ export function TicketsList({ onSelect, onClose }: TicketsListProps) {
         )}
         <div className="flex flex-col gap-2">
           {items.map((item) => (
+            // 字段与层级照 PRD 原型 CustomerSupportHistoryList.tsx 的 history-row：
+            // 第一行「记录类型 + 状态」，第二行标题，第三行「编号 · 更新时间」+ 未读标记。
+            // 原先漏了**记录类型**与**未读**两个字段（接口的 type / unread 都给了、没渲染），
+            // 而 PRD §「记录类型」「未读来源」两节都明确要求展示，QA 会逐条验。
             <button
               key={item.id}
               type="button"
               onClick={() => onSelect(item.id)}
               className="mg-tile text-left px-3 py-2 hover:border-brand-mid/50 transition-colors"
             >
-              <div className="flex items-center justify-between">
-                <span className="min-w-0 truncate mg-text-caption font-medium text-mg-text-1" title={item.ticket_no}>{item.ticket_no}</span>
+              <div className="flex items-center justify-between gap-2">
+                <span className="mg-text-caption text-mg-text-3">
+                  {t(`common.customerService.tickets.types.${item.type}`, { defaultValue: item.type })}
+                </span>
                 <Badge variant="outline" size="sm">{item.status}</Badge>
               </div>
-              {item.title && <p className="m-0 mt-1 mg-text-caption text-mg-text-3 line-clamp-2" title={item.title}>{item.title}</p>}
-              <p className="m-0 mt-1 text-[10px] text-mg-text-3">{new Date(item.updated_at).toLocaleString()}</p>
+              {item.title && <p className="m-0 mt-1 mg-text-caption font-medium text-mg-text-1 line-clamp-2" title={item.title}>{item.title}</p>}
+              <div className="mt-1 flex items-center justify-between gap-2">
+                <small className="min-w-0 truncate text-[10px] text-mg-text-3" title={item.ticket_no}>
+                  {item.ticket_no} · {new Date(item.updated_at).toLocaleString()}
+                </small>
+                {item.unread && (
+                  <b className="shrink-0 rounded-full bg-mg-primary-light px-1.5 py-0.5 text-[10px] font-medium text-brand-base">
+                    {t('common.customerService.tickets.unread')}
+                  </b>
+                )}
+              </div>
             </button>
           ))}
         </div>

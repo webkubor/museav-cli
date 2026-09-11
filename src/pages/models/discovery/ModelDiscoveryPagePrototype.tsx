@@ -34,6 +34,7 @@ import {
 } from 'react-icons/lu'
 import { useMemo, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { useTranslation } from 'react-i18next'
+import { trackEvent } from '@/lib/track'
 import { AgentPopularityLeaderboard, DiscoveryLoadError } from './discovery-agent-popularity'
 import { useProviderColor } from './discovery-colors'
 import { useSectionAnchor } from './use-section-anchor'
@@ -942,6 +943,12 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   }
 
   function switchModality(next: ModalityKey) {
+    // 🔴 只在状态**实际变化**时上报（PRD §13.3，prd#1007）：重复点当前已选中的模态
+    // 不该产生 _category_switch。Tabs 的 onValueChange 在重复点同一项时也会触发，
+    // 所以去重必须做在这里，不能指望组件。
+    if (next !== modality) {
+      trackEvent('model_discovery_category_switch', { from_category: modality, to_category: next });
+    }
     const nextConfig = discoveryConfigFor(t, next);
     const nextTask = nextConfig.tasks[0];
     setModality(next);
@@ -954,7 +961,19 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
     setTableAccess("all");
   }
 
+  function switchScope(next: typeof scope) {
+    // 同上：只在真的换了范围时上报（prd#1007）
+    if (next !== scope) {
+      trackEvent('model_discovery_access_scope_change', { category: modality, from_scope: scope, to_scope: next });
+    }
+    setScope(next);
+  }
+
   function switchTask(nextTask: string) {
+    // 同上：只在真的换了子任务时上报（prd#1007）
+    if (nextTask !== task) {
+      trackEvent('model_discovery_task_switch', { category: modality, from_task: task, to_task: nextTask });
+    }
     setTask(nextTask);
     setYMetric(0);
     setXMetric(0);
@@ -1015,7 +1034,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
             </TabsList>
           </Tabs>
         )}
-        <Tabs className="ml-auto" onValueChange={(value) => setScope(value as typeof scope)} value={scope}>
+        <Tabs className="ml-auto" onValueChange={(value) => switchScope(value as typeof scope)} value={scope}>
           <TabsList aria-label={t("modelsDiscovery.a11y.scope")} variant="pills">
             <TabsTrigger value="all" variant="pills">{t("modelsDiscovery.scope.all")}</TabsTrigger>
             <TabsTrigger value="supported" variant="pills">{t("modelsDiscovery.scope.supported")}</TabsTrigger>

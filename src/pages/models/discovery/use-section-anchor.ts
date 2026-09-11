@@ -5,7 +5,8 @@ import { trackEvent } from '@/lib/track'
 /**
  * 模型发现页的区块锚点（qa#726 / TC-DISC-102）。
  *
- * 四件事：滚到某区块时把它的 id 同步进 URL hash、上报一次 `model_discovery_section_view`、
+ * 四件事：滚到某区块时把它的 id 同步进 URL hash、上报一次 `model_discovery_section_view`
+ * （字段 `section_key` + `trigger_type`，见下）、
  * 带 hash 进页面时定位过去、**hash 落不到区块时回退 `#overview` 并留痕**（PRD §13.3）。
  *
  * 判「当前区块」用的是 rootMargin 把视口压成顶部一条窄带（`-12% 0px -80% 0px`），
@@ -50,6 +51,7 @@ export function useSectionAnchor(ready: boolean) {
         `${window.location.pathname}${window.location.search}#${OVERVIEW_SECTION}`,
       )
       document.getElementById(OVERVIEW_SECTION)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      window.setTimeout(() => sync('anchor'), 500)
       trackEvent('model_discovery_section_route_fallback', {
         requested_hash: requestedHash,
         fallback_reason: reason,
@@ -74,6 +76,9 @@ export function useSectionAnchor(ready: boolean) {
         return
       }
       el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      // 带 hash 直达：这一次到达不是滚出来的，标 anchor。scrollIntoView 是平滑动画，
+      // 等它落定再同步，否则 sync 读到的还是滚动前的位置、会把上一个区块当成当前区块。
+      window.setTimeout(() => sync('anchor'), 500)
     }
 
     // 带 hash 进来先定位。区块是异步渲染出来的，等一帧再找，否则 getElementById 拿到 null
@@ -97,7 +102,11 @@ export function useSectionAnchor(ready: boolean) {
     // 用几何量而不是 IntersectionObserver：完整榜单比视口还高，观察器口径下它和下一个
     // 区块会同时 intersecting，取谁都错一半（实测 hash 会滞后一个区块）；而「谁的顶
     // 越过了线」在任何区块高度下都唯一。
-    const sync = () => {
+    /**
+     * `trigger_type`（PRD §13.3，prd#1007）：区分「用户滚过来的」和「带 hash 直接落过来的」。
+     * 下游按它拆分自然浏览与外链直达，混在一起会把外链流量算成页内浏览深度。
+     */
+    const sync = (triggerType: 'scroll' | 'anchor' = 'scroll') => {
       const line = window.scrollY + window.innerHeight * 0.25
       // 触底时最后一个区块可能整个还在线下方、永远选不中，这时直接认最后一个存在的。
       const atBottom =
@@ -119,7 +128,8 @@ export function useSectionAnchor(ready: boolean) {
         '',
         `${window.location.pathname}${window.location.search}#${current}`,
       )
-      trackEvent('model_discovery_section_view', { section: current })
+      // 字段名是 section_key，不是 section（PRD / TestMgr 用例口径，prd#1007 缺口二）
+      trackEvent('model_discovery_section_view', { section_key: current, trigger_type: triggerType })
     }
 
     const onScroll = () => {

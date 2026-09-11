@@ -22,9 +22,11 @@
  *   「暂无数据」的卡对用户没有任何信息量。改动依据 PRD §11.2 + prd#1005，已在单里请
  *   需求方与后端对齐「保持完整结构」那条要求的实际约束力。
  */
+import { useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getModelBenchmarks } from '@/services/model-discovery'
 import { isNotFoundError } from '@/lib/request-error-message'
+import { trackEvent } from '@/lib/track'
 import type { BenchmarkCompositeIndex, BenchmarkItem, DiscoveryMetric } from '@/types'
 
 /** 综合指数的展示名。接口只给 metric 码，中文名前端定。 */
@@ -148,12 +150,65 @@ export function BenchmarkSection({ modelId }: { modelId: string }) {
     }))
     .filter((group) => group.items.length > 0)
 
+  const sectionRef = useRef<HTMLElement | null>(null)
+  const viewReportedRef = useRef(false)
+  const summaryMetricKeys = composites.map((index) => index.metric).join(',')
+
+  /**
+   * 模块曝光埋点 `model_detail_benchmark_view`（PRD §11.7，prd#1007 缺口三）。
+   *
+   * 判据取「**可见面积 ≥ 50% 且连续驻留 ≥ 1 秒**」——不是一进 DOM 就报：
+   * 详情页整页很长，Benchmark 在下半屏，只要用户没滚到就不算看见。1 秒驻留过滤掉
+   * 快速划过（TC-DISC-101 的面积+驻留口径也正好落在这里，之前因为没有独立曝光事件
+   * 而无锚点可判）。
+   *
+   * 整个生命周期只报一次：`viewReportedRef` 拦重复，报完即 disconnect。
+   * `summary_metric_keys` 取**过滤后实际展示**的指标，不是接口返回的完整清单 ——
+   * 下游要知道用户看到的是哪几项（空值项已按 §11.2 隐藏，见 prd#1005）。
+   */
+  useEffect(() => {
+    const el = sectionRef.current
+    if (!el || !data || viewReportedRef.current) return
+    let dwellTimer = 0
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+            if (dwellTimer) continue
+            dwellTimer = window.setTimeout(() => {
+              dwellTimer = 0
+              if (viewReportedRef.current) return
+              viewReportedRef.current = true
+              trackEvent('model_detail_benchmark_view', {
+                model_id: data.modelgo_id || modelId,
+                category: data.type,
+                summary_metric_keys: summaryMetricKeys,
+                snapshot_date: data.snapshot_date,
+              })
+              observer.disconnect()
+            }, 1000)
+          } else if (dwellTimer) {
+            // 驻留被打断（滚开了）就清掉，重新进入再从 0 计时
+            window.clearTimeout(dwellTimer)
+            dwellTimer = 0
+          }
+        }
+      },
+      { threshold: [0, 0.5, 1] },
+    )
+    observer.observe(el)
+    return () => {
+      observer.disconnect()
+      if (dwellTimer) window.clearTimeout(dwellTimer)
+    }
+  }, [data, modelId, summaryMetricKeys])
+
   // 加载中不占位：整块本来就可能不存在，先撑一个空壳再抽掉会让详情页跳动
   if (isLoading) return null
   if (composites.length === 0 && groups.length === 0) return null
 
   return (
-    <section className="mg-tile mg-detail-card">
+    <section className="mg-tile mg-detail-card" ref={sectionRef}>
       <header className="mb-3 flex flex-wrap items-baseline gap-2">
         <h3 className="text-[14px] font-semibold text-mg-text-1">Benchmark 基准评测</h3>
         {/* 来源标签只出现一次 */}

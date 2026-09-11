@@ -139,6 +139,7 @@ import { useLangStore } from '@/store/use-brand-store'
 import { usePublicProtocolsStore } from '@/store/use-public-protocols-store'
 
 import { Toaster } from 'sonner'
+import { CustomerService } from '@/components/customer-service'
 
 // 注入市场标识（初始值用域名探测，PlatformLoader 会用 API 结果覆盖）
 document.documentElement.dataset.market = getMarket()
@@ -385,6 +386,13 @@ export default function App() {
           <Route path="*" element={withLocaleNamespaces(<NotFoundPage />, ['common'])} />
         </Routes>
         </Suspense>
+        {/* 智能助手：全站挂一次，**含未登录与登录页**（prd#996）。
+            PRD 原型 modelgo_prd/src/App.tsx 把 <CustomerSupportWidget /> 挂了三处，
+            其中一处就在 `shell === "login"` 分支里 —— 未登录可见是产品口径，不是遗漏。
+            §11.6 也要求「官网、登录页和 Console 右下角共用 ModelGo 圆形入口」。
+            ⚠️ 不要挪回 DashboardLayout：那样未登录看不到入口，
+            「未登录可问平台知识 / 账户问题提示 needs_login」这两条 AC 就无从触发。 */}
+        <CustomerService />
         </AuthProvider>
       </BrowserRouter>
     </Providers>

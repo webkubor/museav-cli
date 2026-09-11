@@ -7,7 +7,6 @@ import { MarkdownContent } from '@/components/ui/MarkdownContent'
 import { LuX, LuSendHorizontal, LuHistory, LuMessageSquareWarning, LuThumbsUp, LuThumbsDown, LuKeyRound, LuTerminal, LuSparkles, LuReceipt } from 'react-icons/lu'
 import { useSiteLogo } from '@/config/brand-assets'
 import { storageKeys } from '@/lib/storage'
-import { useAuthStore } from '@/store/auth'
 import { useCustomerServiceStore } from '@/store/use-customer-service-store'
 import { formatChartDate, formatDate, formatShortTime } from '@/lib/format-date'
 import { trackEvent } from '@/lib/track'
@@ -162,7 +161,6 @@ export function CustomerService() {
   const toggleOpen = useCustomerServiceStore((s) => s.toggle)
   const setOpen = useCustomerServiceStore((s) => s.setOpen)
   const logoSrc = useSiteLogo()
-  const activeTenantId = useAuthStore((s) => s.activeTenantId)
 
   const support = useSupport()
   const {
@@ -202,7 +200,11 @@ export function CustomerService() {
     if (isOpen) trackEvent('support_open')
   }, [isOpen])
 
-  if (!activeTenantId) return null
+  // ⚠️ 这里原先是 `if (!activeTenantId) return null`（未登录不渲染），与 prd#996 冲突：
+  // PRD §11.6 要求「官网、登录页和 Console 右下角共用 ModelGo 圆形入口」，原型
+  // modelgo_prd/src/App.tsx 也在 `shell === "login"` 分支里挂了 widget。
+  // 未登录同样要能问平台知识；账户类问题由后端回 needs_login，不靠前端藏入口来拦。
+  // 私有上下文的隔离靠「登出/换号清会话」那条（见 use-support），不靠这个门槛。
 
   function handleMouseDown(e: React.MouseEvent) {
     dragRef.current = { startX: e.clientX, startY: e.clientY, startPosX: pos.x, startPosY: pos.y }

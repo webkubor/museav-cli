@@ -27,6 +27,7 @@ import { useQuery } from '@tanstack/react-query'
 import { getModelBenchmarks } from '@/services/model-discovery'
 import { isNotFoundError } from '@/lib/request-error-message'
 import { trackEvent } from '@/lib/track'
+import { InfoTip } from '@/components/ui/InfoTip'
 import type { BenchmarkCompositeIndex, BenchmarkItem, DiscoveryMetric } from '@/types'
 
 /** 综合指数的展示名。接口只给 metric 码，中文名前端定。 */
@@ -152,6 +153,8 @@ export function BenchmarkSection({ modelId }: { modelId: string }) {
 
   const sectionRef = useRef<HTMLElement | null>(null)
   const viewReportedRef = useRef(false)
+  /** 已上报过 tooltip 的评测项，同一项每次页面生命周期只报一次（反复 hover 不刷量）。 */
+  const tooltipReportedRef = useRef<Set<string>>(new Set())
   const summaryMetricKeys = composites.map((index) => index.metric).join(',')
 
   /**
@@ -203,6 +206,26 @@ export function BenchmarkSection({ modelId }: { modelId: string }) {
     }
   }, [data, modelId, summaryMetricKeys])
 
+  /**
+   * `model_detail_benchmark_tooltip_view`（PRD §11.7，prd#1007）。
+   * 触发时机按 PRD 原文「用户悬浮**或聚焦**评测项说明」—— InfoTip 的 onReveal
+   * 在 hover 与键盘 focus 各触发一次，两条路都覆盖到（§11.6 要求信息图标键盘可聚焦）。
+   *
+   * 参数映射（PRD 只给了字段名、没定取值，已在单里请需求方确认）：
+   *   metric_key     = 所属分组码 group.code（如「代码」组）
+   *   evaluation_key = 具体评测项 item.metric（如 SciCode）
+   */
+  const reportTooltip = (groupCode: string, metricKey: string) => {
+    const dedupeKey = `${groupCode}/${metricKey}`
+    if (tooltipReportedRef.current.has(dedupeKey)) return
+    tooltipReportedRef.current.add(dedupeKey)
+    trackEvent('model_detail_benchmark_tooltip_view', {
+      model_id: data?.modelgo_id || modelId,
+      metric_key: groupCode,
+      evaluation_key: metricKey,
+    })
+  }
+
   // 加载中不占位：整块本来就可能不存在，先撑一个空壳再抽掉会让详情页跳动
   if (isLoading) return null
   if (composites.length === 0 && groups.length === 0) return null
@@ -242,16 +265,23 @@ export function BenchmarkSection({ modelId }: { modelId: string }) {
                   return (
                     <li key={item.metric}>
                       <div className="mb-1 flex items-baseline justify-between gap-2">
-                        <span className="min-w-0 truncate text-[12px] text-mg-text-1">
-                          {item.name}
+                        <span className="flex min-w-0 items-center gap-1 text-[12px] text-mg-text-1">
+                          <span className="min-w-0 truncate">{item.name}</span>
+                          {/* 一句话指标解释走名称旁的 ⓘ（PRD §11.6），不再在下方平铺一行：
+                              同一句话展示两遍没有意义，而且真实 description 有上百字符、
+                              平铺会把明细行撑得很高。InfoTip 自带 tabIndex=0，满足
+                              §11.6「键盘可聚焦信息图标」。 */}
+                          {item.description ? (
+                            <InfoTip
+                              text={item.description}
+                              onReveal={() => reportTooltip(group.code, item.metric)}
+                            />
+                          ) : null}
                         </span>
                         <span className="shrink-0 text-[12px] font-semibold text-mg-text-1">
                           {result}
                         </span>
                       </div>
-                      {item.description ? (
-                        <p className="mb-1 text-[11px] text-mg-text-3">{item.description}</p>
-                      ) : null}
                       {/* 无值不画空槽，避免读成「得分为 0」 */}
                       {width !== null ? (
                         <div className="h-1 w-full overflow-hidden rounded-full bg-mg-fill-1">

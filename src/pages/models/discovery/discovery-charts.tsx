@@ -55,28 +55,21 @@ export function DiscoveryModelIcon({ model, provider, className }: { model: stri
 /**
  * 热门 Agent 榜的图标。
  *
- * 走 `@model-go/icons/agents` 的 `agentVisual()`——库里就有三级兜底：
- * ① 131 个知名 agent 的本地 SVG（矢量、跟随主题）② favicon 覆盖长尾
- * ③ 首字母块，颜色按名字哈希稳定取，不会随排序变化闪烁。
+ * 🔴 **一律首字母块，不渲染任何品牌 Logo**（prd#1004）。PRD §7.1 原文：「图标不使用
+ * OpenRouter 应用 Logo，统一显示应用名称首字母」，原型契约
+ * `assert-model-discovery.mjs:108` 同样按 `name.trim().charAt(0)` 校验。
  *
- * 这里原先是 `agent.name.trim().charAt(0)` 裸截首字母——DESIGN.md 明令禁止的写法，
- * 而且把库里现成的 131 个官方 logo 全绕过去了（2026-09-03）。
+ * 2026-09-03 曾改成 `agentVisual()` 直出品牌 SVG，理由是「裸截首字母是 DESIGN.md
+ * 禁止的写法，且绕过了库里 131 个官方 logo」——出发点没错，但方向反了：PRD 要的就是
+ * 不出现品牌 Logo，结果榜上一半行是 Logo、一半是首字母，反而不统一（#1004 实测）。
  *
- * favicon 一级暂时不启用：国内站取不到 `t0.gstatic.com`，要先有自建 img-proxy
- * 才能开（库的文档写明「不换 base 就是一片空图」）。所以现在是 SVG 命中就用 SVG，
- * 否则直接落到稳定色首字母块，跳过中间那级。
+ * 现在仍走 `agentVisual()` / `agentFallback()` 取首字母，**不是裸截 charAt(0)**——
+ * 库负责首字母提取与按名字哈希的稳定配色（不会随排序闪烁），既满足 PRD 又不违反
+ * DESIGN.md。favicon 那一级本来就没启用（国内站取不到 `t0.gstatic.com`）。
  */
 export function DiscoveryAgentIcon({ id, name }: { id: string; name: string }) {
   const visual = agentVisual({ id, name })
-  if (visual.kind === 'svg') {
-    return (
-      <i
-        aria-hidden="true"
-        className="model-discovery-agent-icon"
-        dangerouslySetInnerHTML={{ __html: visual.svg }}
-      />
-    )
-  }
+  // 命中品牌 SVG 也不用它，一律落首字母块 —— PRD §7.1 要求全榜统一
   const fallback = visual.kind === 'initial' ? visual : agentFallback(name)
   return (
     <i

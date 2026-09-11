@@ -241,8 +241,6 @@
     },
     "agentRank": {
       "title": "Popular Agents",
-      "source": "Source: {{source}} platform traffic",
-      "sourceFallback": "Source: third-party platform traffic",
       "total": "{{count}} apps"
     },
     "value": {

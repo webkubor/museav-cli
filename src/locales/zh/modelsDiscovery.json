@@ -241,8 +241,6 @@
     },
     "agentRank": {
       "title": "热门 Agent 排行",
-      "source": "数据来源 {{source}} 平台流量",
-      "sourceFallback": "数据来源：第三方平台流量",
       "total": "共 {{count}} 个应用"
     },
     "value": {

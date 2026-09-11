@@ -60,7 +60,8 @@ export function AgentPopularityLeaderboard() {
   const agentPopularityPeriods = useMemo(() => buildAgentPopularityPeriods(t), [t]);
   const [period, setPeriod] = useState<AgentPopularityPeriod>("day");
   const [expanded, setExpanded] = useState(false);
-  const { apps, total, source, isLoading, isError, refetch } = useHotAgents(period, true);
+  // total / source 不再解构：PRD §7 要求无副标题，两者原本只喂那条副标题（prd#1004）
+  const { apps, isLoading, isError, refetch } = useHotAgents(period, true);
   const visibleAgents = apps.slice(0, expanded ? 20 : 10);
   // Token 量的相对条：以榜首为满格。接口按 Token 降序，apps[0] 即最大值；
   // 兜底 1 防 0 除。条只表达"相对谁多"，精确值仍在右侧数字上。
@@ -72,11 +73,10 @@ export function AgentPopularityLeaderboard() {
     <div className="model-discovery-section-head model-discovery-agent-popularity-head">
       <div>
         <h2>{t("modelsDiscovery.section.agentRank")}</h2>
-        {/* 数据来源标注：接口文档明确要求，否则这份榜会被当成市场份额读 */}
-        <span className="model-discovery-agent-popularity-source">
-          {source ? t("modelsDiscovery.agentRank.source", { source }) : t("modelsDiscovery.agentRank.sourceFallback")}
-          {total > 0 ? ` · ${t("modelsDiscovery.agentRank.total", { count: total })}` : ""}
-        </span>
+        {/* 🔴 不要在这里加副标题（prd#1004）。PRD §7「标题为『热门 Agent 排行』，无副标题和
+            说明 Banner」+ §4「对外呈现为 ModelGo 平台数据，不暴露 OpenRouter 来源」。
+            原先这里渲染「数据来源 openrouter 平台流量 · 共 200 个应用」，两条都违反。
+            口径提示（这是该平台流量分布、不是全行业市场份额）另见组件顶部注释第 2 条。 */}
       </div>
       <div aria-label={t("modelsDiscovery.a11y.agentRange")} className="runtime-range-switch" role="radiogroup">
         {agentPopularityPeriods.map((option) => <button aria-checked={period === option.key} className={period === option.key ? "active" : ""} key={option.key} onClick={() => setPeriod(option.key)} role="radio" type="button">{option.label}</button>)}

@@ -7,13 +7,20 @@
  * - `Artificial Analysis` 来源标签**只出现一次**（§5.1）
  * - 整块无数据（模型未命中 40401 / 两部分都空）就 `return null` —— 详情直接接
  *   相关模型，不留标题、不留空卡
- * - **组内单项取不到值时保留该项、标注「暂无数据」**：接口的指标清单是固定的完整
- *   结构，数值取不到也会返回（score/display_score 为 null），后端明确要求前端保持
- *   完整结构展示空态、不要删项也不要补 0。这与 §5.2「缺失就隐藏那一项」的原意
- *   （不要用「—」冒充有数据）不冲突：空态是显式标注，不是占位符。
- * - **但整组一项有效值都没有时隐藏整组**（需求方#969 缺陷 2，PRD §11.2「空分组自动
- *   隐藏」）：保留完整结构的前提是这组里至少有一项能看，6/6 全 null 的组渲染出来
- *   是 6 行「暂无数据」，那不是空态标注、就是占位垃圾。
+ * - **取不到值的一律不渲染，三级都是**（PRD §11.2「摘要指标卡…不补空卡」「任务评测
+ *   明细…空分组自动隐藏」，需求方 prd#1005）：
+ *     ① 摘要指标卡 `score === null` → 不出这张卡
+ *     ② 明细单项 `score` 与 `display_score` 都为 null → 不出这一行
+ *     ③ 组内过滤后一项不剩 → 整组隐藏；整块都空 → `return null`
+ *   接口的指标清单是**固定完整结构**，取不到值也会返回一项 `score: null`，所以判据
+ *   必须是「有没有有效值」而不是「有没有指标项」（实测 deepseek-v4-pro 的 4 组 12 项
+ *   里 11 项 null、3 组整组为空）。
+ *
+ *   ⚠️ 本条 2026-09-11 前是反的：写着「后端明确要求前端保持完整结构展示空态、不要删项」，
+ *   于是 minimax-m2.5 的摘要区出现「代码指数/暂无数据」「Agent 指数/暂无数据」两张空卡。
+ *   当时的辩解是「空态是显式标注、不是占位符」——但 PRD 说的就是不补空卡，一张只写着
+ *   「暂无数据」的卡对用户没有任何信息量。改动依据 PRD §11.2 + prd#1005，已在单里请
+ *   需求方与后端对齐「保持完整结构」那条要求的实际约束力。
  */
 import { useQuery } from '@tanstack/react-query'
 import { getModelBenchmarks } from '@/services/model-discovery'
@@ -89,25 +96,25 @@ function CompositeDistribution({ index, label }: { index: BenchmarkCompositeInde
 
 function CompositeCard({ index }: { index: BenchmarkCompositeIndex }) {
   const label = COMPOSITE_LABEL[index.metric] ?? index.metric
-  const score = index.score === null ? null : String(index.score)
   const hasRank = index.rank !== null && index.total !== null
+
+  // 无值不出卡（PRD §11.2「不补空卡」）。上游 composites 已过滤，这里是同语义兜底 ——
+  // 不要改回渲染「暂无数据」，那正是 prd#1005 报的缺陷。
+  if (index.score === null) return null
+  const score = String(index.score)
 
   return (
     <div className="mg-metric">
       <dt className="mg-metric-label">{label}</dt>
       <dd>
-        {score === null ? (
-          <span className="mg-metric-value text-mg-text-3">暂无数据</span>
-        ) : (
-          <span className="mg-metric-value">{score}</span>
-        )}
+        <span className="mg-metric-value">{score}</span>
         {hasRank ? (
           <i className="mg-metric-unit ml-1">
             #{index.rank} / {index.total}
             {index.ahead_percent !== null ? ` · 领先 ${index.ahead_percent}%` : ''}
           </i>
         ) : null}
-        {score === null ? null : <CompositeDistribution index={index} label={label} />}
+        <CompositeDistribution index={index} label={label} />
       </dd>
     </div>
   )
@@ -127,14 +134,19 @@ export function BenchmarkSection({ modelId }: { modelId: string }) {
     retry: (count, err) => !isNotFoundError(err) && count < 1,
   })
 
-  const composites = data?.composite_indices ?? []
-  // 整组隐藏的判据是「有没有**有效值**」，不是「有没有指标项」（需求方#969 缺陷 2）：
-  // 接口的指标清单是固定完整结构，取不到值也会返回一项 score:null —— 按项数判断的话，
-  // 6/6 全 null 的「推理与知识」组照样渲染，整组 6 行全是「暂无数据」，没有任何信息量。
-  // 实测 deepseek-v4-pro 的 4 组 12 项里 11 项 null，3 组整组为空。
-  const groups = (data?.benchmark_groups ?? []).filter((group) =>
-    group.items.some((item) => item.score !== null || item.display_score !== null),
-  )
+  // 摘要指标卡：score 为 null 的整张卡不渲染（PRD §11.2「不补空卡」，prd#1005）
+  const composites = (data?.composite_indices ?? []).filter((index) => index.score !== null)
+  // 明细：先逐项剔掉无有效值的，再按「过滤后还剩几项」决定整组去留（prd#1005）。
+  // 判据是「有没有**有效值**」而非「有没有指标项」——接口是固定完整结构，取不到值也会
+  // 返回一项 score:null，按项数判断的话 6/6 全 null 的组照样渲染成 6 行「暂无数据」。
+  const groups = (data?.benchmark_groups ?? [])
+    .map((group) => ({
+      ...group,
+      // 判据用 formatScore 的输入 display_score，与下面渲染同源：score 有值但
+      // display_score 为 null 的项渲染出来仍是「暂无数据」，按 score 过滤会漏掉它
+      items: group.items.filter((item) => formatScore(item) !== null),
+    }))
+    .filter((group) => group.items.length > 0)
 
   // 加载中不占位：整块本来就可能不存在，先撑一个空壳再抽掉会让详情页跳动
   if (isLoading) return null
@@ -178,12 +190,8 @@ export function BenchmarkSection({ modelId }: { modelId: string }) {
                         <span className="min-w-0 truncate text-[12px] text-mg-text-1">
                           {item.name}
                         </span>
-                        <span
-                          className={`shrink-0 text-[12px] font-semibold ${
-                            result === null ? 'text-mg-text-3' : 'text-mg-text-1'
-                          }`}
-                        >
-                          {result ?? '暂无数据'}
+                        <span className="shrink-0 text-[12px] font-semibold text-mg-text-1">
+                          {result}
                         </span>
                       </div>
                       {item.description ? (

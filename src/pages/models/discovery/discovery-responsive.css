@@ -29,10 +29,17 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  /* Table 组件外层自带 overflow-auto；这里只保证内容不被压缩，
-     从而在窄屏走横向滚动（plan §6：表格保留横向滚动容器）。 */
+  /* Table 组件外层自带 overflow-auto（.model-discovery-table-scroll）；这里只保证内容不被
+     压缩，从而在窄屏走横向滚动（plan §6：表格保留横向滚动容器）。
+
+     🔴 用 max-content，不要写死像素值（prd#1006）。原先是 min-width: 980px，
+     768px 下 8 列分摊后模型名列只剩 142px，而真实模型名（「Claude Fable 5.1 (Adaptive
+     Reasoning, Max Effort…)」70 字符）需要 144px 以上 —— 20 行全部被省略号截断，
+     「有横向滚动容器」形同虚设：滚动能看到右边的列，却救不了单元格内部的 ellipsis。
+     768px 实测四档：980px→20 行截断 / 1180px→8 / 1320px→5 / max-content→0。
+     写死像素还有第二个问题：指标类型切换会改变列数，任何常量都会在某个组合下重新压缩。 */
   .model-discovery-table {
-    min-width: 980px;
+    min-width: max-content;
   }
 }
 

@@ -1249,8 +1249,12 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
             </div>
           </div>
           {/* 语义表格（plan §3.2 模块 7：走现有 Table + Pagination，不手写表格体系）。
-              Table 自带 overflow-auto 包装，故不再套 .model-discovery-table-scroll。 */}
-          <Table className="model-discovery-table">
+              横向滚动由 Table 自带的 overflow-auto 外层承担（配合 discovery-responsive.css
+              里 .model-discovery-table 的 min-width:980px，窄屏才有滚动余量）——不要再额外套一层 div。
+              .model-discovery-table-scroll 挂在那个外层上：原型契约
+              (modelgo_prd scripts/assert-model-discovery.mjs:96) 与 TC-DISC-110 按此类名定位滚动容器，
+              缺了会被判成「无横向滚动容器」而误报（prd#1006）。 */}
+          <Table className="model-discovery-table" wrapperClassName="model-discovery-table-scroll">
             <TableHeader>
               <TableRow>
                 <TableHead>{t("modelsDiscovery.table.rank")}</TableHead>

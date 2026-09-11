@@ -2,38 +2,40 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
-import type { SupportServiceMode } from '@/interfaces/support'
+import type { SupportMode } from './support-machine'
 import type { ChatItem } from './use-support'
 
 export interface HandoffHeaderStatusProps {
-  serviceMode: SupportServiceMode | 'idle'
-  queuePosition?: number
-  agentInfo: { name?: string; no?: string } | null
+  /** 直接收模式：排队人数/客服信息都随模式携带，不再是三个可能互相矛盾的游离参数 */
+  mode: SupportMode
   onCancel: () => void
   onEnd: () => void
 }
 
 /** 顶部第二行的人工服务状态 + 右上角操作（排队/连接中/已接入），aria-live 播报状态变化 */
-export function HandoffHeaderStatus({ serviceMode, queuePosition, agentInfo, onCancel, onEnd }: HandoffHeaderStatusProps) {
+export function HandoffHeaderStatus({ mode, onCancel, onEnd }: HandoffHeaderStatusProps) {
   const { t } = useTranslation()
-  if (serviceMode === 'idle' || serviceMode === 'ended') return null
+  // 只有人工线进行中才显示这一行
+  if (mode.kind !== 'queuing' && mode.kind !== 'connecting' && mode.kind !== 'human') return null
 
-  const label = serviceMode === 'queueing'
-    ? t('common.customerService.handoff.queueing', { position: queuePosition ?? '-' })
-    : serviceMode === 'connecting'
+  // 每个分支只能读到该模式**确实拥有**的字段 —— 排队时读不到 agentName，
+  // 接通后读不到 ahead，编译期就杜绝了「拿上一个模式的残留值渲染」
+  const label = mode.kind === 'queuing'
+    ? t('common.customerService.handoff.queueing', { position: mode.ahead ?? '-' })
+    : mode.kind === 'connecting'
       ? t('common.customerService.handoff.connecting')
-      : t('common.customerService.handoff.connected', { name: agentInfo?.name ?? '', no: agentInfo?.no ?? '' })
+      : t('common.customerService.handoff.connected', { name: mode.agentName ?? '', no: mode.agentNo ?? '' })
 
   return (
     <div className="flex items-center justify-between mt-0.5" aria-live="polite">
       <p className="m-0 text-[11px] text-mg-text-2">{label}</p>
-      {serviceMode === 'connected' ? (
+      {mode.kind === 'human' ? (
         <button type="button" onClick={onEnd} className="text-[11px] text-mg-text-3 hover:text-mg-text-1 underline underline-offset-2">
           {t('common.customerService.handoff.endService')}
         </button>
       ) : (
         <button type="button" onClick={onCancel} className="text-[11px] text-mg-text-3 hover:text-mg-text-1 underline underline-offset-2">
-          {serviceMode === 'connecting' ? t('common.customerService.handoff.cancelConnecting') : t('common.customerService.handoff.cancelQueue')}
+          {mode.kind === 'connecting' ? t('common.customerService.handoff.cancelConnecting') : t('common.customerService.handoff.cancelQueue')}
         </button>
       )}
     </div>

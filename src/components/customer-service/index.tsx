@@ -164,8 +164,10 @@ export function CustomerService() {
 
   const support = useSupport()
   const {
-    mode, setMode, serviceMode, messages, isAsking, queuePosition, agentInfo,
-    ticketDetail, ask, rateMessageAnswer, startHandoff, cancelActiveHandoff, endActiveHandoff,
+    mode, go, messages, isAsking, ticketDetail,
+    // 三区行为由状态机推导，组件不再自己拼布尔组合（原先是 mode/serviceMode 交叉判断）
+    showComposer, composerDisabled, showFeedbackEntry, isHumanChat,
+    ask, rateMessageAnswer, startHandoff, cancelActiveHandoff, endActiveHandoff,
     sendHumanReply, feedbackSubmitting, submitFeedback, openTicketDetail, reopenSelectedTicket, rateSelectedTicket,
   } = support
 
@@ -232,8 +234,6 @@ export function CustomerService() {
     toggleOpen()
   }
 
-  const composerDisabled = serviceMode === 'queueing' || serviceMode === 'connecting'
-  const isHumanChat = serviceMode === 'connected'
 
   function handleSend() {
     if (!inputValue.trim() || isAsking || composerDisabled) return
@@ -253,8 +253,6 @@ export function CustomerService() {
     ask(t(`common.customerService.faq.${key}`))
   }
 
-  const showComposer = mode === 'chat'
-  const showFeedbackEntry = mode === 'chat' && (serviceMode === 'idle' || serviceMode === 'ended')
 
   return (
     <SupportCtx.Provider value={{
@@ -301,25 +299,20 @@ export function CustomerService() {
               <img src={logoSrc} alt="" style={{ width: 28, height: 28, objectFit: 'contain', marginTop: 2 }} />
               <div style={{ minWidth: 0, flex: 1 }}>
                 <p className="m-0 text-[13px] font-bold text-mg-text-1">{t('common.customerService.assistant')}</p>
-                {serviceMode === 'idle' || serviceMode === 'ended' ? (
-                  <p className="m-0 text-[11px] text-mg-text-2">{t('common.customerService.online')}</p>
+                {/* 顶部第二行：人工线进行中显示状态+操作，其余模式显示「在线」 */}
+                {mode.kind === 'queuing' || mode.kind === 'connecting' || mode.kind === 'human' ? (
+                  <HandoffHeaderStatus mode={mode} onCancel={cancelActiveHandoff} onEnd={() => endActiveHandoff()} />
                 ) : (
-                  <HandoffHeaderStatus
-                    serviceMode={serviceMode}
-                    queuePosition={queuePosition}
-                    agentInfo={agentInfo}
-                    onCancel={cancelActiveHandoff}
-                    onEnd={() => endActiveHandoff()}
-                  />
+                  <p className="m-0 text-[11px] text-mg-text-2">{t('common.customerService.online')}</p>
                 )}
               </div>
             </div>
             <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-              {mode === 'chat' && (
+              {(mode.kind === 'chat' || mode.kind === 'empty' || mode.kind === 'humanEnded') && (
                 <button
                   type="button"
                   aria-label={t('common.customerService.tickets.title')}
-                  onClick={() => setMode('tickets')}
+                  onClick={() => go({ kind: 'tickets' })}
                   className="text-mg-text-2 hover:text-mg-text-1 p-1"
                 >
                   <LuHistory size={16} />
@@ -337,19 +330,19 @@ export function CustomerService() {
           </div>
 
           {/* Body */}
-          {mode === 'tickets' && <TicketsList onSelect={openTicketDetail} onClose={() => setMode('chat')} />}
-          {mode === 'ticket-detail' && (
+          {mode.kind === 'tickets' && <TicketsList onSelect={openTicketDetail} onClose={() => go({ kind: 'chat' })} />}
+          {mode.kind === 'ticketDetail' && (
             <TicketDetailView
               detail={ticketDetail}
-              onBack={() => setMode('tickets')}
+              onBack={() => go({ kind: 'tickets' })}
               onReopen={reopenSelectedTicket}
               onRate={rateSelectedTicket}
             />
           )}
-          {mode === 'feedback' && (
-            <FeedbackForm submitting={feedbackSubmitting} onCancel={() => setMode('chat')} onSubmit={submitFeedback} />
+          {mode.kind === 'feedback' && (
+            <FeedbackForm submitting={feedbackSubmitting} onCancel={() => go({ kind: 'chat' })} onSubmit={submitFeedback} />
           )}
-          {mode === 'chat' && (
+          {(mode.kind === 'chat' || mode.kind === 'empty' || mode.kind === 'humanEnded') && (
             <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
               {messages.length === 0 && (
                 <div className="flex flex-col gap-4">
@@ -387,7 +380,7 @@ export function CustomerService() {
               {showFeedbackEntry && (
                 <button
                   type="button"
-                  onClick={() => setMode('feedback')}
+                  onClick={() => go({ kind: 'feedback' })}
                   className="self-start flex items-center gap-1.5 mg-text-caption text-mg-text-2 hover:text-mg-text-1"
                 >
                   <LuMessageSquareWarning size={13} />

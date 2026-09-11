@@ -18,11 +18,23 @@ import {
   submitSupportFeedback,
 } from '@/services/support'
 import { useSupportEvents } from './use-support-events'
+import {
+  canStartHandoff,
+  composerDisabled as composerDisabledOf,
+  isHumanChannel,
+  modeFromServiceMode,
+  needsEvents,
+  serviceModeOf,
+  showsComposer,
+  showsFeedbackEntry,
+  ticketIdOf,
+  transition,
+  type SupportMode,
+} from './support-machine'
 import type {
   SupportAnswerRating,
   SupportAnswerStatus,
   SupportFeedbackRequest,
-  SupportServiceMode,
   SupportTicketDetail,
 } from '@/interfaces/support'
 
@@ -47,15 +59,22 @@ export function useSupport() {
   const { t } = useTranslation()
   const account = useAuthStore((s) => s.account)
 
-  const [mode, setMode] = useState<PanelMode>('chat')
-  const [serviceMode, setServiceMode] = useState<SupportServiceMode | 'idle'>('idle')
+  // 🔴 模式是**单一真源**：原先 mode(4) × serviceMode(6) = 24 种组合、PRD 只承认 9 种，
+  // 且 ticketId / queuePosition / agentInfo 散在外面，切模式要手动清 4~5 个变量
+  // —— 漏一个就残留（见 support-machine.ts 顶部记的两个真实 bug）。
+  // 现在这些数据随模式携带，切模式即失效，漏不掉。
+  const [mode, setModeRaw] = useState<SupportMode>({ kind: 'chat' })
   const [messages, setMessages] = useState<ChatItem[]>([])
   const [isAsking, setIsAsking] = useState(false)
-  const [ticketId, setTicketId] = useState<string | null>(null)
-  const [queuePosition, setQueuePosition] = useState<number | undefined>(undefined)
-  const [agentInfo, setAgentInfo] = useState<{ name?: string; no?: string } | null>(null)
-  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null)
   const [ticketDetail, setTicketDetail] = useState<SupportTicketDetail | null>(null)
+
+  /** 唯一的模式迁移入口：非法跳转被 transition() 拦下，不静默生效。 */
+  const go = useCallback((next: SupportMode) => {
+    setModeRaw((cur) => transition(cur, next))
+  }, [])
+
+  /** 当前模式关联的工单号（取代原来那个全局 ticketId）。 */
+  const ticketId = ticketIdOf(mode)
 
   const lastAccountId = useRef<string | null>(null)
 
@@ -71,13 +90,10 @@ export function useSupport() {
   useEffect(() => {
     const currentId = account?.account_id ?? null
     if (lastAccountId.current !== null && lastAccountId.current !== currentId) {
+      // 回到 chat 即丢弃全部模式内数据（ticketId / 排队人数 / 客服信息），
+      // 不用再逐个清 —— 这正是原先漏清 agentInfo 的地方
       setMessages([])
-      setMode('chat')
-      setServiceMode('idle')
-      setTicketId(null)
-      setQueuePosition(undefined)
-      setAgentInfo(null)
-      setSelectedTicketId(null)
+      setModeRaw({ kind: 'chat' })
       setTicketDetail(null)
     }
     lastAccountId.current = currentId
@@ -88,27 +104,28 @@ export function useSupport() {
   }, [])
 
   const startHandoff = useCallback(async () => {
-    if (serviceMode !== 'idle') return
-    setServiceMode('queueing')
+    // 「排队中不允许重复发起转接」由状态机判定（PRD §8.6），不再自己比 serviceMode
+    if (!canStartHandoff(mode)) return
     trackEvent('support_handoff_request')
     try {
       const resp = await requestHandoff({ page_path: currentPagePath() })
-      setTicketId(resp.ticket_id)
-      setServiceMode(resp.service_mode)
-      setQueuePosition(resp.queue_position)
-      if (resp.agent_name) setAgentInfo({ name: resp.agent_name, no: resp.agent_no })
+      go(modeFromServiceMode(resp.service_mode, resp.ticket_id, {
+        ahead: resp.queue_position,
+        agentName: resp.agent_name,
+        agentNo: resp.agent_no,
+      }))
     } catch (error) {
       appToast.requestError(error, t('common.customerService.handoffFailed'))
-      setServiceMode('idle')
+      go({ kind: 'chat' })
       appendMessage({ id: crypto.randomUUID(), role: 'system', content: t('common.customerService.handoffFailed'), createdAt: Date.now() })
     }
-  }, [serviceMode, appendMessage, t])
+  }, [mode, go, appendMessage, t])
 
   const ask = useCallback(async (question: string) => {
     const trimmed = question.trim()
     if (!trimmed || isAsking) return
 
-    if (HANDOFF_TRIGGER_RE.test(trimmed) && serviceMode === 'idle') {
+    if (HANDOFF_TRIGGER_RE.test(trimmed) && canStartHandoff(mode)) {
       appendMessage({ id: crypto.randomUUID(), role: 'user', content: trimmed, createdAt: Date.now() })
       await startHandoff()
       return
@@ -140,7 +157,7 @@ export function useSupport() {
       setIsAsking(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAsking, serviceMode, appendMessage, t])
+  }, [isAsking, mode, appendMessage, t])
 
   const rateMessageAnswer = useCallback(async (messageId: string, rating: SupportAnswerRating) => {
     const target = messages.find((m) => m.id === messageId)
@@ -159,7 +176,7 @@ export function useSupport() {
 
   const cancelActiveHandoff = useCallback(async () => {
     if (!ticketId) return
-    const isConnecting = serviceMode === 'connecting'
+    const isConnecting = mode.kind === 'connecting'
     try {
       await cancelHandoff(ticketId)
       trackEvent('support_handoff_cancel')
@@ -172,10 +189,10 @@ export function useSupport() {
       content: isConnecting ? t('common.customerService.handoffConnectCancelled') : t('common.customerService.handoffQueueCancelled'),
       createdAt: Date.now(),
     })
-    setServiceMode('idle')
-    setTicketId(null)
-    setQueuePosition(undefined)
-  }, [ticketId, serviceMode, appendMessage, t])
+    // 回 chat 一步到位：ticketId / 排队人数 / 客服信息随模式一起丢弃。
+    // 旧实现这里漏清 agentInfo，导致取消排队后评价卡会带上一位客服的姓名/工号。
+    go({ kind: 'chat' })
+  }, [ticketId, mode, go, appendMessage, t])
 
   const endActiveHandoff = useCallback(async (rating?: number, skip?: boolean) => {
     if (!ticketId) return
@@ -188,11 +205,8 @@ export function useSupport() {
       appToast.requestError(error)
     }
     setMessages((prev) => prev.map((m) => (m.kind === 'rating_card' ? { ...m, ratingCard: { ...m.ratingCard!, submittedStars: rating, skipped: skip } } : m)))
-    setServiceMode('idle')
-    setTicketId(null)
-    setAgentInfo(null)
-    setQueuePosition(undefined)
-  }, [ticketId])
+    go({ kind: 'chat' })
+  }, [ticketId, go])
 
   const sendHumanReply = useCallback(async (content: string) => {
     const trimmed = content.trim()
@@ -205,16 +219,26 @@ export function useSupport() {
     }
   }, [ticketId, appendMessage, t])
 
-  // 长轮询：仅排队/连接中/已接入时开启
-  const eventsEnabled = serviceMode === 'queueing' || serviceMode === 'connecting' || serviceMode === 'connected'
+  // 长轮询：开关也由模式推导（PRD 只在人工线进行中需要）
+  const eventsEnabled = needsEvents(mode)
   useSupportEvents(eventsEnabled, ticketId ?? undefined, useCallback((event) => {
-    if (event.queue_position !== undefined) setQueuePosition(event.queue_position)
-    if (event.service_mode && event.service_mode !== serviceMode) {
-      const prevMode = serviceMode
-      setServiceMode(event.service_mode)
-      if (event.service_mode === 'connected' && prevMode !== 'connected') {
+    // 排队人数变化：同模式内换数据（状态机允许 from === to）
+    if (event.queue_position !== undefined && mode.kind === 'queuing') {
+      go({ ...mode, ahead: event.queue_position })
+    }
+    if (event.service_mode && event.service_mode !== serviceModeOf(mode)) {
+      const prevKind = mode.kind
+      go(modeFromServiceMode(event.service_mode, ticketId!, {
+        ahead: event.queue_position,
+        agentName: mode.kind === 'human' ? mode.agentName : undefined,
+        agentNo: mode.kind === 'human' ? mode.agentNo : undefined,
+      }))
+      if (event.service_mode === 'connected' && prevKind !== 'human') {
         getSupportTicket(ticketId!).then((detail) => {
-          setAgentInfo({ name: detail.agent_name, no: detail.agent_no })
+          // 客服信息随 human 模式携带，不再是游离变量
+          setModeRaw((cur) => (cur.kind === 'human'
+            ? { ...cur, agentName: detail.agent_name, agentNo: detail.agent_no }
+            : cur))
         }).catch(() => {})
         appendMessage({ id: crypto.randomUUID(), role: 'system', content: t('common.customerService.handoffConnected'), createdAt: Date.now() })
       }
@@ -226,17 +250,22 @@ export function useSupport() {
           content: '',
           createdAt: Date.now(),
           kind: 'rating_card',
-          ratingCard: { ticketId: ticketId!, agentName: agentInfo?.name, agentNo: agentInfo?.no },
+          ratingCard: {
+            ticketId: ticketId!,
+            // 只有 human 模式才有客服信息 —— 取不到就不带，绝不会带上一次的
+            agentName: mode.kind === 'human' ? mode.agentName : undefined,
+            agentNo: mode.kind === 'human' ? mode.agentNo : undefined,
+          },
         })
       }
       if (event.service_mode === 'async') {
+        // 转异步后走异步回执、不再占用面板主态（PRD §8.6）。
+        // 模式已由 modeFromServiceMode('async') 映射回 chat，排队人数/客服信息随之丢弃
+        // —— 旧实现这里漏清 queuePosition，顶部还会显示「前方 N 人」。
         appendMessage({ id: crypto.randomUUID(), role: 'system', content: t('common.customerService.handoffAsync'), createdAt: Date.now() })
-        setServiceMode('idle')
-        setTicketId(null)
-        setAgentInfo(null)
       }
     }
-    if (event.has_new_messages && ticketId && serviceMode === 'connected') {
+    if (event.has_new_messages && ticketId && mode.kind === 'human') {
       listTicketMessages(ticketId).then((page) => {
         setMessages((prev) => {
           const known = new Set(prev.map((m) => m.id))
@@ -245,7 +274,7 @@ export function useSupport() {
         })
       }).catch(() => {})
     }
-  }, [serviceMode, ticketId, agentInfo, appendMessage, t]))
+  }, [mode, go, ticketId, appendMessage, t]))
 
   // ---- 反馈 ----
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
@@ -273,7 +302,7 @@ export function useSupport() {
           description: fields.description,
         },
       })
-      setMode('chat')
+      go({ kind: 'chat' })
       return true
     } catch (error) {
       appToast.requestError(error, t('common.customerService.feedbackFailed'))
@@ -281,12 +310,13 @@ export function useSupport() {
     } finally {
       setFeedbackSubmitting(false)
     }
-  }, [appendMessage, t])
+  }, [appendMessage, go, t])
 
   // ---- 服务记录 ----
   const openTicketDetail = useCallback(async (id: string) => {
-    setSelectedTicketId(id)
-    setMode('ticket-detail')
+    // 工单号随 ticketDetail 模式携带 —— 原先那个游离的 selectedTicketId 一旦
+    // 模式切走就成了悬空引用（reopen/rate 还会拿它去打接口）
+    go({ kind: 'ticketDetail', ticketId: id })
     setTicketDetail(null)
     try {
       const detail = await getSupportTicket(id)
@@ -294,10 +324,12 @@ export function useSupport() {
     } catch (error) {
       appToast.requestError(error)
     }
-  }, [])
+  }, [go])
 
   const reopenSelectedTicket = useCallback(async () => {
-    if (!selectedTicketId) return
+    // 只在详情模式下有效：切走了就不该再对那张工单做写操作
+    if (mode.kind !== 'ticketDetail') return
+    const selectedTicketId = mode.ticketId
     try {
       const detail = await reopenTicket(selectedTicketId)
       setTicketDetail(detail)
@@ -305,29 +337,33 @@ export function useSupport() {
     } catch (error) {
       appToast.requestError(error)
     }
-  }, [selectedTicketId, t])
+  }, [mode, t])
 
   const rateSelectedTicket = useCallback(async (stars: number) => {
-    if (!selectedTicketId) return
+    if (mode.kind !== 'ticketDetail') return
     try {
-      await rateTicket(selectedTicketId, stars)
+      await rateTicket(mode.ticketId, stars)
       setTicketDetail((prev) => (prev ? { ...prev, rating: stars } : prev))
     } catch (error) {
       appToast.requestError(error)
     }
-  }, [selectedTicketId])
+  }, [mode])
 
   return {
+    /** 唯一的模式真源（discriminated union，见 support-machine.ts） */
     mode,
-    setMode,
-    serviceMode,
+    /** 模式迁移唯一入口 —— 非法跳转会被拦下，组件别直接 setState */
+    go,
     messages,
     isAsking,
     ticketId,
-    queuePosition,
-    agentInfo,
-    selectedTicketId,
     ticketDetail,
+    // 三区行为：由模式单向推导，组件不再自己拼布尔组合
+    showComposer: showsComposer(mode),
+    composerDisabled: composerDisabledOf(mode),
+    showFeedbackEntry: showsFeedbackEntry(mode),
+    isHumanChat: isHumanChannel(mode),
+    serviceMode: serviceModeOf(mode),
     ask,
     rateMessageAnswer,
     startHandoff,

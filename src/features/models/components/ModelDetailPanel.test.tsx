@@ -91,7 +91,76 @@ describe('价格梯度表 · 次级分档 sub_label（#864）', () => {
     render(<ModelDetailPanel detail={makeDetail(rulesNoSub)} />)
     expect(screen.queryByRole('columnheader', { name: '条件' })).toBeNull()
     const rows = screen.getAllByRole('row').filter((r) => within(r).queryAllByRole('cell').length > 0)
-    // 4 列：区间 / 输入 / 输出 / 缓存读取，没有条件列
-    expect(within(rows[0]).getAllByRole('cell')).toHaveLength(4)
+    // 3 列：区间 / 输入 / 输出。这组档位没下发缓存读取价，该列按 #1000 整列去掉
+    expect(within(rows[0]).getAllByRole('cell')).toHaveLength(3)
+  })
+})
+
+/**
+ * 峰时倍率档的促销双价与缓存读取列（shared/modelgo_prd#1000）
+ *
+ * cn 生产 deepseek-v4-pro：挂「限时74折」，规格条按 #867 走折后价 ¥3.33（划掉 ¥4.5），
+ * 但峰时档下发的 `input_per_1m: "9"` 是折前价 4.5 × 倍率 2 —— 梯度表比规格条贵一截
+ * 又没有划线；同一张表的「缓存读取」列则因为倍率档不下发该字段，被兜底填成「×2」
+ * （整档倍率，不是缓存读取价）。两处都是需求方 2026-09-11 点名的现象。
+ */
+describe('峰时倍率档 · 促销折后价与缓存读取列（#1000）', () => {
+  /** cn 生产 deepseek-v4-pro 实际下发形状（2026-09-11 实测） */
+  const peakRules: CatalogPricingRule[] = [
+    {
+      dimension: 'peak_time', label: '09:00–12:00', start_time: '09:00', end_time: '12:00',
+      timezone: 'Asia/Shanghai', mode: 'multiplier', rate: '2',
+      input_per_1m: '9', output_per_1m: '27', unit: 'M',
+    },
+    {
+      dimension: 'peak_time', label: '14:00–18:00', start_time: '14:00', end_time: '18:00',
+      timezone: 'Asia/Shanghai', mode: 'multiplier', rate: '2',
+      input_per_1m: '9', output_per_1m: '27', unit: 'M',
+    },
+  ]
+
+  function makePeakDetail(promotion?: CatalogModelDetail['promotion']): CatalogModelDetail {
+    return {
+      ...makeDetail(peakRules),
+      id: 'deepseek-v4-pro',
+      model_id: 'deepseek-v4-pro',
+      display_name: 'DeepSeek V4 Pro',
+      pricing: { input_per_1m: '3.33', output_per_1m: '9.99', cache_read_per_1m: '0.111', currency: 'CNY' },
+      promotion,
+    }
+  }
+
+  const promotion = {
+    free: false,
+    original_price: '4.5', original_input_per_1m: '4.5',
+    original_output_per_1m: '13.5', original_cache_read_per_1m: '0.15',
+    discount_label: '限时74折',
+  }
+
+  /** 划线折前价的 DOM 形态与规格条同源：<s class="mg-metric-strike"> */
+  const strikes = (root: HTMLElement) =>
+    Array.from(root.querySelectorAll('s.mg-metric-strike')).map((s) => s.textContent)
+
+  it('促销期：每档展示折后价 + 划线原档位价，缓存读取列整列不出现', () => {
+    render(<ModelDetailPanel detail={makePeakDetail(promotion)} />)
+    expect(screen.queryByRole('columnheader', { name: '缓存读取' })).toBeNull()
+
+    const rows = screen.getAllByRole('row').filter((r) => within(r).queryAllByRole('cell').length > 0)
+    expect(rows).toHaveLength(2)
+    // 时段 / 时区 / 输入 / 输出 —— 折后价在前、折前价划线并列（与规格条同口径）
+    expect(within(rows[0]).getAllByRole('cell').map((c) => c.textContent))
+      .toEqual(['09:00–12:00', 'Asia/Shanghai', '¥6.66/M¥9/M', '¥19.98/M¥27/M'])
+    expect(strikes(rows[0])).toEqual(['¥9/M', '¥27/M'])
+  })
+
+  it('无促销：档位价原样展示、不划线，缓存读取列同样不出现（不再打出「×2」）', () => {
+    render(<ModelDetailPanel detail={makePeakDetail(undefined)} />)
+    expect(screen.queryByRole('columnheader', { name: '缓存读取' })).toBeNull()
+    expect(screen.queryByText('×2')).toBeNull()
+
+    const rows = screen.getAllByRole('row').filter((r) => within(r).queryAllByRole('cell').length > 0)
+    expect(within(rows[0]).getAllByRole('cell').map((c) => c.textContent))
+      .toEqual(['09:00–12:00', 'Asia/Shanghai', '¥9/M', '¥27/M'])
+    expect(strikes(rows[0])).toHaveLength(0)
   })
 })

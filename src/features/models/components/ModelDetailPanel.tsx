@@ -24,7 +24,8 @@ import {
   currencySymbol, priceUnitSuffix, priceText, protocolLabel, pickCapabilities, vendorFromModelId, detailSummary, modelVendorLabel,
   priceTierLabel, priceTierUnit, mediaPrimaryPrice, firstPositivePrice, strikeOriginalPrice,
   pricingRuleGroups, pricingRuleLabel, pricingRulePriceText, pricingRuleStrikeText,
-  pricingRuleSubLabel, pricingRulesHaveSub, withPriceFrom, sortProtocols,
+  pricingRuleSubLabel, pricingRulesHaveCacheRead, pricingRulesHaveSub,
+  withPromotedRulePrices, withPriceFrom, sortProtocols,
   PROTOCOL_LABEL_ZH, PROTOCOL_LABEL_EN, mergeProtocolLabels,
 } from '../model-format'
 import { usePublicProtocolsStore } from '@/store/use-public-protocols-store'
@@ -113,7 +114,11 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
   // 「—」）。未配价不能说成免费。
   // 价格梯度（#800）：pricing_rules 按维度分组（context_length → peak_time）。
   // 有梯度时规格条的输入/输出价仍是起始档（后端已写进 pricing.*），只在后面加「起」。
-  const ruleGroups = pricingRuleGroups(detail.pricing_rules)
+  // 分组前先补上倍率档的促销折后价（#1000）：后端只给 context_length 档算折后价，
+  // 峰时倍率档给的是折前价 × 倍率，不补的话梯度表比规格条贵一截且没有划线。
+  const ruleGroups = pricingRuleGroups(
+    withPromotedRulePrices(detail.pricing_rules, detail.pricing, promo),
+  )
   const hasGradient = ruleGroups.length > 0
   const input = withPriceFrom(priceText(detail.pricing?.input_per_1m, symbol, isFree ? freeLabel : '', unitSuffix, isFree), hasGradient)
   const output = withPriceFrom(priceText(detail.pricing?.output_per_1m, symbol, isFree ? freeLabel : '', unitSuffix, isFree), hasGradient)
@@ -393,6 +398,12 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
               // 同一区间被输出长度等次级条件拆成多行时补「条件」列区分
               //（prd#864：后端 sub_label 已下发，缺列会读成两行同名脏数据）
               const hasSub = pricingRulesHaveSub(rules)
+              // 组内没有任何真实缓存读取价就整列去掉（#1000）——倍率档本来就不下发
+              // 这个字段，留着列只会被「×倍率」兜底填成「缓存读取 ×2」的误读
+              const hasCacheRead = pricingRulesHaveCacheRead(rules)
+              const priceKinds = hasCacheRead
+                ? (['input', 'output', 'cache_read'] as const)
+                : (['input', 'output'] as const)
               return (
                 <div key={dimension}>
                   <h4 className="mg-text-label text-mg-text-3 mb-2">
@@ -421,7 +432,9 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
                         )}
                         <TableHead>{t('models.detail.pricingInput')}</TableHead>
                         <TableHead>{t('models.detail.pricingOutput')}</TableHead>
-                        <TableHead>{t('models.detail.pricingCacheRead')}</TableHead>
+                        {hasCacheRead && (
+                          <TableHead>{t('models.detail.pricingCacheRead')}</TableHead>
+                        )}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -436,7 +449,7 @@ export function ModelDetailPanel({ detail, vendorHint, onModelIdCopied, actions 
                           )}
                           {/* 促销期每档折后为主、折前划线并列（prd#860 方案 2，#867 字段）；
                               与摘要行同一守卫，原价缺失或 ≤ 现价不划 */}
-                          {(['input', 'output', 'cache_read'] as const).map((kind) => {
+                          {priceKinds.map((kind) => {
                             const strike = pricingRuleStrikeText(rule, kind, symbol)
                             return (
                               <TableCell key={kind}>

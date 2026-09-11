@@ -12,7 +12,8 @@ import {
   firstPositivePrice,
   catalogCardReplacesGridWithTiers, mediaPrimaryPrice, priceTierLabel, priceTierUnit, priceTiersForCard, priceUnitSuffix, strikeOriginalPrice,
   pricingRuleGroups, hasPricingGradient, pricingRuleLabel, pricingRulePriceText,
-  pricingRuleStrikeText, pricingRuleSubLabel, pricingRulesHaveSub, withPriceFrom,
+  pricingRuleStrikeText, pricingRuleSubLabel, pricingRulesHaveCacheRead, pricingRulesHaveSub,
+  withPromotedRulePrices, withPriceFrom,
   autoSummary, cardSummary, detailSummary, sortProtocols,
 } from './model-format'
 
@@ -295,6 +296,81 @@ describe('pricing_rules — 上下文分档 / 峰时价（#800）', () => {
 
   it('mode=multiplier 无绝对价 → 展示 ×倍率', () => {
     expect(pricingRulePriceText({ dimension: 'peak_time', mode: 'multiplier', rate: '1.50' }, 'input', '¥')).toBe('×1.5')
+  })
+
+  it('缓存读取列（#1000）：组内有真实缓存读取价才留列，倍率档/空值不留', () => {
+    // 倍率档不下发 cache_read_per_1m —— 留着列会被「×倍率」兜底填成「缓存读取 ×2」
+    expect(pricingRulesHaveCacheRead(rules)).toBe(false)
+    expect(pricingRulesHaveCacheRead([{ dimension: 'peak_time', mode: 'multiplier', rate: '2' }])).toBe(false)
+    expect(pricingRulesHaveCacheRead([{ dimension: 'context_length', cache_read_per_1m: '' }])).toBe(false)
+    // 组内任一行有就留（glm-4.7 那种逐档不同的缓存读取价）
+    expect(pricingRulesHaveCacheRead([...rules, { dimension: 'context_length', cache_read_per_1m: '0.4' }])).toBe(true)
+    // 明确配 0（缓存读取免费）也是真实价，列要留
+    expect(pricingRulesHaveCacheRead([{ dimension: 'context_length', cache_read_per_1m: '0' }])).toBe(true)
+  })
+})
+
+/**
+ * shared/modelgo_prd#1000：cn 生产 deepseek-v4-pro 挂「限时74折」，规格条按 #867
+ * 口径显示 ¥3.33 起（划掉 ¥4.5），但峰时倍率档下发的是 `input_per_1m: "9"`
+ * —— 折前价 4.5 × 倍率 2，档位表比规格条贵一截还没有划线。这一组钉住「倍率重新
+ * 架在折后价上」与各条不该动的守卫。
+ */
+describe('withPromotedRulePrices — 倍率档补促销折后价（#1000）', () => {
+  /** cn 生产 deepseek-v4-pro 实际下发形状（2026-09-11 实测） */
+  const pricing = { input_per_1m: '3.33', output_per_1m: '9.99', cache_read_per_1m: '0.111', currency: 'CNY' }
+  const promotion = {
+    free: false,
+    original_price: '4.5', original_input_per_1m: '4.5',
+    original_output_per_1m: '13.5', original_cache_read_per_1m: '0.15',
+    discount_label: '限时74折',
+  }
+  const peak = {
+    dimension: 'peak_time', label: '09:00–12:00',
+    input_per_1m: '9', output_per_1m: '27',
+    start_time: '09:00', end_time: '12:00', timezone: 'Asia/Shanghai',
+    mode: 'multiplier', rate: '2', unit: 'M',
+  }
+
+  it('倍率档：折后价 × 倍率为主价，原档位价降级成划线原价', () => {
+    const [promoted] = withPromotedRulePrices([peak], pricing, promotion)
+    expect(promoted.input_per_1m).toBe('6.66')
+    expect(promoted.original_input_per_1m).toBe('9')
+    expect(promoted.output_per_1m).toBe('19.98')
+    expect(promoted.original_output_per_1m).toBe('27')
+    // 渲染层拿到的就是与规格条同源的双价
+    expect(pricingRulePriceText(promoted, 'input', '¥')).toBe('¥6.66/M')
+    expect(pricingRuleStrikeText(promoted, 'input', '¥')).toBe('¥9/M')
+  })
+
+  it('档位没下发的 kind 不凭空造价：缓存读取该缺还是缺', () => {
+    const [promoted] = withPromotedRulePrices([peak], pricing, promotion)
+    expect(promoted.cache_read_per_1m).toBeUndefined()
+    expect(promoted.original_cache_read_per_1m).toBeUndefined()
+    expect(pricingRulesHaveCacheRead([promoted])).toBe(false)
+  })
+
+  it('无促销 / 限免 / 非倍率档 / 后端已算过 → 原样返回，不重复打折', () => {
+    expect(withPromotedRulePrices([peak], pricing, undefined)[0]).toBe(peak)
+    expect(withPromotedRulePrices([peak], pricing, { ...promotion, free: true })[0]).toBe(peak)
+    // replace 档是后端给定的绝对价，不碰
+    expect(withPromotedRulePrices([{ ...peak, mode: 'replace' }], pricing, promotion)[0].input_per_1m).toBe('9')
+    // context_length 档后端已按 #867 下发折后价 + original_*，再打一次就双重折扣
+    const backendDone = {
+      dimension: 'context_length', label: '0–256K',
+      input_per_1m: '1.5', original_input_per_1m: '2', mode: 'multiplier', rate: '2', unit: 'M',
+    }
+    expect(withPromotedRulePrices([backendDone], pricing, promotion)[0].input_per_1m).toBe('1.5')
+  })
+
+  it('脏数据守卫：倍率缺失/非正、促销原价 ≤ 现价、折后价不低于原档位价 → 都不改', () => {
+    expect(withPromotedRulePrices([{ ...peak, rate: undefined }], pricing, promotion)[0].input_per_1m).toBe('9')
+    expect(withPromotedRulePrices([{ ...peak, rate: '0' }], pricing, promotion)[0].input_per_1m).toBe('9')
+    // 促销没落在这个 kind 上（原价 = 现价，#747 那批脏数据形态）
+    const flat = { ...promotion, original_input_per_1m: '3.33' }
+    expect(withPromotedRulePrices([peak], pricing, flat)[0].input_per_1m).toBe('9')
+    // 折后价反而不低于原档位价 → 不渲染「原价 ≤ 现价」的自相矛盾划线
+    expect(withPromotedRulePrices([{ ...peak, input_per_1m: '6' }], pricing, promotion)[0].input_per_1m).toBe('6')
   })
 
   it('「起」：中文缀在单位后、英文改 from 前缀；免费/未配价（unit 空）不挂', async () => {

@@ -1,5 +1,21 @@
 # Changelog
 
+## 3.2.0 (2026-09-12)
+
+### ⚠️ 必须升级：出图请求体字段改为 `template_slug`
+
+中台把 `skill_slug` 彻底统一成了 `template_slug`（「技能」和「模板」在系统里
+从来是同一件东西，产品词汇 2026-08-30 就统一叫「模板」，字段名一直拖着没清）。
+`/api/generate` 现在收到 `skill_slug` 会直接返回 400，**不再静默兼容**。
+
+所以 **3.1.0 及更早版本的 `museav gen --skill <slug>` 会当场报错**，必须升级：
+
+```bash
+npm i -g museav-cli@latest
+```
+
+**你手上的命令不用改** —— 变的只是请求体字段名，`--skill` 这个命令行参数保持原样。
+
 ## 3.1.0 (2026-09-08)
 
 ### 发布 Skill 到小红书 SkillHub：`museav skillhub`

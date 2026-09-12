@@ -158,7 +158,7 @@ export async function gen(client: StudioClient, opts: {
     // 每行内容按 skill/template 有无决定语义：有 → 行是 input（业务描述），
     // 没有 → 行是完整 prompt。其余选项全部作为公共 defaults 下发。
     const defaults: Record<string, unknown> = {}
-    if (opts.skill) defaults.skill_slug = opts.skill
+    if (opts.skill) defaults.template_slug = opts.skill
     if (opts.template) defaults.template_id = opts.template
     if (opts.ratio) defaults.ratio = opts.ratio
     if (opts.model) defaults.model = opts.model
@@ -249,7 +249,7 @@ export async function gen(client: StudioClient, opts: {
   const job = await client.generateAndWait(
     {
       prompt: opts.prompt,
-      skill_slug: opts.skill,
+      template_slug: opts.skill,
       input: opts.input,
       template_id: opts.template,
       template_fields: templateFields,

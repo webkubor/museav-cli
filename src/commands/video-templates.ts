@@ -42,7 +42,6 @@ interface CreateVideoTemplateOpts {
   prompt: string
   category?: string
   description?: string
-  model?: string
   duration?: string
   ratio?: string
   sampleVideo?: string
@@ -66,8 +65,9 @@ export async function createVideoTemplate(client: StudioClient, opts: CreateVide
   const fields = keys.map((key) => ({ key, label: key }))
 
   const cfg: Record<string, unknown> = {
-    // 默认 auto：交给中台路由按 ratio/duration 挑档次。锁死具体模型得自己保证参数配得上它
-    model: opts.model || 'auto',
+    // 恒为 auto：档次由中台按 ratio/duration 挑（用哪个模型是中台的事）。
+    // 锁死具体档次得自己保证参数配得上它，而 CLI 已不再提供 --model。
+    model: 'auto',
     prompt_template: opts.prompt,
     is_default: true,
   }

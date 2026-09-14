@@ -68,7 +68,6 @@ export async function gen(client: StudioClient, opts: {
   template?: string
   fields?: string
   ratio?: string
-  model?: string
   quality?: string
   ref?: string[]      // 可重复：--ref a.jpg --ref b.jpg，顺序即「图片1、图片2…」
   transparent?: boolean   // 透明背景 PNG；能不能做由中台按上游能力判定，做不了会明确报错
@@ -161,7 +160,6 @@ export async function gen(client: StudioClient, opts: {
     if (opts.skill) defaults.template_slug = opts.skill
     if (opts.template) defaults.template_id = opts.template
     if (opts.ratio) defaults.ratio = opts.ratio
-    if (opts.model) defaults.model = opts.model
     if (opts.quality) defaults.quality = opts.quality
     if (referenceImage) defaults.reference_image = referenceImage
     if (referenceImages) defaults.reference_images = referenceImages
@@ -210,7 +208,6 @@ export async function gen(client: StudioClient, opts: {
     )
     const { jobId } = await client.generateVideo({
       prompt: opts.prompt,
-      model: opts.model,
       ratio: opts.ratio,
       duration: opts.duration,
       image_url: referenceImage,
@@ -254,7 +251,6 @@ export async function gen(client: StudioClient, opts: {
       template_id: opts.template,
       template_fields: templateFields,
       ratio: opts.ratio,
-      model: opts.model,
       quality: opts.quality as 'low' | 'medium' | 'high' | undefined,
       reference_image: referenceImage,
       reference_images: referenceImages,

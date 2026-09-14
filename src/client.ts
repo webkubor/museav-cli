@@ -317,6 +317,11 @@ export interface ModelOption {
   value: string
   label: string
   description?: string
+  /** 仅视频档次会带：中台下发的时长区间与分辨率，供 UI 提示（不是必填） */
+  media_type?: string
+  min_seconds?: number | null
+  max_seconds?: number | null
+  resolutions?: string[] | null
 }
 
 export interface Balance {
@@ -807,9 +812,15 @@ export class StudioClient {
     return this.request('me')
   }
 
-  /** 查可用模型列表 */
-  async models(): Promise<ModelOption[]> {
-    return this.request('available-models')
+  /**
+   * 查可用模型列表。
+   *
+   * `mediaType='video'` 时返回视频**档次名**（Seedance 2.0 这种对外名）。中台不会
+   * 下发上游内部渠道代号——那是供应商身份，不该出现在客户端能读到的地方。
+   * 这个列表同时也是 `gen --video --model` 的合法取值来源：中台写接口会把它归一回去。
+   */
+  async models(mediaType?: 'video'): Promise<ModelOption[]> {
+    return this.request(`available-models${mediaType === 'video' ? '?media_type=video' : ''}`)
   }
 
   /** 查上游余额 */

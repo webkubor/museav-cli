@@ -11,8 +11,10 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
+import { balanceBreakdownKey, balanceKey } from '@/hooks/use-balance'
 import { useMarket } from '@/hooks/useMarket'
 import { useTenantRole, type TenantRole } from '@/hooks/use-tenant-role'
 import { useAuthStore } from '@/store/auth'
@@ -44,6 +46,7 @@ function toOnboardingSite(market: 'china' | 'global'): OnboardingSite {
 
 export function useOnboardingGuide() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { t } = useTranslation()
   const market = useMarket()
   const activeTenantId = useAuthStore((s) => s.activeTenantId)
@@ -177,8 +180,22 @@ export function useOnboardingGuide() {
     // 领取是用户主动点的按钮，失败必须给回音（上报五步那些是背景动作，才静默）
     if (outcome.result === 'failed') {
       appToast.requestError(outcome.error, t('onboarding.reward.claimFailed'))
+      return
     }
-  }, [activeTenantId, claimReward, emit, t])
+    /**
+     * 领取成功 = 服务端刚给这个租户加了一笔赠金，本地缓存里的余额与入账记录当场作废。
+     * 不失效的话（全局 staleTime 60s、余额 30s）会踩两件事：
+     *   1. 余额卡片还显示领取前的数字；
+     *   2. 「查看赠金」落到账单页时 react-query 认为列表还新鲜、根本不发请求 ——
+     *      拿到的是**领取前**的列表，那条新记录不在里面，高亮定位当场落空。
+     * 对照 TopUpModal / PromoRedeemForm：充值与兑换码成功后也是这么收口的。
+     */
+    if (outcome.result === 'success' || outcome.result === 'already_claimed') {
+      void queryClient.invalidateQueries({ queryKey: balanceKey(activeTenantId) })
+      void queryClient.invalidateQueries({ queryKey: balanceBreakdownKey(activeTenantId) })
+      void queryClient.invalidateQueries({ queryKey: ['billing', 'income-records', activeTenantId] })
+    }
+  }, [activeTenantId, claimReward, emit, t, queryClient])
 
   const handleOpenChange = useCallback(
     (next: boolean) => {

@@ -56,6 +56,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs'
 import { InfoTip } from '@/components/ui/InfoTip'
+import { useAutoAnimate } from '@formkit/auto-animate/react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
 import { SelectContent, SelectItem, SelectRoot, SelectTrigger, SelectValue } from '@/components/ui/Select'
 import { Input } from '@/components/ui/Input'
@@ -380,6 +381,15 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   const [modelFilterSearch, setModelFilterSearch] = useState("");
   const [selectedModelNames, setSelectedModelNames] = useState<string[]>([]);
   const [rankingMetric, setRankingMetric] = useState<RankingMetric>("overall");
+
+  /**
+   * 完整榜单换排序/筛选时，行是整体重排的 —— 原来是"啪"地换一批，看不出谁升谁降。
+   * auto-animate 给 tbody 的子元素增删与移动自动加过渡（FLIP），不用写 keyframes。
+   * 它内部读 prefers-reduced-motion，系统关动效时自动不播，无需额外处理。
+   * 只给这一处：模型广场的卡片网格已有自己的入场动画（IntersectionObserver +
+   * is-entering-view），两套叠在同一批元素上会互相打架。
+   */
+  const [rankTableBodyRef] = useAutoAnimate<HTMLTableSectionElement>();
   const [providerFilter, setProviderFilter] = useState<string[]>([]);
   const [tableAccess, setTableAccess] = useState<"all" | "supported" | "pending">("all");
   const [tablePage, setTablePage] = useState(1);
@@ -1311,7 +1321,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                 <TableHead><span className="sr-only">{t("modelsDiscovery.table.actions")}</span></TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody ref={rankTableBodyRef}>
               {tableModels.length === 0 && tableLoading && Array.from({ length: 6 }, (_, i) => (
                 <TableRow key={`skeleton-${i}`}>
                   <TableCell colSpan={8}>

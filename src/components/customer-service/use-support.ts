@@ -68,6 +68,7 @@ const HANDOFF_TRIGGER_RE = /转\s*人工|找\s*客服|人工\s*处理|human\s*(a
 export function useSupport() {
   const { t } = useTranslation()
   const account = useAuthStore((s) => s.account)
+  const isLoading = useAuthStore((s) => s.isLoading)
 
   // 🔴 模式是**单一真源**：原先 mode(4) × serviceMode(6) = 24 种组合、PRD 只承认 9 种，
   // 且 ticketId / queuePosition / agentInfo 散在外面，切模式要手动清 4~5 个变量
@@ -120,7 +121,10 @@ export function useSupport() {
     // 再被 catch 成「转人工失败，请稍后重试」——用户会一直重试，而重试
     // 永远失败。同理这里也不能让 40101 走到 request.ts 的全局分支，
     // 那条是给「会话过期」用的，对从未登录的人提示「会话已过期」是错的。
-    if (!account) {
+    // ⚠️ 必须带 !isLoading：页面刷新后 auth store 要先拉 /auth/session 才有 account，
+    // 那几百毫秒里 account 是 null。只判 account 会对**已登录**用户弹「请先登录」
+    // ——f8992444 就这么回归过一次，2026-09-14 在 test 上实测撞到。
+    if (!isLoading && !account) {
       appendMessage({
         id: crypto.randomUUID(),
         role: 'system',
@@ -136,13 +140,14 @@ export function useSupport() {
         ahead: resp.queue_position,
         agentName: resp.agent_name,
         agentNo: resp.agent_no,
+        status: resp.status,
       }))
     } catch (error) {
       appToast.requestError(error, t('common.customerService.handoffFailed'))
       go({ kind: 'chat' })
       appendMessage({ id: crypto.randomUUID(), role: 'system', content: t('common.customerService.handoffFailed'), createdAt: Date.now() })
     }
-  }, [mode, go, appendMessage, t, account])
+  }, [mode, go, appendMessage, t, account, isLoading])
 
   const ask = useCallback(async (question: string) => {
     const trimmed = question.trim()
@@ -336,8 +341,11 @@ export function useSupport() {
         createdAt: Date.now(),
         kind: 'feedback_receipt',
         feedbackReceipt: {
-          ticketNo: resp.ticket_no,
-          status: resp.status,
+          // 后端实测只给 ticket_id（FB-20260914-8315），没有 ticket_no —— 读错字段
+          // 的后果是回执卡「反馈编号」整行空白；status 是机器码（pending），
+          // 上屏要用 status_label（「等待客服受理」）。
+          ticketNo: resp.ticket_id || resp.ticket_no || '',
+          status: resp.status_label || resp.status,
           slaText: resp.sla_text,
           category: fields.category,
           description: fields.description,

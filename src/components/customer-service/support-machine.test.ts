@@ -108,6 +108,25 @@ describe('support-machine · service_mode 映射', () => {
     expect(modeFromServiceMode('async', 'T1')).toEqual({ kind: 'chat' })
   })
 
+  // 2026-09-14 生产级白屏的回归：后端 handoff 实际回 service_mode:"live"（PRD 里没有），
+  // switch 不认它 → 返回 undefined → transition 读 next.kind 抛 TypeError → 整棵 React 树白屏。
+  it('live 按 status 分排队/已接通，未知取值兜底到 chat（绝不返回 undefined）', () => {
+    expect(modeFromServiceMode('live', 'CS-1', { status: 'pending' }))
+      .toEqual({ kind: 'queuing', ticketId: 'CS-1', ahead: undefined })
+    expect(modeFromServiceMode('live', 'CS-1', { status: 'serving', agentName: '小沐' }))
+      .toEqual({ kind: 'human', ticketId: 'CS-1', agentName: '小沐', agentNo: undefined })
+    // 后端将来再加新取值：最差停在问答模式，不许是 undefined
+    const unknown = modeFromServiceMode('brand_new_mode' as never, 'CS-1')
+    expect(unknown).toBeDefined()
+    expect(unknown).toEqual({ kind: 'chat' })
+  })
+
+  it('transition 收到空值时停在当前模式，不抛错（白屏第二道防线）', () => {
+    const cur = { kind: 'chat' } as const
+    expect(transition(cur, undefined as never)).toEqual(cur)
+    expect(transition(cur, null as never)).toEqual(cur)
+  })
+
   it('ticketIdOf 只在带工单的模式返回工单号', () => {
     expect(ticketIdOf({ kind: 'chat' })).toBeNull()
     expect(ticketIdOf({ kind: 'empty' })).toBeNull()

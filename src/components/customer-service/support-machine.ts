@@ -80,6 +80,9 @@ export function canTransition(from: SupportModeKind, to: SupportModeKind): boole
  * 免得像旧实现那样悄悄进入 PRD 不承认的组合。
  */
 export function transition(current: SupportMode, next: SupportMode): SupportMode {
+  // 第二道防线：上游（如 modeFromServiceMode 遇到未知 service_mode）给出空值时
+  // 停在当前模式，不让 next.kind 抛 TypeError 把整棵树带崩。
+  if (!next?.kind) return current
   if (!canTransition(current.kind, next.kind)) {
     if (import.meta.env.DEV) {
       console.warn(`[support-machine] 非法模式迁移被拦下: ${current.kind} → ${next.kind}`)
@@ -99,8 +102,9 @@ export function transition(current: SupportMode, next: SupportMode): SupportMode
 export function modeFromServiceMode(
   serviceMode: SupportServiceMode,
   ticketId: string,
-  extra?: { ahead?: number; agentName?: string; agentNo?: string },
+  extra?: { ahead?: number; agentName?: string; agentNo?: string; status?: string },
 ): SupportMode {
+  const status = extra?.status
   switch (serviceMode) {
     case 'queueing':
       return { kind: 'queuing', ticketId, ahead: extra?.ahead }
@@ -111,6 +115,18 @@ export function modeFromServiceMode(
     case 'ended':
       return { kind: 'humanEnded', ticketId }
     case 'async':
+      return { kind: 'chat' }
+    // 后端实测返回的是 live（实时人工这条线），排队到哪一步看 status：
+    // pending = 还在排队，其余按已接通渲染。
+    case 'live':
+      return status === 'pending'
+        ? { kind: 'queuing', ticketId, ahead: extra?.ahead }
+        : { kind: 'human', ticketId, agentName: extra?.agentName, agentNo: extra?.agentNo }
+    default:
+      // 🔴 兜底不可省：这个函数的返回值直接进 transition(cur, next)，
+      // 返回 undefined 会在 next.kind 上抛 TypeError，整棵 React 树白屏
+      // ——2026-09-14 就是这么白的（后端加了 PRD 里没有的 live）。
+      // 后端再加新取值时，最差是停在问答模式，不是白屏。
       return { kind: 'chat' }
   }
 }

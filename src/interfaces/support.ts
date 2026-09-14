@@ -19,7 +19,13 @@ export type SupportAnswerStatus =
 
 export type SupportAnswerRating = 'like' | 'dislike'
 
-export type SupportServiceMode = 'queueing' | 'connecting' | 'connected' | 'ended' | 'async'
+/**
+ * 人工服务形态。`live` 是后端实测返回值（2026-09-14 test：`POST /support/handoff`
+ * 回 `service_mode:"live"` + `status:"pending"` + `status_label:"排队中 · 前方 0 人"`），
+ * PRD 里没有这个取值 —— 前端 switch 不认它就返回 undefined，整棵 React 树白屏。
+ * 语义上 live 是「实时人工」这条线（对应 async 异步工单），排队到哪一步看 status。
+ */
+export type SupportServiceMode = 'queueing' | 'connecting' | 'connected' | 'ended' | 'async' | 'live'
 
 export type SupportTicketFilter = 'all' | 'processing' | 'ended'
 
@@ -68,9 +74,12 @@ export interface SupportFeedbackRequest {
 }
 
 export interface SupportFeedbackResponse {
+  /** 编号本体。实测就是这个字段（FB-20260914-8315）；后端不返回 ticket_no。 */
   ticket_id: string
-  ticket_no: string
+  ticket_no?: string
   status: string
+  /** 后端给的中文状态（「等待客服受理」）；status 是机器码（pending），不能直接上屏。 */
+  status_label?: string
   sla_text?: string
 }
 
@@ -82,6 +91,10 @@ export interface SupportHandoffRequest {
 export interface SupportHandoffResponse {
   ticket_id: string
   service_mode: SupportServiceMode
+  status?: string
+  /** 后端给的完整排队文案（「排队中 · 前方 0 人」）。 */
+  status_label?: string
+  /** 后端实测不下发，排队人数只能从 status_label 读；留着兼容将来补上。 */
   queue_position?: number
   agent_name?: string
   agent_no?: string

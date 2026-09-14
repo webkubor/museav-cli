@@ -32,7 +32,6 @@ import { products } from './commands/products.js'
 import { assets } from './commands/assets.js'
 import { stickers, createSticker } from './commands/stickers.js'
 import { posterTemplates, createPosterTemplate } from './commands/poster-templates.js'
-import { speak, transcribeCmd } from './commands/speak.js'
 
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8')) as { name: string; version: string }
 // 每 12 小时最多查一次 npm registry，过期才提示，不拖慢日常调用
@@ -313,21 +312,6 @@ program
   .option('--workspace <id>', '归档到指定项目')
   .action(withClient((client: StudioClient, file: string, opts: { toWorks?: boolean; workspace?: string }) =>
     upload(client, file, { toWorks: opts.toWorks, workspace: opts.workspace })))
-
-program
-  .command('speak <text>')
-  .description('文本转语音（小米 MiMo，直连上游需 MIMO_API_KEY，不走中台身份）：stdout 输出 wav 路径')
-  .option('--out <path>', '输出路径（默认 speech-<时间戳>.wav）')
-  .option('--voice <name>', '预置音色，默认 Chloe')
-  .option('--design <desc>', '一句话描述音色，当场造一个（如「低沉沙哑的中年男声」）')
-  .option('--clone <file>', '拿这段音频当样本，克隆它的音色')
-  .option('--instruction <text>', '语气/风格指令（三种模式都可用）')
-  .action(asyncRun((text: string, opts: any) => speak(text, opts)))
-
-program
-  .command('transcribe <audio>')
-  .description('语音转文本（小米 MiMo，需 MIMO_API_KEY）：stdout 输出识别结果。同音字可能有误，重要场景请核对')
-  .action(asyncRun((audio: string) => transcribeCmd(audio)))
 
 program
   .command('models')

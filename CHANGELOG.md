@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.3.0 (2026-09-14)
+
+### 移除：语音命令 `speak` / `transcribe`
+
+小米 MiMo Token Plan 已于 2026-09-07 退订，中台侧同步下线了 `xiaomi-mimo` 上游
+（见 museav-manager `chore(upstream): 下线 xiaomi-mimo`）。这两个命令**直连上游、不走中台身份**，
+只认 `MIMO_API_KEY`——套餐作废后那把 key 一并失效，调用只会拿到 401/403。
+
+命令注册、实现（`src/mimo-speech.ts`、`src/commands/speak.ts`）与 README 文档一并移除，
+不留一个注定失败的入口。中台的出音链路后续若以走中台身份的方式重做，再重新引入。
+
 ## 3.2.0 (2026-09-12)
 
 ### ⚠️ 必须升级：出图请求体字段改为 `template_slug`

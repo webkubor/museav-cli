@@ -4,3 +4,6 @@ dist/
 .DS_Store
 .zcode/
 .worktrees/
+# cs wt / 各 agent 开的隔离 worktree 落在这里，每个都是独立 git 仓库。
+# 不 ignore 的话 `git add -A` 会把它们当 gitlink 提交进来（对齐 museav-manager / museav-web）。
+.claude/worktrees/

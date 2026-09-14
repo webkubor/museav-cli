@@ -74,6 +74,40 @@ describe('relatedPriceView — 媒体模型', () => {
     })
   })
 
+  // prd#1010：cn 生产 GET /catalog/models/qwen-image-3.0/related 的真实形状 ——
+  // 计量型价格（unit=image）的 input/output/per_call 三个标量价**全是 "0"**，
+  // 价格只在 price_tiers 里。旧组件只读标量价，于是渲染成「—」。
+  // 这条钉住：标量全 0 不等于未配价，媒体模型必须回落到 tiers 最高档。
+  it('tiers 非空但三个标量价均为 0（按张计量型）→ 仍取最高档，不落到「—」', () => {
+    const qwenImagePro = related({
+      output_modalities: ['image'],
+      input_price: '0',
+      output_price: '0',
+      per_call_price: '0',
+      price_unit: '张',
+      price_unit_en: 'image',
+      price_tiers: [
+        { label: '图片输入 · 1K', price: '0.02', unit: '张', bucket: 'image_input_1k' },
+        { label: '图片输入 · 2K', price: '0.02', unit: '张', bucket: 'image_input_2k' },
+        { label: '图片输出 · 1K', price: '0.25', unit: '张', bucket: 'image_output_1k' },
+        { label: '图片输出 · 2K', price: '0.5', unit: '张', bucket: 'image_output_2k' },
+      ],
+    })
+    expect(relatedPriceView(qwenImagePro, true)).toEqual({
+      kind: 'primary', text: '¥0.5/张', strike: undefined, showContext: false,
+    })
+    // 标准版：最高档 = 输出 1K ¥0.18/张（本单验收标准第 2 条钉的数）
+    expect(relatedPriceView(related({
+      output_modalities: ['image'],
+      input_price: '0', output_price: '0', per_call_price: '0',
+      price_unit: '张',
+      price_tiers: [
+        { label: '图片输入 · 1K', price: '0.02', unit: '张', bucket: 'image_input_1k' },
+        { label: '图片输出 · 1K', price: '0.18', unit: '张', bucket: 'image_output_1k' },
+      ],
+    }), true)).toEqual({ kind: 'primary', text: '¥0.18/张', strike: undefined, showContext: false })
+  })
+
   it('档位单位跟档位走（秒 / 张），不依赖 unit 字面值判定（#861 期望 4）', () => {
     const h3 = related({
       output_modalities: ['video'],

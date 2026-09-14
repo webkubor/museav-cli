@@ -101,6 +101,34 @@ describe('任务气泡', () => {
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(onOpenChange).toHaveBeenCalledWith(false)
   })
+
+  it('点气泡外面才关闭', () => {
+    const onOpenChange = vi.fn()
+    renderGuide(2, { onOpenChange })
+    fireEvent.pointerDown(document.body)
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
+  /**
+   * 控制台里侧栏入口是**两份实例**：DashboardLayout 桌面侧栏 + 移动抽屉（抽屉常驻
+   * DOM，只是 translate 出屏），而 open 是 store 里的单份状态 —— 两份会同时打开、
+   * 各自往 document 注册一个「点外面就关」的 pointerdown 监听。
+   * 监听只比自己的 ref 时，抽屉那份把桌面那份气泡里的点击当成外部点击、在
+   * pointerdown 阶段就关掉气泡，按钮在 click 派发前被卸载 ⇒ 五步 CTA 与「领取」
+   * 在控制台内全点不动（测试环境实测：pointerdown 有、click 根本没派发）。
+   */
+  it('两份实例共存时，点其中一个气泡内部不被另一份判成外部点击', () => {
+    const onOpenChange = vi.fn()
+    const onStepAction = vi.fn()
+    renderGuide(1, { onOpenChange, onStepAction })
+    renderGuide(1, { onOpenChange, onStepAction })
+
+    const cta = screen.getAllByRole('button', { name: /去体验/ })[0]
+    fireEvent.pointerDown(cta)
+    expect(onOpenChange).not.toHaveBeenCalled()
+    fireEvent.click(cta)
+    expect(onStepAction).toHaveBeenCalledWith('playground')
+  })
 })
 
 describe('领取成功弹框（2026-08-13 规格）', () => {

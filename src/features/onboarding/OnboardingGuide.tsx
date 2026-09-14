@@ -192,11 +192,21 @@ export function OnboardingGuide({
     const closeOnEscape = (event: globalThis.KeyboardEvent) => {
       if (event.key === 'Escape') openChangeRef.current(false)
     }
+    /**
+     * ⚠️ 认的是「任意一个指南入口/气泡」，不是自己这一份 ref —— 别改回比 ref。
+     * open 是 store 里的单份状态，而侧栏入口在 DashboardLayout 里挂了**两份**实例
+     * （桌面常驻 + 移动抽屉：抽屉一直在 DOM 里，只是 translate 出屏），两份都会注册
+     * 这个监听。只比自己的 ref 时，抽屉那份会把「点在桌面那份气泡里」判成外部点击，
+     * 抢在 pointerdown 阶段把气泡卸载掉 —— 按钮在 pointerdown 与 click 之间消失，
+     * click 永远派发不到 CTA 上，于是控制台内五步与「领取」全点不动（模型广场走
+     * PublicShell，只有一份悬浮入口，所以那里是好的）。
+     */
     const closeOnOutsidePointer = (event: PointerEvent) => {
-      const target = event.target as Node
-      if (!entryRef.current?.contains(target) && !popoverRef.current?.contains(target)) {
-        openChangeRef.current(false)
-      }
+      const target = event.target
+      const insideGuide =
+        target instanceof Element &&
+        target.closest('.onboarding-guide-entry, .onboarding-guide-popover') !== null
+      if (!insideGuide) openChangeRef.current(false)
     }
 
     positionPopover()

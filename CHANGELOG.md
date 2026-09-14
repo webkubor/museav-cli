@@ -4,12 +4,15 @@
 
 ### 移除：语音命令 `speak` / `transcribe`
 
-小米 MiMo Token Plan 已于 2026-09-07 退订，中台侧同步下线了 `xiaomi-mimo` 上游
-（见 museav-manager `chore(upstream): 下线 xiaomi-mimo`）。这两个命令**直连上游、不走中台身份**，
-只认 `MIMO_API_KEY`——套餐作废后那把 key 一并失效，调用只会拿到 401/403。
+小米 MiMo Token Plan 已退订，中台同步下线了该上游。这两个命令**直连上游、不走中台身份**，
+只认 `MIMO_API_KEY`——套餐作废后那把 key 一并失效，留着也只会拿到 401/403。
+命令注册、实现与文档一并移除；中台出音链路日后若改成走中台身份，再重新引入。
 
-命令注册、实现（`src/mimo-speech.ts`、`src/commands/speak.ts`）与 README 文档一并移除，
-不留一个注定失败的入口。中台的出音链路后续若以走中台身份的方式重做，再重新引入。
+### 新增：`museav models --video`，不再硬编码模型名
+
+视频档次改从中台查（`museav models --video`），给出的是**对外档次名**（如 `Seedance 2.5`），
+可直接喂给 `gen --video --model`。原先写死的档次代号已移除——那是上游渠道的内部命名，
+不该出现在客户端。模型清单从此跟着中台走，**上游换档次不用等 CLI 发版**。
 
 ## 3.2.0 (2026-09-12)
 

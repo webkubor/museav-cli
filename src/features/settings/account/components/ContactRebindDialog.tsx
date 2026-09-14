@@ -118,13 +118,11 @@ export function ContactRebindDialog({ mode, profile, onClose }: ContactRebindDia
     setCurrentCodeSent(true)
   }
 
+  // 新凭证发码复用登录/注册的公共端点，短信与邮箱后端都要人机参数（缺参 40025）
   const sendNewCode = async () => {
-    if (isPhone) {
-      const captcha = await getCaptchaParam()
-      await sendSmsCode(normalizedNew, captcha)
-    } else {
-      await sendEmailCode(normalizedNew)
-    }
+    const captcha = await getCaptchaParam()
+    if (isPhone) await sendSmsCode(normalizedNew, captcha)
+    else await sendEmailCode(normalizedNew, captcha)
     setNewCodeSent(true)
   }
 
@@ -232,8 +230,9 @@ export function ContactRebindDialog({ mode, profile, onClose }: ContactRebindDia
   )
 
   return (
-    // modal={false}：短信发码走阿里云人机验证，SDK 浮层 portal 在 Dialog 之外，Radix modal 会锁住 body 让它点不动
-    // （同 RequiredPhoneBindingDialog）；遮罩仍渲染。
+    // modal={false}：发码走阿里云人机验证，SDK 浮层 portal 在 Dialog 之外，Radix modal 会锁住 body 让它点不动
+    // （同 RequiredPhoneBindingDialog）；遮罩仍渲染。非 modal 下 Radix 仍会把滑块浮层上的操作当「外部交互」
+    // 触发关闭，滑完弹窗就没了——一并拦掉，关闭只走右上角 X / 取消 / ESC。
     <Modal
       open
       onClose={() => {
@@ -242,6 +241,8 @@ export function ContactRebindDialog({ mode, profile, onClose }: ContactRebindDia
       }}
       size="md"
       modal={false}
+      onPointerDownOutside={(event) => event.preventDefault()}
+      onInteractOutside={(event) => event.preventDefault()}
       title={title}
       description={<StepIndicator step={step} newStepLabel={newStepLabel} />}
       footer={footer}

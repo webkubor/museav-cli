@@ -164,7 +164,6 @@ program
   // 不给具体模型名的例子：视频档次的合法取值来自上游渠道，属供应商身份，
   // 不该印在 help 里（也不该硬编码——上游换档次时这里会变成一堆没人认得的字符串）。
   // 要查就跑 `museav models`（出图）/ `museav models --video`（视频档次）。
-  .option('-m, --model <name>', '指定模型；不传则走中台智能路由。可选值跑 museav models 查')
   .option('-q, --quality <level>', '质量: low / medium / high（仅 gpt-image）')
   // 可重复：--ref 正面.jpg --ref 背景.jpg。顺序即语义——提示词里写「参考图片1的排版、
   // 用图片2作为背景」时，图片N 对应第 N 个 --ref。commander 的 collect 保证顺序。
@@ -393,7 +392,6 @@ videoTemplatesCmd
   .option('--slug <slug>', '对外调用标识（全局唯一，视频模板硬必填）；不传自动生成 vt- 前缀短标识')
   .option('--category <name>', '分类，默认「其他」')
   .option('--description <text>', '模板说明')
-  .option('--model <name>', '视频档次，默认 auto（交给中台按参数路由）；可选值跑 museav models --video 查——那里给的是对外档次名（如 Seedance 2.5），中台会归一成实际渠道')
   .option('--duration <sec>', '视频时长（秒，4-30：Seedance 2.0 系上限 15、2.5 到 30，可选）')
   .option('--ratio <ratio>', '画面比例: 9:16 / 16:9 / 1:1 / 3:4（可选）')
   .option('--sample-video <url>', '参考视频 URL（可选，展示给用户的示例片）')
@@ -411,7 +409,6 @@ templatesCmd
   .option('--category <name>', '分类，默认「其他」')
   .option('--ratio <ratio>', '宽高比，默认 3:4')
   .option('--description <text>', '模板说明')
-  .option('--model <name>', '生成模型，默认 auto（交给中台按参数路由）。可选值跑 museav models 查——CLI 不硬编码模型名')
   .option('--quality <level>', '质量: low / medium / high')
   .option('--fields <json>', '占位符字段说明，JSON 数组，如 \'[{"key":"artist","label":"艺人名"}]\'；不传则自动从 --prompt 里的 {key} 提取')
   .option('--type <type>', '模板类型：image（图片，默认） / article（文字）')

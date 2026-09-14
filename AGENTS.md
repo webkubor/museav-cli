@@ -38,10 +38,10 @@ Don't try both — whichever credential is present is what gets used (env var `S
 museav gen --prompt 'a poster, neon lights, cyberpunk' --ratio 9:16
 
 # Generate a video (文生视频/图生视频), wait, get the mp4 URL on stdout.
-# Omit --model to let the platform route automatically (auto). To pin a tier, list the
-# legal values first with `museav models --video` — the list comes from the platform
-# (public tier names like "Seedance 2.5"), so it tracks upstream changes without a CLI
-# release. Don't hardcode tier ids: they're upstream channel names, not part of our API.
+# There is NO --model flag: which model/upstream to use is the PLATFORM's job — smart
+# routing is what the middle platform does. Callers supply prompt + ratio + quality only.
+# `museav models` / `museav models --video` are read-only lookups of what the platform is
+# currently using, not a selection menu.
 museav gen --video --prompt 'a cat stretching on a windowsill, cinematic' --ratio 9:16
 museav gen --video --image logo.png --prompt 'logo glows slowly, background fades' --ratio 1:1
 

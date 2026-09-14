@@ -74,7 +74,7 @@
     ◄── 图片 URL ──────────────────────│
 ```
 
-你永远不用接触上游 key，也不用关心用的哪个模型（除非你想指定）。
+你永远不用接触上游 key，也不用关心用的哪个模型——选模型就是中台在做的事。
 
 `museav` 这个 CLI 就是这套能力的命令行封装，**服务两类不同的使用者，鉴权方式也不一样**：
 
@@ -102,7 +102,7 @@
 | | 抠图去背景（输出透明 PNG） | `remove-bg` |
 | | **放大清晰度**（2M → 10M+ 级） | `upscale` |
 | | 去水印 | `remove-watermark` |
-| **素材与统计** | 上传素材 / 查任务 / 查余额 / 查模型 / 查身份 | `upload` / `jobs` / `balance` / `models` / `whoami` |
+| **素材与统计** | 上传素材 / 查任务 / 查余额 / 看当前模型 / 查身份 | `upload` / `jobs` / `balance` / `models` / `whoami` |
 | **发布**（小红书 SkillHub） | 把本地 Agent Skill 发到小红书 SkillHub | `skillhub publish` |
 
 > 本地工具（`compress` / `remove-bg` / `upscale` / `remove-watermark`）**不用登录、不花一分钱**，装了就能用；其余命令需要一个凭证（个人 `login` 或租户 apiKey）。
@@ -204,9 +204,6 @@ museav gen --prompt '一只在月球上的猫'
 # 宽高比（不指定则纯 prompt 模式兜底 3:4；--skill/--template 模式默认用技能/模板自己的比例）
 museav gen --prompt '海报' --ratio 9:16    # 可选: 3:4 / 9:16 / 1:1 / 4:3 / 16:9
 
-# 指定模型（不指定则中台自动选最优）
-museav gen --prompt '...' --model gpt-image-2
-
 # 质量（仅 gpt-image 生效）
 museav gen --prompt '...' --quality high
 
@@ -223,12 +220,12 @@ museav gen --prompt '把这只鞋抠成透明底' --ref shoe.jpg --transparent
 #     （白底图看起来完全正常，静默降级只会让你以为提示词没写对，反复重试）
 #   · 会强制 PNG 输出：JPEG / 有损 WebP 没有 alpha 通道，装不下透明
 
-# 文生视频（不传 --model 走 auto 路由，自动轮询直到完成）
+# 文生视频（自动轮询直到完成）
 museav gen --video --prompt '一只橘猫在窗台上伸懒腰，阳光洒进来，电影感' --ratio 9:16
 
-# 想锁定档次：先查可选值（清单来自中台，随上游变动自动更新，CLI 不硬编码）
+# 想知道现在用的是哪一代模型/哪个视频档次：查（只读，清单来自中台）
+museav models
 museav models --video
-museav gen --video --prompt '...' --model 'Seedance 2.5'
 
 # 图生视频（--image 传首帧图，自动上传）
 museav gen --video --image logo.png --prompt 'logo 缓缓发光，背景渐暗' --ratio 1:1
@@ -459,7 +456,7 @@ museav jobs --project meso                             # 只看该项目的任�
 ### 查模型 / 余额
 
 ```bash
-museav models      # 中台当前可用的模型
+museav models      # 中台当前在用的模型（只读：用哪个由中台决定，调用方不选）
 museav balance     # 各上游余额
 ```
 
@@ -617,7 +614,7 @@ console.log(r.sculpt.light)  // 光影分析
 | `slideshow` / `slideshow-layouts` | **已下线（3.0.0）**，出片走 reel-kit；跑一下会打印迁移说明 | 迁移指引 |
 | `projects` | 工作区（项目）列表：一账户多项目，各带自己的素材库 | 项目 id 列表 |
 | `projects assets --project` | 项目素材库：ls / add / rm（垫图母版，人像库/产品库各管各的） | `id<TAB>url` 行 |
-| `models` | 可用模型 | 模型名列表 |
+| `models` | 看中台当前在用的模型 / 视频档次（`--video`）——只读，不用于选择 | 名称列表 |
 | `balance` | 上游余额 | JSON |
 | `jobs` | 查自己（租户则是自己业务下）的工作流 | JSON 数组 |
 | `config` | 配置中台（B 端 apikey，含 `--tenantBaseUrl`） | — |

@@ -30,7 +30,6 @@
   },
   "dependencies": {
     "@fingerprintjs/fingerprintjs": "^5.2.0",
-    "@formkit/auto-animate": "^0.10.0",
     "@hookform/resolvers": "^5.4.0",
     "@lobehub/icons": "^5.8.0",
     "@model-go/icons": "3.0.1",

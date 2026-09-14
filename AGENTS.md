@@ -38,8 +38,10 @@ Don't try both — whichever credential is present is what gets used (env var `S
 museav gen --prompt 'a poster, neon lights, cyberpunk' --ratio 9:16
 
 # Generate a video (文生视频/图生视频), wait, get the mp4 URL on stdout.
-# Omit --model to let the platform route automatically (auto); pinning a tier uses
-# artsdance-* ids like artsdance-2-0-pro-260801 (Seedance 2.0).
+# Omit --model to let the platform route automatically (auto). To pin a tier, list the
+# legal values first with `museav models --video` — the list comes from the platform
+# (public tier names like "Seedance 2.5"), so it tracks upstream changes without a CLI
+# release. Don't hardcode tier ids: they're upstream channel names, not part of our API.
 museav gen --video --prompt 'a cat stretching on a windowsill, cinematic' --ratio 9:16
 museav gen --video --image logo.png --prompt 'logo glows slowly, background fades' --ratio 1:1
 
@@ -73,22 +75,6 @@ museav gen --prompt "$(museav reverse ./photo.png)"
 # image). Async by default; stage progress is printed to stderr, template id to stdout.
 museav image-to-template ./poster.jpg --name '暗金演唱会主视觉' --variables title,subject,location
 museav image-to-template ./poster.jpg --no-create      # dry run: draft JSON on stdout, nothing created
-
-# Text-to-speech / speech-to-text (Xiaomi MiMo). These talk DIRECTLY to the upstream,
-# NOT through the platform — so they need MIMO_API_KEY and ignore your login/apiKey entirely.
-# Reason: the platform's audio pipeline isn't wired up yet, and this capability is
-# internal-only for now (tenants don't have this key, so they can't reach it).
-#   export MIMO_API_KEY=...   or   cs kyvault run --env MIMO_API_KEY=secret://mimo/api-key -- museav ...
-# stdout: the written .wav path (speak) / the recognized text (transcribe).
-museav speak '声影成诗，一念成像。'                          # preset voice (Chloe)
-museav speak '欢迎收听' --design '低沉沙哑的中年男声'          # invent a voice from a description
-museav speak '这句换个音色' --clone ./sample.wav              # clone the voice in sample.wav
-museav speak '慢一点念' --instruction '语速放慢，温柔一些'      # style/tone instruction
-museav transcribe ./recording.wav
-
-# ⚠️ transcribe accuracy wobbles on homophones — the same synthesized line came back as
-# 「声影成诗，一念成相」 once and 「上庸城失，一面呈象」 another time. Don't feed its output
-# into anything that bills, stores, or branches on exact text without a human check.
 
 # Upload a file (image/audio/video; type is detected from the bytes, not the extension)
 museav upload ./face.png

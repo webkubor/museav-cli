@@ -161,7 +161,10 @@ program
   // 不设默认值：--skill / --template 场景下要让技能/模板自己的比例生效，
   // CLI 强填默认值会把它们覆盖掉（服务端在纯 --prompt 场景已有 3:4 兜底，这里不用重复兜底）
   .option('-r, --ratio <ratio>', '宽高比: 3:4 / 9:16 / 1:1 / 4:3 / 16:9（不指定则用技能/模板自己的比例，纯 prompt 模式兜底 3:4）')
-  .option('-m, --model <name>', '指定模型，如 gpt-image-2 / artsdance-2-0-pro-260801（视频不传则走 auto 路由）')
+  // 不给具体模型名的例子：视频档次的合法取值来自上游渠道，属供应商身份，
+  // 不该印在 help 里（也不该硬编码——上游换档次时这里会变成一堆没人认得的字符串）。
+  // 要查就跑 `museav models`（出图）/ `museav models --video`（视频档次）。
+  .option('-m, --model <name>', '指定模型；不传则走中台智能路由。可选值跑 museav models 查')
   .option('-q, --quality <level>', '质量: low / medium / high（仅 gpt-image）')
   // 可重复：--ref 正面.jpg --ref 背景.jpg。顺序即语义——提示词里写「参考图片1的排版、
   // 用图片2作为背景」时，图片N 对应第 N 个 --ref。commander 的 collect 保证顺序。
@@ -170,7 +173,7 @@ program
   // 透明背景是上游的 background 参数，不是提示词能表达的东西——提示词里写
   // "transparent background" 只是在描述构图，模型照样铺一层白底。这个开关才是抠图开关。
   .option('--transparent', '透明背景 PNG（抠掉背景，带 alpha 通道）。仅部分上游支持，不支持时中台明确报错、不会悄悄给白底图；服务端自动强制 PNG 输出（JPEG 没有 alpha 通道）')
-  .option('--video', '生成视频（走 /api/videos 链路；模型档次如 artsdance-2-0-pro-260801，不传 --model 走 auto 路由）')
+  .option('--video', '生成视频（走 /api/videos 链路；不传 --model 走 auto 路由，可选档次跑 museav models --video 查）')
   .option('--duration <sec>', '视频时长（秒，仅 --video；由模型与上游支持范围决定）', (v) => Number(v))
   .option('--image <file>', '图生视频首帧图（仅 --video，自动上传）')
   .option('--project <id|名>', '归档进该工作区（museav projects 查；账户身份才生效）')
@@ -315,8 +318,9 @@ program
 
 program
   .command('models')
-  .description('查可用模型列表')
-  .action(withClient((client: StudioClient) => models(client)))
+  .description('查可用模型（--video 查视频档次）。清单来自中台，CLI 不硬编码')
+  .option('--video', '查视频档次（Seedance 2.0 这类对外名），可直接喂给 gen --video --model')
+  .action(withClient((client: StudioClient, opts: { video?: boolean }) => models(client, opts)))
 
 program
   .command('skills')
@@ -389,7 +393,7 @@ videoTemplatesCmd
   .option('--slug <slug>', '对外调用标识（全局唯一，视频模板硬必填）；不传自动生成 vt- 前缀短标识')
   .option('--category <name>', '分类，默认「其他」')
   .option('--description <text>', '模板说明')
-  .option('--model <name>', '视频模型档次，默认 auto（交给中台路由）；锁死可选 artsdance-2-0-pro-260801（Seedance 2.0）/ artsdance-2-0-fast-260801 / artsdance-2-0-mini-260801 / artsdance-2-5-pro-260801（Seedance 2.5）')
+  .option('--model <name>', '视频档次，默认 auto（交给中台按参数路由）；可选值跑 museav models --video 查——那里给的是对外档次名（如 Seedance 2.5），中台会归一成实际渠道')
   .option('--duration <sec>', '视频时长（秒，4-30：Seedance 2.0 系上限 15、2.5 到 30，可选）')
   .option('--ratio <ratio>', '画面比例: 9:16 / 16:9 / 1:1 / 3:4（可选）')
   .option('--sample-video <url>', '参考视频 URL（可选，展示给用户的示例片）')
@@ -407,7 +411,7 @@ templatesCmd
   .option('--category <name>', '分类，默认「其他」')
   .option('--ratio <ratio>', '宽高比，默认 3:4')
   .option('--description <text>', '模板说明')
-  .option('--model <name>', '生成模型，默认 gpt-image-2')
+  .option('--model <name>', '生成模型，默认 auto（交给中台按参数路由）。可选值跑 museav models 查——CLI 不硬编码模型名')
   .option('--quality <level>', '质量: low / medium / high')
   .option('--fields <json>', '占位符字段说明，JSON 数组，如 \'[{"key":"artist","label":"艺人名"}]\'；不传则自动从 --prompt 里的 {key} 提取')
   .option('--type <type>', '模板类型：image（图片，默认） / article（文字）')

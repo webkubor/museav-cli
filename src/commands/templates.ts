@@ -99,7 +99,12 @@ export async function createTemplate(client: StudioClient, opts: CreateTemplateO
     template_type: type,
     generation_configs: [
       {
-        model: opts.model || 'gpt-image-2',
+        // 默认 auto：交给中台路由按这次的要求挑。原先这里硬编码 'gpt-image-2'，
+        // 有两个问题——① 它把「我们实际调哪个模型」写进了 CLI，那是中台的事，
+        // 上游换代时还要发版；② 模板是长期资产，锁死一个模型名意味着它将来会
+        // 指向一个已经不存在的档次（toapis 下线时 10 个视频模板就是这么悬空的）。
+        // 要锁定具体模型仍然可以传 --model。
+        model: opts.model || 'auto',
         prompt_template: opts.prompt,
         quality: opts.quality,
         // 契约要求 fields 在 config 顶层（服务端 validateConfig 读 cfg.fields）

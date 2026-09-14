@@ -1,27 +1,35 @@
 /**
  * 手机号 / 邮箱换绑弹窗（shared/modelgo_prd#837，对齐原型 App.tsx AccountContactChangeDialog）。
  * 路由：/settings/account（基本资料）
- * API：POST /auth/sms-code/send、POST /auth/email-code/send（发码，现有）；
- *      POST /account/phone/rebind、POST /account/email/rebind（提案，见 services/account.ts）
+ * API（后端契约 2026-09-14 落地，见 services/account.ts 说明）：
+ *      ① POST /account/rebind/current-code/send → POST /account/rebind/verify-current（签发 rebind_ticket）
+ *      ② POST /auth/sms-code/send | /auth/email-code/send（给新凭证发码，现有）→ POST /account/rebind/commit
  *
- * 三步：① 验证身份（向当前绑定手机号发码；无手机号的账号退到当前邮箱）→ ② 验证新凭证 → ③ 完成。
- * 第一步只做本地格式校验，当前验证码随第二步一起提交由后端一次性校验——避免后端维护跨步骤
- * 状态，也避免现有 /auth/*-code/verify 会不会消费验证码的不确定性。
+ * 三步：① 验证身份（向当前绑定手机号发码；无手机号的账号退到当前邮箱，「下一步」真校验并拿票据）
+ *      → ② 验证新凭证（票据 + 新码一起提交）→ ③ 完成。
+ * commit 成功后端吊销全部会话：完成页不再拉任何接口，「重新登录」清鉴权态跳 /login。
  */
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { LuCheck } from 'react-icons/lu'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { VerificationCodeButton } from '@/components/auth/VerificationCodeButton'
-import { rebindEmail, rebindPhone, type RebindCurrentChannel } from '@/services/account'
+import {
+  REBIND_ERROR_CODE,
+  commitRebind,
+  sendRebindCurrentCode,
+  verifyRebindCurrent,
+  type RebindCurrentChannel,
+} from '@/services/account'
 import { sendEmailCode, sendSmsCode } from '@/services/auth'
 import { getCaptchaParam } from '@/lib/aliyun-captcha'
 import { appToast } from '@/lib/app-toast'
 import { trackEvent } from '@/lib/track'
-import { errorCodeOf, isNotFoundError } from '@/lib/request-error-message'
+import { errorCodeOf, isApiErrorCode } from '@/lib/request-error-message'
 import { useAuthStore } from '@/store/auth'
 import { useCustomerServiceStore } from '@/store/use-customer-service-store'
 import type { AccountProfile } from '@/types'
@@ -71,6 +79,8 @@ function StepIndicator({ step, newStepLabel }: { step: Step; newStepLabel: strin
 export function ContactRebindDialog({ mode, profile, onClose }: ContactRebindDialogProps) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  const clearAuth = useAuthStore((s) => s.clearAuth)
   const openSupport = useCustomerServiceStore((s) => s.setOpen)
   const isPhone = mode === 'phone'
 
@@ -81,6 +91,8 @@ export function ContactRebindDialog({ mode, profile, onClose }: ContactRebindDia
   const [step, setStep] = useState<Step>('identity')
   const [currentCode, setCurrentCode] = useState('')
   const [currentCodeSent, setCurrentCodeSent] = useState(false)
+  // 第一步校验通过后端签发的换绑票据（600s）；「上一步」回退不作废，再点「下一步」直接进第二步
+  const [rebindTicket, setRebindTicket] = useState<string | null>(null)
   const [newContact, setNewContact] = useState('')
   const [newCode, setNewCode] = useState('')
   const [newCodeSent, setNewCodeSent] = useState(false)
@@ -96,13 +108,9 @@ export function ContactRebindDialog({ mode, profile, onClose }: ContactRebindDia
       ? t(isPhone ? 'account.info.rebind.samePhone' : 'account.info.rebind.sameEmail')
       : ''
 
+  // 当前凭证发码走换绑专用端点（登录态、后端按会话取号，无需滑块）
   const sendCurrentCode = async () => {
-    if (currentChannel === 'phone') {
-      const captcha = await getCaptchaParam()
-      await sendSmsCode(profile.phone ?? '', captcha)
-    } else {
-      await sendEmailCode(profile.email)
-    }
+    await sendRebindCurrentCode(currentChannel)
     setCurrentCodeSent(true)
   }
 
@@ -117,18 +125,41 @@ export function ContactRebindDialog({ mode, profile, onClose }: ContactRebindDia
   }
 
   const rebindEvent = isPhone ? 'account.phone:rebind' : 'account.email:rebind'
-  const mutation = useMutation({
-    mutationFn: () => {
-      const credential = { current_channel: currentChannel, current_code: currentCode.trim() }
-      return isPhone
-        ? rebindPhone(normalizedNew, newCode.trim(), credential)
-        : rebindEmail(normalizedNew, newCode.trim(), credential)
+
+  // 票据失效（40103）：回第一步重新验身，旧码已被消费，必须重发
+  const resetToIdentity = () => {
+    setRebindTicket(null)
+    setCurrentCode('')
+    setCurrentCodeSent(false)
+    setStep('identity')
+  }
+
+  const verifyMutation = useMutation({
+    mutationFn: () => verifyRebindCurrent(currentChannel, currentCode.trim()),
+    onSuccess: (res) => {
+      setRebindTicket(res.rebind_ticket)
+      setStep('new')
     },
+    onError: (err: unknown) => {
+      appToast.requestError(err, t(isPhone ? 'account.info.rebind.phoneError' : 'account.info.rebind.emailError'))
+      trackEvent(rebindEvent, undefined, { result: 'fail', error_code: errorCodeOf(err) })
+    },
+  })
+
+  const goNext = () => {
+    if (rebindTicket) {
+      setStep('new')
+      return
+    }
+    verifyMutation.mutate()
+  }
+
+  const commitMutation = useMutation({
+    mutationFn: () => commitRebind(rebindTicket ?? '', normalizedNew, newCode.trim()),
     onSuccess: (updated) => {
       appToast.success(t(isPhone ? 'account.info.rebind.phoneSuccess' : 'account.info.rebind.emailSuccess'))
+      // 会话已被后端吊销：只同步本地缓存，不 invalidate（重拉会撞 40101 触发「会话过期」toast）
       if (updated) queryClient.setQueryData<AccountProfile>(['account-profile'], updated)
-      void queryClient.invalidateQueries({ queryKey: ['account-profile'] })
-      // 右上角账号信息 / 手机号守卫读的是 auth store，成功后本地同步，不等重拉 session
       const account = useAuthStore.getState().account
       if (account) {
         useAuthStore.setState({ account: isPhone ? { ...account, phone: normalizedNew } : { ...account, email: normalizedNew } })
@@ -137,28 +168,41 @@ export function ContactRebindDialog({ mode, profile, onClose }: ContactRebindDia
       setStep('done')
     },
     onError: (err: unknown) => {
-      // 后端换绑端点未落地（#837）→ 40401，给用户可理解的文案而不是「资源不存在」
-      if (isNotFoundError(err)) appToast.error(t('account.info.rebind.serviceUnavailable'))
-      else appToast.requestError(err, t(isPhone ? 'account.info.rebind.phoneError' : 'account.info.rebind.emailError'))
       trackEvent(rebindEvent, undefined, { result: 'fail', error_code: errorCodeOf(err) })
+      if (isApiErrorCode(err, REBIND_ERROR_CODE.TICKET_INVALID)) {
+        appToast.error(t('account.info.rebind.ticketExpired'))
+        resetToIdentity()
+        return
+      }
+      // 40911 占用 / 42901 限频 / 新码错误：后端 msg 已是中英 catalog 文案，直接透出
+      appToast.requestError(err, t(isPhone ? 'account.info.rebind.phoneError' : 'account.info.rebind.emailError'))
     },
   })
+
+  // 完成页唯一出口：全部会话已吊销，清前端鉴权态 → SPA 跳登录（不用 window.location，防 /login↔/dashboard 循环刷新）
+  const relogin = () => {
+    onClose()
+    clearAuth()
+    navigate('/login', { replace: true })
+  }
 
   const title = t(isPhone ? 'account.info.rebind.changePhone' : 'account.info.rebind.changeEmail')
   const newStepLabel = t(isPhone ? 'account.info.rebind.stepNewPhone' : 'account.info.rebind.stepNewEmail')
   const currentCodeValid = CODE_RE.test(currentCode.trim())
   const newCodeValid = CODE_RE.test(newCode.trim())
-  const busy = mutation.isPending
+  const verifying = verifyMutation.isPending
+  const busy = commitMutation.isPending
   const doneTarget = isPhone ? maskPhone(normalizedNew) : maskEmail(normalizedNew)
 
   const footer = step === 'identity' ? (
     <>
-      <Button variant="outline" className="h-8 rounded-lg px-3 text-xs" onClick={onClose}>{t('common.cancel')}</Button>
+      <Button variant="outline" className="h-8 rounded-lg px-3 text-xs" disabled={verifying} onClick={onClose}>{t('common.cancel')}</Button>
       <Button
         variant="brand"
         className="h-8 rounded-lg px-4 text-xs font-semibold"
+        loading={verifying}
         disabled={!currentCodeSent || !currentCodeValid}
-        onClick={() => setStep('new')}
+        onClick={goNext}
       >
         {t('account.info.rebind.next')}
       </Button>
@@ -172,15 +216,15 @@ export function ContactRebindDialog({ mode, profile, onClose }: ContactRebindDia
         variant="brand"
         className="h-8 rounded-lg px-4 text-xs font-semibold"
         loading={busy}
-        disabled={!newValid || isSame || !newCodeSent || !newCodeValid}
-        onClick={() => mutation.mutate()}
+        disabled={!rebindTicket || !newValid || isSame || !newCodeSent || !newCodeValid}
+        onClick={() => commitMutation.mutate()}
       >
         {t('account.info.rebind.confirm')}
       </Button>
     </>
   ) : (
-    <Button variant="brand" className="h-8 rounded-lg px-4 text-xs font-semibold" onClick={onClose}>
-      {t('account.info.rebind.done')}
+    <Button variant="brand" className="h-8 rounded-lg px-4 text-xs font-semibold" onClick={relogin}>
+      {t('account.info.rebind.relogin')}
     </Button>
   )
 
@@ -189,7 +233,10 @@ export function ContactRebindDialog({ mode, profile, onClose }: ContactRebindDia
     // （同 RequiredPhoneBindingDialog）；遮罩仍渲染。
     <Modal
       open
-      onClose={() => { if (!busy) onClose() }}
+      onClose={() => {
+        if (step === 'done') relogin()
+        else if (!busy && !verifying) onClose()
+      }}
       size="md"
       modal={false}
       title={title}
@@ -207,10 +254,15 @@ export function ContactRebindDialog({ mode, profile, onClose }: ContactRebindDia
               inputMode="numeric"
               autoFocus
               value={currentCode}
-              onChange={(e) => setCurrentCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              disabled={verifying}
+              onChange={(e) => {
+                setCurrentCode(e.target.value.replace(/\D/g, '').slice(0, 6))
+                // 改了当前码就得重新校验，旧票据不再对应
+                setRebindTicket(null)
+              }}
               placeholder={t('account.info.rebind.codePlaceholder')}
-              className="h-9 text-xs rounded-lg"
-              suffix={<VerificationCodeButton onSend={sendCurrentCode} />}
+              size="sm"
+              suffix={<VerificationCodeButton onSend={sendCurrentCode} disabled={verifying} />}
             />
           </div>
           <Button
@@ -244,7 +296,7 @@ export function ContactRebindDialog({ mode, profile, onClose }: ContactRebindDia
                 setNewCodeSent(false)
               }}
               placeholder={t(isPhone ? 'account.info.rebind.newPhonePlaceholder' : 'account.info.rebind.newEmailPlaceholder')}
-              className="h-9 text-xs rounded-lg"
+              size="sm"
             />
             {newContactError && <p className="text-xs text-mg-danger" role="alert">{newContactError}</p>}
           </div>
@@ -263,7 +315,7 @@ export function ContactRebindDialog({ mode, profile, onClose }: ContactRebindDia
               disabled={busy}
               onChange={(e) => setNewCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
               placeholder={t('account.info.rebind.codePlaceholder')}
-              className="h-9 text-xs rounded-lg"
+              size="sm"
               suffix={<VerificationCodeButton onSend={sendNewCode} disabled={!newValid || isSame} />}
             />
           </div>
@@ -279,6 +331,7 @@ export function ContactRebindDialog({ mode, profile, onClose }: ContactRebindDia
             {t(isPhone ? 'account.info.rebind.phoneSuccess' : 'account.info.rebind.emailSuccess')}
           </strong>
           <span className="text-xs text-mg-text-3">{doneTarget}</span>
+          <p className="max-w-xs text-xs text-mg-text-3">{t('account.info.rebind.doneRelogin')}</p>
         </div>
       )}
     </Modal>

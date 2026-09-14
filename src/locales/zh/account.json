@@ -64,7 +64,9 @@
         "emailSuccess": "邮箱更换成功",
         "phoneError": "手机号更换失败",
         "emailError": "邮箱更换失败",
-        "serviceUnavailable": "换绑服务暂未开放，请稍后再试或联系人工客服"
+        "ticketExpired": "身份验证已过期，请重新获取当前验证码",
+        "doneRelogin": "为保障账号安全，所有已登录设备已退出，请使用新的联系方式重新登录",
+        "relogin": "重新登录"
       }
     },
     "security": {

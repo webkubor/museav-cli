@@ -64,7 +64,9 @@
         "emailSuccess": "Email changed",
         "phoneError": "Failed to change phone number",
         "emailError": "Failed to change email",
-        "serviceUnavailable": "Rebinding is not available yet. Please try again later or contact support."
+        "ticketExpired": "Identity verification expired. Please request a new code for your current contact.",
+        "doneRelogin": "For your security, all signed-in devices have been signed out. Please sign in again with the new contact.",
+        "relogin": "Sign in again"
       }
     },
     "security": {

@@ -40,32 +40,67 @@ export function bindEmail(email: string, code: string) {
 }
 
 /**
- * 换绑手机号 / 邮箱（shared/modelgo_prd#837，三步：验身 → 验新凭证 → 完成）。
+ * 自助换绑手机号 / 邮箱（shared/modelgo_prd#837，后端契约 2026-09-14 落地，Swagger 202609141230）。
  *
- * ⚠️ 后端契约未定（#837 卡 @duanlingxiao，note 15519 已列四问），下面两个端点是前端按原型
- * 流程给出的**提案**，后端落地前打到 test 返回 40401，UI 层把 40401 映射成「换绑服务暂未开放」。
- * 提案要点（尽量不让后端维护跨步骤状态）：
- *   POST /account/phone/rebind { phone, code, current_channel, current_code }
- *   POST /account/email/rebind { email, code, current_channel, current_code }
- *   - current_channel：第一步验身用的当前凭证，'phone' | 'email'（有手机号优先手机号）；
- *     current_code：发到该凭证的验证码。两码同请求提交，后端一次性校验，无需 ticket。
- *   - 发码复用现有 /auth/sms-code/send、/auth/email-code/send。
- *   - 新号/邮箱已被占用、换绑频率超限 → 各自独立业务码 + 中文 msg，前端直接透出 msg。
- * 响应沿用 bind 接口口径：返回更新后的 AccountProfile，或 null（前端自行 invalidate）。
+ * 票据式两步流程（后端不维护 DB 行，票据是 HMAC 短时效凭证，绑定 account + channel）：
+ *   ① POST /account/rebind/current-code/send { channel }        → 向当前绑定的手机/邮箱发码（无滑块）
+ *   ① POST /account/rebind/verify-current    { channel, code }  → 校验当前码，签发 rebind_ticket（600s）
+ *   ② POST /account/rebind/commit { rebind_ticket, new_value, new_code } → 校验新凭证码 + 占用，替换绑定
+ * 新凭证的发码仍复用 /auth/sms-code/send、/auth/email-code/send（services/auth）。
+ *
+ * ⚠️ commit 成功后端会吊销该账号**全部**会话（含当前）——调用方成功后不要再发任何请求
+ * （invalidateQueries 会撞 40101 触发「会话过期」toast），直接清鉴权态引导重新登录。
+ *
+ * 业务码（web-api 已带中英 catalog 文案，未特判的直接透出 msg）：
+ *   40035 当前验证码错误 · 40037 当前凭证未绑定 · 40103 票据失效/不匹配（退回第一步重验）
+ *   40911 新号/邮箱已被其他账号占用 · 42901 24h 内已换绑过
  */
 export type RebindCurrentChannel = 'phone' | 'email'
 
-export interface RebindCredential {
-  current_channel: RebindCurrentChannel
-  current_code: string
+export const REBIND_ERROR_CODE = {
+  /** 当前凭证验证码错误 */
+  CURRENT_CODE_INVALID: 40035,
+  /** 当前凭证未绑定（如无手机号却选 phone 验身） */
+  CURRENT_NOT_BOUND: 40037,
+  /** 换绑票据失效 / 不匹配：回到第一步重新验身 */
+  TICKET_INVALID: 40103,
+  /** 新手机号 / 邮箱已被其他账号占用 */
+  OCCUPIED: 40911,
+  /** 换绑过于频繁（24h 内仅允许一次） */
+  TOO_FREQUENT: 42901,
+} as const
+
+export interface RebindCodeSentResponse {
+  /** 验证码有效期（秒） */
+  expires_in: number
 }
 
-export function rebindPhone(phone: string, code: string, credential: RebindCredential) {
-  return post<AccountProfile | null>('account/phone/rebind', { phone, code, ...credential })
+export interface RebindTicketResponse {
+  rebind_ticket: string
+  /** 票据有效期（秒） */
+  expires_in: number
 }
 
-export function rebindEmail(email: string, code: string, credential: RebindCredential) {
-  return post<AccountProfile | null>('account/email/rebind', { email, code, ...credential })
+/** 换绑第一步：向当前绑定的手机 / 邮箱发验证码 */
+export function sendRebindCurrentCode(channel: RebindCurrentChannel) {
+  return post<RebindCodeSentResponse>('account/rebind/current-code/send', { channel })
+}
+
+/** 换绑第一步校验：验证当前凭证验证码，签发换绑票据 */
+export function verifyRebindCurrent(channel: RebindCurrentChannel, code: string) {
+  return post<RebindTicketResponse>('account/rebind/verify-current', { channel, code })
+}
+
+/**
+ * 换绑第二步：票据 + 新凭证验证码完成换绑。
+ * 响应沿用 bind 口径（更新后的 profile 或空 data）；成功即全部会话被吊销，见文件头说明。
+ */
+export function commitRebind(rebindTicket: string, newValue: string, newCode: string) {
+  return post<AccountProfile | null>('account/rebind/commit', {
+    rebind_ticket: rebindTicket,
+    new_value: newValue,
+    new_code: newCode,
+  })
 }
 
 /**

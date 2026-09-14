@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
-import { LuTicket, LuGift, LuUsers, LuShieldCheck, LuWallet } from 'react-icons/lu'
+import { LuTicket, LuGift, LuUsers, LuShieldCheck, LuWallet, LuCoins } from 'react-icons/lu'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
 import { Pagination } from '@/components/ui/Pagination'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -31,6 +31,7 @@ const CHANNEL_ICON: Record<string, React.ReactNode> = {
   promo: <LuTicket size={14} className="text-mg-text-3 shrink-0" />,
   activity: <LuGift size={14} className="text-mg-text-3 shrink-0" />,
   referral: <LuUsers size={14} className="text-mg-text-3 shrink-0" />,
+  onboarding_reward: <LuCoins size={14} className="text-mg-text-3 shrink-0" />,
 }
 function channelIcon(channel: string) {
   return CHANNEL_ICON[channel] ?? <LuWallet size={14} className="text-mg-text-3 shrink-0" />

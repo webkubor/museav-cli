@@ -179,7 +179,7 @@
       "online": "Online",
       "connecting": "Connecting",
       "offline": "Offline",
-      "empty": "How can I help?",
+      "empty": "How can I help you?",
       "placeholderLoading": "Thinking...",
       "placeholder": "Type a message. Enter to send",
       "stop": "Stop generation",
@@ -416,7 +416,8 @@
       "loginRequired": {
         "handoff": "Sign in to reach a human agent — you can transfer right after signing in.",
         "tickets": "Sign in to view your service records"
-      }
+      },
+      "sensitiveHit": "A possible key or token was detected — it will not be logged or passed to an agent."
     },
     "referralInviteCard": {
       "inviteLinkLabel": "My referral link",

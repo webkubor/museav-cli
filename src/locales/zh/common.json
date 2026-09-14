@@ -175,11 +175,11 @@
       "thinking": "思考中…",
       "todayAt": "今天 {{time}}",
       "yesterdayAt": "昨天 {{time}}",
-      "assistant": "平台助手",
+      "assistant": "智能助手",
       "online": "在线",
       "connecting": "连接中",
       "offline": "离线",
-      "empty": "有什么我可以帮助你的？",
+      "empty": "有什么我可以帮助你的吗？",
       "placeholderLoading": "正在思考中…",
       "placeholder": "输入消息，Enter 发送",
       "stop": "停止生成",
@@ -246,7 +246,7 @@
         "usageAndBilling": "如何查看用量与账单"
       },
       "openAria": "打开智能助手",
-      "close": "关闭平台助手",
+      "close": "关闭智能助手",
       "inputAria": "输入客服消息",
       "reconnect": "重新连接",
       "rating": {
@@ -416,7 +416,8 @@
       "loginRequired": {
         "handoff": "转人工需要先登录，登录后可直接转接客服。",
         "tickets": "登录后查看服务记录"
-      }
+      },
+      "sensitiveHit": "已检测到疑似密钥或令牌，该内容不会被记录或转给人工客服。"
     },
     "referralInviteCard": {
       "inviteLinkLabel": "我的专属邀请链接",

@@ -55,6 +55,8 @@ export interface SupportAskResponse {
   suggest_feedback?: boolean
   needs_login?: boolean
   unresolved_streak?: number
+  /** 敏感信息检测结果，实测字段名首字母大写（Go 结构体直出）：{ Hit: false, Kind: "" } */
+  sensitive?: { Hit?: boolean; Kind?: string }
 }
 
 /**

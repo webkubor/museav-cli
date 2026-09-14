@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 
 import { MarkdownContent } from '@/components/ui/MarkdownContent'
-import { LuX, LuSendHorizontal, LuHistory, LuMessageSquareWarning, LuThumbsUp, LuThumbsDown, LuKeyRound, LuTerminal, LuSparkles, LuReceipt } from 'react-icons/lu'
+import { LuX, LuSendHorizontal, LuHistory, LuMessageSquareWarning, LuCheck, LuThumbsUp, LuThumbsDown, LuKeyRound, LuTerminal, LuSparkles, LuReceipt } from 'react-icons/lu'
 import { useSiteLogo } from '@/config/brand-assets'
 import { storageKeys } from '@/lib/storage'
 import { useCustomerServiceStore } from '@/store/use-customer-service-store'
@@ -172,6 +172,13 @@ function MessageBubble({ msg, onRate, onStartHandoff }: { msg: ChatItem; onRate:
           </button>
         )}
       </div>
+      {/* PRD §10：敏感信息命中后要给用户明确提示（内容不进模型/检索/埋点/人工摘要）。
+          后端回 sensitive.Hit，此前前端一个字段都没读。 */}
+      {msg.sensitiveHit && (
+        <p className="m-0 mt-1 px-1 text-[11px] text-mg-warning">
+          {t('common.customerService.sensitiveHit')}
+        </p>
+      )}
       {msg.role === 'assistant' && msg.answerId && (
         <div className="mt-1 flex items-center gap-2 px-1">
           <button
@@ -190,6 +197,14 @@ function MessageBubble({ msg, onRate, onStartHandoff }: { msg: ChatItem; onRate:
           >
             <LuThumbsDown size={13} />
           </button>
+          {/* PRD §8.4：点击后在控件旁展示勾号和「感谢反馈」。文案 key 早就有，
+              一直没渲染 —— 用户点完没有任何反馈，会以为没点上。 */}
+          {msg.rating && (
+            <span className="flex items-center gap-0.5 text-[11px] text-mg-text-3">
+              <LuCheck size={12} aria-hidden />
+              {t('common.customerService.thanks')}
+            </span>
+          )}
         </div>
       )}
       <span className="mt-1 px-1 text-[10px] text-mg-text-3">
@@ -263,7 +278,7 @@ export function CustomerService() {
   }, [isOpen, setOpen])
 
   useEffect(() => {
-    if (isOpen) trackEvent('support_open')
+    if (isOpen) trackEvent('support_assistant_open')
   }, [isOpen])
 
   // ⚠️ 这里原先是 `if (!activeTenantId) return null`（未登录不渲染），与 prd#996 冲突：

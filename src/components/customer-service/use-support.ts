@@ -50,12 +50,31 @@ export interface ChatItem {
   createdAt: number
   answerId?: string
   answerStatus?: SupportAnswerStatus
+  /** 后端 sensitive.Hit：这条提问/回答命中了疑似密钥，界面要提示且不进交接摘要 */
+  sensitiveHit?: boolean
   rating?: SupportAnswerRating | null
   kind?: 'feedback_receipt' | 'rating_card' | 'async_ticket'
   feedbackReceipt?: { ticketNo: string; status: string; slaText?: string; category: string; description: string }
   ratingCard?: { ticketId: string; agentName?: string; agentNo?: string; submittedStars?: number; skipped?: boolean }
   /** 转异步后的问题单回执（PRD 原型 CustomerSupportAsyncTicket.tsx 的 AsyncSupportTicketCard） */
   asyncTicket?: { ticketNo: string; status: string; slaText?: string }
+}
+
+/**
+ * 人工交接摘要（PRD §8.6）。只拼**用户提问**与回答状态，绝不带回答正文与任何凭据：
+ * §10 明确 API Key / Token / 密码不得进入交接摘要。取最近 6 条，整体截到 800 字。
+ */
+function buildHandoffSummary(items: ChatItem[], pagePath: string): string {
+  const lines = items
+    .filter((m) => m.role === 'user' && !m.sensitiveHit)
+    .slice(-6)
+    .map((m) => `- ${m.content.slice(0, 120)}`)
+  const tried = items.filter((m) => m.role === 'assistant').length
+  return [
+    `页面：${pagePath}`,
+    tried > 0 ? `已尝试智能回答 ${tried} 次` : '未获得智能回答',
+    lines.length ? `最近提问：\n${lines.join('\n')}` : '',
+  ].filter(Boolean).join('\n').slice(0, 800)
 }
 
 /** 取后端实测的回答 id；匿名占位不算，评分控件据此隐藏。 */
@@ -134,9 +153,15 @@ export function useSupport() {
       })
       return
     }
-    trackEvent('support_handoff_request')
+    trackEvent('support_handoff_start')
     try {
-      const resp = await requestHandoff({ page_path: currentPagePath() })
+      const resp = await requestHandoff({
+        page_path: currentPagePath(),
+        // PRD §8.6：转人工要自动交接当前页面与最近对话摘要，客服不用从头问一遍。
+        // §10/§12 要求摘要先过敏感检测：这里只取**用户自己的提问**和回答状态标签，
+        // 不带回答正文、不带 API Key/Token（后端 sensitive.Hit 命中的那条也不会进来）。
+        summary: buildHandoffSummary(messages, currentPagePath() ?? ''),
+      })
       go(modeFromServiceMode(resp.service_mode, resp.ticket_id, {
         ahead: resp.queue_position,
         agentName: resp.agent_name,
@@ -148,7 +173,7 @@ export function useSupport() {
       go({ kind: 'chat' })
       appendMessage({ id: crypto.randomUUID(), role: 'system', content: t('common.customerService.handoffFailed'), createdAt: Date.now() })
     }
-  }, [mode, go, appendMessage, t, account, isLoading])
+  }, [mode, go, appendMessage, t, account, isLoading, messages])
 
   const ask = useCallback(async (question: string) => {
     const trimmed = question.trim()
@@ -174,6 +199,9 @@ export function useSupport() {
         // ans_ephemeral 占位，没落库、评分接口用不了，故不给评分控件。
         answerId: pickAnswerId(resp),
         answerStatus: resp.answer_status,
+        // 后端在响应里回 sensitive:{Hit,Kind}，PRD §10 要求命中后给用户明确提示
+        // （命中内容不进模型/检索/埋点/人工摘要）。此前前端完全没读这个字段。
+        sensitiveHit: resp.sensitive?.Hit === true,
         rating: null,
       })
     } catch (error) {
@@ -291,6 +319,7 @@ export function useSupport() {
         setModeRaw((cur) => (cur.kind === 'human'
           ? { ...cur, agentName, agentNo: detail.agent_no }
           : cur))
+        trackEvent('support_handoff_connected')
         appendMessage({ id: crypto.randomUUID(), role: 'system', content: t('common.customerService.handoffConnected'), createdAt: Date.now() })
       }
       if (event.service_mode === 'ended') {

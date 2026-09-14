@@ -50,6 +50,7 @@ export interface ChatItem {
   createdAt: number
   answerId?: string
   answerStatus?: SupportAnswerStatus
+  suggestHandoff?: boolean
   rating?: SupportAnswerRating | null
   kind?: 'feedback_receipt' | 'rating_card' | 'async_ticket'
   feedbackReceipt?: { ticketNo: string; status: string; slaText?: string; category: string; description: string }
@@ -174,6 +175,7 @@ export function useSupport() {
         // ans_ephemeral 占位，没落库、评分接口用不了，故不给评分控件。
         answerId: pickAnswerId(resp),
         answerStatus: resp.answer_status,
+        suggestHandoff: resp.suggest_handoff,
         rating: null,
       })
     } catch (error) {

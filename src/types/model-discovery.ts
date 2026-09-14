@@ -105,6 +105,9 @@ export interface DiscoveryModelCard {
   is_integrated: boolean
   /** 接入站点，徽标/可点性/落点的唯一判据（见 DiscoveryIntegratedSite）。 */
   integrated_site?: DiscoveryIntegratedSite | null
+  /** 各市场下该模型的 id，实测键是 `cn` / `global`（prd#1016 跨站跳转用 global）。 */
+  market_model_ids?: Record<string, string> | null
+  integrated_markets?: string[] | null
   is_open_source: boolean
   /** TTS / STT 无发布时间，恒为 null。 */
   release_date: string | null

@@ -102,6 +102,8 @@ type DiscoveryModel = {
   integrationStatus?: DiscoveryIntegrationStatus;
   /** 接入站点（接口 integrated_site）：徽标/可点性/落点的唯一判据（qa#727）。 */
   integratedSite?: DiscoveryIntegratedSite | null;
+  /** 国际站 id：MODELGO_AI 的模型据此拼跨站详情链接（prd#1016）。 */
+  globalModelId?: string | null;
   /**
    * 排序与格式化用的原始数值。**不要从展示串反解析** —— `price` 在无数据时是「—」，
    * 解析出来是 0，会把「没有成本数据」显示成「$0.00」，和真的 0（免费）分不开
@@ -116,6 +118,12 @@ type DiscoveryModel = {
  * 比对前统一小写并去掉空格与标点：接口 creator_name 的写法与展示名不一致
  * （"Z AI" vs "Z.ai"、"ByteDance Seed"、"KlingAI"）。
  */
+/**
+ * 国际站控制台的生产地址。与 .env.production 的 VITE_GLOBAL_CONSOLE 同值，
+ * 但这里不读 env：跨站详情链接在测试环境也要指向线上（见 globalModelDetailUrl）。
+ */
+const GLOBAL_CONSOLE_PROD = "https://console.modelgo.ai";
+
 const domesticModelProviders = new Set(
   [
     "Alibaba",
@@ -676,7 +684,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   const safeTablePage = Math.min(tablePage, tablePageCount);
 
   /** 跳详情只需要这四个字段，散点用的轻量模型对象同样适用。 */
-  type DetailShape = Pick<DiscoveryModel, "id" | "name" | "provider" | "supported" | "integrationStatus" | "integratedSite">;
+  type DetailShape = Pick<DiscoveryModel, "id" | "name" | "provider" | "supported" | "integrationStatus" | "integratedSite" | "globalModelId">;
 
   /**
    * 能不能点 —— 与状态标签**同一个判据**（isModelConnected）。
@@ -690,6 +698,16 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
     return isModelConnected(model);
   }
 
+  /**
+   * 国际站详情页地址。**固定用生产域名**：测试环境只有国内一套站，
+   * VITE_GLOBAL_CONSOLE 在 test 里指回 console.test.modelgo.com，跳过去照样
+   * 没有这个模型 —— 而这个链接的意义就是让人看到真实产品页，所以 test 上也
+   * 直接跳线上（owner 2026-09-14 口径）。
+   */
+  function globalModelDetailUrl(globalId: string) {
+    return `${GLOBAL_CONSOLE_PROD}/models/${encodeURIComponent(globalId)}`;
+  }
+
   function modelDetailAriaLabel(model: DetailShape) {
     return model.supported
       ? t("modelsDiscovery.action.viewModelDetail", { name: model.name })
@@ -701,9 +719,15 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
    * 这里只做动作，不重新推断落点——三次返工都是因为在这里另立判据。
    */
   function openModelDetail(model: DetailShape) {
-    switch (detailTarget({ id: model.id, site: accessSite(model) })) {
+    switch (detailTarget({ id: model.id, site: accessSite(model), globalId: model.globalModelId })) {
       case "inside":
         onOpenModel(model.id!);
+        return;
+      case "global":
+        // 接在国外站的模型（MODELGO_AI）：本站没有它的详情页，新开一页去国际站看
+        // （prd#1016，QA 口径「modelgo.ai 接入的新开页面跳国际站」）。
+        // noopener 断开 window.opener —— 外链新窗口的基本要求。
+        window.open(globalModelDetailUrl(model.globalModelId!), "_blank", "noopener,noreferrer");
         return;
       case "no-id":
         // 已接入却没给 modelgo_id：说不出详情页在哪，但不能静默

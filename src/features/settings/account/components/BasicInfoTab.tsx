@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { updateProfile, uploadAvatar, bindEmail } from '@/services/account'
 import { sendEmailCode } from '@/services/auth'
+import { getCaptchaParam } from '@/lib/aliyun-captcha'
 import { useAuthStore } from '@/store/auth'
 import type { AccountProfile } from '@/types'
 import { Button } from '@/components/ui/Button'
@@ -72,7 +73,9 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
 
   const handleSendEmailCode = async () => {
     try {
-      const r = await sendEmailCode(emailInput.trim())
+      // 公共邮箱发码端点后端要人机参数（缺参 40025「人机校验不通过」），与注册页同口径
+      const captcha = await getCaptchaParam()
+      const r = await sendEmailCode(emailInput.trim(), captcha)
       trackEvent('account.email:send_code', undefined, { result: 'success' })
       return r.expires_in
     } catch (err) {
@@ -180,10 +183,14 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
             </div>
           )}
 
+          {/* modal={false} + 拦外部交互：人机验证浮层 portal 在 Dialog 之外，见 ContactRebindDialog 同款注释 */}
           <Modal
             open={emailBindOpen}
             onClose={() => { if (!bindEmailMutation.isPending) setEmailBindOpen(false) }}
             size="md"
+            modal={false}
+            onPointerDownOutside={(event) => event.preventDefault()}
+            onInteractOutside={(event) => event.preventDefault()}
             title={t('account.info.bindEmailTitle')}
             description={t('account.info.bindEmailDesc')}
             footer={(
@@ -196,7 +203,7 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold uppercase tracking-wider text-mg-text-2">{t('account.info.emailLabel')}</label>
-                <Input value={emailInput} disabled={bindEmailMutation.isPending} onChange={(e) => setEmailInput(e.target.value)} placeholder="you@example.com" className="h-9 text-xs rounded-lg" />
+                <Input value={emailInput} disabled={bindEmailMutation.isPending} onChange={(e) => setEmailInput(e.target.value)} placeholder="you@example.com" size="sm" />
               </div>
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold uppercase tracking-wider text-mg-text-2">{t('account.auth.fields.code')}</label>
@@ -205,7 +212,7 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
                   disabled={bindEmailMutation.isPending}
                   onChange={(e) => setEmailCode(e.target.value)}
                   placeholder={t('account.info.emailCodePlaceholder')}
-                  className="h-9 text-xs rounded-lg"
+                  size="sm"
                   suffix={<VerificationCodeButton onSend={handleSendEmailCode} disabled={!emailValid} />}
                 />
               </div>

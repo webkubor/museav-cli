@@ -45,7 +45,7 @@ if command -v pnpm >/dev/null 2>&1 && [ -f node_modules/.modules.yaml ]; then
       if [ "$_new_store" = "$_cur_store" ]; then
         echo "✅ 依赖已迁移到当前 store，继续门禁" >&2
       else
-        echo "⚠ install 完成但 storeDir 记录未变（仍是 $_new_store）。" >&2
+        echo "⚠ install 完成但 storeDir 记录未变（仍是 ${_new_store}）。" >&2
         echo "   多半是 .modules.yaml 被手工改过、pnpm 判定无需重建。" >&2
         echo "   若本次提交正常通过即可忽略；反复出现请删 node_modules 重装。" >&2
       fi
@@ -91,7 +91,7 @@ if [ -f "$USAGE_GUARD" ]; then
   MODELGO_WORKSPACE="$(git rev-parse --show-toplevel)" node "$USAGE_GUARD" src || exit 1
 else
   # 不静默跳过：说清哪道门禁没跑、为什么。依赖没装时前面的快检本来也过不了。
-  echo "pre-commit: ⚠ 硬编码门禁未运行 —— 找不到 $USAGE_GUARD，先 pnpm install" >&2
+  echo "pre-commit: ⚠ 硬编码门禁未运行 —— 找不到 ${USAGE_GUARD}，先 pnpm install" >&2
 fi
 
 # 组件清单不漂移（2026-09-08 接入）：src/components/ui/COMPONENTS.md 是自动生成的

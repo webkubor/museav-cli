@@ -96,7 +96,6 @@ export function useSectionAnchor(ready: boolean) {
 
     // 连续停留不重复上报：只记「上一个报过的」，离开再回来算新的一次到达。
     let lastReported = ''
-    let frame = 0
 
     // 判定「当前区块」＝越过判定线的最后一个区块。
     // 用几何量而不是 IntersectionObserver：完整榜单比视口还高，观察器口径下它和下一个
@@ -132,23 +131,19 @@ export function useSectionAnchor(ready: boolean) {
       trackEvent('model_discovery_section_view', { section_key: current, trigger_type: triggerType })
     }
 
-    const onScroll = () => {
-      if (frame) return
-      frame = window.requestAnimationFrame(() => {
-        frame = 0
-        sync()
-      })
-    }
-
     sync() // 首屏也算一次到达，别等用户滚了才有 hash
-    window.addEventListener('scroll', onScroll, { passive: true })
-    window.addEventListener('resize', onScroll)
+
+    // 🔴 用定时轮询判「当前区块」，不挂 scroll 监听 + rAF（prd#1007 复验分歧的根因）：
+    // 页面被后台化/遮挡时 Chrome 暂停渲染管线，rAF 回调与 scroll 事件都不再派发——
+    // 上一版 onScroll 里 `frame` 置位后 rAF 永不执行，后续 scroll 全部早退，
+    // scroll-spy 从落地起冻结（QA r7 取证 A/B：hash 恒定/恒空 + section_view 0 条，
+    // 而走 setTimeout 的 anchor 路径同环境仍是通的）。定时器在后台页照样触发
+    // （最多被钳到 1s/次），300ms 一次 5 个 getBoundingClientRect 的成本可忽略。
+    const pollTimer = window.setInterval(() => sync(), 300)
 
     return () => {
-      window.removeEventListener('scroll', onScroll)
-      window.removeEventListener('resize', onScroll)
       window.removeEventListener('hashchange', onHashChange)
-      if (frame) window.cancelAnimationFrame(frame)
+      window.clearInterval(pollTimer)
       if (locateTimer) window.clearTimeout(locateTimer)
     }
   }, [ready])

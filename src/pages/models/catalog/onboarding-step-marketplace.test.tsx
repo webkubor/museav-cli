@@ -38,8 +38,21 @@ vi.mock('@/services/tenants', () => ({ listTenants: () => listTenants() }))
 vi.mock('@/services/workspaces', () => ({ listWorkspaces: () => listWorkspaces() }))
 vi.mock('@/hooks/useMarket', () => ({ useMarket: () => 'china' }))
 
+// 指南状态走后端（prd#943）；这里只关心上报时序，用假替身挡住真请求
+const getOnboardingGuide = vi.fn()
+const completeOnboardingStepApi = vi.fn()
+vi.mock('@/services/onboarding', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/onboarding')>()
+  return {
+    ...actual,
+    getOnboardingGuide: (...args: unknown[]) => getOnboardingGuide(...args),
+    completeOnboardingStepApi: (...args: unknown[]) => completeOnboardingStepApi(...args),
+  }
+})
+
 import { useAuthStore } from '@/store/auth'
 import { useOnboardingStore } from '@/store/use-onboarding-store'
+import { toOnboardingGuideState } from '@/services/onboarding'
 import ModelCatalogPage from './index'
 
 const TENANT_ID = 'ten_1'
@@ -108,12 +121,30 @@ beforeEach(() => {
   listModelTags.mockResolvedValue({ items: [] })
   listFeatured.mockResolvedValue({ items: [] })
   listWorkspaces.mockResolvedValue([])
+  getOnboardingGuide.mockResolvedValue({
+    guide: toOnboardingGuideState(
+      {
+        status: 'eligible',
+        guide_version: 'v1',
+        eligible_at: '2026-09-11T00:00:00Z',
+        completed_steps: [],
+        reward: { currency: 'CNY', amount: '10.00', config_version: 'v1' },
+      },
+      { tenantId: TENANT_ID, tenantKind: 'personal', site: 'domestic' },
+    ),
+    autoOpen: false,
+  })
+  completeOnboardingStepApi.mockResolvedValue(null)
   useOnboardingStore.setState({
     guides: {},
     trackRoles: {},
     open: false,
+    pendingAutoOpen: null,
     rewardReceipt: null,
-    billingHighlightRecordRef: null,
+    billingHighlight: null,
+    loadingTenants: {},
+    guidelessTenants: {},
+    claimingTenants: {},
   })
   useAuthStore.setState({
     isAuthenticated: true,

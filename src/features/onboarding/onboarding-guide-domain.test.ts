@@ -1,29 +1,43 @@
 /**
  * 新手指南领域层测试 —— 从 PRD 原型的 node 断言脚本改写成 vitest。
  * 来源：modelgo_prd/scripts/test-onboarding-guide-domain.mjs
- * 覆盖规格 §16.1 的六组：资格创建 / 状态推进 / 权限 / 金额快照 / 领取 / 幂等。
+ * 覆盖规格 §16.1 的：状态推进 / 权限 / 金额展示 / 领取镜像 / 幂等。
+ *
+ * ⚠️ 2026-09-14 切接口后，「取得资格」「发不发奖」由服务端判，前端不再有等价实现，
+ * 所以这里的 fixture 从**真实接口载荷**经 services/onboarding 的映射生成 —— 契约变了
+ * 这些测试要一起红，比自己 new 一个领域对象更能兜住前后端不一致。
  */
 
 import { describe, expect, it } from 'vitest'
+import { toOnboardingGuideState, type OnboardingGuideDTO } from '@/services/onboarding'
 import {
   canAccessOnboardingGuide,
   canClaimOnboardingReward,
   completeOnboardingStep,
-  createOnboardingGuideState,
   formatOnboardingReward,
   markOnboardingRewarded,
   nextOnboardingStep,
+  type OnboardingGuideState,
   type OnboardingStepCompletion,
 } from './onboarding-guide-domain'
 
 const ELIGIBLE_AT = '2026-08-06T00:00:00.000Z'
 
-function domesticGuide() {
-  return createOnboardingGuideState({
-    tenantId: 'tenant-enterprise',
-    tenantKind: 'enterprise',
+function guideFromApi(dto: OnboardingGuideDTO, kind: 'personal' | 'enterprise' = 'enterprise') {
+  return toOnboardingGuideState(dto, {
+    tenantId: kind === 'enterprise' ? 'tenant-enterprise' : 'tenant-overseas',
+    tenantKind: kind,
     site: 'domestic',
-    eligibleAt: ELIGIBLE_AT,
+  }) as OnboardingGuideState
+}
+
+function domesticGuide() {
+  return guideFromApi({
+    status: 'eligible',
+    guide_version: 'v1',
+    eligible_at: ELIGIBLE_AT,
+    completed_steps: [],
+    reward: { currency: 'CNY', amount: '10.00', config_version: 'v1' },
   })
 }
 
@@ -55,8 +69,8 @@ function claimableGuide() {
   )
 }
 
-describe('资格创建与金额快照', () => {
-  it('国内站快照 CNY 10，初始 eligible 且零完成步骤', () => {
+describe('金额快照的展示（规格 §8.2：展示的是快照，不是当前配置）', () => {
+  it('国内站 CNY 10 渲染成 ¥10（服务端给的 "10.00" 不带到界面上）', () => {
     const guide = domesticGuide()
     expect(guide.guideVersion).toBe('v1')
     expect(guide.status).toBe('eligible')
@@ -65,19 +79,23 @@ describe('资格创建与金额快照', () => {
       site: 'domestic',
       currency: 'CNY',
       amount: 10,
-      configVersion: 'onboarding-reward-2026-08-06',
+      configVersion: 'v1',
     })
     expect(formatOnboardingReward(guide.reward)).toBe('¥10')
   })
 
-  it('海外站快照 USD 5', () => {
-    const guide = createOnboardingGuideState({
-      tenantId: 'tenant-overseas',
-      tenantKind: 'personal',
-      site: 'overseas',
-      eligibleAt: ELIGIBLE_AT,
-    })
-    expect(guide.reward.currency).toBe('USD')
+  it('海外站 USD 5 渲染成 $5，站点由币种反推', () => {
+    const guide = guideFromApi(
+      {
+        status: 'eligible',
+        guide_version: 'v1',
+        eligible_at: ELIGIBLE_AT,
+        completed_steps: [],
+        reward: { currency: 'USD', amount: '5.00', config_version: 'v1' },
+      },
+      'personal',
+    )
+    expect(guide.reward.site).toBe('overseas')
     expect(guide.reward.amount).toBe(5)
     expect(formatOnboardingReward(guide.reward)).toBe('$5')
   })
@@ -92,7 +110,7 @@ describe('权限矩阵（规格 §6.2）', () => {
   })
 })
 
-describe('步骤推进', () => {
+describe('步骤推进（本地乐观更新，服务端回来后整份覆盖）', () => {
   it('完成一步进 in_progress，下一项推荐 playground', () => {
     const guide = completeOnboardingStep(domesticGuide(), marketplaceCompletion)
     expect(guide.status).toBe('in_progress')
@@ -108,7 +126,7 @@ describe('步骤推进', () => {
       completedBy: 'user-2',
       evidenceId: 'marketplace-again',
     })
-    // 引用相等是契约的一部分：调用方据此跳过 setState，避免无谓重渲染
+    // 引用相等是契约的一部分：调用方据此跳过 setState 与 POST，避免无谓请求和重渲染
     expect(repeated).toBe(guide)
   })
 
@@ -119,46 +137,55 @@ describe('步骤推进', () => {
     expect(nextOnboardingStep(guide)).toBeNull()
     expect(canClaimOnboardingReward(guide)).toBe(true)
   })
+
+  it('服务端只回 step key，时间/证据字段缺省也能正常判进度', () => {
+    const guide = guideFromApi({
+      status: 'in_progress',
+      guide_version: 'v1',
+      eligible_at: ELIGIBLE_AT,
+      completed_steps: ['browse_marketplace', 'model_experience'],
+      reward: { currency: 'CNY', amount: '10.00' },
+    })
+    expect(guide.completedSteps).toEqual([{ stepKey: 'marketplace' }, { stepKey: 'playground' }])
+    expect(nextOnboardingStep(guide)).toBe('api_key')
+    expect(canClaimOnboardingReward(guide)).toBe(false)
+  })
 })
 
-describe('领取与幂等（规格 §11）', () => {
-  it('未满足条件领取抛错，任务保持原状', () => {
+describe('领取镜像与幂等（规格 §11）', () => {
+  it('没到 claimable 就不给领（按钮的闸门），服务端另有一道', () => {
     const guide = completeOnboardingStep(domesticGuide(), marketplaceCompletion)
-    expect(() =>
-      markOnboardingRewarded(guide, {
-        rewardedAt: '2026-08-06T00:10:00.000Z',
-        transactionId: 'onboarding-tenant-enterprise-v1',
-      }),
-    ).toThrow(/not claimable/i)
+    expect(canClaimOnboardingReward(guide)).toBe(false)
   })
 
-  it('领取成功后进 rewarded 并记下 transactionId，不再可领', () => {
+  it('领取成功后进 rewarded 并记下流水号，不再可领', () => {
     const rewarded = markOnboardingRewarded(claimableGuide(), {
       rewardedAt: '2026-08-06T00:10:00.000Z',
-      transactionId: 'onboarding-tenant-enterprise-v1',
+      transactionId: 'txn-onboarding-1',
+      recordRef: 'txn-onboarding-1',
     })
     expect(rewarded.status).toBe('rewarded')
-    expect(rewarded.rewardTransactionId).toBe('onboarding-tenant-enterprise-v1')
+    expect(rewarded.rewardTransactionId).toBe('txn-onboarding-1')
     expect(canClaimOnboardingReward(rewarded)).toBe(false)
   })
 
-  it('重复领取返回原对象，不覆盖已有 transactionId', () => {
+  it('重复领取返回原对象，不覆盖首次的流水号与时间', () => {
     const rewarded = markOnboardingRewarded(claimableGuide(), {
       rewardedAt: '2026-08-06T00:10:00.000Z',
-      transactionId: 'onboarding-tenant-enterprise-v1',
+      transactionId: 'txn-onboarding-1',
     })
     const again = markOnboardingRewarded(rewarded, {
       rewardedAt: '2026-08-06T00:11:00.000Z',
       transactionId: 'different-transaction',
     })
     expect(again).toBe(rewarded)
-    expect(again.rewardTransactionId).toBe('onboarding-tenant-enterprise-v1')
+    expect(again.rewardTransactionId).toBe('txn-onboarding-1')
   })
 
   it('已领取后不再接受新的步骤上报', () => {
     const rewarded = markOnboardingRewarded(claimableGuide(), {
       rewardedAt: '2026-08-06T00:10:00.000Z',
-      transactionId: 'onboarding-tenant-enterprise-v1',
+      transactionId: 'txn-onboarding-1',
     })
     const after = completeOnboardingStep(rewarded, {
       stepKey: 'marketplace',

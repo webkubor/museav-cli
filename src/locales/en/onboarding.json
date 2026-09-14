@@ -39,7 +39,8 @@
       "title": "Claim your reward",
       "claimable": "{{reward}} ready to claim",
       "remaining": "{{count}} more to unlock",
-      "claim": "Claim {{reward}}"
+      "claim": "Claim {{reward}}",
+      "claimFailed": "Claim failed, please try again later"
     },
     "rewardSuccess": {
       "title": "Reward claimed",

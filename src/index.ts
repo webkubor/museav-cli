@@ -172,7 +172,7 @@ program
   // 透明背景是上游的 background 参数，不是提示词能表达的东西——提示词里写
   // "transparent background" 只是在描述构图，模型照样铺一层白底。这个开关才是抠图开关。
   .option('--transparent', '透明背景 PNG（抠掉背景，带 alpha 通道）。仅部分上游支持，不支持时中台明确报错、不会悄悄给白底图；服务端自动强制 PNG 输出（JPEG 没有 alpha 通道）')
-  .option('--video', '生成视频（走 /api/videos 链路；不传 --model 走 auto 路由，可选档次跑 museav models --video 查）')
+  .option('--video', '生成视频（走 /api/videos 链路；档次由中台按参数自动挑，想看当前用哪个跑 museav models --video）')
   .option('--duration <sec>', '视频时长（秒，仅 --video；由模型与上游支持范围决定）', (v) => Number(v))
   .option('--image <file>', '图生视频首帧图（仅 --video，自动上传）')
   .option('--project <id|名>', '归档进该工作区（museav projects 查；账户身份才生效）')
@@ -318,7 +318,7 @@ program
 program
   .command('models')
   .description('查可用模型（--video 查视频档次）。清单来自中台，CLI 不硬编码')
-  .option('--video', '查视频档次（Seedance 2.0 这类对外名），可直接喂给 gen --video --model')
+  .option('--video', '查视频档次（Seedance 2.0 这类对外名）——只读：用哪档由中台决定')
   .action(withClient((client: StudioClient, opts: { video?: boolean }) => models(client, opts)))
 
 program

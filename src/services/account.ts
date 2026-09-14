@@ -51,8 +51,11 @@ export function bindEmail(email: string, code: string) {
  * ⚠️ commit 成功后端会吊销该账号**全部**会话（含当前）——调用方成功后不要再发任何请求
  * （invalidateQueries 会撞 40101 触发「会话过期」toast），直接清鉴权态引导重新登录。
  *
- * 业务码（web-api 已带中英 catalog 文案，未特判的直接透出 msg）：
- *   40035 当前验证码错误 · 40037 当前凭证未绑定 · 40103 票据失效/不匹配（退回第一步重验）
+ * ⚠️ 票据绑定的 channel 就是 commit 要替换的字段（permissions CommitRebind 按 ticket.Channel 分支）：
+ *   改手机 → 第一步必须 channel=phone 验当前手机；改邮箱 → channel=email 验当前邮箱。
+ *
+ * 业务码（web-api 已带中英 catalog 文案，未特判的直接透出 msg；permissions 原码 4011-4014/4095）：
+ *   40035 验证码错误/过期 · 40036 新值与当前相同 · 40037 当前凭证未绑定 · 40103 票据失效/不匹配（退回第一步重验）
  *   40911 新号/邮箱已被其他账号占用 · 42901 24h 内已换绑过
  */
 export type RebindCurrentChannel = 'phone' | 'email'
@@ -62,6 +65,8 @@ export const REBIND_ERROR_CODE = {
   CURRENT_CODE_INVALID: 40035,
   /** 当前凭证未绑定（如无手机号却选 phone 验身） */
   CURRENT_NOT_BOUND: 40037,
+  /** 新值与当前绑定相同（前端已在本地拦截，理论不可达） */
+  SAME_VALUE: 40036,
   /** 换绑票据失效 / 不匹配：回到第一步重新验身 */
   TICKET_INVALID: 40103,
   /** 新手机号 / 邮箱已被其他账号占用 */

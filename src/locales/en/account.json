@@ -59,7 +59,6 @@
         "next": "Next",
         "prev": "Back",
         "confirm": "Confirm change",
-        "done": "Done",
         "phoneSuccess": "Phone number changed",
         "emailSuccess": "Email changed",
         "phoneError": "Failed to change phone number",

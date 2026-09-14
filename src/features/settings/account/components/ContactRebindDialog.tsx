@@ -5,8 +5,10 @@
  *      ① POST /account/rebind/current-code/send → POST /account/rebind/verify-current（签发 rebind_ticket）
  *      ② POST /auth/sms-code/send | /auth/email-code/send（给新凭证发码，现有）→ POST /account/rebind/commit
  *
- * 三步：① 验证身份（向当前绑定手机号发码；无手机号的账号退到当前邮箱，「下一步」真校验并拿票据）
+ * 三步：① 验证身份（向**当前绑定的、要被换掉的那个凭证**发码：改手机验当前手机、改邮箱验当前邮箱；「下一步」真校验并拿票据）
  *      → ② 验证新凭证（票据 + 新码一起提交）→ ③ 完成。
+ * ⚠️ 与原型的差异：原型「更换邮箱」第一步用当前手机验身；后端 CommitRebind 按票据里的 channel 决定替换哪个凭证
+ *   （permissions pkg/service/account_rebind.go），票据 channel 必须等于换绑目标，所以前端验身 channel 跟 mode 走。
  * commit 成功后端吊销全部会话：完成页不再拉任何接口，「重新登录」清鉴权态跳 /login。
  */
 import { useState } from 'react'
@@ -84,9 +86,10 @@ export function ContactRebindDialog({ mode, profile, onClose }: ContactRebindDia
   const openSupport = useCustomerServiceStore((s) => s.setOpen)
   const isPhone = mode === 'phone'
 
-  // 验身凭证：有手机号优先手机号（国内账号必有），否则退到当前邮箱
-  const currentChannel: RebindCurrentChannel = profile.phone ? 'phone' : 'email'
-  const currentTarget = currentChannel === 'phone' ? maskPhone(profile.phone ?? '') : maskEmail(profile.email)
+  // 验身凭证 = 要被换掉的那个凭证（后端票据 channel 决定 commit 替换哪个字段，见文件头）。
+  // 入口在 BasicInfoTab 只对已绑定的凭证露出，所以这里 profile.phone / profile.email 必有值，40037 不可达。
+  const currentChannel: RebindCurrentChannel = mode
+  const currentTarget = isPhone ? maskPhone(profile.phone ?? '') : maskEmail(profile.email)
 
   const [step, setStep] = useState<Step>('identity')
   const [currentCode, setCurrentCode] = useState('')
@@ -156,14 +159,11 @@ export function ContactRebindDialog({ mode, profile, onClose }: ContactRebindDia
 
   const commitMutation = useMutation({
     mutationFn: () => commitRebind(rebindTicket ?? '', normalizedNew, newCode.trim()),
-    onSuccess: (updated) => {
+    onSuccess: () => {
       appToast.success(t(isPhone ? 'account.info.rebind.phoneSuccess' : 'account.info.rebind.emailSuccess'))
-      // 会话已被后端吊销：只同步本地缓存，不 invalidate（重拉会撞 40101 触发「会话过期」toast）
-      if (updated) queryClient.setQueryData<AccountProfile>(['account-profile'], updated)
-      const account = useAuthStore.getState().account
-      if (account) {
-        useAuthStore.setState({ account: isPhone ? { ...account, phone: normalizedNew } : { ...account, email: normalizedNew } })
-      }
+      // 会话已被后端吊销：完成页存活期间不允许再有任何请求打出去（会撞 40101 → 「会话过期」toast 把完成页顶掉），
+      // 掐掉在途查询、不 invalidate、不同步本地 profile（relogin 马上 clearAuth，写了也是白写）
+      void queryClient.cancelQueries()
       trackEvent(rebindEvent, undefined, { result: 'success' })
       setStep('done')
     },
@@ -316,7 +316,7 @@ export function ContactRebindDialog({ mode, profile, onClose }: ContactRebindDia
               onChange={(e) => setNewCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
               placeholder={t('account.info.rebind.codePlaceholder')}
               size="sm"
-              suffix={<VerificationCodeButton onSend={sendNewCode} disabled={!newValid || isSame} />}
+              suffix={<VerificationCodeButton onSend={sendNewCode} disabled={!newValid || isSame || busy} />}
             />
           </div>
         </div>

@@ -412,6 +412,10 @@
           "updatedLabel": "Updated",
           "agentLabel": "Agent"
         }
+      },
+      "loginRequired": {
+        "handoff": "Sign in to reach a human agent — you can transfer right after signing in.",
+        "tickets": "Sign in to view your service records"
       }
     },
     "referralInviteCard": {

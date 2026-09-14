@@ -30,12 +30,32 @@ export interface SupportAskRequest {
 }
 
 export interface SupportAskResponse {
-  answer_id: string
+  /**
+   * 回答 id。后端实测返回的是 `message_id`（2026-09-14 test 实测），
+   * `answer_id` 从未出现过 —— 早期照 PRD 写的字段名，导致点赞点踩控件
+   * 恒不渲染（渲染条件是 answerId 非空）。/support/* 不在 Swagger 里
+   * （`/swagger/doc.json` 的 support 路径数 = 0），静态校验查不出来，
+   * 只能以实测响应为准，两个名字都留着兼容。
+   */
+  message_id?: string
+  answer_id?: string
   answer: string
   answer_status: SupportAnswerStatus
   conversation_id?: string
   sla_text?: string
+  intent?: string
+  confidence?: string
+  suggest_handoff?: boolean
+  suggest_feedback?: boolean
+  needs_login?: boolean
+  unresolved_streak?: number
 }
+
+/**
+ * 匿名提问时后端回的占位 id：这条回答没落库，拿它调
+ * `POST /support/answers/:id/rating` 没有意义，因此不展示评分控件。
+ */
+export const EPHEMERAL_ANSWER_ID = 'ans_ephemeral'
 
 export interface SupportFeedbackRequest {
   /** 幂等键，crypto.randomUUID() 生成 */

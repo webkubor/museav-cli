@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Badge } from '@/components/ui/Badge'
 import { LuArrowLeft, LuSearch, LuInbox } from 'react-icons/lu'
 import { appToast } from '@/lib/app-toast'
+import { useAuthStore } from '@/store/auth'
 import { listSupportTickets } from '@/services/support'
 import type { SupportTicketDetail, SupportTicketFilter, SupportTicketSummary } from '@/interfaces/support'
 
@@ -19,6 +20,7 @@ export interface TicketsListProps {
 /** 服务记录列表：游标分页 + filter + 搜索 */
 export function TicketsList({ onSelect, onClose }: TicketsListProps) {
   const { t } = useTranslation()
+  const account = useAuthStore((s) => s.account)
   const [filter, setFilter] = useState<SupportTicketFilter>('all')
   const [q, setQ] = useState('')
   const [items, setItems] = useState<SupportTicketSummary[]>([])
@@ -27,6 +29,13 @@ export function TicketsList({ onSelect, onClose }: TicketsListProps) {
   const [loading, setLoading] = useState(false)
 
   async function load(reset: boolean) {
+    // 未登录不发请求：拿到的只会是 40101，列表空着渲染「暂无服务记录」，
+    // 用户会以为自己确实没有记录。这里如实说「登录后查看」。
+    if (!account) {
+      setItems([])
+      setHasMore(false)
+      return
+    }
     setLoading(true)
     try {
       const page = await listSupportTickets({ filter, q: q.trim() || undefined, cursor: reset ? undefined : cursor ?? undefined })
@@ -45,7 +54,7 @@ export function TicketsList({ onSelect, onClose }: TicketsListProps) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter])
+  }, [filter, account])
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
@@ -81,7 +90,10 @@ export function TicketsList({ onSelect, onClose }: TicketsListProps) {
 
       <div className="flex-1 overflow-y-auto px-4 py-3">
         {!loading && items.length === 0 && (
-          <EmptyState icon={<LuInbox />} title={t('common.customerService.tickets.empty')} />
+          <EmptyState
+            icon={<LuInbox />}
+            title={account ? t('common.customerService.tickets.empty') : t('common.customerService.loginRequired.tickets')}
+          />
         )}
         <div className="flex flex-col gap-2">
           {items.map((item) => (

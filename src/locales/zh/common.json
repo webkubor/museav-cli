@@ -412,6 +412,10 @@
           "updatedLabel": "最近更新",
           "agentLabel": "客服"
         }
+      },
+      "loginRequired": {
+        "handoff": "转人工需要先登录，登录后可直接转接客服。",
+        "tickets": "登录后查看服务记录"
       }
     },
     "referralInviteCard": {

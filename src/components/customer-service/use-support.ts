@@ -31,9 +31,11 @@ import {
   transition,
   type SupportMode,
 } from './support-machine'
+import { EPHEMERAL_ANSWER_ID } from '@/interfaces/support'
 import type {
   SupportAnswerRating,
   SupportAnswerStatus,
+  SupportAskResponse,
   SupportFeedbackRequest,
   SupportTicketDetail,
 } from '@/interfaces/support'
@@ -53,6 +55,12 @@ export interface ChatItem {
   ratingCard?: { ticketId: string; agentName?: string; agentNo?: string; submittedStars?: number; skipped?: boolean }
   /** 转异步后的问题单回执（PRD 原型 CustomerSupportAsyncTicket.tsx 的 AsyncSupportTicketCard） */
   asyncTicket?: { ticketNo: string; status: string; slaText?: string }
+}
+
+/** 取后端实测的回答 id；匿名占位不算，评分控件据此隐藏。 */
+function pickAnswerId(resp: SupportAskResponse): string | undefined {
+  const id = resp.message_id ?? resp.answer_id
+  return !id || id === EPHEMERAL_ANSWER_ID ? undefined : id
 }
 
 const HANDOFF_TRIGGER_RE = /转\s*人工|找\s*客服|人工\s*处理|human\s*(agent|support)/i
@@ -108,6 +116,19 @@ export function useSupport() {
   const startHandoff = useCallback(async () => {
     // 「排队中不允许重复发起转接」由状态机判定（PRD §8.6），不再自己比 serviceMode
     if (!canStartHandoff(mode)) return
+    // 未登录直接引导登录：转人工是登录态能力，发出去只会拿到 40101，
+    // 再被 catch 成「转人工失败，请稍后重试」——用户会一直重试，而重试
+    // 永远失败。同理这里也不能让 40101 走到 request.ts 的全局分支，
+    // 那条是给「会话过期」用的，对从未登录的人提示「会话已过期」是错的。
+    if (!account) {
+      appendMessage({
+        id: crypto.randomUUID(),
+        role: 'system',
+        content: t('common.customerService.loginRequired.handoff'),
+        createdAt: Date.now(),
+      })
+      return
+    }
     trackEvent('support_handoff_request')
     try {
       const resp = await requestHandoff({ page_path: currentPagePath() })
@@ -121,7 +142,7 @@ export function useSupport() {
       go({ kind: 'chat' })
       appendMessage({ id: crypto.randomUUID(), role: 'system', content: t('common.customerService.handoffFailed'), createdAt: Date.now() })
     }
-  }, [mode, go, appendMessage, t])
+  }, [mode, go, appendMessage, t, account])
 
   const ask = useCallback(async (question: string) => {
     const trimmed = question.trim()
@@ -143,7 +164,9 @@ export function useSupport() {
         role: 'assistant',
         content: resp.answer,
         createdAt: Date.now(),
-        answerId: resp.answer_id,
+        // 后端实测返回 message_id（不是 PRD 写的 answer_id）；匿名态是
+        // ans_ephemeral 占位，没落库、评分接口用不了，故不给评分控件。
+        answerId: pickAnswerId(resp),
         answerStatus: resp.answer_status,
         rating: null,
       })

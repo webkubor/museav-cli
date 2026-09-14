@@ -41,9 +41,10 @@ export interface OnboardingRewardReceipt {
   /** 入账记录编号，展示用 */
   recordRef: string
   /**
-   * 入账记录行 id。**定位高亮认这个**：claim 返回的 record_ref 是流水 id，而入账记录
-   * 列表把同一笔渲染成 `redm_<日期>_<后8位>` 的展示编号，两者对不上；能对上的是
-   * IncomeRecord.id === transaction_id。见 BillingLedgerPanel 的匹配。
+   * 入账记录行 id。与 recordRef **两个标识交叉比对**任一命中即高亮：不同数据源下这两个
+   * 值对应的字段不一样（前端合成的行 id === record_ref；接口直出时 record_ref 是
+   * `redm_<日期>_<后8位>` 展示编号、id 另算），只认一个就会有一侧对不上。
+   * 匹配规则见 pages/billing/income-highlight.ts，不在这里内联。
    */
   transactionId: string
   rewardLabel: string

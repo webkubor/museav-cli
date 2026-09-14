@@ -65,7 +65,7 @@ export interface ChatItem {
  * 人工交接摘要（PRD §8.6）。只拼**用户提问**与回答状态，绝不带回答正文与任何凭据：
  * §10 明确 API Key / Token / 密码不得进入交接摘要。取最近 6 条，整体截到 800 字。
  */
-function buildHandoffSummary(items: ChatItem[], pagePath: string): string {
+export function buildHandoffSummary(items: ChatItem[], pagePath: string): string {
   const lines = items
     .filter((m) => m.role === 'user' && !m.sensitiveHit)
     .slice(-6)

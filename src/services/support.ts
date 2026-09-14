@@ -60,7 +60,8 @@ export function markTicketRead(id: string) {
 }
 
 export function rateAnswer(answerId: string, rating: 'like' | 'dislike') {
-  return post<void>(`support/answers/${answerId}/rating`, { rating })
+  // 后端契约实测（qa#731）：只收 up/down，like/dislike 会被 40001 support.empty_content 拒
+  return post<void>(`support/answers/${answerId}/rating`, { rating: rating === 'like' ? 'up' : 'down' })
 }
 
 export function rateTicket(id: string, rating: number) {

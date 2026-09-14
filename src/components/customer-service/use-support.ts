@@ -223,7 +223,10 @@ export function useSupport() {
   const rateMessageAnswer = useCallback(async (messageId: string, rating: SupportAnswerRating) => {
     const target = messages.find((m) => m.id === messageId)
     if (!target?.answerId) return
-    const next = target.rating === rating ? null : rating
+    // 后端评分一次性（qa#731 实测：up 后再 down → 40001 support.invalid_transition），
+    // 已评过就不再响应，切换/撤销都不允许。
+    if (target.rating) return
+    const next = rating
     setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, rating: next } : m)))
     if (next) {
       trackEvent('support_answer_rating', { rating: next })

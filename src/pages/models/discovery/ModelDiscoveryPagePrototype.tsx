@@ -70,6 +70,7 @@ import {
   useDiscoveryTrends,
 } from './use-discovery-query'
 import { ProgressBar } from '@/components/ui/ProgressBar'
+import { OverflowTip } from '@/components/ui/OverflowTip'
 import { defaultScatterSelection, detailTarget, EMPTY, integratedSiteOf, rankBarWidth, specialtyRows, unitPriceDetail } from './discovery-data'
 import type { DiscoveryIntegratedSite, DiscoveryIntegrationStatus, DiscoveryUnitPrices } from '@/types'
 import { appToast } from "@/lib/app-toast"
@@ -1059,7 +1060,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
           ))}
           {visibleModels.slice(0, 5).map((model, index) => {
             const hasDetail = canOpenModelDetail(model);
-            return <div aria-label={hasDetail ? modelDetailAriaLabel(model) : undefined} className={`model-discovery-rank-row ${hasDetail ? "model-discovery-row-clickable" : ""}`} key={model.name} onClick={hasDetail ? () => openModelDetail(model) : undefined} onKeyDown={hasDetail ? (event) => handleModelRowKeyDown(event, model) : undefined} role={hasDetail ? "link" : undefined} tabIndex={hasDetail ? 0 : undefined}><span>{index + 1}</span><strong className="model-discovery-rank-name"><DiscoveryModelIcon model={model.name} provider={model.provider} /><span><span title={model.name}>{model.name}</span><small>{model.provider}</small></span></strong><em className={isModelConnected(model) ? "supported" : "pending"}>{modelAccessLabel(t, model)}</em><div><ProgressBar flow showGlow={false} size="xs" value={rankBarWidth(model, visibleModels.slice(0, 5), scoreAscending)} /><b>{model.score}</b></div></div>;
+            return <div aria-label={hasDetail ? modelDetailAriaLabel(model) : undefined} className={`model-discovery-rank-row ${hasDetail ? "model-discovery-row-clickable" : ""}`} key={model.name} onClick={hasDetail ? () => openModelDetail(model) : undefined} onKeyDown={hasDetail ? (event) => handleModelRowKeyDown(event, model) : undefined} role={hasDetail ? "link" : undefined} tabIndex={hasDetail ? 0 : undefined}><span>{index + 1}</span><strong className="model-discovery-rank-name"><DiscoveryModelIcon model={model.name} provider={model.provider} /><span><OverflowTip text={model.name} /><small>{model.provider}</small></span></strong><em className={isModelConnected(model) ? "supported" : "pending"}>{modelAccessLabel(t, model)}</em><div><ProgressBar flow showGlow={false} size="xs" value={rankBarWidth(model, visibleModels.slice(0, 5), scoreAscending)} /><b>{model.score}</b></div></div>;
           })}
           <div className="model-discovery-rank-more"><button onClick={viewFullRanking} type="button">{t("modelsDiscovery.action.viewMore")}<LuChevronDown size={13} /></button></div>
         </article>

@@ -36,6 +36,23 @@ function channelIcon(channel: string) {
   return CHANNEL_ICON[channel] ?? <LuWallet size={14} className="text-mg-text-3 shrink-0" />
 }
 
+/**
+ * 「查看赠金」要高亮的是哪一行（新手奖励领取回执 → 入账记录，规格 2026-08-13）。
+ *
+ * ⚠️ **先比 id，再比编号**。claim 接口返回的 record_ref 是赠金流水的 **id**，而入账记录
+ * 这一列展示的 record_ref 是服务端现算的展示编号（`redm_<日期>_<id 后 8 位>`，billing
+ * incomeRecordRef）——两者对不上。能对上的是 IncomeRecord.id === claim.transaction_id。
+ * 保留 record_ref 的比较是兼容旧回执 / 后端日后把 record_ref 改成正式编号的情况。
+ */
+function isHighlighted(
+  rec: IncomeRecord,
+  highlight: { recordRef: string; transactionId: string } | null,
+): boolean {
+  if (!highlight) return false
+  if (highlight.transactionId && rec.id === highlight.transactionId) return true
+  return Boolean(highlight.recordRef) && rec.record_ref === highlight.recordRef
+}
+
 const TYPE_FILTERS: Array<{ value: 'all' | IncomeRecordType }> = [
   { value: 'all' },
   { value: 'recharge' },
@@ -118,7 +135,7 @@ export function BillingLedgerPanel({
 
   // 新手奖励领取后从成功弹框点「查看赠金」进来：定位并高亮那条「新手任务奖励」入账记录
   // （新手指南规格 2026-08-13 §交互流程 4-5）
-  const highlightRecordRef = useOnboardingStore((st) => st.billingHighlightRecordRef)
+  const highlight = useOnboardingStore((st) => st.billingHighlight)
   const clearHighlight = useOnboardingStore((st) => st.clearBillingHighlight)
   const highlightRowRef = useRef<HTMLTableRowElement | null>(null)
 
@@ -127,7 +144,7 @@ export function BillingLedgerPanel({
   // 只能由这个外部信号一次性推一把——highlightRecordRef 从 null 变成有值时触发一次，
   // 用完即被下面的 effect 清成 null，不会反复。
   useEffect(() => {
-    if (!highlightRecordRef) return
+    if (!highlight) return
     // eslint-disable-next-line react-hooks/set-state-in-effect -- 外部 store 信号驱动的一次性复位，同本仓 logs/index.tsx 的 request_id 自动展开
     setLedgerTab('transactions')
     setType('all')
@@ -135,7 +152,7 @@ export function BillingLedgerPanel({
     onBucketFilterChange('all')
     pager.reset()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [highlightRecordRef])
+  }, [highlight])
 
   // bucketFilter 由父级（可能来自 BalanceCard 点桶，也可能来自下面的筛选 Select）驱动；
   // 无论来源，变化时都要重置分页 + 上报，跳过首渲染避免误报。
@@ -168,19 +185,17 @@ export function BillingLedgerPanel({
    * 数据到位后滚到目标行，2.2s 后清掉高亮标记（动画时长同 billing.css）。
    * 目标记录不在返回里就直接清掉：用户照常停在账单管理，不弹错误
    * （规格 2026-08-13 §可访问性与异常处理「若目标记录未找到，仍进入账单管理，不阻断」）。
-   * ⚠️ 本轮奖励是前端 Mock，服务端没有这条流水，所以现在走的正是这条「未找到」分支——
-   * 后端 /onboarding/reward/claim 落地后才会真高亮。
    */
   useEffect(() => {
-    if (!highlightRecordRef || isFetching) return
-    const found = items.some((rec) => rec.record_ref === highlightRecordRef)
+    if (!highlight || isFetching) return
+    const found = items.some((rec) => isHighlighted(rec, highlight))
     if (found) {
       highlightRowRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
     }
     const timer = setTimeout(clearHighlight, found ? 2200 : 0)
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [highlightRecordRef, isFetching, data])
+  }, [highlight, isFetching, data])
 
   // §11.2 billing_income_filter_change：type/time 两维度共用这个上报点；bucket 维度的上报
   // 已改由上面那个 effect 统一处理（无论触发源是这里的 Select 还是 BalanceCard 点桶）。
@@ -323,8 +338,8 @@ export function BillingLedgerPanel({
                 {items.map((rec) => (
                   <TableRow
                     key={rec.id}
-                    ref={rec.record_ref === highlightRecordRef ? highlightRowRef : undefined}
-                    className={rec.record_ref === highlightRecordRef ? 'billing-transaction-highlight' : undefined}
+                    ref={isHighlighted(rec, highlight) ? highlightRowRef : undefined}
+                    className={isHighlighted(rec, highlight) ? 'billing-transaction-highlight' : undefined}
                   >
                     <TableCell className="font-mono text-xs text-mg-text-2 max-w-[160px]">
                       <div className="flex items-center gap-1 min-w-0">

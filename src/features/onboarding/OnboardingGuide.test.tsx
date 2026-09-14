@@ -15,9 +15,9 @@ import { describe, expect, it, vi, beforeAll } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import i18n, { loadLocaleNamespaces } from '@/i18n'
 import { OnboardingGuide, OnboardingRewardSuccessDialog } from './OnboardingGuide'
+import { toOnboardingGuideState } from '@/services/onboarding'
 import {
   completeOnboardingStep,
-  createOnboardingGuideState,
   ONBOARDING_STEP_ORDER,
   type OnboardingGuideState,
 } from './onboarding-guide-domain'
@@ -37,12 +37,16 @@ function guideWith(count: number): OnboardingGuideState {
         evidenceType: 'test',
         evidenceId: `e-${stepKey}`,
       }),
-    createOnboardingGuideState({
-      tenantId: 't-1',
-      tenantKind: 'personal',
-      site: 'domestic',
-      eligibleAt: '2026-08-06T00:00:00.000Z',
-    }),
+    toOnboardingGuideState(
+      {
+        status: 'eligible',
+        guide_version: 'v1',
+        eligible_at: '2026-08-06T00:00:00.000Z',
+        completed_steps: [],
+        reward: { currency: 'CNY', amount: '10.00', config_version: 'v1' },
+      },
+      { tenantId: 't-1', tenantKind: 'personal', site: 'domestic' },
+    ) as OnboardingGuideState,
   )
 }
 

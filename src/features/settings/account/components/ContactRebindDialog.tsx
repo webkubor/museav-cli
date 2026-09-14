@@ -31,6 +31,7 @@ import { sendEmailCode, sendSmsCode } from '@/services/auth'
 import { getCaptchaParam } from '@/lib/aliyun-captcha'
 import { appToast } from '@/lib/app-toast'
 import { trackEvent } from '@/lib/track'
+import { toLoginWithRedirect } from '@/lib/redirect'
 import { errorCodeOf, isApiErrorCode } from '@/lib/request-error-message'
 import { useAuthStore } from '@/store/auth'
 import { useCustomerServiceStore } from '@/store/use-customer-service-store'
@@ -144,7 +145,8 @@ export function ContactRebindDialog({ mode, profile, onClose }: ContactRebindDia
       setStep('new')
     },
     onError: (err: unknown) => {
-      appToast.requestError(err, t(isPhone ? 'account.info.rebind.phoneError' : 'account.info.rebind.emailError'))
+      // 验身阶段的失败不是「更换失败」：兜底文案单独一条，后端 msg（40035 等）优先透出
+      appToast.requestError(err, t('account.info.rebind.identityVerifyFailed'))
       trackEvent(rebindEvent, undefined, { result: 'fail', error_code: errorCodeOf(err) })
     },
   })
@@ -183,7 +185,8 @@ export function ContactRebindDialog({ mode, profile, onClose }: ContactRebindDia
   const relogin = () => {
     onClose()
     clearAuth()
-    navigate('/login', { replace: true })
+    // 复用 RequireAuth 的回跳口径：重新登录后落回账号设置页
+    navigate(toLoginWithRedirect('/settings/account'), { replace: true })
   }
 
   const title = t(isPhone ? 'account.info.rebind.changePhone' : 'account.info.rebind.changeEmail')

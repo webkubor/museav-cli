@@ -87,9 +87,10 @@ const sendCodeButton = () => screen.getByRole('button', { name: /发送验证码
 const nextButton = () => screen.getByRole('button', { name: '下一步' })
 
 /** 第一步：发当前码 → 填码 → 下一步（真调 verify-current），断言进入第二步 */
-async function passIdentityStep(channel: 'phone' | 'email', code = '123456') {
+async function passIdentityStep(channel: 'phone' | 'email', code = '123456', expectedSends = 1) {
   fireEvent.click(sendCodeButton())
-  await waitFor(() => expect(sendRebindCurrentCode).toHaveBeenCalledWith(channel))
+  await waitFor(() => expect(sendRebindCurrentCode).toHaveBeenCalledTimes(expectedSends))
+  expect(sendRebindCurrentCode).toHaveBeenLastCalledWith(channel)
   fireEvent.change(codeInput(), { target: { value: code } })
   fireEvent.click(nextButton())
   await waitFor(() => expect(verifyRebindCurrent).toHaveBeenCalledWith(channel, code))
@@ -100,6 +101,8 @@ async function fillNewEmailAndSubmit(email = 'new@example.com', code = '654321')
   fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: email } })
   fireEvent.click(sendCodeButton())
   await waitFor(() => expect(sendEmailCode).toHaveBeenCalledWith(email))
+  // 等「已发送」落地再填码，不依赖 act 冲刷时序
+  await screen.findByText(/验证码已发送至/)
   fireEvent.change(codeInput(), { target: { value: code } })
   fireEvent.click(screen.getByRole('button', { name: '确认更换' }))
 }
@@ -153,7 +156,7 @@ describe('ContactRebindDialog', () => {
     await waitFor(() => expect(sendRebindCurrentCode).toHaveBeenCalledWith('email'))
     fireEvent.change(codeInput(), { target: { value: '000000' } })
     fireEvent.click(nextButton())
-    await waitFor(() => expect(appToast.requestError).toHaveBeenCalledWith(err, '邮箱更换失败'))
+    await waitFor(() => expect(appToast.requestError).toHaveBeenCalledWith(err, '身份验证失败，请检查验证码后重试'))
     expect(stepItems()[0]).toHaveAttribute('aria-current', 'step')
   })
 
@@ -228,8 +231,8 @@ describe('ContactRebindDialog', () => {
     expect(stepItems()[0]).toHaveAttribute('aria-current', 'step')
     expect(nextButton()).toBeDisabled()
 
-    // 恢复：重发当前码、重新校验拿到新票据，第二步保留已填的新邮箱与新码，直接再提交
-    await passIdentityStep('email', '333333')
+    // 恢复：重发当前码（第 2 次）、重新校验拿到新票据，第二步保留已填的新邮箱与新码，直接再提交
+    await passIdentityStep('email', '333333', 2)
     expect(verifyRebindCurrent).toHaveBeenCalledTimes(2)
     fireEvent.click(screen.getByRole('button', { name: '确认更换' }))
     await waitFor(() => expect(commitRebind).toHaveBeenLastCalledWith('tk_2', 'new@example.com', '654321'))

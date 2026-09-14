@@ -39,7 +39,8 @@
       "title": "领取新手奖励",
       "claimable": "可领取 {{reward}}",
       "remaining": "再完成 {{count}} 项即可领取",
-      "claim": "领取 {{reward}}"
+      "claim": "领取 {{reward}}",
+      "claimFailed": "领取失败，请稍后重试"
     },
     "rewardSuccess": {
       "title": "新手奖励领取成功",

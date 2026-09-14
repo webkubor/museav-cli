@@ -172,37 +172,39 @@ export function BenchmarkSection({ modelId }: { modelId: string }) {
   useEffect(() => {
     const el = sectionRef.current
     if (!el || !data || viewReportedRef.current) return
-    let dwellTimer = 0
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
-            if (dwellTimer) continue
-            dwellTimer = window.setTimeout(() => {
-              dwellTimer = 0
-              if (viewReportedRef.current) return
-              viewReportedRef.current = true
-              trackEvent('model_detail_benchmark_view', {
-                model_id: data.modelgo_id || modelId,
-                category: data.type,
-                summary_metric_keys: summaryMetricKeys,
-                snapshot_date: data.snapshot_date,
-              })
-              observer.disconnect()
-            }, 1000)
-          } else if (dwellTimer) {
-            // 驻留被打断（滚开了）就清掉，重新进入再从 0 计时
-            window.clearTimeout(dwellTimer)
-            dwellTimer = 0
-          }
-        }
-      },
-      { threshold: [0, 0.5, 1] },
-    )
-    observer.observe(el)
+    // 🔴 定时轮询几何量，不用 IntersectionObserver（prd#1007 复验分歧的根因）：
+    // IO 回调挂在渲染管线上，页面被后台化/遮挡时 Chrome 不再出帧、IO 一次都不派发
+    // （QA r7：卡片 100% 可见驻留 20s 仍 0 上报，而走 DOM 事件的 tooltip_view 同页是通的）。
+    // 定时器在后台页照样触发；驻留用时间戳累计而不是数 tick，后台钳到 1s/次也不失真。
+    let visibleSince = 0
+    const dwellPoll = window.setInterval(() => {
+      if (viewReportedRef.current) return
+      const rect = el.getBoundingClientRect()
+      const viewportH = window.innerHeight || document.documentElement.clientHeight
+      const visible = Math.min(rect.bottom, viewportH) - Math.max(rect.top, 0)
+      const ratio = rect.height > 0 ? visible / rect.height : 0
+      if (ratio < 0.5) {
+        // 驻留被打断（滚开了）就清掉，重新进入再从 0 计时
+        visibleSince = 0
+        return
+      }
+      const now = Date.now()
+      if (!visibleSince) {
+        visibleSince = now
+        return
+      }
+      if (now - visibleSince < 1000) return
+      viewReportedRef.current = true
+      window.clearInterval(dwellPoll)
+      trackEvent('model_detail_benchmark_view', {
+        model_id: data.modelgo_id || modelId,
+        category: data.type,
+        summary_metric_keys: summaryMetricKeys,
+        snapshot_date: data.snapshot_date,
+      })
+    }, 300)
     return () => {
-      observer.disconnect()
-      if (dwellTimer) window.clearTimeout(dwellTimer)
+      window.clearInterval(dwellPoll)
     }
   }, [data, modelId, summaryMetricKeys])
 

@@ -1,25 +1,26 @@
 /**
- * 新手指南全局状态（本轮全 Mock，落 localStorage）
+ * 新手指南全局状态
  * 路由：全局
- * API：⚠️ 无 —— 服务端契约见文件末尾「待后端」，接口到位后只换数据来源，UI 不动
+ * API：services/onboarding.ts（prd#943：guide / steps/{key} / reward/claim）
  *
- * 规格：2026-08-06-onboarding-guide-reward-design.md §9.2（原型状态建议）
+ * 规格：2026-08-06-onboarding-guide-reward-design.md §9.2（生产对象）
  *      2026-08-13-onboarding-reward-balance-guide-design.md（领取回执 + 账单定位）
  *
- * 状态分桶口径照规格：
- *   · 任务进度按 tenantId 分桶 —— 个人/企业隔离，企业 Owner 与 Admin 共享同一份（§6.2）
- *   · 自动展开偏好按 user+tenant+guideVersion 分桶 —— Owner 关掉不影响 Admin 首次自动展开（§5.4）
+ * **服务端是权威，这个 store 是它的本地镜像**（2026-09-14 由全 Mock 切过来）：
+ *   · 进度按 tenant 共享（企业 Owner / Admin 看到同一份），由服务端按 tenant_id 存
+ *   · 自动展开偏好按 user+tenant+guideVersion，也在服务端（billing 的 user_preference）
+ *   · 金额快照、once-per-tenant 发放、五步幂等全在 billing，客户端传值一律不可信
+ *
+ * ⚠️ 不再写 localStorage：本地缓存一份进度只会和服务端打架（换设备/换人看到的该是
+ * 同一份），领取与否更不能由浏览器说了算。
  */
 
 import { create } from 'zustand'
-import { storageKeys } from '@/lib/storage'
 import { useAuthStore } from '@/store/auth'
 import { trackEvent } from '@/lib/track'
 import {
-  ONBOARDING_GUIDE_VERSION,
-  completeOnboardingStep,
   canClaimOnboardingReward,
-  createOnboardingGuideState,
+  completeOnboardingStep,
   formatOnboardingReward,
   markOnboardingRewarded,
   type OnboardingGuideState,
@@ -28,36 +29,68 @@ import {
   type OnboardingTenantKind,
 } from '@/features/onboarding/onboarding-guide-domain'
 import { buildOnboardingGuideProps } from '@/features/onboarding/onboarding-track'
+import {
+  claimOnboardingReward,
+  completeOnboardingStepApi,
+  getOnboardingGuide,
+  type OnboardingGuideContext,
+} from '@/services/onboarding'
 
-/** 领取成功后交给弹框和账单页的回执（2026-08-13 规格：recordRef 是跨页面定位标识）。 */
+/** 领取成功后交给弹框和账单页的回执（2026-08-13 规格：跨页面定位标识）。 */
 export interface OnboardingRewardReceipt {
+  /** 入账记录编号，展示用 */
   recordRef: string
+  /**
+   * 入账记录行 id。**定位高亮认这个**：claim 返回的 record_ref 是流水 id，而入账记录
+   * 列表把同一笔渲染成 `redm_<日期>_<后8位>` 的展示编号，两者对不上；能对上的是
+   * IncomeRecord.id === transaction_id。见 BillingLedgerPanel 的匹配。
+   */
+  transactionId: string
   rewardLabel: string
 }
 
+/** 领取结果三态（规格 §13.1 的 claim_result；顶层 result 列另有 SDK 枚举） */
+export type OnboardingClaimOutcome =
+  | { result: 'success'; receipt: OnboardingRewardReceipt }
+  | { result: 'already_claimed'; receipt: OnboardingRewardReceipt | null }
+  | { result: 'failed'; errorCode: string; error?: unknown }
+
 interface OnboardingState {
-  /** 按租户分桶的任务状态 */
+  /** 按租户分桶的任务状态（服务端镜像） */
   guides: Record<string, OnboardingGuideState>
   /**
-   * 埋点用的角色，按租户分桶。**不持久化、不进 guide** —— guide 是 1:1 移植的领域
-   * 对象，塞展示/埋点字段进去会污染它，而且角色是会变的（Admin 被降权），不该跟着
-   * 任务进度一起落 localStorage。
+   * 埋点用的角色，按租户分桶。**不进 guide** —— guide 是服务端契约的镜像，塞展示/埋点
+   * 字段进去会污染它，而且角色是会变的（Admin 被降权），不该跟着进度一起存。
    *
    * 存在这儿是因为命令式上报路径（reportOnboardingStep ← experience-run.ts）拿不到
    * React 上下文，而 role 的真源 useTenantRole 是 hook，auth store 的 TenantBrief
    * 又不带 role。由 hook 在 ensureGuide 时灌进来。
    */
   trackRoles: Record<string, string>
-  /** 气泡开合（瞬时 UI 状态，不持久化） */
+  /** 气泡开合（瞬时 UI 状态） */
   open: boolean
+  /**
+   * 待自动展开的租户：服务端 GET /guide 回 auto_open=true 时置上，hook 消费一次即清。
+   * 服务端已经保证每个 user+tenant+版本只回一次 true，这里只防同一次会话里重复弹。
+   */
+  pendingAutoOpen: string | null
   /** 本次领取的回执；非 null 时成功弹框可见 */
   rewardReceipt: OnboardingRewardReceipt | null
   /** 账单入账记录里要高亮的那一行 */
-  billingHighlightRecordRef: string | null
+  billingHighlight: OnboardingRewardReceipt | null
+  /**
+   * 请求去重（瞬时，不对 UI 可见）：
+   *   loadingTenants —— GET 在途，挡住并发请求（见 ensureGuide 的注释）
+   *   guidelessTenants —— GET 回了空（企业 Member / 未取得资格），本会话不再重复问
+   *   claimingTenants —— 领取在途，挡住双击与多标签页
+   */
+  loadingTenants: Record<string, true>
+  guidelessTenants: Record<string, true>
+  claimingTenants: Record<string, true>
 }
 
 interface OnboardingActions {
-  /** 取得资格（幂等）：租户第一次进控制台时建状态并快照奖励金额 */
+  /** 拉取当前租户的指南状态（幂等：一个租户一个会话只 GET 一次，见下方 inflight 注释） */
   ensureGuide: (input: {
     tenantId: string
     tenantKind: OnboardingTenantKind
@@ -65,7 +98,7 @@ interface OnboardingActions {
     /** 仅用于埋点公共属性（规格 §13.1）；权限判定在调用方 hook 里已经做过 */
     role?: string
   }) => void
-  /** 完成一步；重复上报静默忽略（领域层保证引用不变） */
+  /** 完成一步：本地先乐观打勾，再上报；服务端回来的状态整份覆盖，失败回滚 */
   completeStep: (input: {
     tenantId: string
     stepKey: OnboardingStepKey
@@ -73,128 +106,182 @@ interface OnboardingActions {
     evidenceId: string
     completedBy: string
   }) => void
-  /** 领取奖励，返回回执；不满足条件返回 null（不抛，调用方是 onClick） */
-  claimReward: (tenantId: string) => OnboardingRewardReceipt | null
+  /** 领取奖励。三态由「领取前的本地状态 + 请求结果」共同决定，见 OnboardingClaimOutcome */
+  claimReward: (tenantId: string) => Promise<OnboardingClaimOutcome>
   setOpen: (open: boolean) => void
+  consumeAutoOpen: () => void
   dismissReceipt: () => void
-  /** 「查看赠金」：收弹框、把 recordRef 交给账单页做定位高亮 */
+  /** 「查看赠金」：收弹框、把回执交给账单页做定位高亮 */
   takeReceiptForBilling: () => OnboardingRewardReceipt | null
   clearBillingHighlight: () => void
 }
 
-function readGuide(tenantId: string): OnboardingGuideState | null {
-  try {
-    const raw = window.localStorage.getItem(storageKeys.onboardingGuide(tenantId))
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as OnboardingGuideState
-    // 换版本等于换活动：旧版进度不迁移，重新取得资格（§6.1「不设截止时间」但按 guideVersion 分活动）
-    return parsed.guideVersion === ONBOARDING_GUIDE_VERSION ? parsed : null
-  } catch {
-    // 隐私模式 / 存量脏数据：当作没有，重新建一份，不阻断进控制台
-    return null
-  }
+function withKey(map: Record<string, true>, key: string): Record<string, true> {
+  return { ...map, [key]: true }
 }
 
-function writeGuide(guide: OnboardingGuideState) {
-  try {
-    window.localStorage.setItem(storageKeys.onboardingGuide(guide.tenantId), JSON.stringify(guide))
-  } catch {
-    /* 写不进去只影响刷新后的保持，不影响本次会话 */
-  }
+function withoutKey(map: Record<string, true>, key: string): Record<string, true> {
+  if (!map[key]) return map
+  const next = { ...map }
+  delete next[key]
+  return next
 }
 
-/**
- * 入账记录号。真实实现由服务端在同一事务里生成正式流水编号
- * （规格 §11「用可追踪的正常流水编号，不用业务名称占用编号字段」）。
- * Mock 阶段用 gnt 前缀 + 租户 + 版本，保证同一租户重复领取拿到同一个号 —— 幂等的一部分。
- */
-function mockRecordRef(tenantId: string): string {
-  return `gnt-${tenantId}-${ONBOARDING_GUIDE_VERSION}`
+function guideContext(guide: OnboardingGuideState): OnboardingGuideContext {
+  return { tenantId: guide.tenantId, tenantKind: guide.tenantKind, site: guide.reward.site }
 }
 
 export const useOnboardingStore = create<OnboardingState & OnboardingActions>()((set, get) => ({
   guides: {},
   trackRoles: {},
   open: false,
+  pendingAutoOpen: null,
   rewardReceipt: null,
-  billingHighlightRecordRef: null,
+  billingHighlight: null,
+  loadingTenants: {},
+  guidelessTenants: {},
+  claimingTenants: {},
 
+  /**
+   * 一个租户一个会话只 GET 一次。两个入口（侧栏 + 广场悬浮）会在同一帧各调一次
+   * ensureGuide，StrictMode 下还要再翻倍；而 **auto_open 是读一次即消费的**（服务端在
+   * 这次 GET 里就把 auto_open_seen_at 写了），并发 GET 会让第二个请求拿到 false，
+   * 自动展开就静默丢了。所以在途期间挡住后续请求，失败时放开以便下次重试。
+   */
   ensureGuide: ({ tenantId, tenantKind, site, role }) => {
     // guide 已建时仍要刷 role：角色查询比 ensureGuide 晚回是常态，早退会让埋点永远缺 role
-    if (get().guides[tenantId]) {
-      if (role && get().trackRoles[tenantId] !== role) {
-        set((s) => ({ trackRoles: { ...s.trackRoles, [tenantId]: role } }))
-      }
+    if (role && get().trackRoles[tenantId] !== role) {
+      set((s) => ({ trackRoles: { ...s.trackRoles, [tenantId]: role } }))
+    }
+    const state = get()
+    if (state.guides[tenantId] || state.loadingTenants[tenantId] || state.guidelessTenants[tenantId]) {
       return
     }
-    const guide =
-      readGuide(tenantId) ??
-      createOnboardingGuideState({
-        tenantId,
-        tenantKind,
-        site,
-        eligibleAt: new Date().toISOString(),
+    set((s) => ({ loadingTenants: withKey(s.loadingTenants, tenantId) }))
+    void getOnboardingGuide({ tenantId, tenantKind, site })
+      .then(({ guide, autoOpen }) => {
+        // guide 为 null = 没有指南（企业 Member / 未取得资格）：不建状态，入口自然不出现
+        if (!guide) {
+          set((s) => ({ guidelessTenants: withKey(s.guidelessTenants, tenantId) }))
+          return
+        }
+        set((s) => ({
+          guides: { ...s.guides, [tenantId]: guide },
+          pendingAutoOpen: autoOpen ? tenantId : s.pendingAutoOpen,
+        }))
       })
-    writeGuide(guide)
-    set((s) => ({
-      guides: { ...s.guides, [tenantId]: guide },
-      trackRoles: role ? { ...s.trackRoles, [tenantId]: role } : s.trackRoles,
-    }))
+      // 拉不到指南不该打断进控制台：静默降级成「没有入口」，下次 effect 再试
+      .catch(() => {})
+      .finally(() => set((s) => ({ loadingTenants: withoutKey(s.loadingTenants, tenantId) })))
   },
 
   completeStep: ({ tenantId, stepKey, evidenceType, evidenceId, completedBy }) => {
     const current = get().guides[tenantId]
     if (!current) return
-    const next = completeOnboardingStep(current, {
+    const optimistic = completeOnboardingStep(current, {
       stepKey,
       completedAt: new Date().toISOString(),
       completedBy,
       evidenceType,
       evidenceId,
     })
-    // 领域层重复事件返回原引用 → 这里跳过 setState，避免无谓重渲染
-    if (next === current) return
-    writeGuide(next)
-    set((s) => ({ guides: { ...s.guides, [tenantId]: next } }))
+    // 领域层重复事件返回原引用 → 这一步早就完成过，连请求都不用发（服务端也是幂等的）
+    if (optimistic === current) return
+    set((s) => ({ guides: { ...s.guides, [tenantId]: optimistic } }))
+
+    void completeOnboardingStepApi(guideContext(current), stepKey, { evidenceType, evidenceId })
+      .then((authoritative) => {
+        if (authoritative) {
+          set((s) => {
+            const live = s.guides[tenantId]
+            /**
+             * 连着上报两步时响应可能乱序到达，先回来的那份不含后一步 —— 直接覆盖会把
+             * 刚打上的勾抹掉（界面上看着像"完成了又退回去"）。只接受不比本地少的那份，
+             * 少的那份等下一次 GET / 下一步上报自然纠正。
+             */
+            if (live && authoritative.completedSteps.length < live.completedSteps.length) return s
+            return { guides: { ...s.guides, [tenantId]: authoritative } }
+          })
+        }
+        /**
+         * 埋点落在**服务端确认之后**，不是乐观更新那一刻：上报失败会回滚，那一步并没有
+         * 真的完成，先记一条「完成」会让漏斗比服务端数据多算。
+         * 用 authoritative 建公共属性：completed_steps 要含这一步，否则第 5 步永远上报 4。
+         */
+        trackEvent('onboarding_step_completed', {
+          ...buildOnboardingGuideProps(authoritative ?? optimistic, get().trackRoles[tenantId]),
+          step_key: stepKey,
+          evidence_type: evidenceType,
+        })
+      })
+      .catch(() => {
+        /**
+         * 回滚到上报前的状态：勾不能白打——它决定「领取」按钮能不能点，而钱是服务端发的。
+         * 本地留着假勾会让用户点了领取拿到 400。不弹 toast：这些上报都挂在业务动作的成功
+         * 回调上（浏览广场 / 体验成功 / 建 Key…），用户没在等这个结果，下次动作会再报一次。
+         * 仅当期间没有更新的状态时回滚，避免踩掉并发到达的服务端权威值。
+         */
+        set((s) => (s.guides[tenantId] === optimistic
+          ? { guides: { ...s.guides, [tenantId]: current } }
+          : s))
+      })
   },
 
-  claimReward: (tenantId) => {
+  claimReward: async (tenantId) => {
     const current = get().guides[tenantId]
-    if (!current || !canClaimOnboardingReward(current)) return null
-
-    const transactionId = `onboarding-${tenantId}-${current.guideVersion}`
-    const recordRef = mockRecordRef(tenantId)
-    const rewarded = markOnboardingRewarded(current, {
-      rewardedAt: new Date().toISOString(),
-      transactionId,
-    })
-    writeGuide(rewarded)
-
-    const receipt: OnboardingRewardReceipt = {
-      recordRef,
-      rewardLabel: formatOnboardingReward(current.reward),
+    if (!current) return { result: 'failed', errorCode: 'no_guide' }
+    // 已是 rewarded（本会话领过 / 另一个管理员领过后刷新到）：不重复发请求
+    if (current.status === 'rewarded') {
+      return { result: 'already_claimed', receipt: get().rewardReceipt }
     }
-    set((s) => ({
-      guides: { ...s.guides, [tenantId]: rewarded },
-      // 领取后收起气泡，交给成功弹框（2026-08-13 规格：领取 → 关闭指南 → 居中弹框）
-      open: false,
-      rewardReceipt: receipt,
-    }))
-    return receipt
+    if (!canClaimOnboardingReward(current)) return { result: 'failed', errorCode: 'not_claimable' }
+    if (get().claimingTenants[tenantId]) {
+      return { result: 'already_claimed', receipt: get().rewardReceipt }
+    }
+
+    set((s) => ({ claimingTenants: withKey(s.claimingTenants, tenantId) }))
+    try {
+      const claimed = await claimOnboardingReward(guideContext(current))
+      const receipt: OnboardingRewardReceipt = {
+        recordRef: claimed.recordRef,
+        transactionId: claimed.transactionId,
+        // 金额用服务端这次回的快照，不用本地那份——后台调价后两者可能不同，以服务端为准
+        rewardLabel: formatOnboardingReward(claimed.reward),
+      }
+      const rewarded = markOnboardingRewarded(get().guides[tenantId] ?? current, {
+        rewardedAt: new Date().toISOString(),
+        transactionId: claimed.transactionId,
+        recordRef: claimed.recordRef,
+      })
+      set((s) => ({
+        guides: { ...s.guides, [tenantId]: rewarded },
+        // 领取后收起气泡，交给成功弹框（2026-08-13 规格：领取 → 关闭指南 → 居中弹框）
+        open: false,
+        rewardReceipt: receipt,
+      }))
+      return { result: 'success', receipt }
+    } catch (error) {
+      const code = (error as { code?: number })?.code
+      return { result: 'failed', errorCode: code ? String(code) : 'request_failed', error }
+    } finally {
+      set((s) => ({ claimingTenants: withoutKey(s.claimingTenants, tenantId) }))
+    }
   },
 
   setOpen: (open) => set({ open }),
+
+  consumeAutoOpen: () => set({ pendingAutoOpen: null }),
 
   dismissReceipt: () => set({ rewardReceipt: null }),
 
   takeReceiptForBilling: () => {
     const receipt = get().rewardReceipt
     if (!receipt) return null
-    set({ rewardReceipt: null, billingHighlightRecordRef: receipt.recordRef })
+    set({ rewardReceipt: null, billingHighlight: receipt })
     return receipt
   },
 
-  clearBillingHighlight: () => set({ billingHighlightRecordRef: null }),
+  clearBillingHighlight: () => set({ billingHighlight: null }),
 }))
 
 /**
@@ -202,8 +289,8 @@ export const useOnboardingStore = create<OnboardingState & OnboardingActions>()(
  * trackModelRun，它是普通函数、同时服务体验页和对比页）。
  *
  * 权限判定靠一条不变式：**store 里存在该租户的 guide ⟺ 当时判过 hasAccess**
- * （只有 useOnboardingGuide 的 ensureGuide 会建它，而它已经门控了角色）。
- * 所以这里不需要再查一次角色，没有 guide 就直接不上报。
+ * （只有 useOnboardingGuide 的 ensureGuide 会建它，而它已经门控了角色），加上服务端
+ * 自己也有角色门（企业 Member POST 返 40301），两道闸。
  */
 export function reportOnboardingStep(
   stepKey: OnboardingStepKey,
@@ -214,7 +301,7 @@ export function reportOnboardingStep(
   if (!activeTenantId) return
   const store = useOnboardingStore.getState()
   if (!store.guides[activeTenantId]) return
-  const before = store.guides[activeTenantId]
+  // 重复上报的静默忽略、以及 onboarding_step_completed 埋点，都在 completeStep 里
   store.completeStep({
     tenantId: activeTenantId,
     stepKey,
@@ -222,53 +309,4 @@ export function reportOnboardingStep(
     evidenceId,
     completedBy: account?.email ?? account?.account_id ?? 'unknown',
   })
-  // 只在真的推进了才埋点：重复上报（用户第二次成功体验）不该再记一次完成
-  const after = useOnboardingStore.getState().guides[activeTenantId]
-  if (after !== before) {
-    // 用 after 而非 before 建公共属性：completed_steps 要含这一步，否则第 5 步永远上报 4
-    trackEvent('onboarding_step_completed', {
-      ...buildOnboardingGuideProps(after, store.trackRoles[activeTenantId]),
-      step_key: stepKey,
-      evidence_type: evidenceType,
-    })
-  }
 }
-
-/** 自动展开偏好：每个 user+tenant+guideVersion 只自动弹一次（规格 §5.4）。 */
-export function hasSeenOnboardingAutoOpen(userId: string, tenantId: string): boolean {
-  try {
-    return (
-      window.localStorage.getItem(storageKeys.onboardingAutoOpen(userId, tenantId)) ===
-      ONBOARDING_GUIDE_VERSION
-    )
-  } catch {
-    // 读不到就当已看过：宁可不弹，也不要每次进控制台都弹一次
-    return true
-  }
-}
-
-export function markOnboardingAutoOpenSeen(userId: string, tenantId: string) {
-  try {
-    window.localStorage.setItem(
-      storageKeys.onboardingAutoOpen(userId, tenantId),
-      ONBOARDING_GUIDE_VERSION,
-    )
-  } catch {
-    /* 写不进去最多下次再弹一次，不影响功能 */
-  }
-}
-
-/* ──────────────────────────────────────────────────────────────────────────
- * 待后端（规格 §9.1 生产对象 / §11 发放约束）—— 本轮前端全 Mock，需要后端提供：
- *
- *   GET  /onboarding/guide            返回当前租户 TenantOnboardingProgress
- *                                     （status / completedSteps / reward 快照 / guideVersion）
- *   POST /onboarding/steps/{stepKey}  上报完成，带 evidenceType + evidenceId，服务端按
- *                                     tenant_id + guide_version + step_key 幂等写入
- *   POST /onboarding/reward/claim     领取：重校验租户+角色+状态，同事务写赠送余额流水并
- *                                     置 rewarded，返回入账记录的正式 recordRef
- *
- * 三条硬约束：①tenant_id + guide_version 唯一约束保证每租户每版只发一笔；②Owner/Admin
- * 并发领取只有一个建流水、另一个返回原结果而不是通用失败；③金额/币种/配置版本一律用
- * 服务端快照，不信客户端传值。
- * ────────────────────────────────────────────────────────────────────────── */

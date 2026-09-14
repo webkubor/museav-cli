@@ -37,7 +37,8 @@
         "admin": "管理员充值",
         "promo": "优惠码",
         "activity": "活动赠送",
-        "referral": "推荐计划"
+        "referral": "推荐计划",
+          "onboarding_reward": "新手任务奖励"
       },
       "buckets": {
         "main": "主余额",

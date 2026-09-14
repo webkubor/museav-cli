@@ -32,11 +32,13 @@ if [ "$#" -gt 0 ]; then
   file_list="$(printf '%s\n' "$@")"
 else
   MODE=staged
-  file_list="$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null | grep -E '\.(tsx|ts)$' || true)"
+  # 收 .css 是因为 WARN 11（hover 无过渡）查的是裸 CSS —— 只收 ts/tsx 的话
+  # 那条规则永远进不了 file_list，等于没写（2026-09-14 加规则时当场踩到）。
+  file_list="$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null | grep -E '\.(tsx|ts|css)$' || true)"
 fi
 
 if [ -z "$file_list" ]; then
-  echo "[ui-guard] 无 TS/TSX 变更，跳过"
+  echo "[ui-guard] 无 TS/TSX/CSS 变更，跳过"
   exit 0
 fi
 
@@ -284,6 +286,26 @@ while IFS= read -r f; do
     printf '%s\n' "$hits" | sed 's/^/      /'
     block=$((block + 1))
   fi
+
+
+  # ── WARN 11：hover 改了样式却没有 transition —— 交互反馈是"跳"的不是"过渡"的。
+  #    2026-09-14 盘点：全站 86 处 animate-* 里 64 处是 loading 骨架（pulse/spin），
+  #    真正的交互动效几乎为零；而库里 duration/easing 档位齐全、还预拼了
+  #    --mg-motion-hover，实测**零使用**（原始档位倒是被手拼了 38 处）。
+  #    不是缺 token，是不知道有 —— 表在 DESIGN.md「Motion」节。
+  #    只查 CSS 里新增的 :hover 块：块内改了颜色/背景/边框/阴影/位移，而同一
+  #    选择器或其基选择器没有 transition。Tailwind 的 hover: 工具类自带过渡语义，
+  #    不在此列。误报会让门禁失去公信力，所以走 warn 不阻断。
+  case "$f" in
+    *.css)
+      hits="$(python3 "$(dirname "$0")/check-hover-transition.py" "$f" 2>/dev/null || true)"
+      if [ -n "$hits" ] && ! ignored "hover 过渡"; then
+        echo "⚠ [hover 无过渡] $f — 交互反馈应走 transition（var(--mg-motion-hover)），不是瞬间跳变（DESIGN.md · Motion）"
+        printf '%s\n' "$hits" | sed 's/^/      /'
+        warn=$((warn + 1))
+      fi
+      ;;
+  esac
 
 done <<EOF
 $file_list

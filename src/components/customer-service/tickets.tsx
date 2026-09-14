@@ -8,7 +8,7 @@ import { LuArrowLeft, LuSearch, LuInbox } from 'react-icons/lu'
 import { appToast } from '@/lib/app-toast'
 import { useAuthStore } from '@/store/auth'
 import { listSupportTickets } from '@/services/support'
-import { ticketNoOf, ticketStatusTextOf, ticketUnreadOf } from '@/interfaces/support'
+import { ticketAgentNameOf, ticketNoOf, ticketSlaTextOf, ticketStatusTextOf, ticketUnreadOf } from '@/interfaces/support'
 import type { SupportTicketDetail, SupportTicketFilter, SupportTicketSummary } from '@/interfaces/support'
 
 const FILTERS: SupportTicketFilter[] = ['all', 'processing', 'ended']
@@ -175,12 +175,15 @@ export function TicketDetailView({ detail, onBack, onReopen, onRate }: TicketDet
               <div className="flex gap-1.5">
                 <dt className="shrink-0 text-mg-text-3">{t('common.customerService.tickets.detail.typeLabel')}</dt>
                 <dd className="m-0 text-mg-text-2">
-                  {t(`common.customerService.tickets.types.${detail.type}`, { defaultValue: detail.type })}
+                  {/* detail.type 后端不下发，直接插值会把 i18n key 原样打到屏上
+                      （实测「common.customerService.tickets.types.undefined」）。 */}
+                  {detail.display_type
+                    || t(`common.customerService.tickets.types.${detail.ticket_type ?? detail.type}`, { defaultValue: detail.ticket_type ?? detail.type ?? '' })}
                 </dd>
               </div>
               <div className="flex gap-1.5">
                 <dt className="shrink-0 text-mg-text-3">{t('common.customerService.tickets.detail.idLabel')}</dt>
-                <dd className="m-0 min-w-0 truncate font-medium text-mg-text-2" title={detail.ticket_no}>{detail.ticket_no}</dd>
+                <dd className="m-0 min-w-0 truncate font-medium text-mg-text-2" title={ticketNoOf(detail)}>{ticketNoOf(detail)}</dd>
               </div>
               <div className="flex gap-1.5">
                 <dt className="shrink-0 text-mg-text-3">{t('common.customerService.tickets.detail.createdLabel')}</dt>
@@ -190,15 +193,15 @@ export function TicketDetailView({ detail, onBack, onReopen, onRate }: TicketDet
                 <dt className="shrink-0 text-mg-text-3">{t('common.customerService.tickets.detail.updatedLabel')}</dt>
                 <dd className="m-0 text-mg-text-2">{new Date(detail.updated_at).toLocaleString()}</dd>
               </div>
-              {(detail.agent_name || detail.agent_no) && (
+              {(ticketAgentNameOf(detail) || detail.agent_no) && (
                 <div className="flex gap-1.5">
                   <dt className="shrink-0 text-mg-text-3">{t('common.customerService.tickets.detail.agentLabel')}</dt>
-                  <dd className="m-0 min-w-0 truncate text-mg-text-2">{[detail.agent_name, detail.agent_no].filter(Boolean).join(' · ')}</dd>
+                  <dd className="m-0 min-w-0 truncate text-mg-text-2">{[ticketAgentNameOf(detail), detail.agent_no].filter(Boolean).join(' · ')}</dd>
                 </div>
               )}
             </dl>
             {detail.description && <p className="m-0 mg-text-body text-mg-text-1 whitespace-pre-wrap">{detail.description}</p>}
-            {detail.sla_text && <p className="m-0 mg-text-caption text-mg-text-3">{detail.sla_text}</p>}
+            {ticketSlaTextOf(detail) && <p className="m-0 mg-text-caption text-mg-text-3">{ticketSlaTextOf(detail)}</p>}
             {typeof detail.rating === 'number' && (
               <p className="m-0 mg-text-caption text-mg-warning">{'★'.repeat(detail.rating)}{'☆'.repeat(5 - detail.rating)}</p>
             )}
@@ -207,7 +210,8 @@ export function TicketDetailView({ detail, onBack, onReopen, onRate }: TicketDet
               {detail.capabilities.can_reopen && (
                 <Button size="small" variant="secondary" onClick={onReopen}>{t('common.customerService.tickets.reopen')}</Button>
               )}
-              {detail.type === 'handoff' && typeof detail.rating !== 'number' && detail.status !== 'processing' && (
+              {/* 后端的人工单是 ticket_type:'human_support'（PRD 措辞是 handoff），两种都认 */}
+              {(detail.ticket_type === 'human_support' || detail.type === 'handoff') && typeof detail.rating !== 'number' && detail.status !== 'processing' && (
                 <RateInline onRate={onRate} />
               )}
             </div>

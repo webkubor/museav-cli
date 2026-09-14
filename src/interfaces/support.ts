@@ -80,6 +80,8 @@ export interface SupportFeedbackResponse {
   status: string
   /** 后端给的中文状态（「等待客服受理」）；status 是机器码（pending），不能直接上屏。 */
   status_label?: string
+  /** SLA 文案实测在这里（「我们将在 1 个工作日内联系你。」）；PRD 叫 sla_text。 */
+  next_step?: string
   sla_text?: string
 }
 
@@ -110,25 +112,76 @@ export interface SupportTicketCapabilities {
   can_create_followup: boolean
 }
 
+/**
+ * 工单摘要 —— 字段按 2026-09-14 test 实测响应写，不是 PRD 措辞。
+ * 实测原文（`GET /support/tickets?filter=all`）：
+ * ```
+ * { ticket_id:"CS-20260914-2377", ticket_type:"human_support", service_mode:"live",
+ *   display_type:"人工服务", status:"pending", status_label:"排队中 · 前方 0 人",
+ *   title, description, assignee_display_name:"", version, latest_message_seq,
+ *   read_message_seq, unread_count:0, capabilities:{...}, next_step:"我们将在 1 个工作日内联系你。" }
+ * ```
+ * 旧字段（id / ticket_no / type / unread）后端一个都不下发，留成可选只为兼容老代码路径。
+ */
 export interface SupportTicketSummary {
-  id: string
-  ticket_no: string
-  type: 'feedback' | 'handoff'
+  /** 编号本体，就是展示用的 CS-/FB- 号。 */
+  ticket_id: string
+  ticket_type?: 'feedback' | 'human_support'
+  /** 已本地化的类型名（「人工服务」「人工服务 · 转异步」「问题反馈」），直接上屏。 */
+  display_type?: string
   status: string
+  /** 已本地化的状态文案（「排队中 · 前方 0 人」「待客服联系」「等待客服受理」）。
+   *  status 是机器码，**上屏一律用这个**，前端不再自己拼状态文案。 */
+  status_label?: string
   service_mode?: SupportServiceMode
   title?: string
+  description?: string
+  /** 客服显示名；非空 = 已接通（前端据此判排队/接通，不依赖 status 枚举）。 */
+  assignee_display_name?: string
+  /** SLA / 下一步文案（「我们将在 1 个工作日内联系你。」）—— PRD 叫 sla_text，后端叫这个。 */
+  next_step?: string
+  latest_message_seq?: number
+  read_message_seq?: number
+  unread_count?: number
+  version?: number
   created_at: string
   updated_at: string
+
+  // ↓ 兼容位：后端实测不下发
+  id?: string
+  ticket_no?: string
+  type?: 'feedback' | 'handoff'
   unread?: boolean
 }
 
 export interface SupportTicketDetail extends SupportTicketSummary {
-  description?: string
+  /** 后端实测用 assignee_display_name；agent_name/agent_no 从未下发，保留兼容。 */
   agent_name?: string
   agent_no?: string
   rating?: number
   sla_text?: string
   capabilities: SupportTicketCapabilities
+}
+
+/** 统一取值口径：编号 / 状态文案 / SLA / 是否已接通，一处定义，调用方不再各拼各的。 */
+export function ticketNoOf(t: Pick<SupportTicketSummary, 'ticket_id' | 'ticket_no' | 'id'>): string {
+  return t.ticket_id || t.ticket_no || t.id || ''
+}
+
+export function ticketStatusTextOf(t: Pick<SupportTicketSummary, 'status_label' | 'status'>): string {
+  return t.status_label || t.status || ''
+}
+
+export function ticketSlaTextOf(t: Pick<SupportTicketSummary, 'next_step'> & { sla_text?: string }): string | undefined {
+  return t.next_step || t.sla_text || undefined
+}
+
+export function ticketAgentNameOf(t: Pick<SupportTicketSummary, 'assignee_display_name'> & { agent_name?: string }): string | undefined {
+  return t.assignee_display_name || t.agent_name || undefined
+}
+
+export function ticketUnreadOf(t: Pick<SupportTicketSummary, 'unread_count' | 'unread'>): boolean {
+  return (t.unread_count ?? 0) > 0 || t.unread === true
 }
 
 export interface SupportTicketListParams {
@@ -147,8 +200,43 @@ export interface SupportMessage {
   rating?: SupportAnswerRating | null
 }
 
+/**
+ * `GET /support/events` 的**实测**响应（2026-09-14 test）：
+ * ```
+ * { events: [{ id, ticket_id, version, type: "ticket.created", actor_type,
+ *              actor_id, actor_name, summary, visible_to_user, created_at }],
+ *   resync_required: [], retry_after: 0,
+ *   server_versions: [{ ticket_id, version }] }
+ * ```
+ * 它是**变更信号**，不带 service_mode / queue_position / has_new_messages
+ * ——那三个字段是照 PRD 写的，后端从没下发过，导致长轮询空转：排队→接通、
+ * 超时转异步、新消息全都推不动。真状态一律以工单详情为准。
+ */
+export interface SupportEventItem {
+  id: string
+  ticket_id: string
+  version: number
+  type: string
+  actor_type?: string
+  actor_id?: string
+  actor_name?: string
+  summary?: string
+  visible_to_user?: boolean
+  created_at?: string
+}
+
 export interface SupportEventsResponse {
+  events?: SupportEventItem[]
+  resync_required?: string[]
+  retry_after?: number
+  server_versions?: { ticket_id: string; version: number }[]
+}
+
+/** 由工单详情推导出的状态快照，喂给面板的模式机。 */
+export interface SupportTicketSnapshot {
   service_mode?: SupportServiceMode
-  queue_position?: number
+  status?: string
+  status_label?: string
+  agent_name?: string
   has_new_messages?: boolean
 }

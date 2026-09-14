@@ -31,8 +31,9 @@ import {
   transition,
   type SupportMode,
 } from './support-machine'
-import { EPHEMERAL_ANSWER_ID } from '@/interfaces/support'
+import { EPHEMERAL_ANSWER_ID, ticketAgentNameOf, ticketNoOf, ticketSlaTextOf } from '@/interfaces/support'
 import type {
+  SupportTicketSnapshot,
   SupportAnswerRating,
   SupportAnswerStatus,
   SupportAskResponse,
@@ -251,25 +252,45 @@ export function useSupport() {
 
   // 长轮询：开关也由模式推导（PRD 只在人工线进行中需要）
   const eventsEnabled = needsEvents(mode)
-  useSupportEvents(eventsEnabled, ticketId ?? undefined, useCallback((event) => {
-    // 排队人数变化：同模式内换数据（状态机允许 from === to）
-    if (event.queue_position !== undefined && mode.kind === 'queuing') {
-      go({ ...mode, ahead: event.queue_position })
+  useSupportEvents(eventsEnabled, ticketId ?? undefined, useCallback(async (raw) => {
+    // 后端的 /support/events 只是**变更信号**（events[] + server_versions），
+    // 不带 service_mode / queue_position / has_new_messages —— 那三个是照 PRD 写的，
+    // 从没下发过，长轮询因此空转：排队→接通、超时转异步、新消息全推不动。
+    // 真状态一律回工单详情拿，这里把详情压成下面这套逻辑原本期待的形状。
+    if (!ticketId) return
+    if (raw && Array.isArray(raw.events) && raw.events.length === 0) return
+    const detail = await getSupportTicket(ticketId).catch(() => null)
+    if (!detail) return
+    const agentName = ticketAgentNameOf(detail)
+    const event: SupportTicketSnapshot = {
+      // 后端的 service_mode 只有 live / async 两个值，排队到哪一步不在里面：
+      // 有客服显示名 = 已接通，否则还在排队。不猜 status 枚举（只实测到 pending）。
+      service_mode: detail.service_mode === 'async'
+        ? 'async'
+        : detail.service_mode === 'ended'
+          ? 'ended'
+          : agentName ? 'connected' : 'queueing',
+      status_label: detail.status_label,
+      agent_name: agentName,
+      has_new_messages: (detail.latest_message_seq ?? 0) > (detail.read_message_seq ?? 0),
+    }
+    // 排队文案变化：同模式内换数据（状态机允许 from === to）。
+    // 后端不下发 queue_position 数字，只给整句 status_label（「排队中 · 前方 0 人」），
+    // 直接透传 —— 前端再拼一遍只会拼出「前方 - 人」。
+    if (event.status_label && mode.kind === 'queuing' && mode.statusLabel !== event.status_label) {
+      go({ ...mode, statusLabel: event.status_label })
     }
     if (event.service_mode && event.service_mode !== serviceModeOf(mode)) {
       const prevKind = mode.kind
-      go(modeFromServiceMode(event.service_mode, ticketId!, {
-        ahead: event.queue_position,
-        agentName: mode.kind === 'human' ? mode.agentName : undefined,
+      go(modeFromServiceMode(event.service_mode, ticketId, {
+        statusLabel: event.status_label,
+        agentName: event.agent_name ?? (mode.kind === 'human' ? mode.agentName : undefined),
         agentNo: mode.kind === 'human' ? mode.agentNo : undefined,
       }))
       if (event.service_mode === 'connected' && prevKind !== 'human') {
-        getSupportTicket(ticketId!).then((detail) => {
-          // 客服信息随 human 模式携带，不再是游离变量
-          setModeRaw((cur) => (cur.kind === 'human'
-            ? { ...cur, agentName: detail.agent_name, agentNo: detail.agent_no }
-            : cur))
-        }).catch(() => {})
+        setModeRaw((cur) => (cur.kind === 'human'
+          ? { ...cur, agentName, agentNo: detail.agent_no }
+          : cur))
         appendMessage({ id: crypto.randomUUID(), role: 'system', content: t('common.customerService.handoffConnected'), createdAt: Date.now() })
       }
       if (event.service_mode === 'ended') {
@@ -296,19 +317,20 @@ export function useSupport() {
         // 🔴 再出一张**带工单编号的回执卡**（PRD 原型 AsyncSupportTicketCard）：
         // AC 第 3 条要的是「出现异步问题单回执（CS-）」，只发一句纯文本系统消息
         // 用户拿不到编号、后续无从追踪。events 接口不带 ticket_no，从详情拉。
-        const asyncTicketId = ticketId
-        if (asyncTicketId) {
-          getSupportTicket(asyncTicketId).then((detail) => {
-            appendMessage({
-              id: crypto.randomUUID(),
-              role: 'system',
-              content: '',
-              createdAt: Date.now(),
-              kind: 'async_ticket',
-              asyncTicket: { ticketNo: detail.ticket_no, status: detail.status, slaText: detail.sla_text },
-            })
-          }).catch(() => { /* 拉不到就只留上面那条文本，不阻断 */ })
-        }
+        // detail 上面已经拉过，直接用 —— 编号/状态/SLA 一律走统一取值口径，
+        // 后端字段是 ticket_id / status_label / next_step，不是 PRD 的 ticket_no / sla_text。
+        appendMessage({
+          id: crypto.randomUUID(),
+          role: 'system',
+          content: '',
+          createdAt: Date.now(),
+          kind: 'async_ticket',
+          asyncTicket: {
+            ticketNo: ticketNoOf(detail),
+            status: detail.status_label || detail.status,
+            slaText: ticketSlaTextOf(detail),
+          },
+        })
       }
     }
     if (event.has_new_messages && ticketId && mode.kind === 'human') {
@@ -346,7 +368,8 @@ export function useSupport() {
           // 上屏要用 status_label（「等待客服受理」）。
           ticketNo: resp.ticket_id || resp.ticket_no || '',
           status: resp.status_label || resp.status,
-          slaText: resp.sla_text,
+          // 后端把 SLA 放在 next_step（「我们将在 1 个工作日内联系你。」），不是 sla_text
+          slaText: resp.next_step || resp.sla_text,
           category: fields.category,
           description: fields.description,
         },

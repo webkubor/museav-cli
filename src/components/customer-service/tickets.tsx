@@ -8,6 +8,7 @@ import { LuArrowLeft, LuSearch, LuInbox } from 'react-icons/lu'
 import { appToast } from '@/lib/app-toast'
 import { useAuthStore } from '@/store/auth'
 import { listSupportTickets } from '@/services/support'
+import { ticketNoOf, ticketStatusTextOf, ticketUnreadOf } from '@/interfaces/support'
 import type { SupportTicketDetail, SupportTicketFilter, SupportTicketSummary } from '@/interfaces/support'
 
 const FILTERS: SupportTicketFilter[] = ['all', 'processing', 'ended']
@@ -102,23 +103,25 @@ export function TicketsList({ onSelect, onClose }: TicketsListProps) {
             // 原先漏了**记录类型**与**未读**两个字段（接口的 type / unread 都给了、没渲染），
             // 而 PRD §「记录类型」「未读来源」两节都明确要求展示，QA 会逐条验。
             <button
-              key={item.id}
+              key={ticketNoOf(item)}
               type="button"
-              onClick={() => onSelect(item.id)}
+              onClick={() => onSelect(ticketNoOf(item))}
               className="mg-tile text-left px-3 py-2 hover:border-brand-mid/50 transition-colors"
             >
               <div className="flex items-center justify-between gap-2">
                 <span className="mg-text-caption text-mg-text-3">
-                  {t(`common.customerService.tickets.types.${item.type}`, { defaultValue: item.type })}
+                  {/* 后端已下发本地化类型名（「人工服务 · 转异步」这种复合态前端拼不出来），优先用它 */}
+                  {item.display_type
+                    || t(`common.customerService.tickets.types.${item.ticket_type ?? item.type}`, { defaultValue: item.ticket_type ?? item.type ?? '' })}
                 </span>
-                <Badge variant="outline" size="sm">{item.status}</Badge>
+                <Badge variant="outline" size="sm">{ticketStatusTextOf(item)}</Badge>
               </div>
               {item.title && <p className="m-0 mt-1 mg-text-caption font-medium text-mg-text-1 line-clamp-2" title={item.title}>{item.title}</p>}
               <div className="mt-1 flex items-center justify-between gap-2">
-                <small className="min-w-0 truncate text-[10px] text-mg-text-3" title={item.ticket_no}>
-                  {item.ticket_no} · {new Date(item.updated_at).toLocaleString()}
+                <small className="min-w-0 truncate text-[10px] text-mg-text-3" title={ticketNoOf(item)}>
+                  {ticketNoOf(item)} · {new Date(item.updated_at).toLocaleString()}
                 </small>
-                {item.unread && (
+                {ticketUnreadOf(item) && (
                   <b className="shrink-0 rounded-full bg-mg-primary-light px-1.5 py-0.5 text-[10px] font-medium text-brand-base">
                     {t('common.customerService.tickets.unread')}
                   </b>
@@ -155,8 +158,8 @@ export function TicketDetailView({ detail, onBack, onReopen, onRate }: TicketDet
         <button type="button" onClick={onBack} aria-label={t('common.customerService.tickets.back')} className="text-mg-text-2 hover:text-mg-text-1">
           <LuArrowLeft size={16} />
         </button>
-        <p className="m-0 mg-text-body font-medium text-mg-text-1 flex-1">{detail?.ticket_no ?? ''}</p>
-        {detail && <Badge variant="outline" size="sm">{detail.status}</Badge>}
+        <p className="m-0 mg-text-body font-medium text-mg-text-1 flex-1">{detail ? ticketNoOf(detail) : ''}</p>
+        {detail && <Badge variant="outline" size="sm">{ticketStatusTextOf(detail)}</Badge>}
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-3">

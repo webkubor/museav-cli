@@ -34,7 +34,7 @@ export type SupportMode =
   /** 反馈表单：中部换表单，**不显示聊天输入**，不响应转人工 */
   | { kind: 'feedback' }
   /** 排队中：右上角「取消排队」，输入禁用 */
-  | { kind: 'queuing'; ticketId: string; ahead?: number }
+  | { kind: 'queuing'; ticketId: string; ahead?: number; statusLabel?: string }
   /** 正在连接：右上角「取消转接」，输入禁用 */
   | { kind: 'connecting'; ticketId: string }
   /** 人工服务：顶部客服姓名+工号、可结束服务；输入走人工通道 */
@@ -102,12 +102,12 @@ export function transition(current: SupportMode, next: SupportMode): SupportMode
 export function modeFromServiceMode(
   serviceMode: SupportServiceMode,
   ticketId: string,
-  extra?: { ahead?: number; agentName?: string; agentNo?: string; status?: string },
+  extra?: { ahead?: number; agentName?: string; agentNo?: string; status?: string; statusLabel?: string },
 ): SupportMode {
   const status = extra?.status
   switch (serviceMode) {
     case 'queueing':
-      return { kind: 'queuing', ticketId, ahead: extra?.ahead }
+      return { kind: 'queuing', ticketId, ahead: extra?.ahead, statusLabel: extra?.statusLabel }
     case 'connecting':
       return { kind: 'connecting', ticketId }
     case 'connected':
@@ -120,7 +120,7 @@ export function modeFromServiceMode(
     // pending = 还在排队，其余按已接通渲染。
     case 'live':
       return status === 'pending'
-        ? { kind: 'queuing', ticketId, ahead: extra?.ahead }
+        ? { kind: 'queuing', ticketId, ahead: extra?.ahead, statusLabel: extra?.statusLabel }
         : { kind: 'human', ticketId, agentName: extra?.agentName, agentNo: extra?.agentNo }
     default:
       // 🔴 兜底不可省：这个函数的返回值直接进 transition(cur, next)，

@@ -20,8 +20,13 @@ export function HandoffHeaderStatus({ mode, onCancel, onEnd }: HandoffHeaderStat
 
   // 每个分支只能读到该模式**确实拥有**的字段 —— 排队时读不到 agentName，
   // 接通后读不到 ahead，编译期就杜绝了「拿上一个模式的残留值渲染」
+  // 排队文案优先用后端整句 status_label（「排队中 · 前方 0 人」）：后端不下发
+  // queue_position 数字，前端自己拼只会拼出「前方 - 人」（2026-09-14 test 实测）。
   const label = mode.kind === 'queuing'
-    ? t('common.customerService.handoff.queueing', { position: mode.ahead ?? '-' })
+    ? (mode.statusLabel
+       ?? (mode.ahead !== undefined
+           ? t('common.customerService.handoff.queueing', { position: mode.ahead })
+           : t('common.customerService.handoff.connecting')))
     : mode.kind === 'connecting'
       ? t('common.customerService.handoff.connecting')
       : t('common.customerService.handoff.connected', { name: mode.agentName ?? '', no: mode.agentNo ?? '' })

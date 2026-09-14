@@ -190,3 +190,35 @@
 .model-discovery-rank-more button:hover {
   color: color-mix(in srgb, var(--accent) 82%, #142033);
 }
+
+/* ── Top 3 图标常驻呼吸（prd46#1012 之后 owner 提的视觉增强）──────────────
+   只给前三名：整页都在动会变成噪音，而榜单的意义是"谁在最前面"，
+   动效正好承担这个信息——静态截图里看不出差别，动起来第一眼就落在前三。
+
+   ⚠️ 用 `data-rank-top` 显式标记，**不要用 nth-of-type/nth-child**：那两个数的是
+   父元素里所有同标签兄弟，而卡片里 rank-row 前面还有别的 div，序号会整体错位
+   ——2026-09-14 实测第 1 行拿到了本该给第 3 名的 delay、第 2~3 行压根没匹配上。
+
+   三行错开相位，避免三个图标齐步走——那样像加载动画而不像呼吸。
+   scale 走 transform：不触发重排，不影响行高与旁边文字的位置。 */
+@keyframes mg-discovery-rank-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); }
+}
+
+.model-discovery-rank-row[data-rank-top] .mg-logo {
+  animation: mg-discovery-rank-pulse var(--mg-duration-pulse) ease-in-out infinite;
+  transform-origin: center;
+  will-change: transform;
+}
+
+.model-discovery-rank-row[data-rank-top="2"] .mg-logo { animation-delay: calc(var(--mg-duration-pulse) / 3); }
+.model-discovery-rank-row[data-rank-top="3"] .mg-logo { animation-delay: calc(var(--mg-duration-pulse) / 3 * 2); }
+
+/* 无障碍基本项，不能省：系统开了"减弱动态效果"就彻底关掉，不是放慢。 */
+@media (prefers-reduced-motion: reduce) {
+  .model-discovery-rank-row[data-rank-top] .mg-logo {
+    animation: none;
+    will-change: auto;
+  }
+}

@@ -115,6 +115,8 @@ export interface PrototypeModel {
   integrationStatus?: DiscoveryIntegrationStatus
   /** 接入站点（接口 `integrated_site`）：徽标/可点性/落点的唯一判据（qa#727）。 */
   integratedSite?: DiscoveryIntegratedSite | null
+  /** 国际站 id，MODELGO_AI 的模型据此拼跨站详情链接 */
+  globalModelId?: string | null
   /** 单价构成，用于成本列的 tooltip。只有语言类有，且各档位可能缺项。 */
   unitPrices?: DiscoveryUnitPrices | null
   /** 排序用的原始数值，避免从展示串里反解析（"$0.34/M" 会被解析出 0.34 但丢单位）。 */
@@ -171,6 +173,10 @@ export function toPrototypeModel(t: TFn, item: DiscoveryRankingItem, type: Disco
     latency: item.end_to_end_latency_ms === null ? EMPTY : `${Math.round(item.end_to_end_latency_ms)} ms`,
     integrationStatus: item.integration_status,
     integratedSite: item.integrated_site ?? null,
+    // 国际站的模型 id：MODELGO_AI 的模型要靠它拼跨站详情链接（prd#1016）。
+    // 实测 test 上 MODELGO_AI 的 53 个模型 market_model_ids 全部只有 global 键、
+    // 无一含 cn；MODELGO 的 17 个全部含 cn，两个判据一致。
+    globalModelId: item.market_model_ids?.global ?? item.source_slug ?? null,
     unitPrices: item.unit_prices ?? null,
     raw: {
       score: item.primary_score,
@@ -628,7 +634,13 @@ export function integratedSiteOf(model: {
 export function detailTarget(model: {
   id?: string | null
   site: DiscoveryIntegratedSite
-}): 'inside' | 'disabled' | 'no-id' {
+  globalId?: string | null
+}): 'inside' | 'disabled' | 'no-id' | 'global' {
   if (model.site === 'NOT_INTEGRATED') return 'disabled'
+  // MODELGO_AI = 接在国外站。本站（国内）没有它的详情页，原来走 no-id 弹一句
+  // 「该模型尚未接入 ModelGo」—— 与行上「ModelGo.ai 已接入」的徽标自相矛盾，
+  // 用户看到两句打架的话，还是进不去（prd#1016）。改为新开页跳国际站。
+  // QA 口径：「modelgo.com 接入的按目前逻辑，modelgo.ai 接入的新开页面跳国际站」。
+  if (model.site === 'MODELGO_AI') return model.globalId ? 'global' : 'no-id'
   return model.id ? 'inside' : 'no-id'
 }

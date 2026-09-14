@@ -468,14 +468,22 @@ describe('specialtyMetricFor', () => {
   })
 })
 
-describe('detailTarget（查看详情落点，integrated_site 三态，qa#727）', () => {
-  it('MODELGO / MODELGO_AI（已接入）→ 站内详情', () => {
+describe('detailTarget（查看详情落点，integrated_site 三态，qa#727 / prd#1016）', () => {
+  it('MODELGO（国内站接入）→ 站内详情', () => {
     expect(detailTarget({ id: 'kimi-k2.6', site: 'MODELGO' })).toBe('inside')
-    expect(detailTarget({ id: 'gemini-3.1-flash-lite', site: 'MODELGO_AI' })).toBe('inside')
   })
-  it('已接入但没有 modelgo_id → no-id（提示，不静默）', () => {
+  // prd#1016：原来 MODELGO_AI 也判 inside，可本站 catalog 里根本没有它，
+  // 于是落到 no-id 弹「该模型尚未接入 ModelGo」—— 与行上「ModelGo.ai 已接入」
+  // 的徽标自相矛盾，用户两句话都看见、还是进不去。
+  it('MODELGO_AI（国外站接入）+ 有国际站 id → 新开页跳国际站', () => {
+    expect(detailTarget({ id: '', site: 'MODELGO_AI', globalId: 'gpt-6-astra' })).toBe('global')
+    // 站内 id 存在也一样走外站：它在本站 catalog 里查不到详情（qa#718）
+    expect(detailTarget({ id: 'gpt-6-astra', site: 'MODELGO_AI', globalId: 'gpt-6-astra' })).toBe('global')
+  })
+  it('已接入但拿不到对应 id → no-id（提示，不静默）', () => {
     expect(detailTarget({ id: '', site: 'MODELGO' })).toBe('no-id')
     expect(detailTarget({ site: 'MODELGO_AI' })).toBe('no-id')
+    expect(detailTarget({ site: 'MODELGO_AI', globalId: '' })).toBe('no-id')
   })
   it('NOT_INTEGRATED → disabled，即使境外厂商（qa#727：87 条不再按国别猜成已接入）', () => {
     expect(detailTarget({ id: 'gpt-5.4', site: 'NOT_INTEGRATED' })).toBe('disabled')

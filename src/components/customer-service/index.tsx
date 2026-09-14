@@ -15,6 +15,7 @@ import type { ChatItem } from './use-support'
 import { HandoffHeaderStatus, RatingCard } from './human-chat'
 import { FeedbackForm } from './feedback-form'
 import { TicketsList, TicketDetailView } from './tickets'
+import { answerStatusPresentation } from './answer-status'
 
 function formatCsTimestamp(timestamp: number, t: (key: string, options?: Record<string, unknown>) => string) {
   const date = new Date(timestamp)
@@ -36,21 +37,6 @@ const FAQ_ITEMS = [
   { icon: LuSparkles, key: 'chooseModel' },
   { icon: LuReceipt, key: 'billing' },
 ] as const
-
-function statusHint(status: ChatItem['answerStatus'], t: (key: string) => string): string | null {
-  switch (status) {
-    case 'needs_login':
-      return t('common.customerService.answerStatus.needsLogin')
-    case 'insufficient_evidence':
-      return t('common.customerService.answerStatus.insufficientEvidence')
-    case 'degraded':
-      return t('common.customerService.answerStatus.degraded')
-    case 'suggest_handoff':
-      return t('common.customerService.answerStatus.suggestHandoff')
-    default:
-      return null
-  }
-}
 
 function MessageBubble({ msg, onRate, onStartHandoff }: { msg: ChatItem; onRate: (id: string, rating: 'like' | 'dislike') => void; onStartHandoff: () => void }) {
   const { t } = useTranslation()
@@ -146,7 +132,9 @@ function MessageBubble({ msg, onRate, onStartHandoff }: { msg: ChatItem; onRate:
   }
 
   const isUser = msg.role === 'user'
-  const hint = msg.role === 'assistant' ? statusHint(msg.answerStatus, t) : null
+  const presentation = msg.role === 'assistant'
+    ? answerStatusPresentation(msg.answerStatus, msg.suggestHandoff)
+    : { hintKey: null, showHandoffCta: false }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: isUser ? 'flex-end' : 'flex-start', marginBottom: 16 }}>
@@ -161,8 +149,8 @@ function MessageBubble({ msg, onRate, onStartHandoff }: { msg: ChatItem; onRate:
         }`}
       >
         {isUser ? msg.content : <MarkdownContent>{msg.content}</MarkdownContent>}
-        {hint && <p className="m-0 mt-1.5 text-[11px] text-mg-text-3">{hint}</p>}
-        {msg.answerStatus === 'suggest_handoff' && (
+        {presentation.hintKey && <p className="m-0 mt-1.5 text-[11px] text-mg-text-3">{t(presentation.hintKey)}</p>}
+        {presentation.showHandoffCta && (
           <button
             type="button"
             onClick={onStartHandoff}

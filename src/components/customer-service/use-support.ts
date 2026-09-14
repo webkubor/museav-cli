@@ -50,6 +50,7 @@ export interface ChatItem {
   createdAt: number
   answerId?: string
   answerStatus?: SupportAnswerStatus
+  suggestHandoff?: boolean
   /** 后端 sensitive.Hit：这条提问/回答命中了疑似密钥，界面要提示且不进交接摘要 */
   sensitiveHit?: boolean
   rating?: SupportAnswerRating | null
@@ -199,6 +200,7 @@ export function useSupport() {
         // ans_ephemeral 占位，没落库、评分接口用不了，故不给评分控件。
         answerId: pickAnswerId(resp),
         answerStatus: resp.answer_status,
+        suggestHandoff: resp.suggest_handoff,
         // 后端在响应里回 sensitive:{Hit,Kind}，PRD §10 要求命中后给用户明确提示
         // （命中内容不进模型/检索/埋点/人工摘要）。此前前端完全没读这个字段。
         sensitiveHit: resp.sensitive?.Hit === true,

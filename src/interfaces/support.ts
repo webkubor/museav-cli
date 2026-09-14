@@ -15,6 +15,7 @@ export type SupportAnswerStatus =
   | 'insufficient_evidence'
   | 'degraded'
   | 'out_of_scope'
+  | 'human_handoff'
   | 'suggest_handoff'
 
 export type SupportAnswerRating = 'like' | 'dislike'

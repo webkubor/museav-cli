@@ -381,9 +381,11 @@
         "billing": "How to check usage and billing"
       },
       "answerStatus": {
+        "intent": "Please add a workspace, time range, or Request ID so I can continue.",
         "needsLogin": "Sign in to query your account data",
         "insufficientEvidence": "Not confirmed yet — you can submit feedback or ask for a human agent",
         "degraded": "Evidence is limited; treat this as a rough guide",
+        "outOfScope": "I can currently help only with ModelGo-related questions.",
         "suggestHandoff": "You can connect with a human agent if this doesn't help",
         "handoffCta": "Connect to an agent"
       },

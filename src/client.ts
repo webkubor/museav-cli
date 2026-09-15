@@ -817,7 +817,7 @@ export class StudioClient {
    *
    * `mediaType='video'` 时返回视频**档次名**（Seedance 2.0 这种对外名）。中台不会
    * 下发上游内部渠道代号——那是供应商身份，不该出现在客户端能读到的地方。
-   * 这个列表同时也是 `gen --video --model` 的合法取值来源：中台写接口会把它归一回去。
+   * 3.4.0 起 CLI 不再提供 `gen --model`，这个列表是**只读查询**：看中台当前在用哪些档次。
    */
   async models(mediaType?: 'video'): Promise<ModelOption[]> {
     return this.request(`available-models${mediaType === 'video' ? '?media_type=video' : ''}`)

@@ -9,7 +9,8 @@ import type { StudioClient } from '../client.js'
  * CLI 不用发版。原先 `gen --video` 的 help 里写死了一串上游渠道代号，既泄露供应商
  * 身份，又会在上游下线时变成一堆没人认得的字符串。
  *
- * 查到的档次名可以直接喂给 `gen --video --model`——中台写接口会把它归一回内部代号。
+ * 3.4.0 移除了 `gen --model` 之后，这里**不能再教用户去传它**——档次由中台按参数
+ * 自动挑。这个命令的定位随之从「查完拿去传参」改成「看当前在用什么」。
  */
 export async function models(client: StudioClient, opts: { video?: boolean } = {}): Promise<void> {
   const list = await client.models(opts.video ? 'video' : undefined)
@@ -31,8 +32,10 @@ export async function models(client: StudioClient, opts: { video?: boolean } = {
     process.stderr.write(`  ${m.label.padEnd(28)} ${range}\n`)
   }
   if (opts.video) {
-    process.stderr.write("\n出视频: museav gen --video --prompt '...' --model <上面的档次名>（不传则走 auto 路由）\n")
+    // 3.4.0 已移除 gen --model，这行原来还在教人传它 —— 照着做直接报
+    // 「unknown option」。这里只说怎么出视频，档次交给中台挑。
+    process.stderr.write("\n出视频: museav gen --video --prompt '...'（用哪个档次由中台按参数自动挑）\n")
   }
-  // stdout 输出 value 列表（便于脚本解析）：视频这里就是档次名，可直接喂给 --model
+  // stdout 输出 value 列表（便于脚本解析）：视频这里就是档次名，给脚本做展示/校验用
   console.log(list.map((m) => m.value).join('\n'))
 }

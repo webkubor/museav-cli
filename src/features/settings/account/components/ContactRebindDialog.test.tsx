@@ -15,6 +15,7 @@ import { ModelGoApiError } from '@/lib/request'
 import { useAuthStore } from '@/store/auth'
 import type { AccountBrief, AccountProfile } from '@/types'
 import { ContactRebindDialog } from './ContactRebindDialog'
+import { useCustomerServiceStore } from '@/store/use-customer-service-store'
 
 vi.mock('@/services/account', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/services/account')>()
@@ -247,6 +248,14 @@ describe('ContactRebindDialog', () => {
     await fillNewEmailAndSubmit()
     await waitFor(() => expect(appToast.requestError).toHaveBeenCalledWith(err, '邮箱更换失败'))
     expect(stepItems()[1]).toHaveAttribute('aria-current', 'step')
+  })
+
+  it('第一步「联系人工客服」：先关掉换绑弹窗再打开平台助手，助手窗口不会被弹窗压住（QA note_18254）', () => {
+    useCustomerServiceStore.setState({ isOpen: false })
+    const { onClose } = renderDialog('phone')
+    fireEvent.click(screen.getByRole('button', { name: /联系人工客服/ }))
+    expect(onClose).toHaveBeenCalledTimes(1)
+    expect(useCustomerServiceStore.getState().isOpen).toBe(true)
   })
 
   it('弹窗外的指针操作（人机验证滑块浮层 portal 在 Dialog 之外）不会关掉弹窗，取消按钮仍可关', async () => {

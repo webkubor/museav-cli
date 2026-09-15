@@ -117,6 +117,7 @@ describe('ContactRebindDialog', () => {
     vi.mocked(sendSmsCode).mockClear()
     vi.mocked(appToast.error).mockClear()
     vi.mocked(appToast.requestError).mockClear()
+    useCustomerServiceStore.setState({ isOpen: false })
     useAuthStore.setState({ isAuthenticated: true, account: accountBrief })
   })
 
@@ -251,7 +252,6 @@ describe('ContactRebindDialog', () => {
   })
 
   it('第一步「联系人工客服」：先关掉换绑弹窗再打开平台助手，助手窗口不会被弹窗压住（QA note_18254）', () => {
-    useCustomerServiceStore.setState({ isOpen: false })
     const { onClose } = renderDialog('phone')
     fireEvent.click(screen.getByRole('button', { name: /联系人工客服/ }))
     expect(onClose).toHaveBeenCalledTimes(1)

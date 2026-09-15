@@ -273,6 +273,7 @@ export function ContactRebindDialog({ mode, profile, onClose }: ContactRebindDia
           <Button
             variant="link"
             className="h-auto p-0 text-xs font-bold"
+            disabled={verifying}
             onClick={() => { trackEvent('account.contact:rebind_support'); onClose(); openSupport(true) }}
           >
             {t('account.info.rebind.contactSupport')}

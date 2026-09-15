@@ -301,8 +301,8 @@ export default function ModelDetailPage() {
               调用统计不再对外暴露，已整块下线（modelgo/shared/modelgo_prd#1035）。
               ⚠️ 它从头到尾只有 mock 数据、从未接过真实统计接口，所以下线**不涉及**
               任何后端端点，别去找要一起下掉的接口。
-              计划稿 docs/superpowers/plans/2026-08-24-v1.0.6-model-discovery-ui-flow.md
-              的 §2.3 / §3.3 / §4 已就地标注下线，别再照它把区块加回来。
+              计划稿 docs/superpowers/plans/2026-08-24-v1.0.6-model-discovery-ui-flow.md 里提到
+              本区块的地方已全标注（grep ⛔），别照它加回来；按小标题定位，章号有重复（「3.」「4.」各两个）。
               Benchmark 是独立 .mg-tile.mg-detail-card，区块间距由外层 .models-catalog-page
               的 flex gap 统一给（卡片自身无 margin），删掉上一块不会留空洞。 */}
           <BenchmarkSection modelId={detail.model_id} />

@@ -61,7 +61,6 @@
       "member": "Member",
       "allMembers": "All members",
       "guardrailLabel": "Guardrail",
-      "fullTextHint": "Request/Response full-text search only covers records with input/output log capture enabled.",
       "defaultHint": "Showing all requests from the last 7 days by default",
       "clear": "Clear filters",
       "status": {

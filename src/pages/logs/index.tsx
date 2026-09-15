@@ -41,7 +41,7 @@ import {
 } from './detail'
 import { SyncLogsSummary } from './summary'
 import { AsyncTasksPanel } from '@/pages/tasks'
-import { LuChevronDown, LuFileText, LuRefreshCw, LuSearch, LuTriangleAlert } from 'react-icons/lu'
+import { LuChevronDown, LuRefreshCw, LuSearch, LuTriangleAlert } from 'react-icons/lu'
 
 type RecordType = 'sync' | 'async'
 
@@ -696,10 +696,6 @@ export default function LogsPage() {
                 ))}
               </Select>
             </FilterField>
-            <div className="flex items-start gap-2 rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-sm)] mg-text-caption text-mg-text-3">
-              <LuFileText className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>{t('logs.filter.fullTextHint')}</span>
-            </div>
           </div>
         )}
 

@@ -272,11 +272,17 @@ export function ContactRebindDialog({ mode, profile, onClose }: ContactRebindDia
               suffix={<VerificationCodeButton onSend={sendCurrentCode} disabled={verifying} />}
             />
           </div>
-          <Button asChild variant="link" className="h-auto p-0 text-xs font-bold">
-            <a href={supportMailHref} onClick={() => trackEvent('account.contact:rebind_support')}>
-              {t('account.info.rebind.contactSupport', { email: supportEmail })}
+          {/* 兜底出口降为辅助说明：问句是灰字，只有邮箱地址是链接（mailto），既能点也能抄 */}
+          <p className="text-xs text-mg-text-3">
+            {t('account.info.rebind.supportHint')}
+            <a
+              href={supportMailHref}
+              className="font-mono text-brand-base hover:text-brand-deep"
+              onClick={() => trackEvent('account.contact:rebind_support')}
+            >
+              {supportEmail}
             </a>
-          </Button>
+          </p>
         </div>
       )}
 

@@ -127,7 +127,7 @@ describe('ContactRebindDialog', () => {
     expect(screen.getByText('验证码将发送至 lo***@example.com')).toBeInTheDocument()
     expect(screen.queryByText(/louie@example.com/)).toBeNull()
     expect(sendCodeButton()).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /无法接收验证码？联系人工客服/ })).toBeInTheDocument()
+    expect(screen.getByText(/无法接收验证码？请发邮件至/)).toBeInTheDocument()
     // 没发码、没填码不能进下一步
     expect(nextButton()).toBeDisabled()
   })
@@ -249,9 +249,10 @@ describe('ContactRebindDialog', () => {
     expect(stepItems()[1]).toHaveAttribute('aria-current', 'step')
   })
 
-  it('第一步「联系人工客服」是人工支持邮箱的 mailto 直达，不挂 1.0.7 的平台助手、也不关弹窗', () => {
+  it('第一步求助出口：灰字问句 + 邮箱地址 mailto 链接，不挂 1.0.7 的平台助手、也不关弹窗', () => {
     const { onClose } = renderDialog('phone')
-    const link = screen.getByRole('link', { name: /联系人工客服 feedback@modelgo\.com/ })
+    expect(screen.getByText(/无法接收验证码？请发邮件至/)).toBeInTheDocument()
+    const link = screen.getByRole('link', { name: 'feedback@modelgo.com' })
     expect(link).toHaveAttribute('href', expect.stringMatching(/^mailto:feedback@modelgo\.com\?subject=/))
     expect(decodeURIComponent(link.getAttribute('href') ?? '')).toContain('ModelGo 账号换绑求助')
     expect(onClose).not.toHaveBeenCalled()

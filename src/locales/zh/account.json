@@ -43,7 +43,7 @@
         "currentEmailCode": "当前邮箱验证码",
         "codeWillSendTo": "验证码将发送至 {{target}}",
         "codePlaceholder": "6 位验证码",
-        "contactSupport": "无法接收验证码？联系人工客服 {{email}}",
+        "supportHint": "无法接收验证码？请发邮件至 ",
         "supportMailSubject": "ModelGo 账号换绑求助",
         "newPhone": "新手机号",
         "newEmail": "新邮箱地址",

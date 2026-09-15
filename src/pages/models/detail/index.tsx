@@ -28,7 +28,6 @@ import { resolveModelCategory, hasPlaygroundExperience } from '../model-experien
 import { mapApiProtocols } from '../api-code-samples'
 import { ModelsCompareModal } from '../components/ModelsCompareModal'
 import { ApiAccessPanel } from './ApiAccessPanel'
-import { RuntimeMetricsSection } from './RuntimeMetricsSection'
 import { BenchmarkSection } from './BenchmarkSection'
 import '../catalog/catalog.css'
 
@@ -291,10 +290,11 @@ export default function ModelDetailPage() {
             />
           </div>
 
-          {/* v1.0.6 §2.3 区块顺序：Hero/规格 → API 接入 → 平台运行表现 →
-              Benchmark → 相关模型。两块都是独立 .mg-tile.mg-detail-card，
-              与现有详情的纵向节奏一致，不把详情改成一张长卡。 */}
-          <RuntimeMetricsSection />
+          {/* v1.0.6 §2.3 区块顺序：Hero/规格 → API 接入 → Benchmark → 相关模型。
+              「平台运行表现」原本夹在 API 接入与 Benchmark 之间，产品侧决定不再对外
+              暴露平台侧真实调用统计，已整块下线（shared/modelgo_prd#1035）。
+              Benchmark 是独立 .mg-tile.mg-detail-card，区块间距由外层 flex gap 统一给，
+              删掉上一块不会留空洞。 */}
           <BenchmarkSection modelId={detail.model_id} />
 
           {related.length > 0 && (

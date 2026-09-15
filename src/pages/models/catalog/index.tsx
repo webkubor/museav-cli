@@ -488,11 +488,16 @@ export default function ModelsCatalogPage() {
                 与搜索、排序同一行的最右，柱状图标 + 文案 + 右箭头，品牌色强调。
                 此前放在页头且降成中性 outline，与原型不一致（2026-09-03 需求方指出）。
                 尺寸与同一行的搜索(lg)/排序触发器(lg)同档（2026-09-04 控件统一）：
-                此前 size="sm"(32px) 跟在 48px 的搜索框后面，flex 行里高度参差。 */}
+                此前 size="sm"(32px) 跟在 48px 的搜索框后面，flex 行里高度参差。
+                横向留白单独降到 md 档（2rem=32px → 16px，modelgo/shared/modelgo_prd#1034）：lg 档的 2rem
+                是给整行主操作按钮留的，套在「图标 + 四字 + 箭头」这种短内容上会在文案两侧
+                各撑出一大块空白（需求方反馈「这两边空白咋这么多」）。只改 padding-inline，
+                高度仍是 lg，同行搜索框/排序器的 48px 对齐不受影响。 */}
             {DISCOVERY_ENTRY_ENABLED && (
               <Button
                 variant="brand-outline"
                 size="lg"
+                className="px-[var(--mg-control-pad-x-md)]"
                 onClick={() => {
                   // 只记点击，不把「加载成功」伪报成点击（§2.1）
                   trackEvent('marketplace_discovery_entry_clicked', { source: 'catalog_toolbar' })

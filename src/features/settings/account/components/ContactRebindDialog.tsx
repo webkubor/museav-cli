@@ -269,10 +269,12 @@ export function ContactRebindDialog({ mode, profile, onClose }: ContactRebindDia
               suffix={<VerificationCodeButton onSend={sendCurrentCode} disabled={verifying} />}
             />
           </div>
+          {/* 求助入口：先关本弹窗再开平台助手——弹窗遮罩/浮层压在助手窗口之上，不关就看不见（QA note_18254） */}
           <Button
             variant="link"
             className="h-auto p-0 text-xs font-bold"
-            onClick={() => { trackEvent('account.contact:rebind_support'); openSupport(true) }}
+            disabled={verifying}
+            onClick={() => { trackEvent('account.contact:rebind_support'); onClose(); openSupport(true) }}
           >
             {t('account.info.rebind.contactSupport')}
           </Button>

@@ -6,12 +6,17 @@
  */
 
 /* 热门 Agent 排行的周期分段控件（本日 / 本周 / 本月）。
-   原型这块复用的类名是 `.runtime-range-switch` —— 它在 redesign.css 里归
-   「运行表现」分节（17101-17135），不在本页搬运的 `Model discovery` 分节内，
-   所以按分节整段搬时漏了。表现：三个按钮完全无样式，挤成「本日本周本月」
-   一串纯文字，既看不出是分段控件、也没有选中态。
-   这里按原型规则补回，作用域收在 .model-discovery-page 内 —— 类名太通用，
-   泄到全局会撞上详情页自己的运行表现区块。 */
+   原型这块复用的类名是 `.runtime-range-switch`（modelgo-prd `src/redesign.css:17533-17566`，
+   就在本页搬运的 `Model discovery` 分节内，分节横幅在 `:13746`）。搬运时漏了这一段，
+   表现：三个按钮完全无样式，挤成「本日本周本月」一串纯文字，既看不出是分段控件、
+   也没有选中态。这里按原型规则补回。
+   ⚠️ `.model-discovery-page` 前缀**不要去掉**，理由只有一条且与任何具体区块无关：
+   原型侧这四条规则是**裸全局类**，而 `runtime-range-switch` 这个名字足够通用，
+   谁都可能再用一次；不收敛就会和后来任何同名类互相覆盖，表现是选中态错乱。
+   （注：本仓从来没有第二处用过这个类 —— 详情页原「平台运行表现」的周期控件走的是
+   `SegmentedToggle` 组件、纯 Tailwind，压根不是这套 CSS。那个区块已随
+   modelgo/shared/modelgo_prd#1035 下线，但它**不是**当初收敛作用域的原因，
+   别去 git 历史里找一场没发生过的撞车。） */
 .model-discovery-page .runtime-range-switch {
   align-items: center;
   /* 原型这里取 --surface-muted 并回退到写死的 #f3f5f9：控制台没有这个 token，

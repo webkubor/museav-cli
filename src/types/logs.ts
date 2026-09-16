@@ -77,6 +77,15 @@ export interface CallLogItem {
   /** 回退次数（原型 Fallback 卡）：后端 runtime_detail 内派生，无则 0 */
   fallback_count: number
   api_key: { api_key_id: string; name: string; masked: string }
+  /**
+   * 调用密钥类型（trial = 模型体验用的系统托管隐藏 Key）。真源是网关落库的
+   * `metadata.api_key_type`；2026-07-14 之前的历史行没打这个标，读出来是空串 = 未知，
+   * 消费方自行决定降级方向。
+   *
+   * ⚠️ 故意不是 `ApiKeyType` —— 那个类型只有 personal|member|service 三值、没有
+   * trial（后端 `/model-logs` 筛选枚举是四值），别顺手「统一类型」把它收紧掉。
+   */
+  api_key_type: string
   account: { account_id: string; display_name: string }
   app_name: string | null
   status: 'accepted' | 'succeeded' | 'failed' | 'rejected'

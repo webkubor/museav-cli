@@ -77,8 +77,9 @@ describe('relatedPriceView — 媒体模型', () => {
   // prd#1010：cn 生产 GET /catalog/models/qwen-image-3.0/related 的真实形状 ——
   // 计量型价格（unit=image）的 input/output/per_call 三个标量价**全是 "0"**，
   // 价格只在 price_tiers 里。旧组件只读标量价，于是渲染成「—」。
-  // 这条钉住：标量全 0 不等于未配价，媒体模型必须回落到 tiers 最高档。
-  it('tiers 非空但三个标量价均为 0（按张计量型）→ 仍取最高档，不落到「—」', () => {
+  // 这条钉住两件事：①标量全 0 不等于未配价，媒体模型必须回落到 tiers 取价；
+  // ②产品 2026-09-15 口径：图片模型主价格 = 输出档最低价（1K ¥0.25，不是 2K ¥0.5）。
+  it('tiers 非空但三个标量价均为 0（按张计量型）→ 取输出档最低价，不落到「—」', () => {
     const qwenImagePro = related({
       output_modalities: ['image'],
       input_price: '0',
@@ -94,9 +95,9 @@ describe('relatedPriceView — 媒体模型', () => {
       ],
     })
     expect(relatedPriceView(qwenImagePro, true)).toEqual({
-      kind: 'primary', text: '¥0.5/张', strike: undefined, showContext: false,
+      kind: 'primary', text: '¥0.25/张', strike: undefined, showContext: false,
     })
-    // 标准版：最高档 = 输出 1K ¥0.18/张（本单验收标准第 2 条钉的数）
+    // 标准版：输出 1K ¥0.18/张（本单验收标准第 2 条钉的数）
     expect(relatedPriceView(related({
       output_modalities: ['image'],
       input_price: '0', output_price: '0', per_call_price: '0',

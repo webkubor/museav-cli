@@ -134,6 +134,17 @@ describe('mediaPrimaryPrice — 媒体模型主价格', () => {
       .toEqual({ amount: '1.5', unit: '/秒', unitName: '秒' })
   })
 
+  it('按张计价的图片档（qwen-image-3.0-pro 实况）→ 取输出档最低价 0.25，不取最高档 0.5 也不取输入档 0.02（prd#1010 产品 2026-09-15 口径）', () => {
+    const qwenImageProTiers = [
+      { label: '图片输入 · 1K', price: '0.02', unit: '张', bucket: 'image_input_1k' },
+      { label: '图片输入 · 2K', price: '0.02', unit: '张', bucket: 'image_input_2k' },
+      { label: '图片输出 · 1K', price: '0.25', unit: '张', bucket: 'image_output_1k' },
+      { label: '图片输出 · 2K', price: '0.5', unit: '张', bucket: 'image_output_2k' },
+    ]
+    expect(mediaPrimaryPrice({ mode: 'token', input_per_1m: '0', output_per_1m: '0' }, '张', qwenImageProTiers, 'image'))
+      .toEqual({ amount: '0.25', unit: '/张', unitName: '张', originalAmount: undefined })
+  })
+
   it('按 token 计价且无矩阵的媒体模型 → output 优先，unitName M', () => {
     expect(mediaPrimaryPrice({ mode: 'token', input_per_1m: '20', output_per_1m: '46' }, undefined, []))
       .toEqual({ amount: '46', unit: '/M', unitName: 'M' })

@@ -4,6 +4,13 @@ This CLI is designed to be used directly by coding agents (Claude Code, Codex, e
 
 ## What this is
 
+> 定位（2026-09-16 收口）：**中台 API 客户端 + 一套本地图像后期工具**。
+> 两条红线：① 不内置模型运行时 —— 要本地大模型推理就委托外部工具
+> （`reverse --local` → `vlm`/mlx-vlm-kit）；② 不寄生第三方工具 ——
+> 跟 MUSE AV 中台无关的能力不进这个 CLI（3.6.0 据此移除了发小红书的 `skillhub`）。
+> 本地图像那套（抠图/超分/去水印/压缩）是例外且**应当留下**：它不重复任何其它仓库，
+> museav-mcp 正是把本 CLI 当能力层在用。
+
 A command-line client for the "studio" image-generation platform (`https://manager.museav.top`). It generates images from a prompt, reverse-engineers a prompt from an existing image, and lists your own generation history. All output is designed for machine consumption: **stdout carries only the final result** (a URL, a prompt string, or JSON); progress and human-readable info goes to stderr.
 
 ## Scope: this tool makes *assets*, not finished videos
@@ -106,27 +113,6 @@ museav jobs --limit 10 --status failed
 museav products
 museav assets
 
-# Publish a local Agent Skill to Xiaohongshu SkillHub. NOT the same as `museav skills`
-# (that lists the platform's image-generation skills) — this ships a local SKILL.md
-# directory to 小红书 SkillHub. Packing, device-code auth, upload and submit are all done
-# by Xiaohongshu's own CLI (`redskillhub-upload`, a dependency of this package); museav is
-# just the entry point plus one guard rail.
-#
-# WITHOUT --yes it is a dry run: local pack + validation only, no login, no upload, no
-# submit. That's the default on purpose — a submit is irreversible (the Skill ID is the
-# platform's primary key and cannot be renamed across versions). Add --yes to really submit;
-# an unauthenticated --yes prints a QR code for the user to scan in the Xiaohongshu app.
-#
-# --tag is REQUIRED (the platform demands at least one content tag and there is no sane
-# default). List the live options first — do not hardcode them.
-museav skillhub tags
-museav skillhub publish ./my-skill --tag 效率工具,编程开发          # dry run, stdout: payload JSON
-museav skillhub publish ./my-skill --tag 效率工具 --yes             # real submit
-museav skillhub publish ./my-skill --tag 内容创作 --source repost --repost-source 知乎 --yes
-
-# Platform limits worth knowing before you package anything: text-ish extensions only
-# (.md/.js/.py/.json/.sh/.html/.css …; .mjs, .ts, .yaml and images are rejected outright),
-# 10MB per file, 30MB per bundle, and a SKILL.md must exist at the root.
 
 # Check who you're logged in as and whether the account is affiliated with a tenant
 # Works for both personal login and apiKey (platform account or tenant). For apiKey:

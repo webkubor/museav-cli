@@ -1,5 +1,27 @@
 # Changelog
 
+## 3.6.0 (2026-09-16)
+
+### 移除 `skillhub`：一次都没用过的出站功能，不该占着这个 CLI
+
+`museav skillhub` 是把本地 Agent Skill 发到**小红书 SkillHub**。它既不走 MUSE AV 中台，
+也不属于图像能力，实现全靠小红书官方的 `redskillhub-upload`（本包唯一的第三方工具依赖）。
+
+实测 `skillhub whoami` → `loggedIn: false`，本地无任何凭证 —— 加进来之后一次都没发布过。
+
+- 删除 `skillhub` 命令及其 5 个子命令（tags / publish / whoami / login / logout），
+  共 214 行 + 42 行测试。
+- 移除依赖 `redskillhub-upload`。**至此本包 dependencies 只剩 `commander` 与
+  `update-notifier` 两个纯工具库**，没有任何第三方工具寄生。
+- 真要发小红书 Skill，那个包自己就能跑：`npx redskillhub-upload`，不需要经过本 CLI。
+
+顺带把定位写准了（AGENTS.md）：本 CLI = **中台 API 客户端 + 一套本地图像后期工具**。
+本地图像那套（抠图 / 超分 / 去水印 / 压缩）继续留在这里 —— 它们不重复任何其它仓库，
+且 museav-mcp 正是把本 CLI 当能力层在用。
+
+⚠️ museav-mcp 同版本移除了 `skillhub_tags` / `skillhub_whoami` / `skillhub_publish`
+三个 MCP 工具，两边必须一起升，否则 agent 会拿到报 unknown command 的坏工具。
+
 ## 3.5.0 (2026-09-16)
 
 ### `reverse --local` 的引擎换成 mlx-vlm-kit，CLI 不再自带模型运行时

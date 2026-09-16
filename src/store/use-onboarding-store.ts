@@ -132,6 +132,21 @@ function guideContext(guide: OnboardingGuideState): OnboardingGuideContext {
   return { tenantId: guide.tenantId, tenantKind: guide.tenantKind, site: guide.reward.site }
 }
 
+/** 账单高亮信号的存活上限；超过就作废，见 takeReceiptForBilling */
+export const BILLING_HIGHLIGHT_TTL_MS = 8000
+let billingHighlightExpiry: ReturnType<typeof setTimeout> | null = null
+function disarmBillingHighlightExpiry() {
+  if (billingHighlightExpiry) clearTimeout(billingHighlightExpiry)
+  billingHighlightExpiry = null
+}
+function armBillingHighlightExpiry(expire: () => void) {
+  disarmBillingHighlightExpiry()
+  billingHighlightExpiry = setTimeout(() => {
+    billingHighlightExpiry = null
+    expire()
+  }, BILLING_HIGHLIGHT_TTL_MS)
+}
+
 export const useOnboardingStore = create<OnboardingState & OnboardingActions>()((set, get) => ({
   guides: {},
   trackRoles: {},
@@ -279,10 +294,20 @@ export const useOnboardingStore = create<OnboardingState & OnboardingActions>()(
     const receipt = get().rewardReceipt
     if (!receipt) return null
     set({ rewardReceipt: null, billingHighlight: receipt })
+    // 信号自毁：账单页要么在 TTL 内把它用掉（找到行 → 钉住 / 判定找不到），要么它自己作废。
+    // 放在这里而不是账单面板的 effect 里，是因为面板卸载会把 effect 的定时器一起清掉——
+    // 用户在列表落地前就离开账单页，信号会无限期挂着，下次进来又复位一次筛选并高亮，
+    // 违背「离开再进来必须没有高亮」（2026-09-16 owner 口径）。
+    armBillingHighlightExpiry(() => {
+      if (get().billingHighlight === receipt) set({ billingHighlight: null })
+    })
     return receipt
   },
 
-  clearBillingHighlight: () => set({ billingHighlight: null }),
+  clearBillingHighlight: () => {
+    disarmBillingHighlightExpiry()
+    set({ billingHighlight: null })
+  },
 }))
 
 /**

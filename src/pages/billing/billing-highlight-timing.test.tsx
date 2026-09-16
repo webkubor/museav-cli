@@ -10,7 +10,7 @@
  * income-onboarding-row.test.ts）。
  */
 
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -41,7 +41,7 @@ vi.mock('react-i18next', () => ({
 }))
 
 import { BillingLedgerPanel } from './BillingLedgerPanel'
-import { useOnboardingStore } from '@/store/use-onboarding-store'
+import { BILLING_HIGHLIGHT_TTL_MS, useOnboardingStore } from '@/store/use-onboarding-store'
 
 function row(id: string, recordRef = id): IncomeRecord {
   return {
@@ -56,21 +56,52 @@ function row(id: string, recordRef = id): IncomeRecord {
   }
 }
 
+function panelEl(bucketFilter: 'all' | 'gift' = 'all') {
+  return (
+    <BillingLedgerPanel
+      tenantId="t-1"
+      currencySymbol="¥"
+      bucketFilter={bucketFilter}
+      onBucketFilterChange={() => {}}
+    />
+  )
+}
+
 function renderPanel() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   )
-  render(
-    <BillingLedgerPanel
-      tenantId="t-1"
-      currencySymbol="¥"
-      bucketFilter="all"
-      onBucketFilterChange={() => {}}
-    />,
-    { wrapper },
+  const view = render(panelEl(), { wrapper })
+  return Object.assign(client, {
+    unmount: view.unmount,
+    /** 换余额桶筛选（父级 BalanceCard 点桶的效果） */
+    setBucket: (bucket: 'all' | 'gift') => view.rerender(panelEl(bucket)),
+    /** 模拟离开账单页再回来：卸载后重新挂一份新的面板（断言走 screen/document，不用返回值） */
+    reenter: (): void => {
+      if (view.container.isConnected) view.unmount()
+      render(panelEl(), { wrapper })
+    },
+  })
+}
+
+/**
+ * 真实页面的形态：余额桶筛选由父级（BalanceCard 点桶）持有，面板通过 onBucketFilterChange 回写。
+ * 用它复现「用户本来停在账单页、带着筛选去领奖」的时序。
+ */
+function Host({ initialBucket }: { initialBucket: 'all' | 'gift' }) {
+  const [bucket, setBucket] = useState<'all' | 'gift'>(initialBucket)
+  return (
+    <BillingLedgerPanel tenantId="t-1" currencySymbol="¥" bucketFilter={bucket} onBucketFilterChange={(b) => setBucket(b as 'all' | 'gift')} />
   )
-  return client
+}
+
+function renderHost(initialBucket: 'all' | 'gift') {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={client}>{children}</QueryClientProvider>
+  )
+  return render(<Host initialBucket={initialBucket} />, { wrapper })
 }
 
 const receipt = { recordRef: 'gift-new', transactionId: 'gift-new', rewardLabel: '新手任务奖励' }
@@ -150,5 +181,122 @@ describe('「查看赠金」高亮的时序', () => {
       expect(document.querySelectorAll('.billing-transaction-highlight')).toHaveLength(1)
     })
     expect(screen.getByText('gift-new').closest('tr')).toHaveClass('billing-transaction-highlight')
+  })
+
+  /**
+   * 2026-09-16 口径变更（owner）：高亮不再 2.2s 后消失，淡到选中态后常驻；
+   * store 里那个一次性信号在找到行的瞬间就被用掉，不再靠定时器收尾。
+   */
+  it('找到行后常驻高亮，并立刻用掉 store 信号', async () => {
+    listIncomeRecords.mockResolvedValue({ items: [row('gift-old'), row('gift-new')], has_more: false })
+    renderPanel()
+    await screen.findByText('gift-new')
+
+    useOnboardingStore.setState({ billingHighlight: receipt })
+    await waitFor(() => {
+      expect(screen.getByText('gift-new').closest('tr')).toHaveClass('billing-transaction-highlight')
+    })
+    expect(useOnboardingStore.getState().billingHighlight).toBeNull()
+
+    // 老实现 2.2s 后就摘类；现在过了这个点（连 8s 兜底一起）仍在。
+    // 高亮已断言通过、没有在途查询，这时开 fake timers 不会和 react-query 的调度打架。
+    vi.useFakeTimers()
+    try {
+      vi.advanceTimersByTime(10_000)
+    } finally {
+      vi.useRealTimers()
+    }
+    expect(screen.getByText('gift-new').closest('tr')).toHaveClass('billing-transaction-highlight')
+    expect(screen.getByText('gift-new').closest('tr')).toHaveAttribute('aria-current', 'true')
+  })
+
+  it('离开账单页再进来，高亮必须没有', async () => {
+    listIncomeRecords.mockResolvedValue({ items: [row('gift-old'), row('gift-new')], has_more: false })
+    const client = renderPanel()
+    await screen.findByText('gift-new')
+
+    useOnboardingStore.setState({ billingHighlight: receipt })
+    await waitFor(() => {
+      expect(document.querySelectorAll('.billing-transaction-highlight')).toHaveLength(1)
+    })
+
+    client.reenter()
+    await screen.findByText('gift-new')
+    // 给可能的异步 effect 一个 tick，确认不是「还没来得及挂上」
+    await new Promise((r) => setTimeout(r, 50))
+    expect(document.querySelectorAll('.billing-transaction-highlight')).toHaveLength(0)
+    expect(useOnboardingStore.getState().billingHighlight).toBeNull()
+  })
+
+  it('切筛选后钉住的行清掉', async () => {
+    listIncomeRecords.mockResolvedValue({ items: [row('gift-old'), row('gift-new')], has_more: false })
+    const client = renderPanel()
+    await screen.findByText('gift-new')
+
+    useOnboardingStore.setState({ billingHighlight: receipt })
+    await waitFor(() => {
+      expect(document.querySelectorAll('.billing-transaction-highlight')).toHaveLength(1)
+    })
+
+    client.setBucket('gift')
+    await waitFor(() => {
+      expect(document.querySelectorAll('.billing-transaction-highlight')).toHaveLength(0)
+    })
+    // 换筛选后的那次请求回来了也不会再亮（信号已用掉）；keepPreviousData 会让旧行先留在屏上，
+    // 所以要等到第二次请求真的落地再断言
+    await waitFor(() => expect(listIncomeRecords).toHaveBeenCalledTimes(2))
+    await screen.findByText('gift-new')
+    expect(document.querySelectorAll('.billing-transaction-highlight')).toHaveLength(0)
+  })
+
+  /**
+   * 回归（首版 review 抓出）：用户本来停在账单页、带着「赠送余额」筛选去领奖。信号到达那一帧，
+   * 复位筛选与找行两个 effect 同批跑，若「钉住时的 key」记的是复位前的值，下一帧 key 一变就把
+   * 刚钉的行清掉，而信号已用掉 ⇒ 一条都不亮。
+   */
+  it('带着筛选去领奖，复位筛选后那行仍常驻高亮', async () => {
+    listIncomeRecords.mockResolvedValue({ items: [row('gift-old'), row('gift-new')], has_more: false })
+    renderHost('gift')
+    await screen.findByText('gift-new')
+
+    useOnboardingStore.setState({ billingHighlight: receipt })
+    await waitFor(() => {
+      expect(screen.getByText('gift-new').closest('tr')).toHaveClass('billing-transaction-highlight')
+    })
+    // 复位后 bucket=all 的那次请求也回来了，高亮还在
+    await waitFor(() => expect(listIncomeRecords).toHaveBeenCalledTimes(2))
+    await new Promise((r) => setTimeout(r, 50))
+    expect(document.querySelectorAll('.billing-transaction-highlight')).toHaveLength(1)
+    expect(useOnboardingStore.getState().billingHighlight).toBeNull()
+  })
+
+  /**
+   * 漏网路径：列表还没落地用户就离开了账单页，信号没被消费。面板 effect 的定时器随卸载被清，
+   * 所以自毁必须在 store 侧——过了 TTL 再进账单页，不能再复位筛选、也不能再高亮。
+   */
+  it('列表落地前离开账单页，过了 TTL 再进来没有高亮', async () => {
+    let resolveFirst: (v: unknown) => void = () => {}
+    listIncomeRecords.mockImplementationOnce(() => new Promise((r) => { resolveFirst = r }))
+    const client = renderPanel()
+    await waitFor(() => expect(listIncomeRecords).toHaveBeenCalledTimes(1))
+
+    // 走真实签发路径（带自毁定时器），不是直接 setState
+    useOnboardingStore.setState({ rewardReceipt: receipt })
+    vi.useFakeTimers()
+    try {
+      expect(useOnboardingStore.getState().takeReceiptForBilling()).toEqual(receipt)
+      client.unmount()
+      vi.advanceTimersByTime(BILLING_HIGHLIGHT_TTL_MS + 1)
+    } finally {
+      vi.useRealTimers()
+    }
+    expect(useOnboardingStore.getState().billingHighlight).toBeNull()
+    resolveFirst({ items: [row('gift-old'), row('gift-new')], has_more: false })
+
+    listIncomeRecords.mockResolvedValue({ items: [row('gift-old'), row('gift-new')], has_more: false })
+    client.reenter()
+    await screen.findByText('gift-new')
+    await new Promise((r) => setTimeout(r, 50))
+    expect(document.querySelectorAll('.billing-transaction-highlight')).toHaveLength(0)
   })
 })

@@ -186,11 +186,18 @@ function MessageBubble({ msg, onRate, onStartHandoff }: { msg: ChatItem; onRate:
             <LuThumbsDown size={13} />
           </button>
           {/* PRD §8.4：点击后在控件旁展示勾号和「感谢反馈」。文案 key 早就有，
-              一直没渲染 —— 用户点完没有任何反馈，会以为没点上。 */}
+              一直没渲染 —— 用户点完没有任何反馈，会以为没点上。
+
+              2026-09-16 test 实测补记：上一版 key 写成 `customerService.thanks`，
+              而文案实际挂在 `customerService.rating.thanks`（少一层）。i18n 取不到就把
+              key 原样吐出来，于是页面上真的显示了一行 "common.customerService.thanks"。
+              条件渲染是对的、按钮也确实变绿了，**错的只有这一个字符串** —— 从外面看
+              就像「功能没生效」，查半天才发现是文案路径。写 key 对着 locales 的实际
+              层级核，别照记忆敲：同组件里 like/dislike 是直挂的，thanks 却多一层 rating。 */}
           {msg.rating && (
             <span className="flex items-center gap-0.5 text-[11px] text-mg-text-3">
               <LuCheck size={12} aria-hidden />
-              {t('common.customerService.thanks')}
+              {t('common.customerService.rating.thanks')}
             </span>
           )}
         </div>

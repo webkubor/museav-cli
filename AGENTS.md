@@ -59,10 +59,10 @@ museav gen --template <id> --fields '{"artist":"name","city":"place"}'
 museav templates create --name '演唱会海报' --prompt '{artist} 在 {city} 的演唱会海报' --ratio 9:16
 
 # Reverse-engineer a prompt from an existing image (stdout: English prompt only).
-# PRIMARY path is LOCAL: Ollama qwen3-vl — fast, free, NO login needed. Falls back to
-# the platform API (with a slowness warning) only if Ollama isn't running or the model
-# is missing. Image URLs always go to the API (local path takes file paths only);
-# --api forces the API path.
+# DEFAULT path is the platform API (the doc used to say "local is primary" — that was
+# stale; --local has always been an explicit opt-in flag). With --local the CLI shells
+# out to `vlm` (mlx-vlm-kit) and falls back to the API with a warning if it's absent.
+# Image URLs always go to the API (the local path takes file paths only).
 # This READS the image and nothing else — it will NOT build a template. Passing any
 # template-ish flag to the underlying API is a hard 400 since 2026-08-16.
 museav reverse ./photo.png
@@ -139,7 +139,11 @@ Full flag reference: `museav <command> --help`. Full command table and auth deta
 
 ## Failure modes worth knowing
 
-- **Cross-platform contract**: the CLI targets macOS AND Windows. No Unix-only assumptions anywhere — paths go through `node:path`/`os.homedir()`, no shell expansions, no brew/which calls in code (OS-specific text like Ollama start hints adapts via `process.platform`). Keep it that way in new code.
+- **Cross-platform contract**: the CLI targets macOS AND Windows. No Unix-only assumptions anywhere — paths go through `node:path`/`os.homedir()`, no shell expansions, no brew/which calls in code (OS-specific text adapts via `process.platform`). Keep it that way in new code.
+  **本地模型不由 CLI 承担**（2026-09-16 owner 定的分工）：CLI 只调中台 API，要本地推理就
+  委托外部工具（`reverse --local` → `vlm`/mlx-vlm-kit）。所以 CLI 自己保持跨平台，
+  而某个委托目标是 Apple Silicon 专属并不破坏这条契约 —— 它是 opt-in 且缺失时回落 API。
+  不要再往 CLI 里内置第二个模型运行时。
 - `gen` polls until the job finishes or times out (default 600s controlled by the underlying `generateAndWait`); a timeout throws, it does not hang forever.
 - `jobs --limit`/`--status` are filtered **client-side** — the server always returns your most recent 50 jobs; you cannot page past that.
 - Non-zero exit code + a message on stderr is the only failure signal; there's no separate machine-readable error format on stdout.

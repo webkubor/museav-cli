@@ -1,7 +1,7 @@
 /** museav reverse —— 图片逆向（SCULPT 六要素反推 prompt）。
- *  默认走中台 API（快、稳定、不需本地模型）；--local 可切本地 Ollama（需自备 qwen3-vl，
- *  仅在用户显式要求时使用——本地大模型默认不拉起，不给用户的内存添负担）。
- *  client 懒构造：本地路成功就完全不碰中台凭证。 */
+ *  默认走中台 API（快、稳定、不需本地模型）；--local 委托给 mlx-vlm-kit 的 `vlm`
+ *  （需另装，见 local-vision.ts），仅在用户显式要求时使用——本地大模型默认不拉起，
+ *  不给用户的内存添负担。client 懒构造：本地路成功就完全不碰中台凭证。 */
 import type { StudioClient, ReverseResult } from '../client.js'
 import { checkLocalVlm, reverseLocally, LOCAL_VLM_MODEL } from '../local-vision.js'
 
@@ -19,7 +19,7 @@ export async function reverse(
       try {
         const start = Date.now()
         const result = await reverseLocally(input)
-        process.stderr.write(`✓ 本地 Ollama（${LOCAL_VLM_MODEL}）用时 ${((Date.now() - start) / 1000).toFixed(1)}s\n`)
+        process.stderr.write(`✓ 本地 ${LOCAL_VLM_MODEL} 用时 ${((Date.now() - start) / 1000).toFixed(1)}s\n`)
         renderReverse(result)
         return
       } catch (e) {

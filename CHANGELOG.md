@@ -1,5 +1,29 @@
 # Changelog
 
+## 3.5.0 (2026-09-16)
+
+### `reverse --local` 的引擎换成 mlx-vlm-kit，CLI 不再自带模型运行时
+
+分工定死：**CLI 只调中台 API；要本地推理就委托专门的工具。**
+
+原来 `--local` 走的是内置的 Ollama 调用（qwen3-vl:8b）。问题不在 Ollama 好不好用，
+在于同一台 Mac 上会为同一件事养两个模型运行时 —— Ollama 和 MLX 各拉一份几 GB 的
+Qwen3-VL。而 [mlx-vlm-kit](https://github.com/webkubor/mlx-vlm-kit) 本来就是干这个的。
+
+- `--local` 现在 shell 调 `vlm`（mlx-vlm-kit），没装就照旧回落中台 API。
+  装： `pipx install git+https://github.com/webkubor/mlx-vlm-kit.git`
+- **本仓真正的资产没动**：SCULPT 提示词与 `normalizeSculpt()` 归一化仍从中台
+  `_reverse-core.js` / `reverse-template.js` 移植而来，本地路与 API 路产出严格同构。
+  换的只是底下那台引擎。
+- 删掉内置的 Ollama 探活与 `/api/chat` 调用（连同 `ollamaHost()` 死代码）。
+- 实测：一张 1080×1920 登录背景图，端到端 16.0s，SCULPT 六要素齐全、比例判定正确。
+
+文档同时修了一处长期漂移：AGENTS.md 写着 reverse「PRIMARY path is LOCAL」，
+而代码里 `--local` 一直是显式开关、默认走 API。以代码为准改正。
+
+注：`--local` 依赖的 MLX 是 Apple Silicon 专属，但这不破坏 CLI 的跨平台契约 ——
+它是 opt-in，缺失时回落 API，CLI 自身仍不含任何 Unix-only 假设。
+
 ## 3.4.1 (2026-09-15)
 
 ### 修复：3.4.0 拆掉了 `--model`，但三处文案还在教人传它

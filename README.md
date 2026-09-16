@@ -293,13 +293,14 @@ museav gen --template "$ID" --fields '{"artist":"..."}'
 
 ### 图片逆向 `reverse`
 
-逆推出图 prompt，可以直接拿去再出一张同风格。**默认走中台 API**（SCULPT 六要素：主体/构图/世界观/光影/输出/质感）；`--local` 可显式切本地 Ollama（需自备 qwen3-vl，本地不可用时自动回落 API）：
+逆推出图 prompt，可以直接拿去再出一张同风格。**默认走中台 API**（SCULPT 六要素：主体/构图/世界观/光影/输出/质感）；`--local` 委托本地 [mlx-vlm-kit](https://github.com/webkubor/mlx-vlm-kit)（`pipx install git+https://github.com/webkubor/mlx-vlm-kit.git`，Apple Silicon；未安装时自动回落 API）：
 
 ```bash
 # 默认：中台 API（需登录）
 museav reverse photo.png
 
-# 显式本地：需 ollama pull qwen3-vl:8b 自备模型（本地大模型默认不自动拉起）
+# 显式本地：先装 mlx-vlm-kit（一次性）
+#   pipx install git+https://github.com/webkubor/mlx-vlm-kit.git
 museav reverse photo.png --local
 
 # 图片 URL 走中台 API
@@ -421,7 +422,7 @@ museav remove-watermark photo.jpg                      # 角标式水印自动�
 museav remove-watermark photo.jpg --mask mask.png      # 复杂画面手工掩码（白=去除区）
 ```
 
-- 依赖红线：本地**绝不自动拉起开源大模型**——这些工具是轻量 CNN/传统算法，用完即释放内存。reverse 的本地路已翻回显式 `--local`（需自备 Ollama），默认走中台 API。
+- 依赖红线：本地**绝不自动拉起开源大模型**——上面这些工具是轻量 CNN/传统算法，用完即释放内存。需要大模型读图的只有 `reverse --local`，它不内置运行时，而是委托 [mlx-vlm-kit](https://github.com/webkubor/mlx-vlm-kit)；没装就回落中台 API。
 - 二进制与模型缓存：`~/.museav-bin/upscayl`（引擎）、`~/.museav-models/`（模型），Windows 对应 `%USERPROFILE%` 下同名目录；删除即彻底清理。
 
 ### 出成品视频：走 reel-kit

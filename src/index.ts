@@ -99,7 +99,7 @@ function withClient<T extends (...args: any[]) => Promise<any>>(fn: T) {
   }
 }
 
-// reverse 的本地路（Ollama）不需要中台凭证，client 懒构造：只有真回落 API 才建，
+// reverse 的本地路（委托 mlx-vlm-kit 的 vlm）不需要中台凭证，client 懒构造：只有真回落 API 才建，
 // 未登录的报错也只在那时候出现
 function withLazyClient(fn: (getClient: () => StudioClient, ...args: any[]) => Promise<any>) {
   return async (...args: any[]) => {
@@ -290,9 +290,9 @@ assetsCmd
 
 program
   .command('reverse <input>')
-  .description('读图：反推 SCULPT prompt，stdout 输出英文 prompt。默认走中台 API（需登录）；--local 显式切本地 Ollama（需自备 qwen3-vl）。只读图；要做成模板用 image-to-template')
+  .description('读图：反推 SCULPT prompt，stdout 输出英文 prompt。默认走中台 API（需登录）；--local 委托本地 vlm（mlx-vlm-kit，需另装）。只读图；要做成模板用 image-to-template')
   .option('--api', '强制走中台 API（默认路径）')
-  .option('--local', '改用本地 Ollama 读图（需先 ollama pull qwen3-vl:8b；本地不可用时回落 API）')
+  .option('--local', '改用本地 vlm 读图（pipx install git+https://github.com/webkubor/mlx-vlm-kit.git；不可用时回落 API）')
   .action(withLazyClient((getClient: () => StudioClient, input: string, opts: any) => reverse(getClient, input, opts)))
 
 program

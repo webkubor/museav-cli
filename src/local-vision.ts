@@ -1,24 +1,32 @@
 /**
- * 本地视觉模型（Ollama + qwen3-vl）—— reverse 的主路。
- * 中台 API 逆向一次要十几秒到几十秒，本地 8b 量化模型在 Apple Silicon 上更快且零成本；
- * API 降级为回落路（commands/reverse.ts 负责切换与提示）。
- * 提示词与返回结构从中台 _reverse-core.js / reverse-template.js 移植，保证两条路产出同构。
+ * 本地视觉 —— reverse 的可选加速路，引擎委托给 mlx-vlm-kit 的 `vlm` 命令。
+ *
+ * 2026-09-16 换掉了原来自带的 Ollama 实现。原因不是 Ollama 不好用，是分工：
+ * **CLI 只负责调中台 API + 把结果整成 SCULPT 结构，本地模型交给专门的工具。**
+ * 自带一套 Ollama 调用等于在 CLI 里养第二个模型运行时 —— 同一台 Mac 上
+ * Ollama(qwen3-vl:8b) 和 MLX(Qwen3-VL-4B) 各拉一份模型干同一件事。
+ *
+ * 本文件真正的资产是 sculptSystemPrompt() 与 normalizeSculpt()：
+ * 提示词与返回结构从中台 _reverse-core.js / reverse-template.js 移植，
+ * 保证本地路与 API 路产出同构。换引擎不动这两样。
+ *
+ * 装： pipx install git+https://github.com/webkubor/mlx-vlm-kit.git
  */
-import { readFile } from 'node:fs/promises'
+import { spawn } from 'node:child_process'
+import { readFile, writeFile, unlink } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { compressForVision } from './compress.js'
 import type { ReverseResult } from './client.js'
 
-/** 本地读图模型。换档位用 MUSEAV_LOCAL_VLM 环境变量，不用改代码 */
-export const LOCAL_VLM_MODEL = process.env.MUSEAV_LOCAL_VLM || 'qwen3-vl:8b'
+/** 本地读图命令。换实现用 MUSEAV_VLM_BIN，不用改代码 */
+export const LOCAL_VLM_BIN = process.env.MUSEAV_VLM_BIN || 'vlm'
+/** 给用户看的引擎名（提示语里用） */
+export const LOCAL_VLM_MODEL = 'mlx-vlm-kit (Qwen3-VL · MLX)'
+/** SCULPT 要输出六个字段 + 中英两版 prompt，vlm 默认 400 token 不够 */
+const MAX_TOKENS = 1400
 
 const ALLOWED_RATIOS = ['3:4', '9:16', '1:1', '4:3', '16:9']
-
-// OLLAMA_HOST 生态里带不带 scheme、带不带尾斜杠的写法都有
-function ollamaHost(): string {
-  let host = process.env.OLLAMA_HOST || 'http://localhost:11434'
-  if (!/^https?:\/\//.test(host)) host = `http://${host}`
-  return host.replace(/\/+$/, '')
-}
 
 export interface LocalVlmStatus {
   running: boolean
@@ -28,29 +36,33 @@ export interface LocalVlmStatus {
   reason?: string
 }
 
-// 各系统启动 Ollama 的正确姿势不同，提示语跟着平台走（Windows 没有 brew）
-function ollamaStartHint(): string {
-  if (process.platform === 'win32') return '启动 Ollama 应用（开始菜单 / Ollama.exe），或命令行运行 ollama serve'
-  if (process.platform === 'darwin') return 'brew services start ollama，或 ollama serve'
-  return 'systemctl --user start ollama，或 ollama serve'
+const INSTALL_HINT = `未找到 ${LOCAL_VLM_BIN} —— 装: pipx install git+https://github.com/webkubor/mlx-vlm-kit.git`
+
+/** 跑一条命令，拿 stdout/stderr/退出码。不用 shell，参数原样传，不存在注入 */
+function run(bin: string, args: string[], timeoutMs: number): Promise<{ code: number; out: string; err: string }> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(bin, args, { stdio: ['ignore', 'pipe', 'pipe'] })
+    let out = ''
+    let err = ''
+    const timer = setTimeout(() => { child.kill('SIGKILL'); reject(new Error(`${bin} 超时（${timeoutMs / 1000}s）`)) }, timeoutMs)
+    child.stdout.on('data', (d) => { out += d })
+    child.stderr.on('data', (d) => { err += d })
+    child.on('error', (e) => { clearTimeout(timer); reject(e) })
+    child.on('close', (code) => { clearTimeout(timer); resolve({ code: code ?? -1, out, err }) })
+  })
 }
 
-/** 探活 + 模型在位检查。3 秒探不通就是没起服务，不等推理超时才发现 */
+/** 探活：vlm 在不在。不触发模型下载 —— --version 不加载模型，秒回 */
 export async function checkLocalVlm(): Promise<LocalVlmStatus> {
-  const host = ollamaHost()
+  const host = LOCAL_VLM_BIN
   try {
-    const resp = await fetch(`${host}/api/tags`, { signal: AbortSignal.timeout(3000) })
-    if (!resp.ok) {
-      return { running: false, modelPresent: false, host, reason: `Ollama 探活返回 HTTP ${resp.status}` }
-    }
-    const tags = (await resp.json()) as { models?: Array<{ name?: string }> }
-    const names = (tags.models || []).map((m) => m.name || '')
-    if (!names.includes(LOCAL_VLM_MODEL)) {
-      return { running: true, modelPresent: false, host, reason: `模型未拉取，执行: ollama pull ${LOCAL_VLM_MODEL}` }
-    }
-    return { running: true, modelPresent: true, host }
+    const { code, out } = await run(LOCAL_VLM_BIN, ['--version'], 10_000)
+    if (code !== 0) return { running: false, modelPresent: false, host, reason: INSTALL_HINT }
+    // 模型是否已下载这里探不出来（vlm 首次调用时自动拉 ~2.9GB），
+    // 所以 modelPresent 恒 true，真下载发生在 reverseLocally 里，进度打在 stderr。
+    return { running: true, modelPresent: true, host: out.trim() || host }
   } catch {
-    return { running: false, modelPresent: false, host, reason: `Ollama 未运行（${host}），${ollamaStartHint()}` }
+    return { running: false, modelPresent: false, host, reason: INSTALL_HINT }
   }
 }
 
@@ -82,36 +94,42 @@ function sculptSystemPrompt(): string {
 
 /** 本地逆向一张图。任何失败都抛 Error，由调用方决定回落 */
 export async function reverseLocally(filePath: string): Promise<ReverseResult> {
-  // 复用上传同款压缩：图小不仅传得快，本地 VLM 推理也快
+  // 复用上传同款压缩：图小不仅传得快，本地 VLM 推理也快。
+  // vlm 收的是文件路径，压过的图得先落临时文件。
   const { buffer, note } = await compressForVision(filePath)
   if (note) process.stderr.write(`  ${note}\n`)
-  const bytes = buffer ?? (await readFile(filePath))
-  const b64 = Buffer.from(bytes).toString('base64')
-
-  const payload = {
-    model: LOCAL_VLM_MODEL,
-    messages: [
-      { role: 'system', content: sculptSystemPrompt() },
-      { role: 'user', content: '用 SCULPT 六要素分析这张图，逆推出图 prompt', images: [b64] },
-    ],
-    stream: false,
+  let target = filePath
+  let temp: string | null = null
+  if (buffer) {
+    temp = join(tmpdir(), `museav-reverse-${process.pid}-${Date.now()}.jpg`)
+    await writeFile(temp, buffer)
+    target = temp
+  } else {
+    await readFile(filePath)   // 早失败：读不了就别等模型加载完才报错
   }
 
-  // 8b 视觉推理单张图几十秒量级，给足余量
-  const resp = await fetch(`${ollamaHost()}/api/chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(5 * 60 * 1000),
-  })
-  if (!resp.ok) {
-    throw new Error(`Ollama 返回 HTTP ${resp.status}: ${(await resp.text()).slice(0, 200)}`)
+  try {
+    const { code, out, err } = await run(LOCAL_VLM_BIN, buildVlmArgs(target, sculptSystemPrompt()), 5 * 60 * 1000)
+    if (code !== 0) throw new Error(`${LOCAL_VLM_BIN} 退出码 ${code}: ${err.trim().slice(0, 200)}`)
+    return normalizeSculpt(parseJsonLoose(parseVlmOutput(out)))
+  } finally {
+    if (temp) await unlink(temp).catch(() => {})
   }
-  const out = (await resp.json()) as { message?: { content?: string } }
-  const content = out.message?.content || ''
+}
+
+/** vlm 的 argv。**全局参数必须排在子命令前面** —— vlm 的 argparse 把 --json /
+ *  --max-tokens 定义在顶层 parser 上，写到 `ask` 后面会被当成未知参数直接报错。
+ *  单独抽出来是为了能测：顺序写反在运行时才炸，而那时模型已经加载过一轮了。 */
+export function buildVlmArgs(imagePath: string, question: string): string[] {
+  return ['--json', '--max-tokens', String(MAX_TOKENS), 'ask', imagePath, '--q', question]
+}
+
+/** 剥掉 vlm --json 的外层信封 { ok, text, elapsed_secs }，取出模型原话 */
+export function parseVlmOutput(stdout: string): string {
+  const envelope = JSON.parse(stdout.trim()) as { ok?: boolean; text?: string }
+  const content = envelope.text || ''
   if (!content.trim()) throw new Error('本地模型返回空内容')
-
-  return normalizeSculpt(parseJsonLoose(content))
+  return content
 }
 
 /** 视觉模型「只输出 JSON」的承诺不可信：剥 ```json 围栏、截首尾大括号 */

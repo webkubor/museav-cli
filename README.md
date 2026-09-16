@@ -421,8 +421,12 @@ museav remove-watermark photo.jpg                      # 角标式水印自动�
 museav remove-watermark photo.jpg --mask mask.png      # 复杂画面手工掩码（白=去除区）
 ```
 
+- 许可证：整条本地链路都是宽松许可 —— `remove-bg` / `remove-watermark` 的 ONNX 模型是
+  MIT/Apache，`upscale` 的引擎是 [Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN) 的
+  ncnn/Vulkan 构建（**BSD-3-Clause**）。3.7.0 之前用的是它的 fork upscayl-ncnn（AGPL-3.0）——
+  运行时下载、不打包不链接本不构成违规，换掉是为了少下一个包，顺便免掉一个要靠纪律维持的论证。
 - 依赖红线：本地**绝不自动拉起开源大模型**——上面这些工具是轻量 CNN/传统算法，用完即释放内存。需要大模型读图的只有 `reverse --local`，它不内置运行时，而是委托 [mlx-vlm-kit](https://github.com/webkubor/mlx-vlm-kit)；没装就回落中台 API。
-- 二进制与模型缓存：`~/.museav-bin/upscayl`（引擎）、`~/.museav-models/`（模型），Windows 对应 `%USERPROFILE%` 下同名目录；删除即彻底清理。
+- 二进制与模型缓存：`~/.museav-bin/realesrgan`（引擎）、`~/.museav-models/`（模型），Windows 对应 `%USERPROFILE%` 下同名目录；删除即彻底清理。
 
 ### 出成品视频：走 reel-kit
 

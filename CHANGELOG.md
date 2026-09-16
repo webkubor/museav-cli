@@ -1,5 +1,33 @@
 # Changelog
 
+## 3.7.0 (2026-09-16)
+
+### 超分引擎换成 BSD 许可的 realesrgan-ncnn-vulkan，顺带少下一个包
+
+原来用 upscayl-ncnn（**AGPL-3.0**）。先把话说清楚：**原做法并不违规** ——
+二进制是运行时从 upscayl 官方 release 下到用户机器的，我们既不打包、不链接、
+也不修改，用户是直接从上游取得的。
+
+换掉的真实理由是另外两条：
+
+1. **少一个下载**。模型本来就从 xinntao/Real-ESRGAN 的 zip 里取，而**引擎就在同一个
+   zip 里** —— 原来等于为了一个 15MB 的引擎额外下一次。现在一次下载两样都有。
+2. **免掉一个要靠纪律维持的论证**。哪天有人图省事把二进制打进 npm 包，AGPL 的分发
+   义务立刻附上来，而那种改动看起来毫无风险。换成 BSD-3-Clause 之后结构上就没这回事。
+
+- 引擎：`upscayl/upscayl-ncnn`（AGPL-3.0）→ `xinntao/Real-ESRGAN`（**BSD-3-Clause**）。
+  两者 CLI 完全一致（前者是后者的 fork），`-i -o -s -n -m` 一个没变。
+- 三平台都在同一个 release：macos（universal，Apple Silicon 原生）/ ubuntu / windows。
+  Windows 额外解出 `vcomp140.dll` / `vcomp140d.dll`（OpenMP 运行时，漏了 exe 起不来）。
+- 只解压需要的成员：包里还带着 demo 视频和示例图，全解白占 100MB。
+- 缓存目录 `~/.museav-bin/upscayl` → `~/.museav-bin/realesrgan`（旧目录可手工删）。
+
+实测（清空缓存从零跑）：下载 49MB → 解压 → 1024×1024 放大到 4096×4096，48.0s，
+缓存里只有引擎与 4 个模型文件，没有多余内容。
+
+**代价要知道**：这个构建停在 2022-04-24，上游不再更新；upscayl 那边仍在活跃维护。
+对「4x 放大」这个固定用途够用，将来若要新模型或新特性，得重新评估。
+
 ## 3.6.0 (2026-09-16)
 
 ### 移除 `skillhub`：一次都没用过的出站功能，不该占着这个 CLI

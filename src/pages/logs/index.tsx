@@ -30,6 +30,7 @@ import type { CallLogListParams } from '@/interfaces/logs'
 import type { CallLogItem } from '@/types'
 import { rangeToDates } from '@/pages/usage/usage-utils'
 import { decodePayloadBody, formatSSESummary, reassembleSSE } from './reassemble-sse'
+import { canCompleteRequestLogStep } from './onboarding-step'
 import {
   ActiveFilterChips,
   FilterField,
@@ -414,9 +415,12 @@ export default function LogsPage() {
    * 是伪造数据。所以证据换成**用户自己那次真实成功调用的日志详情被打开**：
    * 语义与 §7.2 一致（成功 Request + 看了它的详情），且没有一条假数据。
    * request_id 就是天然的 evidenceId，后端契约要的也是它。
+   *
+   * 哪条日志算证据由 canCompleteRequestLogStep 判（含 #1036 的「模型体验不算」），
+   * 判据带单测，别在这里就地改条件。
    */
   function reportOnboardingLogOpened(row: CallLogItem) {
-    if (row.status !== 'succeeded') return
+    if (!canCompleteRequestLogStep(row)) return
     reportOnboardingStep('request_log', 'request_log_opened', row.request_id)
   }
 

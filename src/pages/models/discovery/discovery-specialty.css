@@ -59,14 +59,33 @@
   overflow: visible;
 }
 
-/* X 轴刻度里的厂牌图标：装在 <foreignObject> 里，所以仍是普通 HTML 盒子。
-   语义档位最小是 dense=18px，与原先轴标签一致。 */
+/* X 轴刻度：厂牌图标 + 模型名（prd46#1065），装在 <foreignObject> 里，仍是普通 HTML 盒子。
+   名称单行 ellipsis，全名走容器 title；字号用体系最小档（配角 10）。 */
+.model-discovery-axis-tick {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+}
+
 .model-discovery-axis-icon {
   align-items: center;
   display: flex;
   height: 18px;
   justify-content: center;
   width: 18px;
+}
+
+.model-discovery-axis-name {
+  color: var(--mg-text-2);
+  font-size: var(--mg-font-size-micro);
+  line-height: 1.2;
+  max-width: 100%;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 摘要卡的标识略大：档位像素的真源在 design-tokens，为一个一次性尺寸去改跨仓

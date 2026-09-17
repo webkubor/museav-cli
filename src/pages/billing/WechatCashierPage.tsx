@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import { LuArrowLeft, LuCheck, LuCopy, LuScanQrCode, LuShieldCheck } from 'react-icons/lu'
 import { WechatIcon } from '@/constants/brand-icons'
+import { BRAND_COLORS } from '@/constants/brand-colors'
 import { useCopy } from '@/hooks/use-copy'
 import { appToast } from '@/lib/app-toast'
 import { trackEvent } from '@/lib/track'
@@ -42,7 +43,7 @@ const PAY = {
   shadowCard: 'var(--shadow-md)',
 } as const
 
-const WECHAT_GREEN = '#07c160' // 成功/等待中的语义色场景仍保留品牌绿（规范：Success 用 Green）
+const WECHAT_GREEN = BRAND_COLORS.wechat // 成功/等待中的语义色场景仍保留品牌绿（规范：Success 用 Green）；色值走第三方品牌色 SSOT，不散落
 const POLL_INTERVAL_MS = 3000
 const REDIRECT_DELAY_S = 3
 

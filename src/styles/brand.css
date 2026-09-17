@@ -25,10 +25,9 @@
 /* Go：紫色阶渐变 shimmer（对齐 Go） */
 .brand-wordmark-domestic-accent {
   margin-left: 0.04em;
-  /* 国内品牌蓝（与官网品牌蓝同值）。
-     原来的紫洋红渐变跟国内品牌色不一致。
-     保持同样的七档结构与 shimmer 动画，只把色相换到蓝。 */
-  background: linear-gradient(90deg, #1e3fd6 0%, #385aff 20%, #5b7cff 40%, #7fa0ff 50%, #5b7cff 60%, #385aff 80%, #1e3fd6 100%);
+  /* 七档对称渐变走品牌 token（prd#1061：原先写死七个蓝 hex，改品牌色时 wordmark 不跟；
+     海外档同文件早已走 brand token，这里对齐同一写法，国内市场下即 cn 色阶）。 */
+  background: linear-gradient(90deg, var(--brand-deep) 0%, var(--brand-base) 20%, var(--brand-mid) 40%, var(--brand-light) 50%, var(--brand-mid) 60%, var(--brand-base) 80%, var(--brand-deep) 100%);
   background-size: 300% auto;
   -webkit-background-clip: text;
   background-clip: text;

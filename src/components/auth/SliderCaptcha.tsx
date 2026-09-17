@@ -98,6 +98,13 @@ export function SliderCaptcha({ onChange, disabled = false, lockedHint }: Slider
   const draw = useCallback(() => {
     const ctx = canvasRef.current?.getContext('2d')
     if (!ctx) return
+    // canvas 画笔吃不到 var()，从 :root 读 resolved 值；token 缺失时兜底旧色（prd#1061）
+    const cssColor = (name: string, fallback: string) => {
+      const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+      return v || fallback
+    }
+    const successColor = cssColor('--mg-success', '#1d9e75')
+    const dangerColor = cssColor('--mg-danger', '#e24b4a')
     ctx.clearRect(0, 0, W, H)
 
     // 底图（cover 适配）；未加载时给个占位底色
@@ -108,11 +115,8 @@ export function SliderCaptcha({ onChange, disabled = false, lockedHint }: Slider
       dx = (W - dw) / 2; dy = (H - dh) / 2
       ctx.drawImage(img, dx, dy, dw, dh)
     } else {
-      // 占位底（首图加载前）：深色品牌调渐变，避免裸白框
-      const ph = ctx.createLinearGradient(0, 0, W, H)
-      ph.addColorStop(0, '#2f335a')
-      ph.addColorStop(1, '#23263f')
-      ctx.fillStyle = ph
+      // 占位底（首图加载前）：品牌深档纯色，避免裸白框；随市场 cn/global 切换
+      ctx.fillStyle = cssColor('--mg-brand-deep', '#2f335a')
       ctx.fillRect(0, 0, W, H)
     }
 
@@ -150,7 +154,7 @@ export function SliderCaptcha({ onChange, disabled = false, lockedHint }: Slider
       // 整图按相同 cover 变换、再水平平移 (px-gapX)，使缺口处内容落到拼块上
       ctx.drawImage(img, dx + (px - gapX), dy, dw, dh)
     } else {
-      ctx.fillStyle = '#cdd2e4'
+      ctx.fillStyle = cssColor('--mg-brand-pale', '#cdd2e4')
       ctx.fillRect(px, gapY, PIECE, PIECE)
     }
     ctx.restore()
@@ -164,7 +168,7 @@ export function SliderCaptcha({ onChange, disabled = false, lockedHint }: Slider
     roundRect(ctx, px + 0.6, gapY + 0.6, PIECE - 1.2, PIECE - 1.2, RADIUS - 1)
     ctx.lineWidth = 1
     ctx.strokeStyle =
-      status === 'success' ? '#1d9e75' : status === 'fail' ? '#e24b4a' : 'rgba(255,255,255,0.95)'
+      status === 'success' ? successColor : status === 'fail' ? dangerColor : 'rgba(255,255,255,0.95)'
     ctx.stroke()
     // 左上高光，玻璃质感
     const hl = ctx.createLinearGradient(px, gapY, px, gapY + PIECE)
@@ -172,12 +176,11 @@ export function SliderCaptcha({ onChange, disabled = false, lockedHint }: Slider
     hl.addColorStop(0.4, 'rgba(255,255,255,0)')
     ctx.fillStyle = hl
     ctx.fill()
-    if (status === 'success') {
-      ctx.fillStyle = 'rgba(29,158,117,0.26)'
+    if (status === 'success' || status === 'fail') {
+      ctx.globalAlpha = 0.26 // 语义色叠罩：token 是不透明色，用 globalAlpha 代替写死 rgba
+      ctx.fillStyle = status === 'success' ? successColor : dangerColor
       ctx.fill()
-    } else if (status === 'fail') {
-      ctx.fillStyle = 'rgba(226,75,74,0.26)'
-      ctx.fill()
+      ctx.globalAlpha = 1
     }
     ctx.restore()
   }, [img, puzzle, status])

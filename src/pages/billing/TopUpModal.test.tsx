@@ -83,7 +83,7 @@ describe('TopUpModal', () => {
     vi.restoreAllMocks()
   })
 
-  it('shows the international entity name (Modelgo AI) as WeChat payee on the global site', async () => {
+  it('shows the international legal entity (MODELGO PTE. LTD.) as WeChat payee on the global site', async () => {
     useSiteMock.mockReturnValue('global')
     const paymentWindow = { close: vi.fn(), closed: false, location: { href: '' } } as unknown as Window
     vi.spyOn(window, 'open').mockReturnValue(paymentWindow)
@@ -94,7 +94,7 @@ describe('TopUpModal', () => {
     await waitFor(() => {
       expect(paymentWindow.location.href).toContain('/billing/wechat-cashier')
     })
-    expect(new URL(paymentWindow.location.href).searchParams.get('payee')).toBe('Modelgo AI')
+    expect(new URL(paymentWindow.location.href).searchParams.get('payee')).toBe('MODELGO PTE. LTD.')
   })
 
   it('opens the first-party WeChat cashier for QR code responses', async () => {

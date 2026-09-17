@@ -100,7 +100,7 @@ export default function WechatCashierPage() {
   const tenant = searchParams.get('tenant')?.trim() ?? ''
   const amount = searchParams.get('amount')?.trim() ?? ''
   const currency = searchParams.get('currency')?.trim() || 'CNY'
-  // 收款主体是随站点变化的法律实体名（国际站 Modelgo AI / 国内站境内公司），不走 i18n；
+  // 收款主体是随站点变化的法律实体名（国际站 MODELGO PTE. LTD. / 国内站境内公司），不走 i18n；
   // 正常由 TopUpModal 经 payee 参数带入，缺参时按站点兜底，绝不落回国内主体。
   const payee = searchParams.get('payee')?.trim() || wechatPayeeName(site)
   const returnTo = useMemo(() => safeReturnTo(searchParams.get('return_to')), [searchParams])

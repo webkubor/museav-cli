@@ -230,7 +230,15 @@
       "notFoundHint": "It may have been removed, or it is only available on the other site.",
       "notFoundCrossSite": "View on ModelGo.ai",
       "benchmarkTitle": "Benchmark evaluations",
-      "benchmarkSnapshot": "Data as of {{date}}"
+      "benchmarkSnapshot": "Data as of {{date}}",
+      "compositeMetric": {
+        "INTELLIGENCE_INDEX": "Intelligence Index",
+        "CODING_INDEX": "Coding Index",
+        "AGENTIC_INDEX": "Agentic Index",
+        "ELO": "Elo Score",
+        "VOICE_ELO": "Voice Elo",
+        "AA_WER": "AA-WER"
+      }
     },
     "error.loadDetail": "Failed to load model detail. Please try again.",
     "discovery": {

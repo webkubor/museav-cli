@@ -230,7 +230,15 @@
       "notFoundHint": "它可能已下架，或只在另一个站点提供。",
       "notFoundCrossSite": "去 ModelGo.ai 查看",
       "benchmarkTitle": "Benchmark 基准评测",
-      "benchmarkSnapshot": "数据截至 {{date}}"
+      "benchmarkSnapshot": "数据截至 {{date}}",
+      "compositeMetric": {
+        "INTELLIGENCE_INDEX": "智力指数",
+        "CODING_INDEX": "代码指数",
+        "AGENTIC_INDEX": "Agent 指数",
+        "ELO": "Elo 评分",
+        "VOICE_ELO": "语音 Elo",
+        "AA_WER": "AA-WER 词错率"
+      }
     },
     "error.loadDetail": "加载模型详情失败，请稍后重试。",
     "discovery": {

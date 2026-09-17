@@ -14,9 +14,12 @@ import {
   canAccessOnboardingGuide,
   canClaimOnboardingReward,
   completeOnboardingStep,
+  completesImpliedSteps,
   formatOnboardingReward,
+  impliedOnboardingSteps,
   markOnboardingRewarded,
   nextOnboardingStep,
+  rollbackOnboardingStep,
   type OnboardingGuideState,
   type OnboardingStepCompletion,
 } from './onboarding-guide-domain'
@@ -195,5 +198,101 @@ describe('领取镜像与幂等（规格 §11）', () => {
       evidenceId: 'marketplace',
     })
     expect(after).toBe(rewarded)
+  })
+})
+
+/**
+ * 蕴含关系（shared/modelgo_prd#1058：完成 ⑤ 之后 ④ 自动完成）。
+ * 只有「⑤ 已完成 + ④ 还没完成 + 没领过奖」这一种组合才该补，其余都不发请求。
+ */
+describe('步骤蕴含', () => {
+  function withSteps(steps: string[], status: 'in_progress' | 'claimable' | 'rewarded' = 'in_progress') {
+    return guideFromApi({
+      status,
+      guide_version: 'v1',
+      eligible_at: ELIGIBLE_AT,
+      completed_steps: steps,
+      reward: { currency: 'CNY', amount: '10.00', config_version: 'v1' },
+    })
+  }
+
+  it('⑤ 完成而 ④ 没完成 → 该补 ④，并带上是谁蕴含的', () => {
+    const guide = withSteps(['browse_marketplace', 'model_experience', 'create_api_key', 'call_and_view_log'])
+    expect(impliedOnboardingSteps(guide)).toEqual([
+      { stepKey: 'quick_connect', impliedBy: 'request_log' },
+    ])
+  })
+
+  it('④ 已完成 → 没有要补的', () => {
+    const guide = withSteps(['create_api_key', 'quick_integrate', 'call_and_view_log'])
+    expect(impliedOnboardingSteps(guide)).toEqual([])
+  })
+
+  it('⑤ 没完成 → 不倒推：④ 不会被别的步骤点亮', () => {
+    const guide = withSteps(['browse_marketplace', 'model_experience', 'create_api_key'])
+    expect(impliedOnboardingSteps(guide)).toEqual([])
+  })
+
+  it('已领取 → 不再补，状态机只向前', () => {
+    const guide = withSteps(
+      ['browse_marketplace', 'model_experience', 'create_api_key', 'call_and_view_log'],
+      'rewarded',
+    )
+    expect(impliedOnboardingSteps(guide)).toEqual([])
+  })
+
+  it('只有 ⑤ 是触发方 —— 补出来的 ④ 自己不会再触发一轮对账', () => {
+    expect(completesImpliedSteps('request_log')).toBe(true)
+    expect(completesImpliedSteps('quick_connect')).toBe(false)
+    expect(completesImpliedSteps('marketplace')).toBe(false)
+    expect(completesImpliedSteps('playground')).toBe(false)
+    expect(completesImpliedSteps('api_key')).toBe(false)
+  })
+})
+
+/** 上报失败时的撤回 —— 决定「领取」按钮能不能点，错了就是让用户点了拿 400 */
+describe('撤回一步', () => {
+  function withSteps(steps: string[], status: 'in_progress' | 'claimable' | 'rewarded' = 'in_progress') {
+    return guideFromApi({
+      status,
+      guide_version: 'v1',
+      eligible_at: ELIGIBLE_AT,
+      completed_steps: steps,
+      reward: { currency: 'CNY', amount: '10.00', config_version: 'v1' },
+    })
+  }
+
+  it('摘掉指定那步，五步齐时从 claimable 退回 in_progress', () => {
+    const claimable = withSteps(
+      ['browse_marketplace', 'model_experience', 'create_api_key', 'quick_integrate', 'call_and_view_log'],
+      'claimable',
+    )
+    const after = rollbackOnboardingStep(claimable, 'quick_connect')
+    expect(after.completedSteps.map((item) => item.stepKey)).toEqual([
+      'marketplace',
+      'playground',
+      'api_key',
+      'request_log',
+    ])
+    expect(after.status).toBe('in_progress')
+  })
+
+  it('摘到空退回 eligible —— 与服务端「还没推进过」同义', () => {
+    const after = rollbackOnboardingStep(withSteps(['browse_marketplace']), 'marketplace')
+    expect(after.completedSteps).toEqual([])
+    expect(after.status).toBe('eligible')
+  })
+
+  it('本来就没完成那步 → 原样返回（引用不变，调用方据此跳过 setState）', () => {
+    const guide = withSteps(['browse_marketplace'])
+    expect(rollbackOnboardingStep(guide, 'quick_connect')).toBe(guide)
+  })
+
+  it('已领取不回滚 —— 钱已经发了，状态机只向前', () => {
+    const rewarded = withSteps(
+      ['browse_marketplace', 'model_experience', 'create_api_key', 'quick_integrate', 'call_and_view_log'],
+      'rewarded',
+    )
+    expect(rollbackOnboardingStep(rewarded, 'quick_connect')).toBe(rewarded)
   })
 })

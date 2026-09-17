@@ -21,8 +21,11 @@ import { trackEvent } from '@/lib/track'
 import {
   canClaimOnboardingReward,
   completeOnboardingStep,
+  completesImpliedSteps,
   formatOnboardingReward,
+  impliedOnboardingSteps,
   markOnboardingRewarded,
+  rollbackOnboardingStep,
   type OnboardingGuideState,
   type OnboardingSite,
   type OnboardingStepKey,
@@ -33,6 +36,7 @@ import {
   claimOnboardingReward,
   completeOnboardingStepApi,
   getOnboardingGuide,
+  ONBOARDING_STEP_KEY_TO_API,
   type OnboardingGuideContext,
 } from '@/services/onboarding'
 
@@ -185,6 +189,8 @@ export const useOnboardingStore = create<OnboardingState & OnboardingActions>()(
           guides: { ...s.guides, [tenantId]: guide },
           pendingAutoOpen: autoOpen ? tenantId : s.pendingAutoOpen,
         }))
+        // 存量对账（#1058）：⑤ 已完成但 ④ 还灰着的租户在这里自愈，见 reconcileImpliedSteps
+        reconcileImpliedSteps(tenantId)
       })
       // 拉不到指南不该打断进控制台：静默降级成「没有入口」，下次 effect 再试
       .catch(() => {})
@@ -229,17 +235,34 @@ export const useOnboardingStore = create<OnboardingState & OnboardingActions>()(
           step_key: stepKey,
           evidence_type: evidenceType,
         })
+        /**
+         * 蕴含步骤补报（#1058）。放在服务端确认之后，和埋点同一时机：上报失败会回滚，
+         * 那一步并没真的完成，凭它去点亮别的步骤等于凭空发奖。
+         * 只有触发方（当前是 ⑤）才对账，补出来的那一步不会再触发一轮。
+         */
+        if (completesImpliedSteps(stepKey)) reconcileImpliedSteps(tenantId, evidenceId)
       })
       .catch(() => {
         /**
-         * 回滚到上报前的状态：勾不能白打——它决定「领取」按钮能不能点，而钱是服务端发的。
+         * 回滚这一步：勾不能白打——它决定「领取」按钮能不能点，而钱是服务端发的。
          * 本地留着假勾会让用户点了领取拿到 400。不弹 toast：这些上报都挂在业务动作的成功
          * 回调上（浏览广场 / 体验成功 / 建 Key…），用户没在等这个结果，下次动作会再报一次。
-         * 仅当期间没有更新的状态时回滚，避免踩掉并发到达的服务端权威值。
+         *
+         * ⚠️ 引用没变时换回上报前那一份（保持"回滚后引用与上报前相同"这个既有不变式）；
+         * **引用变了不能就此跳过** —— 原来那种只比引用的写法在期间有别的步骤落地时会整个
+         * 放弃回滚，本地留下服务端没有的假勾，而 ensureGuide 一个会话只 GET 一次、整个
+         * 会话都不自愈。#1058 的存量对账让「页面一加载就自动打一个勾」成为常态，这种交叠
+         * 从边角变成日常，所以补一条按 stepKey 摘的兜底。
+         * 方向是保守的：万一服务端其实记下了只是响应没回来，下次 GET 会把它加回来；
+         * 反过来留个假勾则整个会话都在骗用户。
          */
-        set((s) => (s.guides[tenantId] === optimistic
-          ? { guides: { ...s.guides, [tenantId]: current } }
-          : s))
+        set((s) => {
+          const live = s.guides[tenantId]
+          if (!live) return s
+          if (live === optimistic) return { guides: { ...s.guides, [tenantId]: current } }
+          const rolled = rollbackOnboardingStep(live, stepKey)
+          return rolled === live ? s : { guides: { ...s.guides, [tenantId]: rolled } }
+        })
       })
   },
 
@@ -309,6 +332,53 @@ export const useOnboardingStore = create<OnboardingState & OnboardingActions>()(
     set({ billingHighlight: null })
   },
 }))
+
+/**
+ * 补报出来的那一步在 billing 里的 evidence_type 前缀，后面接**触发方**的后端 step_key
+ * （如 `implied_by_call_and_view_log`）—— 与用户直接做出来的证据一眼区分开。
+ *
+ * 埋点 onboarding_step_completed 也会带上它：补报同样发一条「④ 完成」，漏斗里这条的
+ * completed_steps 是 5、时间还晚于 ⑤，口径上要按这个前缀排除，否则 ④ 的完成率被自己
+ * 填平，下次再出 #1058 这类问题就看不见了。
+ */
+export const ONBOARDING_IMPLIED_EVIDENCE_PREFIX = 'implied_by_'
+
+/**
+ * 把「被别的步骤蕴含、但还没点亮」的步骤补报上去（shared/modelgo_prd#1058：完成 ⑤ 之后
+ * ④ 自动完成）。蕴含关系本身在领域层（impliedOnboardingSteps），这里只负责发请求。
+ *
+ * 两条调用路径：拉到指南时（治存量卡在 4/5 的租户）、⑤ 上报成功后（治新发生的）。
+ * 走 completeStep 而不是直接打接口，是为了复用它那套乐观更新 / 乱序保护 / 失败回滚 /
+ * 埋点；重复补报由 completeStep 自己挡掉（领域层对已完成的步骤返回原引用）。
+ *
+ * ⚠️ 这只是**客户端派生**。状态机的权威在 billing，同样的规则后端补上之后这里就是冗余的
+ * （两边幂等，不冲突）；在那之前，非控制台路径（比如直接调接口的租户）不会被自动补。
+ */
+function reconcileImpliedSteps(tenantId: string, triggerEvidenceId?: string) {
+  const store = useOnboardingStore.getState()
+  const guide = store.guides[tenantId]
+  if (!guide) return
+  const implied = impliedOnboardingSteps(guide)
+  if (implied.length === 0) return
+  const { account } = useAuthStore.getState()
+  const completedBy = account?.email ?? account?.account_id ?? 'unknown'
+  for (const { stepKey, impliedBy } of implied) {
+    // 触发方用后端认识的那个 step_key（call_and_view_log），不是前端的内部命名
+    const triggerKey = ONBOARDING_STEP_KEY_TO_API[impliedBy]
+    store.completeStep({
+      tenantId,
+      stepKey,
+      evidenceType: `${ONBOARDING_IMPLIED_EVIDENCE_PREFIX}${triggerKey}`,
+      /**
+       * 刚完成 ⑤ 这条路手里有真的 request_id，透传下去 —— 万一将来要倒查「这笔 ¥10 是靠
+       * 哪次调用派生出来的」，billing 里翻得到。存量对账那条路没有（服务端不回 evidence），
+       * 退回触发方的 step_key，至少不是空值。
+       */
+      evidenceId: triggerEvidenceId || triggerKey,
+      completedBy,
+    })
+  }
+}
 
 /**
  * 命令式上报一步 —— 给拿不到 React 上下文的调用方用（如 experience-run.ts 里的

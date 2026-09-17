@@ -121,10 +121,7 @@ export function QuickStartSection() {
               </div>
             )}
             <div className="relative shrink-0">
-              <span
-                className="flex h-14 w-14 items-center justify-center rounded-full text-white shadow-md"
-                style={{ background: 'var(--mg-brand-gradient)' }}
-              >
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-brand-deep to-brand-base text-white shadow-md">
                 {step.icon}
               </span>
               <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-mg-border bg-mg-bg-0 text-xs font-bold text-mg-text-2 shadow-sm">

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { AlipayIcon, StripeIcon, WechatIcon } from './brand-icons'
 import type { BrandKey } from './brand-colors'
+import { marketFromSite } from '@/lib/market'
 
 export const RECHARGE_PAYMENT_CHANNEL_KEYS = ['alipay', 'wechat', 'stripe', 'stripe_wechat', 'stripe_alipay'] as const
 export type RechargePaymentChannel = (typeof RECHARGE_PAYMENT_CHANNEL_KEYS)[number]
@@ -19,8 +20,9 @@ export type RechargePaymentChannel = (typeof RECHARGE_PAYMENT_CHANNEL_KEYS)[numb
  */
 export const WECHAT_PAYEE_CN = '杭州词元共生科技有限公司'
 export const WECHAT_PAYEE_INTL = 'MODELGO PTE. LTD.'
+/** 收款主体：后端配了就用后端的，没配按 Market 兜底。site 归一走 lib/market（唯一真源）。 */
 export function wechatPayeeName(site: string | null | undefined, configured?: string | null): string {
-  return configured?.trim() || (site === 'global' ? WECHAT_PAYEE_INTL : WECHAT_PAYEE_CN)
+  return configured?.trim() || (marketFromSite(site) === 'global' ? WECHAT_PAYEE_INTL : WECHAT_PAYEE_CN)
 }
 
 export const RECHARGE_CHANNEL_KEYS = ['alipay', 'wechat', 'stripe', 'manual', 'stripe_wechat', 'stripe_alipay'] as const

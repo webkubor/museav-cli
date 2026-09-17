@@ -31,13 +31,14 @@ import {
   transition,
   type SupportMode,
 } from './support-machine'
-import { EPHEMERAL_ANSWER_ID, ticketAgentNameOf, ticketNoOf, ticketSlaTextOf } from '@/interfaces/support'
+import { EPHEMERAL_ANSWER_ID, supportMessageRoleOf, ticketAgentNameOf, ticketNoOf, ticketSlaTextOf } from '@/interfaces/support'
 import type {
   SupportTicketSnapshot,
   SupportAnswerRating,
   SupportAnswerStatus,
   SupportAskResponse,
   SupportFeedbackRequest,
+  SupportMessage,
   SupportTicketDetail,
 } from '@/interfaces/support'
 
@@ -59,6 +60,28 @@ export interface ChatItem {
   ratingCard?: { ticketId: string; agentName?: string; agentNo?: string; submittedStars?: number; skipped?: boolean }
   /** 转异步后的问题单回执（PRD 原型 CustomerSupportAsyncTicket.tsx 的 AsyncSupportTicketCard） */
   asyncTicket?: { ticketNo: string; status: string; slaText?: string }
+}
+
+/**
+ * 把工单消息列表里**新的客服回复**接到本地对话框。
+ * 后端实测是 sender_type，不是 role（CS-20260917-4109）；本地用户气泡用的是
+ * crypto.randomUUID()，跟服务端 id 对不上，所以只收 agent，避免把用户自己的
+ * 发言再插一遍。
+ */
+export function mergeFreshAgentMessages(prev: ChatItem[], items: SupportMessage[]): ChatItem[] {
+  const known = new Set(prev.map((m) => m.id))
+  const fresh: ChatItem[] = []
+  for (const m of items) {
+    if (known.has(m.id) || supportMessageRoleOf(m) !== 'agent') continue
+    known.add(m.id)
+    fresh.push({
+      id: m.id,
+      role: 'agent',
+      content: m.content,
+      createdAt: new Date(m.created_at).getTime(),
+    })
+  }
+  return fresh.length === 0 ? prev : [...prev, ...fresh]
 }
 
 /**
@@ -369,11 +392,7 @@ export function useSupport() {
     }
     if (event.has_new_messages && ticketId && mode.kind === 'human') {
       listTicketMessages(ticketId).then((page) => {
-        setMessages((prev) => {
-          const known = new Set(prev.map((m) => m.id))
-          const fresh = page.items.filter((m) => !known.has(m.id) && m.role === 'agent')
-          return [...prev, ...fresh.map((m) => ({ id: m.id, role: m.role, content: m.content, createdAt: new Date(m.created_at).getTime() }))]
-        })
+        setMessages((prev) => mergeFreshAgentMessages(prev, page.items))
       }).catch(() => {})
     }
   }, [mode, go, ticketId, appendMessage, t]))

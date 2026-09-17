@@ -194,13 +194,29 @@ export interface SupportTicketListParams {
   limit?: number
 }
 
+export type SupportMessageRole = 'user' | 'assistant' | 'agent' | 'system'
+
 export interface SupportMessage {
   id: string
-  role: 'user' | 'assistant' | 'agent' | 'system'
+  /**
+   * 前端气泡用的角色。后端实测字段是 `sender_type`（CS-20260917-4109：
+   * `GET /support/tickets/:id/messages` 只下发 sender_type，从不下发 role），
+   * 收口在 supportMessageRoleOf，调用方不要自己读 role。
+   */
+  role?: SupportMessageRole
+  sender_type?: SupportMessageRole
   content: string
   created_at: string
   answer_status?: SupportAnswerStatus
   rating?: SupportAnswerRating | null
+}
+
+const SUPPORT_MESSAGE_ROLES = new Set<SupportMessageRole>(['user', 'assistant', 'agent', 'system'])
+
+/** 消息角色：优先 role，否则用后端实测的 sender_type。 */
+export function supportMessageRoleOf(m: Pick<SupportMessage, 'role' | 'sender_type'>): SupportMessageRole | undefined {
+  const raw = m.role || m.sender_type
+  return raw && SUPPORT_MESSAGE_ROLES.has(raw) ? raw : undefined
 }
 
 /**

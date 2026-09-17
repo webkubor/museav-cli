@@ -842,9 +842,23 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
    * （同样以各响应的 type 为准）——三者都到了才设默认值，否则会拿上一个 tab
    * 的榜行算并集，一个都匹配不上、退化成全选后再也不纠正。
    */
+  /**
+   * 专项榜每张卡的行 —— 必须 memo，引用要稳。
+   *
+   * recharts 的 <Bar> 把数值标签挂在 CartesianLabelListContext 上，而该 context 的值是
+   * `showLabels ? entries : undefined`，`showLabels = !isAnimating`（见 recharts/lib/cartesian/Bar.js）：
+   * **柱子动画期间 LabelList 整个不渲染**。原先 rows 在 render 里现算，每次渲染都是新数组 →
+   * animationId 变 → 动画重启 → 标签又消失 900ms；页面上有 hoveredModel state，鼠标在图上
+   * 一动就重渲染，于是数字看起来「一会有一会没有」（#1059）。
+   */
+  const specialtyRowsByKind = useMemo(
+    () => new Map(rankingCards.map((card) => [card.kind, specialtyRows(card.kind, specialtyModelsFor(card.kind), { scoreAscending })])),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rankingCards, specialtyModels, scoreAscending],
+  );
   const defaultSelection = () =>
     defaultScatterSelection(
-      rankingCards.map((card) => specialtyRows(card.kind, specialtyModelsFor(card.kind), { scoreAscending })),
+      rankingCards.map((card) => specialtyRowsByKind.get(card.kind) ?? []),
       chartCandidates.map((model) => model.name),
     );
   const selectionKey = discoveryDataType ?? "";
@@ -1114,7 +1128,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
         <div className="model-discovery-section-head"><div><h2>{t("modelsDiscovery.section.specialtyRank")}</h2></div></div>
         <div className="model-discovery-specialties">{rankingCards.map((item) => {
           const specialtySource = specialtyModelsFor(item.kind);
-          const rows = specialtyRows(item.kind, specialtySource, { scoreAscending });
+          const rows = specialtyRowsByKind.get(item.kind) ?? [];
           // 柱子此前有 hover 效果和 tabIndex，却没有任何点击行为——看着可点其实是死的。
           // 从**本榜自己那批模型**里找回完整对象后接上跳详情（改服务端排序后，
           // 榜上的模型可能不在主榜那 100 条里，只查 visibleModels 会找不到而变成死柱子）。

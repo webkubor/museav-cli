@@ -195,7 +195,7 @@ function SelectField({
   return (
     <div className="model-settings-field">
       <label className="model-settings-field-label">{label}</label>
-      <Select value={value} onChange={onChange} disabled={disabled} className="h-9 text-xs rounded-lg">
+      <Select value={value} onChange={onChange} disabled={disabled} className="w-full">
         {options.map((option) => {
           const opt = typeof option === 'string' ? { value: option, label: option } : option
           return (

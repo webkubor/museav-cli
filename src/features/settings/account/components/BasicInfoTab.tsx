@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { updateProfile, uploadAvatar, bindEmail } from '@/services/account'
 import { sendEmailCode } from '@/services/auth'
+import { getCaptchaParam } from '@/lib/aliyun-captcha'
 import { useAuthStore } from '@/store/auth'
 import type { AccountProfile } from '@/types'
 import { Button } from '@/components/ui/Button'
@@ -16,7 +17,9 @@ import { appToast } from '@/lib/app-toast'
 import { trackEvent } from '@/lib/track'
 import { errorCodeOf } from '@/lib/request-error-message'
 import { useMarket } from '@/hooks/useMarket'
-import { LuGift, LuLock } from 'react-icons/lu'
+import { LuGift } from 'react-icons/lu'
+import { ContactRebindDialog, type ContactRebindMode } from './ContactRebindDialog'
+import { maskEmail, maskPhone } from '../contact-mask'
 
 interface BasicInfoTabProps {
   profile: AccountProfile
@@ -70,7 +73,9 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
 
   const handleSendEmailCode = async () => {
     try {
-      const r = await sendEmailCode(emailInput.trim())
+      // 公共邮箱发码端点后端要人机参数（缺参 40025「人机校验不通过」），与注册页同口径
+      const captcha = await getCaptchaParam()
+      const r = await sendEmailCode(emailInput.trim(), captcha)
       trackEvent('account.email:send_code', undefined, { result: 'success' })
       return r.expires_in
     } catch (err) {
@@ -94,6 +99,13 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
     },
   })
 
+  // 换绑（shared/modelgo_prd#837）：手机号 / 邮箱字段本体保持脱敏只读，右侧入口弹三步换绑弹窗
+  const [rebindMode, setRebindMode] = useState<ContactRebindMode | null>(null)
+  const openRebind = (mode: ContactRebindMode) => {
+    trackEvent(mode === 'phone' ? 'account.phone:rebind_open' : 'account.email:rebind_open')
+    setRebindMode(mode)
+  }
+
   const avatarLetter = (profile.display_name || profile.email || profile.phone || 'U').charAt(0).toUpperCase()
   const isDirty = displayName.trim() !== profile.display_name && displayName.trim() !== ''
 
@@ -113,7 +125,7 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
             {profile.display_name || '—'}
           </div>
           <div style={{ color: 'var(--mg-text-2)', fontSize: '13px', marginTop: '3.5px' }}>
-            {profile.email || (profile.phone ? `${profile.phone.includes('+') ? '' : '+86 '}${profile.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')}` : '—')}
+            {profile.email ? maskEmail(profile.email) : profile.phone ? maskPhone(profile.phone) : '—'}
           </div>
         </div>
       </div>
@@ -126,11 +138,12 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
             <span className="block text-xs font-semibold uppercase tracking-wider text-mg-text-2">
               {t('account.info.phoneLabel')}
             </span>
-            <Input
-              value={`${profile.phone.includes('+') ? '' : '+86 '}${profile.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')}`}
-              readOnly
-              suffix={<LuLock size={14} />}
-            />
+            <div className="flex gap-2.5">
+              <Input className="flex-1" value={maskPhone(profile.phone)} readOnly aria-label={t('account.info.phoneLabel')} />
+              <Button variant="outline" className="shrink-0 rounded-sm px-4 font-semibold" onClick={() => openRebind('phone')}>
+                {t('account.info.rebind.changePhone')}
+              </Button>
+            </div>
             <span className="block text-xs leading-relaxed text-mg-text-3">
               {t('account.info.phoneHint')}
             </span>
@@ -141,12 +154,20 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
           <span className="block text-xs font-semibold uppercase tracking-wider text-mg-text-2">
             {t('account.info.emailLabel')}
           </span>
-          <Input
-            value={profile.email || ''}
-            placeholder={profile.email ? undefined : t('account.info.emailUnbound')}
-            readOnly
-            suffix={profile.email ? <LuLock size={14} /> : undefined}
-          />
+          <div className="flex gap-2.5">
+            <Input
+              className="flex-1"
+              value={profile.email ? maskEmail(profile.email) : ''}
+              placeholder={profile.email ? undefined : t('account.info.emailUnbound')}
+              readOnly
+              aria-label={t('account.info.emailLabel')}
+            />
+            {profile.email && (
+              <Button variant="outline" className="shrink-0 rounded-sm px-4 font-semibold" onClick={() => openRebind('email')}>
+                {t('account.info.rebind.changeEmail')}
+              </Button>
+            )}
+          </div>
           {profile.email ? (
             <span className="block text-xs leading-relaxed text-mg-text-3">{t('account.info.emailHint')}</span>
           ) : (
@@ -162,10 +183,14 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
             </div>
           )}
 
+          {/* modal={false} + 拦外部交互：人机验证浮层 portal 在 Dialog 之外，见 ContactRebindDialog 同款注释 */}
           <Modal
             open={emailBindOpen}
             onClose={() => { if (!bindEmailMutation.isPending) setEmailBindOpen(false) }}
             size="md"
+            modal={false}
+            onPointerDownOutside={(event) => event.preventDefault()}
+            onInteractOutside={(event) => event.preventDefault()}
             title={t('account.info.bindEmailTitle')}
             description={t('account.info.bindEmailDesc')}
             footer={(
@@ -178,7 +203,7 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold uppercase tracking-wider text-mg-text-2">{t('account.info.emailLabel')}</label>
-                <Input value={emailInput} disabled={bindEmailMutation.isPending} onChange={(e) => setEmailInput(e.target.value)} placeholder="you@example.com" className="h-9 text-xs rounded-lg" />
+                <Input value={emailInput} disabled={bindEmailMutation.isPending} onChange={(e) => setEmailInput(e.target.value)} placeholder="you@example.com" size="sm" />
               </div>
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold uppercase tracking-wider text-mg-text-2">{t('account.auth.fields.code')}</label>
@@ -187,7 +212,7 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
                   disabled={bindEmailMutation.isPending}
                   onChange={(e) => setEmailCode(e.target.value)}
                   placeholder={t('account.info.emailCodePlaceholder')}
-                  className="h-9 text-xs rounded-lg"
+                  size="sm"
                   suffix={<VerificationCodeButton onSend={handleSendEmailCode} disabled={!emailValid} />}
                 />
               </div>
@@ -217,10 +242,14 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
           </div>
         </div>
 
+        {rebindMode && (
+          <ContactRebindDialog key={rebindMode} mode={rebindMode} profile={profile} onClose={() => setRebindMode(null)} />
+        )}
+
         {referral?.inviteLink && (
           <div className="pt-4 border-t border-mg-border/40">
             <p className="text-xs font-bold text-mg-text-3 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-              <LuGift className="h-3.5 w-3.5 text-mg-brand" />
+              <LuGift className="h-3.5 w-3.5 text-brand-base" />
               {t('account.info.referralLabel')}
             </p>
             <ReferralInviteCard

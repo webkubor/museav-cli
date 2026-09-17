@@ -1,0 +1,134 @@
+/**
+ * 近 7 日使用趋势柱图：柱子、零线、标签与图例。
+ *
+ * discovery.css 的分片之一。入口按顺序 @import，**顺序即层叠顺序**。
+ * 再拆分请用选择器锚点定位，不要用行号（见入口文件里的说明）。
+ */
+
+.model-discovery-trend-chart {
+  margin-top: 9px;
+  min-width: 0;
+}
+
+.model-discovery-trend-bar {
+  fill: var(--trend-color);
+  opacity: 0.88;
+  rx: var(--discovery-radius-2xs);
+}
+
+.model-discovery-trend-label {
+  fill: var(--text-soft);
+  font-size: var(--discovery-fs-micro);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 零线：增长率有正有负，分界线画出来才看得出方向 */
+.model-discovery-trend-zero line {
+  stroke: var(--line);
+}
+
+.model-discovery-trend-legend {
+  display: grid;
+  gap: 4px 10px;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  margin-top: 10px;
+}
+
+.model-discovery-trend-legend > span {
+  align-items: center;
+  display: grid;
+  font-size: var(--discovery-fs-micro);
+  gap: 5px;
+  grid-template-columns: 7px minmax(0, 1fr) auto;
+}
+
+.model-discovery-trend-legend > span > i {
+  background: var(--trend-color);
+  border-radius: var(--discovery-radius-circle);
+  height: 7px;
+  width: 7px;
+}
+
+.model-discovery-trend-legend strong {
+  font-size: var(--discovery-fs-micro);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-discovery-trend-legend b {
+  color: var(--discovery-growth-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.model-discovery-trend-empty {
+  align-items: center;
+  color: var(--text-tertiary);
+  display: flex;
+  font-size: var(--discovery-fs-micro);
+  justify-content: center;
+  min-height: 120px;
+}
+
+.model-discovery-specialties {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.model-discovery-specialties article {
+  --specialty-color: var(--discovery-specialty-1);
+  overflow: visible;
+  padding: 16px 18px 15px;
+}
+
+/* 柱色按**维度（卡片）**区分，不按厂牌（qa#724，owner 2026-09-09 按 PRD 原型
+   推翻 2026-09-08 的厂牌色方案）：每张卡一色、卡内十根柱同色，厂牌语义只留在
+   轴刻度图标与 tooltip 的厂牌 mark。focus 光圈（discovery-specialty.css）同样
+   吃 --specialty-color，自动跟随维度色，与原型 :15159 一致。
+   nth-child 只数渲染出来的 article——部分模态隐藏若干卡时，第 N 张渲染出的卡
+   取第 N 色，与原型 nth-child 行为一致。 */
+.model-discovery-specialties article:nth-child(2) {
+  --specialty-color: var(--discovery-specialty-2);
+}
+
+.model-discovery-specialties article:nth-child(3) {
+  --specialty-color: var(--discovery-specialty-3);
+}
+
+.model-discovery-specialties article:nth-child(4) {
+  --specialty-color: var(--discovery-specialty-4);
+}
+
+.model-discovery-specialties article:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.model-discovery-specialties article > header {
+  align-items: flex-start;
+  display: flex;
+  justify-content: space-between;
+}
+
+.model-discovery-specialties article > header > span {
+  background: color-mix(in srgb, var(--accent) 9%, var(--panel));
+  border-radius: var(--mg-radius-pill);
+  color: var(--accent);
+  font-size: var(--discovery-fs-micro);
+  font-weight: 700;
+  padding: 4px 7px;
+}
+
+.model-discovery-specialties h3 {
+  font-size: var(--discovery-fs-title);
+  margin: 0;
+}
+
+.model-discovery-specialties p {
+  align-items: center;
+  color: var(--text-tertiary);
+  display: flex;
+  font-size: var(--discovery-fs-micro);
+  gap: 6px;
+  margin: 4px 0 0;
+}

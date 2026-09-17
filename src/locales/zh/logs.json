@@ -61,7 +61,6 @@
       "member": "成员",
       "allMembers": "全部成员",
       "guardrailLabel": "护栏",
-      "fullTextHint": "Request/Response 全文搜索仅覆盖已开启输入/输出日志采集的记录。",
       "defaultHint": "默认显示近 7 天全部请求",
       "clear": "清空筛选",
       "status": {
@@ -227,6 +226,7 @@
     "metrics": {
       "notStarted": "未发起",
       "noResponse": "未发起响应",
+      "asyncNotCounted": "异步任务暂不统计",
       "noTokens": "未产生 Token"
     },
     "guardrail": {

@@ -1,0 +1,52 @@
+{
+  "onboarding": {
+    "title": "新手指南",
+    "quickStartTag": "快速开始",
+    "subtitle": "完成 {{count}} 个任务，领取 {{reward}} 赠送余额",
+    "close": "关闭",
+    "closeGuide": "关闭新手指南",
+    "entryTooltip": "新手指南，已完成 {{completed}}/{{total}}",
+    "stepCompleted": "已完成",
+    "stepDone": "完成",
+    "steps": {
+      "marketplace": {
+        "title": "浏览模型广场",
+        "description": "发现适合业务场景的模型",
+        "action": "去浏览"
+      },
+      "playground": {
+        "title": "选择模型并完成体验",
+        "description": "成功生成一次模型回复",
+        "action": "去体验"
+      },
+      "api_key": {
+        "title": "创建 API Key",
+        "description": "为工作空间创建调用凭证",
+        "action": "去创建"
+      },
+      "quick_connect": {
+        "title": "完成快速接入配置",
+        "description": "选择方式并复制完整配置",
+        "action": "去接入"
+      },
+      "request_log": {
+        "title": "查看对应请求日志",
+        "description": "打开本次成功调用的日志详情",
+        "action": "去查看"
+      }
+    },
+    "reward": {
+      "title": "领取新手奖励",
+      "claimable": "可领取 {{reward}}",
+      "remaining": "再完成 {{count}} 项即可领取",
+      "claim": "领取 {{reward}}",
+      "claimFailed": "领取失败，请稍后重试"
+    },
+    "rewardSuccess": {
+      "title": "新手奖励领取成功",
+      "credited": "已存入赠送余额",
+      "later": "稍后查看",
+      "viewCredit": "查看赠金"
+    }
+  }
+}

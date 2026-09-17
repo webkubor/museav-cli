@@ -206,14 +206,38 @@ function rechargeChannelCode(o: RechargeOrder): string {
   return o.channel_label || o.channel || 'alipay'
 }
 
-/** 赠送来源 → 入账类型（含推荐/返佣/奖励关键字归为 reward，否则 gift） */
-function giftRecordType(source: string | undefined): IncomeRecordType {
-  const s = source ?? ''
-  return /推荐|referral|reward|返佣|奖励|rebate/i.test(s) ? 'reward' : 'gift'
+/**
+ * billing 给的 canonical 赠送来源码 → 入账类型与余额桶。
+ *
+ * ⚠️ 必须在下面那条模糊正则**之前**判。`onboarding_reward`（新手任务奖励，prd#943）
+ * 字面里带着 "reward"，被正则一扫就归成 reward 桶 —— 而服务端把这笔钱记在 **gift 桶**
+ * （income-records 返回 bucket=gift，余额接口也是 gift 桶 +10）。归错的后果不是文案不好看：
+ * 账单会显示「奖励余额」，而同页余额卡片上奖励余额是 ¥0，两处自相矛盾。
+ * 正则是给没有 canonical 码的历史数据兜底的，有码的一律走这张表。
+ * 查表前 trim+lowercase：来源码经后端不同字段/不同版本回来过 `Onboarding_Reward`、
+ * 带尾空格等写法，逐字比对会漏掉它们、悄悄掉回正则那条路。
+ */
+const GIFT_SOURCE_CODES: ReadonlyArray<readonly [string, IncomeRecordType]> = [
+  ['onboarding_reward', 'gift'],
+]
+
+/** 来源码归一（trim + lowercase）后查 canonical 表，命中返回整条 [码, 桶] */
+function canonicalGiftSource(source: string | undefined) {
+  const s = (source ?? '').trim().toLowerCase()
+  return GIFT_SOURCE_CODES.find(([code]) => code === s)
+}
+
+/** 赠送来源 → 入账类型（canonical 码优先；否则含推荐/返佣/奖励关键字归 reward） */
+export function giftRecordType(source: string | undefined): IncomeRecordType {
+  const canonical = canonicalGiftSource(source)
+  if (canonical) return canonical[1]
+  return /推荐|referral|reward|返佣|奖励|rebate/i.test(source ?? '') ? 'reward' : 'gift'
 }
 
 /** 赠送来源 → canonical channel code */
-function giftChannelCode(source: string | undefined, type: IncomeRecordType): string {
+export function giftChannelCode(source: string | undefined, type: IncomeRecordType): string {
+  const canonical = canonicalGiftSource(source)
+  if (canonical) return canonical[0]
   const s = source ?? ''
   if (/推荐|referral|返佣|rebate/i.test(s)) return 'referral'
   if (/优惠码|promo|兑换|redeem|code/i.test(s)) return 'promo'
@@ -222,13 +246,13 @@ function giftChannelCode(source: string | undefined, type: IncomeRecordType): st
 }
 
 /**
- * 充值订单 → 入账记录。paid/pending/failed 三态纳入（PRD 1.0.4 §8.6.1 状态枚举含 failed，
- * 失败的充值尝试也需要在账本里可见）；取消/退款不是"入账"事件本身，仍然排除。
+ * 充值订单 → 入账记录。需求方 #835（1.0.6）：入账记录只体现实际入账，
+ * 未支付完成（pending）与支付失败（failed）的充值单不展示（覆盖 PRD 1.0.4 §8.6.1
+ * 「failed 可见」的旧口径）；取消/退款同样排除。后端 income-records 接口上线时需同口径过滤。
  */
 function rechargeToIncome(o: RechargeOrder): IncomeRecord | null {
-  if (o.status === 'cancelled' || o.status === 'refunded') return null
-  const status: IncomeRecordStatus =
-    o.status === 'paid' ? 'completed' : o.status === 'failed' ? 'failed' : 'processing'
+  if (o.status !== 'paid') return null
+  const status: IncomeRecordStatus = 'completed'
   return {
     id: o.order_no,
     type: 'recharge',

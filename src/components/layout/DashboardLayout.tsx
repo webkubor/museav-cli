@@ -24,6 +24,7 @@ import {
   LuBuilding2,
 } from 'react-icons/lu'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
+import { OnboardingRewardDialog } from '@/features/onboarding/OnboardingGuideEntry'
 import { useTranslation } from 'react-i18next'
 import { DashboardHeader } from './DashboardHeader'
 import { DashboardSidebar } from './DashboardSidebar'
@@ -313,6 +314,9 @@ export function DashboardLayout() {
           {/* 高阶极简自定义 Breadcrumbs */}
           <Breadcrumb items={getBreadcrumbs()} />
 
+          {/* 平台助手：只解答平台功能怎么用，不承接客服反馈。挂在 Console 内，
+              登录后才可见（V1.0.6 那版全局挂 App.tsx、未登录也弹的形态已随
+              智能客服一起回退，代码在 feature/customer-service 分支）。 */}
           <CustomerService />
 
           {/* 国内环境强制绑定手机号守卫（#366）：无手机号时弹不可跳过的绑定弹窗，挂一次即可 */}
@@ -357,6 +361,9 @@ export function DashboardLayout() {
           </div>
         </main>
       </div>
+
+      {/* 新手奖励领取成功弹框：全局挂一次（领取入口在侧栏气泡里，跟随路由挂会被卸载） */}
+      <OnboardingRewardDialog />
     </div>
   )
 }

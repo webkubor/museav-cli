@@ -1,0 +1,248 @@
+/**
+ * 响应式断点与收尾杂项。
+ * ⚠️ 必须**最后**加载：媒体查询要覆盖前面各分片的同名规则。
+ *
+ * 由 discovery.css 拆分而来（原单文件 1917 行，远超 300 行阈值）。
+ * 入口是 discovery.css，只负责按顺序 @import——**顺序即层叠顺序，不要调整**。
+ */
+
+@media (max-width: 1120px) {
+  .model-discovery-overview,
+  .model-discovery-analysis-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .model-discovery-summary-grid.cards-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .model-discovery-summary-grid.cards-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .model-discovery-summary-grid.cards-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+
+  .model-discovery-summary-grid {
+    grid-auto-rows: minmax(104px, auto);
+    min-height: 0;
+  }
+
+  .model-discovery-summary-card.wide {
+    grid-column: auto;
+  }
+
+  .model-discovery-specialties {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Table 组件外层自带 overflow-auto（.model-discovery-table-scroll）；这里只保证内容不被
+     压缩，从而在窄屏走横向滚动（plan §6：表格保留横向滚动容器）。
+
+     🔴 用 max-content，不要写死像素值（prd#1006）。原先是 min-width: 980px，
+     768px 下 8 列分摊后模型名列只剩 142px，而真实模型名（「Claude Fable 5.1 (Adaptive
+     Reasoning, Max Effort…)」70 字符）需要 144px 以上 —— 20 行全部被省略号截断，
+     「有横向滚动容器」形同虚设：滚动能看到右边的列，却救不了单元格内部的 ellipsis。
+     768px 实测四档：980px→20 行截断 / 1180px→8 / 1320px→5 / max-content→0。
+     写死像素还有第二个问题：指标类型切换会改变列数，任何常量都会在某个组合下重新压缩。 */
+  .model-discovery-table {
+    min-width: max-content;
+  }
+}
+
+@media (max-width: 760px) {
+  .model-discovery-page {
+    padding: 18px 16px 40px;
+  }
+
+  .model-discovery-head,
+  .model-discovery-section-head,
+  .model-discovery-analysis-tools,
+  .model-discovery-taskbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .model-discovery-head,
+  .model-discovery-analysis-tools,
+  .model-discovery-taskbar {
+    display: flex;
+  }
+
+  /* ⚠️ 下面两条是本页唯一**偏离原型逐字搬运**的地方，改的是特异性与轨道下限、
+     不是布局意图。两个症状同源，一起说明：
+
+     ① 摘要卡在 390px 仍按五列排，每张只有 ~55px，标题「综合评分最高」被逐字
+        竖排、数值单位换行。原型在这一段只写了 .model-discovery-summary-grid
+        （特异性 0,1,0），但 1120 段的 .cards-3/4/5（0,2,0）在 ≤760px 时同样
+        命中且更高，于是 760 这条永远不生效。原型写了它就说明意图是窄屏两列，
+        只是被自己压掉了 —— 所以这里把选择器提到同一特异性来兑现。
+     ② 整页横向滚动（docScrollWidth 487 > 390）。1120 段把 overview 设成单列
+        `1fr`，而 `1fr` 等价于 `minmax(auto, 1fr)`：轨道下限是 auto，被 item 的
+        min-content 顶大。顶它的就是①里那些摘要卡（两列各自「标题 + 数值 +
+        InfoTip」的 min-content 合起来 ≈ 455px）；Top 5 卡本身能压缩，只是被
+        同一条轨道一起拉宽，所以看起来像表格撑破了页面。下限归零后轨道才真正
+        受视口约束。
+
+     若需求方要求连 bug 一起 1:1，删掉这两条即可回到原型表现。 */
+  .model-discovery-overview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .model-discovery-summary-grid.cards-3,
+  .model-discovery-summary-grid.cards-4,
+  .model-discovery-summary-grid.cards-5 {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .model-discovery-summary-card.wide {
+    grid-column: 1 / -1;
+  }
+
+  /* 两列之后每张卡只有 158px，扣掉 padding 与 20px 厂牌图标，18px 字号下
+     「DeepSeek V4 Flash」这类长名仍会 ellipsis 成「DeepSee…」——摘要卡的
+     主信息就是这个模型名，截掉等于白给一张卡。窄屏改成 15px + 允许折两行：
+     字号写死不走刻度是为了先保住视觉，两处值都只在 ≤760px 生效，桌面不动。 */
+  .model-discovery-summary-model > strong {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: var(--discovery-fs-title);
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .model-discovery-rank-head,
+  .model-discovery-rank-row {
+    grid-template-columns: 24px minmax(0, 1fr) minmax(0, 0.8fr);
+  }
+
+  .model-discovery-rank-head > span:nth-child(3),
+  .model-discovery-rank-row > em {
+    display: none;
+  }
+
+  .model-discovery-specialties {
+    grid-template-columns: 1fr;
+  }
+
+  .model-discovery-specialties article:last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+
+  /* grid item 的 min-width 默认是 auto，会被下面 703px 宽的柱图撑开 ——
+     卡片跟着变宽、整页横向滚动，chart 自己的 overflow-x 反而永远不触发。
+     归零后溢出才被关进图表容器里。 */
+  .model-discovery-specialties article {
+    min-width: 0;
+  }
+
+  /* 窄屏不再需要横向滚动兜底：Recharts 按容器实际宽度排布 10 根柱，
+     轴上只有 18px 的厂牌图标（不是会被 ellipsis 砍断的模型名），
+     390px 下每列约 33px 仍放得开。原先那套「容器横向滚动 + 64px 保底列宽 +
+     背景网格线跟随滚动」的手工方案随之删除。 */
+
+  .model-discovery-selects {
+    justify-content: flex-start;
+  }
+
+  .model-discovery-section-head.model-discovery-agent-popularity-head {
+    align-items: center;
+    flex-direction: row;
+  }
+
+  .model-discovery-agent-popularity-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .model-discovery-agent-popularity-column + .model-discovery-agent-popularity-column {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .model-discovery-agent-popularity-row {
+    gap: 9px;
+    grid-template-columns: 22px 32px minmax(0, 1fr) auto;
+    min-height: 66px;
+    padding-inline: 12px;
+  }
+
+  .model-discovery-agent-icon {
+    height: 32px;
+    width: 32px;
+  }
+}
+
+/* 模型名单元格：图标 + （名称 / 厂商）两行。图标不参与压缩，名称一列可收缩，
+   否则长模型名会把图标挤成扁的（收缩链要求整条祖先都有 min-width: 0）。 */
+.model-discovery-rank-name,
+.model-discovery-cell-model {
+  /* 名称已单行截断（见下），不会换行，所以图标对「名称 + 厂商」这个两行块整体居中——
+     顶对齐会让图标只跟第一行齐、下半边空着，视觉上像挂歪了。 */
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+}
+
+.model-discovery-rank-name > span,
+.model-discovery-cell-model > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* 模型名单行截断，全名交给 title 悬浮看。
+   「Claude Fable 5.1 (Adaptive Reasoning, Max Effort, Default Fallback)」这类名字
+   在 160px 的列里必然换行，换行后行高不齐、图标错位，比截断难看得多。 */
+.model-discovery-rank-name > span > span,
+.model-discovery-cell-model > span > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-discovery-rank-name > span > small,
+.model-discovery-cell-model > span > small {
+  color: var(--text-tertiary);
+  font-size: var(--discovery-fs-micro);
+  font-weight: 500;
+}
+
+/* 表格筛选区的 Select。
+   ① 控制台 SelectTrigger 默认 w-full（表单里铺满一列），放进筛选条要收成按内容宽，
+      否则两个筛选器各撑几百像素、挤到换行。
+   ② 字号 / 高度 / 内边距走**全站控件档位**（2026-09-04 控件统一）：本页正文
+      保持 12px 高密度节奏不变，但控件（Select/筛选触发器/面板内搜索）与全站
+      同一张脸——13px 字号（--mg-font-size-body）+ 32px（--mg-control-h-sm 档）。
+      此前同排三种尺寸（Select 14px / 自写厂商筛选器 12px / 模型筛选触发器 12px），
+      2026-09-03 需求方指出「select 字体那么大、大小还不统一」，当时按 12px 抄齐；
+      现随全站控件统一升到 13px，本条筛选条内仍互相一致。
+   ③ 高度用固定 32px（--mg-control-h-sm）而不是 height:auto + min-height：auto 时
+      上下 padding 为 0，文字贴边，视觉上「内边距太小」（同一次反馈）。
+   ④ 选择器必须带 .model-discovery-page 前缀：SelectTrigger 的字号 / 圆角 / padding
+      是 Tailwind utilities（同为单类权重），不加前缀会输给它们——第一版只写单类，
+      结果只有 SelectTrigger 没设的 height/width 生效，冲突的三项全被压掉。 */
+.model-discovery-page .model-discovery-select-trigger {
+  /* 高度交给组件档位（triggerSize="sm" → --mg-control-h-sm）；这里只收宽度、
+     内距与圆角对齐本页节奏 */
+  width: auto;
+  padding: 0 9px;
+  font-size: var(--mg-font-size-body);
+  border-radius: var(--discovery-control-radius);
+}
+
+/* 「指标类型 | 综合评价」：前缀是字段名、后面才是当前值，中间给一条分隔线，
+   否则两段中文直接连读成「指标类型综合评价」。 */
+.model-discovery-metric-label {
+  border-right: 1px solid var(--line);
+  color: var(--text-tertiary);
+  margin-right: 8px;
+  padding-right: 8px;
+  white-space: nowrap;
+}
+
+/* 长文本兜底：这几处渲染的是接口给的模型名 / 描述，长度由数据决定。
+   模型名实测可达 70 字符（「Claude Fable 5.1 (Adaptive Reasoning, Max Effort,
+   Default Fallback)」），不截断就会换行把行高撑乱。全名走 title 悬浮看。 */
+.model-discovery-model-filter-list > button > span > strong,
+.model-discovery-trend-legend strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

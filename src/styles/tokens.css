@@ -28,6 +28,29 @@
   --brand-selected-bg: var(--mg-brand-selected-bg);
 }
 
+/* ── 数据可视化的入场时长 ──────────────────────────────────────
+   modelgo-design-tokens 的 duration 档位（instant .1 / fast .15 / base .25 / slow .4）
+   是**交互反馈**的尺子：hover、按压、展开这类高频动作，快才不碍事。
+   但图表数据的入场是另一类动效——一次性的、要引导人读出数量差，0.4s 一闪而过，
+   等于没有（2026-09-08 owner：「进度条的动效为啥没同步过来」；同期用量分析页的
+   柱图/面积图之所以有"进度感"，是因为它压根没配、吃的是 Recharts 默认 1.5s）。
+   0.9s 是两者之间：看得见生长过程，又不会让人等。
+   ⚠️ 只给图表入场与相对条，别拿它做 hover/切换——那类仍走 fast/base。
+   库里补了这一档就撤这里（本文件的定位就是"库里没有的"）。 */
+:root {
+  --mg-duration-chart: 0.9s;
+}
+
+/* ── 常驻微动的周期 ────────────────────────────────────────
+   库的 duration 档位（instant/fast/base/slow）量的是**一次动作**有多快，
+   --mg-duration-chart 量的是**一次入场**有多长；这一档量的是**循环一圈**要多久，
+   三者不是一个尺子，所以单独立一个而不是复用。
+   2.4s 是「看得出在动、但不抢注意力」的边界：1s 以内像故障闪烁，4s 以上人眼
+   察觉不到变化、等于白做。只给常驻循环（呼吸、流光），别拿它做 hover 或入场。 */
+:root {
+  --mg-duration-pulse: 2.4s;
+}
+
 /* 主色 / 链接（跟随 brand-*，自动响应市场切换） */
 :root {
   --mg-primary:          var(--brand-base);
@@ -64,6 +87,16 @@
      这一档为准，已写进 design-tokens 0.7.0 的 --mg-font-sans，此处改为引用，值不变。 */
   --font-sans: var(--mg-font-sans);
   --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+  /* micro / meta 是控制台特有的两档紧凑字号，共享包最小只到 12px（--mg-text-xs）。
+     它们的存在有实据：模型发现页 2026-09-03 用 computed style 逐项量过 PRD 原型
+     （厂商名 / 状态标签 / 轴刻度 / 图例都是 10px），智能客服面板宽 380px、窄屏还会
+     收缩，11px 是元信息排得开的前提。此前这两档在 discovery 与客服里各自建了一份
+     页面级变量，同一个 10px 定义了两遍——收到这里做唯一真源。
+     ⚠️ 只补共享包确实没有的档；12px 及以上一律用下面的 caption/body/value，不再自建。 */
+  --mg-font-size-micro: 0.625rem;
+  --mg-line-height-micro: 0.875rem;
+  --mg-font-size-meta: 0.6875rem;
+  --mg-line-height-meta: 1rem;
   --mg-font-size-caption: 0.75rem;
   --mg-line-height-caption: 1rem;
   --mg-font-size-body: 0.875rem;
@@ -128,6 +161,31 @@
   --mg-menu-item-py: var(--mg-space-2);
   --mg-progress-milestone-h: 2rem;
   --mg-panel-padding: var(--mg-panel-padding-md);
+
+  /* ══ 浮层玻璃（Float）—— 所有浮层（Popover / Dropdown / Select / Dialog / Sheet / Tooltip）表面的唯一配方
+     为什么不直接复用 --mg-glass-surface：那一档是给内容面调的（浅色白 70% / 深色白 7%），
+     背后的正文能透读出来 —— 需求方 #504（同源 #449）当初正是因此把下拉面板一刀改成实色 bg-mg-bg-2。
+     但实色浮层和玻璃画布是两套语言，浮层看着像贴上去的纸片。
+     这里给浮层单开一档「厚玻璃」：遮挡靠不透明度（92% / 深色 90%，背后只剩 8%~10% 且已被
+     24px 模糊抹平，读不出字形），质感靠模糊 + 提饱和 + 微光，两者互不妥协 —— 也就是说
+     #504 的结论（浮层必须完整遮挡背景）没有被推翻，只是不再用「实色」这一种实现方式。
+     染入 --brand-base 让浮层跟着 data-market / data-theme 走，四象限自动成立。
+     命名用 float 不用 overlay：--mg-overlay-bg 已经是「模态遮罩 scrim」的名字，
+     同名两义会让后来的人改错地方。 */
+  --mg-float-blur: 24px;      /* 比 --mg-glass-blur(18px) 重一档：浮层糊的是正文，糊透才干净 */
+  --mg-float-saturate: 1.6;   /* 补回模糊带来的灰化，否则玻璃显脏（深色尤甚） */
+  --mg-float-brand-mix: 5%;   /* 主题色染入量：到「能感觉到偏色」为止，不到「看得出是紫的」 */
+  --mg-float-opacity: 92%;    /* 遮挡底线，别往下调（实测 88% 以下背后正文开始可辨） */
+  --mg-float-surface: color-mix(in oklab, var(--brand-base) var(--mg-float-brand-mix), var(--mg-bg-2));
+  --mg-float-bg: color-mix(in srgb, var(--mg-float-surface) var(--mg-float-opacity), transparent);
+  --mg-float-line: color-mix(in oklab, var(--brand-base) 16%, var(--mg-glass-line));
+  --mg-float-sheen: rgba(255, 255, 255, 0.9);   /* 顶部 1px 亮边 = 玻璃厚度的高光 */
+  /* 微光是「晕」不是「环」：用大扩散负 spread 的品牌色投影，别写 0 0 0 1px（那会变成第二道描边） */
+  --mg-float-glow: 0 8px 32px -14px color-mix(in oklab, var(--brand-base) 30%, transparent);
+  --mg-float-shadow:
+    0 1px 2px rgba(16, 24, 40, 0.05),
+    0 12px 28px -10px rgba(16, 24, 40, 0.16),
+    0 28px 60px -24px rgba(16, 24, 40, 0.2);
 
   /* 账号浮层：只定义语义，不跨主题写死色值。
      浮层必须实底 —— --mg-bg-0 已并入玻璃（半透明），改用悬浮层 --mg-bg-2 / 顶层 --mg-bg-3（#529） */
@@ -254,6 +312,19 @@ body[theme-mode='dark'] {
   /* bg-0/1/2/3、fill-*、success/warning/info、danger 交共享 [data-theme='dark']（theme.ts 已同步设 data-theme=dark）。
      文字层也直接用共享 --mg-text-1/2/3/4（共享 [data-theme=dark] 已定义 zinc-100/300/400/600），不再本地覆盖。*/
   --mg-bg-0-rgb: 35, 35, 41;  /* surface 暗值的 RGB，供玻璃态 rgba() */
+
+  /* 浮层玻璃深色档：暗底上玻璃靠「淡白薄膜 + 品牌微光」立起来，不是靠更黑的面。
+     brand-mix 提到 11%（暗底吃色，5% 完全看不出）；sheen 压到 12%（深色下白亮边一硬就假）；
+     不透明度 90% 略低于浅色 —— 暗底本身对比就低，透出来的 10% 更没有可读性风险。 */
+  --mg-float-brand-mix: 11%;
+  --mg-float-opacity: 90%;
+  --mg-float-line: color-mix(in oklab, var(--brand-mid) 22%, rgba(255, 255, 255, 0.13));
+  --mg-float-sheen: rgba(255, 255, 255, 0.12);
+  --mg-float-glow: 0 8px 34px -14px color-mix(in oklab, var(--brand-mid) 36%, transparent);
+  --mg-float-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.34),
+    0 16px 38px -12px rgba(0, 0, 0, 0.48),
+    0 34px 68px -30px rgba(0, 0, 0, 0.55);
   --mg-bg-1-rgb: 24, 24, 28;  /* bg 暗值的 RGB（对应共享 [data-theme=dark] 的 --mg-bg #18181c），供玻璃态 rgba() */
 
   /* 代码块面（payload 查看器）：清透极黑 */

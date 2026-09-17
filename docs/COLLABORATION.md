@@ -26,11 +26,12 @@ cd ../wt-my-branch && ln -s ../modelgo-console-web/node_modules .
 ### 收工
 
 ```bash
-# 用 cs land 合入的话，worktree + 分支已被自动回收，这里不用做任何事
-cs land --base test
+# 版本功能：推回版本分支（不是 test，见 CLAUDE.md 入场第 3 条），然后自己清三步
+git push origin HEAD:feature/v1.0.x-<当期版本分支>
+git worktree remove ../wt-my-branch      # 详见 §4「手动合并」
 
-# 手动合并的才需要自己清（详见 §4 步骤 5）
-git worktree remove ../wt-my-branch
+# cs land 只用于确实要直接落到某个集成分支的场合（它会自动回收 worktree + 分支）
+# ——版本迭代期不要 land 到 test，那会绕过版本节奏
 ```
 
 ## 2. 任务互斥：看板认领锁（任务层）
@@ -53,7 +54,14 @@ git worktree remove ../wt-my-branch
 | 看板 | 完成流程 | 说明 |
 |:---|:---|:---|
 | QA 任务看板 | Open → 已认领 → 进行中 → 待验证 → 已完成 → Closed | BUG 必须带目标环境回归证据才可进入待验证；验收通过后再完成/关闭 |
-| PRD 派单 | 进行中 → 待验证 → 已完成 | PM需求单，必须先待验证，PM验收后才能标记已完成 |
+| PRD 派单 | 进行中 → 待验证 → 待上线 → **待线上验证** → 已完成 | PM需求单，必须先待验证，PM验收后才能标记已完成 |
+
+**发布上线后的状态流转（owner 2026-09-09 拍板，PRD 派单看板）：**
+
+- 单子内容**发布到生产后，立即移「待线上验证」**（`remove_labels=待上线` + `add_labels=待线上验证`）。这一步是**发布方/agent 的职责**，发版收尾必做、不等人催。
+- 「待线上验证」的语义是**等 QA/测试在线上验证**，agent 不代做线上验证；验完的流转（已完成/关单）由 QA/owner 决定。
+- 后端单的状态由后端自己移，前端 agent 不代劳。
+- 判「内容是否在生产」看**提交是否在生产部署 commit 的祖先**（`git merge-base --is-ancestor <commit> <生产commit>`，生产 commit 取 version.json 的 `commit` 字段），**别看版本号**——main 上零散合过热修但版本号未 bump，看版本号会漏单（2026-09-09 #834/#838 就这么漏的）。若生产 commit 是 revert 之后的，历史里含被撤销的 merge，要用 revert 前 diff 为 0 的干净基线做祖先判断。
 
 业务标签：`TASK`（需求）、`BUG`（缺陷）、`Feature`（功能）、`前端就绪`（前端完成待后端/QA）
 
@@ -81,9 +89,34 @@ glab issue close 293 -R "$REPO"
 ### 认领锁规则
 
 - 锁 = GitLab issue 打「进行中」标签 + 指派自己 + 结构化评论
-- 锁过期时间：**1 小时**（`STALE_MS = 1h`）
+- 锁过期时间：**1 小时**
 - 超时未 release → 锁自动过期，其他 agent 可接管
 - 「已完成」/「待验证」状态的单**禁止重新认领**（防拖回）
+
+#### 超时即接管，不要跨 session 问归属（owner 2026-09-11 拍板）
+
+**一个单做一整天都没完结是不可能的，那只说明持锁方已经死了。** 所以锁一旦超过
+1 小时没有新动静，接手方**直接接管、直接开工**，不需要向任何人确认归属 ——
+不发跨 session 消息问「这个还是你在做吗」，也不等回复。
+
+判断锁是否已死，看这三样（任一成立即视为已死）：
+
+```bash
+# ① 锁评论的时间戳：agent-lock 评论里的 ts 距今超过 1 小时
+glab issue view <iid> -R "$REPO" -c | grep -A2 "agent-lock"
+
+# ② 对应 worktree 零未提交 + 零领先提交 —— 持锁方什么都没产出
+git -C <worktree> status --porcelain | wc -l
+git -C <worktree> log --oneline <base>..HEAD | wc -l
+
+# ③ 单据状态与锁矛盾（例：锁还挂着，但单已被 reopen 或已流转到别的列）
+```
+
+接管时**只做一件额外的事**：在单上补一条评论写明「按 1h 超时规则接管，原锁 ts=<旧时间戳>」，
+留痕给后来人，不用等谁批。原持锁方如果活过来，看到这条评论就知道该停手。
+
+**别把「问一句更稳妥」当美德** —— 两个 session 互相等确认的成本，比偶尔重复一小段工作高得多；
+而重复工作本来就被 worktree 隔离兜住了（见 §1/§4），撞不坏对方的代码。
 
 ### 跨看板 iid 撞车
 
@@ -352,7 +385,22 @@ PRD 原型 > 飞书文档 > 现状控制台代码
 | 按修复粒度上线 | worktree（`fix/`·`feat/`） | main | 同一分支**分别**合进 test（验证）和 main（发布），各自产生一个 merge commit |
 | 线上 hotfix | main | main | main 分支修复 → 部署线上 → 同步到 test |
 
-**部署分支按环境定，不是按项目定**：测试 job 传 `GIT_BRANCH=test`，生产 job 传 `GIT_BRANCH=main` + `GIT_TAG`。抄命令前先核一眼 Jenkins 上次构建的实参（`job/<n>/api/json` 的 `parameters`）——**分支传错不报错**，构建照样 SUCCESS，只是把另一个分支发了出去（2026-08-25 踩过：部署卡把测试环境的分支渲染成 `main`，而当时 main 落后 test 16 个提交，照抄等于把测试环境回滚半个月）。
+**部署分支按环境定，不是按项目定**：测试 job 传 `GIT_BRANCH=<测试环境当前跟的分支>`，生产 job 传 `GIT_BRANCH=main` + `GIT_TAG`。
+
+> 🔴 **版本迭代期：测试环境跟当期版本分支，不跟 `test`**（owner 2026-09-10 拍板，
+> 实测佐证 `version.json`：`{"commit":"12f595b","branch":"release/v1.0.6"}`）。
+>
+> - **部署**传 `GIT_BRANCH=release/v1.0.x`（当期版本分支），不是 `test`。
+> - **验证/冒烟也按同一条分支来**：跑 TestMgr 冒烟、UI 回归、QA 复验前，先确认测试环境上
+>   跑的是版本分支的产物，别拿 `test` 分支的代码去对结论。
+> - **「更新测试环境」＝触发 Jenkins**，不等于把版本分支合进 `test`；合 `test` 是版本节奏的事
+>   （由 owner 定，见 `CLAUDE.md` 入场第 3 条），与能不能提测无关。
+> - 代码回流（`test` → 版本分支）只动源码、不动环境，**回流完必须再部一次**，否则环境仍是旧 commit。
+>
+> 每次部署前后各读一眼，别照抄上表：
+> ```bash
+> curl -s "https://console.test.modelgo.com/version.json?_=$(date +%s)"   # 看它现在跟哪条分支、哪个 commit
+> ```抄命令前先核一眼 Jenkins 上次构建的实参（`job/<n>/api/json` 的 `parameters`）——**分支传错不报错**，构建照样 SUCCESS，只是把另一个分支发了出去（2026-08-25 踩过：部署卡把测试环境的分支渲染成 `main`，而当时 main 落后 test 16 个提交，照抄等于把测试环境回滚半个月）。
 
 #### test / main 分叉：成因与处理
 
@@ -375,11 +423,20 @@ git merge-base --is-ancestor origin/main origin/test && echo "可快进"
 
 > ⚠️ **`test` 是集成/部署来源分支，不是开发地**。别 `git checkout test` 直接在上面写代码——多个 session 共用同一工作树 + 同分支会互相踩（未提交改动串台、被迫 autostash rebase）。开发一律在隔离 worktree（见第 1 节），`test` 只接受**合并**。这与顶部「代码隔离 > 任务互斥」原则一致。
 
-**日常开发流程：**
-1. 开隔离 worktree + 分支：`cs wt fix/<名>`（或 `git worktree add -b fix/<名> ../wt-<名> origin/test`）
+> ⚠️ **2026-09-03 owner 拍板的分支定位**（覆盖本节以下流程里「一律 base test / land 到 test」的老写法）：
+> `main` 生产 · `test` 测试环境（**当前版本 1.0.6 在这里迭代**）· `feature/v1.0.x-*` 版本集成分支 · `hotfix/*` 临时需求。
+> 版本功能走 **worktree → 版本分支 → 合入 test → 整批上线合 main**；
+> **何时把版本分支合进 `test` 由 owner 按版本节奏决定，agent 不要自己 land 到 test**。
+> 临时 / 紧急需求走 `hotfix/*`：从 `main` 分出、验完合 `main`、再回流 `test` 与当期版本分支。
+> 详见 `CLAUDE.md` 入场第 3 条。
+
+**日常开发流程（版本功能）：**
+1. 开隔离 worktree + 分支：`cs wt fix/<名> --base origin/feature/v1.0.x-<当期版本分支>`
+   （`--base` 取的是**本地**分支、会落后远端，所以显式带 `origin/`；2026-09-03 因此在旧基线上白改一轮）
 2. 在 worktree 里开发、提交（与其他 session 物理隔离，互不看见对方未提交改动）
-3. 合并进 test：**`cs land --base test`**（fetch→rebase→push HEAD:test，push 撞并行提交会自动 refetch+rebase 重试）
-4. 触发测试环境部署：`test/modelgo-console-web`
+3. 推回版本分支：`git push origin HEAD:feature/v1.0.x-<当期版本分支>`
+   —— **不要 `cs land --base test`**，那会绕过版本节奏直接进测试环境分支
+4. 触发测试环境部署：由 owner 把版本分支合进 `test` 后再部署 `test/modelgo-console-web`
 5. **清理已由 `cs land` 自动完成，不用再手动跑**（2026-08-21 起）：land 成功后它会自动
    `worktree remove` + 删本地分支 + 删远端同名分支（存在才删）+ `fetch --prune`。
    - 删前强制校验 `merge-base --is-ancestor <分支> origin/<base>`，**未合入一律不删**
@@ -392,6 +449,9 @@ git merge-base --is-ancestor origin/main origin/test && echo "可快进"
    （2026-07-28 一次清理攒了 60+ 个已合并分支；2026-08-21 又发现早已合入 test 的
    `fix/617-usage-link-params`，worktree 和分支都还挂着。）
 
+   ⚠️ 新流程（推版本分支）**不走 `cs land`**，所以这份自动清理不会发生，
+   要自己走下面「手动合并」的三步。
+
    手动合并（不用 `cs land`）时，仍要自己走完三步：`git worktree remove ../wt-<名>`
    → `git branch -d <名>` → `git push origin --delete <名>`。功能分支的生命周期到
    「进了 test」就结束，没有理由留到合并 main 前。
@@ -401,14 +461,53 @@ git merge-base --is-ancestor origin/main origin/test && echo "可快进"
 2. 合并到 main：`git checkout main && git merge test && git push origin main`
 3. 触发线上部署：`prod/modelgo-console-web`
 
-**线上 hotfix 流程：**
-1. 在 main 分支修复问题
-2. 提交并推送 main
+**线上 hotfix 流程：**（临时 / 紧急需求也走这条，不等版本节奏）
+1. 从 main 开隔离 worktree 修复：`cs wt hotfix/<名> --base origin/main`
+   （别 `git checkout main` 直接在主检出上改——同一条「test 不是开发地」的理由，见本节开头）
+2. 提交并合进 main、推送
 3. 触发线上部署（`prod/modelgo-console-web`）
-4. 同步到 test 分支：`git checkout test && git merge main && git push origin test`
-5. 触发测试环境部署（`test/modelgo-console-web`）
+4. 回流 `test`：`git checkout test && git merge main && git push origin test`
+5. **回流当期版本分支**（2026-09-03 补：版本在 test 迭代，只回流 test 不回流版本分支，
+   下次版本合 test 时必在同一处冲突）：
+   `git push origin main:feature/v1.0.x-<当期版本分支>` 打不过去时用 merge，别 force
+6. 触发测试环境部署（`test/modelgo-console-web`）
+
+**临时 / 紧急需求**走 `hotfix/*`，见上面「线上 hotfix 流程」——它的意义就是绕开版本节奏，
+所以不要挂在版本分支上做。
+
+**本节以下凡写「base test」「land 到 test」的，按新流程替换目标分支；**`cs land` 的自动清理、
+分叉判定、冲突处理等机制本身仍然适用，只是 base 换成版本分支。
 
 **分支清理：** 见上面「日常开发流程」步骤 5——分支合并进 test 就应清理，不用等到合并上线。
+
+### 冒烟用例：真源在 TestMgr，不在飞书也不在代码库
+
+**部署到测试环境后要跑的冒烟清单，唯一真源是 TestMgr**（`https://qa.ops.modelgo.com/testmgr/`）。
+2026-09-10 找这份清单时在飞书和 QA 代码库里绕了两圈才问出来，所以钉在这里：
+
+| 当期版本 | V1.0.6 冒烟（扩容 120 条） |
+|:---|:---|
+| 入口 | <https://qa.ops.modelgo.com/testmgr/test-tasks/task-01m1gmt456jy35cxwdrf2hc6fg> |
+| 用例集 | `set-01m0y0yqtjnznsxgv54s02dhr8` |
+| 口径 | 全部可执行 P0（51）+ 核心 P1（68）+ `TC-MINOR-031`（P2）＝120 条；**blocked 的一条不进**（后端未上线 / 原型未实现 / 日限额）。是旧 40 条冒烟的严格超集 |
+| 上一轮 | 2026-09-02～09-04 由 `george.j` 执行：120 条全执行，**passed 35 / failed 7 / blocked 67 / skipped 11**，通过率 29.17% —— blocked 占一多半，主因是后端与 Admin 前端未交付，看结论前先分清「没做」还是「做坏了」 |
+
+读取用 API（**只读 GET；本仓 skill 禁止任何 DELETE**，见 skill `testmgr-api`）：
+
+```bash
+curl -s "https://qa.ops.modelgo.com/api/testmgr/runs/<task-id>" | python3 -m json.tool   # 注意是 runs 不是 tasks
+```
+
+> ⚠️ 路径易错：页面 URL 是 `/testmgr/test-tasks/<id>`，但 API 端点是 `/api/testmgr/runs/<id>`；
+> 打到 `/api/testmgr/tasks/<id>` 会返回 `not_found`，别据此以为任务不存在。
+
+另外两处**不是**真源、只作参考：
+
+- 飞书《ModelGo P0 冒烟测试用例（V1.0.1–V1.0.3）》（30 条，于剑锋）——只到 1.0.3，**没有 1.0.6**：
+  <https://ocny5azjudjs.feishu.cn/wiki/BQK0wyKcfi595SksWGlcvs21nxe>
+- 自动化用例在 QA 仓 `qa/modelgo-api-tests`：后端冒烟 `tests/api/smoke/`（`-m p0` ≡ `-m smoke`，10 例 ~3s），
+  前端 `tests/ui/`（91 个用例，Playwright 直连 `console.test.modelgo.com`，与 p0/p1 分层正交）。
+  ⚠️ **1.0.6 的模型发现页 / benchmark / 新手指南在自动化库里一条用例都没有**，只能靠 TestMgr 人工执行。
 
 ## 5. UI 测试账户管理
 
@@ -661,6 +760,8 @@ git worktree list
 
 # ② 判断哪些是真残留：已合入 test 却还在的分支
 git fetch origin --prune                 # 先 prune，否则会把远端已删的分支误判成僵尸
+# 版本迭代期功能推的是版本分支，两个基线都要查一遍
+git branch --merged origin/feature/v1.0.x-<当期版本分支> | grep -vE '^\*|test|main'
 git branch --merged origin/test | grep -vE '^\*|test|main'
 
 # ③ 上一步列出来的，按 §4 补做（不是可选项）：

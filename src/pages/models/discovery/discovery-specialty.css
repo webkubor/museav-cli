@@ -1,0 +1,80 @@
+/**
+ * 专项指标排行的四张柱图：柱子交互层、柱内标签、轴刻度里的厂牌图标。
+ *
+ * 由 discovery.css 拆分而来（原单文件 1917 行，远超 300 行阈值）。
+ * 入口是 discovery.css，只负责按顺序 @import——**顺序即层叠顺序，不要调整**。
+ */
+
+/* Recharts 容器：柱子的排布、栅格线、轴刻度都交给图表本身，
+   这里只留外边距与 min-width:0（后者让 ResponsiveContainer 在窄屏能收缩，
+
+   不再把卡片撑宽导致整页横向滚动）。 */
+.model-discovery-specialty-chart {
+  margin-top: 13px;
+  min-width: 0;
+}
+
+/* 柱子的交互层：一个 <g> 承载可点 / 联动 / 键盘，里面的 rect 只管画。
+   用自定义 shape 而不是 recharts 默认 Rectangle，就是为了保住这层语义。 */
+.model-discovery-bar-hit {
+  outline: 0;
+}
+
+/* 能跳详情的才给可点的样子；跳不了的保持默认光标，避免「看着能点、点了没反应」 */
+.model-discovery-bar-hit.clickable {
+  cursor: pointer;
+}
+
+.model-discovery-specialty-bar {
+  fill: var(--specialty-color);
+  opacity: 0.9;
+  rx: var(--discovery-radius-xs);
+  transition: opacity var(--discovery-dur-instant) var(--mg-ease-standard);
+}
+
+.model-discovery-bar-hit:hover .model-discovery-specialty-bar,
+.model-discovery-bar-hit.linked .model-discovery-specialty-bar {
+  opacity: 1;
+}
+
+.model-discovery-bar-hit:focus-visible .model-discovery-specialty-bar {
+  stroke: var(--specialty-color);
+  stroke-opacity: 0.45;
+  stroke-width: 3px;
+}
+
+/* 柱内数值标签（recharts <LabelList> 渲染成 SVG text） */
+/* 柱外顶部标签，与 .model-discovery-trend-label 同一套（见 discovery-charts.tsx
+   里 position="top" 的说明）。原先是柱内白字(--discovery-on-dark)。 */
+.model-discovery-bar-label {
+  fill: var(--text-soft);
+  font-size: var(--discovery-fs-micro);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 首根柱的顶标签居中锚定时会向左越出 svg 5–7px，overflow:hidden 把
+   「1252 tok/s」裁成「252 tok/s」、「$0.0060」裁掉 $（1024 档实测）——数值被
+   裁是误读，放开裁剪让标签落进卡片 padding；柱体本身不会越界，无泄漏风险。 */
+.model-discovery-specialty-chart svg.recharts-surface {
+  overflow: visible;
+}
+
+/* X 轴刻度里的厂牌图标：装在 <foreignObject> 里，所以仍是普通 HTML 盒子。
+   语义档位最小是 dense=18px，与原先轴标签一致。 */
+.model-discovery-axis-icon {
+  align-items: center;
+  display: flex;
+  height: 18px;
+  justify-content: center;
+  width: 18px;
+}
+
+/* 摘要卡的标识略大：档位像素的真源在 design-tokens，为一个一次性尺寸去改跨仓
+   token 不划算，所以在本页作用域内重设 --logo-box —— 仍然走组件自己的变量通道，
+   不在调用点写 width/height。 */
+.model-discovery-summary-model .mg-logo {
+  --logo-box: 20px;
+}
+
+/* 只剩热门 Agent 排行用它（按 PRD 显示应用名首字符，Agent 应用不是模型，
+   图标库里没有它们） */

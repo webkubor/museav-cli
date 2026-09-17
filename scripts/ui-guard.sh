@@ -9,6 +9,21 @@
 # 退出码：0 通过（可能有 warn）；1 有硬性违规（block）阻断提交。
 set -uo pipefail
 
+# --rules：把「机器实际会拦什么」列出来。开工前跑一次，比读 249 行 DESIGN.md 可靠——
+# 清单直接从下方各条规则的注释里提取，不另存一份，所以不会与实现漂移。
+if [ "${1:-}" = "--rules" ]; then
+  echo "UI 门禁规则（BLOCK 阻断提交 / WARN 提醒）—— 真源 DESIGN.md，实现见本文件"
+  echo ""
+  grep -E '^[[:space:]]*# ── (BLOCK|WARN) [0-9]+：' "$0" \
+    | sed -E 's/^[[:space:]]*# ── //; s/：/  ·  /' \
+    | sed -E 's/^(BLOCK [0-9]+)/  ✗ \1/; s/^(WARN [0-9]+)/  ⚠ \1/'
+  echo ""
+  echo "受控豁免：文件里写 \`ui-guard-ignore: <关键词> —— <理由>\`（必须带理由）可跳过对应规则。"
+  echo ""
+  echo "另有 node scripts/check-css-tokens.mjs：未声明的 var()（阻断）、CSS 简写重置 font:/all: inherit|unset（阻断，会静默击穿组件样式）、裸字号 / 字体族字符串 / 内容面毛玻璃（提醒）"
+  exit 0
+fi
+
 block=0
 warn=0
 
@@ -17,11 +32,13 @@ if [ "$#" -gt 0 ]; then
   file_list="$(printf '%s\n' "$@")"
 else
   MODE=staged
-  file_list="$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null | grep -E '\.(tsx|ts)$' || true)"
+  # 收 .css 是因为 WARN 11（hover 无过渡）查的是裸 CSS —— 只收 ts/tsx 的话
+  # 那条规则永远进不了 file_list，等于没写（2026-09-14 加规则时当场踩到）。
+  file_list="$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null | grep -E '\.(tsx|ts|css)$' || true)"
 fi
 
 if [ -z "$file_list" ]; then
-  echo "[ui-guard] 无 TS/TSX 变更，跳过"
+  echo "[ui-guard] 无 TS/TSX/CSS 变更，跳过"
   exit 0
 fi
 
@@ -37,6 +54,15 @@ get_added() {
   else
     git diff --cached -U0 --diff-filter=ACM -- "$1" 2>/dev/null | grep -E '^\+' | grep -vE '^\+\+\+' | sed 's/^+//'
   fi
+}
+
+# 受控豁免：文件里写 `ui-guard-ignore: <关键词> —— <理由>` 可跳过命中该关键词的规则。
+# 为什么要有这个出口：没有豁免机制的门禁，遇到合理例外时人会整体绕过（--no-verify），
+# 那等于所有规则一起失效。受控豁免让例外**可见、带理由、可审计**——
+# grep 一下就知道全仓有哪些例外、为什么。滥用它是 code review 的事，不是门禁的事。
+# 必须写理由：只写关键词不带 `——` 的豁免视为无效。
+ignored() {
+  printf '%s' "$content" | grep -qE "ui-guard-ignore:[^\n]*$1[^\n]*——"
 }
 
 while IFS= read -r f; do
@@ -108,7 +134,7 @@ while IFS= read -r f; do
   # ── 以下为「防新增」规则：只扫本次新增行，存量不阻断（治「一个个发现太慢」，让机器挡新债） ──
   added="$(get_added "$f")"
 
-  # BLOCK 3：内联 style={{...}} 里写 CSS 变量 token。应走 Tailwind 类（text-mg-*/bg-mg-*/border-mg-*），
+  # ── BLOCK 3：内联 style={{...}} 里写 CSS 变量 token。应走 Tailwind 类（text-mg-*/bg-mg-*/border-mg-*），
   #    否则绕过 token 体系、双主题/双端不自适应（治 OAuthBindingTab 那种整片内联 style 的老坑）。
   #    ⚠️ 只拦 style={{...}} 内的 token：recharts 的 tick/cursor/activeDot 等 SVG 属性对象
   #    （fill/stroke 传 var token）是 SVG presentation 值，套不上 Tailwind 类，属合法写法放行。
@@ -121,7 +147,7 @@ while IFS= read -r f; do
     block=$((block + 1))
   fi
 
-  # BLOCK 4：内联 style 裸数值圆角（borderRadius: 8 / '8px'）。圆角只认 rounded-sm/md/lg/full token。
+  # ── BLOCK 4：内联 style 裸数值圆角（borderRadius: 8 / '8px'）。圆角只认 rounded-sm/md/lg/full token。
   # 仅匹配单值 px/裸数字，并要求值后是属性分隔符；放行 50% 圆形与多值气泡圆角。
   hits="$(printf '%s' "$added" | grep -nE "borderRadius:[[:space:]]*['\"]?[0-9]+(\.[0-9]+)?(px)?['\"]?[[:space:]]*(,|})" || true)"
   if [ -n "$hits" ]; then
@@ -130,7 +156,7 @@ while IFS= read -r f; do
     block=$((block + 1))
   fi
 
-  # WARN 4：疑似手写卡片（同行 border-mg-border + shadow-sm/md）。卡片统一 .mg-tile / <Card>
+  # ── WARN 4：疑似手写卡片（同行 border-mg-border + shadow-sm/md）。卡片统一 .mg-tile / <Card>
   #    （已绑 --mg-card-* Apple 卡片语言）；别再手写 border+shadow 拼卡致风格漂移。
   hits="$(printf '%s' "$added" | grep -nE 'border-mg-border' | grep -E 'shadow-(sm|md)' | grep -vE 'mg-tile' || true)"
   if [ -n "$hits" ]; then
@@ -139,7 +165,7 @@ while IFS= read -r f; do
     warn=$((warn + 1))
   fi
 
-  # WARN 5：疑似手写模型首字母头像（拿 model 相关变量 slice(0,1)/charAt(0) 当图标）。
+  # ── WARN 5：疑似手写模型首字母头像（拿 model 相关变量 slice(0,1)/charAt(0) 当图标）。
   #    模型身份统一走 <ModelIcon>（四层兜底：logo → lobehub 供应商图标 → 名称推断 → 首字母），
   #    这是反复出现的问题（模型体验单页/对比工作台都各自手写过），别再手搓文字色块替代。
   #    文件已 import ModelIcon 时放行（假定作者知情，这行只是极端兜底分支）。
@@ -149,6 +175,89 @@ while IFS= read -r f; do
     printf '%s\n' "$hits" | sed 's/^/      /'
     warn=$((warn + 1))
   fi
+  # ── BLOCK 5：原生 <select>。它的下拉列表由**操作系统**渲染，我们的 CSS 一行都够不着：
+  #    macOS 上是一层半透明系统材质，底下的页面文字会透出来，深色主题也不跟随。
+  #    2026-09-03 模型发现页实测——需求方直接指出「居然还有系统弹窗」。
+  #    统一用 @/components/ui/Select（Radix）：受控、可主题化、与全站浮层同一套质感。
+  #    只认真正的 JSX：先剔掉注释行，否则"改用 Select 而不是原生 <select>"这类说明文字也被拦。
+  hits="$(printf '%s' "$added" | grep -vE '^[[:space:]]*[{]?(//|/\*|\*)' | grep -nE '<select[[:space:]>]' || true)"
+  if [ -n "$hits" ]; then
+    echo "✗ [原生 select] $f — 下拉列表由系统渲染、CSS 管不到（半透明、不跟随主题），改用 @/components/ui/Select（DESIGN.md · Components）"
+    printf '%s\n' "$hits" | sed 's/^/      /'
+    block=$((block + 1))
+  fi
+
+  # ── WARN 6：手写浮层。弹窗 / 下拉 / 气泡统一走 ui/ 下的 Popover、DropdownMenu、
+  #    Select、Dialog、Modal、Sheet、SideSheet、Tooltip——它们统一了磨砂玻璃质感、
+  #    z-index 层级、点击外部关闭、ESC 关闭与焦点管理。
+  #    自写的浮层每次都要重新踩一遍：背景透读、层级压不住、键盘出不去
+  #    （2026-09-03 需求方原话「每次浮窗都有问题，每次都要改」）。
+  #    判据：新增行里出现 popover/dropdown/modal 类命名 + position:absolute/fixed 定位，
+  #    且整个文件没有引用 ui/ 的任何浮层组件。
+  #    `-modal` 不能裸写：`modality-bar`（模态导航）会被它命中，加上后缀边界排除。
+  hits="$(printf '%s' "$added" | grep -vE '^[[:space:]]*[{]?(//|/\*|\*)' | grep -niE 'className=.[^"'"'"']*(popover|dropdown|-modal([^a-z]|$)|-dialog|flyout|tooltip)' || true)"
+  if [ -n "$hits" ] && ! ignored "浮层" && ! printf '%s' "$content" | grep -qE "from ['\"]@/components/ui/(Popover|DropdownMenu|Select|Dialog|Modal|Sheet|SideSheet|Tooltip|Combobox|ConfirmModal)"; then
+    echo "⚠ [疑似手写浮层] $f — 弹窗/下拉/气泡走 @/components/ui 下的 Popover / DropdownMenu / Select / Dialog（统一玻璃质感 + 层级 + 外部点击与 ESC 关闭），别自己定位（DESIGN.md · Components）"
+    printf '%s\n' "$hits" | sed 's/^/      /'
+    warn=$((warn + 1))
+  fi
+
+  # ── WARN 7：手写 tab / 分段控件。走 @/components/ui/Tabs 的 underline（导航）或
+  #    pills（分段）变体——它管掉了 aria-selected / role=tablist、键盘左右切换、
+  #    选中态与下划线动画。手搓的每次都少一样，最常见的是键盘不可用。
+  hits="$(printf '%s' "$added" | grep -vE '^[[:space:]]*[{]?(//|/\*|\*)' | grep -niE 'className=.[^"'"'"']*(-tabs?([^a-z]|$)|tab-(list|item|bar)|segmented)' || true)"
+  if [ -n "$hits" ] && ! printf '%s' "$content" | grep -qE "from ['\"]@/components/ui/Tabs"; then
+    echo "⚠ [疑似手写 tab] $f — 导航/分段切换走 @/components/ui/Tabs（underline / pills 两个变体），它带 role=tablist + 键盘左右切换 + 选中态动画（DESIGN.md · Components）"
+    printf '%s\n' "$hits" | sed 's/^/      /'
+    warn=$((warn + 1))
+  fi
+
+  # ── WARN 8：接口文本直接渲染、既不截断也不给 title。
+  #    模型名、厂商名、描述这类长度由数据决定的字段，在固定宽度的列/卡片里必然溢出：
+  #    「Claude Fable 5.1 (Adaptive Reasoning, Max Effort, Default Fallback)」70 个字符。
+  #    要么单行截断 + title 悬浮看全名，要么 line-clamp，不能放任它换行把行高撑乱
+  #    （2026-09-03 需求方原话「很多文字加上很丑会换行」）。
+  #    判据：同一行里把 .name/.description 这类字段塞进标签，且整行没有 title=、
+  #    没有 truncate / line-clamp / OverflowTip。
+  #    正则要求 `>{x.name}<` 这种「作为子节点渲染」的形态，避免把 key={model.name}、
+  #    xLabel={axis.label} 这类 props 也算进来。
+  hits="$(printf '%s' "$added" | grep -vE '^[[:space:]]*[{]?(//|/\*|\*)' | grep -nE '>\{[a-zA-Z_.]*\.(name|display_name|description)\}<' | grep -vE 'title=|truncate|line-clamp|OverflowTip|text-ellipsis|sr-only' || true)"
+  if [ -n "$hits" ]; then
+    echo "⚠ [长文本无溢出兜底] $f — 名称/描述这类长度由数据决定的字段，需单行截断 + title（或 line-clamp / <OverflowTip>），否则真实数据下会换行撑乱行高（DESIGN.md · Typography）"
+    printf '%s\n' "$hits" | sed 's/^/      /'
+    warn=$((warn + 1))
+  fi
+
+  # ── BLOCK 7：直接写 --cn-* / --go-*。这两组是市场分支的**内部实现**，
+  #    直接引用等于把颜色钉死在单一市场，另一端就失效了。一律走 --brand-* / --mg-*，
+  #    由 data-market 自动路由（DESIGN.md · Don'ts）。
+  hits="$(printf '%s' "$added" | grep -nE 'var\(--(cn|go)-' || true)"
+  if [ -n "$hits" ]; then
+    echo "✗ [锁死单一市场] $f — --cn-* / --go-* 是市场分支的内部实现，引用它等于钉死一端；走 --brand-* / --mg-*，由 data-market 路由（DESIGN.md · Don'ts）"
+    printf '%s\n' "$hits" | sed 's/^/      /'
+    block=$((block + 1))
+  fi
+
+  # ── WARN 9：给 <PageHeader> 传间距覆盖。标题到首卡的标准间距是
+  #    「PageHeader 自带 mb-6 + 外层 space-y-6」叠出来的，私自覆盖会让标题贴卡
+  #    ——历史上 5 个页面这么干过，已全部修回（DESIGN.md · Layout）。
+  hits="$(printf '%s' "$added" | grep -nE '<PageHeader[^>]*(mb-0|mb-|mt-|my-)' || true)"
+  if [ -n "$hits" ]; then
+    echo "⚠ [覆盖 PageHeader 间距] $f — 标题到首卡的间距由 PageHeader 自带 mb-6 + 外层 space-y-6 叠成，别传 mb-*/mt-* 覆盖（DESIGN.md · Layout）"
+    printf '%s\n' "$hits" | sed 's/^/      /'
+    warn=$((warn + 1))
+  fi
+
+  # ── WARN 10：装饰性光球 / 通用渐变背景 —— DESIGN.md 点名的 AI slop。
+  #    典型形态：一个大圆 + blur + 半透明品牌色，绝对定位当背景装饰。
+  #    它不承载任何信息，还会在低端机上拖垮合成层。
+  hits="$(printf '%s' "$added" | grep -niE 'blur\((3[0-9]|[4-9][0-9]|[0-9]{3,})px\)|radial-gradient\([^)]*(circle|ellipse)[^)]*\)' || true)"
+  if [ -n "$hits" ]; then
+    echo "⚠ [疑似装饰光球/渐变] $f — 大半径 blur 圆与径向渐变背景是 DESIGN.md 点名的 AI slop（装饰性 orbs / 通用渐变），确认它是否承载信息（DESIGN.md · Don'ts）"
+    printf '%s\n' "$hits" | sed 's/^/      /'
+    warn=$((warn + 1))
+  fi
+
   # ── 规则：图标语义 vs 语义色 不一致（warn，观察期）───────────────────────
   #   由来 2026-09-02：免费额度提示条用 LuInfo 配 mg-warning，需求方反馈「像
   #   warning，有点吓人」。写代码时图标选对了（这是告知信息），颜色却走了另一套
@@ -162,6 +271,41 @@ while IFS= read -r f; do
     printf '%s\n' "$hits" | sed 's/^/      /'
     warn=$((warn + 1))
   fi
+
+
+  # ── BLOCK 11：控件格式被页面类覆盖（h-*/text-*/rounded-* 打在 ui 控件上）。
+  #    2026-09-04 控件统一：Input/Select/Combobox 的尺寸已经成套走 token 档位
+  #    （size 属性：sm 32 / md 40 / lg 48，字号一律 13px、圆角一律档位 token），
+  #    页面再叠 h-8/h-9/text-xs/rounded-lg 等类就是「长的长、扁的扁」的根源——
+  #    有的被组件 CSS 压掉变成死代码，有的真生效把同一控件改成另一副面孔。
+  #    改尺寸只能传 size 属性；豁免写 ui-guard-ignore: 控件格式 —— 理由。
+  #    实现见 check-control-format-overrides.py（剥离 {...} 内嵌元素后再查直接属性）。
+  hits="$(python3 "$(dirname "$0")/check-control-format-overrides.py" "$f" 2>/dev/null || true)"
+  if [ -n "$hits" ] && ! ignored "控件格式"; then
+    echo "✗ [控件格式覆盖] $f — ui/Input/Select/Combobox 的尺寸/字号/圆角由 size 档位约束，禁止页面类覆盖（DESIGN.md · 控件统一 2026-09-04）"
+    printf '%s\n' "$hits" | sed 's/^/      /'
+    block=$((block + 1))
+  fi
+
+
+  # ── WARN 11：hover 改了样式却没有 transition —— 交互反馈是"跳"的不是"过渡"的。
+  #    2026-09-14 盘点：全站 86 处 animate-* 里 64 处是 loading 骨架（pulse/spin），
+  #    真正的交互动效几乎为零；而库里 duration/easing 档位齐全、还预拼了
+  #    --mg-motion-hover，实测**零使用**（原始档位倒是被手拼了 38 处）。
+  #    不是缺 token，是不知道有 —— 表在 DESIGN.md「Motion」节。
+  #    只查 CSS 里新增的 :hover 块：块内改了颜色/背景/边框/阴影/位移，而同一
+  #    选择器或其基选择器没有 transition。Tailwind 的 hover: 工具类自带过渡语义，
+  #    不在此列。误报会让门禁失去公信力，所以走 warn 不阻断。
+  case "$f" in
+    *.css)
+      hits="$(python3 "$(dirname "$0")/check-hover-transition.py" "$f" 2>/dev/null || true)"
+      if [ -n "$hits" ] && ! ignored "hover 过渡"; then
+        echo "⚠ [hover 无过渡] $f — 交互反馈应走 transition（var(--mg-motion-hover)），不是瞬间跳变（DESIGN.md · Motion）"
+        printf '%s\n' "$hits" | sed 's/^/      /'
+        warn=$((warn + 1))
+      fi
+      ;;
+  esac
 
 done <<EOF
 $file_list

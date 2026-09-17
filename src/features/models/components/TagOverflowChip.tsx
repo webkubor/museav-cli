@@ -57,7 +57,7 @@ export function TagOverflowChip({
         <span
           role="tooltip"
           style={{ left: pos.x, top: pos.y }}
-          className="mg-tag-tip pointer-events-none fixed z-[var(--mg-z-tooltip)] w-max max-w-[300px] -translate-x-1/2 -translate-y-full rounded-[var(--mg-tooltip-radius)] border border-mg-border bg-mg-bg-3 px-[var(--mg-tooltip-pad-x)] py-[var(--mg-tooltip-pad-y)] text-left mg-text-caption font-medium leading-snug text-mg-text-2 shadow-lg"
+          className="mg-tag-tip pointer-events-none fixed z-[var(--mg-z-tooltip)] w-max max-w-[300px] -translate-x-1/2 -translate-y-full rounded-[var(--mg-tooltip-radius)] mg-float px-[var(--mg-tooltip-pad-x)] py-[var(--mg-tooltip-pad-y)] text-left mg-text-caption font-medium leading-snug text-mg-text-2"
         >
           {hidden.map((label) => <span key={label} className={itemClassName}>{label}</span>)}
         </span>,

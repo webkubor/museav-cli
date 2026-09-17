@@ -37,7 +37,8 @@
         "admin": "Admin Recharge",
         "promo": "Promo Code",
         "activity": "Campaign Gift",
-        "referral": "Referral Program"
+        "referral": "Referral Program",
+          "onboarding_reward": "Onboarding Reward"
       },
       "buckets": {
         "main": "Main Balance",
@@ -264,6 +265,7 @@
       "selectRechargesTitle": "Select recharge orders (selected orders will be issued as one invoice)",
       "selectAll": "Select all",
       "selectedCount": "Selected {{selected}}/{{total}}",
+      "minAmountHint": "Selected recharge orders must total at least {{min}} to request an invoice. Current total: {{selected}}",
       "loading": "Loading…",
       "noInvoiceableRecharges": "No invoiceable recharges",
       "invoiceTitle": "Invoice Title",

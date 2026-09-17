@@ -9,9 +9,11 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import {
   LuSearch, LuChevronDown, LuCheck, LuSlidersHorizontal, LuLayers, LuZap, LuBuilding2, LuShieldCheck,
-  LuColumns2, LuType, LuImage, LuVideo, LuAudioLines, LuDatabase, LuX,
+  LuChartColumn, LuArrowRight, LuColumns2, LuType, LuImage, LuVideo, LuAudioLines, LuDatabase, LuX,
 } from 'react-icons/lu'
 import type { IconType } from 'react-icons'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 import { listModels, listModelTags, listFeatured } from '@/services/catalog'
 import { useAuthStore } from '@/store/auth'
 import { toLoginWithRedirect } from '@/lib/redirect'
@@ -28,9 +30,32 @@ import {
   outputModalitiesOf,
 } from './modelCatalogFilterLogic'
 import { ModelsCompareModal } from '../components/ModelsCompareModal'
+import { OnboardingGuideFloatingEntry } from '@/features/onboarding/OnboardingGuideEntry'
+import { useOnboardingGuide } from '@/features/onboarding/use-onboarding-guide'
 import { queryLengthBucket, diffFilterChange, buildFilterSummary } from './catalog-tracking'
 import type { CatalogModelItem } from '@/types'
 import './catalog.css'
+
+
+/**
+ * 模型发现入口的开关。
+ *
+ * 模型发现页本身与路由 `/models/discovery` 都保留 —— 关掉的只是模型广场工具栏里这枚
+ * **唯一入口按钮**，直接输 URL 仍能进（方便验证与演示）。
+ *
+ * 为什么要开关：v1.0.6 联调期入口先不对外露出 —— 榜单里 161 个标「ModelGo 已接入」的
+ * 模型缺 `modelgo_id` 点不进详情页（qa#718），Benchmark 只有 18/33 命中，热门 Agent 排行
+ * 还没数据源（qa#708 第 4 条）。开关留着，是为了随时能把入口收回去。
+ *
+ * 取值（2026-09-08 现状）：`test` 与当班 `release/v1.0.6` 的 `.env.test`、
+ * `.env.development` **都配了 `on`**，即测试环境入口已开。`main` 不配 —— 生产还没有
+ * 这个功能。原先承载它的 `feature/v1.0.6-model-discovery` 分支已合入并删除，
+ * 不要再照它找开关。
+ *
+ * 路由 `/models/discovery` 在所有分支上都通，直接输 URL 就能看页面，
+ * 开关管的只是模型广场工具栏那枚入口按钮。
+ */
+const DISCOVERY_ENTRY_ENABLED = import.meta.env.VITE_ENABLE_DISCOVERY_ENTRY === 'on'
 
 type SortKey = 'default' | 'newest' | 'cheapest'
 
@@ -59,6 +84,9 @@ export default function ModelsCatalogPage() {
   const [search, setSearch] = useState(() => searchParams.get('q') ?? '')
   const [selected, setSelected] = useState<string[]>(() => searchParams.get('f')?.split(',').filter(Boolean) ?? [])
   const [sort, setSort] = useState<SortKey>(() => (searchParams.get('sort') as SortKey) || 'default')
+
+  // 新手指南：本页既是第 1 步的完成证据，也是悬浮入口的宿主
+  const { guide: onboardingGuide, reportStep: reportOnboardingStep } = useOnboardingGuide()
 
   useEffect(() => {
     const next = new URLSearchParams()
@@ -224,6 +252,31 @@ export default function ModelsCatalogPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modelsQuery.isLoading, modelsQuery.isError])
 
+  /**
+   * 新手指南第 1 步「浏览模型广场」：证据是**登录态下**目录真正展示出来这件事，
+   * 不是点了入口（规格 §7 表：认证后的页面访问业务事件）。匿名访客不计。
+   *
+   * ⚠️ 必须独立成一个 effect，不能挂在上面 marketplace_view 里 —— 那个有
+   * viewTrackedRef 单次闩锁，而本页是**公开页**，模型列表常常比 GET /tenants 先到；
+   * 租户信息没回来时 guide 还没建，store 的 `if (!guides[tenantId]) return` 会把这
+   * 一步静默丢掉，闩锁却已经翻了，于是这次访问永远补不回来。用户看到的症状就是
+   * 「点了『去浏览』没反应、一直 0/5」。
+   *
+   * 所以这里等 onboardingGuide 就绪再报，并且不加闩锁：领域层对重复完成同一步是
+   * 幂等的（返回原引用），guide 因为其他步骤推进而变化时重跑一次也只是空转。
+   */
+  useEffect(() => {
+    if (!isAuthenticated || !onboardingGuide) return
+    if (modelsQuery.isLoading || modelsQuery.isError) return
+    reportOnboardingStep('marketplace', 'page_visit', 'marketplace')
+  }, [
+    isAuthenticated,
+    onboardingGuide,
+    modelsQuery.isLoading,
+    modelsQuery.isError,
+    reportOnboardingStep,
+  ])
+
   /** marketplace_empty_shown：只在「从有结果变为无结果」时报一次，避免同一空态重复上报 */
   const wasEmptyRef = useRef(false)
   const reportEmptyIfNeeded = () => {
@@ -318,7 +371,7 @@ export default function ModelsCatalogPage() {
         type="button"
         onClick={() => { const n = !filtersOpen; if (n) window.scrollTo(0, 0); setFiltersOpen(n) }}
         aria-expanded={filtersOpen}
-        className={`bg-mg-bg-2 fixed bottom-6 right-5 z-[var(--mg-z-sticky)] inline-flex h-11 items-center gap-2 rounded-full border px-6 text-[14px] font-medium shadow-lg backdrop-blur lg:hidden ${
+        className={`bg-mg-bg-2 fixed bottom-6 right-5 z-[var(--mg-z-sticky)] inline-flex h-11 items-center gap-2 rounded-full border px-6 mg-text-body font-medium shadow-lg backdrop-blur lg:hidden ${
           filtersOpen ? 'border-brand-base text-brand-base' : 'border-mg-border text-mg-text-2'
         }`}
       >
@@ -329,20 +382,26 @@ export default function ModelsCatalogPage() {
       {/* 页面结构（2026-08 视觉改版稿）：标题 / 轮播 两块全宽；搜索排序在下方
           两列布局的右列内、与筛选侧栏顶部平行。轮播保持全宽不被侧栏挤窄。 */}
       <div className="mg-plaza">
-          {/* 标题 */}
-          <div className="mb-6">
-            <h1 className="text-mg-text-1 catalog-title text-[34px] font-bold tracking-tight">
-              {t('modelsCatalog.page.title')}
-            </h1>
-            <p className="text-mg-text-3 mt-1.5 text-[14px]">
-              {t('modelsCatalog.page.subtitle')}
-            </p>
-            {/* 信任 chips：协议兼容 / 供应商直连 / SLA。2026-08 视觉改版稿改白底
-                描边 pill，SLA 用 warning 强调色（稿上唯一的暖色点缀）。 */}
-            <div className="mg-trust">
-              <span><LuZap size={12} />{t('modelsCatalog.trust.protocols')}</span>
-              <span><LuBuilding2 size={12} />{t('modelsCatalog.trust.providers')}</span>
-              <span className="is-sla"><LuShieldCheck size={12} />{t('modelsCatalog.trust.sla')}</span>
+          {/* 标题区只有身份信息（标题 + 副标题 + 信任 chips）。
+              「模型发现」入口在下面的搜索/排序工具栏最右 —— 2026-09-03 按 PRD 原型
+              （.marketplace-discovery-entry）挪回去的，原先放这里且降成中性 outline，
+              与原型不一致。它仍是模型发现的**唯一**入口，不进顶栏、不进左侧导航、
+              不进模型卡（见 plans/2026-08-24-v1.0.6-model-discovery-ui-flow §2.1 修订段）。 */}
+          <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="text-mg-text-1 catalog-title text-[34px] font-bold tracking-tight">
+                {t('modelsCatalog.page.title')}
+              </h1>
+              <p className="text-mg-text-3 mt-1.5 mg-text-body">
+                {t('modelsCatalog.page.subtitle')}
+              </p>
+              {/* 信任 chips：协议兼容 / 供应商直连 / SLA。2026-08 视觉改版稿改白底
+                  描边 pill，SLA 用 warning 强调色（稿上唯一的暖色点缀）。 */}
+              <div className="mg-trust">
+                <span><LuZap size={12} />{t('modelsCatalog.trust.protocols')}</span>
+                <span><LuBuilding2 size={12} />{t('modelsCatalog.trust.providers')}</span>
+                <span className="is-sla"><LuShieldCheck size={12} />{t('modelsCatalog.trust.sla')}</span>
+              </div>
             </div>
           </div>
 
@@ -376,21 +435,16 @@ export default function ModelsCatalogPage() {
         </div>
 
         <div>
-          {/* 搜索 + 排序 */}
+          {/* 搜索 + 排序（2026-09-04 控件统一：搜索走 ui/Input 标准组件 size="lg"——
+              48px 高度/13px 字号/pill 圆角全部来自 token 档位，替换原先手写的
+              .mg-search-input；排序按钮同档高度，与搜索框并排等高） */}
           <div className="models-toolbar">
-            <div className="catalog-search-wrap relative flex-1">
-              <LuSearch size={16} className="catalog-search-icon absolute left-4 top-1/2 -translate-y-1/2" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder={t('modelsCatalog.search.placeholder')}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="mg-search-input"
-              />
-              {/* 有输入内容时显示清空按钮（#872 需求点 11，原型 marketplace-search-clear）：
-                  清空后焦点留在搜索框，方便继续输入 */}
-              {search && (
+            <Input
+              ref={searchInputRef}
+              variant="search"
+              size="lg"
+              prefix={<LuSearch className="w-4 h-4" />}
+              suffix={search ? (
                 <button
                   type="button"
                   className="mg-search-clear"
@@ -400,21 +454,26 @@ export default function ModelsCatalogPage() {
                 >
                   <LuX size={14} />
                 </button>
-              )}
-            </div>
+              ) : undefined}
+              placeholder={t('modelsCatalog.search.placeholder')}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1"
+            />
             <div className="relative" ref={sortRef}>
               <button type="button" onClick={() => setSortOpen((v) => !v)} className="mg-sort-btn">
                 {sortLabels[sort]}
                 <LuChevronDown size={13} className={sortOpen ? 'rotate-180' : ''} />
               </button>
+              {/* 排序下拉表面走全局浮层类 mg-float，与 ui/DropdownMenu 同一档，避免同页两种下拉两种脸 */}
               {sortOpen && (
-                <div className="bg-mg-bg-2 border-mg-border absolute right-0 top-full z-[var(--mg-z-dropdown)] mt-1.5 min-w-[140px] overflow-hidden rounded-[var(--mg-popover-radius)] border py-1 shadow-lg">
+                <div className="mg-float absolute right-0 top-full z-[var(--mg-z-dropdown)] mt-1.5 min-w-[140px] overflow-hidden rounded-[var(--mg-popover-radius)] py-1">
                   {(['default', 'newest', 'cheapest'] as SortKey[]).map((key) => (
                     <button
                       key={key}
                       type="button"
                       onClick={() => handleSortChange(key)}
-                      className={`hover:bg-mg-fill-1 flex w-full items-center gap-2 px-4 py-2 text-left text-[12.5px] transition-colors ${
+                      className={`hover:bg-mg-fill-1 flex w-full items-center gap-2 px-4 py-2 text-left mg-text-body transition-colors ${
                         sort === key ? 'text-brand-base' : 'text-mg-text-2'
                       }`}
                     >
@@ -425,6 +484,31 @@ export default function ModelsCatalogPage() {
                 </div>
               )}
             </div>
+            {/* 模型发现入口。位置与形态按 PRD 原型（.marketplace-discovery-entry）：
+                与搜索、排序同一行的最右，柱状图标 + 文案 + 右箭头，品牌色强调。
+                此前放在页头且降成中性 outline，与原型不一致（2026-09-03 需求方指出）。
+                尺寸与同一行的搜索(lg)/排序触发器(lg)同档（2026-09-04 控件统一）：
+                此前 size="sm"(32px) 跟在 48px 的搜索框后面，flex 行里高度参差。
+                横向留白单独降到 md 档（2rem=32px → 16px，modelgo/shared/modelgo_prd#1034）：lg 档的 2rem
+                是给整行主操作按钮留的，套在「图标 + 四字 + 箭头」这种短内容上会在文案两侧
+                各撑出一大块空白（需求方反馈「这两边空白咋这么多」）。只改 padding-inline，
+                高度仍是 lg，同行搜索框/排序器的 48px 对齐不受影响。 */}
+            {DISCOVERY_ENTRY_ENABLED && (
+              <Button
+                variant="brand-outline"
+                size="lg"
+                className="px-[var(--mg-control-pad-x-md)]"
+                onClick={() => {
+                  // 只记点击，不把「加载成功」伪报成点击（§2.1）
+                  trackEvent('marketplace_discovery_entry_clicked', { source: 'catalog_toolbar' })
+                  navigate('/models/discovery')
+                }}
+              >
+                <LuChartColumn size={14} />
+                {t('modelsCatalog.discovery.entry')}
+                <LuArrowRight size={13} />
+              </Button>
+            )}
           </div>
 
           {/* 输出模态分类栏（#872 需求点 9）：搜索栏下方，与侧栏各维度组合筛选；
@@ -459,14 +543,14 @@ export default function ModelsCatalogPage() {
               ))}
             </div>
           ) : modelsQuery.isError ? (
-            <div className="border-mg-border text-mg-text-3 rounded-md border p-6 text-center text-[13px]">
+            <div className="border-mg-border text-mg-text-3 rounded-md border p-6 text-center mg-text-body">
               {t('modelsCatalog.error.load')}
             </div>
           ) : visibleModels.length === 0 ? (
             <div className="bg-mg-bg-0 border-mg-border flex flex-col items-center justify-center rounded-md border py-20 text-center">
               <LuLayers size={28} className="text-mg-text-4 mb-3" />
-              <p className="text-mg-text-3 text-[13px]">{t('modelsCatalog.emptyFiltered')}</p>
-              <button type="button" onClick={reset} className="text-mg-text-3 mt-3 text-[12px] underline-offset-2 hover:underline">
+              <p className="text-mg-text-3 mg-text-body">{t('modelsCatalog.emptyFiltered')}</p>
+              <button type="button" onClick={reset} className="text-mg-text-3 mt-3 mg-text-caption underline-offset-2 hover:underline">
                 {t('modelsCatalog.clearFilters')}
               </button>
             </div>
@@ -501,6 +585,9 @@ export default function ModelsCatalogPage() {
           )}
         </div>
       </div>
+
+      {/* 新手指南悬浮入口（规格 §5.1）：只在模型广场出现，与侧栏入口共享同一份租户进度 */}
+      <OnboardingGuideFloatingEntry />
 
       <ModelsCompareModal
         isOpen={isCompareOpen}

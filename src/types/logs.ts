@@ -1,3 +1,4 @@
+/** 调用日志字段契约；路由：/logs。 */
 import type { Money } from './account'
 
 export interface HistogramBucket {
@@ -63,11 +64,28 @@ export interface CallLogItem {
   upstream_model: string
   path: string
   call_type: string
+  /** 调用类别；契约来源 qa#719，本地未实测。缺失按同步分支降级。 */
+  call_kind?: 'model_call' | 'async_task' | 'mcp_tool_call' | null
+  /** 调用模式；契约来源 qa#719，本地未实测。缺失时仍检查 call_kind。 */
+  call_mode?: 'sync' | 'async' | null
+  /** 异步任务 ID；契约来源 qa#719，本地未实测。缺失不伪造任务关联。 */
+  async_task_id?: string | null
+  /** 原有派生响应模式（如 blocking）；契约来源 qa#719，本地未实测。不用于异步判据。 */
+  response_mode?: string | null
   http_status: number
   tpot_ms: number
   /** 回退次数（原型 Fallback 卡）：后端 runtime_detail 内派生，无则 0 */
   fallback_count: number
   api_key: { api_key_id: string; name: string; masked: string }
+  /**
+   * 调用密钥类型（trial = 模型体验用的系统托管隐藏 Key）。真源是网关落库的
+   * `metadata.api_key_type`；2026-07-14 之前的历史行没打这个标，读出来是空串 = 未知，
+   * 消费方自行决定降级方向。
+   *
+   * ⚠️ 故意不是 `ApiKeyType` —— 那个类型只有 personal|member|service 三值、没有
+   * trial（后端 `/model-logs` 筛选枚举是四值），别顺手「统一类型」把它收紧掉。
+   */
+  api_key_type: string
   account: { account_id: string; display_name: string }
   app_name: string | null
   status: 'accepted' | 'succeeded' | 'failed' | 'rejected'

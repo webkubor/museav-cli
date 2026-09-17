@@ -50,9 +50,15 @@ type ModelLogRow = {
   currency?: string
   path?: string
   call_type?: string
+  call_kind?: CallLogItem['call_kind']
+  call_mode?: CallLogItem['call_mode']
+  async_task_id?: CallLogItem['async_task_id']
+  response_mode?: CallLogItem['response_mode']
   upstream_model?: string
   request_ctx?: Record<string, unknown>
   runtime_detail?: Record<string, unknown>
+  /** 网关落库的调用元数据；本层只取 api_key_type（见 toApiKeyType） */
+  metadata?: Record<string, unknown>
   model?: { id?: string; display_name?: string }
   provider?: { id?: string; name?: string; type?: string }
   workspace?: { workspace_id?: string; name?: string }
@@ -135,6 +141,22 @@ function stringFromMap(map: Record<string, unknown> | undefined, key: string) {
   return typeof value === 'string' ? value : ''
 }
 
+/**
+ * 调用密钥类型。行上的真源是**网关落库的 `metadata.api_key_type`**，
+ * trial = 模型体验，走系统托管的隐藏试用 Key，不是用户自己建的那把。
+ *
+ * ⚠️ 不要收紧成 `ApiKeyType`：仓内那个类型（types/workspace/api-key.ts）只有
+ * `personal | member | service` 三值，**没有 trial**；后端 `/model-logs` 的
+ * `api_key_type` 筛选枚举是四值（personal|member|service|trial(模型体验)，见 web-api
+ * swagger），仓内类型还没跟上。两边对不齐期间这里用 `string`。
+ *
+ * ⚠️ 网关 2026-07-14 才开始打这个标（observer qa#469），更早的历史行读不出来 ——
+ * 所以缺失一律保持 `''`（未知），由调用方决定怎么降级，这里不猜、不兜底成 personal。
+ */
+function toApiKeyType(row: ModelLogRow): string {
+  return stringFromMap(row.metadata, 'api_key_type')
+}
+
 function displayModel(row: ModelLogRow) {
   return (
     row.model?.display_name ||
@@ -199,6 +221,11 @@ function toCallLogItem(row: ModelLogRow): CallLogItem {
     upstream_model: row.upstream_model || '',
     path: row.path || '',
     call_type: row.call_type || '',
+    // qa#719 契约透传；本地未实测，缺失保持缺失，不填 sync/false/0。
+    call_kind: row.call_kind,
+    call_mode: row.call_mode,
+    async_task_id: row.async_task_id,
+    response_mode: row.response_mode,
     http_status: numberOrZero(row.http_status),
     fallback_count: fallbackCount(row.runtime_detail),
     tpot_ms: numberOrZero(row.tpot_ms),
@@ -207,6 +234,7 @@ function toCallLogItem(row: ModelLogRow): CallLogItem {
       name: apiKeyName,
       masked: row.api_key?.masked || '',
     },
+    api_key_type: toApiKeyType(row),
     account: {
       account_id: accountID,
       display_name: accountName,

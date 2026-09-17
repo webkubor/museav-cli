@@ -239,6 +239,16 @@ YAML front matter 里的值是 **「国内 + 浅色」** 默认态；其余三�
 
 - **Button**：主操作用 `variant="brand"`（品牌底 + 白字 + `rounded-full`，hover→mid、active→deep）；次级用 `variant="outline"`。禁止自写 `<button>` 替代。
 - **Card（Apple 卡片语言，2026-07-23 定）**：`bg-0` + **淡边框 `--mg-card-border`（hairline，近乎无）** + **柔和扩散阴影 `--mg-card-shadow`**——卡片靠阴影"浮起"，不靠硬线框。**统一走 `.mg-tile` 类**（`src/styles/components.css`，已绑 `--mg-card-*`，深浅各一套见 `tokens.css`）；**禁止**再手写 `bg-mg-bg-0 border border-mg-border shadow-sm` 拼卡（那是旧硬边框风、且边框用满色 `--mg-border`）。深色下阴影近不可见，靠顶部高光描边 + inset 高光提亮。可交互卡追加 `.mg-tile-hover`。内容卡**实心不透明**（毛玻璃只给浮层，见 Don'ts）；操作型界面**不要嵌套卡片**、不要装饰性 card garden。
+- **控件尺寸 = 格式约束的档位（2026-09-04 控件统一，治「长的长、扁的扁」）**：Input / Select / Combobox / DateRangePicker 的**高度、字号、图标、内距成套走 token 档位，页面只能传 `size` 属性选档，禁止用 `h-8` / `h-9` / `text-xs` / `rounded-lg` 等类覆盖**（ui-guard BLOCK 11 拦截）：
+  | 档位 | 高度 | 用途 |
+  |---|---|---|
+  | `size="sm"` | 32px（`--mg-control-h-sm`） | 面板内：下拉面板里的搜索、侧栏、弹窗列表 |
+  | 默认 `md` | 40px（`--mg-control-h-md`） | 页面工具栏的搜索 / 筛选下拉 / 表单 |
+  | `size="lg"` | 48px（`--mg-control-h-lg`） | 公共主搜索（模型广场 hero 搜索） |
+  - **字号一律 13px（`--mg-font-size-body`），不随档位变**——高度调档、字号不变，这是「同一套控件」的底线。
+  - **圆角**：搜索变体（`variant="search"`）与日期筛选 = pill；普通输入 / 下拉触发器 = `--mg-control-radius`(14px)。
+  - **图标**：md/lg 档 16px（`w-4 h-4`），sm 档 14px（`w-3.5 h-3.5`）。
+  - 档位由组件 CSS（未分层 + min-height）钉死，页面类即使写了也不生效——别写死代码，要改尺寸传 `size`；例外用 `ui-guard-ignore: 控件格式 —— 理由`。
 - **Input / Select / Table / Modal / Drawer / Tabs / Badge / Pagination / DateRangePicker**：一律用 `src/components/ui/*` 既有组件，保持 hover/focus/disabled/loading/empty/error 状态一致。
 - **CopyButton（复制交互唯一真源）**：任何「复制到剪贴板」用 `src/components/ui/CopyButton`，禁止各页手写复制图标/按钮。场景 → 变体：
   - 行内 / 字段行 / ID / 链接旁的紧凑复制 → `variant="icon"`（默认，一个图标搞定，别上大按钮）
@@ -246,6 +256,47 @@ YAML front matter 里的值是 **「国内 + 浅色」** 默认态；其余三�
   - 唯一例外：API Key 明文的「惰性 reveal + 手势栈内 ClipboardItem 写入」（`api-keys/index.tsx`），因剪贴板需在用户手势栈同步发起，不走 CopyButton。
 - **ModelIcon（模型身份唯一真源，2026-07-29 定）**：任何展示"这是哪个模型/供应商"的地方（模型选择条、聊天消息头像、列表行、对比列头等）一律用 `@/features/models/components/ModelIcon`（兜底链：真实 logo → `@model-go/icons` 按 `logo_url` / `vendor`（含别名）/ 模型名前缀解析 → 首字母色块）。**禁止**自己拿模型名/供应商名首字母 `.slice(0,1).toUpperCase()` 拼一个文字色块替代——这是反复出现的问题（模型体验单页/对比工作台的模型条与消息头像都各自手写过一次，均已改回 `ModelIcon`），新写模型相关 UI 前先确认有没有复用它。
 - **状态优先**：交互注册第一——路由/Tab 切换立即给反馈（骨架 + loading），不让用户干等请求。
+
+## Motion — 动效
+
+**先查这张表，别自己调参数。** 库里 duration/easing 档位是齐的，还预拼了语义组合
+（`--mg-motion-*`）；2026-09-14 盘点发现**语义组合几乎没人用**（hover/panel/skeleton
+全是 0 处），而原始档位被手拼了 38 处 —— 不是缺 token，是不知道有。
+
+| 场景 | 用什么 | 值 |
+|:---|:---|:---|
+| 按钮按压、开关翻转等**微反馈** | `var(--mg-motion-press)` | instant .1s + standard |
+| **hover / focus 反馈**（链接、行、卡片） | `var(--mg-motion-hover)` | fast .15s + standard |
+| **面板进出**（弹窗、抽屉、下拉、气泡） | `var(--mg-motion-panel)` | base .25s + emphasized |
+| **骨架屏呼吸** | `var(--mg-motion-skeleton-duration)` | 1.4s |
+| **一次性引起注意**（校验失败抖动、新内容高亮） | `var(--mg-motion-attention-duration)` | 0.6s |
+| **图表/进度条入场** | `var(--mg-duration-chart)` | 0.9s（本仓补，见 tokens.css） |
+| **常驻循环**（呼吸、流光） | `var(--mg-duration-pulse)` | 2.4s（本仓补） |
+| **列表增删 / 排序重排** | `useAutoAnimate()` | 见下 |
+
+三把尺子别混用：`instant/fast/base/slow` 量的是**一次动作多快**，`chart` 量的是
+**一次入场多长**，`pulse` 量的是**循环一圈多久**。拿 hover 的 0.15s 去做入场等于没有，
+拿 0.9s 去做 hover 则是拖沓。
+
+**列表增删与重排走 `@formkit/auto-animate`**，不要手写 FLIP：
+
+```tsx
+const [listRef] = useAutoAnimate<HTMLTableSectionElement>()
+<TableBody ref={listRef}>…</TableBody>
+```
+
+它自己读 `prefers-reduced-motion`，不用额外兜底。**已有入场动画的容器不要再叠**
+（模型广场卡片网格有 IntersectionObserver + `is-entering-view`，两套会打架）。
+
+**硬性**：
+
+- 任何可交互元素（button / a / 可点行 / 卡片）必须有 **hover 反馈**，且走 transition
+  而不是瞬间跳变 —— ui-guard WARN 11 会点名裸 `:hover` 改色却没有 transition 的新增代码。
+- 自定义 `@keyframes` 的 `animation-duration` 一律引 token，**禁止裸写秒数**（硬编码门禁 block）。
+- 常驻循环动效必须配 `@media (prefers-reduced-motion: reduce) { animation: none }`
+  —— 是**关掉**不是放慢。库的 `--mg-motion-reduced-duration: 0.01ms` 用于需要保留
+  动画事件但不可见的场景。
+- 动效只承担**信息**（谁变了、从哪到哪、正在忙），不做装饰。装饰性光球/渐变见 Don'ts。
 
 ## Do's and Don'ts
 
@@ -260,6 +311,6 @@ YAML front matter 里的值是 **「国内 + 浅色」** 默认态；其余三�
 - ❌ 直接写 `--cn-*` / `--go-*`（会锁死单一市场）。
 - ❌ 给 `<PageHeader>` 传 `mb-0` 等覆盖间距。
 - ❌ AI slop：通用渐变、发光暗色 UI、装饰性光球(orbs)、重复图标卡阵、模板化 hero metric。
-- **毛玻璃(glassmorphism)分场景**（2026-07-23 定）：**内容面（卡片/面板/列表行/表格）禁半透明毛玻璃**，一律实心 `bg-0`（贴 Apple「内容实心、chrome 通透」的分工，也避免压在粒子 canvas 上糊字）。**通透/`backdrop-filter` 只留给浮层 chrome**——顶栏、下拉菜单、SideSheet/Modal，且**绝不叠在动画 canvas 上**（见下条）。
+- **毛玻璃(glassmorphism)分场景**（2026-07-23 定，2026-09-03 按实现修订）：**内容面默认实心**——列表行、表格、页面区块一律不做半透明毛玻璃（避免压在粒子 canvas 上糊字）。**唯一例外是 `.mg-tile`**：它的表面已并入玻璃系统（`--mg-tile-bg` 指向 `--mg-glass-*` 语义别名），让卡片与玻璃画布同一套语言、四象限自动跟随；这是刻意的，别按旧文字把它改回实色。除 `.mg-tile` 外的内容面仍是实心 `bg-0`（贴 Apple「内容实心、chrome 通透」的分工，也避免压在粒子 canvas 上糊字）。**通透/`backdrop-filter` 只留给浮层 chrome**——顶栏、下拉菜单、SideSheet/Modal，且**绝不叠在动画 canvas 上**（见下条）。
 - ❌ 用未安装的 UI 框架——本项目是 **Radix + 自有 ui 组件**，**不是 Semi**（CLAUDE.md 旧述已过时）。
 - ❌ 在动画 canvas 上叠 `backdrop-filter: blur()`（持续重绘卡顿）。

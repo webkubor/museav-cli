@@ -28,7 +28,7 @@ export interface MarketConfig {
   docsUrl: string
 }
 
-const isTestOrDev = (): boolean => {
+export const isTestOrDev = (): boolean => {
   if (import.meta.env.DEV) return true
   if (import.meta.env.MODE === 'test') return true
   if (typeof window !== 'undefined') {

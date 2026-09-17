@@ -53,7 +53,7 @@
 .mg-badge {
   display: inline-flex; align-items: center; gap: 3px;
   padding: 2px 7px; border-radius: var(--radius-sm);
-  font-size: 11px; font-style: normal; font-weight: 600; line-height: 1.5;
+  font-size: var(--mg-font-size-meta); font-style: normal; font-weight: 600; line-height: 1.5;
   white-space: nowrap;
 }
 .mg-badge.is-new {
@@ -71,23 +71,23 @@
 
 .mg-mcard-id { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .mg-mcard-name {
-  font-size: 15px; font-weight: 700; line-height: 1.35; color: var(--mg-text-1);
+  font-size: var(--mg-font-size-value); font-weight: 700; line-height: 1.35; color: var(--mg-text-1);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .mg-mcard-meta {
   display: flex; align-items: center; gap: 5px; min-width: 0;
-  font-size: 12px; color: var(--mg-text-3);
+  font-size: var(--mg-font-size-caption); color: var(--mg-text-3);
 }
 /* 厂商名不压缩：它短且信息密度高。让长出来的 API ID 去截断。 */
 .mg-mcard-vendor { flex-shrink: 0; white-space: nowrap; }
 .mg-mcard-api {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-size: 11.5px; color: var(--mg-text-4);
+  font-size: var(--mg-font-size-caption); color: var(--mg-text-4);
 }
 
 /* 简介：固定两行截断，保证各卡此段高度一致 */
 .mg-mcard-desc {
-  margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--mg-text-3);
+  margin: 0; font-size: var(--mg-font-size-caption); line-height: 1.55; color: var(--mg-text-3);
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -97,7 +97,7 @@
 .mg-mcard-flow-group { display: inline-flex; align-items: center; gap: 4px; }
 .mg-mcard-flow-arrow { color: var(--mg-text-4); flex-shrink: 0; }
 /* qa#286：文本模态用字母「T」而非图标，跟 12px 图标同高、字重加粗以保持可辨识度 */
-.mg-mcard-flow-text { font-size: 11px; font-weight: 700; line-height: 12px; }
+.mg-mcard-flow-text { font-size: var(--mg-font-size-meta); font-weight: 700; line-height: 12px; }
 
 /* API 协议标签：中性描边；协议类型不是选中态，不使用品牌色。 */
 .mg-mcard-protocols { display: flex; flex-wrap: wrap; gap: 5px; }
@@ -114,7 +114,7 @@
 .mg-proto {
   padding: 1px 7px; border-radius: var(--radius-sm);
   border: 1px solid var(--mg-border); background: transparent;
-  font-size: 11px; line-height: 1.6; color: var(--mg-text-3);
+  font-size: var(--mg-font-size-meta); line-height: 1.6; color: var(--mg-text-3);
   transition: border-color 0.15s ease, color 0.15s ease;
 }
 .mg-proto:not(:disabled) { cursor: pointer; }
@@ -128,7 +128,7 @@
   display: inline-flex; align-items: center; gap: 3px;
   padding: 1px 7px; border-radius: var(--radius-sm);
   background: var(--mg-fill-0); border: none;
-  font-size: 11px; line-height: 1.6; color: var(--mg-text-3);
+  font-size: var(--mg-font-size-meta); line-height: 1.6; color: var(--mg-text-3);
 }
 .mg-mcard-tag:not(:disabled) { cursor: pointer; }
 .mg-mcard-tag:not(:disabled):hover { color: var(--mg-text-1); }
@@ -142,7 +142,7 @@
 .mg-task-tags-more,
 .mg-task-tip-item {
   font-style: normal; padding: 1px 7px; border-radius: var(--radius-sm);
-  background: var(--mg-fill-0); font-size: 11px; line-height: 1.6;
+  background: var(--mg-fill-0); font-size: var(--mg-font-size-meta); line-height: 1.6;
   color: var(--mg-text-2); white-space: nowrap;
 }
 /* fit 模式（卡片）：**永远单行**。组件按容器实际宽度算能放几个，但极窄档下连 1 个都放不下
@@ -180,8 +180,8 @@
 /* 卡片规格值字号对齐原型（普通格 13px、主价格 15px，.marketplace-card-chat-specs
    strong 13px / -primary-price 15px）——共享的 .mg-metric-value 16px 在卡片密度下
    太大（需求方 2026-08-25 反馈），只在卡片作用域内收小，详情条不受影响。 */
-.mg-mcard-specs .mg-metric-value { font-size: 13px; }
-.mg-mcard-specs.is-media .mg-metric.is-primary .mg-metric-value { font-size: 15px; }
+.mg-mcard-specs .mg-metric-value { font-size: var(--mg-font-size-body); }
+.mg-mcard-specs.is-media .mg-metric.is-primary .mg-metric-value { font-size: var(--mg-font-size-value); }
 /* 长值格（可体验任务）超出省略：轨道是 minmax(0,1fr)，但 .mg-metric-value 的
    nowrap 会把长值顶穿卡边；.mg-metric 基类的 min-width:64px 还挡着格子收缩，
    两层都得放开。值容器改 flex：省略号打在 OverflowTip 主文本上（截断时悬停
@@ -194,7 +194,7 @@
 .mg-metric-value.is-free { color: var(--mg-success); }
 /* 划线原价：内联在现价右侧，装饰性，不是真实扣费价 */
 .mg-metric-strike {
-  margin-left: 5px; font-size: 11px; color: var(--mg-text-4);
+  margin-left: 5px; font-size: var(--mg-font-size-meta); color: var(--mg-text-4);
   text-decoration: line-through; font-weight: 400;
 }
 /* 卡片作用域：宽度不够时划线原价段先省略（主价格 shrink-0 不裁，prd#860 QA 复验

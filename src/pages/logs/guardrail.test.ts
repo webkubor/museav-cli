@@ -29,6 +29,7 @@ function makeRow(over: Partial<CallLogItem> = {}): CallLogItem {
     tpot_ms: 0,
     fallback_count: 0,
     api_key: { api_key_id: 'k', name: 'key', masked: '***' },
+    api_key_type: 'personal',
     account: { account_id: 'a', display_name: 'user' },
     app_name: null,
     status: 'succeeded',

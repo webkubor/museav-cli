@@ -1,0 +1,191 @@
+/**
+ * 侧栏的模型筛选面板：触发器、搜索框、候选列表、底部操作。
+ *
+ * discovery.css 的分片之一。入口按顺序 @import，**顺序即层叠顺序**。
+ * 再拆分请用选择器锚点定位，不要用行号（见入口文件里的说明）。
+ */
+
+.model-discovery-analysis-aside {
+  display: grid;
+  gap: 12px;
+  grid-template-rows: auto 1fr;
+}
+
+/* 圆角交给 .mg-tile（--mg-tile-radius），这里只留内距；
+   原本走 --discovery-radius-2xl(10px)，与同页其他 tile 的 14px 不齐。 */
+.model-discovery-model-filter,
+.model-discovery-trend {
+  padding: 14px;
+}
+
+.model-discovery-model-filter {
+  position: relative;
+  z-index: 12;
+}
+
+.model-discovery-model-filter h3,
+.model-discovery-trend h3 {
+  align-items: center;
+  display: flex;
+  font-size: var(--discovery-fs-body);
+  gap: 6px;
+  margin: 0;
+}
+
+.model-discovery-model-filter p,
+.model-discovery-trend p {
+  color: var(--text-tertiary);
+  font-size: var(--discovery-fs-micro);
+  line-height: 1.5;
+  margin: 4px 0 9px;
+}
+
+.model-discovery-model-filter .model-discovery-model-filter-trigger {
+  align-items: center;
+  background: color-mix(in srgb, var(--line) 18%, var(--panel));
+  border: 1px solid var(--line);
+  border-radius: var(--discovery-radius-md);
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  font-family: inherit;
+  /* 控件字号归一 --mg-font-size-body(13px)（2026-09-04 控件统一），高度走
+     --mg-control-h-sm(32px) 档位：本页正文字阶（12px）不动，控件与全站控件同一张脸 */
+  font-size: var(--mg-font-size-body);
+  font-weight: 620;
+  justify-content: space-between;
+  line-height: 1;
+  min-height: var(--mg-control-h-sm);
+  padding: 0 10px;
+  width: 100%;
+}
+
+.model-discovery-model-filter .model-discovery-model-filter-trigger[aria-expanded="true"] {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+/* 表面（背景/边框/圆角/阴影/层级/定位）全部交给 ui/Popover 与 .mg-float，
+   这里只留内容排布。原先自持一套表面 + 硬编码 z-index:20，既和全站浮层不是
+   一套质感，也绕开了 --mg-z-* 层级体系（2026-09-03 换组件时清掉）。 */
+.model-discovery-model-filter-panel {
+  display: grid;
+  gap: 8px;
+  padding: 9px;
+  width: min(320px, calc(100vw - 32px));
+}
+
+/* 面板内搜索 = 「安静」变体（2026-09-04 owner 评审「白瓷砖贴在玻璃上」）：
+   标准 Input 的实白底 + 投影 + 描边是为实心页面背景设计的，压在本面板的
+   半透明玻璃底上会读成一块浮起的白瓷砖。这里降噪成微填充/浅描边/无阴影，
+   高度与字号仍走组件 sm 档（尺寸规范不动，动的只是质感）。 */
+.model-discovery-model-filter-panel .modern-input-wrapper {
+  background-color: color-mix(in srgb, var(--line) 22%, var(--panel)) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+.model-discovery-model-filter-panel .modern-input-wrapper:focus-within {
+  background-color: color-mix(in srgb, var(--line) 30%, var(--panel)) !important;
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line)) !important;
+  box-shadow: none !important;
+}
+
+.model-discovery-model-filter-list {
+  display: grid;
+  gap: 2px;
+  max-height: 228px;
+  overflow-y: auto;
+}
+
+.model-discovery-model-filter-list > button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--discovery-radius-md);
+  color: var(--text-soft);
+  cursor: pointer;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 18px minmax(0, 1fr) 16px;
+  padding: 7px 8px;
+  text-align: left;
+}
+
+.model-discovery-model-filter-list > button:hover,
+.model-discovery-model-filter-list > button.selected {
+  background: color-mix(in srgb, var(--accent) 7%, var(--panel));
+}
+
+.model-discovery-model-filter-list > button > span {
+  display: grid;
+  min-width: 0;
+}
+
+/* 模型名 10px→12px（2026-09-04 owner 评审）：列表是面板的主角，原 micro(10px)
+   与顶部搜索框 body(14px) 差 4px，主次倒挂（搜索框比内容还醒目）。
+   名字升 body 档、供应商留 micro，一行内自然分出两层。 */
+.model-discovery-model-filter-list > button strong {
+  font-size: var(--discovery-fs-body);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-discovery-model-filter-list > button small {
+  color: var(--text-tertiary);
+  font-size: var(--discovery-fs-micro);
+}
+
+/* 图标回退块（无 logo 的模型走首字母色块）：全局 .mg-logo-text 是盒子的 40%
+   （dense 盒 18px → 7px 字），发灰发小，与真 logo（占满 18px）大小悬殊。
+   作用域内把回退字母提到 58%（≈10px），观感与真 logo 盒对齐。 */
+.model-discovery-model-filter-list .mg-logo-text {
+  font-size: calc(var(--logo-box) * 0.58);
+}
+
+.model-discovery-model-filter-list > button > svg {
+  color: var(--accent);
+}
+
+.model-discovery-model-filter-list > em {
+  color: var(--text-tertiary);
+  font-size: var(--discovery-fs-micro);
+  font-style: normal;
+  padding: 18px 8px;
+  text-align: center;
+}
+
+/* 三个操作一行均分（2026-09-04 owner 评审）：原先 2 列 grid + last-child 跨整行，
+   「恢复默认」孤伶伶掉到第二行居中，视觉上像排版没收尾。按钮保持同一行，
+   等宽、同高、同质感——经济舱三件套。 */
+.model-discovery-model-filter-panel footer {
+  border-top: 1px solid var(--line);
+  display: flex;
+  gap: 6px;
+  padding-top: 8px;
+}
+
+.model-discovery-model-filter-panel footer button {
+  align-items: center;
+  background: color-mix(in srgb, var(--line) 18%, var(--panel));
+  border: 0;
+  border-radius: var(--mg-radius-xs);
+  color: var(--text-soft);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 1;
+  font-family: inherit;
+  font-size: var(--mg-font-size-caption);
+  gap: 4px;
+  justify-content: center;
+  min-height: 28px;
+  white-space: nowrap;
+  transition: background var(--mg-duration-fast) ease;
+}
+
+.model-discovery-model-filter-panel footer button:hover {
+  background: color-mix(in srgb, var(--line) 34%, var(--panel));
+}
+
+/* Recharts 容器：高度由图表组件给，这里只留外边距 */

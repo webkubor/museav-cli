@@ -12,28 +12,35 @@ import { LuArrowLeft, LuExternalLink } from 'react-icons/lu'
 import { getModel, listModels, listRelatedModels } from '@/services/catalog'
 import { useAuthStore } from '@/store/auth'
 import { useLangStore } from '@/store/use-brand-store'
-import { getMarketConfig } from '@/config/market'
+import { getMarketConfig, isTestOrDev } from '@/config/market'
 import { appendCrossSiteParams } from '@/lib/cross-site-link'
 import { toLoginWithRedirect } from '@/lib/redirect'
 import { isNotFoundError } from '@/lib/request-error-message'
+import { crossSiteModelUrl } from './cross-site-model-url'
+import { modelDetailPath } from '../model-detail-path'
 import { trackEvent, trackPageView } from '@/lib/track'
 import { Button } from '@/components/ui/Button'
-import { formatContextLength, prettyModelName, trimPriceZeros } from '@/lib/utils'
+import { formatContextLength, prettyModelName } from '@/lib/utils'
 import { ModelDetailPanel } from '@/features/models/components/ModelDetailPanel'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
-import { currencySymbol, priceUnitSuffix } from '@/features/models/model-format'
+import { relatedPriceView } from '@/features/models/related-price'
 import { resolveModelCategory, hasPlaygroundExperience } from '../model-experience-data'
 import { mapApiProtocols } from '../api-code-samples'
 import { ModelsCompareModal } from '../components/ModelsCompareModal'
 import { ApiAccessPanel } from './ApiAccessPanel'
+import { BenchmarkSection } from './BenchmarkSection'
 import '../catalog/catalog.css'
 
 /** 进入详情页时携带的导航上下文：来源 + 是否需要直接定位到 API 接入区 */
 interface DetailNavState {
-  source?: 'catalog_list' | 'catalog_featured' | 'related' | string
+  source?: 'catalog_list' | 'catalog_featured' | 'related' | 'discovery' | string
   scrollTo?: 'api-access'
   /** qa#292：从广场带过来的筛选 query（含 `?`），返回时原样带回去还原筛选 */
   fromSearch?: string
+  /** v1.0.6 §2.2：从模型发现页带过来的分析筛选 query，返回时原样带回 */
+  fromDiscoverySearch?: string
+  /** v1.0.6 §2.2：离开发现页时的滚动位置，返回后恢复现场 */
+  fromDiscoveryScrollY?: number
 }
 
 export default function ModelDetailPage() {
@@ -46,8 +53,27 @@ export default function ModelDetailPage() {
   const market = useLangStore((s) => s.market)
   const docsUrl = appendCrossSiteParams(getMarketConfig(market).docsUrl)
 
+  // 40401 时的跨站兜底，判断口径见 cross-site-model-url.ts
+  const crossSiteUrl = crossSiteModelUrl(modelId, market, isTestOrDev(), (m) => getMarketConfig(m).consoleUrl)
+
   const navState = (location.state as DetailNavState | null) ?? null
   const detailSource = navState?.source ?? 'direct'
+
+  /**
+   * v1.0.6 §2.2：来源是模型发现页时，返回目标改成发现页并带回它的分析筛选；
+   * 其余来源维持原有「返回模型广场」行为。发现页的筛选**不**带回广场，两者
+   * 是不同维度的筛选，混带会让广场出现莫名其妙的选中态。
+   */
+  const fromDiscovery = detailSource === 'discovery'
+  const backToSource = () => {
+    if (fromDiscovery) {
+      navigate(`/models/discovery${navState?.fromDiscoverySearch ?? ''}`, {
+        state: { restoreScrollY: navState?.fromDiscoveryScrollY },
+      })
+      return
+    }
+    navigate(`/models${navState?.fromSearch ?? ''}`)
+  }
 
   const apiSectionRef = useRef<HTMLDivElement>(null)
   const viewTrackedRef = useRef(false)
@@ -118,6 +144,12 @@ export default function ModelDetailPage() {
    * scrollIntoView 确实被调用，但那一刻页面还没撑开（scrollHeight 898 / 视口 620），
    * 算出的目标到不了 API 区。rAF 延后一帧、瞬时滚动、依赖 related.length 重试都试过，
    * 均未生效，需要单独排查（与本次「详情页对齐原型」无关，故不在本次改动里带）。
+   *
+   * ⚠️ 排查时注意：#1035 下线「平台运行表现」后，API 接入区下方只剩两个**条件渲染**块
+   * （BenchmarkSection 无数据 return null、相关模型 related.length > 0 才渲染）。被删的那块
+   * 是无条件渲染、约 350–400px 高，等于凭空垫了一段可滚动余量。⇒ 对「既无 Benchmark 数据
+   * 又无相关模型」的模型，页面总高可能小于视口、文档根本不可滚动，scrollIntoView 成为
+   * 永久 no-op。修这个 bug 时别只按「等页面撑开再滚」的思路，那类模型撑开也不够。
    */
   useEffect(() => {
     if (navState?.scrollTo === 'api-access' && detail && apiSectionRef.current) {
@@ -174,12 +206,14 @@ export default function ModelDetailPage() {
     <div className="models-catalog-page">
       <button
         type="button"
-        onClick={() => navigate(`/models${navState?.fromSearch ?? ''}`)}
+        onClick={backToSource}
         className="inline-flex w-fit items-center gap-1 text-[13px] text-mg-text-3 transition-colors hover:text-brand-base"
       >
         {/* 原型是 "← 返回模型广场"，← 是箭头不是尖括号，图标要用 LuArrowLeft 不是 LuChevronLeft */}
         <LuArrowLeft size={15} />
-        {t('modelsCatalog.detail.backToCatalog')}
+        {fromDiscovery
+          ? t('modelsCatalog.discovery.backToDiscovery')
+          : t('modelsCatalog.detail.backToCatalog')}
       </button>
 
       {detailQuery.isLoading ? (
@@ -192,9 +226,22 @@ export default function ModelDetailPage() {
         <div className="border-mg-border text-mg-text-3 rounded-md border p-8 text-center text-[13px]">
           {/* 资源确实不存在（40401/404）才说「模型不存在」；网络/服务故障是另一回事，
               说成「不存在」会误导用户以为模型已下架（qa#595） */}
-          {detailQuery.isError && !isNotFoundError(detailQuery.error)
-            ? t('modelsCatalog.detail.loadFailed')
-            : t('modelsCatalog.detail.notFound')}
+          {detailQuery.isError && !isNotFoundError(detailQuery.error) ? (
+            t('modelsCatalog.detail.loadFailed')
+          ) : (
+            <>
+              <p>{t('modelsCatalog.detail.notFound')}</p>
+              <p className="mt-1">{t('modelsCatalog.detail.notFoundHint')}</p>
+              {crossSiteUrl && (
+                <Button className="mt-4" variant="outline" size="sm" asChild>
+                  <a href={crossSiteUrl} rel="noopener noreferrer" target="_blank">
+                    {t('modelsCatalog.detail.notFoundCrossSite')}
+                    <LuExternalLink size={13} />
+                  </a>
+                </Button>
+              )}
+            </>
+          )}
         </div>
       ) : (
         <>
@@ -249,6 +296,17 @@ export default function ModelDetailPage() {
             />
           </div>
 
+          {/* 区块顺序：Hero/规格 → API 接入 → Benchmark → 相关模型。
+              「平台运行表现」原本夹在 API 接入与 Benchmark 之间，产品侧决定这类平台侧
+              调用统计不再对外暴露，已整块下线（modelgo/shared/modelgo_prd#1035）。
+              ⚠️ 它从头到尾只有 mock 数据、从未接过真实统计接口，所以下线**不涉及**
+              任何后端端点，别去找要一起下掉的接口。
+              计划稿 docs/superpowers/plans/2026-08-24-v1.0.6-model-discovery-ui-flow.md 里提到
+              本区块的地方已全标注（grep ⛔），别照它加回来；按小标题定位，章号有重复（「3.」「4.」各两个）。
+              Benchmark 是独立 .mg-tile.mg-detail-card，区块间距由外层 .models-catalog-page
+              的 flex gap 统一给（卡片自身无 margin），删掉上一块不会留空洞。 */}
+          <BenchmarkSection modelId={detail.model_id} />
+
           {related.length > 0 && (
             <section className="mg-tile mg-detail-card">
               <h3 className="text-mg-text-1 mb-3 text-[14px] font-semibold">
@@ -259,12 +317,17 @@ export default function ModelDetailPage() {
                   1048576 显示成 1049K），名称走 prettyModelName（原本直接吐
                   `anthropic/claude-sonnet-4.6` 这类原始 ID）。 */}
               <div className="mg-related-grid">
-                {related.map((item) => (
+                {related.map((item) => {
+                  // 价格与是否显示上下文按 relatedPriceView 统一给（shared/modelgo_prd#861）：
+                  // 媒体模型主价格 = price_tiers 最高档（#853 口径）且不显示「NNNK 上下文」，
+                  // 文本模型维持「¥输入 / ¥输出 每M」。取值链复用卡片的 mediaPrimaryPrice。
+                  const price = relatedPriceView(item, isZh)
+                  return (
                   <button
                     key={item.id}
                     type="button"
                     className="mg-tile mg-tile-hover mg-related-card"
-                    onClick={() => navigate(`/models/${item.slug || item.id}`, { state: { source: 'related' } })}
+                    onClick={() => navigate(modelDetailPath(item), { state: { source: 'related' } })}
                   >
                     <span className="mg-related-head">
                       <ModelIcon
@@ -277,33 +340,34 @@ export default function ModelDetailPage() {
                     </span>
                     <span className="mg-related-meta">
                       {item.vendor}
-                      {item.context_length > 0
+                      {price.showContext
                         && ` · ${formatContextLength(item.context_length)} ${t('modelsCatalog.labels.context')}`}
                     </span>
                     <span className="mg-related-price">
                       {/* 未配价（零价且无限免标记）显示「—」而非「$0 / 0 每M」——§9.1，
                           与详情面板/广场卡片同口径（qa#624）。
-                          per_call（按张）按 pricing_mode 分支渲染 /张（prd#852 契约：恒下发，
-                          不要从「output 为 0」的价格形态反推）；token 模型输出价为 0 时
-                          只展示输入价、不带单位，兜住脏数据。 */}
-                      {item.is_free
+                          媒体/按张模型单值主价格（¥77/M、¥0.22/张），划线原价只在原价确高于
+                          现价时跟在右侧（同卡片守卫）；文本模型两个数各带货币符号
+                          （原型 App.tsx:5996「¥输入 / ¥输出 每M」；prd#853 QA 复验指出）；
+                          输出价为 0 的脏数据只展示输入价、不带单位。 */}
+                      {price.kind === 'free'
                         ? t('modelsCatalog.detail.limitedFree')
-                        : item.pricing_mode === 'per_call'
-                          ? parseFloat(item.per_call_price ?? '') > 0
-                            ? `${currencySymbol(item.currency, isZh)}${trimPriceZeros(item.per_call_price ?? '0')}${priceUnitSuffix(undefined, 'per_call')}`
-                            : '—'
-                          : parseFloat(item.output_price) > 0
-                            ? t('modelsCatalog.detail.relatedPrice', {
-                                // 两个数各带货币符号（原型 App.tsx:5996「¥输入 / ¥输出 每M」；prd#853 QA 复验指出）
-                                input: `${currencySymbol(item.currency, isZh)}${trimPriceZeros(item.input_price)}`,
-                                output: `${currencySymbol(item.currency, isZh)}${trimPriceZeros(item.output_price)}`,
-                              })
-                            : parseFloat(item.input_price) > 0
-                              ? `${currencySymbol(item.currency, isZh)}${trimPriceZeros(item.input_price)}`
+                        : price.kind === 'primary'
+                          ? (
+                            <>
+                              {price.text}
+                              {price.strike && <s className="mg-metric-strike">{price.strike}</s>}
+                            </>
+                          )
+                          : price.kind === 'pair'
+                            ? t('modelsCatalog.detail.relatedPrice', { input: price.input, output: price.output })
+                            : price.kind === 'single'
+                              ? price.text
                               : '—'}
                     </span>
                   </button>
-                ))}
+                  )
+                })}
               </div>
             </section>
           )}

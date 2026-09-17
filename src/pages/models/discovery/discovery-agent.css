@@ -1,0 +1,204 @@
+/**
+ * 热门 Agent 排行：周期分段控件、榜单行、agentVisual() 的图标槽位。
+ *
+ * 由 discovery.css 拆分而来（原单文件 1917 行，远超 300 行阈值）。
+ * 入口是 discovery.css，只负责按顺序 @import——**顺序即层叠顺序，不要调整**。
+ */
+
+/* 热门 Agent 排行的周期分段控件（本日 / 本周 / 本月）。
+   原型这块复用的类名是 `.runtime-range-switch`（modelgo-prd `src/redesign.css:17533-17566`，
+   就在本页搬运的 `Model discovery` 分节内，分节横幅在 `:13746`）。搬运时漏了这一段，
+   表现：三个按钮完全无样式，挤成「本日本周本月」一串纯文字，既看不出是分段控件、
+   也没有选中态。这里按原型规则补回。
+   ⚠️ `.model-discovery-page` 前缀**不要去掉**，理由只有一条且与任何具体区块无关：
+   原型侧这四条规则是**裸全局类**，而 `runtime-range-switch` 这个名字足够通用，
+   谁都可能再用一次；不收敛就会和后来任何同名类互相覆盖，表现是选中态错乱。
+   （注：本仓从来没有第二处用过这个类 —— 详情页原「平台运行表现」的周期控件走的是
+   `SegmentedToggle` 组件、纯 Tailwind，压根不是这套 CSS。那个区块已随
+   modelgo/shared/modelgo_prd#1035 下线，但它**不是**当初收敛作用域的原因，
+   别去 git 历史里找一场没发生过的撞车。） */
+.model-discovery-page .runtime-range-switch {
+  align-items: center;
+  /* 原型这里取 --surface-muted 并回退到写死的 #f3f5f9：控制台没有这个 token，
+     直接搬就会永远吃那个浅灰、深色模式下瞎掉。按范围控件（Tabs variant="pills"）
+     同款「muted 底」表达桥接。
+     （变量名刻意不写成 var(...) 形式：check-css-tokens 会把注释里的举例当成
+      真引用，报「引用了未声明的变量」。） */
+  background: color-mix(in srgb, var(--line) 46%, transparent);
+  border-radius: var(--discovery-radius-md);
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  padding: 2px;
+}
+
+.model-discovery-page .runtime-range-switch button {
+  background: transparent;
+  border: 0;
+  border-radius: var(--discovery-radius-xs);
+  color: var(--muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--discovery-fs-body);
+  font-weight: 600;
+  height: 24px;
+  min-width: 34px;
+  padding: 0 8px;
+}
+
+.model-discovery-page .runtime-range-switch button.active {
+  background: var(--panel);
+  box-shadow: var(--discovery-shadow-segment);
+  color: var(--accent);
+}
+
+.model-discovery-page .runtime-range-switch button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.model-discovery-agent-popularity-card {
+  overflow: hidden;
+}
+
+.model-discovery-agent-popularity-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.model-discovery-agent-popularity-column {
+  min-width: 0;
+}
+
+.model-discovery-agent-popularity-column + .model-discovery-agent-popularity-column {
+  border-left: 1px solid var(--line);
+}
+
+.model-discovery-agent-popularity-row {
+  align-items: center;
+  display: grid;
+  gap: 11px;
+  grid-template-columns: 28px 34px minmax(0, 1fr) auto;
+  min-height: 70px;
+  padding: 10px 18px;
+}
+
+.model-discovery-agent-popularity-row + .model-discovery-agent-popularity-row {
+  border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+}
+
+.model-discovery-agent-popularity-rank {
+  color: var(--text-tertiary);
+  font-size: var(--discovery-fs-body);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Agent 榜图标：库的 agentVisual() 命中就是一张官方 SVG，命不中才落首字母块。
+   两种形态共用同一个方槽尺寸，榜单左边缘才对得齐。 */
+.model-discovery-agent-icon {
+  align-items: center;
+  border-radius: var(--mg-radius-sm);
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 34px;
+  justify-content: center;
+  overflow: hidden;
+  width: 34px;
+}
+
+.model-discovery-agent-icon svg {
+  height: 22px;
+  width: 22px;
+}
+
+.model-discovery-agent-icon.is-initial {
+  /* 13px 是图标槽位里的那个字符，按 34px 方块的视觉配重定的，不属于文本层级，
+     所以不走本页字阶四档 */
+  background: var(--agent-mark-color);
+  color: var(--discovery-on-dark);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.model-discovery-agent-popularity-copy {
+  min-width: 0;
+}
+
+.model-discovery-agent-popularity-copy strong,
+.model-discovery-agent-popularity-copy span {
+  display: block;
+}
+
+.model-discovery-agent-popularity-copy strong {
+  font-size: var(--discovery-fs-body);
+  line-height: 1.3;
+}
+
+.model-discovery-agent-popularity-copy span {
+  color: var(--muted);
+  font-size: var(--discovery-fs-body);
+  line-height: 1.45;
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Token 量的相对条走 ui/ProgressBar（flow 流光），与 Top 5 排行同一个组件。
+   原先是自制 <i> + scaleX：动效理解错了——owner 要的是"流线感"（持续流光），
+   不是一次性生长。组件的 flow 复用全局 shimmer-slide keyframe。
+   这里只给它一点上边距，其余交给组件。 */
+.model-discovery-agent-popularity-copy > div {
+  margin-top: 6px;
+}
+
+/* 行 hover 也补上——原先整行没有任何反馈。行本身不跳转（PRD），
+   所以只做极轻的底色变化，不做抬升/描边那种"可点"暗示。 */
+.model-discovery-agent-popularity-row {
+  transition: background var(--mg-duration-fast) ease;
+}
+
+.model-discovery-agent-popularity-row:hover {
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .model-discovery-agent-popularity-row {
+    animation: none;
+    transition: none;
+  }
+}
+
+.model-discovery-agent-popularity-usage {
+  font-size: var(--discovery-fs-body);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.model-discovery-agent-popularity-usage span {
+  color: var(--text-tertiary);
+  font-size: var(--discovery-fs-micro);
+  font-weight: 500;
+  margin-left: 4px;
+}
+
+.model-discovery-agent-popularity-more svg {
+  transition: transform var(--mg-duration-fast) ease;
+}
+
+.model-discovery-agent-popularity-more svg.flip {
+  transform: rotate(180deg);
+}
+
+/* 热门 Agent 榜的数据来源标注（接口文档第七节要求）。
+   `.model-discovery-section-head > span` 那条只命中直接子元素，这里的 span 包在
+   标题 div 里，所以单独给一条，样式取值与那条保持一致。 */
+.model-discovery-agent-popularity-head h2 + span {
+  color: var(--text-tertiary);
+  display: block;
+  font-size: var(--discovery-fs-micro);
+  margin-top: 2px;
+}

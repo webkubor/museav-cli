@@ -40,6 +40,75 @@ export function bindEmail(email: string, code: string) {
 }
 
 /**
+ * 自助换绑手机号 / 邮箱（shared/modelgo_prd#837，后端契约 2026-09-14 落地，Swagger 202609141230）。
+ *
+ * 票据式两步流程（后端不维护 DB 行，票据是 HMAC 短时效凭证，绑定 account + channel）：
+ *   ① POST /account/rebind/current-code/send { channel }        → 向当前绑定的手机/邮箱发码（无滑块）
+ *   ① POST /account/rebind/verify-current    { channel, code }  → 校验当前码，签发 rebind_ticket（600s）
+ *   ② POST /account/rebind/commit { rebind_ticket, new_value, new_code } → 校验新凭证码 + 占用，替换绑定
+ * 新凭证的发码仍复用 /auth/sms-code/send、/auth/email-code/send（services/auth）。
+ *
+ * ⚠️ commit 成功后端会吊销该账号**全部**会话（含当前）——调用方成功后不要再发任何请求
+ * （invalidateQueries 会撞 40101 触发「会话过期」toast），直接清鉴权态引导重新登录。
+ *
+ * ⚠️ 票据绑定的 channel 就是 commit 要替换的字段（permissions CommitRebind 按 ticket.Channel 分支）：
+ *   改手机 → 第一步必须 channel=phone 验当前手机；改邮箱 → channel=email 验当前邮箱。
+ *
+ * 业务码（web-api 已带中英 catalog 文案，未特判的直接透出 msg；permissions 原码 4011-4014/4095）：
+ *   40035 验证码错误/过期 · 40036 新值与当前相同 · 40037 当前凭证未绑定 · 40103 票据失效/不匹配（退回第一步重验）
+ *   40911 新号/邮箱已被其他账号占用 · 42901 24h 内已换绑过
+ */
+export type RebindCurrentChannel = 'phone' | 'email'
+
+export const REBIND_ERROR_CODE = {
+  /** 当前凭证验证码错误 */
+  CURRENT_CODE_INVALID: 40035,
+  /** 当前凭证未绑定（如无手机号却选 phone 验身） */
+  CURRENT_NOT_BOUND: 40037,
+  /** 新值与当前绑定相同（前端已在本地拦截，理论不可达） */
+  SAME_VALUE: 40036,
+  /** 换绑票据失效 / 不匹配：回到第一步重新验身 */
+  TICKET_INVALID: 40103,
+  /** 新手机号 / 邮箱已被其他账号占用 */
+  OCCUPIED: 40911,
+  /** 换绑过于频繁（24h 内仅允许一次） */
+  TOO_FREQUENT: 42901,
+} as const
+
+export interface RebindCodeSentResponse {
+  /** 验证码有效期（秒） */
+  expires_in: number
+}
+
+export interface RebindTicketResponse {
+  rebind_ticket: string
+  /** 票据有效期（秒） */
+  expires_in: number
+}
+
+/** 换绑第一步：向当前绑定的手机 / 邮箱发验证码 */
+export function sendRebindCurrentCode(channel: RebindCurrentChannel) {
+  return post<RebindCodeSentResponse>('account/rebind/current-code/send', { channel })
+}
+
+/** 换绑第一步校验：验证当前凭证验证码，签发换绑票据 */
+export function verifyRebindCurrent(channel: RebindCurrentChannel, code: string) {
+  return post<RebindTicketResponse>('account/rebind/verify-current', { channel, code })
+}
+
+/**
+ * 换绑第二步：票据 + 新凭证验证码完成换绑。
+ * 响应沿用 bind 口径（更新后的 profile 或空 data）；成功即全部会话被吊销，见文件头说明。
+ */
+export function commitRebind(rebindTicket: string, newValue: string, newCode: string) {
+  return post<AccountProfile | null>('account/rebind/commit', {
+    rebind_ticket: rebindTicket,
+    new_value: newValue,
+    new_code: newCode,
+  })
+}
+
+/**
  * 上传头像。
  * 文件限制：≤ 2 MiB，仅支持 PNG / JPG / WebP。
  */

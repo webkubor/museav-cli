@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/Input";
 import Select, { SelectItem } from "@/components/ui/Select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { reportOnboardingStep } from "@/store/use-onboarding-store";
 import {
   createApiKey,
   getEffectiveGuardrailPreview,
@@ -210,6 +211,9 @@ export function CreateKeyModal({
         source: "create_modal",
         result: "success",
       });
+      // 新手指南第 3 步「创建 API Key」：证据是创建成功记录的 Key ID（规格 §7 表）。
+      // 之后删掉这个 Key 也不回退完成状态（规格 §12）。
+      reportOnboardingStep("api_key", "api_key_created", newKey.api_key_id);
       onCreated(newKey);
     },
     onError: (err: unknown) => {

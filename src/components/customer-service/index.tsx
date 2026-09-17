@@ -16,6 +16,8 @@ import { HandoffHeaderStatus, RatingCard } from './human-chat'
 import { FeedbackForm } from './feedback-form'
 import { TicketsList, TicketDetailView } from './tickets'
 import { answerStatusPresentation } from './answer-status'
+import { SupportOrb } from './support-orb'
+import { supportOrbState } from './support-presentation'
 
 function formatCsTimestamp(timestamp: number, t: (key: string, options?: Record<string, unknown>) => string) {
   const date = new Date(timestamp)
@@ -245,6 +247,8 @@ export function CustomerService() {
     sendHumanReply, feedbackSubmitting, submitFeedback, openTicketDetail, reopenSelectedTicket, rateSelectedTicket,
   } = support
 
+  const orbState = supportOrbState(support)
+
   const [inputValue, setInputValue] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -347,9 +351,13 @@ export function CustomerService() {
         }}
         className="mg-float flex h-[52px] w-[52px] cursor-grab select-none items-center justify-center rounded-full border border-mg-border bg-mg-bg-2"
       >
+        {/* 收起态用 ai-orb 状态球代替静态 logo：它按真实流程变表情（在想 / 在干活 /
+            等你补充 / 好了 / 出错），用户不点开也知道助手在干什么。展开态仍是关闭图标 ——
+            那时面板本身就在说话，球再表态是重复。
+            球只读状态、不驱动状态机（见 support-presentation.ts）。 */}
         {isOpen
           ? <LuX className="text-mg-text-2" size={20} />
-          : <img src={logoSrc} alt="" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+          : <SupportOrb state={orbState} label={t('common.customerService.orb.open')} />
         }
       </div>
 

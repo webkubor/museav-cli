@@ -419,7 +419,16 @@
         "handoff": "Sign in to reach a human agent — you can transfer right after signing in.",
         "tickets": "Sign in to view your service records"
       },
-      "sensitiveHit": "A possible key or token was detected — it will not be logged or passed to an agent."
+      "sensitiveHit": "A possible key or token was detected — it will not be logged or passed to an agent.",
+      "orb": {
+        "idle": "Here to help",
+        "thinking": "Reading your question",
+        "working": "Working on it",
+        "asking": "Waiting for more details",
+        "done": "Reply delivered",
+        "error": "Couldn't finish",
+        "open": "Open assistant"
+      }
     },
     "referralInviteCard": {
       "inviteLinkLabel": "My referral link",

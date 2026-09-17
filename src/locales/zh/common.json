@@ -419,7 +419,16 @@
         "handoff": "转人工需要先登录，登录后可直接转接客服。",
         "tickets": "登录后查看服务记录"
       },
-      "sensitiveHit": "已检测到疑似密钥或令牌，该内容不会被记录或转给人工客服。"
+      "sensitiveHit": "已检测到疑似密钥或令牌，该内容不会被记录或转给人工客服。",
+      "orb": {
+        "idle": "随时帮你解答",
+        "thinking": "正在理解你的问题",
+        "working": "正在处理",
+        "asking": "等待你补充信息",
+        "done": "回复已送达",
+        "error": "暂时未能完成",
+        "open": "打开智能助手"
+      }
     },
     "referralInviteCard": {
       "inviteLinkLabel": "我的专属邀请链接",

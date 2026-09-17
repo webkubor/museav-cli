@@ -11,7 +11,7 @@ vi.mock('@/services/billing', () => ({
 }))
 
 vi.mock('@/hooks/use-platform-config', () => ({
-  useSite: () => 'global',
+  useWechatPayee: () => 'MODELGO PTE. LTD.',
 }))
 
 vi.mock('react-i18next', () => ({

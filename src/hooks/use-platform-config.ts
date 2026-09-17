@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { getPlatformConfig } from '@/services/platform'
 import { currencySymbol } from '@/features/models/model-format'
+import { wechatPayeeName } from '@/constants/recharge-channels'
 
 export function usePlatformConfig() {
   return useQuery({
@@ -48,4 +49,13 @@ export function useEnabledChannels() {
 export function useSite() {
   const { data } = usePlatformConfig()
   return data?.site ?? null
+}
+
+/**
+ * 微信收银台收款主体（prd#1048）：优先后端下发的 wechat_payee（Nacos `wechat_payee_name`，
+ * 按部署环境配法律实体名），未配置时按站点兜底（国际站 MODELGO PTE. LTD. / 国内站境内公司）。
+ */
+export function useWechatPayee() {
+  const { data } = usePlatformConfig()
+  return wechatPayeeName(data?.site, data?.wechat_payee)
 }

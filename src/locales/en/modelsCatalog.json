@@ -228,7 +228,9 @@
       "gradientFootnote": "Prices are tiered by context and output length; final billing follows actual metered usage.",
       "mainSpec": "Main specs",
       "notFoundHint": "It may have been removed, or it is only available on the other site.",
-      "notFoundCrossSite": "View on ModelGo.ai"
+      "notFoundCrossSite": "View on ModelGo.ai",
+      "benchmarkTitle": "Benchmark evaluations",
+      "benchmarkSnapshot": "Data as of {{date}}"
     },
     "error.loadDetail": "Failed to load model detail. Please try again.",
     "discovery": {

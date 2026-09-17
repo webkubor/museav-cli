@@ -15,7 +15,6 @@ import { ModelGoApiError } from '@/lib/request'
 import { useAuthStore } from '@/store/auth'
 import type { AccountBrief, AccountProfile } from '@/types'
 import { ContactRebindDialog } from './ContactRebindDialog'
-import { useCustomerServiceStore } from '@/store/use-customer-service-store'
 
 vi.mock('@/services/account', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/services/account')>()
@@ -117,7 +116,6 @@ describe('ContactRebindDialog', () => {
     vi.mocked(sendSmsCode).mockClear()
     vi.mocked(appToast.error).mockClear()
     vi.mocked(appToast.requestError).mockClear()
-    useCustomerServiceStore.setState({ isOpen: false })
     useAuthStore.setState({ isAuthenticated: true, account: accountBrief })
   })
 
@@ -129,7 +127,7 @@ describe('ContactRebindDialog', () => {
     expect(screen.getByText('验证码将发送至 lo***@example.com')).toBeInTheDocument()
     expect(screen.queryByText(/louie@example.com/)).toBeNull()
     expect(sendCodeButton()).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '无法接收验证码？联系人工客服' })).toBeInTheDocument()
+    expect(screen.getByText(/无法接收验证码？请发邮件至/)).toBeInTheDocument()
     // 没发码、没填码不能进下一步
     expect(nextButton()).toBeDisabled()
   })
@@ -251,11 +249,13 @@ describe('ContactRebindDialog', () => {
     expect(stepItems()[1]).toHaveAttribute('aria-current', 'step')
   })
 
-  it('第一步「联系人工客服」：先关掉换绑弹窗再打开平台助手，助手窗口不会被弹窗压住（QA note_18254）', () => {
+  it('第一步求助出口：灰字问句 + 邮箱地址 mailto 链接，不挂 1.0.7 的平台助手、也不关弹窗', () => {
     const { onClose } = renderDialog('phone')
-    fireEvent.click(screen.getByRole('button', { name: /联系人工客服/ }))
-    expect(onClose).toHaveBeenCalledTimes(1)
-    expect(useCustomerServiceStore.getState().isOpen).toBe(true)
+    expect(screen.getByText(/无法接收验证码？请发邮件至/)).toBeInTheDocument()
+    const link = screen.getByRole('link', { name: 'feedback@modelgo.com' })
+    expect(link).toHaveAttribute('href', expect.stringMatching(/^mailto:feedback@modelgo\.com\?subject=/))
+    expect(decodeURIComponent(link.getAttribute('href') ?? '')).toContain('ModelGo 账号换绑求助')
+    expect(onClose).not.toHaveBeenCalled()
   })
 
   it('弹窗外的指针操作（人机验证滑块浮层 portal 在 Dialog 之外）不会关掉弹窗，取消按钮仍可关', async () => {

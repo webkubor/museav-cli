@@ -34,7 +34,8 @@ import { trackEvent } from '@/lib/track'
 import { toLoginWithRedirect } from '@/lib/redirect'
 import { errorCodeOf, isApiErrorCode } from '@/lib/request-error-message'
 import { useAuthStore } from '@/store/auth'
-import { useCustomerServiceStore } from '@/store/use-customer-service-store'
+import { getMarketConfig } from '@/config/market'
+import { useMarket } from '@/hooks/useMarket'
 import type { AccountProfile } from '@/types'
 import { CODE_RE, EMAIL_RE, PHONE_RE, maskEmail, maskPhone, normalizePhone } from '../contact-mask'
 
@@ -84,7 +85,9 @@ export function ContactRebindDialog({ mode, profile, onClose }: ContactRebindDia
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const clearAuth = useAuthStore((s) => s.clearAuth)
-  const openSupport = useCustomerServiceStore((s) => s.setOpen)
+  // 求助出口是人工支持邮箱的 mailto（原型口径「联系人工客服」）；控制台内嵌平台助手归 1.0.7，这里不能挂它
+  const supportEmail = getMarketConfig(useMarket()).supportEmail
+  const supportMailHref = `mailto:${supportEmail}?subject=${encodeURIComponent(t('account.info.rebind.supportMailSubject'))}`
   const isPhone = mode === 'phone'
 
   // 验身凭证 = 要被换掉的那个凭证（后端票据 channel 决定 commit 替换哪个字段，见文件头）。
@@ -269,15 +272,17 @@ export function ContactRebindDialog({ mode, profile, onClose }: ContactRebindDia
               suffix={<VerificationCodeButton onSend={sendCurrentCode} disabled={verifying} />}
             />
           </div>
-          {/* 求助入口：先关本弹窗再开平台助手——弹窗遮罩/浮层压在助手窗口之上，不关就看不见（QA note_18254） */}
-          <Button
-            variant="link"
-            className="h-auto p-0 text-xs font-bold"
-            disabled={verifying}
-            onClick={() => { trackEvent('account.contact:rebind_support'); onClose(); openSupport(true) }}
-          >
-            {t('account.info.rebind.contactSupport')}
-          </Button>
+          {/* 兜底出口降为辅助说明：问句是灰字，只有邮箱地址是链接（mailto），既能点也能抄 */}
+          <p className="text-xs text-mg-text-3">
+            {t('account.info.rebind.supportHint')}
+            <a
+              href={supportMailHref}
+              className="font-mono text-brand-base hover:text-brand-deep"
+              onClick={() => trackEvent('account.contact:rebind_support')}
+            >
+              {supportEmail}
+            </a>
+          </p>
         </div>
       )}
 

@@ -257,6 +257,8 @@ function SpecialtyTooltip({ active, payload, rows = [], description }: Specialty
 }
 
 interface SpecialtyBarLabelProps {
+  /** recharts 3 走 viewBox 传位置；x/y/width 保留只为兼容旧调用，实际不会被填 */
+  viewBox?: { x?: number | string; y?: number | string; width?: number | string; height?: number | string }
   x?: number | string
   y?: number | string
   width?: number | string
@@ -267,18 +269,24 @@ interface SpecialtyBarLabelProps {
 /**
  * 柱顶数值标签，带防重叠（qa#724 返工点 3）：成本卡的「$0.0718」这类长标签在
  * 10 列平铺下宽过柱槽，右端相邻标签实测几乎相连。标签宽按 fs-micro(10px)
- * tabular 数字估 6.2px/字符，超过柱槽（柱宽 ÷0.8 得 band）的 72% 就隔柱显示——
+ * tabular 数字估 6.2px/字符，超过柱宽的 90% 就隔柱显示——
  * 只在真的放不下时才隔，热度卡「2K/772」这类短标签不受影响；被隐藏的值
  * tooltip 里有完整展示。缩字号已到底（fs-micro 是最小档），旋转在 30px 的
  * top margin 里放不下斜排长标签，故三选一取隔柱。
  */
-function SpecialtyBarLabel({ x = 0, y = 0, width = 0, value, index = 0 }: SpecialtyBarLabelProps) {
+function SpecialtyBarLabel({ x, y, width, viewBox, value, index = 0 }: SpecialtyBarLabelProps) {
   if (value == null) return null
-  const w = Number(width)
-  const crowded = String(value).length * 6.2 > (w / 0.8) * 0.72
+  // recharts 3 给自定义 content 传的是 viewBox={x,y,width,height}，不是散开的 x/y/width；
+  // 原先只解构后者，w 恒为 0 → crowded 恒成立 → 奇数位标签被无条件丢掉（#1059）。
+  const box = viewBox ?? { x, y, width }
+  const bx = Number(box.x ?? 0)
+  const by = Number(box.y ?? 0)
+  const w = Number(box.width ?? 0)
+  // 量不出宽度时按"不拥挤"处理：宁可让两个标签挨近，也不能整排数字消失
+  const crowded = w > 0 && String(value).length * 6.2 > w * 0.9
   if (crowded && index % 2 === 1) return null
   return (
-    <text className="model-discovery-bar-label" textAnchor="middle" x={Number(x) + w / 2} y={Number(y) - 6}>
+    <text className="model-discovery-bar-label" textAnchor="middle" x={bx + w / 2} y={by - 6}>
       {value}
     </text>
   )
@@ -316,7 +324,11 @@ export function SpecialtyBarChart({ rows, description, hoveredModel, onHoverMode
           <Bar
             animationDuration={ENTER_DURATION}
             dataKey="numeric"
-            isAnimationActive={!prefersReducedMotion()}
+            /* 不开入场动画：recharts 的数值标签走 CartesianLabelListContext，而 Bar 只在
+               `!isAnimating` 时才把 entries 放进 context（见 recharts/lib/cartesian/Bar.js 的
+               showLabels）——动画期间 LabelList 整个不渲染，柱顶数字是空的。这四张榜的数字
+               本身就是内容，不能为了 900ms 入场效果让它先消失一轮（#1059）。 */
+            isAnimationActive={false}
             /* 值域宽的卡（热度榜 2K vs 2，跨三个数量级）domain 落到真实零基线，
                尾柱高≈0.1% —— 6px 保底在截图上仍是「塌地」（owner 2026-09-09 打回）。
                对齐原型 Math.max(18, value/max*100) 的 18% 保底：plot 高约 112–222px，

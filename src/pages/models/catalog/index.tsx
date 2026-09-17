@@ -47,10 +47,10 @@ import './catalog.css'
  * 模型缺 `modelgo_id` 点不进详情页（qa#718），Benchmark 只有 18/33 命中，热门 Agent 排行
  * 还没数据源（qa#708 第 4 条）。开关留着，是为了随时能把入口收回去。
  *
- * 取值（2026-09-08 现状）：`test` 与当班 `release/v1.0.6` 的 `.env.test`、
- * `.env.development` **都配了 `on`**，即测试环境入口已开。`main` 不配 —— 生产还没有
- * 这个功能。原先承载它的 `feature/v1.0.6-model-discovery` 分支已合入并删除，
- * 不要再照它找开关。
+ * 取值（2026-09-17 起）：`.env.production` / `.env.test` / `.env.development` **全配 `on`**，
+ * 即生产入口已随 V1.0.6 发车打开（owner 定）。开关本身保留 —— 上面那三条已知问题
+ * 若在生产暴露得过于难看，把 `.env.production` 那行删掉即可立刻收回入口，不用改代码。
+ * 原先承载它的 `feature/v1.0.6-model-discovery` 分支已合入并删除，不要再照它找开关。
  *
  * 路由 `/models/discovery` 在所有分支上都通，直接输 URL 就能看页面，
  * 开关管的只是模型广场工具栏那枚入口按钮。

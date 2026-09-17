@@ -37,7 +37,8 @@
       "integratedCom": "ModelGo.ai 已接入",
       "notIntegrated": "暂未接入 ModelGo",
       "notIntegratedShort": "暂未接入",
-      "pendingSupport": "{{name}} 暂未接入，待支持"
+      "pendingSupport": "{{name}} 暂未接入，待支持",
+      "pendingLabel": "待支持"
     },
     "metric": {
       "eloScore": "Elo 评分",
@@ -206,7 +207,8 @@
       "allVendors": "全部厂商",
       "relativeTo": "相对谁多",
       "viewModelDetail": "查看 {{name}} 模型详情",
-      "viewOnGlobal": "在 ModelGo.ai 查看 {{name}} 模型"
+      "viewOnGlobal": "在 ModelGo.ai 查看 {{name}} 模型",
+      "resetDefault": "恢复默认"
     },
     "error": {
       "load": "数据加载失败",
@@ -289,7 +291,9 @@
       "selectedCount": "已选择 {{count}} 个",
       "vendorCount": "{{count}} 个厂商",
       "vendorFiltered": "筛选 {{count}} 个厂商",
-      "modelCount": "{{selected}} / {{total}} 个模型"
+      "modelCount": "{{selected}} / {{total}} 个模型",
+      "reset": "重置",
+      "done": "完成"
     },
     "price": {
       "unitPrice": "计费单价\n{{detail}}",

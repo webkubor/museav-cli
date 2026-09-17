@@ -178,3 +178,19 @@ describe('POST /onboarding/reward/claim', () => {
     })
   })
 })
+
+/**
+ * 映射穷尽性。`ONBOARDING_STEP_KEY_TO_API` 是 `Object.fromEntries(...) as Record<...>`，
+ * 那个 cast 让 TS 不再检查五个 key 是否都在 —— 将来加第 6 步而忘了补 pair，编译照过，
+ * 运行时拿到 `undefined`：请求 URL 变成 `/steps/undefined`，`evidence_id` 被 JSON.stringify
+ * 整个丢掉。#1058 的补报正是靠这张表取 evidence，所以在这里钉一道。
+ */
+describe('步骤 key 映射', () => {
+  it('五个步骤都映射到非空的后端 step_key', () => {
+    for (const stepKey of ONBOARDING_STEP_ORDER) {
+      expect(ONBOARDING_STEP_KEY_TO_API[stepKey]).toBeTruthy()
+      expect(typeof ONBOARDING_STEP_KEY_TO_API[stepKey]).toBe('string')
+    }
+    expect(Object.keys(ONBOARDING_STEP_KEY_TO_API)).toHaveLength(ONBOARDING_STEP_ORDER.length)
+  })
+})

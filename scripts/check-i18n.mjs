@@ -149,6 +149,49 @@ if (coreNamespaces) {
   }
 }
 
+/**
+ * 第五类：JSX 里没走 t() 的中文字面量。
+ *
+ * 前四类查的都是「已经用了 t() 之后」配套齐不齐，**查不到「该用 t() 却直接写中文」**——
+ * 而这正是漏翻的形状：2026-09-17 在 v1.0.6 已上线代码里查出 5 处，全部是同一行里
+ * 紧挨着的 t() 之间夹一个漏网的按钮，模型广场的「待支持」连 aria-label 和 title 都翻了、
+ * 唯独按钮文字是中文。门禁每次都过，因为它钉的是另一件事。
+ *
+ * 只认 AST 上的 JsxText 与文案类 JSX 属性，不扫注释/对象 key/数据匹配串——
+ * 宁可漏报不可误报，误报会让人整体关掉这道门禁。
+ */
+const HAN = /[\u4e00-\u9fa5]/
+const TEXT_ATTRS = new Set(['title', 'placeholder', 'alt', 'label', 'aria-label', 'description', 'tooltip'])
+// 豁免必须写清理由，不接受「暂时加一下」
+const I18N_EXEMPT = [
+  // DEV 专属页：App.tsx 里 import.meta.env.DEV ? lazy(...) : null，生产构建不生成 chunk 也不注册路由
+  'src/pages/platform-config/',
+  // 法律文本：隐私政策/服务条款正文，需法务提供英文版后整篇替换，不由前端顺手翻
+  'src/pages/legal/',
+  // 语言名按惯例显示各自原文（英文界面里也该是「简体中文」），title 已写成中英双语
+  'src/components/layout/LanguageSwitcher.tsx',
+]
+
+for (const file of walk(path.join(root, 'src'))) {
+  const rel = path.relative(root, file)
+  if (!rel.endsWith('.tsx')) continue
+  if (I18N_EXEMPT.some((prefix) => rel.startsWith(prefix))) continue
+  const text = fs.readFileSync(file, 'utf8')
+  const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  const at = (node) => source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1
+  function visit(node) {
+    if (ts.isJsxText(node) && HAN.test(node.text)) {
+      errors.push(`${rel}:${at(node)} JSX 文案未走 t()：「${node.text.trim().slice(0, 20)}」`)
+    }
+    if (ts.isJsxAttribute(node) && node.initializer && ts.isStringLiteral(node.initializer)
+        && TEXT_ATTRS.has(node.name.getText(source)) && HAN.test(node.initializer.text)) {
+      errors.push(`${rel}:${at(node)} ${node.name.getText(source)} 未走 t()：「${node.initializer.text.slice(0, 20)}」`)
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(source)
+}
+
 if (errors.length) {
   console.error(`i18n check failed: ${errors.length} issue(s)`)
   for (const error of errors) console.error(`- ${error}`)

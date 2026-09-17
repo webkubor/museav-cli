@@ -23,6 +23,7 @@
  *   需求方与后端对齐「保持完整结构」那条要求的实际约束力。
  */
 import { useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { getModelBenchmarks } from '@/services/model-discovery'
 import { isNotFoundError } from '@/lib/request-error-message'
@@ -124,6 +125,7 @@ function CompositeCard({ index }: { index: BenchmarkCompositeIndex }) {
 }
 
 export function BenchmarkSection({ modelId }: { modelId: string }) {
+  const { t } = useTranslation()
   // catalog 的 model_id 原样传：2026-09-07 实测后端已把 modelgo_id 对齐成 catalog 口径
   // （qa#708 第 1 条），此前那层 toLowerCase + 点转连字符的猜规则适配已删 —— 它现在
   // 是有害的，把 15 个本来能命中的模型转成了 40401（原样 18/33 → 转换后 3/33）
@@ -235,14 +237,14 @@ export function BenchmarkSection({ modelId }: { modelId: string }) {
   return (
     <section className="mg-tile mg-detail-card" ref={sectionRef}>
       <header className="mb-3 flex flex-wrap items-baseline gap-2">
-        <h3 className="text-[14px] font-semibold text-mg-text-1">Benchmark 基准评测</h3>
+        <h3 className="text-[14px] font-semibold text-mg-text-1">{t('modelsCatalog.detail.benchmarkTitle')}</h3>
         {/* 来源标签只出现一次 */}
         <span className="rounded-sm bg-mg-fill-1 px-1.5 py-0.5 text-[10px] text-mg-text-3">
           Artificial Analysis
         </span>
         {/* 快照语义：数据每日刷新一次，不是实时值，必须让用户看到截止日期 */}
         {data?.snapshot_date ? (
-          <span className="text-[10px] text-mg-text-3">数据截至 {data.snapshot_date}</span>
+          <span className="text-[10px] text-mg-text-3">{t('modelsCatalog.detail.benchmarkSnapshot', { date: data.snapshot_date })}</span>
         ) : null}
       </header>
 

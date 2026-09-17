@@ -6,12 +6,18 @@ export const RECHARGE_PAYMENT_CHANNEL_KEYS = ['alipay', 'wechat', 'stripe', 'str
 export type RechargePaymentChannel = (typeof RECHARGE_PAYMENT_CHANNEL_KEYS)[number]
 
 /**
- * WeChat 收银台展示的收款主体，是随站点变化的法律实体名，不是可翻译文案：
- * 国内站是境内公司，国际站(global，走 Stripe 新加坡实体)展示品牌名 Modelgo AI。
- * useSite() 返回 'china' | 'global'（platform_config）。
+ * WeChat 收银台展示的收款主体，是随站点变化的**法律实体名**，不是品牌名、也不是可翻译文案：
+ * 国内站是境内公司，国际站是新加坡实体。useSite() 返回 'china' | 'global'（platform_config）。
+ *
+ * 2026-09-17 修（prd#1048）：国际站原先写的是品牌名 `Modelgo AI`，不是法律实体 ——
+ * 用户在收银台看到的收款方与实际收款主体对不上，是合规展示问题，不是文案问题。
+ * 其余渠道（Stripe 卡 / 支付宝）跳官方页、主体名本来就对，只有自渲染的微信收银台错。
+ *
+ * 这两个常量最终会变成兜底值：单里的完整方案是后端 Nacos 出 `wechat_payee_name`、
+ * 前端读 `platform_config.wechat_payee`，后端那步没到之前，先把兜底改对。
  */
 export const WECHAT_PAYEE_CN = '杭州词元共生科技有限公司'
-export const WECHAT_PAYEE_INTL = 'Modelgo AI'
+export const WECHAT_PAYEE_INTL = 'MODELGO PTE. LTD.'
 export function wechatPayeeName(site: string | null | undefined): string {
   return site === 'global' ? WECHAT_PAYEE_INTL : WECHAT_PAYEE_CN
 }

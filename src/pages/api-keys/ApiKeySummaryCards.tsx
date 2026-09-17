@@ -1,12 +1,18 @@
 /**
  * API Keys 顶部 5 摘要卡（PRD v1.0.3 §API Keys）
  * 数据真源：优先后端 /summary（#383），未交付时由列表 deriveSummary 客户端派生兜底。
+ *
+ * 唯一例外是「本月消费」——PRD（modelgo_prd/src/App.tsx:13890）写死
+ * `workspaceSpend = 当前空间全部 Key 的消费合计`，不分角色。后端 /summary 的
+ * month_spend 走的是 #570 的 scope 分流（member=self、admin/owner=workspace），
+ * 而 #570 是一张 QA 的 BUG 单、不是 PRD，口径已于 2026-09-17 被 owner 打回。
+ * 所以这张卡只认列表派生，不接后端那个值；要改口径先改 PRD（prd46#1056）。
  */
 import { useMemo } from 'react'
 import { LuKeyRound, LuCircleCheck, LuClock, LuGauge, LuReceiptText } from 'react-icons/lu'
 import { KpiCard } from '@/components/ui/KpiCard'
 import { formatMoney } from '@/lib/utils'
-import type { ApiKeyItem, ApiKeySummary, Money } from '@/types'
+import type { ApiKeyItem, ApiKeySummary } from '@/types'
 import { deriveSummary } from './derive'
 import { useTranslation } from 'react-i18next'
 
@@ -14,17 +20,15 @@ interface Props {
   items: ApiKeyItem[]
   /** 后端 /summary 返回（有则覆盖派生值） */
   summary?: ApiKeySummary
-  /** 需求方#570：「本月消费」卡改当前用户口径，由页面按负责人=当前账号派生传入；
-   * 后端 /summary 的 month_spend 是全空间口径，不能用于这张卡 */
-  monthSpend?: Money
   loading?: boolean
 }
 
-export function ApiKeySummaryCards({ items, summary, monthSpend, loading }: Props) {
+export function ApiKeySummaryCards({ items, summary, loading }: Props) {
   const { t } = useTranslation()
   const s = useMemo(() => summary ?? deriveSummary(items), [summary, items])
-  const monthSpendMoney = monthSpend ?? s.month_spend
-  const spend = `${monthSpendMoney.currency} ${formatMoney(monthSpendMoney.amount, '')}`
+  // 本月消费恒为空间合计（见文件头）：后端 summary 的 month_spend 口径与 PRD 不一致，不采信
+  const monthSpend = useMemo(() => deriveSummary(items).month_spend, [items])
+  const spend = `${monthSpend.currency} ${formatMoney(monthSpend.amount, '')}`
 
   return (
     <div className="flex flex-wrap gap-4">
@@ -75,8 +79,8 @@ export function ApiKeySummaryCards({ items, summary, monthSpend, loading }: Prop
         iconLead
         title={t('apiKeys.summary.monthSpend')}
         value={spend}
-        rawNumber={monthSpendMoney.amount}
-        formatter={(n) => `${monthSpendMoney.currency} ${formatMoney(n, '')}`}
+        rawNumber={monthSpend.amount}
+        formatter={(n) => `${monthSpend.currency} ${formatMoney(n, '')}`}
         icon={<LuReceiptText size={18} />}
         color="var(--brand-base)"
         glowColor="var(--brand-glow)"

@@ -16,6 +16,7 @@ import { HandoffHeaderStatus, RatingCard } from './human-chat'
 import { FeedbackForm } from './feedback-form'
 import { TicketsList, TicketDetailView } from './tickets'
 import { answerStatusPresentation } from './answer-status'
+import { showsMessageThread } from './support-machine'
 
 function formatCsTimestamp(timestamp: number, t: (key: string, options?: Record<string, unknown>) => string) {
   const date = new Date(timestamp)
@@ -416,9 +417,9 @@ export function CustomerService() {
           {mode.kind === 'feedback' && (
             <FeedbackForm submitting={feedbackSubmitting} onCancel={() => go({ kind: 'chat' })} onSubmit={submitFeedback} />
           )}
-          {(mode.kind === 'chat' || mode.kind === 'empty' || mode.kind === 'humanEnded') && (
+          {showsMessageThread(mode) && (
             <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
-              {messages.length === 0 && (
+              {messages.length === 0 && (mode.kind === 'empty' || mode.kind === 'chat') && (
                 <div className="flex flex-col gap-4">
                   <div className="flex flex-col items-center gap-2 py-4">
                     <img src={logoSrc} alt="" style={{ width: 40, height: 40, opacity: 0.25 }} />

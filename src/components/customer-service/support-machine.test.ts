@@ -8,6 +8,7 @@ import {
   needsEvents,
   showsComposer,
   showsFeedbackEntry,
+  showsMessageThread,
   ticketIdOf,
   transition,
   type SupportMode,
@@ -67,20 +68,20 @@ describe('support-machine · 回归：散装状态导致的两个残留 bug', ()
 })
 
 describe('support-machine · 三区行为由模式单向推导', () => {
-  const cases: Array<[SupportMode, { composer: boolean; disabled: boolean; feedback: boolean; human: boolean; events: boolean }]> = [
-    [{ kind: 'empty' }, { composer: true, disabled: false, feedback: true, human: false, events: false }],
-    [{ kind: 'chat' }, { composer: true, disabled: false, feedback: true, human: false, events: false }],
+  const cases: Array<[SupportMode, { composer: boolean; disabled: boolean; feedback: boolean; human: boolean; events: boolean; thread: boolean }]> = [
+    [{ kind: 'empty' }, { composer: true, disabled: false, feedback: true, human: false, events: false, thread: true }],
+    [{ kind: 'chat' }, { composer: true, disabled: false, feedback: true, human: false, events: false, thread: true }],
     // PRD §8.1：反馈表单「不显示聊天输入」
-    [{ kind: 'feedback' }, { composer: false, disabled: false, feedback: false, human: false, events: false }],
-    // 排队/连接：输入禁用、不显示反馈入口、长轮询开
-    [{ kind: 'queuing', ticketId: 'T1' }, { composer: false, disabled: true, feedback: false, human: false, events: true }],
-    [{ kind: 'connecting', ticketId: 'T1' }, { composer: false, disabled: true, feedback: false, human: false, events: true }],
-    // 人工服务：输入走人工通道、不显示反馈入口
-    [{ kind: 'human', ticketId: 'T1' }, { composer: true, disabled: false, feedback: false, human: true, events: true }],
+    [{ kind: 'feedback' }, { composer: false, disabled: false, feedback: false, human: false, events: false, thread: false }],
+    // 排队/连接：输入禁用、不显示反馈入口、长轮询开；中部仍要留对话流
+    [{ kind: 'queuing', ticketId: 'T1' }, { composer: false, disabled: true, feedback: false, human: false, events: true, thread: true }],
+    [{ kind: 'connecting', ticketId: 'T1' }, { composer: false, disabled: true, feedback: false, human: false, events: true, thread: true }],
+    // 人工服务：输入走人工通道、不显示反馈入口；中部必须渲染消息，否则 hi 发出去气泡不出现
+    [{ kind: 'human', ticketId: 'T1' }, { composer: true, disabled: false, feedback: false, human: true, events: true, thread: true }],
     // 人工结束：恢复问答与反馈入口、轮询关
-    [{ kind: 'humanEnded', ticketId: 'T1' }, { composer: true, disabled: false, feedback: true, human: false, events: false }],
-    [{ kind: 'tickets' }, { composer: false, disabled: false, feedback: false, human: false, events: false }],
-    [{ kind: 'ticketDetail', ticketId: 'T1' }, { composer: false, disabled: false, feedback: false, human: false, events: false }],
+    [{ kind: 'humanEnded', ticketId: 'T1' }, { composer: true, disabled: false, feedback: true, human: false, events: false, thread: true }],
+    [{ kind: 'tickets' }, { composer: false, disabled: false, feedback: false, human: false, events: false, thread: false }],
+    [{ kind: 'ticketDetail', ticketId: 'T1' }, { composer: false, disabled: false, feedback: false, human: false, events: false, thread: false }],
   ]
 
   it.each(cases)('%j 的三区行为与 PRD §8.1 模式表一致', (mode, want) => {
@@ -89,6 +90,7 @@ describe('support-machine · 三区行为由模式单向推导', () => {
     expect(showsFeedbackEntry(mode)).toBe(want.feedback)
     expect(isHumanChannel(mode)).toBe(want.human)
     expect(needsEvents(mode)).toBe(want.events)
+    expect(showsMessageThread(mode)).toBe(want.thread)
   })
 
   it('排队与连接中，输入框存在但禁用 —— 不是「不显示」', () => {

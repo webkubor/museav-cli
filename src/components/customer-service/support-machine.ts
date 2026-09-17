@@ -152,6 +152,21 @@ export function showsComposer(mode: SupportMode): boolean {
   return mode.kind === 'empty' || mode.kind === 'chat' || mode.kind === 'human' || mode.kind === 'humanEnded'
 }
 
+/** 中部是否显示对话流。人工接通、排队、连接中都要留着，否则输入发出去了气泡却不渲染。 */
+export function showsMessageThread(mode: SupportMode): boolean {
+  switch (mode.kind) {
+    case 'empty':
+    case 'chat':
+    case 'human':
+    case 'humanEnded':
+    case 'queuing':
+    case 'connecting':
+      return true
+    default:
+      return false
+  }
+}
+
 /** 输入框是否禁用：排队与连接中禁用（PRD §8.1「输入禁用」）。 */
 export function composerDisabled(mode: SupportMode): boolean {
   return mode.kind === 'queuing' || mode.kind === 'connecting'

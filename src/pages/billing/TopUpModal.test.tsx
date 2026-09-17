@@ -8,7 +8,7 @@ import type { RechargeCreated } from '@/types'
 const createRecharge = vi.fn<(tenantId: string, body: unknown) => Promise<RechargeCreated>>()
 const toastSuccess = vi.fn()
 const toastError = vi.fn()
-const useSiteMock = vi.hoisted(() => vi.fn<() => string | null>(() => 'china'))
+const useWechatPayeeMock = vi.hoisted(() => vi.fn<() => string>(() => '杭州词元共生科技有限公司'))
 
 vi.mock('@/services/billing', () => ({
   createRecharge: (tenantId: string, body: unknown) => createRecharge(tenantId, body),
@@ -17,7 +17,7 @@ vi.mock('@/services/billing', () => ({
 vi.mock('@/hooks/use-platform-config', () => ({
   useCurrency: () => ({ currency: 'CNY', symbol: '¥' }),
   useEnabledChannels: () => ['wechat'],
-  useSite: () => useSiteMock(),
+  useWechatPayee: () => useWechatPayeeMock(),
 }))
 
 vi.mock('@/hooks/use-permissions', () => ({
@@ -76,7 +76,7 @@ describe('TopUpModal', () => {
     })
     toastSuccess.mockClear()
     toastError.mockClear()
-    useSiteMock.mockReturnValue('china')
+    useWechatPayeeMock.mockReturnValue('杭州词元共生科技有限公司')
   })
 
   afterEach(() => {
@@ -84,7 +84,7 @@ describe('TopUpModal', () => {
   })
 
   it('shows the international legal entity (MODELGO PTE. LTD.) as WeChat payee on the global site', async () => {
-    useSiteMock.mockReturnValue('global')
+    useWechatPayeeMock.mockReturnValue('MODELGO PTE. LTD.')
     const paymentWindow = { close: vi.fn(), closed: false, location: { href: '' } } as unknown as Window
     vi.spyOn(window, 'open').mockReturnValue(paymentWindow)
 
@@ -171,5 +171,18 @@ describe('TopUpModal', () => {
     fireEvent.change(input, { target: { value: '888' } })
     expect(input.value).toBe('888')
     expect(screen.getByRole('button', { name: '前往支付 ¥888' })).toBeInTheDocument()
+  })
+})
+
+// prd#1048 第二阶段：后端可配收款主体的解析逻辑（configured 优先，未配按站点兜底）
+import { wechatPayeeName } from '@/constants/recharge-channels'
+
+describe('wechatPayeeName', () => {
+  it('prefers the backend-configured payee over site fallback', () => {
+    expect(wechatPayeeName('china', 'MODELGO PTE. LTD.')).toBe('MODELGO PTE. LTD.')
+    expect(wechatPayeeName('global', '  ')).toBe('MODELGO PTE. LTD.')
+    expect(wechatPayeeName('global')).toBe('MODELGO PTE. LTD.')
+    expect(wechatPayeeName('china')).toBe('杭州词元共生科技有限公司')
+    expect(wechatPayeeName(null)).toBe('杭州词元共生科技有限公司')
   })
 })

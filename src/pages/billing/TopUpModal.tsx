@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { createRecharge } from '@/services/billing'
-import { useCurrency, useEnabledChannels, useSite } from '@/hooks/use-platform-config'
+import { useCurrency, useEnabledChannels, useWechatPayee } from '@/hooks/use-platform-config'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { Modal } from '@/components/ui/Modal'
@@ -12,7 +12,6 @@ import { cn, formatMoney } from '@/lib/utils'
 import { trackEvent } from '@/lib/track'
 import {
   RECHARGE_PAYMENT_CHANNELS,
-  wechatPayeeName,
   type RechargePaymentChannel,
 } from '@/constants/recharge-channels'
 import { BRAND_COLORS } from '@/constants/brand-colors'
@@ -53,7 +52,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
 
   const { currency, symbol: currencySymbol } = useCurrency()
   const enabledChannels = useEnabledChannels()
-  const site = useSite()
+  const wechatPayee = useWechatPayee()
   // 提交处兜底权限（弹窗是全局单挂载点，多入口共用它）：无 billing.recharge:create 不得下单，
   // 补齐副入口（如 FirstChargeLockGate「去充值」）漏 gate 的口子
   const { hasPermission } = usePermissions()
@@ -104,7 +103,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
               orderNo: data.order_no,
               amount,
               currency,
-              payee: wechatPayeeName(site),
+              payee: wechatPayee,
               returnTo: window.location.href,
               tenant: tenantId,
             })

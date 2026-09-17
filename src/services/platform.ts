@@ -17,6 +17,8 @@ export interface PlatformConfig {
   settlement_currency: string
   /** 站点标识，如 'china' | 'global' */
   site: string
+  /** 微信收银台收款主体（法律实体名，Nacos wechat_payee_name，prd#1048）；未配置时缺省，前端按站点兜底 */
+  wechat_payee?: string
 }
 
 /** 读取全局平台配置（登录页/充值页据此展示可用渠道与登录方式） */

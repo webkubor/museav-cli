@@ -9,6 +9,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#3b82f6" />
     <title>ModelGo 控制台</title>
+
+    <!-- Google tag (gtag.js)：对外门户统一接入 GA4 埋点上报（属性 G-WCEKH5ZZEH，
+         与国内官网 / 国外官网 / 说明文档同一个属性，便于跨站看完整漏斗）。
+
+         控制台虽是登录后的后台，但 /models（模型广场）与 /models/discovery（模型发现）
+         未登录可访问，根路径 / 对未登录访客也跳 /models —— 它们是对外页面
+         （owner 2026-09-17：只要对外的门户都需要加）。
+
+         与站内 @model-go/track 是两条线：track 报自有后端，这条报 Google。
+         别用 track 去封装它，也别把两者的事件名混在一起。 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-WCEKH5ZZEH"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-WCEKH5ZZEH');
+    </script>
     <script>
       // PWA 下线迁移：历史版本给用户浏览器装过 ServiceWorker，不清会一直由旧 SW
       // 控制页面、吃到过期 precache。页面一加载就注销全部 SW 并清空 Cache Storage，

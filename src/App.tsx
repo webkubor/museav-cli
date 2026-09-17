@@ -131,7 +131,7 @@ function consoleRoute(meta: ConsoleRouteMeta) {
   return <Route key={meta.key} path={meta.path} element={element} />
 }
 import { storageKeys } from '@/lib/storage'
-import { getMarket, getMarketQueryOverride, type Market } from '@/lib/market'
+import { getMarket, getMarketQueryOverride, marketFromSite, type Market } from '@/lib/market'
 import { marketLockedByDomain } from '@/lib/market-domain'
 import { applyBrandTheme, applyTheme, getSavedBrandTheme, getSavedTheme, readThemeFromUrl, saveTheme } from '@/lib/theme'
 import { getPlatformConfig } from '@/services/platform'
@@ -147,9 +147,7 @@ document.documentElement.dataset.market = getMarket()
  * site 即 Market——市场词汇已与后端 platform-config 对齐（'china' | 'global'），
  * 转换层消失。仅一次性归一历史遗留值（旧后端/旧 localStorage 缓存的 'international'）。
  */
-function normalizeSite(site: string): Market {
-  return site === 'international' || site === 'global' ? 'global' : 'china'
-}
+const normalizeSite = marketFromSite   // 判断收归 lib/market，这里只保留本地别名
 
 function applyMarket(market: Market) {
   document.documentElement.dataset.market = market

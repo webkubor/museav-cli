@@ -45,6 +45,21 @@ export function getMarket(): Market {
   return marketLockedByDomain(hostname) ?? getMarketQueryOverride() ?? marketFromHostname(hostname)
 }
 
+/**
+ * 把后端 `platform-config.site` 归一成 Market。
+ *
+ * 🔴 国际站实测返回的是 **`'international'`**，不是 `'global'`（2026-09-17
+ * `console.modelgo.ai` → `{"site":"international"}`）。只判 `'global'` 的地方，
+ * 国际站会永远落回 china —— prd#1048 的收款主体就是这么错的：常量改对了，
+ * 选它的条件从来没成立过。
+ *
+ * 放在 Market 的真源里，是因为这个判断**不能有第二份**：App.tsx 原先自己写了一份，
+ * recharge-channels 又写了一份，两份迟早漂。要判 site 就调这个。
+ */
+export function marketFromSite(site: string | null | undefined): Market {
+  return site === 'international' || site === 'global' ? 'global' : 'china'
+}
+
 export function isDomestic(): boolean {
   return getMarket() === 'china'
 }

@@ -377,8 +377,23 @@ export function CreateKeyModal({
         onClose={onClose}
         title={t("apiKeys.createModal.title")}
         description={t("apiKeys.createModal.desc", { workspaceName })}
+        footer={
+          <div className="flex justify-end gap-2 border-t border-mg-border pt-4">
+            <Button variant="outline" onClick={onClose}>
+              {t("apiKeys.createModal.cancel")}
+            </Button>
+            <Button
+              variant="brand"
+              data-track="api_keys:create_submit"
+              loading={createMutation.isPending}
+              onClick={handleSubmit}
+            >
+              {t("apiKeys.createModal.confirm")}
+            </Button>
+          </div>
+        }
       >
-        <div className="flex flex-col gap-7 px-1 py-3 pb-24">
+        <div className="flex flex-col gap-7 px-1 py-3">
           {/* Key 名称（PRD 原型顺序） */}
           <div>
             <label className="block text-xs font-bold text-mg-text-2 mb-2">
@@ -681,19 +696,6 @@ export function CreateKeyModal({
               </div>
             )}
           </div>
-        </div>
-        <div className="sticky bottom-0 flex justify-end gap-2 border-t border-mg-border bg-mg-bg-0/95 py-4 backdrop-blur">
-          <Button variant="outline" onClick={onClose}>
-            {t("apiKeys.createModal.cancel")}
-          </Button>
-          <Button
-            variant="brand"
-            data-track="api_keys:create_submit"
-            loading={createMutation.isPending}
-            onClick={handleSubmit}
-          >
-            {t("apiKeys.createModal.confirm")}
-          </Button>
         </div>
       </SideSheet>
     </>

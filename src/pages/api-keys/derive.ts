@@ -138,17 +138,6 @@ export function deriveSummary(items: ApiKeyItem[]): ApiKeySummary {
   }
 }
 
-/**
- * 需求方#570：「本月消费」卡按当前用户口径——只累加负责人（responsible_member ?? owner）
- * 是当前账号的 key；空间负责人能看到全空间 key，但这张卡不该把别人的消费算进来。
- */
-export function deriveUserMonthSpend(items: ApiKeyItem[], accountId: string | undefined): Money {
-  return sumMoney(
-    items.filter((i) => accountId && responsibleOf(i).account_id === accountId),
-    periodSpendOf,
-  )
-}
-
 /** 行级能力回退：后端 can_* 优先，否则用传入的权限布尔 */
 export function cap(itemFlag: boolean | undefined, permFallback: boolean): boolean {
   return itemFlag ?? permFallback

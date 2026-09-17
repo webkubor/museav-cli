@@ -294,24 +294,25 @@
    而且每加一个浮层就要重新猜「该用哪一档背景」。
    ⚠️ 底线是遮挡不是效果：不透明度由 --mg-float-opacity 保证（见该 token 注释里的 #504 由来），
    谁要调低它必须先做「浮层压在正文上截图看能不能读出字」这一步验证。 */
+/**
+ * 浮层表面。2026-09-17 起是**实底**，不再是磨砂玻璃。
+ *
+ * 9/3 引入玻璃档（92% 不透明 + 24px 模糊 + 5% 品牌色染入）时，我验的是「背后正文能不能
+ * 透读」——遮挡这条守住了，但没验观感。owner 9/17 看 API Key 创建抽屉：那 8% 透光把整片
+ * 抽屉底衬成发紫的灰，与里面的纯白输入框一撞就显脏，抽屉越大越明显。
+ *
+ * 所以遮挡改由不透明度直接给满，backdrop-filter 一并删掉 —— 底已经不透明，模糊什么都
+ * 看不见，只剩每帧的合成开销。#504「浮层必须遮住下层正文」的结论仍然成立，
+ * 这是用更朴素的方式满足它。投影/亮边/光晕保留，层次不靠透明度表达。
+ */
 .mg-float {
   background: var(--mg-float-bg);
   border: 1px solid var(--mg-float-line);
-  -webkit-backdrop-filter: blur(var(--mg-float-blur)) saturate(var(--mg-float-saturate));
-  backdrop-filter: blur(var(--mg-float-blur)) saturate(var(--mg-float-saturate));
-  /* 三层叠加：inset 顶部亮边（玻璃厚度）+ 品牌微光晕 + 分层柔和投影（浮起） */
+  /* 三层叠加：inset 顶部亮边 + 品牌微光晕 + 分层柔和投影（浮起） */
   box-shadow:
     inset 0 1px 0 var(--mg-float-sheen),
     var(--mg-float-glow),
     var(--mg-float-shadow);
-}
-
-/* 不支持 backdrop-filter 的浏览器直接退回完全实色 —— 没有模糊时那 8% 的透明就是纯粹的漏字，
-   宁可丢玻璃质感也不能丢遮挡（这条是 #504 的下限，不是渐进增强的可选项）。 */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .mg-float {
-    background: var(--mg-float-surface);
-  }
 }
 
 /* 内容瓦片 —— Apple 风卡片语言（2026-07-23）：淡边框(hairline) + 柔和扩散阴影撑层次，

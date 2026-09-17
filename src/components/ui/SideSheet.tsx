@@ -24,6 +24,13 @@ interface SideSheetProps {
   ariaTitle?: string
   description?: React.ReactNode
   children?: React.ReactNode
+  /**
+   * 底部操作栏。放在滚动区**外面**，靠 flex 自然贴住抽屉底部。
+   * 不要把操作栏写进 children 里再挂 sticky bottom-0 —— sticky 只在内容溢出、
+   * 真的产生滚动时才贴底；内容短的抽屉不滚动，那条操作栏就停在内容结束处，
+   * 底下留一大片空白（2026-09-17 owner 在 API Key 创建抽屉上看到的就是这个）。
+   */
+  footer?: React.ReactNode
   side?: "left" | "right"
   className?: string
 }
@@ -35,6 +42,7 @@ export function SideSheet({
   ariaTitle,
   description,
   children,
+  footer,
   side = "right",
   className,
 }: SideSheetProps) {
@@ -59,6 +67,7 @@ export function SideSheet({
           </SheetDescription>
         </SheetHeader>
         <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+        {footer ? <div className="shrink-0">{footer}</div> : null}
       </SheetContent>
     </Sheet>
   )

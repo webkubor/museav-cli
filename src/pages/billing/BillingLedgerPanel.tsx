@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { LuTicket, LuGift, LuUsers, LuShieldCheck, LuWallet, LuCoins } from 'react-icons/lu'
@@ -20,6 +20,7 @@ import { useOnboardingStore } from '@/store/use-onboarding-store'
 import { trackEvent } from '@/lib/track'
 import { listIncomeRecords } from '@/services/billing'
 import type { IncomeRecord, IncomeRecordType, IncomeRecordStatus, IncomeBalanceBucket } from '@/services/billing'
+import { isHighlighted } from './income-highlight'
 import { BillingInvoiceTab } from './invoice/BillingInvoiceTab'
 import type { BalanceTab } from './BalanceCard'
 
@@ -35,23 +36,6 @@ const CHANNEL_ICON: Record<string, React.ReactNode> = {
 }
 function channelIcon(channel: string) {
   return CHANNEL_ICON[channel] ?? <LuWallet size={14} className="text-mg-text-3 shrink-0" />
-}
-
-/**
- * 「查看赠金」要高亮的是哪一行（新手奖励领取回执 → 入账记录，规格 2026-08-13）。
- *
- * ⚠️ **先比 id，再比编号**。claim 接口返回的 record_ref 是赠金流水的 **id**，而入账记录
- * 这一列展示的 record_ref 是服务端现算的展示编号（`redm_<日期>_<id 后 8 位>`，billing
- * incomeRecordRef）——两者对不上。能对上的是 IncomeRecord.id === claim.transaction_id。
- * 保留 record_ref 的比较是兼容旧回执 / 后端日后把 record_ref 改成正式编号的情况。
- */
-function isHighlighted(
-  rec: IncomeRecord,
-  highlight: { recordRef: string; transactionId: string } | null,
-): boolean {
-  if (!highlight) return false
-  if (highlight.transactionId && rec.id === highlight.transactionId) return true
-  return Boolean(highlight.recordRef) && rec.record_ref === highlight.recordRef
 }
 
 const TYPE_FILTERS: Array<{ value: 'all' | IncomeRecordType }> = [
@@ -144,8 +128,10 @@ export function BillingLedgerPanel({
   // 会重置账单入账筛选和分页）。用户可能本来就停在账单页上领取的，此时不会重新挂载，
   // 只能由这个外部信号一次性推一把——highlightRecordRef 从 null 变成有值时触发一次，
   // 用完即被下面的 effect 清成 null，不会反复。
+  const highlightSinceRef = useRef(0)
   useEffect(() => {
     if (!highlight) return
+    highlightSinceRef.current = Date.now()
     // eslint-disable-next-line react-hooks/set-state-in-effect -- 外部 store 信号驱动的一次性复位，同本仓 logs/index.tsx 的 request_id 自动展开
     setLedgerTab('transactions')
     setType('all')
@@ -165,7 +151,7 @@ export function BillingLedgerPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bucketFilter])
 
-  const { data, isFetching, isError, refetch } = useQuery({
+  const { data, isFetching, isError, refetch, dataUpdatedAt } = useQuery({
     queryKey: ['billing', 'income-records', tenantId, type, bucketFilter, timeFilter, pager.page, pager.cursor],
     queryFn: () =>
       listIncomeRecords(tenantId, {
@@ -183,20 +169,84 @@ export function BillingLedgerPanel({
   const hasMore = Boolean(data?.has_more && data?.next_cursor)
 
   /**
-   * 数据到位后滚到目标行，2.2s 后清掉高亮标记（动画时长同 billing.css）。
-   * 目标记录不在返回里就直接清掉：用户照常停在账单管理，不弹错误
+   * 目标行只认**一条**：两个标识分别命中两行时，highlightRowRef 会被后一行覆盖、
+   * scrollIntoView 滚到错的地方，而两行都会挂上高亮类。
+   */
+  const highlightedRowId = useMemo(
+    () => (highlight ? (data?.items.find((rec) => isHighlighted(rec, highlight))?.id ?? null) : null),
+    [data, highlight],
+  )
+
+  /**
+   * 钉住的行（2026-09-16 口径变更，owner 拍板）：高亮不再 2.2s 后消失，而是淡到选中态后
+   * **常驻**——用户点「查看赠金」跳过来，页面还在滚、眼睛还在找，一晃神就没了，反而违背
+   * 「你要的那条在这」的目的。原 08-13 规格「约 2 秒后淡出为普通样式」按此作废。
+   *
+   * 为什么是组件本地 state 而不是继续挂在 store 的 billingHighlight 上：
+   * - store 那个是**一次性信号**（进来复位筛选 + 找行），找到就该立刻用掉；留着会让 8s 兜底
+   *   和「再进账单页被陈年信号重置筛选」这些老问题复活。
+   * - 本地 state 随面板卸载消失 ⇒ **离开账单页再回来必定没有高亮**（owner 明确要求）。
+   *
+   * 清掉的时机（三个，缺一个都会留下一条对不上号的蓝行）：
+   * ① 离开账单页（面板卸载，state 自然消亡）；
+   * ② 切筛选 / 翻页（列表换了一份，目标可能已不在当前页）；
+   * ③ 切到发票 tab（回来时表格重挂，不该还带着高亮）。
+   * ②③ 统一由下面的 ledgerKey 变化兜住：钉住的行第一次渲染出来那一帧记下 key（见下），之后 key 一变就清。
+   */
+  const [pinnedRowId, setPinnedRowId] = useState<string | null>(null)
+  const ledgerKey = `${ledgerTab}|${type}|${timeFilter}|${bucketFilter}|${pager.page}|${pager.cursor ?? ''}`
+  const pinnedLedgerKeyRef = useRef<string | null>(null)
+
+  /**
+   * ⚠️ 「钉住时的 key」要在**这里**第一次看到 pinnedRowId 时记，不能在下面的 find-effect 里记：
+   * 信号到达那一帧，复位筛选的 effect 与 find-effect 同批跑，find-effect 拿到的还是复位前的
+   * key（用户本来就停在账单页、带着筛选去领奖的场景），下一帧 key 变成复位后的值就会把刚钉的
+   * 行清掉，而信号已用掉 ⇒ 一条都不亮。等到这个 effect 跑时，那批 setState 已经落地，key 是稳的。
+   */
+  useEffect(() => {
+    if (pinnedRowId === null) {
+      pinnedLedgerKeyRef.current = null
+      return
+    }
+    if (pinnedLedgerKeyRef.current === null) {
+      pinnedLedgerKeyRef.current = ledgerKey
+      return
+    }
+    if (pinnedLedgerKeyRef.current !== ledgerKey) setPinnedRowId(null)
+  }, [ledgerKey, pinnedRowId])
+
+  /**
+   * 数据到位后：找到 ⇒ 钉住那一行并**立刻用掉**store 信号；滚动到该行。
+   * 目标记录不在返回里就直接清掉信号：用户照常停在账单管理，不弹错误
    * （规格 2026-08-13 §可访问性与异常处理「若目标记录未找到，仍进入账单管理，不阻断」）。
+   *
+   * ⚠️ 判「**找不到**」必须等一份「领取之后」拉回来的列表。领取成功会让 income-records
+   * 失效（见 use-onboarding-guide 的 handleClaim），但缓存里那份领取前的列表仍会先渲染
+   * 一帧 —— 拿它判找不到，当场把这个一次性信号烧掉，之后新列表到了也不会再高亮。
+   * 现象就是「点了查看赠金，跳过去了但什么都没发生」，页面不报错、控制台没有线索。
+   * dataUpdatedAt 早于信号到达时刻的那份不作数。（已经找到就无所谓新旧。）
    */
   useEffect(() => {
     if (!highlight || isFetching) return
-    const found = items.some((rec) => isHighlighted(rec, highlight))
-    if (found) {
-      highlightRowRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    if (highlightedRowId !== null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 由数据到达驱动的一次性钉住
+      setPinnedRowId(highlightedRowId)
+      clearHighlight()
+      return
     }
-    const timer = setTimeout(clearHighlight, found ? 2200 : 0)
-    return () => clearTimeout(timer)
+    if (!dataUpdatedAt || dataUpdatedAt < highlightSinceRef.current) return
+    clearHighlight()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [highlight, isFetching, data])
+  }, [highlight, isFetching, dataUpdatedAt, highlightedRowId])
+
+  // 钉住的行渲染出来后滚到视野中央（ref 在 render 里按 pinnedRowId 挂，effect 里才拿得到）
+  useEffect(() => {
+    if (pinnedRowId === null) return
+    highlightRowRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }, [pinnedRowId])
+
+  // 8s 兜底（等不到「领取之后」那份列表 / 用户在列表落地前就离开了账单页）在 store 侧：
+  // takeReceiptForBilling 签发信号时同时起自毁定时器，不依赖本面板还挂着。见 use-onboarding-store。
 
   // §11.2 billing_income_filter_change：type/time 两维度共用这个上报点；bucket 维度的上报
   // 已改由上面那个 effect 统一处理（无论触发源是这里的 Select 还是 BalanceCard 点桶）。
@@ -339,8 +389,9 @@ export function BillingLedgerPanel({
                 {items.map((rec) => (
                   <TableRow
                     key={rec.id}
-                    ref={isHighlighted(rec, highlight) ? highlightRowRef : undefined}
-                    className={isHighlighted(rec, highlight) ? 'billing-transaction-highlight' : undefined}
+                    ref={rec.id === pinnedRowId ? highlightRowRef : undefined}
+                    className={rec.id === pinnedRowId ? 'billing-transaction-highlight' : undefined}
+                    aria-current={rec.id === pinnedRowId ? 'true' : undefined}
                   >
                     <TableCell className="font-mono text-xs text-mg-text-2 max-w-[160px]">
                       <div className="flex items-center gap-1 min-w-0">

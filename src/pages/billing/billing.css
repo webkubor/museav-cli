@@ -160,33 +160,39 @@
   }
 }
 
-/* ── 新手奖励入账记录定位高亮（新手指南规格 2026-08-13 §交互流程 5）──────────
-   从领取成功弹框点「查看赠金」进来时，目标行淡金色闪动一次，约 2 秒后自然淡出为
-   普通样式。放在 billing.css 而不是新手指南的样式表里：这条规则的宿主是账单表格，
-   指南入口领完就隐藏了，样式不该跟着它的模块走。 */
+/* ── 新手奖励入账记录定位高亮（新手指南规格 2026-08-13 §交互流程 5；2026-09-16 口径变更）──
+   从领取成功弹框点「查看赠金」进来时，目标行以主题色浮起，约 0.8s 后淡到选中态并**常驻**，
+   直到用户切筛选 / 翻页 / 切 tab / 离开账单页（清掉的时机由 BillingLedgerPanel 的
+   pinnedRowId 管，CSS 只负责样子）。原规格「约 2 秒后淡出为普通样式」已作废：
+   一闪而过的信号，用户一晃神就丢了，违背「你要的那条在这」的目的。
+   放在 billing.css 而不是新手指南的样式表里：这条规则的宿主是账单表格，指南入口领完
+   就隐藏了，样式不该跟着它的模块走。
+
+   用主题色而不是黄：这套 tokens 里黄 = warning 语义，「定位到你的那条」是选中态，
+   和本页余额桶 .active 同属一组品牌 token（brand-base / selected-bg），随市场与深浅主题自动切。
+   背景峰值 18%（浅色下 text-2 仍过 4.5:1）→ 停在 selected-bg；第一列常驻 3px 主题色左侧竖条。 */
 .billing-transaction-highlight > td {
-  animation: billing-onboarding-reward-highlight 2.2s ease-out both;
+  background: var(--brand-selected-bg);
+  animation: billing-onboarding-reward-highlight 1.4s ease-out both;
+}
+
+.billing-transaction-highlight > td:first-child {
+  box-shadow: inset 3px 0 0 var(--brand-base);
 }
 
 @keyframes billing-onboarding-reward-highlight {
   0%,
-  24% {
-    background: var(--mg-warning-border);
-  }
-
-  12%,
-  38% {
-    background: var(--mg-warning-bg);
+  55% {
+    background: color-mix(in oklab, var(--brand-base) 18%, transparent);
   }
 
   100% {
-    background: transparent;
+    background: var(--brand-selected-bg);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .billing-transaction-highlight > td {
     animation: none;
-    background: var(--mg-warning-bg);
   }
 }

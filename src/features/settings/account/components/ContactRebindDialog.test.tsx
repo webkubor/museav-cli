@@ -7,7 +7,7 @@
  * 成功后完成页只留「重新登录」（会话已被后端吊销）。
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import i18n, { loadLocaleNamespaces } from '@/i18n'
@@ -100,7 +100,7 @@ async function passIdentityStep(channel: 'phone' | 'email', code = '123456', exp
 async function fillNewEmailAndSubmit(email = 'new@example.com', code = '654321') {
   fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: email } })
   fireEvent.click(sendCodeButton())
-  await waitFor(() => expect(sendEmailCode).toHaveBeenCalledWith(email))
+  await waitFor(() => expect(sendEmailCode).toHaveBeenCalledWith(email, null))
   // 等「已发送」落地再填码，不依赖 act 冲刷时序
   await screen.findByText(/验证码已发送至/)
   fireEvent.change(codeInput(), { target: { value: code } })
@@ -127,7 +127,7 @@ describe('ContactRebindDialog', () => {
     expect(screen.getByText('验证码将发送至 lo***@example.com')).toBeInTheDocument()
     expect(screen.queryByText(/louie@example.com/)).toBeNull()
     expect(sendCodeButton()).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '无法接收验证码？联系人工客服' })).toBeInTheDocument()
+    expect(screen.getByText(/无法接收验证码？请发邮件至/)).toBeInTheDocument()
     // 没发码、没填码不能进下一步
     expect(nextButton()).toBeDisabled()
   })
@@ -247,5 +247,30 @@ describe('ContactRebindDialog', () => {
     await fillNewEmailAndSubmit()
     await waitFor(() => expect(appToast.requestError).toHaveBeenCalledWith(err, '邮箱更换失败'))
     expect(stepItems()[1]).toHaveAttribute('aria-current', 'step')
+  })
+
+  it('第一步求助出口：灰字问句 + 邮箱地址 mailto 链接，不挂 1.0.7 的平台助手、也不关弹窗', () => {
+    const { onClose } = renderDialog('phone')
+    expect(screen.getByText(/无法接收验证码？请发邮件至/)).toBeInTheDocument()
+    const link = screen.getByRole('link', { name: 'feedback@modelgo.com' })
+    expect(link).toHaveAttribute('href', expect.stringMatching(/^mailto:feedback@modelgo\.com\?subject=/))
+    expect(decodeURIComponent(link.getAttribute('href') ?? '')).toContain('ModelGo 账号换绑求助')
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('弹窗外的指针操作（人机验证滑块浮层 portal 在 Dialog 之外）不会关掉弹窗，取消按钮仍可关', async () => {
+    const { onClose } = renderDialog('phone')
+    // Radix DismissableLayer 的 pointerdown 监听在挂载后下一拍才注册，先让出一轮宏任务
+    await act(() => new Promise((resolve) => { setTimeout(resolve, 0) }))
+    const outside = document.createElement('div')
+    document.body.appendChild(outside)
+    fireEvent.pointerDown(outside, { pointerType: 'mouse', button: 0 })
+    fireEvent.focusIn(outside)
+    fireEvent.pointerUp(outside, { pointerType: 'mouse', button: 0 })
+    fireEvent.click(outside)
+    expect(onClose).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: '取消' }))
+    expect(onClose).toHaveBeenCalledTimes(1)
+    outside.remove()
   })
 })

@@ -66,10 +66,12 @@ export function priceTiersForCard(tiers: CatalogPriceTier[] | undefined | null):
  * marketplacePrimaryPriceText，App.tsx:4199）：媒体卡片/详情条只摆一个主价，
  * 不再铺输入/输出/缓存四格或整张档位矩阵（完整档位进详情「价格梯度」表）。
  *
- * 取值顺序：per_call 的每张价 → price_tiers 里**价格最高的一档**（需求方
- * 2026-08-25：主价格取最高档。媒体模型的 price_tiers 才是媒体产物价，pricing.*
- * 是文本 token 侧分项价 —— gemini-3.1-flash-lite-image 图片产出 ¥204/M、文本
- * output 仅 ¥10.2/M，先读 pricing 会把主价格错标成便宜一个量级的文本价）→
+ * 取值顺序：per_call 的每张价 → price_tiers 选档（按张/image 计价的图片档取
+ * **输出档里价格最低的一档**，产品 2026-09-15 prd#1010：qwen-image-3.0-pro 显示
+ * 1K ¥0.25/张 而非最高档 2K ¥0.5；其余媒体档维持需求方 2026-08-25 的最高档口径，
+ * prd#858 钉过 Seedance 必须取最高档 37。媒体模型的 price_tiers 才是媒体产物价，
+ * pricing.* 是文本 token 侧分项价 —— gemini-3.1-flash-lite-image 图片产出
+ * ¥204/M、文本 output 仅 ¥10.2/M，先读 pricing 会把主价格错标成便宜一个量级的文本价）→
  * pricing 的 output||input（Seedance 这类按 token 计价、无矩阵的视频模型，
  * ¥46/M）→ 未配价 undefined。
  * unit 是随金额来源配对的后缀（/张、/M、/秒），unitName 是给「计费单位」格的
@@ -95,10 +97,20 @@ export function mediaPrimaryPrice(
       : undefined
     return { amount, unit: suffix, unitName: suffix.slice(1) }
   }
-  const top = (tiers ?? []).reduce<CatalogPriceTier | undefined>(
-    (max, tier) => (parseFloat(tier.price) > parseFloat(max?.price ?? '0') ? tier : max),
-    undefined,
-  )
+  // prd#1010 产品口径（2026-09-15）：按张计价的图片档取输出档最低价（无 output
+  // 桶时在全部张档里取最低）；视频/秒与 token 矩阵仍取最高档（prd#858）。
+  const priced = (tiers ?? []).filter((tier) => parseFloat(tier.price) > 0)
+  const imageTiers = priced.filter((tier) => tier.unit === '张' || tier.unit_en === 'image')
+  const pick = (pool: CatalogPriceTier[], lowest: boolean) =>
+    pool.reduce<CatalogPriceTier | undefined>((best, tier) => {
+      if (!best) return tier
+      const cmp = parseFloat(tier.price) - parseFloat(best.price)
+      return (lowest ? cmp < 0 : cmp > 0) ? tier : best
+    }, undefined)
+  const imageOutputTiers = imageTiers.filter((tier) => tier.bucket?.includes('output'))
+  const top = imageTiers.length
+    ? pick(imageOutputTiers.length ? imageOutputTiers : imageTiers, true)
+    : pick(priced, false)
   const unitName = (!isZhLang() && priceUnitEN?.trim()) || priceUnit || 'M'
   if (top) {
     // originalAmount 必须跟主价同源：doubao-seedance-2.0-mini 主价取最高档

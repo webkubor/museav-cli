@@ -28,7 +28,6 @@ import { resolveModelCategory, hasPlaygroundExperience } from '../model-experien
 import { mapApiProtocols } from '../api-code-samples'
 import { ModelsCompareModal } from '../components/ModelsCompareModal'
 import { ApiAccessPanel } from './ApiAccessPanel'
-import { RuntimeMetricsSection } from './RuntimeMetricsSection'
 import { BenchmarkSection } from './BenchmarkSection'
 import '../catalog/catalog.css'
 
@@ -145,6 +144,12 @@ export default function ModelDetailPage() {
    * scrollIntoView 确实被调用，但那一刻页面还没撑开（scrollHeight 898 / 视口 620），
    * 算出的目标到不了 API 区。rAF 延后一帧、瞬时滚动、依赖 related.length 重试都试过，
    * 均未生效，需要单独排查（与本次「详情页对齐原型」无关，故不在本次改动里带）。
+   *
+   * ⚠️ 排查时注意：#1035 下线「平台运行表现」后，API 接入区下方只剩两个**条件渲染**块
+   * （BenchmarkSection 无数据 return null、相关模型 related.length > 0 才渲染）。被删的那块
+   * 是无条件渲染、约 350–400px 高，等于凭空垫了一段可滚动余量。⇒ 对「既无 Benchmark 数据
+   * 又无相关模型」的模型，页面总高可能小于视口、文档根本不可滚动，scrollIntoView 成为
+   * 永久 no-op。修这个 bug 时别只按「等页面撑开再滚」的思路，那类模型撑开也不够。
    */
   useEffect(() => {
     if (navState?.scrollTo === 'api-access' && detail && apiSectionRef.current) {
@@ -291,10 +296,15 @@ export default function ModelDetailPage() {
             />
           </div>
 
-          {/* v1.0.6 §2.3 区块顺序：Hero/规格 → API 接入 → 平台运行表现 →
-              Benchmark → 相关模型。两块都是独立 .mg-tile.mg-detail-card，
-              与现有详情的纵向节奏一致，不把详情改成一张长卡。 */}
-          <RuntimeMetricsSection />
+          {/* 区块顺序：Hero/规格 → API 接入 → Benchmark → 相关模型。
+              「平台运行表现」原本夹在 API 接入与 Benchmark 之间，产品侧决定这类平台侧
+              调用统计不再对外暴露，已整块下线（modelgo/shared/modelgo_prd#1035）。
+              ⚠️ 它从头到尾只有 mock 数据、从未接过真实统计接口，所以下线**不涉及**
+              任何后端端点，别去找要一起下掉的接口。
+              计划稿 docs/superpowers/plans/2026-08-24-v1.0.6-model-discovery-ui-flow.md 里提到
+              本区块的地方已全标注（grep ⛔），别照它加回来；按小标题定位，章号有重复（「3.」「4.」各两个）。
+              Benchmark 是独立 .mg-tile.mg-detail-card，区块间距由外层 .models-catalog-page
+              的 flex gap 统一给（卡片自身无 margin），删掉上一块不会留空洞。 */}
           <BenchmarkSection modelId={detail.model_id} />
 
           {related.length > 0 && (

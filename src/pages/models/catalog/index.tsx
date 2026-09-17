@@ -37,25 +37,6 @@ import type { CatalogModelItem } from '@/types'
 import './catalog.css'
 
 
-/**
- * 模型发现入口的开关。
- *
- * 模型发现页本身与路由 `/models/discovery` 都保留 —— 关掉的只是模型广场工具栏里这枚
- * **唯一入口按钮**，直接输 URL 仍能进（方便验证与演示）。
- *
- * 为什么要开关：v1.0.6 联调期入口先不对外露出 —— 榜单里 161 个标「ModelGo 已接入」的
- * 模型缺 `modelgo_id` 点不进详情页（qa#718），Benchmark 只有 18/33 命中，热门 Agent 排行
- * 还没数据源（qa#708 第 4 条）。开关留着，是为了随时能把入口收回去。
- *
- * 取值（2026-09-08 现状）：`test` 与当班 `release/v1.0.6` 的 `.env.test`、
- * `.env.development` **都配了 `on`**，即测试环境入口已开。`main` 不配 —— 生产还没有
- * 这个功能。原先承载它的 `feature/v1.0.6-model-discovery` 分支已合入并删除，
- * 不要再照它找开关。
- *
- * 路由 `/models/discovery` 在所有分支上都通，直接输 URL 就能看页面，
- * 开关管的只是模型广场工具栏那枚入口按钮。
- */
-const DISCOVERY_ENTRY_ENABLED = import.meta.env.VITE_ENABLE_DISCOVERY_ENTRY === 'on'
 
 type SortKey = 'default' | 'newest' | 'cheapest'
 
@@ -488,11 +469,15 @@ export default function ModelsCatalogPage() {
                 与搜索、排序同一行的最右，柱状图标 + 文案 + 右箭头，品牌色强调。
                 此前放在页头且降成中性 outline，与原型不一致（2026-09-03 需求方指出）。
                 尺寸与同一行的搜索(lg)/排序触发器(lg)同档（2026-09-04 控件统一）：
-                此前 size="sm"(32px) 跟在 48px 的搜索框后面，flex 行里高度参差。 */}
-            {DISCOVERY_ENTRY_ENABLED && (
-              <Button
+                此前 size="sm"(32px) 跟在 48px 的搜索框后面，flex 行里高度参差。
+                横向留白单独降到 md 档（2rem=32px → 16px，modelgo/shared/modelgo_prd#1034）：lg 档的 2rem
+                是给整行主操作按钮留的，套在「图标 + 四字 + 箭头」这种短内容上会在文案两侧
+                各撑出一大块空白（需求方反馈「这两边空白咋这么多」）。只改 padding-inline，
+                高度仍是 lg，同行搜索框/排序器的 48px 对齐不受影响。 */}
+            <Button
                 variant="brand-outline"
                 size="lg"
+                className="px-[var(--mg-control-pad-x-md)]"
                 onClick={() => {
                   // 只记点击，不把「加载成功」伪报成点击（§2.1）
                   trackEvent('marketplace_discovery_entry_clicked', { source: 'catalog_toolbar' })
@@ -502,8 +487,7 @@ export default function ModelsCatalogPage() {
                 <LuChartColumn size={14} />
                 {t('modelsCatalog.discovery.entry')}
                 <LuArrowRight size={13} />
-              </Button>
-            )}
+            </Button>
           </div>
 
           {/* 输出模态分类栏（#872 需求点 9）：搜索栏下方，与侧栏各维度组合筛选；

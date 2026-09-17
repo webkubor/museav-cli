@@ -102,9 +102,21 @@ export function AgentPopularityLeaderboard() {
       ) : (
         <div className="model-discovery-agent-popularity-grid" id="agent-popularity-list" role="list">
           {agentColumns.map((column, columnIndex) => <div className="model-discovery-agent-popularity-column" key={columnIndex} role="presentation">
-            {column.map((agent) => <div className="model-discovery-agent-popularity-row" key={agent.app_id} role="listitem">
-              {/* rank 用接口原值 —— 名次有空洞是正常的，不要用下标 */}
-              <span className="model-discovery-agent-popularity-rank">{agent.rank}.</span>
+            {column.map((agent, rowIndex) => <div className="model-discovery-agent-popularity-row" key={agent.app_id} role="listitem">
+              {/*
+                序号用**展示位次**（跨列连号 1..N），不是接口的 `agent.rank`。
+
+                接口原值是带洞的：实测 day 榜返回 [2,4,5,6,8,9,10,11,12,14,15,16,17,19,20,…]
+                —— 首条就是 2，缺 1/3/7/13/18（源站把部分应用设为不公开）。原样展示会让
+                用户看到「排行榜从第 2 名开始」，以为页面坏了。owner 2026-09-15 拍板：
+                **顺序仍按接口给的来（不重排序），只把显示的编号改成 1,2,3…**
+
+                ⚠️ 这是「显示位次」不是「行业名次」—— 别再拿它跟 OpenRouter 原始名次对账；
+                洞的成因与口径已开单 qa#732 找数据侧确认。
+                列是先切后渲染的（左列 0..columnSize-1、右列 columnSize..），所以要
+                加上 columnIndex * columnSize 才能跨列连号，不能只用列内下标。
+              */}
+              <span className="model-discovery-agent-popularity-rank">{columnIndex * columnSize + rowIndex + 1}.</span>
               <DiscoveryAgentIcon id={String(agent.app_id)} name={agent.title} />
               <div className="model-discovery-agent-popularity-copy">
                 <strong>{agent.title}</strong>

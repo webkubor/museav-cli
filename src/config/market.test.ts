@@ -8,7 +8,7 @@ vi.stubEnv('VITE_GLOBAL_SITE', 'https://modelgo.ai')
 vi.stubEnv('VITE_GLOBAL_CONSOLE', 'https://console.modelgo.ai')
 vi.stubEnv('VITE_GLOBAL_DOCS', 'https://docs.modelgo.ai')
 
-const { siteUrlForLocale } = await import('./market')
+const { siteUrlForLocale, getMarketConfig } = await import('./market')
 
 /**
  * 锁住官网语言前缀映射（shared/modelgo_prd#374）。
@@ -37,5 +37,12 @@ describe('siteUrlForLocale', () => {
 
   it('locale 缺省按非中文处理，不误加前缀', () => {
     expect(siteUrlForLocale('global', '')).toBe('https://modelgo.ai')
+  })
+})
+
+/** 换绑弹窗求助出口（shared/modelgo_prd#837）：两个市场都用同一个反馈邮箱 feedback@modelgo.com（boss 09-15 定） */
+describe('supportEmail', () => {
+  it.each(['china', 'global'] as const)('%s 市场配置了合法邮箱', (market) => {
+    expect(getMarketConfig(market).supportEmail).toMatch(/^[^\s@]+@modelgo\.com$/)
   })
 })

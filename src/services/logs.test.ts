@@ -205,3 +205,47 @@ describe('getLogsSummary 打的端点', () => {
     expect(s.total_cost).toBeUndefined()
   })
 })
+
+describe('listCallLogs 透传 api_key_type（shared/modelgo_prd#1036）', () => {
+  beforeEach(() => {
+    getMock.mockReset()
+  })
+
+  // 新手指南第 ⑤ 步要靠它把「模型体验」那条请求排除掉；真源是网关落库的
+  // metadata.api_key_type（web-api /model-logs 的 api_key_type 筛选同源）。
+  it('从 metadata.api_key_type 取值，模型体验的行读出 trial', async () => {
+    getMock.mockResolvedValue({
+      items: [
+        {
+          request_id: '228b1d59-5128-4724-a0f4-e6ae6af24157',
+          started_at: '2026-09-15T08:18:48.000Z',
+          requested_model: 'qwen3.6-flash',
+          metadata: { api_key_name: '__trial__', api_key_type: 'trial' },
+        },
+        {
+          request_id: 'gw_43820446-77e0-4f30-9078-04cd0c00e3e7',
+          started_at: '2026-09-15T08:21:22.000Z',
+          requested_model: 'qwen3.6-flash',
+          metadata: { api_key_name: '11', api_key_type: 'personal' },
+        },
+      ],
+      limit: 15,
+    })
+
+    const result = await listCallLogs({ limit: 15 })
+
+    expect(result.items[0].api_key_type).toBe('trial')
+    expect(result.items[1].api_key_type).toBe('personal')
+  })
+
+  it('历史行没有 metadata 时保持空串（未知），不猜成 personal', async () => {
+    getMock.mockResolvedValue({
+      items: [{ request_id: 'gw_old', started_at: '2026-06-01T00:00:00.000Z' }],
+      limit: 15,
+    })
+
+    const result = await listCallLogs({ limit: 15 })
+
+    expect(result.items[0].api_key_type).toBe('')
+  })
+})

@@ -26,6 +26,11 @@ export interface MarketConfig {
   consoleUrl: string
   /** 开发者文档站 URL */
   docsUrl: string
+  /**
+   * 人工支持邮箱（shared/modelgo_prd#837）：换绑弹窗「无法接收验证码？联系人工客服」直达 mailto。
+   * 控制台内嵌的平台助手是 1.0.7 的能力，1.0.6 这里不能依赖它；地址按市场分。
+   */
+  supportEmail: string
 }
 
 export const isTestOrDev = (): boolean => {
@@ -73,6 +78,7 @@ const configs: Record<Market, MarketConfig> = {
     siteUrl: requireEnv(import.meta.env.VITE_DOMESTIC_SITE, 'VITE_DOMESTIC_SITE'),
     consoleUrl: requireEnv(import.meta.env.VITE_DOMESTIC_CONSOLE, 'VITE_DOMESTIC_CONSOLE'),
     docsUrl: requireEnv(import.meta.env.VITE_DOMESTIC_DOCS, 'VITE_DOMESTIC_DOCS'),
+    supportEmail: 'feedback@modelgo.com',
   },
 
   global: {
@@ -90,6 +96,7 @@ const configs: Record<Market, MarketConfig> = {
     siteUrl: requireEnv(import.meta.env.VITE_GLOBAL_SITE, 'VITE_GLOBAL_SITE'),
     consoleUrl: requireEnv(import.meta.env.VITE_GLOBAL_CONSOLE, 'VITE_GLOBAL_CONSOLE'),
     docsUrl: requireEnv(import.meta.env.VITE_GLOBAL_DOCS, 'VITE_GLOBAL_DOCS'),
+    supportEmail: 'feedback@modelgo.com',
   },
 }
 

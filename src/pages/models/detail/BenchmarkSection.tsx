@@ -31,14 +31,18 @@ import { trackEvent } from '@/lib/track'
 import { InfoTip } from '@/components/ui/InfoTip'
 import type { BenchmarkCompositeIndex, BenchmarkItem, DiscoveryMetric } from '@/types'
 
-/** 综合指数的展示名。接口只给 metric 码，中文名前端定。 */
-const COMPOSITE_LABEL: Partial<Record<DiscoveryMetric, string>> = {
-  INTELLIGENCE_INDEX: '智力指数',
-  CODING_INDEX: '代码指数',
-  AGENTIC_INDEX: 'Agent 指数',
-  ELO: 'Elo 评分',
-  VOICE_ELO: '语音 Elo',
-  AA_WER: 'AA-WER 词错率',
+/**
+ * 综合指数的展示名。接口只给 metric 码，展示名前端定。
+ * 走 i18n：原先这里写死中文表，英文环境下整排卡片标题都是中文（qa#735 同源）。
+ * 未收录的 metric 码回落成码本身，不额外造词。
+ */
+const COMPOSITE_LABEL_KEYS: Partial<Record<DiscoveryMetric, string>> = {
+  INTELLIGENCE_INDEX: 'modelsCatalog.detail.compositeMetric.INTELLIGENCE_INDEX',
+  CODING_INDEX: 'modelsCatalog.detail.compositeMetric.CODING_INDEX',
+  AGENTIC_INDEX: 'modelsCatalog.detail.compositeMetric.AGENTIC_INDEX',
+  ELO: 'modelsCatalog.detail.compositeMetric.ELO',
+  VOICE_ELO: 'modelsCatalog.detail.compositeMetric.VOICE_ELO',
+  AA_WER: 'modelsCatalog.detail.compositeMetric.AA_WER',
 }
 
 /**
@@ -99,7 +103,9 @@ function CompositeDistribution({ index, label }: { index: BenchmarkCompositeInde
 }
 
 function CompositeCard({ index }: { index: BenchmarkCompositeIndex }) {
-  const label = COMPOSITE_LABEL[index.metric] ?? index.metric
+  const { t } = useTranslation()
+  const labelKey = COMPOSITE_LABEL_KEYS[index.metric]
+  const label = labelKey ? t(labelKey) : index.metric
   const hasRank = index.rank !== null && index.total !== null
 
   // 无值不出卡（PRD §11.2「不补空卡」）。上游 composites 已过滤，这里是同语义兜底 ——

@@ -1073,6 +1073,10 @@ export interface PlatformConfigResponse {
   enabled_withdraw_methods?: string[]
   settlement_currency?: string
   site?: string
+  /** WechatPayee is the legal-entity name shown as the WeChat cashier
+payee (prd#899). Comes from Nacos (config.WechatPayeeName), site-specific per
+deployment. Omitted when unset ⇒ the frontend cashier keeps its per-site default. */
+  wechat_payee?: string
 }
 
 export interface PreferenceNotificationPrefs {

@@ -13,13 +13,14 @@ export type RechargePaymentChannel = (typeof RECHARGE_PAYMENT_CHANNEL_KEYS)[numb
  * 用户在收银台看到的收款方与实际收款主体对不上，是合规展示问题，不是文案问题。
  * 其余渠道（Stripe 卡 / 支付宝）跳官方页、主体名本来就对，只有自渲染的微信收银台错。
  *
- * 这两个常量最终会变成兜底值：单里的完整方案是后端 Nacos 出 `wechat_payee_name`、
- * 前端读 `platform_config.wechat_payee`，后端那步没到之前，先把兜底改对。
+ * 这两个常量是**兜底值**：完整链路是后端 Nacos 出 `wechat_payee_name`、
+ * `platform_config.wechat_payee` 带给前端（configured 参数），未配置时才按站点兜底。
+ * 页面侧统一走 useWechatPayee()（use-platform-config），不要直接调这个函数。
  */
 export const WECHAT_PAYEE_CN = '杭州词元共生科技有限公司'
 export const WECHAT_PAYEE_INTL = 'MODELGO PTE. LTD.'
-export function wechatPayeeName(site: string | null | undefined): string {
-  return site === 'global' ? WECHAT_PAYEE_INTL : WECHAT_PAYEE_CN
+export function wechatPayeeName(site: string | null | undefined, configured?: string | null): string {
+  return configured?.trim() || (site === 'global' ? WECHAT_PAYEE_INTL : WECHAT_PAYEE_CN)
 }
 
 export const RECHARGE_CHANNEL_KEYS = ['alipay', 'wechat', 'stripe', 'manual', 'stripe_wechat', 'stripe_alipay'] as const

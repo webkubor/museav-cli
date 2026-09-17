@@ -19,15 +19,27 @@ import { useWechatPayee } from '@/hooks/use-platform-config'
  *    共享设计系统约束，视觉效果优先于组件复用率。
  * 仅浅色（规范未给深色变体，不臆造）；仍复用 useCopy 等纯逻辑 hook（非 UI 组件）。
  */
+/**
+ * 收银台配色 —— 全部走设计 token，**不写死十六进制**。
+ *
+ * 2026-09-17（prd#1061）之前这里是一套写死的深紫（`#5D3FD3` 等 9 个值），
+ * 国际站打开收银台是一页紫色、跟站点其余部分对不上，而控制台主题色是蓝的。
+ * 换成 token 之后国内站/国外站各自跟随自己的品牌色，换主题不用改这个文件。
+ *
+ * 为什么之前没被拦住：硬编码门禁只有 7 条规则（danger-hex / overlay / global-z /
+ * easing / transition-duration / radius-px / shadow），**没有一条管品牌色** ——
+ * 跟字号那次同一个路径（见 scripts/check-css-tokens.mjs 的注释）。
+ * 本单第 4 项是给门禁补 `hardcoded-brand-color`，在 modelgo-design-tokens 仓。
+ */
 const PAY = {
-  primary: '#5D3FD3', // Deep Royal Purple —— CTA、进度、强调
-  onPrimary: '#FFFFFF',
-  secondary: '#E6E6FA', // Soft Lavender —— 次级按钮底、辅助高光
-  background: '#F8F7FF', // 页面画布（纯色，非渐变）
-  surface: '#FFFFFF', // 卡片
-  neutral: '#1A1A1A', // 主文字
-  border: '#E5E5E5',
-  shadowCard: '0px 4px 20px rgba(93, 63, 211, 0.06)',
+  primary: 'var(--mg-brand-base)', // CTA、进度、强调 —— 随市场切 cn/global
+  onPrimary: 'var(--mg-on-primary)',
+  secondary: 'var(--mg-brand-pale)', // 次级按钮底、辅助高光
+  background: 'var(--mg-bg-1)', // 页面画布
+  surface: 'var(--mg-bg-0)', // 卡片
+  neutral: 'var(--mg-text-1)', // 主文字
+  border: 'var(--mg-border)',
+  shadowCard: 'var(--shadow-md)',
 } as const
 
 const WECHAT_GREEN = '#07c160' // 成功/等待中的语义色场景仍保留品牌绿（规范：Success 用 Green）
@@ -207,7 +219,7 @@ export default function WechatCashierPage() {
           <div
             className="pointer-events-none absolute inset-x-0 top-0 h-1"
             style={{
-              background: `linear-gradient(90deg, ${PAY.primary} 0%, ${PAY.primary}55 30%, ${PAY.secondary} 70%, ${PAY.primary}55 100%)`,
+              background: `linear-gradient(90deg, ${PAY.primary} 0%, color-mix(in oklab, ${PAY.primary} 33%, transparent) 30%, ${PAY.secondary} 70%, color-mix(in oklab, ${PAY.primary} 33%, transparent) 100%)`,
               backgroundSize: state === 'pending' ? '200% 100%' : '100% 100%',
               animation: state === 'pending' ? 'shimmer-slide 2s ease-in-out infinite' : 'none',
             }}

@@ -1,69 +1,61 @@
-/* 模型广场配色定稿（2026-08-06 设计填表口径，双市场 × 双主题四态一览）。
- * 唯一颜色来源：改配色只改这里的变量，别去分区文件里写死值。
- * 2026-08-06：玻璃面/描边不在本文件定值，改为引用 design-tokens 的
- * --mg-glass-surface / --mg-glass-line —— 否则同一个「白 50%」会在这里和
- * 规范里各存一份，调规范看不到效果（已踩过）。
- * 市场由 <html data-market> 区分（缺省=国内），深色档由 [theme-mode='dark']
- * （html 或 body）区分。整页背景不走变量，直接定义在 layout/public-shell.css。 */
+/* 模型广场配色定稿。
+ *
+ * 2026-09-17（prd#1061）重写：原先四个象限（国内/国际 × 浅/深）**各写一套写死的
+ * rgba/hex**，29 处。而那些值就是 --mg-brand-cn-base / --mg-brand-global-base 的
+ * 字面抄写 —— 更糟的是**深色档已经漂移**：共享包把 cn-base 深色档改成了 #5b8def，
+ * 这里还写着 #5f78ff / #b8c4ff。也就是说**改品牌色，模型广场不跟**。
+ * 而本文件头原本写着「唯一颜色来源：改配色只改这里」，等于在 token 之上又立了一层真源。
+ *
+ * 现在全部改引 --brand-* / --mg-* token：
+ *   · 带透明度用 rgba(var(--brand-base-rgb), x) —— 不抄 rgb 三元组
+ *   · 派生深浅用 color-mix(in oklab, ...) —— 不写死色相，否则海外绿站深色下整卡发蓝
+ * token 本身已按 data-market 与 theme-mode 切好，所以**四个象限塌成一套**，
+ * 只有深色档确实需要不同透明度/不同面色的几条单独覆盖。
+ *
+ * 玻璃面/描边仍引 design-tokens 的 --mg-glass-surface / --mg-glass-line ——
+ * 否则同一个「白 50%」会在这里和规范里各存一份，调规范看不到效果（2026-08-06 已踩过）。
+ * 市场由 <html data-market> 区分（缺省=国内），深色档由 [theme-mode='dark'] 区分。
+ * 整页背景不走变量，直接定义在 layout/public-shell.css。 */
 
 :root {
-  /* 国内 · 浅色（缺省）。2026-08-06 二次口径：浅色档卡片/筛选卡改「白色毛玻璃」
-     （半透明白 + 元素上的 backdrop-filter），色值待设计重新给，先出质感。 */
   --plaza-panel-bg: var(--mg-glass-surface);             /* 模型筛选卡 —— 引规范玻璃面，勿写死 */
   --plaza-card-border: var(--mg-glass-line);             /* 卡片/筛选卡 1px 描边 —— 引规范，随四象限走 */
-  /* 移入色：毛玻璃卡面（白50%叠蓝渐变）合成后≈#EFF3FE，纯色 #EFF3FE 会隐形，
-     改品牌色淡染（比选中态 12% 低一档，保持移入<选中的层级） */
-  --plaza-row-hover-bg: rgba(34, 61, 229, 0.08);         /* 筛选行/排序按钮 鼠标移入 */
-  --plaza-row-active-bg: rgba(34, 61, 229, 0.12);        /* 筛选行 选中底 */
-  --plaza-row-active-fg: #223de5;                        /* 筛选行 选中文字 */
-  --plaza-input-bg: var(--mg-glass-surface);             /* 搜索框/排序按钮 —— 与卡片同档，引同一 token */
-  --plaza-focus-border: #223de5;                         /* 搜索框聚焦描边 */
-  --plaza-focus-ring: rgba(34, 61, 229, 0.18);           /* 搜索框聚焦光圈 */
-  --plaza-card-bg: var(--mg-glass-surface);              /* 模型卡片底 —— 引规范玻璃面 */
-  --plaza-card-hover-border: rgba(34, 61, 229, 0.28);    /* 模型卡片移入描边 */
-  --plaza-actions-bg: var(--mg-glass-surface-strong);         /* 卡片底部浮出操作条（毛玻璃，太透会露出底下规格字） */
+  /* 移入色：毛玻璃卡面合成后≈#EFF3FE，纯色会隐形，改用品牌色淡染
+     （比选中态 12% 低一档，保持移入<选中的层级） */
+  --plaza-row-hover-bg: rgba(var(--brand-base-rgb), 0.08);   /* 筛选行/排序按钮 鼠标移入 */
+  --plaza-row-active-bg: rgba(var(--brand-base-rgb), 0.12);  /* 筛选行 选中底 */
+  --plaza-row-active-fg: var(--brand-base);                  /* 筛选行 选中文字 */
+  --plaza-input-bg: var(--mg-glass-surface);             /* 搜索框/排序按钮 —— 与卡片同档 */
+  --plaza-focus-border: var(--brand-base);               /* 搜索框聚焦描边 */
+  --plaza-focus-ring: rgba(var(--brand-base-rgb), 0.18); /* 搜索框聚焦光圈 */
+  --plaza-card-bg: var(--mg-glass-surface);              /* 模型卡片底 */
+  --plaza-card-hover-border: rgba(var(--brand-base-rgb), 0.28);
+  --plaza-actions-bg: var(--mg-glass-surface-strong);    /* 卡片底部浮出操作条 */
 }
 
-/* 国际 · 浅色 */
-[data-market='global'] {
-  --plaza-row-hover-bg: rgba(15, 159, 89, 0.08);
-  --plaza-row-active-bg: rgba(15, 159, 89, 0.12);
-  --plaza-row-active-fg: #0f9f59;
-  --plaza-focus-border: #0f9f59;
-  --plaza-focus-ring: rgba(15, 159, 89, 0.18);
-  /* 卡片底继承缺省的白色毛玻璃（浅色档两市场同质感） */
-  --plaza-card-hover-border: rgba(15, 159, 89, 0.28);
-}
-
-/* 国内 · 深色 */
+/* 深色档：两个市场共用这一套。面色由 --mg-bg-* 给（共享包已按 data-theme=dark 切），
+   品牌相关全部继续走 --brand-base-rgb —— 它自己会跟着市场与主题变。
+   只有透明度需要提档：暗底吃色，浅色档的 8%/12% 在深色下几乎看不出。 */
 [theme-mode='dark'],
 body[theme-mode='dark'] {
-  --plaza-panel-bg: rgba(20, 28, 44, 0.72);
+  --plaza-panel-bg: color-mix(in oklab, var(--mg-bg-2) 72%, transparent);
   --plaza-card-border: var(--mg-card-border);
-  --plaza-row-hover-bg: rgba(34, 61, 229, 0.16);
-  --plaza-row-active-bg: rgba(34, 61, 229, 0.24);
-  --plaza-row-active-fg: #b8c4ff;
-  --plaza-input-bg: rgba(255, 255, 255, 0.06);
-  --plaza-focus-border: #5f78ff;
-  --plaza-focus-ring: rgba(34, 61, 229, 0.32);
-  --plaza-card-bg: linear-gradient(135deg, #17213a, #101827);
-  --plaza-card-hover-border: rgba(95, 120, 255, 0.4);
-  --plaza-actions-bg: rgba(20, 28, 44, 0.75);
-}
-
-/* 国际 · 深色 */
-[data-market='global'][theme-mode='dark'],
-[data-market='global'] body[theme-mode='dark'] {
-  --plaza-panel-bg: rgba(18, 28, 23, 0.72);
-  --plaza-card-border: var(--mg-card-border);
-  --plaza-row-hover-bg: rgba(15, 159, 89, 0.16);
-  --plaza-row-active-bg: rgba(15, 159, 89, 0.24);
-  --plaza-row-active-fg: #8ef4bf;
-  --plaza-focus-border: #36d88a;
-  --plaza-focus-ring: rgba(15, 159, 89, 0.32);
-  --plaza-card-bg: linear-gradient(135deg, #15251e, #101814);
-  --plaza-card-hover-border: rgba(54, 216, 138, 0.4);
-  /* 必须显式给：不写就掉回「国内·深色」的 rgba(20,28,44,.75)（海军蓝），
-     海外深色下移入卡片时底部操作条会是蓝的。色相对齐本块的 --plaza-panel-bg。 */
-  --plaza-actions-bg: rgba(18, 28, 23, 0.75);
+  --plaza-row-hover-bg: rgba(var(--brand-base-rgb), 0.16);
+  --plaza-row-active-bg: rgba(var(--brand-base-rgb), 0.24);
+  /* 🔴 暗底上选中文字要**提亮**，用 --brand-light 不是 --brand-pale。
+     深色档里两者语义与浅色档相反：pale（「淡」）在深色主题下是更接近背景的**暗**色
+     （实测 china dark = #16224d 深蓝），拿它当文字直接看不见。
+     light 才是提亮档（实测 #bcd2fb 亮蓝 / 海外 #b6f5ad 亮绿），与下面的聚焦描边同档。 */
+  --plaza-row-active-fg: var(--brand-light);
+  --plaza-input-bg: color-mix(in oklab, var(--mg-text-1) 6%, transparent);
+  --plaza-focus-border: var(--brand-light);
+  --plaza-focus-ring: rgba(var(--brand-base-rgb), 0.32);
+  --plaza-card-bg: linear-gradient(135deg,
+    color-mix(in oklab, var(--brand-base) 8%, var(--mg-bg-2)),
+    color-mix(in oklab, var(--brand-base) 4%, var(--mg-bg-1)));
+  --plaza-card-hover-border: color-mix(in oklab, var(--brand-light) 40%, transparent);
+  /* 必须显式给：不写就掉回浅色档的 glass-surface-strong。
+     色相对齐本块的 --plaza-panel-bg —— 原先这里国内写海军蓝、海外单独覆盖成绿调，
+     现在两边都由 --mg-bg-2 + 品牌淡染合成，不需要再分市场写。 */
+  --plaza-actions-bg: color-mix(in oklab, var(--mg-bg-2) 75%, transparent);
 }

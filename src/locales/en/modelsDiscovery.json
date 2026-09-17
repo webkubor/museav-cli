@@ -203,6 +203,7 @@
       "collapse": "Collapse",
       "disabled": "Disabled",
       "searchModel": "Search models",
+      "searchVendor": "Search vendors",
       "showingAll": "Showing all",
       "allVendors": "All vendors",
       "relativeTo": "Compared with",
@@ -228,6 +229,7 @@
       "notOnModelGo": "This model is not on ModelGo yet",
       "noData": "No data",
       "noMatchModel": "No matching models",
+      "noMatchVendor": "No matching vendors",
       "noModelUnderFilter": "No models match the current filters",
       "noMetricData": "No data for this metric"
     },

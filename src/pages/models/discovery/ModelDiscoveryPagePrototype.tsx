@@ -381,6 +381,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   const [selectedModelNames, setSelectedModelNames] = useState<string[]>([]);
   const [rankingMetric, setRankingMetric] = useState<RankingMetric>("overall");
   const [providerFilter, setProviderFilter] = useState<string[]>([]);
+  const [providerSearch, setProviderSearch] = useState("");
   const [tableAccess, setTableAccess] = useState<"all" | "supported" | "pending">("all");
   const [tablePage, setTablePage] = useState(1);
   /**
@@ -869,6 +870,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   }
   const chartModels = chartCandidates.filter((model) => selectedModelNames.includes(model.name));
   const filteredModelOptions = chartCandidates.filter((model) => model.name.toLowerCase().includes(modelFilterSearch.trim().toLowerCase()));
+  const filteredProviders = providers.filter((provider) => provider.toLowerCase().includes(providerSearch.trim().toLowerCase()));
   const activeXAxis = analysisXMetrics[xMetric] ?? analysisXMetrics[0];
   /**
    * 散点坐标走 analysis 接口。
@@ -1285,10 +1287,21 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                   content={(close) => (
                     <>
                       <header><div><strong>{t("modelsDiscovery.filter.selectVendor")}</strong><span>{providerFilter.length === 0 ? t("modelsDiscovery.action.showingAll") : t("modelsDiscovery.filter.selectedCount", { count: providerFilter.length })}</span></div><button disabled={providerFilter.length === 0} onClick={() => setProviderFilter([])} type="button">{t("modelsDiscovery.filter.reset")}</button></header>
-                      <div className="model-discovery-provider-options">{providers.map((provider) => {
+                      <div className="model-discovery-provider-search">
+                        <Input
+                          autoFocus
+                          placeholder={t("modelsDiscovery.action.searchVendor")}
+                          value={providerSearch}
+                          onChange={(event) => setProviderSearch(event.target.value)}
+                          prefix={<LuSearch className="w-3.5 h-3.5" />}
+                          size="sm"
+                        />
+                      </div>
+                      <div className="model-discovery-provider-options">{filteredProviders.map((provider) => {
                         const selected = providerFilter.includes(provider);
                         return <button aria-pressed={selected} className={selected ? "selected" : ""} key={provider} onClick={() => toggleProvider(provider)} type="button"><i>{selected && <LuCheck size={11} />}</i><span>{provider}</span></button>;
-                      })}</div>
+                      })}
+                      {filteredProviders.length === 0 && <em>{t("modelsDiscovery.empty.noMatchVendor")}</em>}</div>
                       <footer><span>{providerFilter.length === 0 ? t("modelsDiscovery.filter.vendorCount", { count: providers.length }) : t("modelsDiscovery.filter.vendorFiltered", { count: providerFilter.length })}</span><button onClick={close} type="button">{t("modelsDiscovery.filter.done")}</button></footer>
                     </>
                   )}

@@ -203,6 +203,7 @@
       "collapse": "收起",
       "disabled": "停用",
       "searchModel": "搜索模型",
+      "searchVendor": "搜索厂商",
       "showingAll": "当前展示全部",
       "allVendors": "全部厂商",
       "relativeTo": "相对谁多",
@@ -228,6 +229,7 @@
       "notOnModelGo": "该模型尚未接入 ModelGo",
       "noData": "暂无数据",
       "noMatchModel": "未找到匹配模型",
+      "noMatchVendor": "未找到匹配厂商",
       "noModelUnderFilter": "当前筛选条件下没有模型",
       "noMetricData": "暂无该指标的数据"
     },

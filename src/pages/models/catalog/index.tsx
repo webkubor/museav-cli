@@ -37,25 +37,6 @@ import type { CatalogModelItem } from '@/types'
 import './catalog.css'
 
 
-/**
- * 模型发现入口的开关。
- *
- * 模型发现页本身与路由 `/models/discovery` 都保留 —— 关掉的只是模型广场工具栏里这枚
- * **唯一入口按钮**，直接输 URL 仍能进（方便验证与演示）。
- *
- * 为什么要开关：v1.0.6 联调期入口先不对外露出 —— 榜单里 161 个标「ModelGo 已接入」的
- * 模型缺 `modelgo_id` 点不进详情页（qa#718），Benchmark 只有 18/33 命中，热门 Agent 排行
- * 还没数据源（qa#708 第 4 条）。开关留着，是为了随时能把入口收回去。
- *
- * 取值（2026-09-17 起）：`.env.production` / `.env.test` / `.env.development` **全配 `on`**，
- * 即生产入口已随 V1.0.6 发车打开（owner 定）。开关本身保留 —— 上面那三条已知问题
- * 若在生产暴露得过于难看，把 `.env.production` 那行删掉即可立刻收回入口，不用改代码。
- * 原先承载它的 `feature/v1.0.6-model-discovery` 分支已合入并删除，不要再照它找开关。
- *
- * 路由 `/models/discovery` 在所有分支上都通，直接输 URL 就能看页面，
- * 开关管的只是模型广场工具栏那枚入口按钮。
- */
-const DISCOVERY_ENTRY_ENABLED = import.meta.env.VITE_ENABLE_DISCOVERY_ENTRY === 'on'
 
 type SortKey = 'default' | 'newest' | 'cheapest'
 
@@ -493,8 +474,7 @@ export default function ModelsCatalogPage() {
                 是给整行主操作按钮留的，套在「图标 + 四字 + 箭头」这种短内容上会在文案两侧
                 各撑出一大块空白（需求方反馈「这两边空白咋这么多」）。只改 padding-inline，
                 高度仍是 lg，同行搜索框/排序器的 48px 对齐不受影响。 */}
-            {DISCOVERY_ENTRY_ENABLED && (
-              <Button
+            <Button
                 variant="brand-outline"
                 size="lg"
                 className="px-[var(--mg-control-pad-x-md)]"
@@ -507,8 +487,7 @@ export default function ModelsCatalogPage() {
                 <LuChartColumn size={14} />
                 {t('modelsCatalog.discovery.entry')}
                 <LuArrowRight size={13} />
-              </Button>
-            )}
+            </Button>
           </div>
 
           {/* 输出模态分类栏（#872 需求点 9）：搜索栏下方，与侧栏各维度组合筛选；

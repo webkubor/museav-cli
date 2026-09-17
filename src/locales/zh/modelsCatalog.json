@@ -228,7 +228,9 @@
       "gradientFootnote": "价格按上下文长度与输出长度分档，最终以实际调用结算为准",
       "mainSpec": "主要规格",
       "notFoundHint": "它可能已下架，或只在另一个站点提供。",
-      "notFoundCrossSite": "去 ModelGo.ai 查看"
+      "notFoundCrossSite": "去 ModelGo.ai 查看",
+      "benchmarkTitle": "Benchmark 基准评测",
+      "benchmarkSnapshot": "数据截至 {{date}}"
     },
     "error.loadDetail": "加载模型详情失败，请稍后重试。",
     "discovery": {

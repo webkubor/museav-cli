@@ -37,7 +37,8 @@
       "integratedCom": "Available on ModelGo.ai",
       "notIntegrated": "Not on ModelGo yet",
       "notIntegratedShort": "Not integrated",
-      "pendingSupport": "{{name}} is not integrated yet"
+      "pendingSupport": "{{name}} is not integrated yet",
+      "pendingLabel": "Coming soon"
     },
     "metric": {
       "eloScore": "Elo Score",
@@ -206,7 +207,8 @@
       "allVendors": "All vendors",
       "relativeTo": "Compared with",
       "viewModelDetail": "View details for {{name}}",
-      "viewOnGlobal": "View {{name}} on ModelGo.ai"
+      "viewOnGlobal": "View {{name}} on ModelGo.ai",
+      "resetDefault": "Restore defaults"
     },
     "error": {
       "load": "Failed to load data",
@@ -289,7 +291,9 @@
       "selectedCount": "{{count}} selected",
       "vendorCount": "{{count}} vendors",
       "vendorFiltered": "{{count}} vendors selected",
-      "modelCount": "{{selected}} / {{total}} models"
+      "modelCount": "{{selected}} / {{total}} models",
+      "reset": "Reset",
+      "done": "Done"
     },
     "price": {
       "unitPrice": "Unit price\n{{detail}}",

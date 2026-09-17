@@ -1220,7 +1220,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                         {filteredModelOptions.map((model) => <button className={selectedModelNames.includes(model.name) ? "selected" : ""} key={model.name} onClick={() => toggleChartModel(model.name)} type="button"><DiscoveryModelIcon model={model.name} provider={model.provider} /><span><strong title={model.name}>{model.name}</strong><small>{model.provider}</small></span>{selectedModelNames.includes(model.name) && <LuCheck size={14} />}</button>)}
                         {filteredModelOptions.length === 0 && <em>{t("modelsDiscovery.empty.noMatchModel")}</em>}
                       </div>
-                      <footer><button onClick={() => setSelectedModelNames([])} type="button"><LuX size={13} />{t("modelsDiscovery.action.clear")}</button><button onClick={() => setSelectedModelNames(chartCandidates.map((model) => model.name))} type="button"><LuCheckCheck size={13} />{t("modelsDiscovery.action.selectAll")}</button><button onClick={() => setSelectedModelNames(defaultSelection())} type="button"><LuRotateCcw size={13} />恢复默认</button></footer>
+                      <footer><button onClick={() => setSelectedModelNames([])} type="button"><LuX size={13} />{t("modelsDiscovery.action.clear")}</button><button onClick={() => setSelectedModelNames(chartCandidates.map((model) => model.name))} type="button"><LuCheckCheck size={13} />{t("modelsDiscovery.action.selectAll")}</button><button onClick={() => setSelectedModelNames(defaultSelection())} type="button"><LuRotateCcw size={13} />{t("modelsDiscovery.action.resetDefault")}</button></footer>
                     </>
                   }
                 />
@@ -1270,12 +1270,12 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                   }
                   content={(close) => (
                     <>
-                      <header><div><strong>{t("modelsDiscovery.filter.selectVendor")}</strong><span>{providerFilter.length === 0 ? t("modelsDiscovery.action.showingAll") : t("modelsDiscovery.filter.selectedCount", { count: providerFilter.length })}</span></div><button disabled={providerFilter.length === 0} onClick={() => setProviderFilter([])} type="button">重置</button></header>
+                      <header><div><strong>{t("modelsDiscovery.filter.selectVendor")}</strong><span>{providerFilter.length === 0 ? t("modelsDiscovery.action.showingAll") : t("modelsDiscovery.filter.selectedCount", { count: providerFilter.length })}</span></div><button disabled={providerFilter.length === 0} onClick={() => setProviderFilter([])} type="button">{t("modelsDiscovery.filter.reset")}</button></header>
                       <div className="model-discovery-provider-options">{providers.map((provider) => {
                         const selected = providerFilter.includes(provider);
                         return <button aria-pressed={selected} className={selected ? "selected" : ""} key={provider} onClick={() => toggleProvider(provider)} type="button"><i>{selected && <LuCheck size={11} />}</i><span>{provider}</span></button>;
                       })}</div>
-                      <footer><span>{providerFilter.length === 0 ? t("modelsDiscovery.filter.vendorCount", { count: providers.length }) : t("modelsDiscovery.filter.vendorFiltered", { count: providerFilter.length })}</span><button onClick={close} type="button">完成</button></footer>
+                      <footer><span>{providerFilter.length === 0 ? t("modelsDiscovery.filter.vendorCount", { count: providers.length }) : t("modelsDiscovery.filter.vendorFiltered", { count: providerFilter.length })}</span><button onClick={close} type="button">{t("modelsDiscovery.filter.done")}</button></footer>
                     </>
                   )}
                 />
@@ -1373,7 +1373,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
                            本页又是 1:1 例外。plan §3.2 要求的是表格体系走 Table + Pagination，
                            没有要求行内按钮换组件。样式见 discovery.css .model-discovery-detail-btn。 */
                         ? <button aria-label={modelDetailAriaLabel(model)} className="model-discovery-detail-btn" onClick={(event) => { event.stopPropagation(); openModelDetail(model); }} title={t("modelsDiscovery.action.viewDetail")} type="button">{t("modelsDiscovery.action.viewDetail")}<LuArrowUpRight size={13} /></button>
-                        : <button aria-label={t("modelsDiscovery.status.pendingSupport", { name: model.name })} className="model-discovery-detail-btn" disabled title={t("modelsDiscovery.status.notIntegratedShort")} type="button">待支持</button>}
+                        : <button aria-label={t("modelsDiscovery.status.pendingSupport", { name: model.name })} className="model-discovery-detail-btn" disabled title={t("modelsDiscovery.status.notIntegratedShort")} type="button">{t("modelsDiscovery.status.pendingLabel")}</button>}
                     </TableCell>
                   </TableRow>
                 );

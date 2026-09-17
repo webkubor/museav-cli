@@ -174,8 +174,10 @@
      同名两义会让后来的人改错地方。 */
   --mg-float-blur: 24px;      /* 比 --mg-glass-blur(18px) 重一档：浮层糊的是正文，糊透才干净 */
   --mg-float-saturate: 1.6;   /* 补回模糊带来的灰化，否则玻璃显脏（深色尤甚） */
-  --mg-float-brand-mix: 5%;   /* 主题色染入量：到「能感觉到偏色」为止，不到「看得出是紫的」 */
-  --mg-float-opacity: 92%;    /* 遮挡底线，别往下调（实测 88% 以下背后正文开始可辨） */
+  --mg-float-brand-mix: 0%;   /* 浮层不染主题色 —— 2026-09-17 owner 看 API Key 抽屉「太丑」，
+                                 偏色叠在 bg-2 上整片发紫灰，与里面的纯白输入框撞得很脏。 */
+  --mg-float-opacity: 100%;   /* 实底。92% 那 8% 透光在大面积抽屉上就是脏，不是质感；
+                                 遮挡改由不透明度直接保证，不再依赖 backdrop-filter。 */
   --mg-float-surface: color-mix(in oklab, var(--brand-base) var(--mg-float-brand-mix), var(--mg-bg-2));
   --mg-float-bg: color-mix(in srgb, var(--mg-float-surface) var(--mg-float-opacity), transparent);
   --mg-float-line: color-mix(in oklab, var(--brand-base) 16%, var(--mg-glass-line));
@@ -316,8 +318,8 @@ body[theme-mode='dark'] {
   /* 浮层玻璃深色档：暗底上玻璃靠「淡白薄膜 + 品牌微光」立起来，不是靠更黑的面。
      brand-mix 提到 11%（暗底吃色，5% 完全看不出）；sheen 压到 12%（深色下白亮边一硬就假）；
      不透明度 90% 略低于浅色 —— 暗底本身对比就低，透出来的 10% 更没有可读性风险。 */
-  --mg-float-brand-mix: 11%;
-  --mg-float-opacity: 90%;
+  --mg-float-brand-mix: 0%;
+  --mg-float-opacity: 100%;
   --mg-float-line: color-mix(in oklab, var(--brand-mid) 22%, rgba(255, 255, 255, 0.13));
   --mg-float-sheen: rgba(255, 255, 255, 0.12);
   --mg-float-glow: 0 8px 34px -14px color-mix(in oklab, var(--brand-mid) 36%, transparent);

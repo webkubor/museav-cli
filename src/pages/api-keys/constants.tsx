@@ -107,7 +107,7 @@ export const CONNECT_ACTIONS: {
   {
     key: 'mgc',
     label: 'Quick Connect',
-    icon: <LuZap size={16} className="text-brand-base" />,
+    icon: <LuZap size={16} className="text-brand-base group-data-[state=active]:text-white" />,
   },
   {
     key: 'cc-switch',

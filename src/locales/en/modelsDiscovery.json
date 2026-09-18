@@ -177,7 +177,10 @@
       "imageEloDesc": "Image preference benchmark Elo",
       "videoEloDesc": "Video preference benchmark Elo",
       "voiceEloDesc": "Voice quality and preference benchmark Elo",
-      "costDesc": "Artificial Analysis weighted average benchmark task cost (USD/task)"
+      "costDesc": "Artificial Analysis weighted average benchmark task cost (USD/task)",
+      "ttftP50Unit": "First-token latency (ms)",
+      "perMCharPriceUnit": "Public API price per 1M characters ($/1M chars)",
+      "perKMinuteUnit": "Price per 1,000 audio minutes transcribed ($/1k min)"
     },
     "unit": {
       "successfulTasks": "tasks",

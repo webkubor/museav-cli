@@ -234,6 +234,15 @@ export interface DiscoveryModelOption {
   is_integrated: boolean
   /** 接入站点，徽标/可点性/落点的唯一判据（见 DiscoveryIntegratedSite，qa#727 起消费）。 */
   integrated_site?: DiscoveryIntegratedSite | null
+  /**
+   * 各市场下该模型的 id，实测键是 `cn` / `global`（跨站跳转取 global）。
+   *
+   * 2026-09-18 补：接口一直下发它，**但这里没声明**，于是散点图那条线取不到、
+   * 也没有类型提示，MODELGO_AI 的模型点进去落到 no-id 弹「尚未接入」（prd#1066）。
+   * rankings 那条线的同名字段早就声明了，两条线因此走出两种行为。
+   */
+  market_model_ids?: Record<string, string> | null
+  integrated_markets?: string[] | null
   is_open_source: boolean
 }
 

@@ -817,6 +817,15 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
         // 落点判据：supported 只说「有没有接入」，跳哪个站要看它接在哪个站。
         // 不带这个字段，model-options 这条线的详情跳转就会退化成「一律站内」。
         integrationStatus: option.integration_status,
+        // 跳国际站要用的 id。**口径必须和 toPrototypeModel 那条线逐字一致** ——
+        // 少了它，MODELGO_AI 的模型在 detailTarget 里落到 no-id，弹「尚未接入
+        // ModelGo」，而图上按 integrated_site 画的是实心（已接入），两句自相矛盾
+        // （prd#1066：散点图点实心点进不去详情）。
+        //
+        // 同一个 bug 这是第三次：#1013 列表展示、#1016 点击 gpt-6 astra、本次散点图。
+        // 前两次都只修了当时那个入口，而根因是**两条数据线各自构造 model 对象**，
+        // 少一个字段就少一种行为 —— discovery-data.test.ts 已加断言锁住两线字段一致。
+        globalModelId: option.market_model_ids?.global ?? option.source_slug ?? null,
       })),
     [allModelOptions, scope],
   );

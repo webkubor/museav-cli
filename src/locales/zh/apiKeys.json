@@ -260,12 +260,30 @@
       "copyCommand": "复制命令"
     },
     "connectAction": {
-      "mgc": { "label": "一键接入", "desc": "勾选即用" },
-      "cc-switch": { "label": "CC Switch", "desc": "一键切换" },
-      "claude-code": { "label": "Claude Code", "desc": "终端接入" },
-      "codex": { "label": "Codex", "desc": "配置导入" },
-      "openai-sdk": { "label": "OpenAI SDK", "desc": "代码示例" },
-      "curl": { "label": "cURL", "desc": "连通检查" }
+      "mgc": {
+        "label": "一键接入",
+        "desc": "勾选即用"
+      },
+      "cc-switch": {
+        "label": "CC Switch",
+        "desc": "一键切换"
+      },
+      "claude-code": {
+        "label": "Claude Code",
+        "desc": "终端接入"
+      },
+      "codex": {
+        "label": "Codex",
+        "desc": "配置导入"
+      },
+      "openai-sdk": {
+        "label": "OpenAI SDK",
+        "desc": "代码示例"
+      },
+      "curl": {
+        "label": "cURL",
+        "desc": "连通检查"
+      }
     },
     "connectSnippet": {
       "copyParams": "复制参数",

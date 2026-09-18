@@ -71,7 +71,7 @@ import {
 } from './use-discovery-query'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { OverflowTip } from '@/components/ui/OverflowTip'
-import { defaultScatterSelection, detailTarget, EMPTY, integratedSiteOf, rankBarWidth, specialtyRows, unitPriceDetail } from './discovery-data'
+import { defaultScatterSelection, detailTarget, EMPTY, filterVendors, integratedSiteOf, rankBarWidth, specialtyRows, unitPriceDetail } from './discovery-data'
 import type { DiscoveryIntegratedSite, DiscoveryIntegrationStatus, DiscoveryUnitPrices } from '@/types'
 import { appToast } from "@/lib/app-toast"
 import {
@@ -877,7 +877,7 @@ function ModelDiscoveryPage({ onOpenModel, onViewAllModels }: { onOpenModel: (mo
   }
   const chartModels = chartCandidates.filter((model) => selectedModelNames.includes(model.name));
   const filteredModelOptions = chartCandidates.filter((model) => model.name.toLowerCase().includes(modelFilterSearch.trim().toLowerCase()));
-  const filteredProviders = providers.filter((provider) => provider.toLowerCase().includes(providerSearch.trim().toLowerCase()));
+  const filteredProviders = filterVendors(providers, providerSearch);
   const activeXAxis = analysisXMetrics[xMetric] ?? analysisXMetrics[0];
   /**
    * 散点坐标走 analysis 接口。

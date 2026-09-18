@@ -25,7 +25,9 @@ import {
   toSummaryCards,
   unitPriceDetail,
   defaultScatterSelection,
-  specialtyMetricFor,} from './discovery-data'
+  specialtyMetricFor,
+  filterVendors,
+} from './discovery-data'
 import type { PrototypeModel } from './discovery-data'
 import type { DiscoveryOverview, DiscoveryRankingItem } from '@/types'
 
@@ -574,5 +576,56 @@ describe('两条数据线的详情落点字段必须一致（prd#1066，同形�
     // 带 globalId 能跳过去，不带就弹「尚未接入」——而徽标两种情况都显示已接入。
     expect(detailTarget({ id: 'x', site: 'MODELGO_AI', globalId: 'claude-fable-5' })).toBe('global')
     expect(detailTarget({ id: 'x', site: 'MODELGO_AI' })).toBe('no-id')
+  })
+})
+
+describe('filterVendors（厂商筛选搜索，prd#1068）', () => {
+  // 取真实厂商名：测试环境 model-options 实测 42 个，中英混排
+  const VENDORS = ['Alibaba', 'Anthropic', 'DeepSeek', 'Google', 'Meta', 'MiniMax', 'OpenAI', 'Z AI', '智谱', '百川智能']
+
+  it('空关键词返回全部 —— 退格清空必须立刻回到完整列表', () => {
+    expect(filterVendors(VENDORS, '')).toEqual(VENDORS)
+    expect(filterVendors(VENDORS, '   ')).toEqual(VENDORS)
+  })
+
+  it('大小写不敏感 —— 用户不会记得厂商名的大小写', () => {
+    expect(filterVendors(VENDORS, 'alib')).toEqual(['Alibaba'])
+    expect(filterVendors(VENDORS, 'ALIB')).toEqual(['Alibaba'])
+    expect(filterVendors(VENDORS, 'openai')).toEqual(['OpenAI'])
+  })
+
+  it('带空格的厂商名能搜到（Z AI 这类）', () => {
+    expect(filterVendors(VENDORS, 'z ai')).toEqual(['Z AI'])
+    expect(filterVendors(VENDORS, 'Z AI')).toEqual(['Z AI'])
+  })
+
+  it('中文厂商名能搜到 —— 42 个里有中文名，漏了等于这几家搜不出来', () => {
+    expect(filterVendors(VENDORS, '智谱')).toEqual(['智谱'])
+    expect(filterVendors(VENDORS, '智能')).toEqual(['百川智能'])
+  })
+
+  it('两端空格被 trim —— 从别处复制厂商名常带空格', () => {
+    expect(filterVendors(VENDORS, '  meta  ')).toEqual(['Meta'])
+  })
+
+  it('子串匹配，不只是前缀', () => {
+    expect(filterVendors(VENDORS, 'seek')).toEqual(['DeepSeek'])
+  })
+
+  it('无匹配返回空数组（UI 据此显示「没有匹配的厂商」）', () => {
+    expect(filterVendors(VENDORS, 'zzz-not-exist')).toEqual([])
+  })
+
+  it('返回新数组而非原引用 —— providers 是上游 memo 的结果，调用方若改返回值会污染它', () => {
+    const src = [...VENDORS]
+    // 空关键词是唯一会「原样返回」的分支，必须拷贝。
+    // 只断言 src 没被改是不够的：直接 return vendors 时 src 同样没变，测不出来
+    //（2026-09-18 变异测试发现的漏洞）。
+    const out = filterVendors(src, '')
+    expect(out).toEqual(src)
+    expect(out).not.toBe(src)
+    // 改返回值不应影响源数组
+    out.push('注入的厂商')
+    expect(src).toEqual(VENDORS)
   })
 })

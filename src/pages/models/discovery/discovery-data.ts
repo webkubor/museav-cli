@@ -352,15 +352,37 @@ export function specialtyBarDomain(values: readonly number[]): [number, number] 
 }
 
 /**
- * 柱内标签：原样展示，**保留货币符号与单位**（原型实测是 `$0.05` / `245 tok/s`）。
+ * 专项指标柱图里每根柱子分到的横向宽度 = 绘图区宽 / 柱数。
  *
- * 此前这里用 `/[\d.,]+[BMKT]?/` 只取数字，理由写的是「单位已经写在图表副标题里」——
- * 但那只对部分卡成立：`单次任务成本` 副标题有「（USD/Task）」、`输出 TPS` 有「（Tokens/秒）」，
- * 而 `近 7 日热度` 的说明是「ModelGo 调用 Tokens」根本没有量纲。结果柱上只剩 `0.0116`
- * 这种读不出单位的裸数字（2026-09-03 需求方指出）。
+ * X 轴刻度拿它决定「图标 + 名称」还是「只放图标」。**不能改用视口断点** ——
+ * 四张图在 ≤760px 从两列塌成单列，柱槽从 45px 回弹到 66px（2026-09-18 实测
+ * 1920→67 / 1440→61 / 1280→53 / 1120→45 / 900→34 / 760→66 / 390→29），
+ * 视口越窄柱槽反而越宽，任何按视口写的 media query 都会在这一段判反。
  */
-function compactBarLabel(value: string): string {
-  return value
+export function axisSlotWidth(chartWidth: number, barCount: number): number {
+  if (!Number.isFinite(chartWidth) || chartWidth <= 0 || barCount <= 0) return 0
+  return chartWidth / barCount
+}
+
+/**
+ * 柱内标签：只留数字，单位交给图表副标题。
+ *
+ * 2026-09-03 曾从「只取数字」改回原样展示，理由是有的副标题没量纲（`近 7 日热度`
+ * 当时写作「ModelGo 调用 Tokens」）。代价是长标签放不下：`342 tok/s` 按 fs-micro
+ * 估宽 56px，而 1440 视口下柱子只有约 40px，于是 SpecialtyBarLabel 的防重叠逻辑
+ * 把**奇数位标签整条丢掉** —— 输出 TPS 与单次成本两张榜一半柱子没有数字
+ * （owner 2026-09-18「为啥有的柱子上有数字有的没数字」）。
+ *
+ * 单位对整张图是同一个，写在每根柱子上重复十遍、还挤掉一半真实数值，不划算。
+ * 所以改回只取数字，并把六张榜的副标题一并换成带量纲的 `summary.*Unit` 变体
+ * （那套文案摘要卡早就在用），当初否掉的理由不再成立。
+ *
+ * 保留的三样：数量级后缀 `K/M/B`（`2.4M` 不能裁成 `2.4`）、百分号（STT 的 WER
+ * 是百分比）、以及整串没有数字的值（`免费` / `—`）——后者裁完会变成空字符串。
+ */
+export function compactBarLabel(value: string): string {
+  const match = /[\d.,]+\s*[BMKT]?%?/.exec(value)
+  return match ? match[0].trim() : value
 }
 
 /** 总览卡：接口的 highlights 六键 → 原型 summary 的 { label, model, value, unit }。 */

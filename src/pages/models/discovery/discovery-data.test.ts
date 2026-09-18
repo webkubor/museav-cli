@@ -11,6 +11,8 @@ import { describe, expect, it } from 'vitest'
 import {
   EMPTY,
   MODALITY_TASK_TO_TYPE,
+  axisSlotWidth,
+  compactBarLabel,
   compactAmount,
   detailTarget,
   integratedSiteOf,
@@ -321,14 +323,15 @@ describe('专项榜柱图', () => {
     expect(specialtyBarDomain([])).toEqual([0, 1])
   })
 
-  it('柱内标签保留货币符号与单位', () => {
+  it('柱内标签只留数字，完整值留给 tooltip', () => {
     const rows = specialtyRows('price', [
       toPrototypeModel(t, card({ model_name: 'A', cost_value: 0.0656 }), 'TEXT_CHAT'),
     ])
+    // tooltip 与无障碍标签读的是 value，单位一个都不能少
     expect(rows[0].value).toBe('$0.0656/次')
-    // 原型柱标签实测是 `$0.05` / `245 tok/s`。此前只取数字，理由是「单位写在副标题里」——
-    // 但「近 7 日热度」这类卡的副标题根本没有量纲，柱上就只剩读不出单位的裸数字
-    expect(rows[0].short).toBe('$0.0656/次')
+    // 柱上只留数字：`$0.0656/次` 10 个字符在任何视口都放不下，会触发隔柱丢弃。
+    // 量纲改由图表副标题承担（summary.*Unit，owner 2026-09-18 定）。
+    expect(rows[0].short).toBe('0.0656')
   })
 
   it('紧凑数量后缀保留（50K 不能被切成 50）', () => {
@@ -627,5 +630,96 @@ describe('filterVendors（厂商筛选搜索，prd#1068）', () => {
     // 改返回值不应影响源数组
     out.push('注入的厂商')
     expect(src).toEqual(VENDORS)
+  })
+})
+
+/**
+ * X 轴刻度的取舍只看柱槽宽，不看视口 —— 2026-09-18 实测四张图在 ≤760px 从两列
+ * 塌成单列后柱槽从 45px 回弹到 66px，视口越窄柱槽反而越宽。这组断言钉的就是
+ * 「同一个视口宽度可以对应两种柱槽」这件事，防止有人改回 media query。
+ */
+describe('axisSlotWidth', () => {
+  const SHOW_NAME_MIN = 58 // 与 discovery-charts.tsx 的 BrandIconTick 同一阈值
+
+  it('柱槽 = 绘图区宽 / 柱数', () => {
+    expect(axisSlotWidth(670, 10)).toBe(67)
+    expect(axisSlotWidth(535, 10)).toBe(53.5)
+  })
+
+  it('量不到宽度或没有柱子时回 0（刻度退回只显示图标，不是崩）', () => {
+    expect(axisSlotWidth(0, 10)).toBe(0)
+    expect(axisSlotWidth(-1, 10)).toBe(0)
+    expect(axisSlotWidth(Number.NaN, 10)).toBe(0)
+    expect(axisSlotWidth(600, 0)).toBe(0)
+  })
+
+  it('1440 及以上两列布局放得下名称', () => {
+    expect(axisSlotWidth(667, 10)).toBeGreaterThanOrEqual(SHOW_NAME_MIN) // 1920/1600
+    expect(axisSlotWidth(615, 10)).toBeGreaterThanOrEqual(SHOW_NAME_MIN) // 1440
+  })
+
+  it('1280~900 的两列布局放不下，退回只显示图标', () => {
+    expect(axisSlotWidth(535, 10)).toBeLessThan(SHOW_NAME_MIN) // 1280
+    expect(axisSlotWidth(455, 10)).toBeLessThan(SHOW_NAME_MIN) // 1120
+    expect(axisSlotWidth(345, 10)).toBeLessThan(SHOW_NAME_MIN) // 900
+  })
+
+  it('760 塌成单列后柱槽回弹，名称重新显示 —— 按视口判会在这里判反', () => {
+    expect(axisSlotWidth(658, 10)).toBeGreaterThanOrEqual(SHOW_NAME_MIN) // 760，单列
+    expect(axisSlotWidth(288, 10)).toBeLessThan(SHOW_NAME_MIN) // 390，单列但太窄
+  })
+
+  it('柱数变化跟着变：Top 5 榜的柱槽是 Top 10 的两倍', () => {
+    expect(axisSlotWidth(535, 5)).toBe(axisSlotWidth(535, 10) * 2)
+  })
+})
+
+/**
+ * 柱内标签只留数字（owner 2026-09-18 选的 A 方案）。这组断言钉的是**裁什么不裁什么** ——
+ * 裁过头会让「免费」变成空柱、「2.4M」缩水一千倍，两种都是静默出错、构建不会报。
+ */
+describe('compactBarLabel', () => {
+  it('裁掉尾随单位', () => {
+    expect(compactBarLabel('342 tok/s')).toBe('342')
+    expect(compactBarLabel('312 ms')).toBe('312')
+  })
+
+  it('裁掉货币符号与 /单位 后缀 —— 量纲改由副标题承担', () => {
+    expect(compactBarLabel('$0.0656/次')).toBe('0.0656')
+    expect(compactBarLabel('$0.32/1K 张')).toBe('0.32')
+    expect(compactBarLabel('$12/分钟')).toBe('12')
+  })
+
+  it('保留数量级后缀：2.4M 不能裁成 2.4（差一千倍）', () => {
+    expect(compactBarLabel('2.4M')).toBe('2.4M')
+    expect(compactBarLabel('24K')).toBe('24K')
+    expect(compactBarLabel('1.2B')).toBe('1.2B')
+    expect(compactBarLabel('772')).toBe('772')
+  })
+
+  it('保留百分号：STT 的 WER 是百分比，裁掉就读成了分数', () => {
+    expect(compactBarLabel('88.5%')).toBe('88.5%')
+  })
+
+  it('整串无数字的值原样返回 —— 裁完会是空柱', () => {
+    expect(compactBarLabel('免费')).toBe('免费')
+    expect(compactBarLabel('Free')).toBe('Free')
+    expect(compactBarLabel(EMPTY)).toBe(EMPTY)
+    expect(compactBarLabel('')).toBe('')
+  })
+
+  it('裁完在常用视口不再触发 SpecialtyBarLabel 的隔柱丢弃', () => {
+    // 与 discovery-charts.tsx 同一把尺：字符数 × 6.2 > 柱宽 × 0.9 即判定拥挤。
+    // 柱宽是 2026-09-18 在本页实测的（1920→53 / 1440→49 / 1280→42 / 1120→36）。
+    const crowded = (label: string, barWidth: number) => label.length * 6.2 > barWidth * 0.9
+    for (const barWidth of [53, 49, 42]) {
+      expect(crowded(compactBarLabel('$0.0656/次'), barWidth)).toBe(false)
+      expect(crowded(compactBarLabel('342 tok/s'), barWidth)).toBe(false)
+      // 不裁的话这两张榜在最宽的视口都会隔柱 —— 正是本次要修的现象
+      expect(crowded('$0.0656/次', barWidth)).toBe(true)
+      expect(crowded('342 tok/s', barWidth)).toBe(true)
+    }
+    // 1120 两列下柱子只剩 36px，六位小数仍放不下，隔柱兜底继续生效（不是回归）
+    expect(crowded(compactBarLabel('$0.0656/次'), 36)).toBe(true)
   })
 })

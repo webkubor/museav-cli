@@ -204,7 +204,7 @@
     },
     "createdModal": {
       "title": "API Key created",
-      "desc": "Copy and save it now. You cannot view the full key again after closing this dialog.",
+      "desc": "Your key is ready to copy. You can also copy it again later from the API Keys list.",
       "connect": "Quick connect",
       "saved": "I have saved the key",
       "copyAria": "Copy key"

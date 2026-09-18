@@ -238,6 +238,17 @@
         "ELO": "Elo Score",
         "VOICE_ELO": "Voice Elo",
         "AA_WER": "AA-WER"
+      },
+      "benchmarkRank": "#{{rank}} / {{total}}",
+      "benchmarkRankAhead": "#{{rank}} / {{total}} · ahead of {{percent}}%",
+      "benchmarkDistributionAria": "{{label}}: ranked #{{rank}} of {{total}} in the same category, ahead of {{percent}}%",
+      "benchmarkDistributionAriaBrief": "{{label}}: ahead of {{percent}}%",
+      "benchmarkGroup": {
+        "REASONING": "Reasoning & Knowledge",
+        "CODING": "Coding",
+        "AGENTIC": "Agentic Tasks",
+        "INSTRUCTION": "Instruction Following",
+        "CATEGORIES": "Category Elo"
       }
     },
     "error.loadDetail": "Failed to load model detail. Please try again.",

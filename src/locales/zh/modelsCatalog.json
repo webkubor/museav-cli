@@ -238,6 +238,17 @@
         "ELO": "Elo 评分",
         "VOICE_ELO": "语音 Elo",
         "AA_WER": "AA-WER 词错率"
+      },
+      "benchmarkRank": "#{{rank}} / {{total}}",
+      "benchmarkRankAhead": "#{{rank}} / {{total}} · 领先 {{percent}}%",
+      "benchmarkDistributionAria": "{{label}}：在 {{total}} 个同类模型中排名第 {{rank}}，领先 {{percent}}%",
+      "benchmarkDistributionAriaBrief": "{{label}}：领先 {{percent}}%",
+      "benchmarkGroup": {
+        "REASONING": "推理与知识",
+        "CODING": "代码",
+        "AGENTIC": "Agent 任务",
+        "INSTRUCTION": "指令遵循",
+        "CATEGORIES": "分类 Elo"
       }
     },
     "error.loadDetail": "加载模型详情失败，请稍后重试。",

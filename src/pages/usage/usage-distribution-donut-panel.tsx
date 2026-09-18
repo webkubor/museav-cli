@@ -181,7 +181,7 @@ export function DistributionDonutPanel({
                       className="pointer-events-none absolute inset-0 rounded-full"
                       style={{
                         backgroundImage:
-                          'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.5) 50%, transparent 100%)',
+                          'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.5) 50%, transparent 100%)', // allow-raw-color 白色高光流光叠在系列色之上、明暗主题都是白；无主题无关的白色 token（--mg-bg-*-rgb 暗色会变暗）
                         backgroundSize: '200% 100%',
                         animation: 'shimmer-slide 2s ease-in-out infinite',
                       }}

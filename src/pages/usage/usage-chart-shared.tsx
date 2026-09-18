@@ -19,7 +19,7 @@ export const TOOLTIP_STYLE = {
   borderRadius: 'var(--radius-sm)',
   padding: '8px 12px',
   fontSize: '12px',
-  boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+  boxShadow: '0 4px 16px rgba(0,0,0,0.08)', // allow-raw-color recharts tooltip 投影，无等值 shadow token（--shadow-sm/md 几何与色值均不同）
 } as const
 
 /** recharts chart onClick 回调里取被点中的 x 轴值（bucket_start）。 */

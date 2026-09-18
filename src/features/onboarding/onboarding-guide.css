@@ -21,6 +21,12 @@
  */
 
 /* ── 桥接：入口锚点 ─────────────────────────────────────────── */
+/* ── 本页 palette（1.0.7 主题色 100% token 化收口）：
+   无全局 token 对应的页面色；值即变量名（可读自证），只在本文件内使用。 ── */
+:root {
+  --onb-182230-p40: rgb(24 34 48 / 40%);
+}
+
 .onboarding-guide-anchor {
   --text: var(--mg-text-1);
   --text-soft: var(--mg-text-2);
@@ -458,7 +464,7 @@
   --onboarding-dur-smooth: 180ms;
 
   align-items: center;
-  background: rgb(24 34 48 / 40%);
+  background: var(--onb-182230-p40);
   display: flex;
   inset: 0;
   justify-content: center;

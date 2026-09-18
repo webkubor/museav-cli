@@ -132,7 +132,7 @@ export const CONNECT_ACTIONS: {
   {
     key: 'curl',
     label: 'cURL',
-    icon: <SiCurl className="h-4 w-4" style={{ color: '#073551' }} />,
+    icon: <SiCurl className="h-4 w-4" style={{ color: '#073551' }} />, // allow-raw-color cURL 厂牌 logo 色是内容不是主题（同 src/constants/brand-colors.ts 口径），值随厂牌不随主题
   },
 ]
 

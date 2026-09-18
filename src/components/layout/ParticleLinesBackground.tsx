@@ -44,6 +44,12 @@ function parseHex(hex: string): RGB {
   return { r: 103, g: 67, b: 253 }
 }
 
+// canvas 画笔吃不到 var()，从 body 读 resolved 值；token 缺失时兜底（同 SliderCaptcha 的 cssColor 模式）
+function cssColor(name: string, fallback: string): string {
+  const v = window.getComputedStyle(document.body).getPropertyValue(name).trim()
+  return v || fallback
+}
+
 // 预渲染一张发光粒子精灵，替代每帧的 ctx.shadowBlur（canvas 最昂贵的操作）
 function makeGlowSprite({ r, g, b }: RGB): HTMLCanvasElement {
   const S = 32
@@ -73,10 +79,7 @@ export const ParticleLinesBackground: React.FC = () => {
     let height = (canvas.height = window.innerHeight)
 
     // ── 主题色缓存：挂载读一次，仅在 <html> 属性变化时重建 rgb/精灵/渐变 ──
-    const readThemeColor = (): string => {
-      const color = window.getComputedStyle(document.body).getPropertyValue('--brand-base').trim()
-      return color || '#6743fd'
-    }
+    const readThemeColor = (): string => cssColor('--brand-base', '#6743fd')
     let cachedBrandColor = readThemeColor()
     let rgb = parseHex(cachedBrandColor)
     let glowSprite = makeGlowSprite(rgb)

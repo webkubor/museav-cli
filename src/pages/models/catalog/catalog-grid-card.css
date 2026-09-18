@@ -4,6 +4,12 @@
    hover 抬升，这里只排内部布局，不重复定义卡片外观。
    等高靠 height:100% + flex column；.mg-mcard-specs 的 margin-top:auto 把价格
    行压到底部，简介长短不会让各卡的价格行高低不齐。 */
+/* ── 本页 palette（1.0.7 主题色 100% token 化收口）：
+   无全局 token 对应的页面色；值即变量名（可读自证），只在本文件内使用。 ── */
+:root {
+  --cgc-000000: #000;
+}
+
 .mg-mcard {
   position: relative;
   height: 100%;
@@ -218,8 +224,8 @@
   background: var(--plaza-actions-bg);
   /* 毛玻璃 blur 只在 hover 浮出时启用。静止时 32 张卡各挂一个 backdrop-filter
      层（哪怕 opacity:0 也在合成器里逐帧采样模糊背景），快速滚动会白屏。 */
-  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 14px);
-  mask-image: linear-gradient(180deg, transparent 0, #000 14px);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, var(--cgc-000000) 14px);
+  mask-image: linear-gradient(180deg, transparent 0, var(--cgc-000000) 14px);
   opacity: 0; pointer-events: none;
   /* 浮出走「上滑 + 渐显」：纯 opacity 硬切生硬（走查反馈）。曲线跟 .mg-tile
      的抬升同族（ease-out 弹性），出场稍慢、收场稍快。 */

@@ -1,4 +1,66 @@
 /* ── 模型体验工作台 ───────────────────────────────────────────────────── */
+/* ── 本页 palette（1.0.7 主题色 100% token 化收口）：
+   艺术画布/光斑取自 Figma 稿，无全局 token 对应；
+   值即变量名（可读自证），只在本文件内使用。 ── */
+:root {
+  --exp-001fcc-a62: rgba(0,31,204,0.62);
+  --exp-002ac6-a72: rgba(0,42,198,0.72);
+  --exp-0037de-a76: rgba(0,55,222,0.76);
+  --exp-003ae1-a74: rgba(0,58,225,0.74);
+  --exp-003ed6: #003ed6;
+  --exp-0042ff-a36: rgba(0,66,255,0.36);
+  --exp-004cff: #004cff;
+  --exp-004fff-a36: rgba(0,79,255,0.36);
+  --exp-0052ff-a56: rgba(0,82,255,0.56);
+  --exp-005eff-a82: rgba(0,94,255,0.82);
+  --exp-006014-a62: rgba(0,96,20,0.62);
+  --exp-0066ff-a18: rgba(0,102,255,0.18);
+  --exp-006919-a52: rgba(0,105,25,0.52);
+  --exp-007215: #007215;
+  --exp-007e1a-a60: rgba(0,126,26,0.6);
+  --exp-008521-a28: rgba(0,133,33,0.28);
+  --exp-00861c-a66: rgba(0,134,28,0.66);
+  --exp-008aff-a48: rgba(0,138,255,0.48);
+  --exp-009e21-a74: rgba(0,158,33,0.74);
+  --exp-03cdff-a50: rgba(3,205,255,0.5);
+  --exp-0574ff: #0574ff;
+  --exp-079b20: #079b20;
+  --exp-08b729-a30: rgba(8,183,41,0.3);
+  --exp-12c931: #12c931;
+  --exp-12cd35-a52: rgba(18,205,53,0.52);
+  --exp-14c740-a16: rgba(20,199,64,0.16);
+  --exp-16b5ff-a50: rgba(22,181,255,0.5);
+  --exp-21d269-a40: rgba(33,210,105,0.4);
+  --exp-24adff: #24adff;
+  --exp-46e64f: #46e64f;
+  --exp-4eebb5-a40: rgba(78,235,181,0.4);
+  --exp-50beff-a18: rgba(80,190,255,0.18);
+  --exp-66ffda-a42: rgba(102,255,218,0.42);
+  --exp-78e8ff: #78e8ff;
+  --exp-8af47d: #8af47d;
+  --exp-90f6ff-a38: rgba(144,246,255,0.38);
+  --exp-97f78b-a48: rgba(151,247,139,0.48);
+  --exp-9dff97-a44: rgba(157,255,151,0.44);
+  --exp-acf1ff-a50: rgba(172,241,255,0.5);
+  --exp-b4f1ff-a62: rgba(180,241,255,0.62);
+  --exp-c5ffc6-a34: rgba(197,255,198,0.34);
+  --exp-e8ffe8-a82: rgba(232,255,232,0.82);
+  --exp-ecffff-a34: rgba(236,255,255,0.34);
+  --exp-f0ffec-a72: rgba(240,255,236,0.72);
+  --exp-f4ffff-a84: rgba(244,255,255,0.84);
+  --exp-f5ffff-a88: rgba(245,255,255,0.88);
+  --exp-w-a12: rgba(255,255,255,0.12);
+  --exp-w-a18: rgba(255,255,255,0.18);
+  --exp-w-a20: rgba(255,255,255,0.2);
+  --exp-w-a50: rgba(255,255,255,0.5);
+  --exp-w-a57: rgba(255,255,255,0.58);
+  --exp-w-a68: rgba(255,255,255,0.68);
+  --exp-w-a70: rgba(255,255,255,0.7);
+  --exp-w-a92: rgba(255,255,255,0.92);
+  --exp-w-a96: rgba(255,255,255,0.96);
+  --exp-w-a98: rgba(255,255,255,0.98);
+}
+
 .models-experience-page {
   display: flex;
   flex-direction: column;
@@ -320,16 +382,16 @@ html:not([data-market='global']) body:not([theme-mode='dark']) .dashboard-shell:
   margin-bottom: 10px;
   border-radius: var(--radius-full);
   background:
-    radial-gradient(circle at 68% 25%, rgba(255, 255, 255, 0.96) 0 5%, rgba(255, 255, 255, 0.68) 10%, rgba(255, 255, 255, 0.18) 20%, transparent 31%),
-    radial-gradient(ellipse at 37% 72%, rgba(245, 255, 255, 0.88) 0 16%, rgba(180, 241, 255, 0.62) 30%, rgba(80, 190, 255, 0.18) 48%, transparent 64%),
-    radial-gradient(ellipse at 32% 35%, rgba(3, 205, 255, 0.5) 0 18%, rgba(0, 138, 255, 0.48) 38%, transparent 62%),
-    radial-gradient(circle at 56% 50%, #78e8ff 0%, #24adff 34%, #0574ff 62%, #004cff 82%, #003ed6 100%);
+    radial-gradient(circle at 68% 25%, var(--exp-w-a96) 0 5%, var(--exp-w-a68) 10%, var(--exp-w-a18) 20%, transparent 31%),
+    radial-gradient(ellipse at 37% 72%, var(--exp-f5ffff-a88) 0 16%, var(--exp-b4f1ff-a62) 30%, var(--exp-50beff-a18) 48%, transparent 64%),
+    radial-gradient(ellipse at 32% 35%, var(--exp-03cdff-a50) 0 18%, var(--exp-008aff-a48) 38%, transparent 62%),
+    radial-gradient(circle at 56% 50%, var(--exp-78e8ff) 0%, var(--exp-24adff) 34%, var(--exp-0574ff) 62%, var(--exp-004cff) 82%, var(--exp-003ed6) 100%);
   box-shadow:
-    inset 5px 4px 8px rgba(144, 246, 255, 0.38),
-    inset -8px -8px 12px rgba(0, 42, 198, 0.72),
-    inset 0 0 0 1px rgba(0, 82, 255, 0.56),
-    inset 0 -2px 4px rgba(0, 55, 222, 0.76),
-    0 10px 20px rgba(0, 102, 255, 0.18);
+    inset 5px 4px 8px var(--exp-90f6ff-a38),
+    inset -8px -8px 12px var(--exp-002ac6-a72),
+    inset 0 0 0 1px var(--exp-0052ff-a56),
+    inset 0 -2px 4px var(--exp-0037de-a76),
+    0 10px 20px var(--exp-0066ff-a18);
   overflow: hidden;
 }
 
@@ -340,9 +402,9 @@ html:not([data-market='global']) body:not([theme-mode='dark']) .dashboard-shell:
   z-index: 1;
   border-radius: var(--radius-full);
   background:
-    linear-gradient(128deg, rgba(255, 255, 255, 0.2), transparent 30%),
-    radial-gradient(ellipse at 28% 73%, rgba(255, 255, 255, 0.58), rgba(236, 255, 255, 0.34) 26%, transparent 49%),
-    radial-gradient(ellipse at 52% 59%, rgba(255, 255, 255, 0.18), transparent 44%);
+    linear-gradient(128deg, var(--exp-w-a20), transparent 30%),
+    radial-gradient(ellipse at 28% 73%, var(--exp-w-a57), var(--exp-ecffff-a34) 26%, transparent 49%),
+    radial-gradient(ellipse at 52% 59%, var(--exp-w-a18), transparent 44%);
   filter: blur(1.1px);
   mix-blend-mode: screen;
   opacity: 0.95;
@@ -357,7 +419,7 @@ html:not([data-market='global']) body:not([theme-mode='dark']) .dashboard-shell:
   width: 15px;
   height: 16px;
   border-radius: var(--radius-full);
-  background: radial-gradient(ellipse at 52% 38%, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.7) 32%, rgba(255, 255, 255, 0.12) 64%, transparent 76%);
+  background: radial-gradient(ellipse at 52% 38%, var(--exp-w-a98), var(--exp-w-a70) 32%, var(--exp-w-a12) 64%, transparent 76%);
   filter: blur(1.5px);
   transform: rotate(28deg);
 }
@@ -374,7 +436,7 @@ html:not([data-market='global']) body:not([theme-mode='dark']) .dashboard-shell:
   z-index: 1;
   width: 27px;
   height: 47px;
-  background: linear-gradient(92deg, rgba(0, 66, 255, 0.36), rgba(22, 181, 255, 0.5) 43%, transparent 72%);
+  background: linear-gradient(92deg, var(--exp-0042ff-a36), var(--exp-16b5ff-a50) 43%, transparent 72%);
   filter: blur(3.1px);
   mix-blend-mode: screen;
   opacity: 0.8;
@@ -387,7 +449,7 @@ html:not([data-market='global']) body:not([theme-mode='dark']) .dashboard-shell:
   z-index: 2;
   width: 36px;
   height: 21px;
-  background: radial-gradient(ellipse at 44% 48%, rgba(244, 255, 255, 0.84), rgba(172, 241, 255, 0.5) 38%, transparent 72%);
+  background: radial-gradient(ellipse at 44% 48%, var(--exp-f4ffff-a84), var(--exp-acf1ff-a50) 38%, transparent 72%);
   filter: blur(1.7px);
   mix-blend-mode: screen;
   opacity: 0.92;
@@ -397,35 +459,35 @@ html:not([data-market='global']) body:not([theme-mode='dark']) .dashboard-shell:
 .models-experience-empty-orb-rim {
   inset: 0;
   z-index: 3;
-  background: radial-gradient(circle at 50% 50%, transparent 53%, rgba(0, 79, 255, 0.36) 64%, rgba(0, 58, 225, 0.74) 88%, rgba(0, 94, 255, 0.82) 100%);
-  box-shadow: inset 0 0 4px rgba(0, 31, 204, 0.62);
+  background: radial-gradient(circle at 50% 50%, transparent 53%, var(--exp-004fff-a36) 64%, var(--exp-003ae1-a74) 88%, var(--exp-005eff-a82) 100%);
+  box-shadow: inset 0 0 4px var(--exp-001fcc-a62);
 }
 
 :root[data-market="global"] .models-experience-empty-orb {
   background:
-    radial-gradient(circle at 68% 25%, rgba(255, 255, 255, 0.92) 0 5%, rgba(255, 255, 255, 0.5) 12%, rgba(255, 255, 255, 0.12) 22%, transparent 32%),
-    radial-gradient(ellipse at 37% 72%, rgba(232, 255, 232, 0.82) 0 18%, rgba(151, 247, 139, 0.48) 34%, transparent 63%),
-    radial-gradient(ellipse at 31% 35%, rgba(102, 255, 218, 0.42) 0 20%, rgba(33, 210, 105, 0.4) 42%, transparent 64%),
-    radial-gradient(circle at 56% 50%, #8af47d 0%, #46e64f 34%, #12c931 62%, #079b20 82%, #007215 100%);
+    radial-gradient(circle at 68% 25%, var(--exp-w-a92) 0 5%, var(--exp-w-a50) 12%, var(--exp-w-a12) 22%, transparent 32%),
+    radial-gradient(ellipse at 37% 72%, var(--exp-e8ffe8-a82) 0 18%, var(--exp-97f78b-a48) 34%, transparent 63%),
+    radial-gradient(ellipse at 31% 35%, var(--exp-66ffda-a42) 0 20%, var(--exp-21d269-a40) 42%, transparent 64%),
+    radial-gradient(circle at 56% 50%, var(--exp-8af47d) 0%, var(--exp-46e64f) 34%, var(--exp-12c931) 62%, var(--exp-079b20) 82%, var(--exp-007215) 100%);
   box-shadow:
-    inset 5px 4px 8px rgba(197, 255, 198, 0.34),
-    inset -8px -8px 12px rgba(0, 96, 20, 0.62),
-    inset 0 0 0 1px rgba(18, 205, 53, 0.52),
-    inset 0 -2px 4px rgba(0, 126, 26, 0.6),
-    0 10px 20px rgba(20, 199, 64, 0.16);
+    inset 5px 4px 8px var(--exp-c5ffc6-a34),
+    inset -8px -8px 12px var(--exp-006014-a62),
+    inset 0 0 0 1px var(--exp-12cd35-a52),
+    inset 0 -2px 4px var(--exp-007e1a-a60),
+    0 10px 20px var(--exp-14c740-a16);
 }
 
 :root[data-market="global"] .models-experience-empty-orb-refract-a {
-  background: linear-gradient(92deg, rgba(0, 133, 33, 0.28), rgba(78, 235, 181, 0.4) 43%, transparent 72%);
+  background: linear-gradient(92deg, var(--exp-008521-a28), var(--exp-4eebb5-a40) 43%, transparent 72%);
 }
 
 :root[data-market="global"] .models-experience-empty-orb-refract-b {
-  background: radial-gradient(ellipse at 44% 48%, rgba(240, 255, 236, 0.72), rgba(157, 255, 151, 0.44) 38%, transparent 72%);
+  background: radial-gradient(ellipse at 44% 48%, var(--exp-f0ffec-a72), var(--exp-9dff97-a44) 38%, transparent 72%);
 }
 
 :root[data-market="global"] .models-experience-empty-orb-rim {
-  background: radial-gradient(circle at 50% 50%, transparent 53%, rgba(8, 183, 41, 0.3) 64%, rgba(0, 134, 28, 0.66) 88%, rgba(0, 158, 33, 0.74) 100%);
-  box-shadow: inset 0 0 4px rgba(0, 105, 25, 0.52);
+  background: radial-gradient(circle at 50% 50%, transparent 53%, var(--exp-08b729-a30) 64%, var(--exp-00861c-a66) 88%, var(--exp-009e21-a74) 100%);
+  box-shadow: inset 0 0 4px var(--exp-006919-a52);
 }
 
 body[theme-mode='dark'] .models-experience-empty-orb {

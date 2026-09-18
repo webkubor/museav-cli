@@ -344,8 +344,8 @@ function ConnectModalContent({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
           </div>
           <TabsList variant="pills" className="mt-2 w-full justify-start overflow-x-auto">
             {CONNECT_ACTIONS.map((action) => (
-              <TabsTrigger key={action.key} value={action.key} variant="pills" className="shrink-0 gap-1.5 px-3">
-                <span className="flex h-4 w-4 items-center justify-center text-mg-text-1">
+              <TabsTrigger key={action.key} value={action.key} variant="pills" className="group shrink-0 gap-1.5 px-3">
+                <span className="flex h-4 w-4 items-center justify-center text-mg-text-1 group-data-[state=active]:text-white">
                   {action.icon}
                 </span>
                 {connectActionLabel(t, action.key)}

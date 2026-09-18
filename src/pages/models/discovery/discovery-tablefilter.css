@@ -138,6 +138,33 @@
   cursor: default;
 }
 
+/* 面板内搜索（prd46#1068）：与模型筛选面板同款「安静」变体，
+   理由见 discovery-modelfilter.css 的说明（实白底 Input 压玻璃底会读成白瓷砖） */
+.model-discovery-provider-search {
+  padding: 9px 9px 0;
+}
+
+.model-discovery-provider-filter-panel .modern-input-wrapper {
+  background-color: color-mix(in srgb, var(--line) 22%, var(--panel)) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.model-discovery-provider-filter-panel .modern-input-wrapper:focus-within {
+  background-color: color-mix(in srgb, var(--line) 30%, var(--panel)) !important;
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line)) !important;
+  box-shadow: none !important;
+}
+
+.model-discovery-provider-options > em {
+  color: var(--text-tertiary);
+  font-size: var(--discovery-fs-micro);
+  font-style: normal;
+  grid-column: 1 / -1;
+  padding: 18px 8px;
+  text-align: center;
+}
+
 .model-discovery-provider-options {
   display: grid;
   gap: 4px;

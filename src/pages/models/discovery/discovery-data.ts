@@ -644,3 +644,19 @@ export function detailTarget(model: {
   if (model.site === 'MODELGO_AI') return model.globalId ? 'global' : 'no-id'
   return model.id ? 'inside' : 'no-id'
 }
+
+/**
+ * 厂商筛选浮层的搜索过滤（prd#1068）。
+ *
+ * 大小写不敏感 + 两端 trim：厂商名里中英混排（智谱 / Alibaba / Z AI），
+ * 用户输 "z ai" 或 "Z AI" 都该命中；中文没有大小写，toLowerCase 不影响它。
+ * 空关键词返回全部 —— includes("") 恒真，退格清空要立刻回到完整列表。
+ *
+ * 抽成函数是为了能测：内联在 1400 行组件里的 filter 谁也测不到，
+ * 而这条链路错了不报错，只是「搜不到某个厂商」——用户以为没这家。
+ */
+export function filterVendors(vendors: readonly string[], keyword: string): string[] {
+  const q = keyword.trim().toLowerCase()
+  if (!q) return [...vendors]
+  return vendors.filter((v) => v.toLowerCase().includes(q))
+}

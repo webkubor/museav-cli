@@ -524,3 +524,55 @@ describe('散点图默认选中 = 专项榜四卡并集（qa#723）', () => {
     expect(defaultScatterSelection([[{ model: 'X' }]], ['A', 'B'])).toEqual(['A', 'B'])
   })
 })
+
+describe('两条数据线的详情落点字段必须一致（prd#1066，同形状第三次）', () => {
+  // 模型发现页有两条各自构造 model 对象的数据线：
+  //   · rankings  → toPrototypeModel（列表 / Top5）
+  //   · model-options → ModelDiscoveryPagePrototype 里的 chartCandidates（散点图）
+  // 两边都自己挑字段，少挑一个就少一种行为，而且**不报错**：
+  //   #1013 列表展示未接入 → #1016 点 gpt-6 astra 报错 → #1066 散点图点实心点进不去。
+  // 三次都是同一个根因，前两次只修了当时那个入口。
+  //
+  // detailTarget 需要三样：id、site、globalId。少任何一样，MODELGO_AI 的模型
+  // 都会落到 no-id 弹「尚未接入 ModelGo」，而徽标却按 integrated_site 显示成已接入。
+  const DETAIL_FIELDS = ['id', 'integratedSite', 'globalModelId'] as const
+
+  it('toPrototypeModel（rankings 线）产出全部落点字段', () => {
+    const m = toPrototypeModel(
+      (k: string) => k,
+      {
+        ...card({ is_integrated: true }),
+        integrated_site: 'MODELGO_AI',
+        market_model_ids: { global: 'claude-fable-5' },
+      } as never,
+      'TEXT_CHAT',
+    )
+    for (const f of DETAIL_FIELDS) {
+      expect(f in m, `rankings 线缺字段 ${f} —— detailTarget 会算错落点`).toBe(true)
+    }
+    expect(m.globalModelId).toBe('claude-fable-5')
+  })
+
+  it('globalModelId 的口径：market_model_ids.global 优先，回落 source_slug', () => {
+    const withBoth = toPrototypeModel((k: string) => k, {
+      ...card({ is_integrated: true }),
+      market_model_ids: { global: 'from-market-ids' },
+      source_slug: 'from-slug',
+    } as never, 'TEXT_CHAT')
+    expect(withBoth.globalModelId).toBe('from-market-ids')
+
+    const slugOnly = toPrototypeModel((k: string) => k, {
+      ...card({ is_integrated: true }),
+      market_model_ids: null,
+      source_slug: 'from-slug',
+    } as never, 'TEXT_CHAT')
+    expect(slugOnly.globalModelId).toBe('from-slug')
+  })
+
+  it('MODELGO_AI + 有 globalId → global；缺 globalId 就退化成 no-id（#1066 的现象）', () => {
+    // 这一对断言说明「为什么少一个字段就出 bug」：同样是国外站已接入的模型，
+    // 带 globalId 能跳过去，不带就弹「尚未接入」——而徽标两种情况都显示已接入。
+    expect(detailTarget({ id: 'x', site: 'MODELGO_AI', globalId: 'claude-fable-5' })).toBe('global')
+    expect(detailTarget({ id: 'x', site: 'MODELGO_AI' })).toBe('no-id')
+  })
+})

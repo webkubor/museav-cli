@@ -33,7 +33,7 @@ import {
 } from 'recharts'
 import { ModelIcon } from '@/features/models/components/ModelIcon'
 import { agentFallback, agentVisual } from '@model-go/icons/agents'
-import { specialtyBarDomain } from './discovery-data'
+import { axisSlotWidth, specialtyBarDomain } from './discovery-data'
 
 /**
  * 模型 / 厂牌标识 —— 走控制台统一的 `ModelIcon`（`@model-go/icons` 是 vendor
@@ -206,33 +206,50 @@ function SpecialtyBarShape(props: BarShapeProps) {
   )
 }
 
+/** 柱槽窄于这个值就只留图标：18 图标 + 4 间隙之后要给名字留够约 36px（5 个字符） */
+export const AXIS_NAME_MIN_SLOT = 58
+
 interface BrandTickProps {
   x?: number
   y?: number
+  /** recharts 传入：轴的宽度，等于绘图区宽 */
+  width?: number
+  /** recharts 传入：本轴实际渲染的刻度数 */
+  visibleTicksCount?: number
   payload?: { value?: string | number }
   rows?: ReadonlyArray<{ model: string; provider: string }>
 }
 
 /**
- * X 轴刻度：厂牌图标 + 图标下方的模型名（prd46#1065）。
+ * X 轴刻度：厂牌图标 + 同一行右侧的模型名（prd46#1065 要名称，owner 2026-09-18 要横排）。
  *
  * 名称必须在轴上可见——只留图标时同厂商多模型上榜（连排几个 OpenAI / DeepSeek 图标）
- * 完全分不出是谁。模型名可能很长（实测 67 字符），列宽只有几十像素，所以名称单行
- * ellipsis 截断、title 悬浮出全名（PRD 原型 `.model-discovery-specialty-label` 同款
- * 「有限宽度可辨认 + title 兜底」口径）；tooltip 里也有完整名。
- * foreignObject 宽度取 56px：两列栅格最窄时 10 根柱的柱槽实测约 34px，56px 居中
- * 相邻刻度会轻微相接但不叠字（ellipsis 先生效），比 34px 只能放三四个字符可读得多。
+ * 完全分不出是谁。但**上下两行不能用**：名称宽度优先于图标，两行排版让每个刻度占掉
+ * 32px 高、图标与名字的视觉重心还对不齐（owner 原话「不好看」）。改成一行内左图标、
+ * 右名称，名称按剩余宽度 ellipsis，全名走容器 title 与 tooltip。
+ *
+ * 显不显示名称由**柱槽实际宽度**决定，不是视口断点 —— 四张图在 ≤760px 会从两列变单列，
+ * 柱槽反而从 45px 回弹到 66px（实测），按视口写 media query 必然在这一段判反。
+ * foreignObject 宽度直接取柱槽宽：相邻刻度天然不重叠，也不再需要 56px 那种固定值。
  */
-function BrandIconTick({ x = 0, y = 0, payload, rows = [] }: BrandTickProps) {
+function BrandIconTick({ x = 0, y = 0, width = 0, visibleTicksCount = 0, payload, rows = [] }: BrandTickProps) {
   const row = rows.find((item) => item.model === String(payload?.value ?? ''))
   if (!row) return null
+  // 柱槽宽度从 recharts 自己给的轴宽 / 刻度数同步算出来。先前用 ResizeObserver 盯外层
+  // 容器，在 1920 与 760 两档实测拿不到名称——observer 回调与 recharts 的 tick 渲染
+  // 有竞态，slot 还是 0 时那一轮就定稿了。轴宽是 recharts 布局的产物，不会慢一拍。
+  const slot = axisSlotWidth(width, visibleTicksCount)
+  // 图标 18 + 间隙 4 之外至少要留 36px 给名字（fs-micro 下约 5 个字符），
+  // 再少就只剩「Cla…」这种前缀，同厂商多模型仍然分不出谁是谁，不如只留图标。
+  const showName = slot >= AXIS_NAME_MIN_SLOT
+  const box = Math.max(slot, 18)
   return (
-    <foreignObject height={44} width={56} x={x - 28} y={y + 4}>
+    <foreignObject height={22} width={box} x={x - box / 2} y={y + 6}>
       <div className="model-discovery-axis-tick" title={row.model}>
         <div className="model-discovery-axis-icon">
           <DiscoveryModelIcon model={row.model} provider={row.provider} />
         </div>
-        <span className="model-discovery-axis-name">{row.model}</span>
+        {showName ? <span className="model-discovery-axis-name">{row.model}</span> : null}
       </div>
     </foreignObject>
   )
@@ -315,10 +332,12 @@ export function SpecialtyBarChart({ rows, description, hoveredModel, onHoverMode
           {/* 轴本身不画：柱内已标真实数值，再放一条刻度轴只会在 34px 宽的卡片里抢地方。
               domain 承接原先数据层的 min-max 归一化，见 specialtyBarDomain。 */}
           <YAxis domain={domain} hide tickCount={5} />
+          {/* height 从 52 降到 34：刻度由两行（图标上、名称下）改成一行横排后，
+              52px 会在轴下留一条空白带，把柱图本身压扁。 */}
           <XAxis
             axisLine={false}
             dataKey="model"
-            height={52}
+            height={34}
             interval={0}
             tick={<BrandIconTick rows={rows} />}
             tickLine={false}

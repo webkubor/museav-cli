@@ -62,17 +62,32 @@ use_count: 0
 >    `git fetch origin <分支>`，或直接 `--base origin/<分支>`。2026-09-03 踩过：
 >    基线旧了一天，改动全打在旧代码上，sed 一个都没匹配到，白改一轮才发现。
 >
-> 4. **worktree 默认开、不是「确认有并发才开」**：本仓常年有多 agent/session 并发（巡检/supervisor 每 30 分钟把单派给 Codex、人和其他 session 随时可能在同一目录动手），等你发现冲突（重复 dev server、别人未提交的改动）时可能已经晚了。**任何代码改动落地前先 `cs wt fix/<名>` 或 `git worktree add -b feat/<名> ../wt-<名> origin/feature/v1.0.x-<当期版本分支>` 开隔离 worktree，别直接在主检出的 `test` 分支上写代码/提交**——这一条不因为"这次只是小改"或"我一个人在做"而跳过，详见 `docs/COLLABORATION.md` §1/§4（2026-07-29 教训：直接在主检出改+提交，事后才发现另一个 session 同时在编辑别的文件，这次没冲突纯属运气）。
+> 4. **默认在主检出切分支，不要习惯性开 worktree**（2026-09-18 owner 纠正，推翻此前的「默认开」）
 >
->    **开完必须删——推完 test 就地清理，不是「攒着以后再说」**。开 worktree 这一步每次都做到了，删这一步长期没人做：2026-08-28 清点时挂着 4 个 worktree，其中 3 个分支早已合入 test、0 未合提交，还散在三个不同路径（`cs wt` 的 `.claude/worktrees/`、手工的 `.worktrees/`、`../wt-*`），加上 4 个僵尸本地分支和 2 个已合并的远端分支。收尾三步一起做，别只做前两步：
+>    此前这条写的是「worktree 默认开、不是确认有并发才开」，理由是本仓多 agent 并发。
+>    实践证明代价大于收益：**开这一步每次都做到了，删这一步长期没人做**。
+>    2026-08-28 清点挂着 4 个僵尸 worktree；2026-09-18 owner 再次清点，
+>    我一天内开了 7 个分支/worktree 做 5 个单，其中 2 个从头到尾零提交、
+>    3 个 worktree 零改动，最老的僵尸 7 天没动过。owner 原话：
+>    「wt 搞个毛，本地一堆 wt 的意义在哪里」。
 >
->    ```bash
->    git push origin HEAD:feature/v1.0.x-<当期版本分支>            # 1. 推（不是 test，见上面第 3 条）
->    git -C <主检出> worktree remove <worktree 路径>              # 2. 删 worktree（换个目录跑，不能在自己里面删自己）
->    git -C <主检出> branch -d <分支> && git push origin --delete <分支>   # 3. 删本地 + 远端分支
->    ```
+>    **判据：worktree 只解决「我需要同时在两个分支上干活」。** 串行做完一个再做下一个，
+>    `git checkout` 就够了 —— 每个 worktree 要软链 node_modules、装依赖、删的时候
+>    还得先 `worktree remove` 再 `branch -D`，换来的隔离性一次都用不上。
 >
->    盘点用 `git worktree list` + `git branch --merged origin/<版本分支>`；删别人建的远端分支前先问一句，删自己的不用。
+>    并发冲突用**别的手段**防，不靠 worktree：
+>    - 动手前 `git status` + `git branch --show-current` 看一眼主检出在谁手里
+>    - 主检出停在别人的分支上、或有别人未提交的改动 → **这时才开 worktree**
+>    - 提交前 `git fetch` 确认没人往同一分支推了新东西
+>
+>    **合并同类项**：多个单改的文件不重叠时，一个分支做完全部，一次合并一次发布。
+>    2026-09-18 那 5 个单里真要改代码的只有 2 个、文件完全不重叠，本该一个分支收工。
+>
+>    **纯合并/回流动作（sync、backflow）一律不开 worktree** —— 那本来就是几条 git 命令。
+>
+>    **收尾是 MR 参数，不是记忆力**：建 MR 一律带 `--remove-source-branch`，
+>    合并后远端分支自动消失，本地 `git branch -d`。开了 worktree 的先 `worktree remove`。
+>    定期体检：`bash scripts/branch-hygiene.sh`（列出已合并未删的分支与零改动的僵尸 worktree）。
 
 > ## 🚦 UI 改动开工前置（硬性 · 先做再动手）
 > 治「不读规范就动手」——本仓 UI/组件/样式任何改动，先按序做：

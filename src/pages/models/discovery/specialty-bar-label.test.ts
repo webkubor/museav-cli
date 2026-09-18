@@ -29,3 +29,20 @@ describe('SpecialtyBarChart 的数值标签', () => {
     expect(label).toMatch(/w > 0 &&/)
   })
 })
+
+/**
+ * X 轴刻度的模型名（prd46#1065）。只留厂牌图标时，同厂商多模型上榜会连排几个
+ * 一模一样的 OpenAI / DeepSeek 图标，横轴完全分不出是哪个模型。
+ */
+describe('SpecialtyBarChart 的 X 轴刻度', () => {
+  const tick = src.slice(src.indexOf('function BrandIconTick'), src.indexOf('interface SpecialtyTooltipProps'))
+
+  it('图标下方渲染模型名，不是只有图标', () => {
+    expect(tick).toMatch(/model-discovery-axis-name/)
+    expect(tick).toMatch(/\{row\.model\}/)
+  })
+
+  it('模型名实测有 67 字符，截断后必须有 title 兜出全名', () => {
+    expect(tick).toMatch(/title=\{row\.model\}/)
+  })
+})

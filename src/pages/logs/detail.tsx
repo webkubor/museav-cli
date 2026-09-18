@@ -12,6 +12,8 @@ import {
   LuNetwork,
   LuArrowUpRight,
   LuDownload,
+  LuRotateCw,
+  LuTriangleAlert,
 } from 'react-icons/lu'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -108,6 +110,8 @@ export function LogDetailSheet({
   workspaceName,
   onOpenLogSettings,
   onOpenTask,
+  onRetryPayload,
+  payloadFailed,
 }: {
   requestPayloadText: string
   responsePayloadText: string
@@ -115,6 +119,10 @@ export function LogDetailSheet({
   payloadView: PayloadView
   onPayloadViewChange: (view: PayloadView) => void
   payloadLoading: boolean
+  /** 原文接口是否报错（40401/5xx）；区别于「接口成功但没有正文」。 */
+  payloadFailed?: boolean
+  /** 原文接口失败后的重试。 */
+  onRetryPayload?: () => void
   onDownload: () => void
   onClose: () => void
   open: boolean
@@ -303,6 +311,8 @@ export function LogDetailSheet({
               payloadView={payloadView}
               onPayloadViewChange={onPayloadViewChange}
               payloadLoading={payloadLoading}
+              payloadFailed={payloadFailed}
+              onRetryPayload={onRetryPayload}
               onDownload={onDownload}
               onOpenLogSettings={onOpenLogSettings}
             />
@@ -557,9 +567,13 @@ function ViewToggle({ onChange, value }: { onChange: (view: PayloadView) => void
   )
 }
 
-function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, payloadView, requestPayloadText, responsePayloadText, responseSSE, row, onOpenLogSettings }: {
+export function TranscriptSection({ onDownload, onPayloadViewChange, onRetryPayload, payloadFailed, payloadLoading, payloadView, requestPayloadText, responsePayloadText, responseSSE, row, onOpenLogSettings }: {
   onDownload: () => void
   onPayloadViewChange: (view: PayloadView) => void
+  /** 原文接口失败后的重试（转调两个 payload query 的 refetch）。 */
+  onRetryPayload?: () => void
+  /** 原文接口是否报错（40401 / 5xx）。区别于「接口成功但没有正文」。 */
+  payloadFailed?: boolean
   payloadLoading: boolean
   payloadView: PayloadView
   requestPayloadText: string
@@ -590,20 +604,44 @@ function TranscriptSection({ onDownload, onPayloadViewChange, payloadLoading, pa
     )
   }
   if (!redacted && !requestPayloadText && !responsePayloadText) {
+    // 正文为空有两种完全不同的原因，以前被合并成同一句话（2026-09-17 cn 事故）：
+    //   ① 接口报错（40401 / 5xx）—— 拿不到原文，可能是可见范围/服务异常；
+    //   ② 接口成功但正文为空 —— 空间确实没开输入/输出日志，或这次调用早于开关
+    //      开启（开关不追溯，#557）。
+    // 旧实现一律显示「该工作空间未开启输入/输出日志」，于是**开关明明是开的**、
+    // 正文也存在的空间被指控没开，把排查方向带偏。这里按 ①/② 分开。
     return (
       <section className="space-y-3">
         <h3 className="mg-text-label text-mg-text-3">{t('logs.detail.payload.sectionTitle')}</h3>
-        <div className="flex gap-2 rounded-md border border-mg-border bg-mg-fill-0/30 p-[var(--mg-panel-padding-md)] text-mg-text-3">
-          <LuFileText className="mt-0.5 h-4 w-4 shrink-0" />
+        <div className={cn(
+          'flex gap-2 rounded-md border p-[var(--mg-panel-padding-md)]',
+          payloadFailed
+            ? 'border-mg-warning/30 bg-mg-warning/5 text-mg-text-2'
+            : 'border-mg-border bg-mg-fill-0/30 text-mg-text-3',
+        )}>
+          {payloadFailed
+            ? <LuTriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-mg-warning" />
+            : <LuFileText className="mt-0.5 h-4 w-4 shrink-0" />}
           <div className="min-w-0 space-y-2">
-            <strong className="block mg-text-caption font-bold text-mg-text-1">{t('logs.detail.payload.captureDisabledTitle')}</strong>
-            <p className="mg-text-caption">{t('logs.detail.payload.captureDisabledDesc')}</p>
-            {onOpenLogSettings && (
-              <Button size="xs" variant="outline" onClick={() => onOpenLogSettings(row.workspace_id)}>
-                {t('logs.detail.payload.openSettings')}
-                <LuArrowUpRight className="ml-1 h-3.5 w-3.5" />
-              </Button>
-            )}
+            <strong className="block mg-text-caption font-bold text-mg-text-1">
+              {payloadFailed ? t('logs.detail.payload.fetchFailedTitle') : t('logs.detail.payload.captureDisabledTitle')}
+            </strong>
+            <p className="mg-text-caption">
+              {payloadFailed ? t('logs.detail.payload.fetchFailedDesc') : t('logs.detail.payload.captureDisabledDesc')}
+            </p>
+            {payloadFailed
+              ? onRetryPayload && (
+                <Button size="xs" variant="outline" onClick={onRetryPayload}>
+                  <LuRotateCw className="mr-1 h-3.5 w-3.5" />
+                  {t('logs.detail.payload.retry')}
+                </Button>
+              )
+              : onOpenLogSettings && (
+                <Button size="xs" variant="outline" onClick={() => onOpenLogSettings(row.workspace_id)}>
+                  {t('logs.detail.payload.openSettings')}
+                  <LuArrowUpRight className="ml-1 h-3.5 w-3.5" />
+                </Button>
+              )}
           </div>
         </div>
       </section>

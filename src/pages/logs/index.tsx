@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -356,8 +356,11 @@ export default function LogsPage() {
   // 仅 logs.payload:view 有权限才拉原文（#479）：无权限不发请求,不泄露 Prompt/Response
   const { hasPermission } = usePermissions()
   const canViewPayload = hasPermission(PERMS.LOGS_PAYLOAD_VIEW)
-  // 有权限但空间未开采集时 payload 返回 40401（无数据，非故障）——静默不弹全局「服务暂不可用」，
-  // 由 TranscriptSection 走「未开启采集」空态提示（需求方#101：有权限没数据 ≠ 报错）
+  // 原文接口的两种「没有正文」必须分开：接口报错（40401/5xx）与接口成功但正文为空
+  // （空间没开采集，或该次调用早于开关开启 —— #557 开关不追溯）。旧注释把 40401 直接
+  // 当成「未开启采集」，于是 2026-09-17 cn 上「开关开着、正文也在」的空间被显示成
+  // 「未开启输入/输出日志」，误导排查。正确做法：报错走「获取失败」态并给重试。
+  // 静默（meta.silentError）仍然保留——不弹全局 toast，由详情内的空态承接。
   const requestPayloadQuery = useQuery({
     queryKey: ['logs', selectedLog?.request_id, 'payload', 'request'],
     queryFn: () => getLogPayload(selectedLog!.request_id, 'request'),
@@ -381,6 +384,11 @@ export default function LogsPage() {
     ? formatSSESummary(responseSSE)
     : responseRaw
   const payloadLoading = requestPayloadQuery.isLoading || responsePayloadQuery.isLoading
+  const payloadFailed = requestPayloadQuery.isError || responsePayloadQuery.isError
+  const retryPayload = useCallback(() => {
+    void requestPayloadQuery.refetch()
+    void responsePayloadQuery.refetch()
+  }, [requestPayloadQuery, responsePayloadQuery])
 
   // `items` 由 getPage 在请求边界保证是数组（需求方#635 根治点）；`?.` 只处理 react-query 加载态
   const items = data?.items ?? []
@@ -766,6 +774,8 @@ export default function LogsPage() {
         payloadView={payloadView}
         onPayloadViewChange={setPayloadView}
         payloadLoading={payloadLoading}
+        payloadFailed={payloadFailed}
+        onRetryPayload={retryPayload}
         onDownload={downloadPayloadJson}
         onClose={() => setSelectedLog(null)}
         open={Boolean(selectedLog)}

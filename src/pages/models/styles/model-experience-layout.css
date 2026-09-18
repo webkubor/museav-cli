@@ -628,8 +628,11 @@ body[theme-mode='dark'] .models-experience-empty-orb::after {
 
 /* 卡片挂在 .models-experience-empty 里，那层有 `span { font-size:13px; color:text-2 }`
    的后代选择器（给空态提示文案用的），特指度压过单类名的 .mg-modality-chip，
-   会把模态标签染淡半档。这里把值的口径钉回 dd 自己，不受挂载位置影响。 */
-.models-experience-model-card-spec .mg-modality-chip {
+   会把模态标签染淡半档；OverflowTip 的值主体也是 span，同样被染 —— 价格格里
+   「¥1」变灰、单位 <i>「/M Tokens 起」仍是 dd 的 success 绿，一串价格裂成两色
+   （prd46#1069）。这里把值的口径钉回 dd 自己，不受挂载位置影响。 */
+.models-experience-model-card-spec .mg-modality-chip,
+.models-experience-model-card-spec .models-experience-model-card-spec-main {
   color: inherit;
   font-size: inherit;
 }

@@ -204,7 +204,7 @@
     },
     "createdModal": {
       "title": "API Key 创建成功",
-      "desc": "请立即复制并保存，关闭后将无法再查看完整密钥。",
+      "desc": "Key 已创建成功，可立即复制；稍后也可在 API Keys 列表中再次复制。",
       "connect": "快速接入",
       "saved": "我已保存密钥",
       "copyAria": "复制密钥"
@@ -238,7 +238,7 @@
       "title": "立即接入",
       "desc": "选择接入方式查看参数，按钮用于打开工具或文档。",
       "paramsTitle": "ModelGo 接入参数",
-      "keyCreatedHint": "API Key 只在创建后展示一次，关闭横幅后将无法再次查看完整密钥。",
+      "keyCreatedHint": "Key 已创建成功，可立即复制；稍后也可在 API Keys 列表中再次复制。",
       "noKeyHint": "先确认协议地址和接入方式；创建 API Key 后即可复制完整参数。",
       "revealError": "取回 API Key 明文失败，请稍后重试",
       "noAvailableKey": "暂无可用 API Key",

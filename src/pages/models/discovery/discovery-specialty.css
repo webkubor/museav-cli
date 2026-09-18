@@ -59,31 +59,41 @@
   overflow: visible;
 }
 
-/* X 轴刻度：厂牌图标 + 模型名（prd46#1065），装在 <foreignObject> 里，仍是普通 HTML 盒子。
-   名称单行 ellipsis，全名走容器 title；字号用体系最小档（配角 10）。 */
+/* X 轴刻度：厂牌图标 + 右侧模型名（prd46#1065 要名称，owner 2026-09-18 要横排），
+   装在 <foreignObject> 里，仍是普通 HTML 盒子。
+   一行内左图标、右名称：名称吃掉剩余宽度后 ellipsis，全名走容器 title；
+   字号用体系最小档（配角 10）。放不下名称时由 tick 组件整条不渲染 span，
+   剩下的图标靠 justify-content 回到柱槽正中。 */
 .model-discovery-axis-tick {
   align-items: center;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-direction: row;
+  gap: 4px;
+  justify-content: center;
+  min-width: 0;
   width: 100%;
 }
 
+/* 图标不参与压缩：flex 默认 min-width:auto 会先挤扁图标再截文字，
+   而这里要的恰好相反——图标是唯一恒定可读的信息。 */
 .model-discovery-axis-icon {
   align-items: center;
   display: flex;
+  flex: none;
   height: 18px;
   justify-content: center;
   width: 18px;
 }
 
+/* min-width:0 是 flex 子项能被压到 ellipsis 的前提，缺了它整条刻度会被
+   67 字符的模型名撑出柱槽。 */
 .model-discovery-axis-name {
   color: var(--mg-text-2);
   font-size: var(--mg-font-size-micro);
   line-height: 1.2;
-  max-width: 100%;
+  min-width: 0;
   overflow: hidden;
-  text-align: center;
+  text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

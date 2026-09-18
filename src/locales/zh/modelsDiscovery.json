@@ -177,7 +177,10 @@
       "imageEloDesc": "图像偏好评测 Elo",
       "videoEloDesc": "视频偏好评测 Elo",
       "voiceEloDesc": "语音质量与偏好评测 Elo",
-      "costDesc": "Artificial Analysis 基准任务加权平均成本（USD/Task）"
+      "costDesc": "Artificial Analysis 基准任务加权平均成本（USD/Task）",
+      "ttftP50Unit": "首 Token 响应时延（ms）",
+      "perMCharPriceUnit": "每 1M 字符的公开 API 价格（$/1M chars）",
+      "perKMinuteUnit": "每 1,000 分钟音频转写价格（$/1k min）"
     },
     "unit": {
       "successfulTasks": "成功任务",

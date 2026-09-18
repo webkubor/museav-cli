@@ -186,8 +186,8 @@ export const buildDiscoveryConfigs = (t: TFn): Record<Exclude<ModalityKey, "agen
     ],
     specialties: [
       { kind: "value", title: t("modelsDiscovery.metric.valueLeader"), description: t("modelsDiscovery.summary.valueDesc") },
-      { kind: "tps", title: t("modelsDiscovery.metric.outputTps"), description: t("modelsDiscovery.tooltip.tokensPerSec") },
-      { kind: "latency", title: t("modelsDiscovery.metric.ttftLeader"), description: t("modelsDiscovery.metric.ttftP50") },
+      { kind: "tps", title: t("modelsDiscovery.metric.outputTps"), description: t("modelsDiscovery.summary.tpsDescUnit") },
+      { kind: "latency", title: t("modelsDiscovery.metric.ttftLeader"), description: t("modelsDiscovery.summary.ttftP50Unit") },
       { kind: "usage", title: t("modelsDiscovery.metric.popularity7d"), description: t("modelsDiscovery.summary.tokensDesc") },
     ],
   },
@@ -204,7 +204,7 @@ export const buildDiscoveryConfigs = (t: TFn): Record<Exclude<ModalityKey, "agen
     ],
     specialties: [
       { kind: "value", title: t("modelsDiscovery.metric.valueLeader"), description: t("modelsDiscovery.summary.valueEloPerImage") },
-      { kind: "price", title: t("modelsDiscovery.metric.apiPrice"), description: t("modelsDiscovery.summary.perKImage") },
+      { kind: "price", title: t("modelsDiscovery.metric.apiPrice"), description: t("modelsDiscovery.summary.perKImageUnit") },
       { kind: "usage", title: t("modelsDiscovery.metric.popularity7d"), description: t("modelsDiscovery.summary.tasksDesc") },
     ],
   },
@@ -217,7 +217,7 @@ export const buildDiscoveryConfigs = (t: TFn): Record<Exclude<ModalityKey, "agen
     presets: [{ label: t("modelsDiscovery.preset.qualityPrice"), y: 0, x: 0 }, { label: t("modelsDiscovery.preset.qualityUsage"), y: 0, x: 1 }, { label: t("modelsDiscovery.preset.apiPriceUsage"), y: 1, x: 1 }],
     specialties: [
       { kind: "value", title: t("modelsDiscovery.metric.valueLeader"), description: t("modelsDiscovery.summary.valueEloPerMin") },
-      { kind: "price", title: t("modelsDiscovery.metric.apiPrice"), description: t("modelsDiscovery.summary.perMinVideo") },
+      { kind: "price", title: t("modelsDiscovery.metric.apiPrice"), description: t("modelsDiscovery.summary.perMinVideoUnit") },
       { kind: "usage", title: t("modelsDiscovery.metric.popularity7d"), description: t("modelsDiscovery.summary.tasksDesc") },
     ],
   },
@@ -230,7 +230,7 @@ export const buildDiscoveryConfigs = (t: TFn): Record<Exclude<ModalityKey, "agen
     presets: [{ label: t("modelsDiscovery.preset.qualityPrice"), y: 0, x: 0 }, { label: t("modelsDiscovery.preset.qualityUsage"), y: 0, x: 1 }, { label: t("modelsDiscovery.preset.apiPriceUsage"), y: 1, x: 1 }],
     specialties: [
       { kind: "value", title: t("modelsDiscovery.metric.valueLeader"), description: t("modelsDiscovery.summary.valueScorePerPrice") },
-      { kind: "price", title: t("modelsDiscovery.metric.apiPrice"), description: t("modelsDiscovery.tooltip.perMCharPrice") },
+      { kind: "price", title: t("modelsDiscovery.metric.apiPrice"), description: t("modelsDiscovery.summary.perMCharPriceUnit") },
       { kind: "usage", title: t("modelsDiscovery.metric.popularity7d"), description: t("modelsDiscovery.summary.requestsDesc") },
     ],
   },
@@ -240,13 +240,13 @@ export const buildAudioTaskConfigs = (t: TFn): Record<string, Pick<DiscoveryConf
   "语音合成（TTS）": {
     specialties: [
       { kind: "value", title: t("modelsDiscovery.metric.valueForMoney"), description: t("modelsDiscovery.summary.valueVoicePerApi") },
-      { kind: "price", title: t("modelsDiscovery.metric.apiPrice"), description: t("modelsDiscovery.tooltip.perMCharPrice") },
+      { kind: "price", title: t("modelsDiscovery.metric.apiPrice"), description: t("modelsDiscovery.summary.perMCharPriceUnit") },
       { kind: "usage", title: t("modelsDiscovery.metric.usage7d"), description: t("modelsDiscovery.summary.ttsCharsDesc") },
     ],
   },
   "语音识别（STT）": {
     specialties: [
-      { kind: "price", title: t("modelsDiscovery.metric.apiPrice"), description: t("modelsDiscovery.summary.perKMinute") },
+      { kind: "price", title: t("modelsDiscovery.metric.apiPrice"), description: t("modelsDiscovery.summary.perKMinuteUnit") },
       { kind: "usage", title: t("modelsDiscovery.metric.usage7d"), description: t("modelsDiscovery.summary.sttMinutesDesc") },
     ],
   },

@@ -311,6 +311,15 @@ done <<EOF
 $file_list
 EOF
 
+# 状态球配色：必须从品牌色派生，不许写死。
+# 单独一个脚本而不是内联，因为它要解析 CSS 的 color-mix 语法；
+# 只在相关文件动过时跑，别给每次提交加无关开销。
+if printf '%s\n' "$file_list" | grep -qE 'support-orb(-theme)?\.(css|tsx)'; then
+  if ! node scripts/check-orb-theme.mjs; then
+    block=$((block + 1))
+  fi
+fi
+
 echo ""
 echo "[ui-guard] block=$block warn=$warn"
 if [ "$block" -gt 0 ]; then

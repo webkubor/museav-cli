@@ -214,19 +214,25 @@ interface BrandTickProps {
 }
 
 /**
- * X 轴刻度只放厂牌图标。
+ * X 轴刻度：厂牌图标 + 图标下方的模型名（prd46#1065）。
  *
- * 模型名很长（"Claude Fable 5.1 (Adaptive Reasoning, Max Effort, Default Fallback)"
- * 67 个字符），10 列平铺每列只有三四十像素，任何模型名都会截成「Claud…」——
- * 半截词比不显示更难读。完整名称走 title 与 tooltip。
+ * 名称必须在轴上可见——只留图标时同厂商多模型上榜（连排几个 OpenAI / DeepSeek 图标）
+ * 完全分不出是谁。模型名可能很长（实测 67 字符），列宽只有几十像素，所以名称单行
+ * ellipsis 截断、title 悬浮出全名（PRD 原型 `.model-discovery-specialty-label` 同款
+ * 「有限宽度可辨认 + title 兜底」口径）；tooltip 里也有完整名。
+ * foreignObject 宽度取 56px：两列栅格最窄时 10 根柱的柱槽实测约 34px，56px 居中
+ * 相邻刻度会轻微相接但不叠字（ellipsis 先生效），比 34px 只能放三四个字符可读得多。
  */
 function BrandIconTick({ x = 0, y = 0, payload, rows = [] }: BrandTickProps) {
   const row = rows.find((item) => item.model === String(payload?.value ?? ''))
   if (!row) return null
   return (
-    <foreignObject height={20} width={20} x={x - 10} y={y + 4}>
-      <div className="model-discovery-axis-icon" title={row.model}>
-        <DiscoveryModelIcon model={row.model} provider={row.provider} />
+    <foreignObject height={44} width={56} x={x - 28} y={y + 4}>
+      <div className="model-discovery-axis-tick" title={row.model}>
+        <div className="model-discovery-axis-icon">
+          <DiscoveryModelIcon model={row.model} provider={row.provider} />
+        </div>
+        <span className="model-discovery-axis-name">{row.model}</span>
       </div>
     </foreignObject>
   )
@@ -312,7 +318,7 @@ export function SpecialtyBarChart({ rows, description, hoveredModel, onHoverMode
           <XAxis
             axisLine={false}
             dataKey="model"
-            height={28}
+            height={52}
             interval={0}
             tick={<BrandIconTick rows={rows} />}
             tickLine={false}
@@ -638,7 +644,7 @@ export function TrendBarChart({ points, usageLabel }: TrendBarChartProps): React
           <XAxis
             axisLine={false}
             dataKey="name"
-            height={28}
+            height={52}
             interval={0}
             tick={<BrandIconTick rows={points.map((point) => ({ model: point.name, provider: point.provider }))} />}
             tickLine={false}

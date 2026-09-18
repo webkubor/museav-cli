@@ -29,6 +29,7 @@ import { getModelBenchmarks } from '@/services/model-discovery'
 import { isNotFoundError } from '@/lib/request-error-message'
 import { trackEvent } from '@/lib/track'
 import { InfoTip } from '@/components/ui/InfoTip'
+import { LOCALIZED_GROUP_CODES, benchmarkGroupKey } from './benchmark-i18n'
 import type { BenchmarkCompositeIndex, BenchmarkItem, DiscoveryMetric } from '@/types'
 
 /**
@@ -77,6 +78,7 @@ const DISTRIBUTION_BARS = [3, 5, 8, 13, 21, 34, 48, 63, 74, 80, 74, 63, 48, 34, 
 
 /** 分布图 + 当前模型位置标记线（PRD §11.3，需求方#969 缺陷 3）。 */
 function CompositeDistribution({ index, label }: { index: BenchmarkCompositeIndex; label: string }) {
+  const { t } = useTranslation()
   // 没有百分位就没有标记线可画，整张图不出 —— 只剩背景柱形没有意义
   if (index.ahead_percent === null) return null
   // 贴边的标记线会被裁掉一半，收进 2%~98%
@@ -88,8 +90,16 @@ function CompositeDistribution({ index, label }: { index: BenchmarkCompositeInde
       className="mg-benchmark-distribution"
       aria-label={
         index.rank !== null && index.total !== null
-          ? `${label}：在 ${index.total} 个同类模型中排名第 ${index.rank}，领先 ${index.ahead_percent}%`
-          : `${label}：领先 ${index.ahead_percent}%`
+          ? t('modelsCatalog.detail.benchmarkDistributionAria', {
+              label,
+              rank: index.rank,
+              total: index.total,
+              percent: index.ahead_percent,
+            })
+          : t('modelsCatalog.detail.benchmarkDistributionAriaBrief', {
+              label,
+              percent: index.ahead_percent,
+            })
       }
     >
       <div className="mg-benchmark-distribution-bars" aria-hidden="true">
@@ -120,8 +130,13 @@ function CompositeCard({ index }: { index: BenchmarkCompositeIndex }) {
         <span className="mg-metric-value">{score}</span>
         {hasRank ? (
           <i className="mg-metric-unit ml-1">
-            #{index.rank} / {index.total}
-            {index.ahead_percent !== null ? ` · 领先 ${index.ahead_percent}%` : ''}
+            {index.ahead_percent !== null
+              ? t('modelsCatalog.detail.benchmarkRankAhead', {
+                  rank: index.rank,
+                  total: index.total,
+                  percent: index.ahead_percent,
+                })
+              : t('modelsCatalog.detail.benchmarkRank', { rank: index.rank, total: index.total })}
           </i>
         ) : null}
         <CompositeDistribution index={index} label={label} />
@@ -267,7 +282,9 @@ export function BenchmarkSection({ modelId }: { modelId: string }) {
         <div className="grid gap-4 sm:grid-cols-2">
           {groups.map((group) => (
             <div key={group.code}>
-              <h4 className="mb-2 text-[12px] font-semibold text-mg-text-1">{group.name}</h4>
+              <h4 className="mb-2 text-[12px] font-semibold text-mg-text-1">
+                {LOCALIZED_GROUP_CODES.has(group.code) ? t(benchmarkGroupKey(group.code)) : group.name}
+              </h4>
               <ul className="flex flex-col gap-2.5">
                 {group.items.map((item) => {
                   const result = formatScore(item)

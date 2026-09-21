@@ -6,7 +6,7 @@
  */
 
 import type { ReactNode } from 'react'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
@@ -148,6 +148,60 @@ describe('LoginPage', () => {
     expect(screen.getByRole('heading', { name: '实时模型折扣' })).toBeInTheDocument()
     expect(screen.getByText('最高节省 75%')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '浏览全部模型' })).toHaveAttribute('href', '/models')
+  })
+
+  it('automatically advances the Global discount list', () => {
+    let scheduledFrame: FrameRequestCallback | undefined
+    const animationFrameSpy = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      scheduledFrame = callback
+      return 1
+    })
+    const { container } = renderLogin()
+    const list = container.querySelector<HTMLElement>('.auth-discount-list')
+
+    expect(list).not.toBeNull()
+    Object.defineProperties(list!, {
+      clientHeight: { configurable: true, value: 500 },
+      scrollHeight: { configurable: true, value: 1500 },
+      scrollTop: { configurable: true, value: 0, writable: true },
+    })
+
+    expect(scheduledFrame).toBeTypeOf('function')
+    act(() => {
+      scheduledFrame?.(0)
+      scheduledFrame?.(1000)
+    })
+
+    expect(list!.scrollTop).toBeGreaterThan(0)
+    animationFrameSpy.mockRestore()
+  })
+
+  it('pauses Global discount auto-scroll while the list is hovered', () => {
+    let scheduledFrame: FrameRequestCallback | undefined
+    const animationFrameSpy = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      scheduledFrame = callback
+      return 1
+    })
+    const { container } = renderLogin()
+    const list = container.querySelector<HTMLElement>('.auth-discount-list')!
+
+    Object.defineProperties(list, {
+      clientHeight: { configurable: true, value: 500 },
+      scrollHeight: { configurable: true, value: 1500 },
+      scrollTop: { configurable: true, value: 0, writable: true },
+    })
+
+    act(() => {
+      scheduledFrame?.(0)
+      scheduledFrame?.(1000)
+    })
+    const scrollTopBeforeHover = list.scrollTop
+
+    fireEvent.mouseEnter(list)
+    act(() => scheduledFrame?.(2000))
+
+    expect(list.scrollTop).toBe(scrollTopBeforeHover)
+    animationFrameSpy.mockRestore()
   })
 
   it('unlocks the Global email path after the local human-verification mock completes', async () => {

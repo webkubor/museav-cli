@@ -58,9 +58,10 @@ No additional crop was required: controls, labels, logo, divider, and selector a
 
 - Live reference: `https://platform.cheaperinference.com/signup`
 - User-provided reference screenshot: `/var/folders/kx/c91frh69359__0mb5qcw9s0w0000gn/T/codex-clipboard-23289242-7c51-4fad-b619-881dde4b9d00.png`
+- Auto-scroll and divider reference screenshot: `/var/folders/kx/c91frh69359__0mb5qcw9s0w0000gn/T/codex-clipboard-5175cb5c-3b8b-4062-a696-4fa8f45294e5.png`
 - Browser reference capture: `design-qa-assets/reference-discount-1512x767.png`
-- Implementation capture: `design-qa-assets/implementation-discount-1920x902.png`
-- Focused side-by-side comparison: `design-qa-assets/comparison-discount-panel.png`
+- Latest implementation capture: `design-qa-assets/implementation-discount-divider-polish-1920x902.png`
+- Latest focused side-by-side comparison: `design-qa-assets/comparison-discount-divider-polish.png`
 - Route/state: Global site, initial provider/email page, dark theme.
 - Desktop implementation viewport: 1920 × 902 CSS pixels. The auth card is 400 × 675.78 px and the showcase is 520 × 675.78 px; the document has no horizontal overflow.
 
@@ -68,12 +69,12 @@ No additional crop was required: controls, labels, logo, divider, and selector a
 
 The implementation follows the reference's useful information hierarchy—a live-savings heading, compact model rows, provider and preview-price metadata, prominent percentage savings, and a catalog footer—without copying its brand styling. It is adapted to ModelGo's dark/green shell, existing 400 px authentication card, typography, spacing, and token system. The panel is deliberately narrower than the reference so the two-column composition remains balanced.
 
-The showcase uses local mock data and existing `ModelIcon` assets. Its catalog link resolves to the public `/models` route. The header and footer remain fixed while the center model list scrolls independently. At 1040 px and below the secondary panel is hidden, preserving the focused single-card mobile/tablet flow.
+The showcase uses local mock data and existing `ModelIcon` assets. Its catalog link resolves to the public `/models` route. The header and footer remain fixed while the center model list continuously auto-scrolls as a seamless duplicated loop. Manual wheel scrolling is disabled; hovering pauses the animation and leaving resumes it. At 1040 px and below the secondary panel and divider are hidden, preserving the focused single-card mobile/tablet flow.
 
 ### Required fidelity surfaces
 
 - Typography and hierarchy: heading, summary, row title, metadata, discount, and footer retain the reference's relative emphasis while using ModelGo type tokens.
-- Layout rhythm: twelve equal-height mock rows, aligned metadata, right-anchored discount values, and equal-height auth/showcase cards at desktop width. Overflow stays inside the center list.
+- Layout rhythm: twelve equal-height mock rows, aligned metadata, right-anchored discount values, and equal-height auth/showcase cards at desktop width. The center separation is now a 2 px brand-tinted rail with 64 px clearance on each side; its ends fade softly and a restrained glow keeps it legible against the dark grid without becoming a competing focal point.
 - Color and surfaces: solid `--mg-bg-0-solid` panel, token borders and shadows, and brand-green discount values; no translucent grid interference remains behind row content.
 - Assets: all model marks use the existing `ModelIcon` component; no hand-drawn SVGs or placeholder graphics were introduced.
 - Content behavior: all displayed prices and discounts are explicit local mock values; no production pricing endpoint is called.
@@ -84,7 +85,12 @@ The showcase uses local mock data and existing `ModelIcon` assets. Its catalog l
 2. Fix: changed the panel to solid `--mg-bg-0-solid` while retaining the existing border, radius, and shadow tokens.
 3. Post-fix browser probe confirmed `rgb(35, 35, 41)`, equal card heights, and no horizontal overflow at 1920 × 902.
 4. Focused comparison confirmed no remaining P0, P1, or P2 visual issues.
-5. Scroll verification at 1920 × 902 measured the center list at 574 px client height and 768 px scroll height. Keyboard `End` moved `scrollTop` from 0 to 194 while the header and footer stayed fixed.
+5. Earlier manual-scroll implementation was replaced after feedback with a continuous automatic loop. The list duplicates the twelve-row set for a seamless reset and uses `overflow: hidden`, so wheel/drag scrolling is unavailable.
+6. Desktop browser verification at 1920 × 902 measured the center list at 552 px client height and 1536 px scroll height. `scrollTop` advanced from 13.5 to 44 automatically, stayed exactly 436 for 1.2 seconds while hovered, then advanced from 437 to 467.5 after the pointer left.
+7. The desktop grid measured 1001 px wide. The auth card ended at x=859.5 and the showcase began at x=940.5, leaving an 81 px separation zone composed of 40 px gap + 1 px divider + 40 px gap.
+8. Follow-up visual review found the original `--mg-border` divider too low-contrast and the 40 px side clearance too tight. The post-fix desktop grid measures 1050 px wide; the two panels now have a 130 px separation zone composed of 64 px gap + 2 px divider + 64 px gap. Browser-computed styles confirm the token-driven vertical gradient, 999 px radius, 0.86 opacity, and subtle brand drop shadow.
+9. Responsive re-check at 632 × 778 confirmed the secondary panel and divider are both hidden, the 400 px auth card stays centered, and horizontal overflow remains 0 px.
+10. Follow-up inspection found the duplicated auto-scroll tracks omitted the row divider at their joining seam. Removing the last-row border exception gives every row the same tokenized bottom divider; browser verification confirms both tracks remain exactly 768 px high, the combined scroll height remains 1536 px, and the seam no longer opens into a blank horizontal band.
 
 ## Interaction and runtime checks
 

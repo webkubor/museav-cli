@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { LuArrowUpRight, LuBadgePercent } from 'react-icons/lu'
@@ -26,9 +27,80 @@ const DISCOUNT_MODELS: DiscountModel[] = [
   { name: 'command-r-plus', vendor: 'Cohere', price: '$0.65/M', discount: 20 },
 ]
 
+const AUTO_SCROLL_PIXELS_PER_SECOND = 22
+
+interface DiscountRowsProps {
+  clone?: boolean
+  discountLabel: (discount: number) => string
+}
+
+function DiscountRows({ clone = false, discountLabel }: DiscountRowsProps) {
+  return (
+    <ul className="auth-discount-track" aria-hidden={clone || undefined}>
+      {DISCOUNT_MODELS.map((model) => (
+        <li key={model.name} className="auth-discount-row">
+          <ModelIcon
+            model={{ display_name: model.name, vendor: model.vendor }}
+            variant="compact"
+            rounded="rounded-sm"
+            className="auth-discount-model-icon"
+          />
+          <div className="auth-discount-model-copy">
+            <strong title={model.name}>{model.name}</strong>
+            <span title={`${model.vendor} · ${model.price}`}>
+              {model.vendor} · {model.price}
+            </span>
+          </div>
+          <span className="auth-discount-value">{discountLabel(model.discount)}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 /** Global 登录页的本地 Mock 折扣橱窗，不请求真实目录或价格接口。 */
 export function GlobalDiscountShowcase() {
   const { t } = useTranslation('account')
+  const listRef = useRef<HTMLDivElement>(null)
+  const pausedRef = useRef(false)
+  const title = t('account.auth.globalEmailAuth.discountShowcase.title')
+
+  useEffect(() => {
+    const list = listRef.current
+    if (!list || typeof window.requestAnimationFrame !== 'function') return
+
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')
+    let animationFrame = 0
+    let previousTimestamp: number | null = null
+
+    const advance = (timestamp: number) => {
+      if (previousTimestamp === null) previousTimestamp = timestamp
+      const elapsed = Math.min(timestamp - previousTimestamp, 64)
+      previousTimestamp = timestamp
+
+      if (!pausedRef.current && !reduceMotion?.matches && list.scrollHeight > list.clientHeight) {
+        const loopHeight = list.scrollHeight / 2
+        const nextScrollTop = list.scrollTop + (elapsed * AUTO_SCROLL_PIXELS_PER_SECOND) / 1000
+        list.scrollTop = nextScrollTop >= loopHeight
+          ? nextScrollTop - loopHeight
+          : nextScrollTop
+      }
+
+      animationFrame = window.requestAnimationFrame(advance)
+    }
+
+    animationFrame = window.requestAnimationFrame(advance)
+    return () => window.cancelAnimationFrame(animationFrame)
+  }, [])
+
+  const setPaused = (paused: boolean) => {
+    pausedRef.current = paused
+  }
+
+  const discountLabel = (discount: number) => t(
+    'account.auth.globalEmailAuth.discountShowcase.discount',
+    { discount },
+  )
 
   return (
     <aside className="auth-discount-showcase" aria-labelledby="auth-discount-title">
@@ -36,35 +108,23 @@ export function GlobalDiscountShowcase() {
         <div className="auth-discount-heading">
           <LuBadgePercent size={18} aria-hidden="true" />
           <h2 id="auth-discount-title">
-            {t('account.auth.globalEmailAuth.discountShowcase.title')}
+            {title}
           </h2>
         </div>
         <p>{t('account.auth.globalEmailAuth.discountShowcase.summary')}</p>
       </header>
 
-      <ul className="auth-discount-list" tabIndex={0}>
-        {DISCOUNT_MODELS.map((model) => (
-          <li key={model.name} className="auth-discount-row">
-            <ModelIcon
-              model={{ display_name: model.name, vendor: model.vendor }}
-              variant="compact"
-              rounded="rounded-sm"
-              className="auth-discount-model-icon"
-            />
-            <div className="auth-discount-model-copy">
-              <strong title={model.name}>{model.name}</strong>
-              <span title={`${model.vendor} · ${model.price}`}>
-                {model.vendor} · {model.price}
-              </span>
-            </div>
-            <span className="auth-discount-value">
-              {t('account.auth.globalEmailAuth.discountShowcase.discount', {
-                discount: model.discount,
-              })}
-            </span>
-          </li>
-        ))}
-      </ul>
+      <div
+        ref={listRef}
+        className="auth-discount-list"
+        role="region"
+        aria-label={title}
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+      >
+        <DiscountRows discountLabel={discountLabel} />
+        <DiscountRows clone discountLabel={discountLabel} />
+      </div>
 
       <footer className="auth-discount-footer">
         <span>{t('account.auth.globalEmailAuth.discountShowcase.footer')}</span>

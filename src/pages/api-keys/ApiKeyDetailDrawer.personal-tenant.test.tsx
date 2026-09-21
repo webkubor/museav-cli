@@ -1,21 +1,25 @@
 /**
  * V1.0.7 小需求 #9（modelgo_prd#1095）：个人租户不展示「个人护栏」。
- * 只锁 Key 详情抽屉「安全护栏 → 生效规则预览」这一条分支：个人租户下少一格
- * 「个人护栏」卡片，网格列数跟着收缩；非个人租户不受影响。
+ * 锁 Key 详情抽屉「安全护栏」里的两处：
+ *  1.「生效规则预览」少一格「个人护栏」卡片,网格列数跟着收缩;
+ *  2.「预算闸门」滤掉 per_member 档(需求图在创建弹窗里明确圈掉了「个人预算」,
+ *     抽屉是同一语义的另一处渲染)——这一档是后端数据驱动的,用例必须喂进真实
+ *     budgets 才测得到,空 budgets 下整段不渲染、测不出任何东西。
+ * 非个人租户两处都不受影响。
  */
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import type { ApiKeyItem } from '@/types'
 
+// 预算闸门要按用例喂不同数据,mock 提到 hoisted 里以便逐例覆盖返回值。
+const { getEffectiveGuardrailsMock } = vi.hoisted(() => ({ getEffectiveGuardrailsMock: vi.fn() }))
+
 vi.mock('@/services/api-keys', () => ({
   getApiKeyDetail: vi.fn().mockResolvedValue(undefined),
   getApiKeyAudit: vi.fn().mockResolvedValue({ items: [] }),
-  getEffectiveGuardrails: vi.fn().mockResolvedValue({
-    layers: [],
-    effective: { budgets: [], ip_whitelist: [], model_blacklist: [] },
-  }),
+  getEffectiveGuardrails: getEffectiveGuardrailsMock,
   revealApiKey: vi.fn(),
 }))
 vi.mock('@/services/guardrails', () => ({
@@ -33,6 +37,29 @@ vi.mock('./derive', () => ({
 }))
 
 import i18n, { loadLocaleNamespaces } from '@/i18n'
+
+const EMPTY_EFFECTIVE = { layers: [], effective: { budgets: [], ip_whitelist: [], model_blacklist: [] } }
+
+/** 一档生效预算(字段名照 ApiKeyDetailDrawer 实际读的那几个)。 */
+function budget(aggregationScope: string) {
+  return {
+    aggregation_scope: aggregationScope,
+    spend_limit_amount: '100',
+    currency: 'CNY',
+    period_unit: 'month',
+    period_length: 1,
+    source_guardrail_id: 'g-1',
+  }
+}
+
+function effectiveWithBudgets(scopes: string[]) {
+  return { layers: [], effective: { budgets: scopes.map(budget), ip_whitelist: [], model_blacklist: [] } }
+}
+
+beforeEach(() => {
+  getEffectiveGuardrailsMock.mockReset()
+  getEffectiveGuardrailsMock.mockResolvedValue(EMPTY_EFFECTIVE)
+})
 
 i18n.changeLanguage('zh')
 await loadLocaleNamespaces(['apiKeys'])
@@ -103,5 +130,41 @@ describe('ApiKeyDetailDrawer · 个人租户隐藏个人护栏', () => {
 
     const grid = within(tile).getByText('全局护栏').closest('[class*="grid-cols"]')
     expect(grid?.className).toContain('grid-cols-3')
+  })
+})
+
+describe('ApiKeyDetailDrawer · 个人租户隐藏预算闸门里的「个人预算」档', () => {
+  afterEach(() => {
+    useAuthStore.setState({ activeTenantId: null, tenants: [] })
+  })
+
+  it('个人租户：后端回了 per_member 档也不展示,其余档照常展示', async () => {
+    getEffectiveGuardrailsMock.mockResolvedValue(effectiveWithBudgets(['guardrail_total', 'per_member', 'per_api_key']))
+    useAuthStore.setState({ activeTenantId: 't-1', tenants: [{ tenant_id: 't-1', type: 'personal' }] as never })
+    renderDrawer()
+
+    await waitFor(() => expect(screen.getByText('预算闸门')).toBeInTheDocument())
+    expect(screen.getByText('工作空间总预算')).toBeInTheDocument()
+    expect(screen.getByText('Key 预算')).toBeInTheDocument()
+    expect(screen.queryByText('个人预算')).toBeNull()
+  })
+
+  it('企业租户：同一份数据仍展示「个人预算」档', async () => {
+    getEffectiveGuardrailsMock.mockResolvedValue(effectiveWithBudgets(['guardrail_total', 'per_member', 'per_api_key']))
+    useAuthStore.setState({ activeTenantId: 't-1', tenants: [{ tenant_id: 't-1', type: 'enterprise' }] as never })
+    renderDrawer()
+
+    await waitFor(() => expect(screen.getByText('预算闸门')).toBeInTheDocument())
+    expect(screen.getByText('个人预算')).toBeInTheDocument()
+  })
+
+  it('个人租户：只有 per_member 一档时整个「预算闸门」区块不渲染(不留空标题)', async () => {
+    getEffectiveGuardrailsMock.mockResolvedValue(effectiveWithBudgets(['per_member']))
+    useAuthStore.setState({ activeTenantId: 't-1', tenants: [{ tenant_id: 't-1', type: 'personal' }] as never })
+    renderDrawer()
+
+    await waitFor(() => expect(screen.getByText('生效规则预览')).toBeInTheDocument())
+    expect(screen.queryByText('预算闸门')).toBeNull()
+    expect(screen.queryByText('个人预算')).toBeNull()
   })
 })

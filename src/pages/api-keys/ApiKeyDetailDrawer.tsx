@@ -230,7 +230,12 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
   const effectiveLayers = effective?.layers
   const effectiveView = effectiveLayers && {
     layers: effectiveLayers,
-    budgets: effective?.effective?.budgets ?? [],
+    // 个人租户同样不展示「个人预算」档（#1095 需求图：创建弹窗里这一档被明确圈掉，抽屉是同一语义的另一处）。
+    // 滤在归一化处而不是渲染处：下面「有档才渲染」的门槛也跟着用过滤后的长度，
+    // 个人租户下只有 per_member 一档时整个预算闸门区块不出现，而不是留个空标题。
+    budgets: (effective?.effective?.budgets ?? []).filter(
+      (b) => !isPersonalTenant || b.aggregation_scope !== 'per_member',
+    ),
     ipWhitelist: effective?.effective?.ip_whitelist ?? [],
     modelBlacklist: effective?.effective?.model_blacklist ?? [],
   }

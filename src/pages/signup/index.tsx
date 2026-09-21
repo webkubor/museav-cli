@@ -32,6 +32,7 @@ import { throttleMessage } from '@/lib/auth/server-throttle'
 import { getRedirectTarget } from '@/lib/redirect'
 import { useMarket } from '@/hooks/useMarket'
 import { resolveReferralCode, clearPersistedReferralCode } from './referral-code'
+import type { Market } from '@/lib/market'
 
 function createSignupSchema(t: TFunction) {
   return z.object({
@@ -60,17 +61,21 @@ interface Fields {
  */
 export default function SignupPage() {
   const market = useMarket()
-  return market === 'china' ? <DomesticSignupRedirect /> : <EmailSignupPage />
+  const [searchParams] = useSearchParams()
+  const domesticEmailSignup = market === 'china' && searchParams.get('method') === 'email'
+
+  if (market === 'global' || !domesticEmailSignup) return <UnifiedLoginRedirect />
+  return <EmailSignupPage market="china" />
 }
 
-function DomesticSignupRedirect() {
+function UnifiedLoginRedirect() {
   // 需求方#714：重定向必须透传 query——推荐链接 /signup?aff=X 在国内市场落到 /login，
   // 丢了 search 就等于 100% 丢归因。
   const location = useLocation()
   return <Navigate to={{ pathname: '/login', search: location.search }} replace />
 }
 
-function EmailSignupPage() {
+function EmailSignupPage({ market }: { market: Market }) {
   const { t } = useTranslation('account')
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -203,10 +208,11 @@ function EmailSignupPage() {
       title={t('account.auth.signup.title')}
       subtitle={t('account.auth.signup.subtitle')}
       wide={true}
+      showMarketSwitcher
       footer={
         <span>
           {t('account.auth.signup.hasAccount')}{' '}
-          <Link to="/login" className="auth-redirect-link">
+          <Link to={market === 'china' ? '/login?method=email' : '/login'} className="auth-redirect-link">
             {t('account.auth.signup.login')}
           </Link>
         </span>
@@ -330,7 +336,7 @@ function EmailSignupPage() {
           <Link to="/legal/privacy" className="auth-muted-link">{t('account.auth.legal.privacy')}</Link>
         </p>
 
-        <SocialLogin redirectTo={redirectTo} />
+        {market === 'china' && <SocialLogin redirectTo={redirectTo} />}
       </form>
     </AuthLayout>
   )

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { useSiteLogo } from '@/config/brand-assets'
 import { useLangStore } from '@/store/use-brand-store'
 import { cn } from '@/lib/utils'
+import { AuthMarketSwitcher } from '@/components/auth/AuthMarketSwitcher'
 
 interface AuthLayoutProps {
   /** 鉴权卡片大标题 */
@@ -14,12 +15,21 @@ interface AuthLayoutProps {
   children: ReactNode
   /** 是否使用宽版卡片布局 */
   wide?: boolean
+  /** 登录/注册页展示中国站与 Global 的站点切换 */
+  showMarketSwitcher?: boolean
 }
 
 /**
  * 鉴权公共高品质科技网格氛围骨架 (Tailwind 语义抽离架构)
  */
-export function AuthLayout({ title, subtitle, footer, children, wide = false }: AuthLayoutProps) {
+export function AuthLayout({
+  title,
+  subtitle,
+  footer,
+  children,
+  wide = false,
+  showMarketSwitcher = false,
+}: AuthLayoutProps) {
   const market = useLangStore((s) => s.market)
   const isDomestic = market === 'china'
   const siteLogo = useSiteLogo()
@@ -30,6 +40,8 @@ export function AuthLayout({ title, subtitle, footer, children, wide = false }: 
 
   return (
     <div className="auth-layout-container">
+      {showMarketSwitcher && <AuthMarketSwitcher market={market} />}
+
       {/* 🔮 氛围球一（left-bottom） */}
       <div
         className="auth-blur-orb-primary"

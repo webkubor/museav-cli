@@ -27,6 +27,51 @@ export function sendEmailCode(email: string, captchaVerifyParam?: string | null)
   return post<AuthMailTTLResponse>('auth/email-code/send', withCaptcha({ email }, captchaVerifyParam))
 }
 
+const GLOBAL_AUTH_PROTOTYPE_CODE = '123456'
+
+/** Global 站原型发码 Mock：不发网络请求，固定演示验证码为 123456。 */
+export async function sendGlobalEmailCode(_email: string) {
+  void _email
+  await new Promise((resolve) => window.setTimeout(resolve, 450))
+  return { expires_in: 60, prototype_code: GLOBAL_AUTH_PROTOTYPE_CODE }
+}
+
+/** Global 站原型登录/注册 Mock：新旧邮箱均走同一免密流程，不创建真实会话。 */
+export async function emailCodeLoginRegister(
+  email: string,
+  code: string,
+  _captchaVerifyParam?: string | null,
+  _referralCode?: string,
+  _invitationToken?: string,
+) {
+  void _captchaVerifyParam
+  void _referralCode
+  void _invitationToken
+  await new Promise((resolve) => window.setTimeout(resolve, 650))
+  if (code !== GLOBAL_AUTH_PROTOTYPE_CODE) {
+    throw new Error('验证码错误，请输入原型验证码 123456')
+  }
+  return {
+    account: {
+      account_id: 'prototype-global-account',
+      display_name: email.split('@')[0] || 'Global User',
+      email,
+      avatar_url: null,
+    },
+    active_tenant_id: 'prototype-global-tenant',
+    active_workspace_id: 'prototype-global-workspace',
+    tenants: [],
+  } satisfies LoginResult
+}
+
+export type GlobalOAuthProvider = 'google' | 'github'
+
+/** Global 站第三方登录原型 Mock：模拟 OAuth 等待后返回，不离开当前页面。 */
+export async function mockGlobalOAuthLogin(provider: GlobalOAuthProvider) {
+  await new Promise((resolve) => window.setTimeout(resolve, 700))
+  return { provider, authenticated: true as const }
+}
+
 /** 邮箱密码注册（注册即登录，自动下发 session cookie） */
 export function register(body: RegisterRequest, captchaVerifyParam?: string | null) {
   return post<RegisterResult>('auth/register', withCaptcha(body, captchaVerifyParam))

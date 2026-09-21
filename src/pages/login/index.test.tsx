@@ -104,6 +104,11 @@ function renderLogin(initialEntry = '/login') {
   )
 }
 
+async function completeGlobalCaptcha() {
+  fireEvent.click(screen.getByRole('button', { name: '点击完成人机验证' }))
+  expect(await screen.findByRole('button', { name: '人机验证已完成' })).toBeInTheDocument()
+}
+
 describe('LoginPage', () => {
   // 生产环境靠 App.tsx 的 <LocaleNamespaces> 在路由挂载前异步加载 'account' 语言包；
   // 这里直接渲染 <LoginPage> 没经过那层包裹，t() 找不到资源只会回落成原始 key
@@ -130,8 +135,20 @@ describe('LoginPage', () => {
     expect(screen.getByRole('button', { name: '使用邮箱继续' })).toBeInTheDocument()
     expect(screen.queryByPlaceholderText('••••••••')).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: '免费注册' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Google' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'GitHub' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Google' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'GitHub' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: '使用邮箱继续' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '点击完成人机验证' })).toBeInTheDocument()
+  })
+
+  it('unlocks the Global email path after the local human-verification mock completes', async () => {
+    renderLogin()
+
+    await completeGlobalCaptcha()
+
+    expect(screen.getByRole('button', { name: 'Google' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'GitHub' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: '使用邮箱继续' })).toBeEnabled()
   })
 
   it('completes the Global third-party sign-in prototype without leaving the page', async () => {
@@ -151,6 +168,7 @@ describe('LoginPage', () => {
     fireEvent.change(screen.getByPlaceholderText('you@company.com'), {
       target: { value: 'global@modelgo.ai' },
     })
+    await completeGlobalCaptcha()
     fireEvent.click(screen.getByRole('button', { name: '使用邮箱继续' }))
 
     await waitFor(() => {
@@ -181,6 +199,7 @@ describe('LoginPage', () => {
     fireEvent.change(screen.getByPlaceholderText('you@company.com'), {
       target: { value: 'change@modelgo.ai' },
     })
+    await completeGlobalCaptcha()
     fireEvent.click(screen.getByRole('button', { name: '使用邮箱继续' }))
 
     expect(await screen.findByRole('button', { name: '使用其他邮箱' })).toBeInTheDocument()

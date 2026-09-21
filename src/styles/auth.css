@@ -118,26 +118,12 @@ body[theme-mode='dark'] .glass-auth-card .auth-policy-text {
   height: var(--mg-control-height-lg);
 }
 
-.auth-global-divider {
-  margin-block: 4px;
-}
-
 .auth-global-assurance {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 8px;
   color: var(--mg-text-2);
-  font-size: var(--mg-font-size-caption);
+  font-size: var(--mg-font-size-micro);
   font-weight: 600;
   line-height: 1.55;
-  text-align: left;
-}
-
-.auth-global-assurance svg {
-  flex: none;
-  margin-top: 1px;
-  color: var(--brand-light);
+  text-align: center;
 }
 
 .auth-global-code-note {
@@ -579,6 +565,10 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
 /* 三方登录样式抽离 */
 .social-divider {
   @apply flex items-center gap-4 my-6;
+}
+
+.social-divider.auth-global-divider {
+  margin-block: 0;
 }
 
 .social-divider-line {

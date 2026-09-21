@@ -15,6 +15,7 @@ import {
   LuArrowRight,
   LuCircleCheck,
   LuInfo,
+  LuLoaderCircle,
   LuMailCheck,
   LuShieldCheck,
 } from 'react-icons/lu'
@@ -41,6 +42,7 @@ function createCodeSchema(t: TFunction) {
 type EmailFields = { email: string }
 type CodeFields = { code: string }
 type EmailStep = 'entry' | 'code'
+type HumanVerificationState = 'idle' | 'verifying' | 'verified'
 
 const RESEND_SECONDS = 60
 
@@ -54,6 +56,7 @@ export function GlobalEmailAuth() {
   const [completedIdentity, setCompletedIdentity] = useState('')
   const [completedWithOAuth, setCompletedWithOAuth] = useState(false)
   const [pendingProvider, setPendingProvider] = useState<GlobalOAuthProvider | null>(null)
+  const [humanVerification, setHumanVerification] = useState<HumanVerificationState>('idle')
 
   const emailSchema = useMemo(() => createEmailSchema(t), [t])
   const codeSchema = useMemo(() => createCodeSchema(t), [t])
@@ -78,6 +81,12 @@ export function GlobalEmailAuth() {
     return () => window.clearInterval(timer)
   }, [step, resendSeconds])
 
+  useEffect(() => {
+    if (humanVerification !== 'verifying') return
+    const timer = window.setTimeout(() => setHumanVerification('verified'), 450)
+    return () => window.clearTimeout(timer)
+  }, [humanVerification])
+
   const sendCode = async (email: string) => {
     const result = await sendGlobalEmailCode(email)
     setResendSeconds(RESEND_SECONDS)
@@ -85,6 +94,10 @@ export function GlobalEmailAuth() {
   }
 
   const handleContinueEmail = async (data: EmailFields) => {
+    if (humanVerification !== 'verified') {
+      setServerError(t('account.auth.validation.securityVerificationRequired'))
+      return
+    }
     setLoading(true)
     setServerError('')
     try {
@@ -149,6 +162,7 @@ export function GlobalEmailAuth() {
 
   const useDifferentEmail = () => {
     setStep('entry')
+    setHumanVerification('idle')
     setResendSeconds(0)
     setServerError('')
     codeForm.reset({ code: '' })
@@ -160,6 +174,7 @@ export function GlobalEmailAuth() {
     setStep('entry')
     setResendSeconds(0)
     setServerError('')
+    setHumanVerification('idle')
     emailForm.reset({ email: '' })
     codeForm.reset({ code: '' })
   }
@@ -239,15 +254,46 @@ export function GlobalEmailAuth() {
 
           {serverError && <p className="auth-error-message">{serverError}</p>}
 
-          <Button type="submit" variant="brand" size="lg" loading={loading}>
+          <p className="auth-global-assurance">
+            <span>{t('account.auth.globalEmailAuth.accountNotice')}</span>
+          </p>
+
+          <button
+            type="button"
+            className={`auth-captcha-gate${humanVerification === 'verified' ? ' is-verified' : ''}`}
+            disabled={humanVerification !== 'idle'}
+            aria-live="polite"
+            onClick={() => {
+              setServerError('')
+              setHumanVerification('verifying')
+            }}
+          >
+            {humanVerification === 'verifying' ? (
+              <LuLoaderCircle size={16} className="animate-spin" aria-hidden="true" />
+            ) : (
+              <LuShieldCheck size={16} aria-hidden="true" />
+            )}
+            <span>
+              {t(
+                humanVerification === 'verified'
+                  ? 'account.auth.globalEmailAuth.humanVerified'
+                  : humanVerification === 'verifying'
+                    ? 'account.auth.globalEmailAuth.humanVerifying'
+                    : 'account.auth.globalEmailAuth.humanVerification',
+              )}
+            </span>
+          </button>
+
+          <Button
+            type="submit"
+            variant="brand"
+            size="lg"
+            loading={loading}
+            disabled={humanVerification !== 'verified'}
+          >
             <span>{t('account.auth.globalEmailAuth.continueEmail')}</span>
             <LuArrowRight size={17} aria-hidden="true" />
           </Button>
-
-          <p className="auth-global-assurance">
-            <LuShieldCheck size={16} aria-hidden="true" />
-            <span>{t('account.auth.globalEmailAuth.accountNotice')}</span>
-          </p>
 
           <p className="auth-policy-text">
             {t('account.auth.legal.emailCodePrefix')}{' '}

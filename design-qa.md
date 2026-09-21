@@ -48,6 +48,9 @@ No additional crop was required: controls, labels, logo, divider, and selector a
 1. Initial browser pass found a P2 at narrow desktop/tablet width: the top-right market selector could touch the auth card corner.
 2. Fix: added narrow-width top spacing and centered the selector at widths up to 820 px.
 3. Post-fix evidence: `design-qa-assets/implementation-china-phone-800x823-fixed.png` shows clear vertical separation and no overlap. The 1512 × 823 desktop capture remains unchanged in composition.
+4. Global entry feedback identified excessive vertical whitespace around the `OR` divider. The global-only selector now removes the shared divider's 24 px block margin, leaving only the form's 16 px rhythm without changing China or the verification-code page.
+5. Global account-notice feedback removed the decorative shield and reduced the copy from caption to micro typography, keeping the notice centered while leaving the human-verification control unchanged.
+6. Global verification-order feedback moved the account notice and human-verification gate above the email CTA, so the required step now precedes the action it unlocks.
 
 ## Interaction and runtime checks
 
@@ -55,10 +58,11 @@ No additional crop was required: controls, labels, logo, divider, and selector a
 - China email → `使用手机号登录` returns to the phone form.
 - China email signup remains available through `/signup?method=email`.
 - Global login starts with Google/GitHub plus an email-only field; submitting a valid email opens a dedicated code page. `/signup?market=global` redirects to the same unified entry.
+- The Global entry includes a local Mock human-verification gate in the annotated slot between the account notice and legal copy. It gates only the email login/register path; Google and GitHub remain directly available.
 - The code page shows the submitted email, a six-digit field, resend countdown, and `Use a different email`; returning preserves the entered email.
 - Global prototype APIs are local mocks: sending reveals demo code `123456`; submitting that code renders the success state without a real network request or session. Google/GitHub clicks use the same local success-state pattern and do not leave the page.
 - Global phone, password, forgot-password, and separate signup controls are absent.
 - The market switch preserves auth path/query context in dev/test and uses configured console domains in production.
-- Browser interaction check covered China/Global switching, Global step-one email submission, step-two rendering, resend countdown, return-to-edit with preserved email, the `123456` submit flow, and the final success state. Automated coverage also exercises Google/GitHub Mock login. No application runtime error was observed.
+- Browser interaction check covered China/Global switching, the new human-verification idle/verifying/verified states, the email-only lock/unlock behavior, directly available Google/GitHub choices, Global step-one email submission, step-two rendering, resend countdown, return-to-edit with preserved email, the `123456` submit flow, and the final success state. No application runtime error was observed.
 
 final result: passed

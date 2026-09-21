@@ -22,7 +22,7 @@
   --color-grid-color: var(--grid-color);
   
   /* 单尺铁律（DESIGN.md#Shapes）：项目圆角只有 sm/md/lg/full 四档。
-     下面把 Tailwind 默认多余刻度 reset 掉——rounded-xl/2xl/3xl/4xl/xs 物理不再生成，
+     下面把 Tailwind 默认多余圆角刻度 reset 掉——这些额外工具类物理不再生成，
      写了等于无效类。第二把尺彻底消失（全前端已迁完，零残留）。新用法另由
      eslint.style-guard 门控在改动行拦截。 */
   --radius-sm: var(--radius-sm);
@@ -87,6 +87,7 @@
 @import "./styles/tokens.css";      /* 控制台独有 token（库里没有的）；与库重复的部分已按 qa#611 ④ 撤除 */
 @import "./styles/brand.css";       /* 左上角品牌区：品牌字体 + 双色 wordmark + 漂浮光晕 logo */
 @import "./styles/auth.css";        /* 登录/注册/鉴权页样式 */
+@import "./styles/auth-discount.css"; /* 海外登录页模型折扣展示 */
 @import "./styles/components.css";  /* modern-* 自定义组件 + 液态玻璃搜索 */
 @import "./styles/effects.css";     /* 动画、侧边栏流光、平台助手 markdown */
 

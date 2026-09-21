@@ -21,6 +21,7 @@ import {
 } from 'react-icons/lu'
 
 import { AuthLayout } from '@/components/auth/AuthLayout'
+import { GlobalDiscountShowcase } from '@/components/auth/GlobalDiscountShowcase'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { OAUTH_ICONS, OAUTH_LABELS } from '@/constants/oauth'
@@ -191,7 +192,12 @@ export function GlobalEmailAuth() {
       : t('account.auth.globalEmailAuth.entrySubtitle')
 
   return (
-    <AuthLayout title={title} subtitle={subtitle} showMarketSwitcher>
+    <AuthLayout
+      title={title}
+      subtitle={subtitle}
+      aside={<GlobalDiscountShowcase />}
+      showMarketSwitcher
+    >
       {completedIdentity ? (
         <div className="auth-form-container auth-fade-in items-center text-center">
           <div className="auth-prototype-success-icon" aria-hidden="true">

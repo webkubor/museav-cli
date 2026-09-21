@@ -249,7 +249,14 @@
         "successDescription": "{{identity}} completed the sign-in / sign-up demo",
         "oauthSuccessDescription": "{{identity}} completed the third-party sign-in / sign-up demo",
         "useAnotherEmail": "Use a different email",
-        "restart": "Back to sign-in options"
+        "restart": "Back to sign-in options",
+        "discountShowcase": {
+          "title": "Live model savings",
+          "summary": "Up to 75% off",
+          "discount": "−{{discount}}%",
+          "footer": "Preview prices · Always below list",
+          "browse": "Browse all models"
+        }
       },
       "phoneLogin": {
         "title": "Phone Sign In",

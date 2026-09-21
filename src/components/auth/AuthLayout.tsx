@@ -13,6 +13,8 @@ interface AuthLayoutProps {
   footer?: ReactNode
   /** 子页面表单结构 */
   children: ReactNode
+  /** 桌面端可选的辅助展示区 */
+  aside?: ReactNode
   /** 是否使用宽版卡片布局 */
   wide?: boolean
   /** 登录/注册页展示中国站与 Global 的站点切换 */
@@ -27,6 +29,7 @@ export function AuthLayout({
   subtitle,
   footer,
   children,
+  aside,
   wide = false,
   showMarketSwitcher = false,
 }: AuthLayoutProps) {
@@ -59,7 +62,11 @@ export function AuthLayout({
       />
 
       {/* 核心内容包裹 */}
-      <div className={cn("auth-layout-content", wide && "max-w-none md:!max-w-[640px]")}>
+      <div className={cn(
+        'auth-layout-content',
+        aside && 'auth-layout-content-with-aside',
+        wide && 'max-w-none md:!max-w-[640px]',
+      )}>
         <div className="glass-auth-card">
           {/* 顶部 Logo 与文案 */}
           <div className="auth-brand-header">
@@ -87,6 +94,8 @@ export function AuthLayout({
             </div>
           )}
         </div>
+
+        {aside && <div className="auth-layout-aside">{aside}</div>}
       </div>
     </div>
   )

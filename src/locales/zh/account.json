@@ -249,7 +249,14 @@
         "successDescription": "{{identity}} 已完成登录 / 注册演示",
         "oauthSuccessDescription": "{{identity}} 已完成第三方登录 / 注册演示",
         "useAnotherEmail": "使用其他邮箱",
-        "restart": "返回登录方式"
+        "restart": "返回登录方式",
+        "discountShowcase": {
+          "title": "实时模型折扣",
+          "summary": "最高节省 75%",
+          "discount": "−{{discount}}%",
+          "footer": "预览价格 · 始终低于官方定价",
+          "browse": "浏览全部模型"
+        }
       },
       "phoneLogin": {
         "title": "手机号登录",

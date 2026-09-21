@@ -23,12 +23,13 @@ import LoginPage from './index'
 const marketState = vi.hoisted(() => ({ value: 'global' as 'china' | 'global' }))
 
 vi.mock('@/components/auth/AuthLayout', () => ({
-  AuthLayout: ({ children, footer, title, subtitle }: { children: ReactNode; footer?: ReactNode; title: string; subtitle?: string }) => (
+  AuthLayout: ({ children, footer, title, subtitle, aside }: { children: ReactNode; footer?: ReactNode; title: string; subtitle?: string; aside?: ReactNode }) => (
     <main>
       <h1>{title}</h1>
       {subtitle && <p>{subtitle}</p>}
       {children}
       {footer}
+      {aside}
     </main>
   ),
 }))
@@ -139,6 +140,14 @@ describe('LoginPage', () => {
     expect(screen.getByRole('button', { name: 'GitHub' })).toBeEnabled()
     expect(screen.getByRole('button', { name: '使用邮箱继续' })).toBeDisabled()
     expect(screen.getByRole('button', { name: '点击完成人机验证' })).toBeInTheDocument()
+  })
+
+  it('shows the Global live-discount showcase with a public model-catalog entry', () => {
+    renderLogin()
+
+    expect(screen.getByRole('heading', { name: '实时模型折扣' })).toBeInTheDocument()
+    expect(screen.getByText('最高节省 75%')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '浏览全部模型' })).toHaveAttribute('href', '/models')
   })
 
   it('unlocks the Global email path after the local human-verification mock completes', async () => {

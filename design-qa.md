@@ -24,7 +24,7 @@ The implementation preserves the source composition: centered 400 px auth card, 
 
 The source screenshot contains a transient invalid-phone error while the implementation capture contains the autofocus ring. That state-only line is excluded from spacing judgment; the surrounding field and form geometry remain aligned.
 
-For Global, the reference's two-step interaction model is preserved while its unrelated brand treatment and live-price side panel are intentionally excluded. The first page presents Google and GitHub as full-width primary choices above the email path; the second page is dedicated to the six-digit code, resend state, and changing the email. Both steps remain inside ModelGo's existing dark/green auth shell.
+For Global, the reference's two-step interaction model is preserved while its unrelated brand treatment is intentionally excluded. The first page presents Google and GitHub as full-width primary choices above the email path; the second page is dedicated to the six-digit code, resend state, and changing the email. Both steps remain inside ModelGo's existing dark/green auth shell.
 
 ## Required fidelity surfaces
 
@@ -51,6 +51,40 @@ No additional crop was required: controls, labels, logo, divider, and selector a
 4. Global entry feedback identified excessive vertical whitespace around the `OR` divider. The global-only selector now removes the shared divider's 24 px block margin, leaving only the form's 16 px rhythm without changing China or the verification-code page.
 5. Global account-notice feedback removed the decorative shield and reduced the copy from caption to micro typography, keeping the notice centered while leaving the human-verification control unchanged.
 6. Global verification-order feedback moved the account notice and human-verification gate above the email CTA, so the required step now precedes the action it unlocks.
+
+## Global discount showcase
+
+### Evidence
+
+- Live reference: `https://platform.cheaperinference.com/signup`
+- User-provided reference screenshot: `/var/folders/kx/c91frh69359__0mb5qcw9s0w0000gn/T/codex-clipboard-23289242-7c51-4fad-b619-881dde4b9d00.png`
+- Browser reference capture: `design-qa-assets/reference-discount-1512x767.png`
+- Implementation capture: `design-qa-assets/implementation-discount-1920x902.png`
+- Focused side-by-side comparison: `design-qa-assets/comparison-discount-panel.png`
+- Route/state: Global site, initial provider/email page, dark theme.
+- Desktop implementation viewport: 1920 × 902 CSS pixels. The auth card is 400 × 675.78 px and the showcase is 520 × 675.78 px; the document has no horizontal overflow.
+
+### Full-view comparison
+
+The implementation follows the reference's useful information hierarchy—a live-savings heading, compact model rows, provider and preview-price metadata, prominent percentage savings, and a catalog footer—without copying its brand styling. It is adapted to ModelGo's dark/green shell, existing 400 px authentication card, typography, spacing, and token system. The panel is deliberately narrower than the reference so the two-column composition remains balanced.
+
+The showcase uses local mock data and existing `ModelIcon` assets. Its catalog link resolves to the public `/models` route. The header and footer remain fixed while the center model list scrolls independently. At 1040 px and below the secondary panel is hidden, preserving the focused single-card mobile/tablet flow.
+
+### Required fidelity surfaces
+
+- Typography and hierarchy: heading, summary, row title, metadata, discount, and footer retain the reference's relative emphasis while using ModelGo type tokens.
+- Layout rhythm: twelve equal-height mock rows, aligned metadata, right-anchored discount values, and equal-height auth/showcase cards at desktop width. Overflow stays inside the center list.
+- Color and surfaces: solid `--mg-bg-0-solid` panel, token borders and shadows, and brand-green discount values; no translucent grid interference remains behind row content.
+- Assets: all model marks use the existing `ModelIcon` component; no hand-drawn SVGs or placeholder graphics were introduced.
+- Content behavior: all displayed prices and discounts are explicit local mock values; no production pricing endpoint is called.
+
+### Findings and comparison history
+
+1. Initial implementation used translucent `--mg-bg-0`; the page grid reduced row readability, recorded as P2.
+2. Fix: changed the panel to solid `--mg-bg-0-solid` while retaining the existing border, radius, and shadow tokens.
+3. Post-fix browser probe confirmed `rgb(35, 35, 41)`, equal card heights, and no horizontal overflow at 1920 × 902.
+4. Focused comparison confirmed no remaining P0, P1, or P2 visual issues.
+5. Scroll verification at 1920 × 902 measured the center list at 574 px client height and 768 px scroll height. Keyboard `End` moved `scrollTop` from 0 to 194 while the header and footer stayed fixed.
 
 ## Interaction and runtime checks
 

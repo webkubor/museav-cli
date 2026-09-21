@@ -187,6 +187,18 @@ while IFS= read -r f; do
     block=$((block + 1))
   fi
 
+  # ── BLOCK 6：原生日期/时间控件 <input type="date|time|datetime-local|month|week">。
+  #    和原生 <select> 同源的坑：日期/时间选择面板由**操作系统**渲染——国际站上是浏览器
+  #    中文控件（1.0.6 #456 实测：国际站时间选择器是中文原生控件），也不跟随主题、半透明。
+  #    统一用 @/components/ui 的日期/时间选择组件。判据干净（type= 值精确匹配），不误伤。
+  hits="$(printf '%s' "$added" | grep -vE '^[[:space:]]*[{]?(//|/\*|\*)' | grep -niE '<input[^>]*type=["'"'"'](date|time|datetime-local|month|week)["'"'"']' || true)"
+  if [ -n "$hits" ]; then
+    echo "✗ [原生日期/时间控件] $f — 选择面板由系统渲染（国际站出中文控件、不跟主题），改用 @/components/ui 的日期/时间组件（1.0.6 #456）"
+    printf '%s\n' "$hits" | sed 's/^/      /'
+    block=$((block + 1))
+  fi
+
+
   # ── WARN 6：手写浮层。弹窗 / 下拉 / 气泡统一走 ui/ 下的 Popover、DropdownMenu、
   #    Select、Dialog、Modal、Sheet、SideSheet、Tooltip——它们统一了磨砂玻璃质感、
   #    z-index 层级、点击外部关闭、ESC 关闭与焦点管理。

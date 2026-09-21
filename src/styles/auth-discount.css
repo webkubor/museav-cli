@@ -21,6 +21,13 @@
   }
 }
 
+@media (min-width: 1200px) {
+  /* 双栏组合整体右移一格；48px 的整周期位移仍与背景网格保持对齐。 */
+  .auth-layout-content-with-aside {
+    transform: translateX(48px);
+  }
+}
+
 .auth-layout-content-with-aside::before {
   width: 2px;
   height: calc(100% - 48px);

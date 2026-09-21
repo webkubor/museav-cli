@@ -538,7 +538,7 @@ export function CreateKeyModal({
               customLabel={t("apiKeys.createModal.expiryCustomLabel")}
               hideStartDate={true}
               placeholder={t("apiKeys.createModal.expiryPlaceholder")}
-              className="w-full rounded-md h-10 justify-between !bg-mg-bg-1"
+              className="w-full rounded-md h-10 !bg-mg-bg-1"
             />
           </div>
 

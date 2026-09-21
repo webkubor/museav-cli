@@ -176,6 +176,38 @@ describe('LoginPage', () => {
     animationFrameSpy.mockRestore()
   })
 
+  it('keeps subpixel auto-scroll progress when the browser rounds scrollTop', () => {
+    let scheduledFrame: FrameRequestCallback | undefined
+    const animationFrameSpy = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      scheduledFrame = callback
+      return 1
+    })
+    const { container } = renderLogin()
+    const list = container.querySelector<HTMLElement>('.auth-discount-list')!
+    let browserScrollTop = 0
+
+    Object.defineProperties(list, {
+      clientHeight: { configurable: true, value: 500 },
+      scrollHeight: { configurable: true, value: 1500 },
+      scrollTop: {
+        configurable: true,
+        get: () => browserScrollTop,
+        set: (value: number) => {
+          browserScrollTop = Math.round(value)
+        },
+      },
+    })
+
+    act(() => {
+      for (let frame = 0; frame <= 10; frame += 1) {
+        scheduledFrame?.(frame * 16.7)
+      }
+    })
+
+    expect(list.scrollTop).toBeGreaterThan(1)
+    animationFrameSpy.mockRestore()
+  })
+
   it('pauses Global discount auto-scroll while the list is hovered', () => {
     let scheduledFrame: FrameRequestCallback | undefined
     const animationFrameSpy = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {

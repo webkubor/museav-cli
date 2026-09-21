@@ -72,6 +72,7 @@ export function GlobalDiscountShowcase() {
     const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')
     let animationFrame = 0
     let previousTimestamp: number | null = null
+    let scrollPosition = list.scrollTop
 
     const advance = (timestamp: number) => {
       if (previousTimestamp === null) previousTimestamp = timestamp
@@ -80,10 +81,10 @@ export function GlobalDiscountShowcase() {
 
       if (!pausedRef.current && !reduceMotion?.matches && list.scrollHeight > list.clientHeight) {
         const loopHeight = list.scrollHeight / 2
-        const nextScrollTop = list.scrollTop + (elapsed * AUTO_SCROLL_PIXELS_PER_SECOND) / 1000
-        list.scrollTop = nextScrollTop >= loopHeight
-          ? nextScrollTop - loopHeight
-          : nextScrollTop
+        scrollPosition = (
+          scrollPosition + (elapsed * AUTO_SCROLL_PIXELS_PER_SECOND) / 1000
+        ) % loopHeight
+        list.scrollTop = scrollPosition
       }
 
       animationFrame = window.requestAnimationFrame(advance)

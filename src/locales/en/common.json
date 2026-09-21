@@ -162,6 +162,8 @@
         "sat": "Sat"
       },
       "monthLabel": "{{month}}/{{year}}",
+      "prevMonth": "Previous month",
+      "nextMonth": "Next month",
       "presetsTitle": "Common ranges",
       "customLabel": "Custom date range",
       "deadline": "Until",
@@ -170,6 +172,13 @@
       "selectBelow": "Select below",
       "pending": "Pending",
       "apply": "Apply"
+    },
+    "dateTimePicker": {
+      "placeholder": "Select date and time",
+      "time": "Time",
+      "hour": "Hour",
+      "minute": "Minute",
+      "apply": "Confirm"
     },
     "customerService": {
       "thinking": "Thinking...",
@@ -255,6 +264,7 @@
         "thanks": "Thanks for the feedback"
       },
       "handoff": {
+        "entry": "Human agent",
         "queueing": "In queue · {{position}} ahead",
         "queueingWithPosition": "In queue · {{count}} ahead of you",
         "connecting": "Connecting to an agent",

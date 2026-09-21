@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Textarea } from '@/components/ui/Textarea'
 import { Input } from '@/components/ui/Input'
+import { DateTimePicker } from '@/components/ui/DateTimePicker'
 import { Select, SelectItem } from '@/components/ui/Select'
 import { trackEvent } from '@/lib/track'
 
@@ -100,10 +101,9 @@ export function FeedbackForm({ submitting, onCancel, onSubmit }: FeedbackFormPro
 
       <div className="flex flex-col gap-1">
         <label className="mg-text-caption font-medium text-mg-text-2">{t('common.customerService.feedback.occurredAt')}</label>
-        <Input
-          type="datetime-local"
+        <DateTimePicker
           value={occurredAt}
-          onChange={(e) => setOccurredAt(e.target.value)}
+          onChange={setOccurredAt}
           aria-label={t('common.customerService.feedback.occurredAt')}
         />
       </div>

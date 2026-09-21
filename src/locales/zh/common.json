@@ -162,6 +162,8 @@
         "sat": "六"
       },
       "monthLabel": "{{year}}年 {{month}}月",
+      "prevMonth": "上个月",
+      "nextMonth": "下个月",
       "presetsTitle": "常用时间",
       "customLabel": "自定义日期区间",
       "deadline": "截止",
@@ -170,6 +172,13 @@
       "selectBelow": "请在下方选择",
       "pending": "待选择",
       "apply": "确定应用"
+    },
+    "dateTimePicker": {
+      "placeholder": "选择日期与时间",
+      "time": "时间",
+      "hour": "时",
+      "minute": "分",
+      "apply": "确定"
     },
     "customerService": {
       "thinking": "思考中…",
@@ -255,6 +264,7 @@
         "thanks": "感谢反馈"
       },
       "handoff": {
+        "entry": "人工客服",
         "queueing": "排队中 · 前方 {{position}} 人",
         "queueingWithPosition": "排队中 · 前方 {{count}} 人",
         "connecting": "正在连接人工客服",

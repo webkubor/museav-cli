@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 
 import { MarkdownContent } from '@/components/ui/MarkdownContent'
-import { LuX, LuSendHorizontal, LuHistory, LuMessageSquareWarning, LuCheck, LuThumbsUp, LuThumbsDown, LuKeyRound, LuTerminal, LuSparkles, LuReceipt } from 'react-icons/lu'
+import { LuX, LuSendHorizontal, LuHistory, LuMessageSquareWarning, LuCheck, LuThumbsUp, LuThumbsDown, LuKeyRound, LuTerminal, LuSparkles, LuReceipt, LuUserRound } from 'react-icons/lu'
 import { useSiteLogo } from '@/config/brand-assets'
 import { storageKeys } from '@/lib/storage'
 import { useCustomerServiceStore } from '@/store/use-customer-service-store'
@@ -16,7 +16,7 @@ import { HandoffHeaderStatus, RatingCard } from './human-chat'
 import { FeedbackForm } from './feedback-form'
 import { TicketsList, TicketDetailView } from './tickets'
 import { answerStatusPresentation } from './answer-status'
-import { showsMessageThread } from './support-machine'
+import { canStartHandoff, showsMessageThread } from './support-machine'
 import { SupportOrb } from './support-orb'
 import { supportOrbState } from './support-presentation'
 
@@ -352,14 +352,12 @@ export function CustomerService() {
         }}
         className="mg-float flex h-[52px] w-[52px] cursor-grab select-none items-center justify-center rounded-full border border-mg-border bg-mg-bg-2"
       >
-        {/* 收起态用 ai-orb 状态球代替静态 logo：它按真实流程变表情（在想 / 在干活 /
-            等你补充 / 好了 / 出错），用户不点开也知道助手在干什么。展开态仍是关闭图标 ——
-            那时面板本身就在说话，球再表态是重复。
+        {/* 常显 ai-orb 状态球：按真实流程变表情（在想 / 在干活 / 等你补充 / 好了 / 出错）。
+            展开面板时也要继续表态——对话中的「思考中/待补充」正是状态球存在的意义，
+            切成 X 就把状态全遮掉了。关闭入口只留面板头部那一个 X，悬浮球不再兼任
+            关闭图标（此前展开时头尾两个 X 同屏，多余且难看）。
             球只读状态、不驱动状态机（见 support-presentation.ts）。 */}
-        {isOpen
-          ? <LuX className="text-mg-text-2" size={20} />
-          : <SupportOrb state={orbState} label={t('common.customerService.orb.open')} />
-        }
+        <SupportOrb state={orbState} label={t('common.customerService.orb.open')} />
       </div>
 
       {/* 面板：表面走 .mg-float（同 Popover / Dialog 一档玻璃）+ 体系圆角 rounded-lg；
@@ -460,15 +458,35 @@ export function CustomerService() {
           {/* Footer */}
           {showComposer && (
             <div className="flex flex-col gap-2 px-4 py-3 border-t border-mg-fill-0">
-              {showFeedbackEntry && (
-                <button
-                  type="button"
-                  onClick={() => go({ kind: 'feedback' })}
-                  className="self-start flex items-center gap-1.5 mg-text-caption text-mg-text-2 hover:text-mg-text-1"
-                >
-                  <LuMessageSquareWarning size={13} />
-                  {t('common.customerService.feedback.entry')}
-                </button>
+              {/* 服务条（PRD 原型 customer-support-service-bar）：并排两个入口——
+                  「问题反馈」+「人工客服」。原实现只搬了问题反馈，把常驻的「人工客服」
+                  入口整个漏了：用户想转人工只能等 AI 建议时点气泡里的文字链接，
+                  或自己恰好输入「转人工」关键词——PRD 里这是个显式按钮。
+                  canStartHandoff(mode) 与原型 humanSupportStatus === 'idle' 同义
+                  （排队中/接通中不允许重复发起）。 */}
+              {(showFeedbackEntry || canStartHandoff(mode)) && (
+                <div className="flex items-center gap-2">
+                  {showFeedbackEntry && (
+                    <button
+                      type="button"
+                      onClick={() => go({ kind: 'feedback' })}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-mg-border bg-mg-fill-0/40 px-2.5 py-1.5 mg-text-caption font-medium text-mg-text-2 transition-colors hover:border-brand-mid/50 hover:text-brand-base"
+                    >
+                      <LuMessageSquareWarning size={13} />
+                      {t('common.customerService.feedback.entry')}
+                    </button>
+                  )}
+                  {canStartHandoff(mode) && (
+                    <button
+                      type="button"
+                      onClick={startHandoff}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-mg-border bg-mg-fill-0/40 px-2.5 py-1.5 mg-text-caption font-medium text-mg-text-2 transition-colors hover:border-brand-mid/50 hover:text-brand-base"
+                    >
+                      <LuUserRound size={13} />
+                      {t('common.customerService.handoff.entry')}
+                    </button>
+                  )}
+                </div>
               )}
               <div className="mg-tile flex items-center gap-2 px-3 py-2">
                 <textarea

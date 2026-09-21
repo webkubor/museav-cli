@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { DateTimePicker } from '@/components/ui/DateTimePicker'
 import { SideSheet } from '@/components/ui/SideSheet'
 import { Select, SelectItem } from '@/components/ui/Select'
 import { TagInput } from '@/components/ui/TagInput'
@@ -615,12 +616,11 @@ export function GuardrailDetailSheet({
                   )}
                   {kind === 'boost' && (
                     <Field label={t('guardrails.form.boostExpiresAtLabel')} required>
-                      <Input
-                        type="datetime-local"
+                      <DateTimePicker
                         aria-label={t('guardrails.form.boostExpiresAtLabel')}
                         value={boostExpiresAt}
                         disabled={!canEdit}
-                        onChange={(e) => onBoostExpiresAtChange(e.target.value)}
+                        onChange={onBoostExpiresAtChange}
                       />
                     </Field>
                   )}
@@ -668,12 +668,11 @@ export function GuardrailDetailSheet({
                   )}
                   {kind === 'boost' && (
                     <Field label={t('guardrails.form.boostExpiresAtLabel')} required>
-                      <Input
-                        type="datetime-local"
+                      <DateTimePicker
                         aria-label={t('guardrails.form.boostExpiresAtLabel')}
                         value={boostExpiresAt}
                         disabled={!canEdit}
-                        onChange={(e) => onBoostExpiresAtChange(e.target.value)}
+                        onChange={onBoostExpiresAtChange}
                       />
                     </Field>
                   )}

@@ -150,8 +150,8 @@
 | 用量 | 本期消费 | 金额 / `—` `:335` |
 | | 请求数 | `toLocaleString` / `—` `:336` |
 | | Tokens | `toLocaleString` / `—` `:337` |
-| 安全护栏·生效规则预览（3 层槽 `LAYER_SLOTS`） | 全局护栏 / 个人护栏 / Key 护栏 | 空值文案：全局→`未配置`；Key→`不使用Key护栏`；服务 Key 个人护栏→`个人预算不适用`；无个人护栏→`全局默认个人预算` `:67-71,352-389` |
-| 预算闸门（`GATE_LABEL`） | `guardrail_total=工作空间总预算` / `per_member=个人预算` / `per_api_key=Key 预算` | 金额 / `每{period}` + 来源护栏 `:72-76,394-415` |
+| 安全护栏·生效规则预览（`LAYER_SLOTS`，企业 3 层槽 / **个人租户 2 层槽**） | 全局护栏 / 个人护栏 / Key 护栏（个人租户无「个人护栏」，网格收成 2 列） | 空值文案：全局→`未配置`；Key→`不使用Key护栏`；服务 Key 个人护栏→`个人预算不适用`；无个人护栏→`全局默认个人预算` `:67-71,352-389` |
+| 预算闸门（`GATE_LABEL`） | `guardrail_total=工作空间总预算` / `per_member=个人预算`（**个人租户不展示该档**，滤后无档则整段不渲染） / `per_api_key=Key 预算` | 金额 / `每{period}` + 来源护栏 `:72-76,394-415` |
 | 规则清单（3 卡恒显） | 模型黑名单 / IP 白名单 / 提示词注入 | 值空→`不限制`；来源空→`未配置规则` `:420-453` |
 | 提示词注入模式 | `PROMPT_INJECTION_LABEL[mode]` | 见 §2.7 |
 | 最近调用 | — | 时间 + `N requests · 金额` / `尚未调用`；action=`跳转日志` `:466-491` |
@@ -268,6 +268,11 @@
 - `canSeeAllWorkspaceKeys=true`（`tenantKind!=='enterprise'`），看自己空间全部 Key。
 - **无「成员 Key」**：类型筛选与创建卡都隐藏 member（`index.tsx:428`、`CreateKeyModal.tsx:415`）。
 - 服务 Key **不显示「负责人」字段**，改显 `维护人为自己（{账户}）`（`CreateKeyModal.tsx:488-493`；需求方#210）。
+- **无「个人护栏」/「个人预算」**（V1.0.7 小需求#9，`modelgo_prd#1095`）：判据 `tenants.find(t=>t.tenant_id===activeTenantId)?.type==='personal'`，与护栏列表页 `use-guardrails-page.tsx` 的 `showMember` 同一口径。落在**四处**——
+  - 创建弹窗「生效规则预览」少一格 + 网格 3→2 列（`CreateKeyModal.tsx:326,638`）；
+  - 创建弹窗「预算闸门」去掉 `per_member` 行（`CreateKeyModal.tsx:349`）；
+  - 详情抽屉「生效规则预览」少一格 + 网格 3→2 列（`ApiKeyDetailDrawer.tsx:139,401`）；
+  - 详情抽屉「预算闸门」滤掉 `per_member` 档（`ApiKeyDetailDrawer.tsx:233-238`）——这一档是后端数据驱动的，与前三处的静态槽位不同；滤完没档则整段不渲染。
 
 ### 3.2 明文复制（reveal）差异（跨角色）
 

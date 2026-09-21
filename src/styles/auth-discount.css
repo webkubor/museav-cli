@@ -7,6 +7,20 @@
   max-width: 1050px;
 }
 
+@media (min-width: 1041px) {
+  /* 48px 网格瓦片以中心定位后左缘偏 24px；再左移 36px，
+     让竖向网格线落在双栏分隔线的 center - 60px 位置。 */
+  .auth-layout-container:has(.auth-layout-content-with-aside) {
+    background-position:
+      0 0,
+      0 0,
+      0 0,
+      0 0,
+      0 0,
+      calc(50% - 36px) 0;
+  }
+}
+
 .auth-layout-content-with-aside::before {
   width: 2px;
   height: calc(100% - 48px);
@@ -43,6 +57,7 @@
 .auth-discount-showcase {
   position: absolute;
   inset: 0;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -51,6 +66,12 @@
   border: 1px solid var(--mg-border);
   border-radius: var(--mg-radius-panel);
   box-shadow: var(--mg-shadow-lg);
+}
+
+body[theme-mode='dark'] .auth-discount-showcase {
+  background: var(--auth-card-surface);
+  border-color: var(--mg-glass-line);
+  box-shadow: var(--auth-card-shadow);
 }
 
 .auth-discount-header,

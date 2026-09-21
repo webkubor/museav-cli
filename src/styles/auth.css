@@ -17,8 +17,8 @@
   transition: all 0.3s var(--mg-ease-standard);
 }
 
-/* 流光边框 */
-.glass-auth-card::before {
+/* 鉴权页主表面的共用流光边框。 */
+.auth-flow-surface::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -50,20 +50,11 @@
 body[theme-mode='dark'] .glass-auth-card {
   /* 卡底从品牌深空派生（--brand-pale 深色档即「品牌夜色」：国内靛 #16224d / 海外绿 #1b2921），
      不写死色相 —— 原 rgba(18,27,46,…) 是 slate 蓝调，海外绿站深色下整卡发蓝 */
-  --auth-card-top: color-mix(in oklab, var(--brand-pale) 42%, #14151a);
-  --auth-card-bottom: color-mix(in oklab, var(--brand-pale) 30%, #101116);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--auth-card-top) 88%, transparent),
-      color-mix(in srgb, var(--auth-card-bottom) 84%, transparent)
-    ) !important;
-  box-shadow:
-    0 42px 110px -58px rgba(0, 0, 0, 0.9),
-    0 1px 0 rgba(255, 255, 255, 0.06) inset !important;
+  background: var(--auth-card-surface) !important;
+  box-shadow: var(--auth-card-shadow) !important;
 }
 
-body[theme-mode='dark'] .glass-auth-card::before {
+body[theme-mode='dark'] .auth-flow-surface::before {
   background: conic-gradient(
     from var(--border-angle),
     transparent 0%,
@@ -76,6 +67,12 @@ body[theme-mode='dark'] .glass-auth-card::before {
     transparent 72%,
     transparent 100%
   );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-flow-surface::before {
+    animation: none;
+  }
 }
 
 
@@ -289,6 +286,12 @@ body[theme-mode='dark'] .modern-auth-btn:hover {
 }
 
 body[theme-mode='dark'] .auth-layout-container {
+  --auth-card-top: color-mix(in oklab, var(--brand-pale) 42%, #14151a);
+  --auth-card-bottom: color-mix(in oklab, var(--brand-pale) 30%, #101116);
+  --auth-card-surface: linear-gradient(180deg, var(--auth-card-top), var(--auth-card-bottom));
+  --auth-card-shadow:
+    0 42px 110px -58px rgba(0, 0, 0, 0.9),
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
   /* 深色底 = 品牌夜色（--brand-pale 深色档）压进近黑，两端市场自动得到 靛夜/绿夜 */
   background-color: color-mix(in oklab, var(--brand-pale) 58%, #0a0d12);
   background-image:

@@ -67,7 +67,7 @@ export function AuthLayout({
         aside && 'auth-layout-content-with-aside',
         wide && 'max-w-none md:!max-w-[640px]',
       )}>
-        <div className="glass-auth-card">
+        <div className="glass-auth-card auth-flow-surface">
           {/* 顶部 Logo 与文案 */}
           <div className="auth-brand-header">
             <img

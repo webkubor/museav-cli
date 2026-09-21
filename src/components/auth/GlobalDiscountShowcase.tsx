@@ -103,7 +103,7 @@ export function GlobalDiscountShowcase() {
   )
 
   return (
-    <aside className="auth-discount-showcase" aria-labelledby="auth-discount-title">
+    <aside className="auth-discount-showcase auth-flow-surface" aria-labelledby="auth-discount-title">
       <header className="auth-discount-header">
         <div className="auth-discount-heading">
           <LuBadgePercent size={18} aria-hidden="true" />

@@ -18,6 +18,7 @@ import {
   submitSupportFeedback,
 } from '@/services/support'
 import { useSupportEvents } from './use-support-events'
+import { getOrCreateSupportSessionId, clearSupportSessionId } from './session-id'
 import {
   canStartHandoff,
   composerDisabled as composerDisabledOf,
@@ -133,11 +134,12 @@ export function useSupport() {
 
   const lastAccountId = useRef<string | null>(null)
 
-  // 一次性清除迁移期废弃的 localStorage（旧 SSE hook 用过），新实现不再落盘会话
+  // 一次性清除迁移期废弃的历史缓存（旧 SSE hook 用过）。
+  // 注意：不再清除 cs_cid —— #1057 要求 session_id 本地持久化（刷新/重开保留），
+  // 会话 id 的生命周期改由 getOrCreateSupportSessionId 管理，仅在登出/切账号时清。
   useEffect(() => {
     try {
       localStorage.removeItem(storageKeys.csHistory())
-      localStorage.removeItem(storageKeys.csConversationId())
     } catch { /* ignore */ }
   }, [])
 
@@ -150,6 +152,9 @@ export function useSupport() {
       setMessages([])
       setModeRaw({ kind: 'chat' })
       setTicketDetail(null)
+      // 切账号必须换新会话：否则上一账号持久化的 session_id 会带到新账号，
+      // 让后端把两人的多轮上下文串到一起（#1057 要求会话稳定，但不能跨账号）。
+      clearSupportSessionId()
     }
     lastAccountId.current = currentId
   }, [account?.account_id])
@@ -213,7 +218,11 @@ export function useSupport() {
     setIsAsking(true)
     trackEvent('support_question_submit')
     try {
-      const resp = await askSupport({ message: trimmed, page_path: currentPagePath() })
+      const resp = await askSupport({
+        message: trimmed,
+        session_id: getOrCreateSupportSessionId(),
+        page_path: currentPagePath(),
+      })
       appendMessage({
         id: crypto.randomUUID(),
         role: 'assistant',

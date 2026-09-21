@@ -32,7 +32,13 @@ export type SupportTicketFilter = 'all' | 'processing' | 'ended'
 
 export interface SupportAskRequest {
   message: string
-  conversation_id?: string
+  /**
+   * 会话标识（swagger support.swaggerAskRequest 字段名为 session_id，非早期的
+   * conversation_id）。同一会话内保持稳定并本地持久化（刷新/重开保留），后端据此记住
+   * 「已澄清」并支持多轮续问与「最多澄清一次」（shared/modelgo_prd#1057，PRD 6.1/6.4/6.6）。
+   */
+  session_id?: string
+  /** 当前控制台路由，后端仅作只读范围提示，不覆盖问句主题（PRD 6.6）。 */
   page_path?: string
 }
 

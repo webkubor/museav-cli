@@ -39,6 +39,7 @@ import {
   type OAuthProvider,
 } from '@/services/auth'
 import { getCaptchaOutcome, getCaptchaParam } from '@/lib/aliyun-captcha'
+import { getRequestErrorMessage, isApiErrorCode } from '@/lib/request-error-message'
 import { useAuthStore } from '@/store/auth'
 import { getRedirectTarget } from '@/lib/redirect'
 import { navigateAfterLogin } from '@/lib/login-intent'
@@ -80,6 +81,18 @@ export function GlobalEmailAuth() {
   const [resendSeconds, setResendSeconds] = useState(0)
   const [pendingProvider, setPendingProvider] = useState<GlobalOAuthProvider | null>(null)
   const [humanVerification, setHumanVerification] = useState<HumanVerificationState>('idle')
+
+  /**
+   * 错误文案统一走 getRequestErrorMessage：后端原文（如 40401 的 `resource not found`）
+   * 不许直接上屏，40401/5xx 一律归一成「服务暂不可用」。
+   * 40901「邮箱已注册」单独给词 —— 在"登录或注册合一"的流程里它本不该是错误，
+   * 但 auth/email-code/send 是**注册**发码端点（swagger 原文：邮箱已注册时返回业务错误），
+   * 所以老用户在这条路上根本发不出码。这是后端缺口，前端只能先说清楚。
+   */
+  const describeError = (error: unknown) => {
+    if (isApiErrorCode(error, 40901)) return t('account.auth.globalEmailAuth.emailAlreadyRegistered')
+    return getRequestErrorMessage(error, t('account.auth.globalEmailAuth.failed'))
+  }
 
   const emailSchema = useMemo(() => createEmailSchema(t), [t])
   const codeSchema = useMemo(() => createCodeSchema(t), [t])
@@ -150,7 +163,7 @@ export function GlobalEmailAuth() {
       codeForm.reset({ code: '' })
       setStep('code')
     } catch (error) {
-      setServerError(error instanceof Error ? error.message : t('account.auth.globalEmailAuth.failed'))
+      setServerError(describeError(error))
     } finally {
       setLoading(false)
     }
@@ -164,7 +177,7 @@ export function GlobalEmailAuth() {
       // 重发同样要带四元组：上一组已在首次发码时消费。
       await sendCode(emailForm.getValues('email'), await getCaptchaParam())
     } catch (error) {
-      setServerError(error instanceof Error ? error.message : t('account.auth.globalEmailAuth.failed'))
+      setServerError(describeError(error))
     } finally {
       setLoading(false)
     }
@@ -193,7 +206,7 @@ export function GlobalEmailAuth() {
       )
       trackEvent('login_success', { method: 'email_code' }, { result: 'success' })
     } catch (error) {
-      setServerError(error instanceof Error ? error.message : t('account.auth.globalEmailAuth.failed'))
+      setServerError(describeError(error))
     } finally {
       setLoading(false)
     }
@@ -210,7 +223,7 @@ export function GlobalEmailAuth() {
       if (!param && presented) return
       window.location.assign(oauthAuthorizeUrl(provider, redirectAfterLogin, param))
     } catch (error) {
-      setServerError(error instanceof Error ? error.message : t('account.auth.globalEmailAuth.failed'))
+      setServerError(describeError(error))
     } finally {
       setPendingProvider(null)
     }

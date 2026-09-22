@@ -1,0 +1,56 @@
+# ModelGo Console
+
+> Enterprise-grade AI model API gateway. One API key for every major LLM, OpenAI-compatible, with workspace isolation, budget controls, usage auditing and guardrails. ModelGo provides the API gateway, web console, and online playground under a unified platform.
+
+ModelGo serves enterprise (B2B) customers. This file helps AI assistants, AI search engines, and retrieval crawlers locate the publicly accessible pages of the ModelGo console quickly.
+
+## Public pages (no login required)
+
+- [Model Catalog]({site}/models): Browse every available model, filter by provider, capability, and price
+- [Model Discovery]({site}/models/discovery): Cross-vendor model comparison page with multi-dimensional quality × cost × latency × usage analysis
+- [Terms of Service]({site}/legal/terms): Platform usage terms
+- [Privacy Policy]({site}/legal/privacy): Privacy and data handling
+- [Cookie Preferences]({site}/legal/cookies): Cookie and tracking preferences
+
+## Documentation (docs subdomain)
+
+- [Documentation Home]({docs}): API integration, SDK usage, and console operation guides
+- [Quickstart]({docs}/quickstart): One-line integration, first call in 5 minutes
+- [API Reference]({docs}/api): All REST endpoints, parameters, and error codes
+- [SDK Downloads]({docs}/sdk): Python / Node.js / Go / Java SDKs
+- [Error Code Reference]({docs}/errors): Troubleshoot failed API calls
+- [Billing and Quotas]({docs}/billing): Usage-based pricing, plans, and enterprise contracts
+- [Guardrails]({docs}/guardrails): Input/output auditing, content policies, rate limiting
+- [FAQ]({docs}/faq): Frequently asked questions from customers
+
+## Main site (marketing subdomain)
+
+- [Product Overview]({site_web}): Full ModelGo product introduction
+- [Pricing]({site_web}/pricing): Usage-based billing, enterprise plans, custom solutions
+- [Customer Stories]({site_web}/customers): Customer case studies
+- [Changelog]({site_web}/changelog): Release notes, new features, and fixes
+
+## Company and compliance
+
+- [About Us]({site_web}/about): Company overview and contact information
+- [Data Processing Agreement]({site_web}/dpa): Enterprise DPA template
+- [Security and Compliance]({site_web}/security): Information security and compliance certifications
+
+## API endpoints (programmatic)
+
+- Base URL (China): `{gateway}/v1`
+- Base URL (Global): `{gateway_global}/v1`
+- Compatible with OpenAI Chat Completions / Embeddings / Images / Audio / Fine-tune protocols
+
+## Customer support
+
+- In-console ticket: submit via "Help" after login
+- Enterprise customer support email: see pricing page or commercial contract
+- Status page: see main site footer
+
+## Notes
+
+- This console subdomain is a login-gated application; post-login pages are not indexed by default. This llms.txt only directs AI retrieval to publicly accessible content
+- AI training crawlers (GPTBot / anthropic-ai / Google-Extended / CCBot / Meta-ExternalAgent) are Disallowed in robots.txt and will not be used for training
+- Lines in this file are kept under 80 characters for compatibility with older crawlers; sections and links render with Markdown preference
+- This file collects no user data, has no tracking, and sets no cookies

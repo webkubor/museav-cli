@@ -7,6 +7,7 @@ import { readFileSync } from 'fs'
 import { agentEyes, agentProxy, agentVersion } from 'vite-plugin-agent-eyes'
 import { devRequirementsPlugin } from './scripts/dev-requirements-plugin'
 import { uiAuditPlugin } from './scripts/ui-audit-plugin'
+import { renderLlms } from './scripts/build-llms.mjs'
 
 // 当前分支名。CI 优先用注入的环境变量（Jenkins 的 GIT_BRANCH / GitLab CI 的 CI_COMMIT_REF_NAME），
 // 因为流水线 checkout 后处于 detached HEAD，`rev-parse --abbrev-ref HEAD` 只会返回字面量 HEAD。
@@ -63,6 +64,56 @@ function emitVersionJson(): Plugin {
   }
 }
 
+/**
+ * llms.txt：给 AI 检索爬虫的「控制台公开页入口清单」（owner 2026-09-04 加）。
+ *
+ * 为什么必须有真文件：nginx 的 SPA 兜底（try_files $uri /index.html）对不存在的
+ * 路径统一回 index.html。此前 /llms.txt 就是被它接住的 —— 返回 200 + text/html，
+ * 爬虫拿到的是首页壳，等于没有 llms.txt。落一个真 .txt 文件后，文件存在即绕过
+ * 兜底（robots.txt 一直按这个机制生效）。
+ *
+ * 为什么走 generateBundle + emitFile 而不是 build 完再写文件：emitFile 把产物纳入
+ * 打包清单，谁调 vite build 都会生成（npm script / Jenkins / 手敲 vite 都一样），
+ * 不存在「某个构建入口漏了这一步」。emitVersionJson 用的是同一套路。
+ *
+ * 默认 both（英+中合一份）：控制台两个域 console.modelgo.com / console.modelgo.ai
+ * 目前同一份产物，合一份即可双市场覆盖，不用改部署。真要按域分语言打包时，构建时
+ * 设 LLMS_MARKET=china|global 即可（模板见 scripts/llms-templates/）。
+ */
+function emitLlmsTxt(): Plugin {
+  const market = () => {
+    const m = process.env.LLMS_MARKET
+    if (m && !['both', 'china', 'global'].includes(m)) {
+      throw new Error(`LLMS_MARKET 必须是 both|china|global，当前: ${m}`)
+    }
+    return (m as 'both' | 'china' | 'global') || 'both'
+  }
+  return {
+    name: 'emit-llms-txt',
+    configureServer(server) {
+      // dev 也提供 /llms.txt：文件本来只在 build 产物里，而 Vite 对未知路径走
+      // SPA 兜底回 index.html——本地跑 scripts/check-crawl-files.mjs 会误报
+      // 「llms 被 SPA 兜底」，明明是正常的 dev 行为。这里直接吐文本，本地可验。
+      server.middlewares.use((req, res, next) => {
+        if (req.url?.split('?')[0] !== '/llms.txt') return next()
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+        res.end(renderLlms(market()))
+      })
+    },
+    generateBundle() {
+      const m = process.env.LLMS_MARKET
+      if (m && !['both', 'china', 'global'].includes(m)) {
+        this.error(`LLMS_MARKET 必须是 both|china|global，当前: ${m}`)
+      }
+      this.emitFile({
+        type: 'asset',
+        fileName: 'llms.txt',
+        source: renderLlms((m as 'both' | 'china' | 'global') || 'both'),
+      })
+    },
+  }
+}
+
 // 跳转地址（官网/控制台/文档）每个环境都必须按市场配齐——缺一个就中断构建，
 // 不允许带着空配置/硬编码兜底上线（兜底的真正含义：配置缺失就不让过）。
 const REQUIRED_URL_ENV = [
@@ -102,6 +153,8 @@ export default defineConfig(({ mode }) => {
     // 构建戳记：__APP_VERSION__/__BUILD_TAG__(最新 make-tag)/__BUILD_COMMIT__/__BUILD_TIME__ + dev GET /__version
     agentVersion(),
     emitVersionJson(),
+    // 给 AI 检索爬虫的公开页清单（scripts/build-llms.mjs，默认英+中一份）
+    emitLlmsTxt(),
     // 一站式入口（0.13）：遥测 + 客户端自动埋点 + 项目体检 + dev 超长文件实时警告(sizeWatch)
     // + 提交 guard 默认全开；本仓的提交门禁仍走自定义 git.precommit 透传。
     ...agentEyes({

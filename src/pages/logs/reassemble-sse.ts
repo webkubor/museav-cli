@@ -9,6 +9,7 @@
  * #184：旧实现只认 OpenAI 的 delta.content 字符串，遇到「内容块数组」或「Anthropic 格式」时
  * 17 个 chunk 全解析成功却抽不出正文，展示为空。此处按多路径提取修复。
  */
+import i18n from '@/i18n'
 
 export interface SSEReassembled {
   reasoning: string
@@ -121,11 +122,19 @@ export function reassembleSSE(text: string): SSEReassembled | null {
   return { reasoning, content, chunkCount, finishReason, usage }
 }
 
+/**
+ * 合并结果的展示文本。段标题跟界面语言走——英文站原先固定打「【推理 …】/【回答 …】/合并 N 个 chunk」，
+ * 整段中文出现在对外英文控制台（同 shared/modelgo_prd#1067 那类未适配）。
+ * 走 defaultValue 兜底：logs 语言包是路由级懒加载，未加载时也不能把 raw key 打到页面上。
+ */
 export function formatSSESummary(s: SSEReassembled): string {
+  const t = i18n.t.bind(i18n)
   const blocks: string[] = []
-  if (s.reasoning) blocks.push(`【推理 reasoning_content】\n${s.reasoning}`)
-  blocks.push(`【回答 content】\n${s.content || '(空)'}`)
-  const meta = [`合并 ${s.chunkCount} 个 chunk`]
+  if (s.reasoning) blocks.push(`${t('logs.detail.sseSummary.reasoning', { defaultValue: 'Reasoning (reasoning_content)' })}\n${s.reasoning}`)
+  blocks.push(`${t('logs.detail.sseSummary.content', { defaultValue: 'Answer (content)' })}\n${s.content || t('logs.detail.sseSummary.empty', { defaultValue: '(empty)' })}`)
+  // 用 {{n}} 而不是 i18next 的 count：count 会触发复数后缀查找（merged_one/merged_other），
+  // 语言包里只有单条 merged 时就多一层不必要的回落。
+  const meta = [t('logs.detail.sseSummary.merged', { n: s.chunkCount, defaultValue: 'Merged {{n}} chunks' })]
   if (s.finishReason) meta.push(`finish_reason: ${s.finishReason}`)
   if (s.usage) meta.push(`usage: ${JSON.stringify(s.usage)}`)
   blocks.push(`──\n${meta.join('  ·  ')}`)

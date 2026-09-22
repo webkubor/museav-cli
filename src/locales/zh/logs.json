@@ -204,6 +204,12 @@
       "payloadEmpty": "暂无原始 Payload",
       "payloadTruncated": "已截断",
       "payloadCopied": "Payload 已复制",
+      "sseSummary": {
+        "reasoning": "【推理 reasoning_content】",
+        "content": "【回答 content】",
+        "empty": "(空)",
+        "merged": "合并 {{n}} 个 chunk"
+      },
       "taskArtifact": {
         "title": "任务产物",
         "taskStatus": "任务状态",

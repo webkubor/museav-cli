@@ -10,7 +10,8 @@
  *  3. 端点路径与网关探活结果一致（Anthropic 家族是 /v1/messages，不是 /messages）。
  */
 
-import { describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
+import i18n from '@/i18n'
 import {
   PROTOCOL_LABEL,
   PROTOCOL_LABEL_EN,
@@ -22,6 +23,9 @@ import {
   type ApiProtocol,
 } from './api-code-samples'
 import type { PublicProtocol } from '@/types'
+
+// 语言是全局单例，改完还回去，免得污染同文件/同 worker 的其他断言
+afterAll(async () => { await i18n.changeLanguage('zh') })
 
 /** ApiProtocol 的运行时全集：PROTOCOL_LABEL 是 Record<ApiProtocol, string>，由类型保证穷尽。 */
 const ALL_API_PROTOCOLS = Object.keys(PROTOCOL_LABEL) as ApiProtocol[]
@@ -141,5 +145,26 @@ describe('languageLabel — SDK 后缀只挂在真用 SDK 的协议上', () => {
       expect(new Set(langs).size).toBe(langs.length)
       langs.forEach((l: ApiCodeLanguage) => expect(languageLabel(p, l)).toBeTruthy())
     }
+  })
+})
+
+describe('示例注释跟界面语言走（国际站翻译适配 prd#1098）', () => {
+  /** 示例代码是「复制即用」的产物，注释也是用户读到的文案：英文站不能漏中文出去。 */
+  const CJK = /[\u4e00-\u9fff]/
+
+  it('英文界面下所有协议 × 所有语言的示例都不含中文', async () => {
+    await i18n.changeLanguage('en')
+    for (const p of ALL_API_PROTOCOLS) {
+      for (const lang of languagesForProtocol(p)) {
+        const code = buildCodeSample(p, lang, 'demo-model')
+        expect(CJK.test(code), `${p}/${lang} 英文示例里仍有中文：${code}`).toBe(false)
+      }
+    }
+  })
+
+  it('中文界面保留原中文注释（只做语言分支，不是删中文）', async () => {
+    await i18n.changeLanguage('zh')
+    expect(buildCodeSample('openai_speech', 'typescript', 'demo-model')).toContain('二进制音频数据')
+    expect(buildCodeSample('anthropic_messages', 'claudeCode', 'demo-model')).toContain('指定当前模型启动')
   })
 })

@@ -1,6 +1,6 @@
 {
   "usage": {
-    "title": "Usage Analytics",
+    "title": "Usage Stats",
     "desc": "View API calls, token usage, and cost trends.",
     "descTeam": "Track your organization's spend, requests, tokens, and model usage.",
     "descSpace": "View spend, requests, and model usage for everyone in your managed workspace.",

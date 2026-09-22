@@ -1,10 +1,17 @@
 /**
- * Global 站两步式免密登录/注册原型。
+ * Global 站两步式免密登录/注册。
  * 第一步选择 Google/GitHub 或提交邮箱，第二步单独完成邮箱验证码校验。
+ *
+ * 接口口径（2026-09-22 对齐真实后端，原型 mock 已全部拆除）：
+ * - 发码 → `auth/email-code/send`（与国内邮箱腿同一个端点）
+ * - 登录/注册 → `auth/email-code/login`（**后端尚未提供**，见 services/auth.ts 的 TODO；
+ *   端点上线前这一步会返回 40401，页面按普通服务端错误展示，不再假装成功）
+ * - 第三方 → 真实 `auth/oauth/:provider/authorize` 浏览器导航（先解人机校验再跳）
+ * - 人机校验 → 真实 alicaptcha（getCaptchaOutcome），不再是定时器假通过
  */
 
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -13,7 +20,6 @@ import type { TFunction } from 'i18next'
 import {
   LuArrowLeft,
   LuArrowRight,
-  LuCircleCheck,
   LuInfo,
   LuLoaderCircle,
   LuMailCheck,
@@ -27,10 +33,20 @@ import { Input } from '@/components/ui/Input'
 import { OAUTH_ICONS, OAUTH_LABELS } from '@/constants/oauth'
 import {
   emailCodeLoginRegister,
-  mockGlobalOAuthLogin,
-  sendGlobalEmailCode,
-  type GlobalOAuthProvider,
+  getSession,
+  oauthAuthorizeUrl,
+  sendEmailCode,
+  type OAuthProvider,
 } from '@/services/auth'
+import { getCaptchaOutcome, getCaptchaParam } from '@/lib/aliyun-captcha'
+import { useAuthStore } from '@/store/auth'
+import { getRedirectTarget } from '@/lib/redirect'
+import { navigateAfterLogin } from '@/lib/login-intent'
+import { resolveReferralCode } from '@/pages/signup/referral-code'
+import { trackEvent } from '@/lib/track'
+
+/** 本页固定两个第三方入口（国际站允许集 = google / github，见 SocialLogin 的域名权威口径）。 */
+type GlobalOAuthProvider = Extract<OAuthProvider, 'google' | 'github'>
 
 function createEmailSchema(t: TFunction) {
   return z.object({ email: z.string().email(t('account.auth.validation.email')) })
@@ -50,12 +66,18 @@ const RESEND_SECONDS = 60
 export function GlobalEmailAuth() {
   const { t } = useTranslation('account')
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const setAuth = useAuthStore((s) => s.setAuth)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const isSessionLoading = useAuthStore((s) => s.isLoading)
+  const [redirectAfterLogin] = useState(() => getRedirectTarget())
+  // 人机校验四元组一次性消费：发码用掉的那一组不能再拿去登录（手机号腿实测 40025）。
+  // 用 state 而不是 ref —— 它要参与提交按钮可用性的渲染判断，ref 在 render 期读不合法。
+  const [captchaParam, setCaptchaParam] = useState<string | null>(null)
   const [step, setStep] = useState<EmailStep>('entry')
   const [serverError, setServerError] = useState('')
   const [loading, setLoading] = useState(false)
   const [resendSeconds, setResendSeconds] = useState(0)
-  const [completedIdentity, setCompletedIdentity] = useState('')
-  const [completedWithOAuth, setCompletedWithOAuth] = useState(false)
   const [pendingProvider, setPendingProvider] = useState<GlobalOAuthProvider | null>(null)
   const [humanVerification, setHumanVerification] = useState<HumanVerificationState>('idle')
 
@@ -82,14 +104,36 @@ export function GlobalEmailAuth() {
     return () => window.clearInterval(timer)
   }, [step, resendSeconds])
 
+  // 已登录直接离开登录页；导航统一走 navigateAfterLogin（重新校验模型登录意图，qa#551）
   useEffect(() => {
-    if (humanVerification !== 'verifying') return
-    const timer = window.setTimeout(() => setHumanVerification('verified'), 450)
-    return () => window.clearTimeout(timer)
-  }, [humanVerification])
+    if (!isSessionLoading && isAuthenticated) {
+      void navigateAfterLogin(navigate, redirectAfterLogin)
+    }
+  }, [isAuthenticated, isSessionLoading, navigate, redirectAfterLogin])
 
-  const sendCode = async (email: string) => {
-    const result = await sendGlobalEmailCode(email)
+  /** 真实人机校验：呈现挑战并等用户解题；未启用/SDK 不可用时按放行处理（后端 fail-open）。 */
+  const runHumanVerification = async () => {
+    setServerError('')
+    setHumanVerification('verifying')
+    try {
+      const { param, presented } = await getCaptchaOutcome()
+      if (!param && presented) {
+        // 呈现过但没解出来（关弹窗/超时）→ 退回未验证，不能放行
+        setHumanVerification('idle')
+        return
+      }
+      setCaptchaParam(param)
+      setHumanVerification('verified')
+    } catch {
+      setHumanVerification('idle')
+      setServerError(t('account.auth.globalEmailAuth.failed'))
+    }
+  }
+
+  /** 发码。四元组由调用方给：它一次性消费，发完这组就作废，登录那一步必须另取一组。 */
+  const sendCode = async (email: string, param: string | null) => {
+    const result = await sendEmailCode(email, param)
+    setCaptchaParam(null)
     setResendSeconds(RESEND_SECONDS)
     return result
   }
@@ -102,7 +146,7 @@ export function GlobalEmailAuth() {
     setLoading(true)
     setServerError('')
     try {
-      await sendCode(data.email)
+      await sendCode(data.email, captchaParam)
       codeForm.reset({ code: '' })
       setStep('code')
     } catch (error) {
@@ -117,7 +161,8 @@ export function GlobalEmailAuth() {
     setLoading(true)
     setServerError('')
     try {
-      await sendCode(emailForm.getValues('email'))
+      // 重发同样要带四元组：上一组已在首次发码时消费。
+      await sendCode(emailForm.getValues('email'), await getCaptchaParam())
     } catch (error) {
       setServerError(error instanceof Error ? error.message : t('account.auth.globalEmailAuth.failed'))
     } finally {
@@ -133,12 +178,20 @@ export function GlobalEmailAuth() {
       await emailCodeLoginRegister(
         email,
         data.code,
-        null,
-        undefined,
+        await getCaptchaParam(),
+        resolveReferralCode(searchParams) || undefined,
         searchParams.get('invitation') ?? undefined,
       )
-      setCompletedIdentity(email)
-      setCompletedWithOAuth(false)
+      // 会话由服务端 cookie 下发，读回来填 store；导航交给上面 isAuthenticated 的 effect。
+      const session = await getSession()
+      setAuth(
+        session.account,
+        session.active_tenant_id,
+        session.tenants,
+        session.active_workspace_id,
+        session.permissions?.granted ?? null,
+      )
+      trackEvent('login_success', { method: 'email_code' }, { result: 'success' })
     } catch (error) {
       setServerError(error instanceof Error ? error.message : t('account.auth.globalEmailAuth.failed'))
     } finally {
@@ -151,9 +204,11 @@ export function GlobalEmailAuth() {
     setPendingProvider(provider)
     setServerError('')
     try {
-      await mockGlobalOAuthLogin(provider)
-      setCompletedIdentity(OAUTH_LABELS[provider])
-      setCompletedWithOAuth(true)
+      // 与 SocialLogin 同口径：**先解题拿 token 再导航**。带空 token 会被后端 302 弹回
+      // 登录页，用户看到的是"点一下立刻跳回来"；而挑战根本呈现不出来时必须照常导航。
+      const { param, presented } = await getCaptchaOutcome()
+      if (!param && presented) return
+      window.location.assign(oauthAuthorizeUrl(provider, redirectAfterLogin, param))
     } catch (error) {
       setServerError(error instanceof Error ? error.message : t('account.auth.globalEmailAuth.failed'))
     } finally {
@@ -169,27 +224,13 @@ export function GlobalEmailAuth() {
     codeForm.reset({ code: '' })
   }
 
-  const restart = () => {
-    setCompletedIdentity('')
-    setCompletedWithOAuth(false)
-    setStep('entry')
-    setResendSeconds(0)
-    setServerError('')
-    setHumanVerification('idle')
-    emailForm.reset({ email: '' })
-    codeForm.reset({ code: '' })
-  }
 
-  const title = completedIdentity
-    ? t('account.auth.globalEmailAuth.successTitle')
-    : step === 'code'
-      ? t('account.auth.globalEmailAuth.checkEmailTitle')
-      : t('account.auth.globalEmailAuth.entryTitle')
-  const subtitle = completedIdentity
-    ? undefined
-    : step === 'code'
-      ? t('account.auth.globalEmailAuth.checkEmailSubtitle', { email: emailValue })
-      : t('account.auth.globalEmailAuth.entrySubtitle')
+  const title = step === 'code'
+    ? t('account.auth.globalEmailAuth.checkEmailTitle')
+    : t('account.auth.globalEmailAuth.entryTitle')
+  const subtitle = step === 'code'
+    ? t('account.auth.globalEmailAuth.checkEmailSubtitle', { email: emailValue })
+    : t('account.auth.globalEmailAuth.entrySubtitle')
 
   return (
     <AuthLayout
@@ -198,24 +239,7 @@ export function GlobalEmailAuth() {
       aside={<GlobalDiscountShowcase />}
       showMarketSwitcher
     >
-      {completedIdentity ? (
-        <div className="auth-form-container auth-fade-in items-center text-center">
-          <div className="auth-prototype-success-icon" aria-hidden="true">
-            <LuCircleCheck size={30} strokeWidth={1.8} />
-          </div>
-          <p className="auth-prototype-success-description">
-            {t(
-              completedWithOAuth
-                ? 'account.auth.globalEmailAuth.oauthSuccessDescription'
-                : 'account.auth.globalEmailAuth.successDescription',
-              { identity: completedIdentity },
-            )}
-          </p>
-          <Button type="button" variant="outline" size="lg" onClick={restart}>
-            {t('account.auth.globalEmailAuth.restart')}
-          </Button>
-        </div>
-      ) : step === 'entry' ? (
+      {step === 'entry' ? (
         <form
           className="auth-form-container auth-fade-in"
           onSubmit={emailForm.handleSubmit(handleContinueEmail)}
@@ -269,10 +293,7 @@ export function GlobalEmailAuth() {
             className={`auth-captcha-gate${humanVerification === 'verified' ? ' is-verified' : ''}`}
             disabled={humanVerification !== 'idle'}
             aria-live="polite"
-            onClick={() => {
-              setServerError('')
-              setHumanVerification('verifying')
-            }}
+            onClick={() => { void runHumanVerification() }}
           >
             {humanVerification === 'verifying' ? (
               <LuLoaderCircle size={16} className="animate-spin" aria-hidden="true" />

@@ -252,7 +252,7 @@
         "restart": "Back to sign-in options",
         "discountShowcase": {
           "title": "Live model savings",
-          "summary": "Up to 75% off",
+          "summary": "Up to {{discount}}% off",
           "discount": "−{{discount}}%",
           "footer": "Preview prices · Always below list",
           "browse": "Browse all models"

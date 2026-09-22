@@ -252,7 +252,7 @@
         "restart": "返回登录方式",
         "discountShowcase": {
           "title": "实时模型折扣",
-          "summary": "最高节省 75%",
+          "summary": "最高节省 {{discount}}%",
           "discount": "−{{discount}}%",
           "footer": "预览价格 · 始终低于官方定价",
           "browse": "浏览全部模型"

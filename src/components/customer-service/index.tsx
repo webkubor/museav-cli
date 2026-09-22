@@ -313,6 +313,18 @@ export function CustomerService() {
     toggleOpen()
   }
 
+  /**
+   * 键盘可达：外层是 role="button" + tabIndex=0，必须能用 Enter / Space 触发
+   * （WCAG 4.1.2）。此前只有 onClick —— 键盘用户能 Tab 聚焦到悬浮球，
+   * 但按 Enter / Space 毫无反应，等于客服入口对纯键盘用户不可达。
+   * Space 要 preventDefault，否则会顺带滚动页面。
+   */
+  function handleTriggerKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (e.key !== 'Enter' && e.key !== ' ') return
+    e.preventDefault()
+    handleTriggerClick()
+  }
+
 
   function handleSend() {
     if (!inputValue.trim() || isAsking || composerDisabled) return
@@ -341,6 +353,7 @@ export function CustomerService() {
       <div
         onMouseDown={handleMouseDown}
         onClick={handleTriggerClick}
+        onKeyDown={handleTriggerKeyDown}
         role="button"
         tabIndex={0}
         aria-label={isOpen ? t('common.customerService.close') : t('common.customerService.assistant')}

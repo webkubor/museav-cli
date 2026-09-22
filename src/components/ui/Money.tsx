@@ -7,13 +7,20 @@ import { currencySymbol, isZhLang } from '@/features/models/model-format'
  * 规范（在此定死，调用方只选 size / tone，不自定义色/字重/字体）：
  * - 字体：JetBrains Mono（font-mono）+ tabular-nums（等宽对齐）
  * - 数字：font-bold；颜色由 tone 决定（默认主文字 text-0）
- * - 符号：0.82em 小一号 + font-semibold；颜色随数字 tone（默认主文字 text-1，即黑色，需求方#180）
+ * - 符号：比数字小一档（走下表的 token 刻度）+ font-semibold；颜色随数字 tone（默认主文字 text-1，即黑色，需求方#180）
  * - 无值：显示「—」（text-3，不带符号）
  *
  * size: sm(默认,列表/行内) | md(卡片次要) | lg(KPI/余额大数)
  * tone: default(text-0) | muted(text-1) | brand(品牌色) | danger(扣费/负向)
  */
 const SIZE = { sm: 'mg-text-body', md: 'mg-text-value', lg: 'mg-text-display-sm' } as const
+/**
+ * 符号字号：**必须落在体系刻度上**（禁止 0.82em 这类按比例算的任意值）。
+ * 0.82em 在正文 14px 下算出 11.48px，夹在体系 11/12px 之间 —— ui-runtime-audit
+ * 会判「同一容器里 11.5/12px 挤档」（P1：肉眼分不出主次），且非刻度值本身也违反
+ * DESIGN.md「字号一律走 token」。改成「各自小一档」的语义刻度后与相邻档差 ≥2px。
+ */
+const SYMBOL_SIZE = { sm: 'mg-text-caption', md: 'mg-text-body', lg: 'mg-text-title-sm' } as const
 const TONE = {
   default: 'text-mg-text-1',
   muted: 'text-mg-text-2',
@@ -45,7 +52,7 @@ export function Money({
   const text = formatMoney(amount, '')
   return (
     <span className={cn('font-mono tabular-nums whitespace-nowrap font-bold', SIZE[size], TONE[tone], className)}>
-      <span className="text-[0.82em] font-semibold mr-[0.12em]">{sym}</span>
+      <span className={cn('font-semibold mr-[0.12em]', SYMBOL_SIZE[size])}>{sym}</span>
       {text}
     </span>
   )

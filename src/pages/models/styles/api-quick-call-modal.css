@@ -43,7 +43,7 @@
 }
 
 .api-quick-call-model-id-value {
-  font-size: 12.5px;
+  font-size: 12px;
   font-family: var(--mg-font-mono, monospace);
   color: var(--mg-text-1);
   flex: 1;
@@ -73,7 +73,7 @@
   background: var(--aqc-f8f9fa);
   border: 1px solid var(--aqc-e8eaee);
   overflow-x: auto;
-  font-size: 12.5px;
+  font-size: 12px;
   line-height: 1.6;
   color: var(--aqc-202124);
   white-space: pre;

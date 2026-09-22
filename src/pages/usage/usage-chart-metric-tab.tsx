@@ -18,7 +18,7 @@ export function MetricTab({ label, active, onClick }: MetricTabProps) {
         padding: '7px 20px',
         borderRadius: 'var(--radius-sm)',
         border: 'none',
-        fontSize: '13.5px',
+        fontSize: '14px',
         fontWeight: active ? 600 : 400,
         cursor: 'pointer',
         transition: 'all 0.15s ease',

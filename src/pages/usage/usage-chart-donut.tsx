@@ -126,7 +126,7 @@ export function ModelDonutChart({
           textAlign: 'center',
         }}
       >
-        <span className="text-mg-text-3" style={{ fontSize: '11.5px', lineHeight: 1.3 }}>
+        <span className="text-mg-text-3" style={{ fontSize: '12px', lineHeight: 1.3 }}>
           {hovered ? hovered.label : centerLabel}
         </span>
         <span
@@ -140,7 +140,7 @@ export function ModelDonutChart({
           {hovered ? formatMoney(String(hovered.value), currencySymbol) : centerValue}
         </span>
         {hovered && (
-          <span className="text-mg-text-3" style={{ fontSize: '11.5px', marginTop: 1, fontVariantNumeric: 'tabular-nums' }}>
+          <span className="text-mg-text-3" style={{ fontSize: '12px', marginTop: 1, fontVariantNumeric: 'tabular-nums' }}>
             {hovered.share.toFixed(1)}%
           </span>
         )}

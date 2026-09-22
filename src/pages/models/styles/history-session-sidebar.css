@@ -168,7 +168,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--mg-text-1);
 }
@@ -176,7 +176,7 @@
 .history-sidebar-item-name-input {
   min-width: 0;
   flex: 1;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--mg-text-1);
   background: var(--mg-bg-0);

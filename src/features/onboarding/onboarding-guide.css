@@ -549,7 +549,7 @@
   align-items: baseline;
   color: var(--muted);
   display: flex;
-  font-size: 12.5px;
+  font-size: 12px;
   gap: 8px;
   line-height: 1.45;
   margin: 0;
@@ -575,7 +575,7 @@
 .onboarding-reward-success-actions button {
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
   min-height: 33px;
   transition:

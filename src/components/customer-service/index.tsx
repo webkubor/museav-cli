@@ -405,7 +405,7 @@ export function CustomerService() {
               {(mode.kind === 'chat' || mode.kind === 'empty' || mode.kind === 'humanEnded') && (
                 <button
                   type="button"
-                  aria-label={t('common.customerService.tickets.title')}
+                  aria-label={t('common.customerService.records.open')}
                   onClick={() => go({ kind: 'tickets' })}
                   className="text-mg-text-2 hover:text-mg-text-1 p-1"
                 >

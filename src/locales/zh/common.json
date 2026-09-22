@@ -309,12 +309,15 @@
       },
       "asyncTicket": {
         "title": "已转为异步问题单",
+        "pending": "待处理",
+        "defaultEta": "2小时内",
         "ariaLabel": "异步问题单 {{id}}",
         "idLabel": "工单编号",
         "etaLabel": "预计联系",
         "contact": "客服将通过账号预留联系方式主动联系你，请留意后续通知。",
         "reason": "当前咨询量较大，暂时未能接入人工客服。"
       },
+      "handoffStarted": "已为你转接人工客服，请稍候",
       "records": {
         "title": "服务记录",
         "subtitle": "查看处理进度与继续沟通",

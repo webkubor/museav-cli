@@ -316,23 +316,28 @@ export function CreateKeyModal({
   const memberLayer = previewQuery.data?.layers?.find((layer) =>
     /member|personal/i.test(layer.layer),
   );
+  // 个人租户没有「成员」概念，个人护栏/个人预算两行不适用（V1.0.7 小需求#9），与 use-guardrails-page.tsx 的 showMember 同一口径
   const effectiveLayerRows = [
     {
       label: t("apiKeys.guardrail.global"),
       name: globalGuardrail?.name ?? t("apiKeys.common.notConfigured"),
       state: globalGuardrail ? "active" : "inactive",
     },
-    {
-      label: t("apiKeys.guardrail.member"),
-      name: memberApplies
-        ? (memberLayer?.guardrail_name ??
-          (globalGuardrail ? t("apiKeys.guardrail.globalDefaultMemberBudget") : t("apiKeys.common.notConfigured")))
-        : t("apiKeys.guardrail.memberBudgetNotApplicable"),
-      state:
-        memberApplies && (memberLayer || globalGuardrail)
-          ? "active"
-          : "inactive",
-    },
+    ...(isPersonalTenant
+      ? []
+      : [
+          {
+            label: t("apiKeys.guardrail.member"),
+            name: memberApplies
+              ? (memberLayer?.guardrail_name ??
+                (globalGuardrail ? t("apiKeys.guardrail.globalDefaultMemberBudget") : t("apiKeys.common.notConfigured")))
+              : t("apiKeys.guardrail.memberBudgetNotApplicable"),
+            state:
+              memberApplies && (memberLayer || globalGuardrail)
+                ? "active"
+                : "inactive",
+          },
+        ]),
     {
       label: t("apiKeys.guardrail.key"),
       name: selectedGuardrail?.name ?? t("apiKeys.guardrail.noneSpaced"),
@@ -341,7 +346,7 @@ export function CreateKeyModal({
   ];
   const budgetGateRows = [
     { label: t("apiKeys.budget.workspaceTotal"), scope: "guardrail_total" },
-    { label: t("apiKeys.budget.member"), scope: "per_member" },
+    ...(isPersonalTenant ? [] : [{ label: t("apiKeys.budget.member"), scope: "per_member" }]),
     { label: t("apiKeys.budget.key"), scope: "per_api_key" },
   ].map(({ label, scope: aggregationScope }) => {
     const budget = eff?.budgets?.find(
@@ -538,7 +543,7 @@ export function CreateKeyModal({
               customLabel={t("apiKeys.createModal.expiryCustomLabel")}
               hideStartDate={true}
               placeholder={t("apiKeys.createModal.expiryPlaceholder")}
-              className="w-full rounded-md h-10 justify-between !bg-mg-bg-1"
+              className="w-full rounded-md h-10 !bg-mg-bg-1"
             />
           </div>
 
@@ -630,7 +635,7 @@ export function CreateKeyModal({
                       title={t("apiKeys.budget.runtimeCheckTip")}
                     />
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className={`grid gap-2 ${effectiveLayerRows.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
                     {effectiveLayerRows.map((row) => (
                       <div
                         className={`grid min-w-0 gap-1 rounded-lg border bg-mg-bg-0 px-2.5 py-2 ${row.state === "active" ? "border-[var(--mg-state-selected-border)]" : "border-mg-border"}`}

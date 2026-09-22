@@ -30,7 +30,6 @@ import { DashboardHeader } from './DashboardHeader'
 import { DashboardSidebar } from './DashboardSidebar'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
-import { CustomerService } from '@/components/customer-service'
 import { PhoneBindingGuard } from '@/components/auth/PhoneBindingGuard'
 import { TopUpModal } from '@/pages/billing/TopUpModal'
 import { useRechargeStore } from '@/store/use-recharge-store'
@@ -313,11 +312,6 @@ export function DashboardLayout() {
         )}>
           {/* 高阶极简自定义 Breadcrumbs */}
           <Breadcrumb items={getBreadcrumbs()} />
-
-          {/* 平台助手：只解答平台功能怎么用，不承接客服反馈。挂在 Console 内，
-              登录后才可见（V1.0.6 那版全局挂 App.tsx、未登录也弹的形态已随
-              智能客服一起回退，代码在 feature/customer-service 分支）。 */}
-          <CustomerService />
 
           {/* 国内环境强制绑定手机号守卫（#366）：无手机号时弹不可跳过的绑定弹窗，挂一次即可 */}
           <PhoneBindingGuard />

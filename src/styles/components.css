@@ -446,6 +446,19 @@
   opacity: 0.7;
 }
 
+/* 只读态（prd#1093 需求 #4/#5：账号设置的手机号/邮箱以「禁用框」展示）：
+   灰底 + 默认光标 + 无聚焦高亮，视觉上就是禁用框；但用 readOnly 而不是 disabled，
+   文字不降到 opacity-50（原型里号码仍是正常深色可读），且值仍可选中复制、读屏可念。
+   hover/focus-within 一并覆盖，否则上方 base 规则会把底色刷回 --mg-bg-0。 */
+.modern-input-readonly,
+.modern-input-readonly:hover,
+.modern-input-readonly:focus-within {
+  background-color: var(--mg-fill-0) !important;
+  border-color: var(--mg-border) !important;
+  box-shadow: var(--shadow-sm) !important;
+  cursor: default;
+}
+
 .modern-input-field:hover,
 .modern-input-wrapper:hover {
   border-color: var(--mg-control-border-hover) !important;
@@ -787,7 +800,7 @@ body:not([theme-mode='dark']) header.mg-glass-bar-strong {
 
 .mg-toast-title {
   color: inherit !important;
-  font-size: 13.5px !important;
+  font-size: 14px !important;
   line-height: 1.4 !important;
   font-weight: 600 !important;
 }

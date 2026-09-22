@@ -3,6 +3,12 @@
 /* 容器形态对齐原型 App.tsx：single/compareSwitch 是锚定在触发按钮正下方的浮层
    （.playground-model-panel，无遮罩）；compareAdd 是遮罩+居中 modal
    （MarketplaceCompareModal，见 ModelPickerDialog.tsx #320）。视觉走本仓 --mg-* token。 */
+/* ── 本页 palette（1.0.7 主题色 100% token 化收口）：
+   无全局 token 对应的页面色；值即变量名（可读自证），只在本文件内使用。 ── */
+:root {
+  --mpd-ffffff: #fff;
+}
+
 .model-picker-dialog__panel {
   display: flex;
   flex-direction: column;
@@ -208,7 +214,7 @@
   height: 16px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--mg-border);
-  color: #fff;
+  color: var(--mpd-ffffff);
 }
 
 .model-picker-dialog__checkbox.is-checked {

@@ -98,6 +98,13 @@ export function SliderCaptcha({ onChange, disabled = false, lockedHint }: Slider
   const draw = useCallback(() => {
     const ctx = canvasRef.current?.getContext('2d')
     if (!ctx) return
+    // canvas 画笔吃不到 var()，从 :root 读 resolved 值；token 缺失时兜底旧色（prd#1061）
+    const cssColor = (name: string, fallback: string) => {
+      const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+      return v || fallback
+    }
+    const successColor = cssColor('--mg-success', '#1d9e75')
+    const dangerColor = cssColor('--mg-danger', '#e24b4a')
     ctx.clearRect(0, 0, W, H)
 
     // 底图（cover 适配）；未加载时给个占位底色
@@ -108,11 +115,8 @@ export function SliderCaptcha({ onChange, disabled = false, lockedHint }: Slider
       dx = (W - dw) / 2; dy = (H - dh) / 2
       ctx.drawImage(img, dx, dy, dw, dh)
     } else {
-      // 占位底（首图加载前）：深色品牌调渐变，避免裸白框
-      const ph = ctx.createLinearGradient(0, 0, W, H)
-      ph.addColorStop(0, '#2f335a')
-      ph.addColorStop(1, '#23263f')
-      ctx.fillStyle = ph
+      // 占位底（首图加载前）：品牌深档纯色，避免裸白框；随市场 cn/global 切换
+      ctx.fillStyle = cssColor('--mg-brand-deep', '#2f335a')
       ctx.fillRect(0, 0, W, H)
     }
 
@@ -120,26 +124,26 @@ export function SliderCaptcha({ onChange, disabled = false, lockedHint }: Slider
     // 缺口：暗色凹槽 + 边缘高光，做出凹陷感
     ctx.save()
     roundRect(ctx, gapX, gapY, PIECE, PIECE, RADIUS)
-    ctx.fillStyle = 'rgba(0,0,0,0.55)'
+    ctx.fillStyle = 'rgba(0,0,0,0.55)' // allow-raw-color canvas 缺口暗遮罩：固定黑压在任意底图上，无语义 token（--mg-overlay 浅色是藏蓝 0.5，不 1:1）
     ctx.fill()
     ctx.lineWidth = 2
-    ctx.strokeStyle = 'rgba(0,0,0,0.35)'
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)' // allow-raw-color canvas 缺口外沿阴影，固定黑，无语义 token
     ctx.stroke()
     roundRect(ctx, gapX + 0.8, gapY + 0.8, PIECE - 1.6, PIECE - 1.6, RADIUS - 1)
     ctx.lineWidth = 1
-    ctx.strokeStyle = 'rgba(255,255,255,0.6)'
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)' // allow-raw-color canvas 缺口内沿高光：固定白（bg-0-rgb 暗色变深灰会破高光），无语义 token
     ctx.stroke()
     ctx.restore()
 
     // 拼块：图片切片（与缺口同内容）+ 投影 + 高光描边
     const px = pieceXRef.current
     ctx.save()
-    ctx.shadowColor = 'rgba(0,0,0,0.35)'
+    ctx.shadowColor = 'rgba(0,0,0,0.35)' // allow-raw-color canvas 拼块投影，固定黑，无语义 token
     ctx.shadowBlur = status === 'dragging' ? 14 : 8 // 拖动时投影加深，做出"抬起"手感
     ctx.shadowOffsetX = 2
     ctx.shadowOffsetY = 3
     roundRect(ctx, px, gapY, PIECE, PIECE, RADIUS)
-    ctx.fillStyle = '#fff'
+    ctx.fillStyle = '#fff' // allow-raw-color canvas 拼块底色：图片切片的固定白衬底，无语义 token
     ctx.fill()
     ctx.restore()
 
@@ -150,7 +154,7 @@ export function SliderCaptcha({ onChange, disabled = false, lockedHint }: Slider
       // 整图按相同 cover 变换、再水平平移 (px-gapX)，使缺口处内容落到拼块上
       ctx.drawImage(img, dx + (px - gapX), dy, dw, dh)
     } else {
-      ctx.fillStyle = '#cdd2e4'
+      ctx.fillStyle = cssColor('--mg-brand-pale', '#cdd2e4')
       ctx.fillRect(px, gapY, PIECE, PIECE)
     }
     ctx.restore()
@@ -159,25 +163,24 @@ export function SliderCaptcha({ onChange, disabled = false, lockedHint }: Slider
     ctx.save()
     roundRect(ctx, px, gapY, PIECE, PIECE, RADIUS)
     ctx.lineWidth = 2
-    ctx.strokeStyle = 'rgba(0,0,0,0.28)'
+    ctx.strokeStyle = 'rgba(0,0,0,0.28)' // allow-raw-color canvas 拼块暗描边，固定黑，无语义 token
     ctx.stroke()
     roundRect(ctx, px + 0.6, gapY + 0.6, PIECE - 1.2, PIECE - 1.2, RADIUS - 1)
     ctx.lineWidth = 1
     ctx.strokeStyle =
-      status === 'success' ? '#1d9e75' : status === 'fail' ? '#e24b4a' : 'rgba(255,255,255,0.95)'
+      status === 'success' ? successColor : status === 'fail' ? dangerColor : 'rgba(255,255,255,0.95)' // allow-raw-color canvas 拼块亮描边（idle 态）：固定白，语义分支已走 --mg-success/--mg-danger
     ctx.stroke()
     // 左上高光，玻璃质感
     const hl = ctx.createLinearGradient(px, gapY, px, gapY + PIECE)
-    hl.addColorStop(0, 'rgba(255,255,255,0.35)')
-    hl.addColorStop(0.4, 'rgba(255,255,255,0)')
+    hl.addColorStop(0, 'rgba(255,255,255,0.35)') // allow-raw-color canvas 玻璃高光渐变，固定白，无语义 token
+    hl.addColorStop(0.4, 'rgba(255,255,255,0)') // allow-raw-color canvas 渐变透明尾：addColorStop 不解析 var()，透明尾无 token 对应
     ctx.fillStyle = hl
     ctx.fill()
-    if (status === 'success') {
-      ctx.fillStyle = 'rgba(29,158,117,0.26)'
+    if (status === 'success' || status === 'fail') {
+      ctx.globalAlpha = 0.26 // 语义色叠罩：token 是不透明色，用 globalAlpha 代替写死 rgba
+      ctx.fillStyle = status === 'success' ? successColor : dangerColor
       ctx.fill()
-    } else if (status === 'fail') {
-      ctx.fillStyle = 'rgba(226,75,74,0.26)'
-      ctx.fill()
+      ctx.globalAlpha = 1
     }
     ctx.restore()
   }, [img, puzzle, status])
@@ -302,7 +305,7 @@ export function SliderCaptcha({ onChange, disabled = false, lockedHint }: Slider
             <span
               className="pointer-events-none absolute inset-0"
               style={{
-                background: 'linear-gradient(100deg, transparent 35%, rgba(255,255,255,0.5) 50%, transparent 65%)',
+                background: 'linear-gradient(100deg, transparent 35%, rgba(255,255,255,0.5) 50%, transparent 65%)', // allow-raw-color 成功扫光：品牌渐变条上的固定白高光，无语义 token
                 animation: reducedMotion() ? undefined : 'sc-sheen 1.1s ease-out forwards',
               }}
             />

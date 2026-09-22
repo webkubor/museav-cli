@@ -57,7 +57,7 @@
       "selectWorkspaceFirst": "先在「工作空间」筛选里选一个",
       "more": "更多筛选",
       "requestIdSearch": "Request ID 精确检索",
-      "searchPlaceholder": "输入 Request ID、模型、错误摘要或成员",
+      "searchPlaceholder": "请输入 Request ID 进行搜索",
       "member": "成员",
       "allMembers": "全部成员",
       "guardrailLabel": "护栏",

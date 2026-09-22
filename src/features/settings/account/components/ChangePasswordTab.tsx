@@ -13,7 +13,8 @@ import { appToast } from '@/lib/app-toast'
  *
  * 当前仅支持已设置密码的用户通过当前密码验证后修改密码；忘记密码走独立的邮箱重置流程。
  */
-const HAS_PASSWORD = true // TODO(待后端 has_password)：暂无法探测，按已设密码处理
+const HAS_PASSWORD = true // TODO(待后端 has_password，prd#1093 需求方 #3)：暂无法探测，按已设密码处理；
+// 一旦接上真实字段，未设置态的「去掉锁图标只留按钮」逻辑已就位（见下方 HAS_PASSWORD && ...）
 
 function PasswordDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useTranslation()
@@ -184,10 +185,13 @@ export const ChangePasswordTab: React.FC = () => {
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-3">
-          <span className="hidden items-center gap-1.5 text-mg-text-3 sm:flex">
-            <LuLock size={13} />
-            <span className="font-mono text-sm tracking-widest">{HAS_PASSWORD ? '••••••••' : t('account.security.notSet')}</span>
-          </span>
+          {/* prd#1093：未设置密码时只展示按钮，不展示锁图标/掩码预览（未设置态无锁可言） */}
+          {HAS_PASSWORD && (
+            <span className="hidden items-center gap-1.5 text-mg-text-3 sm:flex">
+              <LuLock size={13} />
+              <span className="font-mono text-sm tracking-widest">••••••••</span>
+            </span>
+          )}
           <Button size="small" variant="brand" onClick={() => setDialogOpen(true)}>
             {HAS_PASSWORD ? t('account.security.changePassword') : t('account.security.setPassword')}
           </Button>

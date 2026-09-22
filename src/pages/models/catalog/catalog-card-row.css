@@ -1,5 +1,12 @@
 /* 模型卡片（横向分栏）+ 左侧筛选栏。由 catalog.css 按分区拆出（原 106-267 行），加载顺序由 catalog.css 的 @import 序保证。 */
 /* ── 模型卡片（横向分栏）─────────────────────────────────── */
+/* ── 本页 palette（1.0.7 主题色 100% token 化收口）：
+   无全局 token 对应的页面色；值即变量名（可读自证），只在本文件内使用。 ── */
+:root {
+  --ccr-ffffff: #fff;
+  --ccr-k-a18: rgba(0,0,0,0.18);
+}
+
 .mg-card {
   position: relative; display: flex; align-items: center; gap: 24px;
   padding: 16px 22px; border: 1px solid var(--mg-border); border-radius: var(--mg-radius-md);
@@ -56,7 +63,7 @@
 .mg-card-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; width: 124px; }
 .mg-card-cta {
   display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 0 16px;
-  border-radius: var(--mg-radius-pill); font-size: var(--mg-font-size-body); font-weight: 700; color: #fff;
+  border-radius: var(--mg-radius-pill); font-size: var(--mg-font-size-body); font-weight: 700; color: var(--ccr-ffffff);
   background: var(--brand-base); cursor: pointer; transition: opacity 0.15s ease;
 }
 .mg-card-cta:hover { opacity: 0.9; }
@@ -88,8 +95,8 @@
 }
 .mg-side-switch > span {
   position: absolute; top: 2px; left: 2px; width: 17px; height: 17px;
-  border-radius: var(--radius-full); background: #fff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.18); transition: transform 0.18s ease;
+  border-radius: var(--radius-full); background: var(--ccr-ffffff);
+  box-shadow: 0 1px 3px var(--ccr-k-a18); transition: transform 0.18s ease;
 }
 .mg-side-switch.is-on { background: var(--brand-base); }
 .mg-side-switch.is-on > span { transform: translateX(17px); }
@@ -163,12 +170,12 @@
 .mg-side-ctx-range input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none; width: 15px; height: 15px;
   border-radius: var(--radius-full); background: var(--plaza-row-active-fg);
-  border: 2.5px solid #fff; box-shadow: var(--mg-shadow-sm);
+  border: 2.5px solid var(--ccr-ffffff); box-shadow: var(--mg-shadow-sm);
 }
 .mg-side-ctx-range input[type='range']::-moz-range-thumb {
   width: 15px; height: 15px;
   border-radius: var(--radius-full); background: var(--plaza-row-active-fg);
-  border: 2.5px solid #fff; box-shadow: var(--mg-shadow-sm);
+  border: 2.5px solid var(--ccr-ffffff); box-shadow: var(--mg-shadow-sm);
 }
 .mg-side-ctx-labels {
   display: flex; justify-content: space-between; margin-top: 2px;
@@ -197,7 +204,7 @@
   display: inline-flex; align-items: center; padding: 2px; border: none; border-radius: var(--radius-full);
   background: none; color: var(--brand-base); cursor: pointer; transition: background 0.15s ease, color 0.15s ease;
 }
-.mg-side-tag-chip button:hover { background: var(--brand-base); color: #fff; }
+.mg-side-tag-chip button:hover { background: var(--brand-base); color: var(--ccr-ffffff); }
 .mg-side-tag-menu {
   position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 20;
   display: grid; gap: 2px; max-height: 280px; overflow-y: auto; padding: 6px;

@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
 import { useSiteLogo } from '@/config/brand-assets'
-import { useLangStore } from '@/store/use-brand-store'
 import { cn } from '@/lib/utils'
 
 interface AuthLayoutProps {
@@ -20,13 +19,12 @@ interface AuthLayoutProps {
  * 鉴权公共高品质科技网格氛围骨架 (Tailwind 语义抽离架构)
  */
 export function AuthLayout({ title, subtitle, footer, children, wide = false }: AuthLayoutProps) {
-  const market = useLangStore((s) => s.market)
-  const isDomestic = market === 'china'
   const siteLogo = useSiteLogo()
 
-  // 自适应双氛围球的渐变渲染
-  const primaryGlow = isDomestic ? 'rgba(99, 102, 241, 0.05)' : 'rgba(16, 185, 129, 0.05)'
-  const secondaryGlow = isDomestic ? 'rgba(99, 102, 241, 0.04)' : 'rgba(16, 185, 129, 0.04)'
+  // 双氛围球：品牌 token 的 rgb 分量（--brand-base-rgb 随市场 × 明暗四象限自动切换）。
+  // 原手写 isDomestic ? indigo : emerald 停在旧品牌色、与 brand token 漂移 —— 本文件唯一允许的视觉变化。
+  const primaryGlow = 'rgba(var(--brand-base-rgb), 0.05)'
+  const secondaryGlow = 'rgba(var(--brand-base-rgb), 0.04)'
 
   return (
     <div className="auth-layout-container">
@@ -34,7 +32,7 @@ export function AuthLayout({ title, subtitle, footer, children, wide = false }: 
       <div
         className="auth-blur-orb-primary"
         style={{
-          background: `radial-gradient(circle, ${primaryGlow} 0%, rgba(255, 255, 255, 0) 70%)`
+          background: `radial-gradient(circle, ${primaryGlow} 0%, rgba(var(--mg-bg-0-rgb), 0) 70%)`
         }}
       />
 
@@ -42,7 +40,7 @@ export function AuthLayout({ title, subtitle, footer, children, wide = false }: 
       <div
         className="auth-blur-orb-secondary"
         style={{
-          background: `radial-gradient(circle, ${secondaryGlow} 0%, rgba(255, 255, 255, 0) 70%)`
+          background: `radial-gradient(circle, ${secondaryGlow} 0%, rgba(var(--mg-bg-0-rgb), 0) 70%)`
         }}
       />
 

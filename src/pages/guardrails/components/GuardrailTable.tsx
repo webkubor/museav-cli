@@ -68,7 +68,7 @@ function NameCell({ row, onOpenDetail }: { row: GuardrailDetail; onOpenDetail: (
   return (
     <button type="button" onClick={() => onOpenDetail(row.id)} className="group flex max-w-[220px] flex-col items-start gap-0.5 text-left">
       <span className="flex max-w-full min-w-0 items-center gap-1.5">
-        <span className="truncate text-[13.5px] font-bold text-mg-text-1 group-hover:text-brand-base">{row.name}</span>
+        <span className="truncate text-sm font-bold text-mg-text-1 group-hover:text-brand-base">{row.name}</span>
         {row.is_default && row.status === 'active' && <Badge variant="warning" className="shrink-0">{t('guardrails.table.defaultBadgeShort')}</Badge>}
       </span>
       {row.description && <span className="max-w-full truncate text-xs font-medium text-mg-text-3">{row.description}</span>}

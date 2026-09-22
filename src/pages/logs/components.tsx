@@ -17,18 +17,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/Table'
-import { formatDateTimeWithSeconds, formatDuration } from '@/lib/format-date'
+import { formatDateTimeWithSeconds } from '@/lib/format-date'
 import { cn } from '@/lib/utils'
 import type { CallLogItem } from '@/types'
 import { deriveLogStatus, isModelNotStarted } from './guardrail'
 import { TokenUsageCell } from '@/features/logs/TokenUsageCell'
 import { isAsyncCall } from './async-call'
 import { buildStatusMap } from './status-map'
-
-function formatMaybeDuration(ms: number | null | undefined) {
-  if (!ms || ms <= 0) return '-'
-  return formatDuration(ms)
-}
 
 function compactModelName(name: string) {
   return name.includes('/') ? name.split('/').pop() || name : name
@@ -137,7 +132,6 @@ export function LogsTable({
             <TableHead className="min-w-[180px]">{t('logs.table.owner')}</TableHead>
             <TableHead>{t('logs.table.token')}</TableHead>
             <TableHead>{t('logs.table.cost')}</TableHead>
-            <TableHead>{t('logs.table.latency')}</TableHead>
             <TableHead>{t('logs.table.actions')}</TableHead>
           </TableRow>
         </TableHeader>
@@ -208,32 +202,6 @@ export function LogsTable({
                     <Money amount={shown} currency={row.cost.currency} />
                   )
                 })()}
-              </TableCell>
-              <TableCell className="whitespace-nowrap">
-                {isAsyncCall(row) ? (
-                  <div className="min-w-0">
-                    <strong className="block text-mg-text-3">{t('logs.metrics.asyncNotCounted')}</strong>
-                    {row.duration_ms > 0 && (
-                      <span className="block font-mono tabular-nums mg-text-caption text-mg-text-3">
-                        {t('logs.detail.diagnostics.totalDuration')}: {formatMaybeDuration(row.duration_ms)}
-                      </span>
-                    )}
-                  </div>
-                ) : isModelNotStarted(row) ? (
-                  <div className="min-w-0">
-                    <strong className="block text-mg-text-3">—</strong>
-                    <span className="block mg-text-caption text-mg-text-3">{t('logs.metrics.noResponse')}</span>
-                  </div>
-                ) : (
-                  <div className="min-w-0 cursor-help" title={t('logs.table.latencyTooltip')}>
-                    <strong className="block font-mono font-bold tabular-nums text-mg-text-2">
-                      {t('logs.table.firstTokenLatency', { value: row.speed.first_token_ms > 0 ? formatDuration(row.speed.first_token_ms) : '—' })}
-                    </strong>
-                    <span className="block font-mono tabular-nums mg-text-caption text-mg-text-3">
-                      {t('logs.table.totalLatency', { value: formatMaybeDuration(row.duration_ms) })}
-                    </span>
-                  </div>
-                )}
               </TableCell>
               <TableCell>
                 {/* 对齐 PRD 原型：操作列为「详情」按钮（整行也可点开）。 */}

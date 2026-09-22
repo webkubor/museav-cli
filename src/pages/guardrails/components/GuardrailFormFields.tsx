@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Input } from '@/components/ui/Input'
+import { DateTimePicker } from '@/components/ui/DateTimePicker'
 import { TagInput } from '@/components/ui/TagInput'
 import Select, { SelectItem } from '@/components/ui/Select'
 import { LuInfo, LuUsers } from 'react-icons/lu'
@@ -208,12 +209,11 @@ export function GuardrailFormFields({
           <label className="block text-xs font-bold text-mg-text-2 mb-2">
             {t('guardrails.form.boostExpiresAtLabel')}<span className="text-mg-danger ml-1">*</span>
           </label>
-          <Input
-            type="datetime-local"
+          <DateTimePicker
             aria-label={t('guardrails.form.boostExpiresAtLabel')}
             value={boostExpiresAt}
             disabled={!canEditInfo}
-            onChange={(e) => onBoostExpiresAtChange(e.target.value)}
+            onChange={onBoostExpiresAtChange}
           />
         </div>
       )}

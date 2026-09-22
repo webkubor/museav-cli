@@ -202,7 +202,7 @@ export default function DevicePage() {
 
   if (state.kind === 'result') {
     const view = {
-      approved: { icon: '✓', color: 'rgb(22,163,74)', title: t('device.result.approvedTitle'), desc: t('device.result.approvedDesc') },
+      approved: { icon: '✓', color: 'var(--mg-success)', title: t('device.result.approvedTitle'), desc: t('device.result.approvedDesc') },
       denied:   { icon: '✕', color: 'var(--mg-danger)', title: t('device.result.deniedTitle'),   desc: t('device.result.deniedDesc') },
       expired:  { icon: '⏱', color: 'var(--mg-warning)', title: t('device.result.expiredTitle'),  desc: t('device.result.expiredDesc') },
     }[state.status]
@@ -263,7 +263,7 @@ export default function DevicePage() {
               width: '28px', height: '28px', borderRadius: '50%',
               backgroundColor: 'var(--mg-primary)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', fontSize: '12px', fontWeight: 600, flexShrink: 0,
+              color: 'var(--mg-on-primary)', fontSize: '12px', fontWeight: 600, flexShrink: 0,
             }}>
               {initials}
             </div>
@@ -277,7 +277,7 @@ export default function DevicePage() {
             </div>
             <span style={{
               fontSize: '12px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px',
-              background: 'rgba(34,197,94,0.1)', color: 'rgb(22,163,74)', border: '1px solid rgba(34,197,94,0.2)',
+              background: 'color-mix(in oklab, var(--mg-success) 10%, transparent)', color: 'var(--mg-success)', border: '1px solid color-mix(in oklab, var(--mg-success) 20%, transparent)',
               letterSpacing: '0.03em', flexShrink: 0,
             }}>
               {t('device.badge.loggedIn')}
@@ -301,8 +301,8 @@ export default function DevicePage() {
           <div style={{
             display: 'flex', alignItems: 'center', gap: '10px',
             padding: '8px 10px', borderRadius: '8px',
-            background: selectedTenant ? 'rgba(99,102,241,0.05)' : 'transparent',
-            border: selectedTenant ? '1px solid rgba(99,102,241,0.15)' : '1px dashed var(--mg-border)',
+            background: selectedTenant ? 'rgba(var(--brand-base-rgb), 0.05)' : 'transparent',
+            border: selectedTenant ? '1px solid rgba(var(--brand-base-rgb), 0.15)' : '1px dashed var(--mg-border)',
             minHeight: '38px',
           }}>
             {selectedTenant ? (
@@ -312,9 +312,9 @@ export default function DevicePage() {
                 </span>
                 <span style={{
                   fontSize: '12px', fontWeight: 600, padding: '1px 6px', borderRadius: '4px',
-                  background: selectedTenant.type === 'enterprise' ? 'rgba(99,102,241,0.1)' : 'rgba(107,114,128,0.1)',
-                  color: selectedTenant.type === 'enterprise' ? 'rgb(79,70,229)' : 'rgb(107,114,128)',
-                  border: `1px solid ${selectedTenant.type === 'enterprise' ? 'rgba(99,102,241,0.2)' : 'rgba(107,114,128,0.2)'}`,
+                  background: selectedTenant.type === 'enterprise' ? 'rgba(var(--brand-base-rgb), 0.1)' : 'color-mix(in oklab, var(--mg-text-3) 12%, transparent)',
+                  color: selectedTenant.type === 'enterprise' ? 'var(--brand-base)' : 'var(--mg-text-3)',
+                  border: `1px solid ${selectedTenant.type === 'enterprise' ? 'rgba(var(--brand-base-rgb), 0.2)' : 'color-mix(in oklab, var(--mg-text-3) 22%, transparent)'}`,
                 }}>
                   {selectedTenant.type === 'enterprise'
                     ? t('device.tenant.typeEnterprise')
@@ -373,7 +373,7 @@ export default function DevicePage() {
                         {tenant.is_default && (
                           <span style={{
                             fontSize: '12px', fontWeight: 700, padding: '1px 5px', borderRadius: '3px',
-                            background: 'var(--mg-primary)', color: '#fff', lineHeight: '14px',
+                            background: 'var(--mg-primary)', color: 'var(--mg-on-primary)', lineHeight: '14px',
                           }}>
                             {t('header.default')}
                           </span>

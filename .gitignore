@@ -43,3 +43,7 @@ dist-ssr
 .worktrees/
 .workbuddy/
 .pnpm-store/
+
+# QA / agent 的取证截图（browser-harness 截的验收图），只在本地留档，不进仓库。
+# 2026-09-17：V1.0.6 期间被一次 `git add -A` 误提交了 812K 进来，清掉并挡住。
+.evidence/

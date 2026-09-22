@@ -1,5 +1,12 @@
 /* 光效/微交互 + 免费政策提示条 + 官方厂商品牌图标排。由 catalog.css 按分区拆出（原 268-539 行），加载顺序由 catalog.css 的 @import 序保证。 */
 /* ── 与国外官网一致的光效 / 微交互（brand 辉光，浅色克制、深色提亮）── */
+/* ── 本页 palette（1.0.7 主题色 100% token 化收口）：
+   无全局 token 对应的页面色；值即变量名（可读自证），只在本文件内使用。 ── */
+:root {
+  --ceff-0f172a-a28: rgba(15,23,42,0.28);
+  --ceff-ffffff: #fff;
+}
+
 .catalog-card { border-color: var(--mg-border); }
 .catalog-card:hover {
   border-color: color-mix(in oklab, var(--brand-base) 40%, var(--mg-border));
@@ -92,7 +99,7 @@
 .catalog-insight-panel {
   border: 1px solid var(--mg-border);
   background: var(--card-bg);
-  box-shadow: 0 10px 30px -24px rgba(15, 23, 42, 0.28);
+  box-shadow: 0 10px 30px -24px var(--ceff-0f172a-a28);
 }
 
 .models-catalog-hero {
@@ -264,7 +271,7 @@
 .models-catalog-filter-chip.is-active {
   border-color: color-mix(in srgb, var(--brand-base) 28%, transparent);
   background: var(--brand-base);
-  color: #fff;
+  color: var(--ceff-ffffff);
   box-shadow: 0 8px 18px -14px var(--brand-base);
 }
 

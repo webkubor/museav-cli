@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Popover } from './Popover'
 import { Button } from './Button'
+import { Calendar } from './Calendar'
 import { LuCalendar, LuChevronRight } from 'react-icons/lu'
 import { cn } from '@/lib/utils'
 
@@ -53,23 +54,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   const [customStart, setCustomStart] = useState<string>(value.startDate || '')
   const [customEnd, setCustomEnd] = useState<string>(value.endDate || '')
 
-  // Custom inline calendar state
-  const [currentYear, setCurrentYear] = useState(() => {
-    const dStr = value.endDate || value.startDate
-    if (dStr) {
-      const d = new Date(dStr)
-      if (!isNaN(d.getTime())) return d.getFullYear()
-    }
-    return new Date().getFullYear()
-  })
-  const [currentMonth, setCurrentMonth] = useState(() => {
-    const dStr = value.endDate || value.startDate
-    if (dStr) {
-      const d = new Date(dStr)
-      if (!isNaN(d.getTime())) return d.getMonth()
-    }
-    return new Date().getMonth()
-  })
+  // 月历的「看哪个月」由 Calendar 自己管（初始月取自 defaultDate），这里不再重复一份状态
 
   // 外部 value 变化时在渲染期同步内部状态（react.dev: adjusting state when a prop changes）
   // 按字段比较而非对象引用，避免父组件每次渲染新建对象导致死循环
@@ -116,10 +101,6 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
     close()
   }
 
-  // Inline calendar calculations
-  const getDaysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate()
-  const getFirstDayOfMonth = (y: number, m: number) => new Date(y, m, 1).getDay()
-
   const handleDateClick = (dateStr: string) => {
     if (hideStartDate) {
       if (dateStr < customStart) return // Prevent selecting past dates
@@ -138,110 +119,19 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
     }
   }
 
-  const handlePrevMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11)
-      setCurrentYear(y => y - 1)
-    } else {
-      setCurrentMonth(m => m - 1)
-    }
-  }
-
-  const handleNextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0)
-      setCurrentYear(y => y + 1)
-    } else {
-      setCurrentMonth(m => m + 1)
-    }
-  }
-
-  const renderCalendar = () => {
-    const daysInMonth = getDaysInMonth(currentYear, currentMonth)
-    const firstDay = getFirstDayOfMonth(currentYear, currentMonth)
-    const cells: React.ReactNode[] = []
-
-    // Empty spaces for previous month's trailing days
-    for (let i = 0; i < firstDay; i++) {
-      cells.push(<div key={`empty-${i}`} className="h-[var(--mg-calendar-cell-size)] w-[var(--mg-calendar-cell-size)]" />)
-    }
-
-    // Days grid
-    for (let day = 1; day <= daysInMonth; day++) {
-      const monthStr = String(currentMonth + 1).padStart(2, '0')
-      const dayStr = String(day).padStart(2, '0')
-      const dateStr = `${currentYear}-${monthStr}-${dayStr}`
-
-      const isSelected = hideStartDate
-        ? customEnd === dateStr
-        : (customStart === dateStr || customEnd === dateStr)
-
-      const isInRange = !hideStartDate && customStart && customEnd && dateStr > customStart && dateStr < customEnd
-      const isDisabled = hideStartDate && dateStr < customStart
-
-      cells.push(
-        <button
-          key={`day-${day}`}
-          type="button"
-          disabled={isDisabled}
-          onClick={() => handleDateClick(dateStr)}
-          className={cn(
-            "h-[var(--mg-calendar-cell-size)] w-[var(--mg-calendar-cell-size)] rounded-lg mg-compact-badge transition-all flex items-center justify-center cursor-pointer active:scale-95",
-            isSelected && "bg-brand-base text-white font-bold shadow-sm shadow-brand-glow",
-            isInRange && "bg-brand-base/15 text-brand-base rounded-none",
-            !isSelected && !isInRange && !isDisabled && "text-mg-text-1 font-medium hover:bg-mg-fill-0/40",
-            isDisabled && "text-mg-text-3/60 cursor-not-allowed opacity-40"
-          )}
-        >
-          {day}
-        </button>
-      )
-    }
-
-    const weekDays = [
-      t('common.dateRange.weekdays.sun'),
-      t('common.dateRange.weekdays.mon'),
-      t('common.dateRange.weekdays.tue'),
-      t('common.dateRange.weekdays.wed'),
-      t('common.dateRange.weekdays.thu'),
-      t('common.dateRange.weekdays.fri'),
-      t('common.dateRange.weekdays.sat'),
-    ]
-
-    return (
-      <div className="flex flex-col gap-2 w-full select-none">
-        <div className="flex items-center justify-between px-1">
-          <button
-            type="button"
-            onClick={handlePrevMonth}
-            className="p-[var(--mg-space-1)] rounded-lg hover:bg-mg-fill-0 text-mg-text-2 hover:text-mg-text-1 cursor-pointer mg-text-caption"
-          >
-            &lt;
-          </button>
-          <span className="mg-compact-badge text-mg-text-1">
-            {t('common.dateRange.monthLabel', { year: currentYear, month: currentMonth + 1 })}
-          </span>
-          <button
-            type="button"
-            onClick={handleNextMonth}
-            className="p-[var(--mg-space-1)] rounded-lg hover:bg-mg-fill-0 text-mg-text-2 hover:text-mg-text-1 cursor-pointer mg-text-caption"
-          >
-            &gt;
-          </button>
-        </div>
-
-        <div className="grid grid-cols-7 gap-1 text-center">
-          {weekDays.map(w => (
-            <span key={w} className="mg-compact-badge font-semibold text-mg-text-2">{w}</span>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-7 gap-1 text-center">
-          {cells}
-        </div>
-      </div>
-    )
-  }
+  // 日历本体走共用 <Calendar>：这里只提供「哪天选中 / 区间内 / 禁用」的语义，
+  // 布局、年月导航、星期表头由 Calendar 统一维护（DateRangePicker 与 DateTimePicker 共用一份）
+  const renderCalendar = () => (
+    <Calendar
+      defaultDate={value.endDate || value.startDate}
+      dayState={(dateStr) => ({
+        selected: hideStartDate ? customEnd === dateStr : (customStart === dateStr || customEnd === dateStr),
+        inRange: Boolean(!hideStartDate && customStart && customEnd && dateStr > customStart && dateStr < customEnd),
+        disabled: Boolean(hideStartDate && customStart && dateStr < customStart),
+      })}
+      onSelectDate={handleDateClick}
+    />
+  )
 
   const isCustomActive = activePreset === 'custom'
 

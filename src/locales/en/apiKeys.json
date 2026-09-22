@@ -204,7 +204,7 @@
     },
     "createdModal": {
       "title": "API Key created",
-      "desc": "Your key is ready to copy. You can also copy it again later from the API Keys list.",
+      "desc": "Key created successfully. Copy it now, or copy it again later from the API Keys list.",
       "connect": "Quick connect",
       "saved": "I have saved the key",
       "copyAria": "Copy key"
@@ -238,7 +238,7 @@
       "title": "Connect now",
       "desc": "Choose a connection method to view parameters. Buttons open tools or documentation.",
       "paramsTitle": "ModelGo connection parameters",
-      "keyCreatedHint": "The API key is shown only once after creation. Save it before closing this banner.",
+      "keyCreatedHint": "Key created successfully. Copy it now, or copy it again later from the API Keys list.",
       "noKeyHint": "Review endpoints and connection methods first. Create an API key to copy complete parameters.",
       "revealError": "Failed to retrieve the API key plaintext. Please try again later.",
       "noAvailableKey": "No available API keys",

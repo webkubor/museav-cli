@@ -282,7 +282,7 @@ export const ModelsCompareModal: React.FC<ModelsCompareModalProps> = ({
               <LuGitCompareArrows size={18} />
             </div>
             <div>
-              <h2 className="text-[14.5px] font-bold text-mg-text-1 m-0 leading-tight">
+              <h2 className="text-sm font-bold text-mg-text-1 m-0 leading-tight">
                 {t('modelsCompare.title')}
               </h2>
               <p className="text-xs text-mg-text-3 m-0 mt-0.5">

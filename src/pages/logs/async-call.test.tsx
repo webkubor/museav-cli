@@ -95,11 +95,12 @@ describe('qa#719 异步调用', () => {
   it.each(asyncMarkers)('任一标记识别异步：%o', (marker) => {
     expect(isAsyncCall(marker)).toBe(true)
     renderTable(makeRow({ ...marker, usage: emptyUsage }))
-    expect(screen.getAllByText('异步任务暂不统计')).toHaveLength(2)
+    // 列表「延迟」列已移除（prd#1094）：表格里「异步任务暂不统计」现只来自 Token 单元格
+    expect(screen.getAllByText('异步任务暂不统计')).toHaveLength(1)
     expect(screen.queryByText('未产生 Token')).toBeNull()
     expect(screen.queryByText(/logs.table.firstTokenLatency/)).toBeNull()
     expect(screen.queryByTitle('logs.table.latencyTooltip')).toBeNull()
-    expect(screen.getByText(/logs.detail.diagnostics.totalDuration/)).toBeTruthy()
+    expect(screen.queryByText(/logs.detail.diagnostics.totalDuration/)).toBeNull()
     expect(screen.getByText(/0.01/)).toBeTruthy()
   })
 
@@ -108,14 +109,16 @@ describe('qa#719 异步调用', () => {
       expect(isAsyncCall(marker)).toBe(false)
       renderTable(makeRow({ ...marker, usage: emptyUsage }))
       expect(screen.getByText('未产生 Token')).toBeTruthy()
-      expect(screen.getByText(/logs.table.firstTokenLatency/)).toBeTruthy()
+      // 列表「延迟」列已移除（prd#1094）：同步空态也不再有首包延迟文案
+      expect(screen.queryByText(/logs.table.firstTokenLatency/)).toBeNull()
     },
   )
 
   it('异步有 Token 时保留实际用量', () => {
     renderTable(makeRow({ call_mode: 'async' }))
     expect(screen.getByText('30')).toBeTruthy()
-    expect(screen.getAllByText('异步任务暂不统计')).toHaveLength(1)
+    // 列表「延迟」列已移除（prd#1094）：有真实 Token 用量时表格里不再有「异步任务暂不统计」文案
+    expect(screen.queryAllByText('异步任务暂不统计')).toHaveLength(0)
   })
 
   it('异步缺少费用/耗时时显示占位，不伪造零值', () => {
@@ -133,6 +136,7 @@ describe('qa#719 异步调用', () => {
     expect(screen.queryByText('logs.detail.timing.firstToken')).toBeNull()
     expect(screen.queryByText('logs.detail.timing.totalResponse')).toBeNull()
     expect(screen.getAllByText('异步任务暂不统计').length).toBeGreaterThanOrEqual(2)
+    // 详情诊断卡不在 prd#1094 范围内（需求截图只圈列表「延迟」列），保留
     expect(screen.getByText('logs.detail.diagnostics.totalDuration')).toBeTruthy()
     expect(screen.getByText(/0.01/)).toBeTruthy()
   })

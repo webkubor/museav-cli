@@ -105,6 +105,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           error && "is-error",
           success && "is-success",
           props.disabled && "opacity-50 cursor-not-allowed pointer-events-none",
+          // 只读态走独立视觉档（prd#1093）：灰底禁用外观，但不套 disabled 的 opacity-50——
+          // 值要保持可读可复制，样式定义见 styles/components.css .modern-input-readonly
+          props.readOnly && !props.disabled && "modern-input-readonly",
           className
         )}
       >

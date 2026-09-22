@@ -188,7 +188,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                 {avatarLetter}
               </AvatarFallback>
             </Avatar>
-            <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-[var(--account-menu-bg-2)] bg-mg-success shadow-sm shadow-[rgba(15,23,42,0.14)]" />
+            <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-[var(--account-menu-bg-2)] bg-mg-success shadow-sm shadow-[rgba(15,23,42,0.14)]" /> {/* allow-raw-color 在线状态点微投影色；同文件 L180/L185 同族 rgba(15,23,42,α) 尚未收敛成 token，无等值可引 */}
           </div>
           <div className="min-w-0 flex-1">
             <div className="truncate text-[15px] font-bold leading-tight text-[var(--account-menu-text-0)]">

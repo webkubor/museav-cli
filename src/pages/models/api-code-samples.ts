@@ -9,7 +9,7 @@
  * 协议单一来源：代码 Tab 从 protocols 派生，无对应协议时不显示空 Tab（§11「协议单一来源」）。
  */
 import { getGatewayDomain } from '@/config/gateway'
-import { sortProtocols } from '@/features/models/model-format'
+import { isZhLang, sortProtocols } from '@/features/models/model-format'
 import type { PublicProtocol } from '@/types'
 
 /**
@@ -316,6 +316,9 @@ export function buildCodeSample(protocol: ApiProtocol, language: ApiCodeLanguage
   // JSON body——跟其余端点（含 native）的 JSON 请求/JSON 响应形状都不一样，单独处理。
   const isAudio = protocol === 'openai_speech'
   const isTranscription = protocol === 'openai_transcriptions'
+  // 示例里的注释也要跟界面语言走：英文站复制到的代码带中文注释，等于把中文
+  // 漏进了对外英文页面（同 shared/modelgo_prd#1067 的那类整块未适配）。
+  const isZh = isZhLang()
 
   switch (language) {
     case 'curl':
@@ -422,7 +425,9 @@ export function buildCodeSample(protocol: ApiProtocol, language: ApiCodeLanguage
           `  body: JSON.stringify(${bodyKeys}),`,
           `});`,
           `const audio = new Uint8Array(await res.arrayBuffer());`,
-          `// 二进制音频数据，按需写入文件或播放`,
+          isZh
+            ? `// 二进制音频数据，按需写入文件或播放`
+            : `// Raw audio bytes — write to a file or play as needed`,
         ].join('\n')
       }
       return [
@@ -498,10 +503,12 @@ export function buildCodeSample(protocol: ApiProtocol, language: ApiCodeLanguage
       // 先用 config 工具一次性写入 ANTHROPIC_BASE_URL / ANTHROPIC_API_KEY，再用
       // --model 指定当前模型启动 Claude Code。
       return [
-        `# 一键写入 Claude Code 配置（@model-go/config）`,
+        isZh
+          ? `# 一键写入 Claude Code 配置（@model-go/config）`
+          : `# Write the Claude Code config in one step (@model-go/config)`,
         `npx @model-go/config -k $MODELGO_API_KEY --only claude`,
         ``,
-        `# 指定当前模型启动`,
+        isZh ? `# 指定当前模型启动` : `# Start Claude Code with this model`,
         `claude --model ${modelId}`,
       ].join('\n')
     default:

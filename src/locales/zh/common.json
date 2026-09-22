@@ -185,6 +185,7 @@
       "stop": "停止生成",
       "send": "发送消息",
       "serviceError": "服务异常，请稍后再试",
+      "requestFailed": "请求失败（{{code}}）",
       "emptyReply": "抱歉，收到空回复，请稍后再试。",
       "sendFailed": "发送失败",
       "stopFailed": "停止会话失败",

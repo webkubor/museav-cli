@@ -185,6 +185,7 @@
       "stop": "Stop generation",
       "send": "Send message",
       "serviceError": "Service error. Please try again later.",
+      "requestFailed": "Request failed ({{code}})",
       "emptyReply": "Sorry, I received an empty response. Please try again.",
       "sendFailed": "Failed to send",
       "stopFailed": "Failed to stop the conversation",

@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
-import { reassembleSSE } from './reassemble-sse'
+import { afterAll, describe, it, expect } from 'vitest'
+import i18n, { loadLocaleNamespaces } from '@/i18n'
+import { formatSSESummary, reassembleSSE } from './reassemble-sse'
 
 /** 把若干 data 行拼成一段 SSE 文本 */
 function sse(...lines: string[]): string {
@@ -69,5 +70,27 @@ describe('reassembleSSE', () => {
     const text = 'data: not-json\n' + sse(JSON.stringify({ choices: [{ delta: { content: 'ok' } }] }))
     const r = reassembleSSE(text)
     expect(r?.content).toBe('ok')
+  })
+})
+
+describe('formatSSESummary — 段标题跟界面语言走（国际站翻译适配 prd#1098）', () => {
+  const text = 'data: ' + JSON.stringify({ choices: [{ delta: { reasoning_content: 'r', content: 'a' } }] }) + '\ndata: [DONE]\n'
+
+  afterAll(async () => { await i18n.changeLanguage('zh') })
+
+  it('英文界面不再打出中文段标题', async () => {
+    await i18n.changeLanguage('en')
+    await loadLocaleNamespaces(['logs'], 'en')
+    const out = formatSSESummary(reassembleSSE(text)!)
+    expect(/[\u4e00-\u9fff]/.test(out), `英文摘要里仍有中文：${out}`).toBe(false)
+    expect(out).toContain('Answer (content)')
+  })
+
+  it('中文界面保持原文案', async () => {
+    await i18n.changeLanguage('zh')
+    await loadLocaleNamespaces(['logs'], 'zh')
+    const out = formatSSESummary(reassembleSSE(text)!)
+    expect(out).toContain('【回答 content】')
+    expect(out).toContain('合并 1 个 chunk')
   })
 })

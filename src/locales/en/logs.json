@@ -204,6 +204,12 @@
       "payloadEmpty": "No raw payload",
       "payloadTruncated": "Truncated",
       "payloadCopied": "Payload copied",
+      "sseSummary": {
+        "reasoning": "Reasoning (reasoning_content)",
+        "content": "Answer (content)",
+        "empty": "(empty)",
+        "merged": "Merged {{n}} chunks"
+      },
       "taskArtifact": {
         "title": "Task artifact",
         "taskStatus": "Task status",

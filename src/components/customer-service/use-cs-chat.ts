@@ -147,7 +147,8 @@ export function useCsChat(options?: CsChatOptions) {
         // 非 SSE 降级：普通业务信封 {code, msg, data:{answer, conversation_id}}
         const json = await response.json()
         const bizCode: number = json?.code ?? 0
-        if (bizCode !== 0) throw new Error(json?.msg ?? `请求失败（${bizCode}）`)
+        // 后端 msg 缺失时的兜底文案也要跟界面语言走：原先固定中文，英文站会弹出中文报错。
+        if (bizCode !== 0) throw new Error(json?.msg ?? t('common.customerService.requestFailed', { code: bizCode }))
         const answer: string = json?.data?.answer ?? ''
         const cid: string = json?.data?.conversation_id ?? ''
         if (cid) {

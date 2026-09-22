@@ -162,26 +162,25 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
               readOnly
               aria-label={t('account.info.emailLabel')}
             />
-            {profile.email && (
+            {profile.email ? (
               <Button variant="outline" className="shrink-0 rounded-sm px-4 font-semibold" onClick={() => openRebind('email')}>
                 {t('account.info.rebind.changeEmail')}
               </Button>
-            )}
-          </div>
-          {profile.email ? (
-            <span className="block text-xs leading-relaxed text-mg-text-3">{t('account.info.emailHint')}</span>
-          ) : (
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs leading-relaxed text-mg-text-3">{t('account.info.emailUnboundHint')}</span>
-              <button
-                type="button"
+            ) : (
+              /* 未绑定态的绑定入口按原型是按钮（与「更换手机号」同款、同在框右侧），
+                 不是原来那个挤在 hint 右下角的文字链（prd#1093 需求 #5） */
+              <Button
+                variant="outline"
+                className="shrink-0 rounded-sm px-4 font-semibold"
                 onClick={() => { setEmailInput(''); setEmailCode(''); setEmailBindOpen(true); trackEvent('account.email:bind_open') }}
-                className="shrink-0 text-xs font-bold text-brand-base hover:text-brand-base/80 bg-transparent border-none p-0 cursor-pointer transition-colors"
               >
                 {t('account.info.bindEmail')}
-              </button>
-            </div>
-          )}
+              </Button>
+            )}
+          </div>
+          {/* hint 两态统一走 emailHint：原型未绑定态的说明也是「用于接收账号通知与找回。」，
+             而不是把状态（暂未绑定）当说明——状态已由框内 placeholder「未绑定」表达 */}
+          <span className="block text-xs leading-relaxed text-mg-text-3">{t('account.info.emailHint')}</span>
 
           {/* modal={false} + 拦外部交互：人机验证浮层 portal 在 Dialog 之外，见 ContactRebindDialog 同款注释 */}
           <Modal

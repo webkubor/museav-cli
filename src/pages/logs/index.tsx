@@ -650,21 +650,6 @@ export default function LogsPage() {
               ]}
             />
           </FilterField>
-          <FilterField label="API Key">
-            <Combobox
-              value={apiKeyFilter}
-              disabled={!apiKeyWorkspaceId}
-              onChange={(value) => { setApiKeyFilter(value); resetPagination(); trackFilter('api_key') }}
-              options={[
-                { value: 'all', label: apiKeyWorkspaceId ? t('logs.filter.allApiKeys') : t('logs.filter.selectWorkspaceFirst') },
-                ...(apiKeysData?.items.map((key) => ({
-                  value: key.api_key_id,
-                  label: `${key.name} (${key.masked})`,
-                  keywords: key.masked,
-                })) ?? []),
-              ]}
-            />
-          </FilterField>
           <Button
             variant="outline"
             className="justify-center"
@@ -676,7 +661,7 @@ export default function LogsPage() {
         </div>
 
         {showMoreFilters && (
-          <div className="grid grid-cols-1 gap-3 border-t border-mg-border pt-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(180px,1fr)_minmax(180px,1fr)_minmax(260px,1.2fr)] lg:items-end">
+          <div className="grid grid-cols-1 gap-3 border-t border-mg-border pt-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(160px,1fr)_minmax(160px,1fr)_minmax(160px,1fr)_minmax(240px,1.1fr)] lg:items-end">
             <FilterField label={t('logs.filter.requestIdSearch')}>
               <Input
                 value={searchValue}
@@ -701,6 +686,22 @@ export default function LogsPage() {
                 />
               </FilterField>
             )}
+            {/* API Key 筛选移入「更多」，位置在成员与护栏之间（prd#1094） */}
+            <FilterField label="API Key">
+              <Combobox
+                value={apiKeyFilter}
+                disabled={!apiKeyWorkspaceId}
+                onChange={(value) => { setApiKeyFilter(value); resetPagination(); trackFilter('api_key') }}
+                options={[
+                  { value: 'all', label: apiKeyWorkspaceId ? t('logs.filter.allApiKeys') : t('logs.filter.selectWorkspaceFirst') },
+                  ...(apiKeysData?.items.map((key) => ({
+                    value: key.api_key_id,
+                    label: `${key.name} (${key.masked})`,
+                    keywords: key.masked,
+                  })) ?? []),
+                ]}
+              />
+            </FilterField>
             <FilterField label={t('logs.filter.guardrailLabel')}>
               <Select value={guardrailFilter} onChange={(value) => { setGuardrailFilter(value as LogGuardrailFilter); resetPagination(); trackFilter('guardrail', value) }}>
                 {guardrailOptions.map((option) => (

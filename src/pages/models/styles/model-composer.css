@@ -1,4 +1,11 @@
 /* ── 模型输入器 ─────────────────────────────────────────────────────── */
+/* ── 本页 palette（1.0.7 主题色 100% token 化收口）：
+   无全局 token 对应的页面色；值即变量名（可读自证），只在本文件内使用。 ── */
+:root {
+  --mcomp-0f172a-a6: rgba(15,23,42,0.06);
+  --mcomp-k-a8: rgba(0,0,0,0.08);
+}
+
 .models-experience-composer-wrap {
   margin: 0 18px 16px 18px;
 }
@@ -9,7 +16,7 @@
   border: 1px solid color-mix(in srgb, var(--brand-base) 42%, var(--mg-border));
   border-radius: var(--mg-radius-sm);
   background: color-mix(in srgb, var(--mg-bg-0-solid) 92%, transparent);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 16px 40px var(--mcomp-k-a8);
 }
 
 .models-experience-composer textarea {
@@ -285,7 +292,7 @@
   background-color: var(--mg-surface-3) !important;
   border: 1px solid var(--mg-border) !important;
   border-radius: var(--radius-lg) !important;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06) !important;
+  box-shadow: 0 10px 30px var(--mcomp-0f172a-a6) !important;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 

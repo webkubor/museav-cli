@@ -123,11 +123,7 @@ export function WorkspaceSwitcher({ collapsed = false }: WorkspaceSwitcherProps)
               >
                 {ws.name}
               </span>
-              {ws.is_default && (
-                <span className="text-xs px-1.5 py-0.5 rounded-sm bg-mg-fill-1 text-mg-text-3 font-bold tracking-wide uppercase shrink-0 mx-1">
-                  {t('header.default')}
-                </span>
-              )}
+              {/* DEFAULT 徽标已移除（prd#1097）：与「空间管理」页新增的默认空间开关概念冲突 */}
               {ws.workspace_id === activeWorkspaceId && (
                 <LuCheck size={13} className="ml-1 text-brand-base shrink-0" />
               )}

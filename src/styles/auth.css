@@ -508,7 +508,7 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
   margin: -2px 0 0;
   text-align: center;
   color: var(--mg-text-3);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1.7;
 }
@@ -604,9 +604,10 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
 }
 
 /* ── 🔒 密码输入圆点高级视觉打磨 ── */
-/* 密文状态下，将圆点微调到饱满精致的 14.5px，拉开轻微的字间距 */
+/* 密文状态下，圆点走在体系刻度上的 14px（原 14.5px 属偏离刻度的任意值），
+   字间距由 letter-spacing 负责拉开 */
 .auth-form-container input[type="password"] {
-  font-size: 14.5px !important;
+  font-size: 14px !important;
   letter-spacing: 0.05em !important;
 }
 

@@ -2,6 +2,13 @@
    收起态：窄图标轨；展开态：248px 内联侧栏。宽度变化用 transition 做平滑过渡，
    由父容器（工作台）负责把侧栏放进 flex/grid 布局并让主区域重新占满剩余空间。 */
 
+/* ── 本页 palette（1.0.7 主题色 100% token 化收口）：
+   无全局 token 对应的页面色；值即变量名（可读自证），只在本文件内使用。 ── */
+:root {
+  --hss-0f172a-a10: rgba(15,23,42,0.1);
+  --hss-k-a32: rgba(0,0,0,0.32);
+}
+
 .history-sidebar-rail,
 .history-sidebar-panel {
   display: flex;
@@ -161,7 +168,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--mg-text-1);
 }
@@ -169,7 +176,7 @@
 .history-sidebar-item-name-input {
   min-width: 0;
   flex: 1;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--mg-text-1);
   background: var(--mg-bg-0);
@@ -274,7 +281,7 @@
     position: fixed;
     inset: 0;
     z-index: 39;
-    background: rgba(0, 0, 0, 0.32);
+    background: var(--hss-k-a32);
   }
 
   .history-sidebar-panel {
@@ -384,7 +391,7 @@
      裁剪约束，超出侧栏右缘的极端长名会被裁，常见模型名在 248px 内放得下 */
   white-space: nowrap;
   text-align: left;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 8px 20px var(--hss-0f172a-a10);
   opacity: 0;
   transition: opacity 0.15s ease;
 }

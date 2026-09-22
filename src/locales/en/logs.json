@@ -57,7 +57,7 @@
       "selectWorkspaceFirst": "Pick one in the Workspace filter first",
       "more": "More filters",
       "requestIdSearch": "Request ID exact search",
-      "searchPlaceholder": "Enter Request ID, model, error summary, or member",
+      "searchPlaceholder": "Enter a Request ID to search",
       "member": "Member",
       "allMembers": "All members",
       "guardrailLabel": "Guardrail",
@@ -204,6 +204,12 @@
       "payloadEmpty": "No raw payload",
       "payloadTruncated": "Truncated",
       "payloadCopied": "Payload copied",
+      "sseSummary": {
+        "reasoning": "Reasoning (reasoning_content)",
+        "content": "Answer (content)",
+        "empty": "(empty)",
+        "merged": "Merged {{n}} chunks"
+      },
       "taskArtifact": {
         "title": "Task artifact",
         "taskStatus": "Task status",

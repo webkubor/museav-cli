@@ -83,7 +83,7 @@ export function AvatarUpload({
           overflow: 'hidden', cursor: disabled ? 'default' : loading ? 'wait' : 'pointer', flexShrink: 0,
           pointerEvents: disabled ? 'none' : undefined,
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 0 0 3px var(--brand-glow), 0 4px 10px rgba(0,0,0,0.06)',
+          boxShadow: '0 0 0 3px var(--brand-glow), 0 4px 10px rgba(0,0,0,0.06)', // allow-raw-color 柔和投影第二段：固定黑 6%，无阴影色分量 token
           backgroundColor: src ? 'var(--mg-fill-0)' : 'var(--mg-primary)',
           border: hover ? '2px solid var(--mg-primary)' : '2px solid transparent',
           transition: 'border-color 0.15s',
@@ -92,19 +92,19 @@ export function AvatarUpload({
         {src ? (
           <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         ) : (
-          <span style={{ color: '#fff', fontSize: size * 0.38, fontWeight: 700 }}>{fallback}</span>
+          <span style={{ color: '#fff', /* allow-raw-color 头像底字白：压在 --mg-primary（品牌色）上的固定白，无 on-brand 文字 token */ fontSize: size * 0.38, fontWeight: 700 }}>{fallback}</span>
         )}
         {(hover || loading) && (
           <div style={{
-            position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)',
+            position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', // allow-raw-color hover 遮罩 scrim：固定黑 45%，--mg-overlay 值不同（浅色藏蓝 0.5/深色 55%）不 1:1
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
           }}>
             {loading ? (
-              <div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+              <div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', /* allow-raw-color loading 白色转圈：黑遮罩上的固定白（bg-0-rgb 暗色变深灰会破可见性） */ borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
             ) : (
-              <LuCamera size={size * 0.22} color="#fff" />
+              <LuCamera size={size * 0.22} color="#fff" /> /* allow-raw-color 相机图标白：黑遮罩上的固定白，无语义 token */
             )}
-            <span style={{ fontSize: 10, color: '#fff', fontWeight: 600 }}>
+            <span style={{ fontSize: 10, color: '#fff', /* allow-raw-color 遮罩操作文案白：黑遮罩上的固定白 */ fontWeight: 600 }}>
               {loading ? t('common.loading') : t('account.info.avatarChange')}
             </span>
           </div>
@@ -179,7 +179,7 @@ function CropModal({
     // 圆形边框
     ctx.beginPath()
     ctx.arc(CANVAS_SIZE / 2, CANVAS_SIZE / 2, CANVAS_SIZE / 2 - 1, 0, Math.PI * 2)
-    ctx.strokeStyle = 'rgba(255,255,255,0.3)'
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)' // allow-raw-color canvas 裁剪圈描边：压在用户图片上的固定白（不随主题），无语义 token
     ctx.lineWidth = 2
     ctx.stroke()
   }, [scale, offset])

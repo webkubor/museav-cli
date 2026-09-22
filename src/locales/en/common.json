@@ -162,6 +162,8 @@
         "sat": "Sat"
       },
       "monthLabel": "{{month}}/{{year}}",
+      "prevMonth": "Previous month",
+      "nextMonth": "Next month",
       "presetsTitle": "Common ranges",
       "customLabel": "Custom date range",
       "deadline": "Until",
@@ -171,6 +173,13 @@
       "pending": "Pending",
       "apply": "Apply"
     },
+    "dateTimePicker": {
+      "placeholder": "Select date and time",
+      "time": "Time",
+      "hour": "Hour",
+      "minute": "Minute",
+      "apply": "Confirm"
+    },
     "customerService": {
       "thinking": "Thinking...",
       "todayAt": "Today {{time}}",
@@ -179,7 +188,7 @@
       "online": "Online",
       "connecting": "Connecting",
       "offline": "Offline",
-      "empty": "How can I help you today?",
+      "empty": "How can I help you?",
       "placeholderLoading": "Thinking...",
       "placeholder": "Type a message. Enter to send",
       "stop": "Stop generation",
@@ -190,30 +199,21 @@
       "stopFailed": "Failed to stop the conversation",
       "stopped": "Generation stopped.",
       "feedback": {
-        "entry": "Report an issue",
+        "entry": "Feedback",
         "title": "Report an issue",
         "subtitle": "Please give as much detail as you can. The current page context is recorded with your report.",
         "required": "Required",
         "optional": "Optional",
-        "issueTypeLabel": "Issue type",
-        "issueTypePlaceholder": "Select an issue type",
-        "issueTypes": {
-          "functionality": "Feature problem",
-          "apiCall": "API call problem",
-          "billing": "Billing problem",
-          "suggestion": "Product suggestion",
-          "other": "Other"
-        },
         "descriptionLabel": "Description",
-        "descriptionPlaceholder": "Describe what happened and what you expected",
+        "descriptionPlaceholder": "Describe the issue and what you expected",
         "occurredAtLabel": "Time of occurrence",
         "requestIdLabel": "Request ID",
-        "requestIdPlaceholder": "Links the report to your call logs. Optional",
+        "requestIdPlaceholder": "Used to trace related logs",
         "attachmentLabel": "Screenshot or attachment",
         "attachmentPick": "Choose a file",
         "attachmentClear": "Remove selected file",
         "cancel": "Cancel",
-        "submit": "Submit",
+        "submit": "Submit feedback",
         "errors": {
           "issueTypeRequired": "Please select an issue type",
           "descriptionRequired": "Please describe the problem"
@@ -228,7 +228,24 @@
         },
         "attachmentUploading": "Uploading...",
         "attachmentFailed": "Attachment upload failed. Please try again.",
-        "submitFailed": "Submission failed. Please try again later."
+        "submitFailed": "Submission failed. Please try again later.",
+        "hint": "The current page context will be attached to your feedback",
+        "category": "Issue type",
+        "categoryPlaceholder": "Select an issue type",
+        "categoryRequired": "Please select an issue type",
+        "categoryOptions": {
+          "bug": "Bug",
+          "api_issue": "API issue",
+          "billing": "Billing issue",
+          "suggestion": "Suggestion",
+          "other": "Other"
+        },
+        "description": "Description",
+        "descriptionRequired": "Please describe the issue",
+        "occurredAt": "When it happened (optional)",
+        "requestId": "Request ID (optional)",
+        "attachment": "Screenshot or attachment (optional)",
+        "attachmentPlaceholder": "Choose a file"
       },
       "quickQuestionsTitle": "Common questions",
       "quickQuestions": {
@@ -247,11 +264,12 @@
         "thanks": "Thanks for the feedback"
       },
       "handoff": {
-        "queueing": "In queue",
+        "entry": "Human agent",
+        "queueing": "In queue · {{position}} ahead",
         "queueingWithPosition": "In queue · {{count}} ahead of you",
         "connecting": "Connecting to an agent",
-        "connected": "Connected to an agent",
-        "cancelQueue": "Leave queue",
+        "connected": "{{name}} · #{{no}}",
+        "cancelQueue": "Cancel queue",
         "cancelConnect": "Cancel transfer",
         "end": "End session",
         "queuedNotice": "Transferring you to an agent. {{count}} ahead of you.",
@@ -263,7 +281,20 @@
         "sendFailed": "Message failed to send. Please try again.",
         "composerConnecting": "Connecting to an agent…",
         "composerLive": "Describe what you need help with",
-        "agentInitial": "A"
+        "agentInitial": "A",
+        "cancelConnecting": "Cancel handoff",
+        "endService": "End service",
+        "humanPlaceholder": "Type your question for the agent",
+        "rateService": "Rate this human service",
+        "starAria": "Rate {{star}} stars",
+        "submitRating": "Submit rating",
+        "skipRating": "Skip",
+        "ratingSubmitted": "Submitted {{stars}}-star rating, thanks for your feedback",
+        "ratingSkipped": "No rating this time",
+        "ratingAria": "Agent rating",
+        "ratingSubmittedAria": "Agent rating submitted",
+        "ratingSkippedAria": "Agent rating skipped",
+        "starsAria": "Star rating"
       },
       "humanRating": {
         "title": "Rate this agent session",
@@ -281,7 +312,8 @@
         "ariaLabel": "Async ticket {{id}}",
         "idLabel": "Ticket number",
         "etaLabel": "Expected contact",
-        "contact": "An agent will reach out using the contact details on your account. Watch for the follow-up."
+        "contact": "An agent will reach out using the contact details on your account. Watch for the follow-up.",
+        "reason": "We are experiencing high volume and could not connect you to an agent."
       },
       "records": {
         "title": "Service records",
@@ -341,6 +373,71 @@
         "attachmentAria": "Add ticket attachment",
         "downloadAttachment": "Download attachment {{name}}",
         "downloadFailed": "Attachment download failed. Please try again later."
+      },
+      "like": "Helpful",
+      "dislike": "Not helpful",
+      "handoffFailed": "Failed to connect to a human agent. Please try again later.",
+      "handoffConnected": "An agent has joined. You can start chatting.",
+      "handoffEnded": "The session has ended. You're back with the assistant.",
+      "handoffAsync": "The queue is taking longer than usual. Your request has moved to async processing — check service records for updates.",
+      "handoffQueueCancelled": "Queue cancelled",
+      "handoffConnectCancelled": "Handoff cancelled",
+      "feedbackFailed": "Failed to submit feedback. Please try again later.",
+      "reopenSuccess": "Ticket reopened",
+      "faq": {
+        "apiKey": "How to create an API Key",
+        "callModel": "How to call the model API",
+        "chooseModel": "How to choose the right model",
+        "billing": "How to check usage and billing"
+      },
+      "answerStatus": {
+        "intent": "Please add a workspace, time range, or Request ID so I can continue.",
+        "needsLogin": "Sign in to query your account data",
+        "insufficientEvidence": "Not confirmed yet — you can submit feedback or ask for a human agent",
+        "degraded": "Evidence is limited; treat this as a rough guide",
+        "outOfScope": "I can currently help only with ModelGo-related questions.",
+        "suggestHandoff": "You can connect with a human agent if this doesn't help",
+        "handoffCta": "Connect to an agent"
+      },
+      "tickets": {
+        "title": "Service records",
+        "back": "Back",
+        "empty": "No service records yet",
+        "loading": "Loading...",
+        "loadMore": "Load more",
+        "reopen": "Reopen",
+        "searchPlaceholder": "Search service records",
+        "filters": {
+          "all": "All",
+          "processing": "Processing",
+          "ended": "Ended"
+        },
+        "types": {
+          "feedback": "Feedback",
+          "handoff": "Agent service"
+        },
+        "unread": "New",
+        "detail": {
+          "typeLabel": "Type",
+          "idLabel": "No.",
+          "createdLabel": "Submitted",
+          "updatedLabel": "Updated",
+          "agentLabel": "Agent"
+        }
+      },
+      "loginRequired": {
+        "handoff": "Sign in to reach a human agent — you can transfer right after signing in.",
+        "tickets": "Sign in to view your service records"
+      },
+      "sensitiveHit": "A possible key or token was detected — it will not be logged or passed to an agent.",
+      "orb": {
+        "idle": "Here to help",
+        "thinking": "Reading your question",
+        "working": "Working on it",
+        "asking": "Waiting for more details",
+        "done": "Reply delivered",
+        "error": "Couldn't finish",
+        "open": "Open assistant"
       }
     },
     "referralInviteCard": {

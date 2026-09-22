@@ -53,11 +53,11 @@ export function SidebarPromoCarousel({ collapsed }: { collapsed: boolean }) {
               {t(badgeKey)}
             </span>
           )}
-          <span className="truncate text-[13.5px] font-bold leading-tight text-white" title={title}>
+          <span className="truncate text-sm font-bold leading-tight text-white" title={title}>
             {title}
           </span>
           {descriptionKey && (
-            <span className="truncate text-[11.5px] leading-snug text-white/75">
+            <span className="truncate text-xs leading-snug text-white/75">
               {t(descriptionKey)}
             </span>
           )}

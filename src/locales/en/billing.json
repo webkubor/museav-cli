@@ -230,6 +230,12 @@
       "tierTableHint": "Per-invitee spend determines tier",
       "tierSpendThreshold": "Spend ≥ {{amount}}",
       "tierCurrent": "Current",
+      "tierName": {
+        "standard": "Standard Partner",
+        "growth": "Growth Partner",
+        "core": "Core Partner",
+        "strategic": "Strategic Partner"
+      },
       "rulesTitle": "How commission works",
       "ruleItem1": "You earn commission in real time on each referral's eligible paid usage. (Refunded charges are reversed, and bonus or promo credits do not qualify.)",
       "ruleItem2": "Earnings are credited to your Reward Balance, which is used before your Main Balance for model usage. Rewards cannot currently be withdrawn.",

@@ -132,6 +132,7 @@ export function useSupport() {
   }, [mode])
   const [messages, setMessages] = useState<ChatItem[]>([])
   const [isAsking, setIsAsking] = useState(false)
+  const handoffPending = useRef(false)
   const [isCancellingHandoff, setIsCancellingHandoff] = useState(false)
   const [ticketDetail, setTicketDetail] = useState<SupportTicketDetail | null>(null)
 
@@ -211,6 +212,7 @@ export function useSupport() {
       appliedAsyncTicketIds.current = new Set()
       suppressedHandoffTicketIds.current = new Set()
       cancellingHandoffTicketId.current = null
+      handoffPending.current = false
       // 切账号必须换新会话：否则上一账号持久化的 session_id 会带到新账号，
       // 让后端把两人的多轮上下文串到一起（#1057 要求会话稳定，但不能跨账号）。
       clearSupportSessionId()
@@ -224,7 +226,7 @@ export function useSupport() {
 
   const startHandoff = useCallback(async () => {
     // 「排队中不允许重复发起转接」由状态机判定（PRD §8.6），不再自己比 serviceMode
-    if (!canStartHandoff(mode)) return
+    if (!canStartHandoff(mode) || handoffPending.current) return
     // 未登录直接引导登录：转人工是登录态能力，发出去只会拿到 40101，
     // 再被 catch 成「转人工失败，请稍后重试」——用户会一直重试，而重试
     // 永远失败。同理这里也不能让 40101 走到 request.ts 的全局分支，
@@ -241,6 +243,7 @@ export function useSupport() {
       })
       return
     }
+    handoffPending.current = true
     trackEvent('support_handoff_start')
     try {
       const resp = await requestHandoff({
@@ -266,6 +269,8 @@ export function useSupport() {
       appToast.requestError(error, t('common.customerService.handoffFailed'))
       go({ kind: 'chat' })
       appendMessage({ id: crypto.randomUUID(), role: 'system', content: t('common.customerService.handoffFailed'), createdAt: Date.now() })
+    } finally {
+      handoffPending.current = false
     }
   }, [mode, go, appendMessage, t, account, isLoading, messages])
 
@@ -303,6 +308,7 @@ export function useSupport() {
         sensitiveHit: resp.sensitive?.Hit === true,
         rating: null,
       })
+      if (resp.intent === 'human_handoff') await startHandoff()
     } catch (error) {
       appToast.requestError(error, t('common.customerService.sendFailed'))
       appendMessage({
@@ -314,8 +320,7 @@ export function useSupport() {
     } finally {
       setIsAsking(false)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAsking, mode, appendMessage, t])
+  }, [isAsking, mode, appendMessage, startHandoff, t])
 
   const rateMessageAnswer = useCallback(async (messageId: string, rating: SupportAnswerRating) => {
     const target = messages.find((m) => m.id === messageId)

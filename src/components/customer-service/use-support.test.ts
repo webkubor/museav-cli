@@ -6,10 +6,12 @@
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { requestHandoffMock, cancelHandoffMock, requestErrorMock } = vi.hoisted(() => ({
+const { askSupportMock, requestHandoffMock, cancelHandoffMock, requestErrorMock, authState } = vi.hoisted(() => ({
+  askSupportMock: vi.fn(),
   requestHandoffMock: vi.fn(),
   cancelHandoffMock: vi.fn(),
   requestErrorMock: vi.fn(),
+  authState: { account: null as null | { account_id: string }, isLoading: true },
 }))
 
 vi.mock('react-i18next', () => ({
@@ -17,10 +19,10 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }))
 vi.mock('@/store/auth', () => ({
-  useAuthStore: (selector: (state: { account: null; isLoading: boolean }) => unknown) => selector({ account: null, isLoading: true }),
+  useAuthStore: (selector: (state: typeof authState) => unknown) => selector(authState),
 }))
 vi.mock('@/services/support', () => ({
-  askSupport: vi.fn(),
+  askSupport: askSupportMock,
   cancelHandoff: cancelHandoffMock,
   endHandoff: vi.fn(),
   getSupportTicket: vi.fn(),
@@ -41,6 +43,9 @@ import { useSupport } from './use-support'
 
 describe('useSupport · 取消人工排队', () => {
   beforeEach(() => {
+    authState.account = null
+    authState.isLoading = true
+    askSupportMock.mockReset()
     requestHandoffMock.mockReset().mockResolvedValue({
       service_mode: 'live',
       ticket_id: 'ticket-1',
@@ -82,6 +87,82 @@ describe('useSupport · 取消人工排队', () => {
       await firstCancel
     })
 
+    expect(result.current.mode.kind).toBe('chat')
+  })
+})
+
+describe('useSupport · agent-detected human handoff', () => {
+  beforeEach(() => {
+    authState.account = { account_id: 'account-1' }
+    authState.isLoading = false
+    askSupportMock.mockReset()
+    requestHandoffMock.mockReset().mockResolvedValue({ service_mode: 'live', ticket_id: 'ticket-1', status: 'pending' })
+    requestErrorMock.mockReset()
+  })
+
+  it('hands off once when the answer explicitly identifies human_handoff, preserving the conversation', async () => {
+    askSupportMock.mockResolvedValue({ answer: '正在为您转接', answer_status: 'intent', intent: 'human_handoff', suggest_handoff: true })
+    const { result } = renderHook(() => useSupport())
+    await act(async () => result.current.ask('帮我接个人工'))
+
+    expect(askSupportMock).toHaveBeenCalledOnce()
+    expect(requestHandoffMock).toHaveBeenCalledOnce()
+    expect(result.current.mode.kind).toBe('queuing')
+    expect(result.current.messages.map((m) => m.role)).toEqual(['user', 'assistant', 'system'])
+  })
+
+  it('does not escalate a generic handoff suggestion or feedback intent', async () => {
+    askSupportMock.mockResolvedValueOnce({ answer: '可转人工', answer_status: 'suggest_handoff', intent: 'general', suggest_handoff: true })
+      .mockResolvedValueOnce({ answer: '请反馈', answer_status: 'intent', intent: 'feedback', suggest_handoff: true })
+    const { result } = renderHook(() => useSupport())
+    await act(async () => result.current.ask('这个问题能解决吗'))
+    await act(async () => result.current.ask('我想反馈问题'))
+    expect(requestHandoffMock).not.toHaveBeenCalled()
+    expect(result.current.mode.kind).toBe('chat')
+  })
+
+  it('gates anonymous explicit handoff without creating a ticket', async () => {
+    authState.account = null
+    askSupportMock.mockResolvedValue({ answer: '请登录', answer_status: 'needs_login', intent: 'human_handoff' })
+    const { result } = renderHook(() => useSupport())
+    await act(async () => result.current.ask('我想联系真人'))
+    expect(requestHandoffMock).not.toHaveBeenCalled()
+    expect(result.current.messages.at(-1)?.content).toBe('common.customerService.loginRequired.handoff')
+  })
+
+  it('does not start a second handoff while the first request is pending', async () => {
+    askSupportMock.mockResolvedValue({ answer: '马上转接', answer_status: 'intent', intent: 'human_handoff' })
+    let release: (value: unknown) => void = () => {}
+    requestHandoffMock.mockImplementation(() => new Promise((resolve) => { release = resolve }))
+    const { result } = renderHook(() => useSupport())
+    await act(async () => {
+      const first = result.current.ask('帮我找真人客服')
+      await Promise.resolve()
+      await result.current.ask('再问一次')
+      expect(requestHandoffMock).toHaveBeenCalledOnce()
+      release({ service_mode: 'live', ticket_id: 'ticket-1', status: 'pending' })
+      await first
+    })
+    expect(result.current.mode.kind).toBe('queuing')
+  })
+
+  it('uses the existing failure path and allows retry', async () => {
+    askSupportMock.mockResolvedValue({ answer: '正在转接', answer_status: 'intent', intent: 'human_handoff' })
+    requestHandoffMock.mockRejectedValueOnce(new Error('handoff failed'))
+    const { result } = renderHook(() => useSupport())
+    await act(async () => result.current.ask('真人帮忙'))
+    expect(requestErrorMock).toHaveBeenCalledOnce()
+    expect(result.current.mode.kind).toBe('chat')
+    await act(async () => result.current.ask('还是需要真人'))
+    expect(requestHandoffMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('uses the existing async-ticket mode mapping', async () => {
+    askSupportMock.mockResolvedValue({ answer: '转接中', answer_status: 'intent', intent: 'human_handoff' })
+    requestHandoffMock.mockResolvedValue({ service_mode: 'async', ticket_id: 'ticket-2' })
+    const { result } = renderHook(() => useSupport())
+    await act(async () => result.current.ask('需要真人帮忙'))
+    expect(requestHandoffMock).toHaveBeenCalledOnce()
     expect(result.current.mode.kind).toBe('chat')
   })
 })

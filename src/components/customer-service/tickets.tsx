@@ -117,9 +117,9 @@ export function TicketsList({ onSelect, onClose }: TicketsListProps) {
                 <Badge variant="outline" size="sm">{ticketStatusTextOf(item)}</Badge>
               </div>
               {item.title && <p className="m-0 mt-1 mg-text-caption font-medium text-mg-text-1 line-clamp-2" title={item.title}>{item.title}</p>}
-              {item.latest_message_preview && (
-                <p className="m-0 mt-1 mg-text-caption text-mg-text-3 line-clamp-2" title={item.latest_message_preview}>
-                  {item.latest_message_preview}
+              {(item.latest_visible_message || item.latest_message_preview) && (
+                <p className="m-0 mt-1 mg-text-caption text-mg-text-3 line-clamp-2" title={item.latest_visible_message || item.latest_message_preview}>
+                  {item.latest_visible_message || item.latest_message_preview}
                 </p>
               )}
               <div className="mt-1 flex items-center justify-between gap-2">

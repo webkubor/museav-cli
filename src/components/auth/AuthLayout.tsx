@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import { useSiteLogo } from '@/config/brand-assets'
+import { useLangStore } from '@/store/use-brand-store'
 import { cn } from '@/lib/utils'
+import { AuthMarketSwitcher } from '@/components/auth/AuthMarketSwitcher'
 
 interface AuthLayoutProps {
   /** 鉴权卡片大标题 */
@@ -11,14 +13,28 @@ interface AuthLayoutProps {
   footer?: ReactNode
   /** 子页面表单结构 */
   children: ReactNode
+  /** 桌面端可选的辅助展示区 */
+  aside?: ReactNode
   /** 是否使用宽版卡片布局 */
   wide?: boolean
+  /** 登录/注册页展示中国站与 Global 的站点切换 */
+  showMarketSwitcher?: boolean
 }
 
 /**
  * 鉴权公共高品质科技网格氛围骨架 (Tailwind 语义抽离架构)
  */
-export function AuthLayout({ title, subtitle, footer, children, wide = false }: AuthLayoutProps) {
+export function AuthLayout({
+  title,
+  subtitle,
+  footer,
+  children,
+  aside,
+  wide = false,
+  showMarketSwitcher = false,
+}: AuthLayoutProps) {
+  // market 只给站点切换器用；氛围球配色已改走 brand token（release/v1.0.7 的 #1061），不再按市场写死色值。
+  const market = useLangStore((s) => s.market)
   const siteLogo = useSiteLogo()
 
   // 双氛围球：品牌 token 的 rgb 分量（--brand-base-rgb 随市场 × 明暗四象限自动切换）。
@@ -28,6 +44,8 @@ export function AuthLayout({ title, subtitle, footer, children, wide = false }: 
 
   return (
     <div className="auth-layout-container">
+      {showMarketSwitcher && <AuthMarketSwitcher market={market} />}
+
       {/* 🔮 氛围球一（left-bottom） */}
       <div
         className="auth-blur-orb-primary"
@@ -45,8 +63,12 @@ export function AuthLayout({ title, subtitle, footer, children, wide = false }: 
       />
 
       {/* 核心内容包裹 */}
-      <div className={cn("auth-layout-content", wide && "max-w-none md:!max-w-[640px]")}>
-        <div className="glass-auth-card">
+      <div className={cn(
+        'auth-layout-content',
+        aside && 'auth-layout-content-with-aside',
+        wide && 'max-w-none md:!max-w-[640px]',
+      )}>
+        <div className="glass-auth-card auth-flow-surface">
           {/* 顶部 Logo 与文案 */}
           <div className="auth-brand-header">
             <img
@@ -73,6 +95,8 @@ export function AuthLayout({ title, subtitle, footer, children, wide = false }: 
             </div>
           )}
         </div>
+
+        {aside && <div className="auth-layout-aside">{aside}</div>}
       </div>
     </div>
   )

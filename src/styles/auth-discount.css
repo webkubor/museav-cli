@@ -1,0 +1,220 @@
+/* 海外登录页模型折扣展示：宽屏并排，窄屏不挤压核心登录流程。 */
+.auth-layout-content-with-aside {
+  display: grid;
+  grid-template-columns: minmax(360px, 400px) 2px minmax(440px, 520px);
+  align-items: stretch;
+  column-gap: 64px;
+  max-width: 1050px;
+}
+
+@media (min-width: 1041px) {
+  /* 48px 网格瓦片以中心定位后左缘偏 24px；再左移 36px，
+     让竖向网格线落在双栏分隔线的 center - 60px 位置。 */
+  .auth-layout-container:has(.auth-layout-content-with-aside) {
+    background-position:
+      0 0,
+      0 0,
+      0 0,
+      0 0,
+      0 0,
+      calc(50% - 36px) 0;
+  }
+}
+
+@media (min-width: 1200px) {
+  /* 双栏组合整体右移一格；48px 的整周期位移仍与背景网格保持对齐。 */
+  .auth-layout-content-with-aside {
+    transform: translateX(48px);
+  }
+}
+
+.auth-layout-content-with-aside::before {
+  width: 2px;
+  height: calc(100% - 48px);
+  min-height: 0;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  border-radius: var(--radius-full);
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--brand-light) 68%, var(--mg-text-2)) 12%,
+    color-mix(in srgb, var(--brand-light) 68%, var(--mg-text-2)) 88%,
+    transparent
+  );
+  content: '';
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--brand-base) 24%, transparent));
+  opacity: 0.86;
+}
+
+.auth-layout-content-with-aside > .glass-auth-card {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.auth-layout-aside {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.auth-discount-showcase {
+  position: absolute;
+  inset: 0;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--mg-text-1);
+  background: var(--mg-bg-0-solid);
+  border: 1px solid var(--mg-border);
+  border-radius: var(--mg-radius-panel);
+  box-shadow: var(--mg-shadow-lg);
+}
+
+body[theme-mode='dark'] .auth-discount-showcase {
+  background: var(--auth-card-surface);
+  border-color: var(--mg-glass-line);
+  box-shadow: var(--auth-card-shadow);
+}
+
+.auth-discount-header,
+.auth-discount-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-inline: 24px;
+  flex: none;
+}
+
+.auth-discount-header {
+  min-height: 68px;
+  border-bottom: 1px solid var(--mg-border);
+}
+
+.auth-discount-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.auth-discount-heading svg {
+  color: var(--brand-light);
+}
+
+.auth-discount-heading h2 {
+  margin: 0;
+  font-size: var(--mg-font-size-body);
+  font-weight: 750;
+}
+
+.auth-discount-header p,
+.auth-discount-footer {
+  color: var(--mg-text-3);
+  font-size: var(--mg-font-size-caption);
+  font-weight: 600;
+}
+
+.auth-discount-header p {
+  margin: 0;
+  text-align: right;
+}
+
+.auth-discount-list {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.auth-discount-track {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.auth-discount-row {
+  display: grid;
+  flex: none;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--mg-border);
+}
+
+.auth-discount-model-icon {
+  color: var(--mg-text-2);
+  background: var(--mg-bg-1);
+  border: 1px solid var(--mg-border);
+}
+
+.auth-discount-model-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.auth-discount-model-copy strong,
+.auth-discount-model-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-discount-model-copy strong {
+  color: var(--mg-text-1);
+  font-size: var(--mg-font-size-body);
+  font-weight: 700;
+}
+
+.auth-discount-model-copy span {
+  color: var(--mg-text-3);
+  font-family: var(--font-mono);
+  font-size: var(--mg-font-size-meta);
+}
+
+.auth-discount-value {
+  color: var(--brand-light);
+  font-family: var(--font-mono);
+  font-size: var(--mg-font-size-body);
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+.auth-discount-footer {
+  min-height: 54px;
+  border-top: 1px solid var(--mg-border);
+}
+
+.auth-discount-footer a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--mg-text-2);
+  text-decoration: none;
+  transition: color 0.2s var(--mg-ease-standard);
+}
+
+.auth-discount-footer a:hover {
+  color: var(--brand-light);
+}
+
+@media (max-width: 1040px) {
+  .auth-layout-content-with-aside {
+    display: block;
+    max-width: 400px;
+  }
+
+  .auth-layout-content-with-aside::before,
+  .auth-layout-aside {
+    display: none;
+  }
+}

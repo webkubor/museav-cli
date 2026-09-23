@@ -76,7 +76,7 @@ type ApiLogEntry = {
 }
 
 // ^key$：api-key reveal 响应的 { key: "mgk_..." } 明文字段（#298），不得进 dev 日志。
-const SENSITIVE_KEY_RE = /authorization|cookie|csrf|token|secret|password|api[_-]?key|access[_-]?key|^key$/i
+const SENSITIVE_KEY_RE = /authorization|cookie|csrf|token|secret|password|api[_-]?key|access[_-]?key|^key$|^totp$|captcha[_-]?verify[_-]?param/i
 
 function nowMs() {
   return typeof performance !== 'undefined' ? performance.now() : Date.now()
@@ -102,7 +102,7 @@ function redactDevValue(value: unknown, depth = 0): unknown {
     return Object.fromEntries(
       Array.from(value.entries()).map(([key, item]) => [
         key,
-        item instanceof File ? `[File name=${item.name} size=${item.size} type=${item.type || 'unknown'}]` : redactDevValue(item, depth + 1),
+        (SENSITIVE_KEY_RE.test(key) || key === 'code') ? '[REDACTED]' : item instanceof File ? `[File name=${item.name} size=${item.size} type=${item.type || 'unknown'}]` : redactDevValue(item, depth + 1),
       ])
     )
   }
@@ -114,7 +114,7 @@ function redactDevValue(value: unknown, depth = 0): unknown {
   return Object.fromEntries(
     Object.entries(source).slice(0, 80).map(([key, item]) => [
       key,
-      SENSITIVE_KEY_RE.test(key) ? '[REDACTED]' : redactDevValue(item, depth + 1),
+      (SENSITIVE_KEY_RE.test(key) || (key === 'code' && typeof item === 'string')) ? '[REDACTED]' : redactDevValue(item, depth + 1),
     ])
   )
 }

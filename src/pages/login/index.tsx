@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/Input'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { SocialLogin } from '@/components/auth/SocialLogin'
 import { PhoneAuth } from '@/components/auth/PhoneAuth'
+import { GlobalEmailAuth } from '@/components/auth/GlobalEmailAuth'
 import { getCaptchaParam } from '@/lib/aliyun-captcha'
 import { CaptchaGate, type CaptchaGateHandle } from '@/components/auth/CaptchaGate'
 import { useMarket } from '@/hooks/useMarket'
@@ -30,6 +31,7 @@ import { navigateAfterLogin } from '@/lib/login-intent'
 import { resolveReferralCode } from '@/pages/signup/referral-code'
 import { storageKeys } from '@/lib/storage'
 import { trackEvent } from '@/lib/track'
+import type { Market } from '@/lib/market'
 
 function createEmailSchema(t: TFunction) {
   return z.object({
@@ -81,7 +83,7 @@ function clearRememberedLogin() {
  */
 export default function LoginPage() {
   const market = useMarket()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   // qa#675：推荐码的解析与持久化必须放在 market 分流**之前**。
   // 根路径 /?aff=X 命中 RequireAuth 会被折成 /login?redirect=%2F%3Faff%3DX，码只藏在
@@ -97,15 +99,31 @@ export default function LoginPage() {
 
   // 写活：国内是否提供邮箱登录入口，跟随平台配置（enabled_login_methods 含 password）。
   const emailAuthEnabled = useEmailAuthEnabled()
-  // 国内默认手机号入口，底部「邮箱登录」快捷入口切到邮箱表单；切换为本地态，不改路由。
-  const [emailMode, setEmailMode] = useState(false)
-  if (market === 'china' && !emailMode) {
-    return <PhoneAuth onUseEmail={emailAuthEnabled ? () => setEmailMode(true) : undefined} />
+  // 国内默认手机号入口；邮箱入口显式写入 URL，刷新、分享及站点切换后都能保持当前方式。
+  const emailMode = market === 'china' && emailAuthEnabled && searchParams.get('method') === 'email'
+  const setDomesticMethod = (method: 'phone' | 'email') => {
+    const next = new URLSearchParams(searchParams)
+    if (method === 'email') next.set('method', 'email')
+    else next.delete('method')
+    setSearchParams(next, { replace: true })
   }
-  return <EmailLoginPage onUsePhone={market === 'china' ? () => setEmailMode(false) : undefined} />
+
+  if (market === 'global') {
+    return <GlobalEmailAuth />
+  }
+
+  if (!emailMode) {
+    return <PhoneAuth onUseEmail={emailAuthEnabled ? () => setDomesticMethod('email') : undefined} />
+  }
+  return (
+    <EmailLoginPage
+      market="china"
+      onUsePhone={() => setDomesticMethod('phone')}
+    />
+  )
 }
 
-function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
+function EmailLoginPage({ market, onUsePhone }: { market: Market; onUsePhone?: () => void }) {
   const { t } = useTranslation('account')
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
@@ -154,7 +172,7 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
     try {
       const result = await checkLoginEmail(data.email)
       if (!result.registered) {
-        navigate(`/signup?email=${encodeURIComponent(data.email)}`)
+        setServerError(t('account.auth.domesticEmailLogin.registerViaPhone'))
         return
       }
       setEmail(data.email)
@@ -250,8 +268,9 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
 
   return (
     <AuthLayout
-      title={t('account.auth.login.title')}
-      subtitle={t('account.auth.login.subtitle')}
+      title={t(market === 'china' ? 'account.auth.domesticEmailLogin.title' : 'account.auth.login.title')}
+      subtitle={t(market === 'china' ? 'account.auth.domesticEmailLogin.subtitle' : 'account.auth.login.subtitle')}
+      showMarketSwitcher
       footer={
         onUsePhone ? (
           <span>
@@ -304,7 +323,7 @@ function EmailLoginPage({ onUsePhone }: { onUsePhone?: () => void }) {
             {t('account.auth.login.continue')}
           </Button>
           
-          <SocialLogin redirectTo={redirectTo} />
+          {market === 'china' && <SocialLogin redirectTo={redirectTo} />}
         </form>
       ) : (
         <form

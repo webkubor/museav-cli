@@ -176,9 +176,9 @@ export function WorkspaceDashboard({ workspaceId, onDeleted, initialTab }: Works
   const { hasPermission } = usePermissions()
   const canViewMembers = isEnterprise && hasPermission(PERMS.WORKSPACE_MEMBERS_VIEW)
   const canViewLogs = hasPermission(PERMS.OBSERVABILITY_VIEW)
-  const canViewSettings = hasPermission(PERMS.WORKSPACE_SETTINGS_EDIT)
-    || hasPermission(PERMS.WORKSPACE_RENAME)
-    || hasPermission(PERMS.WORKSPACE_DELETE)
+  // Every workspace member can manage their own default-workspace preference.
+  // Administrative actions keep their individual permission gates in SettingsTab.
+  const canViewSettings = true
   const activeTab = (
     (tab === 'members' && !canViewMembers)
     || (tab === 'logs' && !canViewLogs)

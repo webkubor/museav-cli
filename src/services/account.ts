@@ -10,12 +10,19 @@ import type {
   ChangePasswordRequest,
   DeleteAccountRequest,
   DeleteAccountResult,
+  SetDefaultWorkspaceRequest,
+  SetDefaultWorkspaceResponse,
   UpdateProfileRequest,
 } from '@/types'
 
 /** 获取当前账号的个人资料 */
 export function getProfile() {
   return get<AccountProfile>('account/profile')
+}
+
+/** 保存当前账号的默认空间（#1097），空字符串取消；沿用会话和 CSRF 校验。 */
+export function setDefaultWorkspace(body: SetDefaultWorkspaceRequest) {
+  return post<SetDefaultWorkspaceResponse>('account/active-workspace', body)
 }
 
 /** 更新个人资料（当前仅允许修改 display_name） */

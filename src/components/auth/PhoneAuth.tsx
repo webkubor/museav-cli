@@ -166,6 +166,7 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
     <AuthLayout
       title={t('account.auth.phoneLogin.title')}
       subtitle={t('account.auth.phoneLogin.subtitle')}
+      showMarketSwitcher
       footer={
         onUseEmail ? (
           <span>

@@ -132,6 +132,7 @@ export function useSupport() {
   }, [mode])
   const [messages, setMessages] = useState<ChatItem[]>([])
   const [isAsking, setIsAsking] = useState(false)
+  const askGeneration = useRef(0)
   const handoffPending = useRef(false)
   const [isCancellingHandoff, setIsCancellingHandoff] = useState(false)
   const [ticketDetail, setTicketDetail] = useState<SupportTicketDetail | null>(null)
@@ -203,6 +204,8 @@ export function useSupport() {
   useEffect(() => {
     const currentId = account?.account_id ?? null
     if (lastAccountId.current !== null && lastAccountId.current !== currentId) {
+      askGeneration.current += 1
+      setIsAsking(false)
       // 回到 chat 即丢弃全部模式内数据（ticketId / 排队人数 / 客服信息），
       // 不用再逐个清 —— 这正是原先漏清 agentInfo 的地方
       setMessages([])
@@ -224,7 +227,7 @@ export function useSupport() {
     setMessages((prev) => [...prev, item])
   }, [])
 
-  const startHandoff = useCallback(async () => {
+  const startHandoffWithTrigger = useCallback(async (trigger?: { question: string; sensitiveHit: boolean }) => {
     // 「排队中不允许重复发起转接」由状态机判定（PRD §8.6），不再自己比 serviceMode
     if (!canStartHandoff(mode) || handoffPending.current) return
     // 未登录直接引导登录：转人工是登录态能力，发出去只会拿到 40101，
@@ -251,7 +254,9 @@ export function useSupport() {
         // PRD §8.6：转人工要自动交接当前页面与最近对话摘要，客服不用从头问一遍。
         // §10/§12 要求摘要先过敏感检测：这里只取**用户自己的提问**和回答状态标签，
         // 不带回答正文、不带 API Key/Token（后端 sensitive.Hit 命中的那条也不会进来）。
-        summary: buildHandoffSummary(messages, currentPagePath() ?? ''),
+        summary: buildHandoffSummary(trigger
+          ? [...messages, { id: '', role: 'user', content: trigger.question, createdAt: Date.now(), sensitiveHit: trigger.sensitiveHit }]
+          : messages, currentPagePath() ?? ''),
       })
       appendMessage({
         id: crypto.randomUUID(),
@@ -273,10 +278,13 @@ export function useSupport() {
       handoffPending.current = false
     }
   }, [mode, go, appendMessage, t, account, isLoading, messages])
+  const startHandoff = useCallback(() => startHandoffWithTrigger(), [startHandoffWithTrigger])
 
   const ask = useCallback(async (question: string) => {
     const trimmed = question.trim()
     if (!trimmed || isAsking) return
+    const generation = askGeneration.current
+    const accountId = account?.account_id ?? null
 
     if (HANDOFF_TRIGGER_RE.test(trimmed) && canStartHandoff(mode)) {
       appendMessage({ id: crypto.randomUUID(), role: 'user', content: trimmed, createdAt: Date.now() })
@@ -293,6 +301,7 @@ export function useSupport() {
         session_id: getOrCreateSupportSessionId(),
         page_path: currentPagePath(),
       })
+      if (generation !== askGeneration.current || accountId !== activeAccountId.current) return
       appendMessage({
         id: crypto.randomUUID(),
         role: 'assistant',
@@ -308,8 +317,9 @@ export function useSupport() {
         sensitiveHit: resp.sensitive?.Hit === true,
         rating: null,
       })
-      if (resp.intent === 'human_handoff') await startHandoff()
+      if (resp.intent === 'human_handoff') await startHandoffWithTrigger({ question: trimmed, sensitiveHit: resp.sensitive?.Hit === true })
     } catch (error) {
+      if (generation !== askGeneration.current || accountId !== activeAccountId.current) return
       appToast.requestError(error, t('common.customerService.sendFailed'))
       appendMessage({
         id: crypto.randomUUID(),
@@ -318,9 +328,9 @@ export function useSupport() {
         createdAt: Date.now(),
       })
     } finally {
-      setIsAsking(false)
+      if (generation === askGeneration.current) setIsAsking(false)
     }
-  }, [isAsking, mode, appendMessage, startHandoff, t])
+  }, [isAsking, mode, account?.account_id, appendMessage, startHandoff, startHandoffWithTrigger, t])
 
   const rateMessageAnswer = useCallback(async (messageId: string, rating: SupportAnswerRating) => {
     const target = messages.find((m) => m.id === messageId)

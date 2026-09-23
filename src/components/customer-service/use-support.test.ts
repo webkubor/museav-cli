@@ -165,4 +165,40 @@ describe('useSupport · agent-detected human handoff', () => {
     expect(requestHandoffMock).toHaveBeenCalledOnce()
     expect(result.current.mode.kind).toBe('chat')
   })
+
+  it('discards a late answer after switching accounts without handing off as the new account', async () => {
+    let resolveAsk: (value: unknown) => void = () => {}
+    askSupportMock.mockImplementationOnce(() => new Promise((resolve) => { resolveAsk = resolve }))
+    const { result, rerender } = renderHook(() => useSupport())
+    let pending: Promise<void> = Promise.resolve()
+    await act(async () => { pending = result.current.ask('帮我联系同事') })
+    await act(async () => {
+      authState.account = { account_id: 'account-2' }
+      rerender()
+    })
+    await act(async () => {
+      resolveAsk({ answer: '正在转接旧账号', answer_status: 'intent', intent: 'human_handoff' })
+      await pending
+    })
+    expect(requestHandoffMock).not.toHaveBeenCalled()
+    expect(result.current.messages).toEqual([])
+    expect(result.current.isAsking).toBe(false)
+  })
+
+  it('includes the triggering question once in the handoff summary', async () => {
+    askSupportMock.mockResolvedValue({ answer: '正在转接', answer_status: 'intent', intent: 'human_handoff' })
+    const { result } = renderHook(() => useSupport())
+    await act(async () => result.current.ask('请帮我联系值班同事'))
+    const summary = requestHandoffMock.mock.calls[0][0].summary as string
+    expect(summary.match(/请帮我联系值班同事/g)).toHaveLength(1)
+    expect(result.current.messages.filter((message) => message.role === 'user')).toHaveLength(1)
+  })
+
+  it('does not include a sensitive triggering question in the handoff summary', async () => {
+    askSupportMock.mockResolvedValue({ answer: '转接中', answer_status: 'intent', intent: 'human_handoff', sensitive: { Hit: true, Kind: 'secret' } })
+    const { result } = renderHook(() => useSupport())
+    await act(async () => result.current.ask('请处理我的 token: secret-value'))
+    expect(requestHandoffMock).toHaveBeenCalledOnce()
+    expect(requestHandoffMock.mock.calls[0][0].summary).not.toContain('secret-value')
+  })
 })

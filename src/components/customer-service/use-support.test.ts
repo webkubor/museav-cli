@@ -12,7 +12,10 @@ const { requestHandoffMock, cancelHandoffMock, requestErrorMock } = vi.hoisted((
   requestErrorMock: vi.fn(),
 }))
 
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }))
+vi.mock('react-i18next', () => ({
+  initReactI18next: { type: '3rdParty', init: vi.fn() },
+  useTranslation: () => ({ t: (key: string) => key }),
+}))
 vi.mock('@/store/auth', () => ({
   useAuthStore: (selector: (state: { account: null; isLoading: boolean }) => unknown) => selector({ account: null, isLoading: true }),
 }))

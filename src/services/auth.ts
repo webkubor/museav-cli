@@ -16,15 +16,46 @@ import type {
   SwitchTenantRequest,
 } from '@/types'
 
-// qa#299 人机验证：登录/注册/发码携带 captcha_verify_param（可选——未启用或 SDK
-// 降级时不带，后端 fail-open）。仅当非空时并入请求体。
+// 仅携带非空人机校验结果；是否允许缺失由各端点决定，邮箱验证码登录失败关闭。
 function withCaptcha<T extends object>(body: T, captchaVerifyParam?: string | null): T {
   return captchaVerifyParam ? { ...body, captcha_verify_param: captchaVerifyParam } : body
 }
 
-/** 发送注册邮箱验证码（5 分钟有效；邮箱已注册返回 40901） */
+/** 发送登录/注册邮箱验证码（#1092）；已注册与新邮箱均返回相同有效期契约。 */
 export function sendEmailCode(email: string, captchaVerifyParam?: string | null) {
   return post<AuthMailTTLResponse>('auth/email-code/send', withCaptcha({ email }, captchaVerifyParam))
+}
+
+/**
+ * 国际站邮箱免密登录/注册：以「邮箱 + 6 位验证码」建号或登录并下发 session cookie。
+ *
+ * #1092：POST /auth/email-code/login 原子消费邮箱验证码；不能先调用 verify。
+ * 已启用两步验证的账号还须提供 totp。
+ *
+ * captcha_verify_param：登录侧实际是 fail-closed（手机号腿实测缺失/空值一律 40025），
+ * 所以调用方必须把人机校验四元组传进来；发码时消费掉的那一组不能复用。
+ */
+export function emailCodeLoginRegister(
+  email: string,
+  code: string,
+  captchaVerifyParam?: string | null,
+  referralCode?: string,
+  invitationToken?: string,
+  totp?: string,
+) {
+  return post<LoginResult>(
+    'auth/email-code/login',
+    withCaptcha(
+      {
+        email,
+        code,
+        ...(referralCode ? { referral_code: referralCode } : {}),
+        ...(invitationToken ? { invitation_token: invitationToken } : {}),
+        ...(totp ? { totp } : {}),
+      },
+      captchaVerifyParam,
+    ),
+  )
 }
 
 /** 邮箱密码注册（注册即登录，自动下发 session cookie） */

@@ -27,6 +27,9 @@ export interface OAuthConnection {
 
 export interface AccountProfile {
   account_id: string
+  has_password: boolean
+  /** 当前账号保存的默认空间；未设置或已失去访问权限时为空字符串。 */
+  default_workspace_id: string
   email: string
   email_verified_at: string
   display_name: string
@@ -122,8 +125,17 @@ export interface UpdateProfileRequest {
 }
 
 export interface ChangePasswordRequest {
-  current_password: string
+  current_password?: string
   new_password: string
+}
+
+export interface SetDefaultWorkspaceRequest {
+  /** 空字符串明确取消默认空间；不能省略或传 null。 */
+  workspace_id: string
+}
+
+export interface SetDefaultWorkspaceResponse {
+  default_workspace_id: string
 }
 
 export interface DeleteAccountRequest {

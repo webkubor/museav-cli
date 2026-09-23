@@ -17,8 +17,8 @@
   transition: all 0.3s var(--mg-ease-standard);
 }
 
-/* 流光边框 */
-.glass-auth-card::before {
+/* 鉴权页主表面的共用流光边框。 */
+.auth-flow-surface::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -50,20 +50,11 @@
 body[theme-mode='dark'] .glass-auth-card {
   /* 卡底从品牌深空派生（--brand-pale 深色档即「品牌夜色」：国内靛 #16224d / 海外绿 #1b2921），
      不写死色相 —— 原 rgba(18,27,46,…) 是 slate 蓝调，海外绿站深色下整卡发蓝 */
-  --auth-card-top: color-mix(in oklab, var(--brand-pale) 42%, #14151a);
-  --auth-card-bottom: color-mix(in oklab, var(--brand-pale) 30%, #101116);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--auth-card-top) 88%, transparent),
-      color-mix(in srgb, var(--auth-card-bottom) 84%, transparent)
-    ) !important;
-  box-shadow:
-    0 42px 110px -58px rgba(0, 0, 0, 0.9),
-    0 1px 0 rgba(255, 255, 255, 0.06) inset !important;
+  background: var(--auth-card-surface) !important;
+  box-shadow: var(--auth-card-shadow) !important;
 }
 
-body[theme-mode='dark'] .glass-auth-card::before {
+body[theme-mode='dark'] .auth-flow-surface::before {
   background: conic-gradient(
     from var(--border-angle),
     transparent 0%,
@@ -76,6 +67,12 @@ body[theme-mode='dark'] .glass-auth-card::before {
     transparent 72%,
     transparent 100%
   );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-flow-surface::before {
+    animation: none;
+  }
 }
 
 
@@ -97,6 +94,110 @@ body[theme-mode='dark'] .glass-auth-card .auth-policy-text {
   font-weight: 700;
   color: var(--mg-text-2) !important;
   margin-bottom: 8px;
+}
+
+.auth-prototype-code-hint {
+  margin-top: 7px;
+  color: var(--brand-deep);
+  font-size: var(--mg-font-size-caption);
+  font-weight: 600;
+}
+
+.auth-global-social-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.auth-global-social-group .social-btn {
+  width: 100%;
+  flex: none;
+  height: var(--mg-control-height-lg);
+}
+
+.auth-global-assurance {
+  color: var(--mg-text-2);
+  font-size: var(--mg-font-size-micro);
+  font-weight: 600;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.auth-global-code-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  color: var(--mg-text-2);
+  background: color-mix(in srgb, var(--mg-fill-0) 72%, transparent);
+  border: 1px solid var(--mg-border);
+  border-radius: var(--mg-radius-md);
+  font-size: var(--mg-font-size-caption);
+  font-weight: 600;
+  line-height: 1.55;
+}
+
+.auth-global-code-note svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--brand-light);
+}
+
+.auth-global-code-input input {
+  text-align: center;
+  letter-spacing: 0.34em !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.auth-global-resend,
+.auth-global-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  align-self: center;
+  padding: 3px 6px;
+  color: var(--mg-text-2);
+  font-size: var(--mg-font-size-caption);
+  font-weight: 650;
+  background: transparent;
+  border: 0;
+  transition: color 0.2s var(--mg-ease-standard);
+}
+
+.auth-global-resend:not(:disabled):hover,
+.auth-global-back:hover {
+  color: var(--brand-light);
+}
+
+.auth-global-resend:disabled {
+  color: var(--mg-text-3);
+  cursor: not-allowed;
+}
+
+.auth-prototype-success-icon {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  color: var(--brand-deep);
+  background: color-mix(in srgb, var(--brand-light) 26%, var(--mg-bg-0));
+  border: 1px solid color-mix(in srgb, var(--brand-base) 24%, transparent);
+  border-radius: var(--mg-radius-lg);
+  box-shadow: 0 16px 36px -24px color-mix(in srgb, var(--brand-base) 70%, transparent);
+}
+
+.auth-prototype-success-title {
+  color: var(--mg-text-1);
+  font-size: var(--mg-font-size-title-sm);
+  font-weight: 750;
+}
+
+.auth-prototype-success-description {
+  margin-top: 6px;
+  color: var(--mg-text-2);
+  font-size: var(--mg-font-size-body);
+  line-height: 1.6;
 }
 
 .modern-auth-input {
@@ -185,6 +286,12 @@ body[theme-mode='dark'] .modern-auth-btn:hover {
 }
 
 body[theme-mode='dark'] .auth-layout-container {
+  --auth-card-top: color-mix(in oklab, var(--brand-pale) 42%, #14151a);
+  --auth-card-bottom: color-mix(in oklab, var(--brand-pale) 30%, #101116);
+  --auth-card-surface: linear-gradient(180deg, var(--auth-card-top), var(--auth-card-bottom));
+  --auth-card-shadow:
+    0 42px 110px -58px rgba(0, 0, 0, 0.9),
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
   /* 深色底 = 品牌夜色（--brand-pale 深色档）压进近黑，两端市场自动得到 靛夜/绿夜 */
   background-color: color-mix(in oklab, var(--brand-pale) 58%, #0a0d12);
   background-image:
@@ -208,6 +315,75 @@ body[theme-mode='dark'] .auth-layout-container {
 
 .auth-layout-content {
   @apply w-full max-w-[400px] z-10 relative;
+}
+
+.auth-market-switcher {
+  position: absolute;
+  z-index: 20;
+  top: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  color: var(--mg-text-3);
+  background: color-mix(in srgb, var(--mg-bg-0) 74%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mg-border) 82%, transparent);
+  border-radius: var(--mg-control-radius);
+  box-shadow: var(--mg-shadow-sm);
+  backdrop-filter: blur(16px);
+}
+
+.auth-market-switch-icon {
+  width: 16px;
+  height: 16px;
+  margin-inline: 7px 3px;
+  flex: none;
+}
+
+.auth-market-switch-option {
+  min-width: 68px;
+  padding-inline: 12px !important;
+  border-radius: calc(var(--mg-control-radius) - 4px) !important;
+  color: var(--mg-text-3) !important;
+  font-weight: 700 !important;
+  text-decoration: none;
+}
+
+.auth-market-switch-option.is-active {
+  color: var(--brand-deep) !important;
+  background: color-mix(in srgb, var(--brand-light) 32%, var(--mg-bg-0)) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand-base) 18%, transparent);
+}
+
+body[theme-mode='dark'] .auth-market-switch-option.is-active {
+  color: var(--brand-light) !important;
+}
+
+@media (max-width: 900px) {
+  .auth-layout-container {
+    padding-top: 84px;
+  }
+
+  .auth-market-switcher {
+    top: 18px;
+    right: 18px;
+  }
+}
+
+@media (max-width: 820px) {
+  .auth-layout-container {
+    padding-top: 108px;
+    padding-bottom: 24px;
+    align-items: flex-start;
+    overflow-y: auto;
+  }
+
+  .auth-market-switcher {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+  }
 }
 
 .auth-brand-header {
@@ -392,6 +568,10 @@ body[theme-mode='dark'] .auth-form-container .modern-input-inner::placeholder {
 /* 三方登录样式抽离 */
 .social-divider {
   @apply flex items-center gap-4 my-6;
+}
+
+.social-divider.auth-global-divider {
+  margin-block: 0;
 }
 
 .social-divider-line {

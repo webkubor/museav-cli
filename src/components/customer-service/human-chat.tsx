@@ -9,11 +9,12 @@ export interface HandoffHeaderStatusProps {
   /** 直接收模式：排队人数/客服信息都随模式携带，不再是三个可能互相矛盾的游离参数 */
   mode: SupportMode
   onCancel: () => void
+  isCanceling?: boolean
   onEnd: () => void
 }
 
 /** 顶部第二行的人工服务状态 + 右上角操作（排队/连接中/已接入），aria-live 播报状态变化 */
-export function HandoffHeaderStatus({ mode, onCancel, onEnd }: HandoffHeaderStatusProps) {
+export function HandoffHeaderStatus({ mode, onCancel, isCanceling = false, onEnd }: HandoffHeaderStatusProps) {
   const { t } = useTranslation()
   // 只有人工线进行中才显示这一行
   if (mode.kind !== 'queuing' && mode.kind !== 'connecting' && mode.kind !== 'human') return null
@@ -39,7 +40,7 @@ export function HandoffHeaderStatus({ mode, onCancel, onEnd }: HandoffHeaderStat
           {t('common.customerService.handoff.endService')}
         </button>
       ) : (
-        <button type="button" onClick={onCancel} className="text-[11px] text-mg-text-3 hover:text-mg-text-1 underline underline-offset-2">
+        <button type="button" onClick={onCancel} disabled={isCanceling} aria-busy={isCanceling} className="text-[11px] text-mg-text-3 hover:text-mg-text-1 underline underline-offset-2 disabled:opacity-50">
           {mode.kind === 'connecting' ? t('common.customerService.handoff.cancelConnecting') : t('common.customerService.handoff.cancelQueue')}
         </button>
       )}

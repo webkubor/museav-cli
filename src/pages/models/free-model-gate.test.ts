@@ -51,4 +51,9 @@ describe('detectFreeModelGate（#833）', () => {
     expect(detectFreeModelGate(null)).toBeNull()
     expect(detectFreeModelGate(undefined)).toBeNull()
   })
+
+  it('#1091 收窄识别串后的反例：同样以「the account」开头但与余额无关的错误人话不误判', () => {
+    expect(detectFreeModelGate(new Error('please verify the account identity before continuing'))).toBeNull()
+    expect(detectFreeModelGate(new Error('the account has been suspended pending review'))).toBeNull()
+  })
 })

@@ -80,8 +80,10 @@ export function PlaygroundComposer({
 
   return (
     <>
-      {/* §9.1 余额资格状态机 + 需求方 #833（1.0.6）：可消费合计为 0 时免费/付费模型
-          均锁定发送，按场景引导充值（文案与充值入口见 ExperienceBalanceNotice） */}
+      {/* §9.1 余额资格状态机 + 需求方 #833（1.0.6）/ #1091（1.0.7）：付费模型看可消费合计
+          （主+赠送+奖励）> 0，免费模型只看主余额 > 0（赠送/奖励不计入），判据见
+          isModelLockedByBalance；命中即锁定发送，按场景引导充值（文案与充值入口见
+          ExperienceBalanceNotice） */}
       {isBlockedByBalance && (
         <ExperienceBalanceNotice
           free={!!selectedModel && isFreeModel(selectedModel)}

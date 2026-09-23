@@ -36,7 +36,8 @@ const BALANCE_REQUIRED_REASON = 'free_model_balance'
 const DAILY_LIMIT_REASON = 'free_model_daily_limit'
 /** 网关固定英文人话（归一化后的判别片段），见文件头注释 */
 const DAILY_LIMIT_MESSAGE_HINT = 'free_model_quota_has_been_reached'
-const BALANCE_REQUIRED_MESSAGE_HINT = 'free_model_requires_the_account_to_keep_available_balance'
+/** 只取句首固定部分：#1091 后网关文案可能把 available balance 改成 main/cash balance，别因措辞变动掉回通用报错 */
+const BALANCE_REQUIRED_MESSAGE_HINT = 'free_model_requires_the_account'
 
 function normalize(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, '_')

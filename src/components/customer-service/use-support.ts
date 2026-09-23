@@ -22,6 +22,7 @@ import { useSupportEvents } from './use-support-events'
 import { getOrCreateSupportSessionId, clearSupportSessionId } from './session-id'
 import {
   canStartHandoff,
+  canApplyHandoffSnapshot,
   composerDisabled as composerDisabledOf,
   canApplyEndedTicket,
   isHumanChannel,
@@ -125,8 +126,13 @@ export function useSupport() {
   // —— 漏一个就残留（见 support-machine.ts 顶部记的两个真实 bug）。
   // 现在这些数据随模式携带，切模式即失效，漏不掉。
   const [mode, setModeRaw] = useState<SupportMode>({ kind: 'chat' })
+  const modeRef = useRef(mode)
+  useLayoutEffect(() => {
+    modeRef.current = mode
+  }, [mode])
   const [messages, setMessages] = useState<ChatItem[]>([])
   const [isAsking, setIsAsking] = useState(false)
+  const [isCancellingHandoff, setIsCancellingHandoff] = useState(false)
   const [ticketDetail, setTicketDetail] = useState<SupportTicketDetail | null>(null)
 
   /** 唯一的模式迁移入口：非法跳转被 transition() 拦下，不静默生效。 */
@@ -180,6 +186,8 @@ export function useSupport() {
         },
       ])
   }, [go, isCurrentSupportTicket, t])
+  const suppressedHandoffTicketIds = useRef<ReadonlySet<string>>(new Set())
+  const cancellingHandoffTicketId = useRef<string | null>(null)
 
   // 一次性清除迁移期废弃的历史缓存（旧 SSE hook 用过）。
   // 注意：不再清除 cs_cid —— #1057 要求 session_id 本地持久化（刷新/重开保留），
@@ -201,6 +209,8 @@ export function useSupport() {
       setTicketDetail(null)
       appliedEndedTicketIds.current = new Set()
       appliedAsyncTicketIds.current = new Set()
+      suppressedHandoffTicketIds.current = new Set()
+      cancellingHandoffTicketId.current = null
       // 切账号必须换新会话：否则上一账号持久化的 session_id 会带到新账号，
       // 让后端把两人的多轮上下文串到一起（#1057 要求会话稳定，但不能跨账号）。
       clearSupportSessionId()
@@ -326,13 +336,24 @@ export function useSupport() {
   }, [messages])
 
   const cancelActiveHandoff = useCallback(async () => {
-    if (!ticketId) return
+    if (!ticketId || cancellingHandoffTicketId.current === ticketId
+      || !canApplyHandoffSnapshot(ticketId, ticketIdOf(modeRef.current), suppressedHandoffTicketIds.current)) return
     const isConnecting = mode.kind === 'connecting'
+    cancellingHandoffTicketId.current = ticketId
+    suppressedHandoffTicketIds.current = new Set([...suppressedHandoffTicketIds.current, ticketId])
+    setIsCancellingHandoff(true)
     try {
       await cancelHandoff(ticketId)
       trackEvent('support_handoff_cancel')
     } catch (error) {
+      suppressedHandoffTicketIds.current = new Set(
+        [...suppressedHandoffTicketIds.current].filter((id) => id !== ticketId),
+      )
       appToast.requestError(error)
+      return
+    } finally {
+      cancellingHandoffTicketId.current = null
+      setIsCancellingHandoff(false)
     }
     appendMessage({
       id: crypto.randomUUID(),
@@ -395,10 +416,12 @@ export function useSupport() {
     // 从没下发过，长轮询因此空转：排队→接通、超时转异步、新消息全推不动。
     // 真状态一律回工单详情拿，这里把详情压成下面这套逻辑原本期待的形状。
     if (!ticketId) return
+    if (!canApplyHandoffSnapshot(ticketId, ticketIdOf(modeRef.current), suppressedHandoffTicketIds.current)) return
     if (raw && Array.isArray(raw.events) && raw.events.length === 0) return
     const detail = await getSupportTicket(ticketId).catch(() => null)
     if (!detail) return
     if (!isCurrentSupportTicket(ticketId, accountId)) return
+    if (!canApplyHandoffSnapshot(ticketId, ticketIdOf(modeRef.current), suppressedHandoffTicketIds.current)) return
     const agentName = ticketAgentNameOf(detail)
     const event: SupportTicketSnapshot = {
       // 后端的 service_mode 只有 live / async 两个值，排队到哪一步不在里面：
@@ -564,6 +587,7 @@ export function useSupport() {
     rateMessageAnswer,
     startHandoff,
     cancelActiveHandoff,
+    isCancellingHandoff,
     endActiveHandoff,
     sendHumanReply,
     feedbackSubmitting,

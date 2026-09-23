@@ -245,7 +245,7 @@ export function CustomerService() {
     mode, go, messages, isAsking, ticketDetail,
     // 三区行为由状态机推导，组件不再自己拼布尔组合（原先是 mode/serviceMode 交叉判断）
     showComposer, composerDisabled, showFeedbackEntry, isHumanChat,
-    ask, rateMessageAnswer, startHandoff, cancelActiveHandoff, endActiveHandoff,
+    ask, rateMessageAnswer, startHandoff, cancelActiveHandoff, isCancellingHandoff, endActiveHandoff,
     sendHumanReply, feedbackSubmitting, submitFeedback, openTicketDetail, reopenSelectedTicket, rateSelectedTicket,
   } = support
 
@@ -392,7 +392,7 @@ export function CustomerService() {
                 <p className="m-0 text-[13px] font-bold text-mg-text-1">{t('common.customerService.assistant')}</p>
                 {/* 顶部第二行：人工线进行中显示状态+操作，其余模式显示「在线」 */}
                 {mode.kind === 'queuing' || mode.kind === 'connecting' || mode.kind === 'human' ? (
-                  <HandoffHeaderStatus mode={mode} onCancel={cancelActiveHandoff} onEnd={() => endActiveHandoff()} />
+                  <HandoffHeaderStatus mode={mode} onCancel={cancelActiveHandoff} isCanceling={isCancellingHandoff} onEnd={() => endActiveHandoff()} />
                 ) : (
                   <p className="m-0 text-[11px] text-mg-text-2">{t('common.customerService.online')}</p>
                 )}

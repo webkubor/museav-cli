@@ -8,6 +8,7 @@ import {
   canApplyEndedTicket,
   isSameSupportContext,
   reserveEndedTicket,
+  canApplyHandoffSnapshot,
   modeFromServiceMode,
   needsEvents,
   showsComposer,
@@ -44,6 +45,13 @@ describe('support-machine · 模式迁移', () => {
     expect(canApplyEndedTicket({ kind: 'human', ticketId: 'CS-1' })).toBe(true)
     expect(canApplyEndedTicket({ kind: 'queuing', ticketId: 'CS-1' })).toBe(false)
     expect(canApplyEndedTicket({ kind: 'ticketDetail', ticketId: 'CS-1' })).toBe(false)
+  })
+
+  it('只允许当前活动且未取消工单应用迟到轮询快照', () => {
+    const suppressedTicketIds = new Set(['T-cancelled'])
+    expect(canApplyHandoffSnapshot('T-cancelled', 'T-cancelled', suppressedTicketIds)).toBe(false)
+    expect(canApplyHandoffSnapshot('T-old', null, suppressedTicketIds)).toBe(false)
+    expect(canApplyHandoffSnapshot('T-active', 'T-active', suppressedTicketIds)).toBe(true)
   })
 
   it('PRD §8.5：反馈表单里不响应转人工，只能回问答', () => {

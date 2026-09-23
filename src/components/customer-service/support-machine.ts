@@ -48,6 +48,15 @@ export type SupportMode =
 
 export type SupportModeKind = SupportMode['kind']
 
+/** 仅当前活动且未取消的工单可以应用迟到轮询快照。 */
+export function canApplyHandoffSnapshot(
+  ticketId: string,
+  activeTicketId: string | null,
+  suppressedTicketIds: ReadonlySet<string>,
+): boolean {
+  return activeTicketId === ticketId && !suppressedTicketIds.has(ticketId)
+}
+
 /**
  * 允许的迁移。列成表而不是散在各处的 setState，是为了让「哪些跳转是合法的」
  * 可被一眼读完、也可被测试钉住。

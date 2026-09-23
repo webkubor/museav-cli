@@ -19,6 +19,20 @@ describe('MarkdownContent', () => {
     expect(screen.getByRole('link', { name: 'https://example.org' })).toHaveAttribute('target', '_blank')
   })
 
+  it('keeps a bare documentation URL clickable without swallowing adjacent Chinese text', () => {
+    render(
+      <MarkdownContent linkifyBareUrls>
+        {'参考文档：https://docs.example.com/quickstart/authentication、首次调用：查看指南'}
+      </MarkdownContent>,
+    )
+
+    const link = screen.getByRole('link', { name: 'https://docs.example.com/quickstart/authentication' })
+    expect(link).toHaveAttribute('href', 'https://docs.example.com/quickstart/authentication')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    expect(document.querySelector('.cs-markdown p')?.textContent).toContain('、首次调用：查看指南')
+  })
+
   it('keeps GFM tables while disabling bare-URL autolinking', () => {
     render(<MarkdownContent>{'| 名称 | 地址 |\n| --- | --- |\n| 文档 | https://example.com |'}</MarkdownContent>)
 

@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/auth'
 import { appToast } from '@/lib/app-toast'
 import { trackEvent } from '@/lib/track'
 import { storageKeys } from '@/lib/storage'
+import { ModelGoApiError } from '@/lib/request'
 import {
   askSupport,
   cancelHandoff,
@@ -23,6 +24,7 @@ import {
   canStartHandoff,
   composerDisabled as composerDisabledOf,
   isHumanChannel,
+  isEndedSupportTicket,
   modeFromServiceMode,
   needsEvents,
   serviceModeOf,
@@ -314,13 +316,40 @@ export function useSupport() {
   const sendHumanReply = useCallback(async (content: string) => {
     const trimmed = content.trim()
     if (!trimmed || !ticketId) return
-    appendMessage({ id: crypto.randomUUID(), role: 'user', content: trimmed, createdAt: Date.now() })
+    const messageId = crypto.randomUUID()
+    appendMessage({ id: messageId, role: 'user', content: trimmed, createdAt: Date.now() })
     try {
       await replyTicketMessage(ticketId, trimmed)
     } catch (error) {
+      setMessages((prev) => prev.filter((message) => message.id !== messageId))
+      if (error instanceof ModelGoApiError && error.rawMessage === 'support.invalid_transition') {
+        try {
+          const detail = await getSupportTicket(ticketId)
+          if (isEndedSupportTicket(detail)) {
+            setTicketDetail(detail)
+            go(modeFromServiceMode('ended', ticketId))
+            setMessages((prev) => prev.some((message) => message.kind === 'rating_card' && message.ratingCard?.ticketId === ticketId)
+              ? prev
+              : [...prev,
+                { id: crypto.randomUUID(), role: 'system', content: t('common.customerService.handoffEnded'), createdAt: Date.now() },
+                {
+                  id: crypto.randomUUID(),
+                  role: 'system',
+                  content: '',
+                  createdAt: Date.now(),
+                  kind: 'rating_card',
+                  ratingCard: { ticketId, agentName: ticketAgentNameOf(detail), agentNo: detail.agent_no },
+                },
+              ])
+            return
+          }
+        } catch {
+          // Keep the original send error when refreshing ticket state also fails.
+        }
+      }
       appToast.requestError(error, t('common.customerService.sendFailed'))
     }
-  }, [ticketId, appendMessage, t])
+  }, [ticketId, appendMessage, go, t])
 
   // 长轮询：开关也由模式推导（PRD 只在人工线进行中需要）
   const eventsEnabled = needsEvents(mode)

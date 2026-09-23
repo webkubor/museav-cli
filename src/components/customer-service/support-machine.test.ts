@@ -4,6 +4,7 @@ import {
   canTransition,
   composerDisabled,
   isHumanChannel,
+  isEndedSupportTicket,
   modeFromServiceMode,
   needsEvents,
   showsComposer,
@@ -15,6 +16,12 @@ import {
 } from './support-machine'
 
 describe('support-machine · 模式迁移', () => {
+  it('客服已关闭工单时识别为结束态', () => {
+    expect(isEndedSupportTicket({ service_mode: 'ended', status: 'resolved' })).toBe(true)
+    expect(isEndedSupportTicket({ service_mode: 'live', status: 'closed' })).toBe(true)
+    expect(isEndedSupportTicket({ service_mode: 'live', status: 'serving' })).toBe(false)
+  })
+
   it('PRD §8.5：反馈表单里不响应转人工，只能回问答', () => {
     expect(canTransition('feedback', 'chat')).toBe(true)
     expect(canTransition('feedback', 'queuing')).toBe(false)

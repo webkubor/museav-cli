@@ -201,6 +201,11 @@ export function ticketIdOf(mode: SupportMode): string | null {
   }
 }
 
+/** 工单详情明确表示人工服务已结束时，禁止继续走用户回复接口。 */
+export function isEndedSupportTicket(ticket: Pick<SupportTicketDetail, 'service_mode' | 'status'>): boolean {
+  return ticket.service_mode === 'ended' || ticket.status.toLowerCase() === 'closed'
+}
+
 /** 能否发起转人工：只有空态/问答里可以，其余模式（尤其排队中）不允许重复发起。 */
 export function canStartHandoff(mode: SupportMode): boolean {
   return mode.kind === 'empty' || mode.kind === 'chat' || mode.kind === 'humanEnded'

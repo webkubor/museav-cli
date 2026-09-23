@@ -23,6 +23,7 @@ import { getOrCreateSupportSessionId, clearSupportSessionId } from './session-id
 import {
   canStartHandoff,
   composerDisabled as composerDisabledOf,
+  canApplyEndedTicket,
   isHumanChannel,
   isEndedSupportTicket,
   isSameSupportContext,
@@ -158,6 +159,7 @@ export function useSupport() {
 
   const applyEndedTicket = useCallback((ticketId: string, expectedAccountId: string | null, detail: SupportTicketDetail) => {
     if (!isCurrentSupportTicket(ticketId, expectedAccountId)) return
+    if (!canApplyEndedTicket(activeMode.current)) return
     const reservation = reserveEndedTicket(appliedEndedTicketIds.current, ticketId)
     appliedEndedTicketIds.current = reservation.appliedTicketIds
     if (!reservation.shouldApply) return

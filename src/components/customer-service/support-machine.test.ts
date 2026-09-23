@@ -5,6 +5,7 @@ import {
   composerDisabled,
   isHumanChannel,
   isEndedSupportTicket,
+  canApplyEndedTicket,
   isSameSupportContext,
   reserveEndedTicket,
   modeFromServiceMode,
@@ -37,6 +38,12 @@ describe('support-machine · 模式迁移', () => {
     expect(isSameSupportContext('account-a', 'account-a', 'CS-1', 'CS-1')).toBe(true)
     expect(isSameSupportContext('account-b', 'account-a', 'CS-1', 'CS-1')).toBe(false)
     expect(isSameSupportContext('account-a', 'account-a', 'CS-2', 'CS-1')).toBe(false)
+  })
+
+  it('仅允许可迁移到人工结束态的当前模式应用结束工单', () => {
+    expect(canApplyEndedTicket({ kind: 'human', ticketId: 'CS-1' })).toBe(true)
+    expect(canApplyEndedTicket({ kind: 'queuing', ticketId: 'CS-1' })).toBe(false)
+    expect(canApplyEndedTicket({ kind: 'ticketDetail', ticketId: 'CS-1' })).toBe(false)
   })
 
   it('PRD §8.5：反馈表单里不响应转人工，只能回问答', () => {

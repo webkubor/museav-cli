@@ -227,6 +227,11 @@ export function isSameSupportContext(
   return activeAccountId === expectedAccountId && activeTicketId === expectedTicketId
 }
 
+/** 结束态回包只允许从当前状态机认可的模式落地。 */
+export function canApplyEndedTicket(mode: SupportMode): boolean {
+  return canTransition(mode.kind, 'humanEnded')
+}
+
 /** 能否发起转人工：只有空态/问答里可以，其余模式（尤其排队中）不允许重复发起。 */
 export function canStartHandoff(mode: SupportMode): boolean {
   return mode.kind === 'empty' || mode.kind === 'chat' || mode.kind === 'humanEnded'

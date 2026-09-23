@@ -32,6 +32,7 @@ describe('parseThinkContent', () => {
   it('非流式遇到未闭合或不完整的 think 开标签时失败关闭', () => {
     expect(parseThinkContent('前言<think type="reasoning">私有推理').answer).toBe('前言')
     expect(parseThinkContent('前言<think type="reasoning"').answer).toBe('前言')
+    expect(parseThinkContent('前言<think type="reasoning<think>私有推理</think>答案').answer).toBe('前言')
   })
 
   it('流式遇到不完整的属性标签时隐藏标记后的内容', () => {

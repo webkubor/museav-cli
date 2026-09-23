@@ -13,7 +13,7 @@
 
 const OPEN_TAG = '<think>'
 const OPEN_START_RE = /<think\b/i
-const OPEN_TAG_RE = /<think\b[^>]*>/i
+const OPEN_TAG_RE = /<think\b[^<>]*>/i
 const CLOSE_TAG_RE = /<\/think\s*>/i
 
 export interface ThinkParseResult {
@@ -48,12 +48,12 @@ export function parseThinkContent(content: string, streaming = false): ThinkPars
   for (;;) {
     if (thinkDepth === 0) {
       const openTag = OPEN_TAG_RE.exec(rest)
+      const malformedOpenIndex = OPEN_START_RE.exec(rest)?.index
+      if (malformedOpenIndex !== undefined && (!openTag || malformedOpenIndex < openTag.index)) {
+        answer += rest.slice(0, malformedOpenIndex)
+        break
+      }
       if (!openTag || openTag.index === undefined) {
-        const malformedOpenIndex = OPEN_START_RE.exec(rest)?.index
-        if (malformedOpenIndex !== undefined) {
-          answer += rest.slice(0, malformedOpenIndex)
-          break
-        }
         answer += streaming ? trimPartialTagTail(rest, OPEN_TAG) : rest
         break
       }

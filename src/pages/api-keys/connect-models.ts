@@ -12,6 +12,7 @@ import type { CatalogModelListParams } from '@/interfaces/catalog'
 import type { CatalogModelItem, CursorPage } from '@/types'
 
 const CONNECT_MODEL_PAGE_SIZE = 100
+const MAX_CONNECT_MODEL_PAGES = 50
 
 /** 拉取某个快速接入客户端的完整模型目录；保留游标分页契约，不改变接口语义。 */
 export async function listAllConnectModels(
@@ -22,7 +23,7 @@ export async function listAllConnectModels(
   const seenCursors = new Set<string>()
   let cursor: string | undefined
 
-  while (true) {
+  for (let pageNumber = 0; pageNumber < MAX_CONNECT_MODEL_PAGES; pageNumber += 1) {
     const page = await listPage({
       coding_tool: tool,
       include_hidden: true,
@@ -31,13 +32,15 @@ export async function listAllConnectModels(
     })
     items.push(...page.items)
 
+    if (!page.has_more) return items
     const nextCursor = page.next_cursor
-    if (!page.has_more || !nextCursor || seenCursors.has(nextCursor)) break
+    if (!nextCursor) throw new Error('模型目录分页响应缺少 next_cursor')
+    if (seenCursors.has(nextCursor)) throw new Error('模型目录分页响应包含重复 cursor')
     seenCursors.add(nextCursor)
     cursor = nextCursor
   }
 
-  return items
+  throw new Error(`模型目录分页超过最大页数（${MAX_CONNECT_MODEL_PAGES}）`)
 }
 
 /** 目录 model_id 带厂商前缀（anthropic/claude-opus-4.6），网关只认裸名，统一剥掉。 */

@@ -39,20 +39,32 @@ describe('listAllConnectModels', () => {
     expect(listPage).toHaveBeenCalledTimes(1)
   })
 
-  it('has_more 为 true 但没有可用 cursor 时终止，避免无法前进的循环', async () => {
+  it('has_more 为 true 但没有可用 cursor 时明确失败，不返回不完整目录', async () => {
     const listPage = vi.fn<(params: CatalogModelListParams) => Promise<CursorPage<CatalogModelItem>>>()
       .mockResolvedValue(page([model('first')], true, null))
 
-    await expect(listAllConnectModels('claude-code', listPage)).resolves.toEqual([model('first')])
+    await expect(listAllConnectModels('claude-code', listPage)).rejects.toThrow('缺少 next_cursor')
     expect(listPage).toHaveBeenCalledTimes(1)
   })
 
-  it('服务端重复返回已用 cursor 时终止，避免无限重复请求', async () => {
+  it('服务端重复返回已用 cursor 时明确失败，不返回不完整目录', async () => {
     const listPage = vi.fn<(params: CatalogModelListParams) => Promise<CursorPage<CatalogModelItem>>>()
       .mockResolvedValueOnce(page([model('first')], true, 'cursor-1'))
       .mockResolvedValueOnce(page([model('second')], true, 'cursor-1'))
 
-    await expect(listAllConnectModels('claude-code', listPage)).resolves.toEqual([model('first'), model('second')])
+    await expect(listAllConnectModels('claude-code', listPage)).rejects.toThrow('重复 cursor')
     expect(listPage).toHaveBeenCalledTimes(2)
+  })
+
+  it('服务端持续返回新 cursor 时在页数上限停止', async () => {
+    let cursorIndex = 0
+    const listPage = vi.fn<(params: CatalogModelListParams) => Promise<CursorPage<CatalogModelItem>>>()
+      .mockImplementation(async () => {
+        cursorIndex += 1
+        return page([model(`page-${cursorIndex}`)], true, `cursor-${cursorIndex}`)
+      })
+
+    await expect(listAllConnectModels('codex', listPage)).rejects.toThrow('超过最大页数')
+    expect(listPage).toHaveBeenCalledTimes(50)
   })
 })

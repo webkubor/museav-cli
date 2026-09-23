@@ -8,6 +8,7 @@ import { agentEyes, agentProxy, agentVersion } from 'vite-plugin-agent-eyes'
 import { devRequirementsPlugin } from './scripts/dev-requirements-plugin'
 import { uiAuditPlugin } from './scripts/ui-audit-plugin'
 import { renderLlms } from './scripts/build-llms.mjs'
+import { renderSitemap, type SitemapMarket } from './scripts/build-sitemap.mjs'
 
 // 当前分支名。CI 优先用注入的环境变量（Jenkins 的 GIT_BRANCH / GitLab CI 的 CI_COMMIT_REF_NAME），
 // 因为流水线 checkout 后处于 detached HEAD，`rev-parse --abbrev-ref HEAD` 只会返回字面量 HEAD。
@@ -114,6 +115,47 @@ function emitLlmsTxt(): Plugin {
   }
 }
 
+function emitSitemap(env: Record<string, string>, mode: string): Plugin {
+  const configuredMarket = process.env.SITEMAP_MARKET
+  const market = configuredMarket || (mode === 'production' ? '' : 'china')
+  if (market && !['china', 'global'].includes(market)) {
+    throw new Error(`SITEMAP_MARKET must be china|global, received: ${market}`)
+  }
+
+  return {
+    name: 'emit-market-sitemap',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (req.url?.split('?')[0] !== '/sitemap.xml') return next()
+        if (!market) {
+          res.statusCode = 500
+          res.end('Set SITEMAP_MARKET=china|global to preview sitemap.xml')
+          return
+        }
+        try {
+          res.setHeader('Content-Type', 'application/xml; charset=utf-8')
+          res.end(renderSitemap(market as SitemapMarket, env))
+        } catch (error) {
+          res.statusCode = 500
+          res.end(error instanceof Error ? error.message : String(error))
+        }
+      })
+    },
+    generateBundle() {
+      if (!market) this.error('Production builds must set SITEMAP_MARKET=china|global')
+      try {
+        this.emitFile({
+          type: 'asset',
+          fileName: 'sitemap.xml',
+          source: renderSitemap(market as SitemapMarket, env),
+        })
+      } catch (error) {
+        this.error(error instanceof Error ? error.message : String(error))
+      }
+    },
+  }
+}
+
 // 跳转地址（官网/控制台/文档）每个环境都必须按市场配齐——缺一个就中断构建，
 // 不允许带着空配置/硬编码兜底上线（兜底的真正含义：配置缺失就不让过）。
 const REQUIRED_URL_ENV = [
@@ -155,6 +197,8 @@ export default defineConfig(({ mode }) => {
     emitVersionJson(),
     // 给 AI 检索爬虫的公开页清单（scripts/build-llms.mjs，默认英+中一份）
     emitLlmsTxt(),
+    // Sitemap protocol requires one host per file; prod/prod-global must build separately.
+    emitSitemap(env, mode),
     // 一站式入口（0.13）：遥测 + 客户端自动埋点 + 项目体检 + dev 超长文件实时警告(sizeWatch)
     // + 提交 guard 默认全开；本仓的提交门禁仍走自定义 git.precommit 透传。
     ...agentEyes({
@@ -247,5 +291,4 @@ export default defineConfig(({ mode }) => {
   },
   }
 })
-
 

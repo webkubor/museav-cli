@@ -127,6 +127,7 @@ async function checkSite(market, base) {
   const findings = []
   const robotsUrl = `${base.replace(/\/$/, '')}/robots.txt`
   const llmsUrl = `${base.replace(/\/$/, '')}/llms.txt`
+  const sitemapUrl = `${base.replace(/\/$/, '')}/sitemap.xml`
 
   // ── robots.txt ──
   const r = await fetchText(robotsUrl)
@@ -159,6 +160,24 @@ async function checkSite(market, base) {
     }
   }
 
+  const sitemapDirectives = [...r.body.matchAll(/^\s*Sitemap\s*:\s*(\S+)\s*$/gim)].map((match) => match[1])
+  if (sitemapDirectives.length === 0) {
+    findings.push({ level: 'P1', kind: 'robots 缺 Sitemap 指令', detail: `${robotsUrl} 未声明 sitemap.xml`, sample: '' })
+  } else if (!baseOverride) {
+    const expectedHost = new URL(base).host
+    const pointsToThisSite = sitemapDirectives.some((directive) => {
+      try {
+        const url = new URL(directive)
+        return url.host === expectedHost && url.pathname === '/sitemap.xml'
+      } catch {
+        return false
+      }
+    })
+    if (!pointsToThisSite) {
+      findings.push({ level: 'P1', kind: 'robots Sitemap 指向错误', detail: `${robotsUrl} 没有指向当前 host 的 /sitemap.xml`, sample: sitemapDirectives.join(', ') })
+    }
+  }
+
   // ── llms.txt ──
   const l = await fetchText(llmsUrl)
   if (l.status !== 200) {
@@ -177,11 +196,41 @@ async function checkSite(market, base) {
     }
   }
 
+  // ── sitemap.xml ──
+  const s = await fetchText(sitemapUrl)
+  if (s.status !== 200) {
+    findings.push({ level: 'P0', kind: 'sitemap 缺失', detail: `${sitemapUrl} 返回 HTTP ${s.status}`, sample: s.error || '' })
+  } else if (!/(application|text)\/(xml|.*\+xml)/i.test(s.contentType)) {
+    findings.push({ level: 'P0', kind: 'sitemap Content-Type 错误', detail: `${sitemapUrl} 返回 ${s.contentType || '无 Content-Type'}，应为 XML`, sample: s.body.slice(0, 80) })
+  } else if (!/^\s*<\?xml\b/i.test(s.body) || !/<urlset\b/i.test(s.body) || !/<\/urlset>\s*$/i.test(s.body)) {
+    findings.push({ level: 'P0', kind: 'sitemap XML 无效', detail: `${sitemapUrl} 不是完整的 urlset XML`, sample: s.body.slice(0, 80) })
+  } else {
+    const locations = [...s.body.matchAll(/<loc>([^<]+)<\/loc>/gi)].map((match) => match[1].trim())
+    const expectedHost = baseOverride ? null : new URL(base).host
+    const hosts = new Set()
+    let invalidUrl = false
+    for (const location of locations) {
+      try {
+        const url = new URL(location)
+        if (!['http:', 'https:'].includes(url.protocol)) invalidUrl = true
+        hosts.add(url.host)
+      } catch {
+        invalidUrl = true
+      }
+    }
+    if (locations.length === 0 || invalidUrl) {
+      findings.push({ level: 'P0', kind: 'sitemap URL 无效', detail: `${sitemapUrl} 缺少有效的绝对 <loc> URL`, sample: '' })
+    } else if (hosts.size !== 1 || (expectedHost && !hosts.has(expectedHost))) {
+      findings.push({ level: 'P0', kind: 'sitemap host 不一致', detail: `${sitemapUrl} 的 <loc> host=${[...hosts].join(', ') || '无'}；期望仅 ${expectedHost || '一个 host'}`, sample: '' })
+    }
+  }
+
   return {
     market,
     base,
     robots: { url: robotsUrl, status: r.status, contentType: r.contentType, size: Buffer.byteLength(r.body, 'utf8') },
     llms: { url: llmsUrl, status: l.status, contentType: l.contentType, size: Buffer.byteLength(l.body, 'utf8') },
+    sitemap: { url: sitemapUrl, status: s.status, contentType: s.contentType, size: Buffer.byteLength(s.body, 'utf8') },
     findings,
   }
 }
@@ -207,6 +256,7 @@ async function main() {
       stdout.write(`\n=== ${r.market} (${r.base}) ===\n`)
       stdout.write(`  robots.txt  HTTP ${r.robots.status}  ${r.robots.size}B  ${r.robots.contentType}\n`)
       stdout.write(`  llms.txt    HTTP ${r.llms.status}    ${r.llms.size}B  ${r.llms.contentType}\n`)
+      stdout.write(`  sitemap.xml HTTP ${r.sitemap.status}  ${r.sitemap.size}B  ${r.sitemap.contentType}\n`)
       if (r.findings.length === 0) {
         stdout.write(`  ✓ 无问题\n`)
       } else {

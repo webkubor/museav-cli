@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/store/auth'
 import { appToast } from '@/lib/app-toast'
@@ -25,8 +25,10 @@ import {
   composerDisabled as composerDisabledOf,
   isHumanChannel,
   isEndedSupportTicket,
+  isSameSupportContext,
   modeFromServiceMode,
   needsEvents,
+  reserveEndedTicket,
   serviceModeOf,
   showsComposer,
   showsFeedbackEntry,
@@ -136,6 +138,46 @@ export function useSupport() {
 
   const lastAccountId = useRef<string | null>(null)
   const appliedAsyncTicketIds = useRef<Set<string>>(new Set())
+  const appliedEndedTicketIds = useRef<ReadonlySet<string>>(new Set())
+  const activeAccountId = useRef(account?.account_id ?? null)
+  const activeMode = useRef(mode)
+
+  useLayoutEffect(() => {
+    activeAccountId.current = account?.account_id ?? null
+    activeMode.current = mode
+  }, [account?.account_id, mode])
+
+  const isCurrentSupportTicket = useCallback((ticketId: string, expectedAccountId: string | null) => (
+    isSameSupportContext(
+      activeAccountId.current,
+      expectedAccountId,
+      ticketIdOf(activeMode.current),
+      ticketId,
+    )
+  ), [])
+
+  const applyEndedTicket = useCallback((ticketId: string, expectedAccountId: string | null, detail: SupportTicketDetail) => {
+    if (!isCurrentSupportTicket(ticketId, expectedAccountId)) return
+    const reservation = reserveEndedTicket(appliedEndedTicketIds.current, ticketId)
+    appliedEndedTicketIds.current = reservation.appliedTicketIds
+    if (!reservation.shouldApply) return
+
+    setTicketDetail(detail)
+    go(modeFromServiceMode('ended', ticketId))
+    setMessages((prev) => prev.some((message) => message.kind === 'rating_card' && message.ratingCard?.ticketId === ticketId)
+      ? prev
+      : [...prev,
+        { id: crypto.randomUUID(), role: 'system', content: t('common.customerService.handoffEnded'), createdAt: Date.now() },
+        {
+          id: crypto.randomUUID(),
+          role: 'system',
+          content: '',
+          createdAt: Date.now(),
+          kind: 'rating_card',
+          ratingCard: { ticketId, agentName: ticketAgentNameOf(detail), agentNo: detail.agent_no },
+        },
+      ])
+  }, [go, isCurrentSupportTicket, t])
 
   // 一次性清除迁移期废弃的历史缓存（旧 SSE hook 用过）。
   // 注意：不再清除 cs_cid —— #1057 要求 session_id 本地持久化（刷新/重开保留），
@@ -155,6 +197,8 @@ export function useSupport() {
       setMessages([])
       setModeRaw({ kind: 'chat' })
       setTicketDetail(null)
+      appliedEndedTicketIds.current = new Set()
+      appliedAsyncTicketIds.current = new Set()
       // 切账号必须换新会话：否则上一账号持久化的 session_id 会带到新账号，
       // 让后端把两人的多轮上下文串到一起（#1057 要求会话稳定，但不能跨账号）。
       clearSupportSessionId()
@@ -316,31 +360,20 @@ export function useSupport() {
   const sendHumanReply = useCallback(async (content: string) => {
     const trimmed = content.trim()
     if (!trimmed || !ticketId) return
+    const accountId = account?.account_id ?? null
     const messageId = crypto.randomUUID()
     appendMessage({ id: messageId, role: 'user', content: trimmed, createdAt: Date.now() })
     try {
       await replyTicketMessage(ticketId, trimmed)
     } catch (error) {
       setMessages((prev) => prev.filter((message) => message.id !== messageId))
+      if (!isCurrentSupportTicket(ticketId, accountId)) return
       if (error instanceof ModelGoApiError && error.rawMessage === 'support.invalid_transition') {
         try {
           const detail = await getSupportTicket(ticketId)
+          if (!isCurrentSupportTicket(ticketId, accountId)) return
           if (isEndedSupportTicket(detail)) {
-            setTicketDetail(detail)
-            go(modeFromServiceMode('ended', ticketId))
-            setMessages((prev) => prev.some((message) => message.kind === 'rating_card' && message.ratingCard?.ticketId === ticketId)
-              ? prev
-              : [...prev,
-                { id: crypto.randomUUID(), role: 'system', content: t('common.customerService.handoffEnded'), createdAt: Date.now() },
-                {
-                  id: crypto.randomUUID(),
-                  role: 'system',
-                  content: '',
-                  createdAt: Date.now(),
-                  kind: 'rating_card',
-                  ratingCard: { ticketId, agentName: ticketAgentNameOf(detail), agentNo: detail.agent_no },
-                },
-              ])
+            applyEndedTicket(ticketId, accountId, detail)
             return
           }
         } catch {
@@ -349,11 +382,12 @@ export function useSupport() {
       }
       appToast.requestError(error, t('common.customerService.sendFailed'))
     }
-  }, [ticketId, appendMessage, go, t])
+  }, [account?.account_id, ticketId, appendMessage, applyEndedTicket, isCurrentSupportTicket, t])
 
   // 长轮询：开关也由模式推导（PRD 只在人工线进行中需要）
   const eventsEnabled = needsEvents(mode)
   useSupportEvents(eventsEnabled, ticketId ?? undefined, useCallback(async (raw) => {
+    const accountId = account?.account_id ?? null
     // 后端的 /support/events 只是**变更信号**（events[] + server_versions），
     // 不带 service_mode / queue_position / has_new_messages —— 那三个是照 PRD 写的，
     // 从没下发过，长轮询因此空转：排队→接通、超时转异步、新消息全推不动。
@@ -362,6 +396,7 @@ export function useSupport() {
     if (raw && Array.isArray(raw.events) && raw.events.length === 0) return
     const detail = await getSupportTicket(ticketId).catch(() => null)
     if (!detail) return
+    if (!isCurrentSupportTicket(ticketId, accountId)) return
     const agentName = ticketAgentNameOf(detail)
     const event: SupportTicketSnapshot = {
       // 后端的 service_mode 只有 live / async 两个值，排队到哪一步不在里面：
@@ -396,20 +431,7 @@ export function useSupport() {
         appendMessage({ id: crypto.randomUUID(), role: 'system', content: t('common.customerService.handoffConnected'), createdAt: Date.now() })
       }
       if (event.service_mode === 'ended') {
-        appendMessage({ id: crypto.randomUUID(), role: 'system', content: t('common.customerService.handoffEnded'), createdAt: Date.now() })
-        appendMessage({
-          id: crypto.randomUUID(),
-          role: 'system',
-          content: '',
-          createdAt: Date.now(),
-          kind: 'rating_card',
-          ratingCard: {
-            ticketId: ticketId!,
-            // 只有 human 模式才有客服信息 —— 取不到就不带，绝不会带上一次的
-            agentName: mode.kind === 'human' ? mode.agentName : undefined,
-            agentNo: mode.kind === 'human' ? mode.agentNo : undefined,
-          },
-        })
+        applyEndedTicket(ticketId, accountId, detail)
       }
       if (event.service_mode === 'async') {
         if (appliedAsyncTicketIds.current.has(ticketId)) return
@@ -442,7 +464,7 @@ export function useSupport() {
         setMessages((prev) => mergeFreshAgentMessages(prev, page.items))
       }).catch(() => {})
     }
-  }, [mode, go, ticketId, appendMessage, t]))
+  }, [mode, go, ticketId, appendMessage, applyEndedTicket, isCurrentSupportTicket, t, account]))
 
   // ---- 反馈 ----
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)

@@ -66,7 +66,9 @@ export function VersionUpdateNotice() {
       writePendingRefresh(null)
     }
 
-    const action = getRefreshAction(latestCommit, __BUILD_COMMIT__, readPendingRefresh())
+    const navigation = window.performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined
+    const navigationType = navigation?.type
+    const action = getRefreshAction(latestCommit, __BUILD_COMMIT__, readPendingRefresh(), navigationType)
     if (action === 'none') {
       writePendingRefresh(null)
       return

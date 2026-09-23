@@ -63,12 +63,24 @@ describe('VersionUpdateNotice', () => {
   })
 
   it('同一新版刷新后仍未更新时停止重载循环', () => {
+    vi.spyOn(window.performance, 'getEntriesByType').mockReturnValue([{ type: 'reload' } as PerformanceNavigationTiming])
     window.sessionStorage.setItem('app-version-refresh-target', 'new-commit')
     render(<VersionUpdateNotice />)
 
     expect(updateRefreshFailed).toHaveBeenCalledOnce()
     act(() => vi.runOnlyPendingTimers())
     expect(reloadCurrentPage).not.toHaveBeenCalled()
+  })
+
+  it('复制标签页继承刷新标记时仍自动刷新一次', () => {
+    vi.spyOn(window.performance, 'getEntriesByType').mockReturnValue([{ type: 'navigate' } as PerformanceNavigationTiming])
+    window.sessionStorage.setItem('app-version-refresh-target', 'new-commit')
+    render(<VersionUpdateNotice />)
+
+    expect(updateRefreshing).toHaveBeenCalledOnce()
+    expect(updateRefreshFailed).not.toHaveBeenCalled()
+    act(() => vi.advanceTimersByTime(1500))
+    expect(reloadCurrentPage).toHaveBeenCalledOnce()
   })
 
   it('已处于最新版本时清除刷新标记且不显示提示', () => {

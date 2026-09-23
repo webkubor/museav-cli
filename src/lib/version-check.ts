@@ -39,9 +39,14 @@ export function getRefreshAction(
   latest: string | undefined,
   current: string,
   pending: string | null,
+  navigationType?: string,
 ): 'none' | 'refresh' | 'already-attempted' {
   if (!hasNewVersion(latest, current)) return 'none'
-  return pending === latest ? 'already-attempted' : 'refresh'
+  if (pending !== latest) return 'refresh'
+  // A duplicated tab can inherit sessionStorage but did not perform this tab's reload.
+  // Unknown navigation type fails closed to avoid an infinite refresh loop.
+  const isKnownFreshNavigation = ['navigate', 'back_forward', 'prerender'].includes(navigationType ?? '')
+  return isKnownFreshNavigation ? 'refresh' : 'already-attempted'
 }
 
 /** 获取服务器报告的构建 commit，供新版提示组件决定是否自动刷新。 */

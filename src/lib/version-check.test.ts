@@ -35,7 +35,17 @@ describe('getRefreshAction', () => {
   })
 
   it('相同新版已经刷新过时停止重试', () => {
-    expect(getRefreshAction('def5678', 'abc1234', 'def5678')).toBe('already-attempted')
+    expect(getRefreshAction('def5678', 'abc1234', 'def5678', 'reload')).toBe('already-attempted')
+  })
+
+  it('复制标签页继承标记但不是 reload 导航时仍自动刷新', () => {
+    expect(getRefreshAction('def5678', 'abc1234', 'def5678', 'navigate')).toBe('refresh')
+  })
+
+  it('无法识别导航类型时保守停止重试', () => {
+    expect(getRefreshAction('def5678', 'abc1234', 'def5678', undefined)).toBe('already-attempted')
+    expect(getRefreshAction('def5678', 'abc1234', 'def5678', '')).toBe('already-attempted')
+    expect(getRefreshAction('def5678', 'abc1234', 'def5678', 'future-type')).toBe('already-attempted')
   })
 
   it('当前版本已更新时不再刷新', () => {

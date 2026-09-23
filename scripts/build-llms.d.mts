@@ -10,6 +10,9 @@ export type LlmsMarket = 'both' | 'china' | 'global'
 /** 渲染 llms.txt 全文（按市场选模板 + 替换域名占位）。 */
 export declare function renderLlms(market?: LlmsMarket): string
 
+/** 用显式环境渲染 llms.txt，用于测试市场映射与配置缺失时的失败边界。 */
+export declare function renderLlmsWithEnv(market: LlmsMarket, env: Record<string, string>): string
+
 /** 渲染并写入目标目录（默认 dist/）。 */
 export declare function writeLlms(opts?: {
   market?: LlmsMarket

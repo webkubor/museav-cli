@@ -52,6 +52,7 @@ function renderMarket(market, env) {
     site_web: env[`${prefix}_SITE`],
     docs: env[`${prefix}_DOCS`],
     gateway: env[`${prefix}_GATEWAY_DOMAIN`] ? `https://${env[`${prefix}_GATEWAY_DOMAIN`]}` : '',
+    gateway_china: env.VITE_DOMESTIC_GATEWAY_DOMAIN ? `https://${env.VITE_DOMESTIC_GATEWAY_DOMAIN}` : '',
     gateway_global: env.VITE_GLOBAL_GATEWAY_DOMAIN ? `https://${env.VITE_GLOBAL_GATEWAY_DOMAIN}` : '',
   }
   const missing = ['site', 'site_web', 'docs', 'gateway'].filter((k) => !vars[k])
@@ -64,7 +65,7 @@ function renderMarket(market, env) {
   if (!existsSync(tplPath)) throw new Error(`模板不存在: scripts/llms-templates/${tplName}`)
 
   const out = readFileSync(tplPath, 'utf8').replace(
-    /\{(site|site_web|docs|gateway|gateway_global)\}/g,
+    /\{(site|site_web|docs|gateway|gateway_china|gateway_global)\}/g,
     (_, key) => {
       const v = vars[key]
       if (!v) throw new Error(`模板 ${tplName} 里有未定义的占位 {${key}}`)
@@ -79,7 +80,15 @@ function renderMarket(market, env) {
  * @param {'both'|'china'|'global'} market
  */
 export function renderLlms(market = 'both') {
-  const env = loadEnv()
+  return renderLlmsWithEnv(market, loadEnv())
+}
+
+/**
+ * 使用显式构建环境渲染清单；单独导出以覆盖市场路由与缺失配置的 fail-closed 行为。
+ * @param {'both'|'china'|'global'} market
+ * @param {Record<string, string>} env
+ */
+export function renderLlmsWithEnv(market, env) {
   if (market === 'china' || market === 'global') return renderMarket(market, env)
   // both：英文在前（llms.txt 事实标准是英文），中文在后，中间加分隔标题
   const en = renderMarket('global', env).trim()

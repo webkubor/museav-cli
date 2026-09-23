@@ -48,7 +48,7 @@ if (!existsSync(cssPath)) {
 
   const decls = [...css.matchAll(/--ao-[\w-]+:\s*([^;]+);/g)].map((m) => m[1].trim())
   for (const d of decls) {
-    if (!/var\(--brand-(base|mid)\)/.test(d)) {
+    if (!/var\(--brand-(base|mid|deep)\)/.test(d)) {
       errors.push('"' + d + '" 没从品牌色派生')
     }
     const hex = d.match(/#(?!fff\b|000\b)[0-9a-fA-F]{3,8}/)

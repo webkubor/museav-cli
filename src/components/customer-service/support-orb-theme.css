@@ -11,10 +11,8 @@
  *   mid 主色  品牌色本身 —— 球体主调
  *   lo  暗部  品牌色压暗 —— 球体右下的背光面
  *   glow 光晕 跟 mid，working 态用 hi（库的既有差异，保留）
- *   ink 眼睛  库默认 #2a1a10（近黑），那是给浅橙球配的暗瞳孔；换成深蓝品牌球后
- *            近黑瞳孔糊进球体里 = 用户看到的「黑眼睛」（prd#1061 回归）。品牌球主体是
- *            深色，瞳孔必须反过来走浅色才有对比 —— 从品牌色混白派生一个浅色瞳孔
- *            （比高光面略深、略饱和，白得不至于没神），明暗两主题各写一档、不写死白。
+ *   ink 眼睛  从品牌深色阶取值，让球心高光上的表情仍有清晰对比；此前白色瞳孔
+ *            叠在浅色球心高光上几乎消失。
  *
  * 用 oklab 混色而不是 srgb：srgb 下往黑白里混会掉饱和、发灰，
  * oklab 的明度是感知线性的，提亮压暗后色相不漂。
@@ -31,9 +29,8 @@
   --ao-mid: var(--brand-base);
   --ao-lo: color-mix(in oklab, var(--brand-base) 78%, #000);
   --ao-glow: var(--brand-base);
-  /* 眼睛跟高光色：深蓝球体上要浅瞳孔才看得清，别沿用库的近黑 --ao-ink。
-     以白为主、只带一丝品牌蓝（12%）——混多了发灰发脏（上一版 30% 实测很丑）。 */
-  --ao-ink: color-mix(in oklab, var(--brand-base) 12%, #fff);
+  /* 深色品牌瞳孔压在球心高光上，浅色球心也能看清表情。 */
+  --ao-ink: var(--brand-deep);
 }
 
 /* working 态的光晕用高光色 —— 保留库的既有差异，只换色系不改行为 */
@@ -46,7 +43,7 @@
   --ao-mid: var(--brand-mid);
   --ao-lo: color-mix(in oklab, var(--brand-mid) 72%, #000);
   --ao-glow: var(--brand-mid);
-  --ao-ink: color-mix(in oklab, var(--brand-mid) 12%, #fff);
+  --ao-ink: var(--brand-deep);
 }
 
 [data-theme='dark'] .cs-orb .agent-orb.is-working {

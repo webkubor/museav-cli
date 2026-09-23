@@ -376,7 +376,7 @@ export function CustomerService() {
             切成 X 就把状态全遮掉了。关闭入口只留面板头部那一个 X，悬浮球不再兼任
             关闭图标（此前展开时头尾两个 X 同屏，多余且难看）。
             球只读状态、不驱动状态机（见 support-presentation.ts）。 */}
-        <SupportOrb state={orbState} label={t('common.customerService.orb.open')} />
+        <SupportOrb size={48} state={orbState} label={t('common.customerService.orb.open')} />
         {/* 未读角标自己画：ai-orb 自带的角标只在 done 态显示，而入口平时是 idle，
             传 unseen 永远出不来（#1148）。面板开着时不显示 —— 服务记录图标另有提示。 */}
         {!isOpen && unreadTotal > 0 && (

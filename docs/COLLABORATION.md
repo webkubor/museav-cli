@@ -592,6 +592,7 @@ await page.evaluate(() => window.__mg_nav.menus())  // 列出所有菜单
 
 1. **PWA 缓存**：部署后浏览器可能显示旧版 → 验部署前先注销 ServiceWorker + 清缓存，核对页脚 commit hash
 2. **Jenkins 双发布线**：国内 `prod/modelgo-console-web` + 国外 `prod-global/`，两条都要触发
+   - sitemap 是单 host 文件：国内生产构建必须注入 `SITEMAP_MARKET=china`，海外生产构建注入 `SITEMAP_MARKET=global`；未配置时生产构建会失败，避免把另一市场的地址发给爬虫。
 3. **React Query key 碰撞**：同一 queryKey 在不同页面存不同形状会崩溃 → 新查询前 grep 该 key 的既有消费方
 4. **测试 mock 竞态**：`useTenantRole→listTenants` 若没 mock 会发真请求 → 40101 → `clearAuth()` 异步洗掉下个用例的 store → 单跑过连跑挂
 5. **「照 PRD 还原页面」类任务，别边问边改**（2026-07-27 账单管理页教训）：这类任务真正的耗时不是代码量，是"先问答式排查、改完才发现漏了"来回绕。正确顺序是下面 §6.1 的一次性流程，不是每发现一处就单独走一轮问答-改码-验证。

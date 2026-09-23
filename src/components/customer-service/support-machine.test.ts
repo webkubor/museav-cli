@@ -1,3 +1,7 @@
+/** 客服模式状态机与工单结束态回归测试
+ * 路由：控制台右下角智能助手
+ * API：无（纯前端状态判断）
+ */
 import { describe, expect, it } from 'vitest'
 import {
   canStartHandoff,
@@ -23,6 +27,7 @@ describe('support-machine · 模式迁移', () => {
   it('客服已关闭工单时识别为结束态', () => {
     expect(isEndedSupportTicket({ service_mode: 'ended', status: 'resolved' })).toBe(true)
     expect(isEndedSupportTicket({ service_mode: 'live', status: 'closed' })).toBe(true)
+    expect(isEndedSupportTicket({ service_mode: 'live', status: 'resolved' })).toBe(true)
     expect(isEndedSupportTicket({ service_mode: 'live', status: 'serving' })).toBe(false)
   })
 

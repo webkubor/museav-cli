@@ -212,7 +212,8 @@ export function ticketIdOf(mode: SupportMode): string | null {
 
 /** 工单详情明确表示人工服务已结束时，禁止继续走用户回复接口。 */
 export function isEndedSupportTicket(ticket: Pick<SupportTicketDetail, 'service_mode' | 'status'>): boolean {
-  return ticket.service_mode === 'ended' || ticket.status.toLowerCase() === 'closed'
+  const status = ticket.status.trim().toLowerCase()
+  return ticket.service_mode === 'ended' || status === 'closed' || status === 'resolved'
 }
 
 /** 幂等预留结束态工单，避免长轮询与失败回复的详情回包重复追加评价卡。 */

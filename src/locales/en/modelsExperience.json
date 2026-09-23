@@ -10,8 +10,6 @@
     "modelOfflineHint": "Past results are still viewable. Switch to an online model above with the same task to continue.",
     "modelRunFailed": "This model failed to respond this round",
     "modelThinking": "Model is thinking",
-    "thinkProcess": "Thought process",
-    "thinkStreaming": "Thinking…",
     "noModelSelected": "No model selected",
     "unnamedSession": "Untitled session",
     "sessionCreateError": "Session creation error: no conversation column returned",

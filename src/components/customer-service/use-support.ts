@@ -4,7 +4,7 @@ import { useAuthStore } from '@/store/auth'
 import { appToast } from '@/lib/app-toast'
 import { trackEvent } from '@/lib/track'
 import { storageKeys } from '@/lib/storage'
-import { ModelGoApiError } from '@/lib/request'
+import { ModelGoApiError, SENSITIVE_KEY_RE } from '@/lib/request'
 import {
   askSupport,
   cancelHandoff,
@@ -132,6 +132,8 @@ export function useSupport() {
   }, [mode])
   const [messages, setMessages] = useState<ChatItem[]>([])
   const [isAsking, setIsAsking] = useState(false)
+  const accountEpoch = useRef(0)
+  const handoffPending = useRef(false)
   const [isCancellingHandoff, setIsCancellingHandoff] = useState(false)
   const [ticketDetail, setTicketDetail] = useState<SupportTicketDetail | null>(null)
 
@@ -143,7 +145,7 @@ export function useSupport() {
   /** 当前模式关联的工单号（取代原来那个全局 ticketId）。 */
   const ticketId = ticketIdOf(mode)
 
-  const lastAccountId = useRef<string | null>(null)
+  const lastAccountId = useRef<string | null>(account?.account_id ?? null)
   const appliedAsyncTicketIds = useRef<Set<string>>(new Set())
   const appliedEndedTicketIds = useRef<ReadonlySet<string>>(new Set())
   const activeAccountId = useRef(account?.account_id ?? null)
@@ -201,7 +203,9 @@ export function useSupport() {
   // 退出登录/切账号：清空私有会话上下文
   useEffect(() => {
     const currentId = account?.account_id ?? null
-    if (lastAccountId.current !== null && lastAccountId.current !== currentId) {
+    if (lastAccountId.current !== currentId) {
+      accountEpoch.current += 1
+      setIsAsking(false)
       // 回到 chat 即丢弃全部模式内数据（ticketId / 排队人数 / 客服信息），
       // 不用再逐个清 —— 这正是原先漏清 agentInfo 的地方
       setMessages([])
@@ -211,6 +215,7 @@ export function useSupport() {
       appliedAsyncTicketIds.current = new Set()
       suppressedHandoffTicketIds.current = new Set()
       cancellingHandoffTicketId.current = null
+      handoffPending.current = false
       // 切账号必须换新会话：否则上一账号持久化的 session_id 会带到新账号，
       // 让后端把两人的多轮上下文串到一起（#1057 要求会话稳定，但不能跨账号）。
       clearSupportSessionId()
@@ -222,9 +227,9 @@ export function useSupport() {
     setMessages((prev) => [...prev, item])
   }, [])
 
-  const startHandoff = useCallback(async () => {
+  const startHandoffWithTrigger = useCallback(async (trigger?: { question: string; sensitiveHit: boolean }) => {
     // 「排队中不允许重复发起转接」由状态机判定（PRD §8.6），不再自己比 serviceMode
-    if (!canStartHandoff(mode)) return
+    if (!canStartHandoff(modeRef.current) || handoffPending.current) return
     // 未登录直接引导登录：转人工是登录态能力，发出去只会拿到 40101，
     // 再被 catch 成「转人工失败，请稍后重试」——用户会一直重试，而重试
     // 永远失败。同理这里也不能让 40101 走到 request.ts 的全局分支，
@@ -241,6 +246,9 @@ export function useSupport() {
       })
       return
     }
+    const epoch = accountEpoch.current
+    const accountId = account?.account_id ?? null
+    handoffPending.current = true
     trackEvent('support_handoff_start')
     try {
       const resp = await requestHandoff({
@@ -248,8 +256,11 @@ export function useSupport() {
         // PRD §8.6：转人工要自动交接当前页面与最近对话摘要，客服不用从头问一遍。
         // §10/§12 要求摘要先过敏感检测：这里只取**用户自己的提问**和回答状态标签，
         // 不带回答正文、不带 API Key/Token（后端 sensitive.Hit 命中的那条也不会进来）。
-        summary: buildHandoffSummary(messages, currentPagePath() ?? ''),
+        summary: buildHandoffSummary(trigger
+          ? [...messages, { id: '', role: 'user', content: trigger.question, createdAt: Date.now(), sensitiveHit: trigger.sensitiveHit }]
+          : messages, currentPagePath() ?? ''),
       })
+      if (epoch !== accountEpoch.current || accountId !== activeAccountId.current) return
       appendMessage({
         id: crypto.randomUUID(),
         role: 'system',
@@ -263,19 +274,27 @@ export function useSupport() {
         status: resp.status,
       }))
     } catch (error) {
+      if (epoch !== accountEpoch.current || accountId !== activeAccountId.current) return
       appToast.requestError(error, t('common.customerService.handoffFailed'))
       go({ kind: 'chat' })
       appendMessage({ id: crypto.randomUUID(), role: 'system', content: t('common.customerService.handoffFailed'), createdAt: Date.now() })
+    } finally {
+      if (epoch === accountEpoch.current) handoffPending.current = false
     }
-  }, [mode, go, appendMessage, t, account, isLoading, messages])
+  }, [go, appendMessage, t, account, isLoading, messages])
+  const startHandoff = useCallback(() => startHandoffWithTrigger(), [startHandoffWithTrigger])
 
   const ask = useCallback(async (question: string) => {
     const trimmed = question.trim()
     if (!trimmed || isAsking) return
+    const generation = accountEpoch.current
+    const accountId = account?.account_id ?? null
 
     if (HANDOFF_TRIGGER_RE.test(trimmed) && canStartHandoff(mode)) {
       appendMessage({ id: crypto.randomUUID(), role: 'user', content: trimmed, createdAt: Date.now() })
-      await startHandoff()
+      // Direct triggers bypass /support/ask's sensitive.Hit; omit the entire question
+      // when the shared request redaction matcher spots a credential label.
+      await startHandoffWithTrigger({ question: trimmed, sensitiveHit: SENSITIVE_KEY_RE.test(trimmed) })
       return
     }
 
@@ -288,6 +307,7 @@ export function useSupport() {
         session_id: getOrCreateSupportSessionId(),
         page_path: currentPagePath(),
       })
+      if (generation !== accountEpoch.current || accountId !== activeAccountId.current) return
       appendMessage({
         id: crypto.randomUUID(),
         role: 'assistant',
@@ -303,7 +323,11 @@ export function useSupport() {
         sensitiveHit: resp.sensitive?.Hit === true,
         rating: null,
       })
+      if (resp.intent === 'human_handoff' && canStartHandoff(modeRef.current)) {
+        await startHandoffWithTrigger({ question: trimmed, sensitiveHit: resp.sensitive?.Hit === true })
+      }
     } catch (error) {
+      if (generation !== accountEpoch.current || accountId !== activeAccountId.current) return
       appToast.requestError(error, t('common.customerService.sendFailed'))
       appendMessage({
         id: crypto.randomUUID(),
@@ -312,10 +336,9 @@ export function useSupport() {
         createdAt: Date.now(),
       })
     } finally {
-      setIsAsking(false)
+      if (generation === accountEpoch.current) setIsAsking(false)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAsking, mode, appendMessage, t])
+  }, [isAsking, mode, account?.account_id, appendMessage, startHandoffWithTrigger, t])
 
   const rateMessageAnswer = useCallback(async (messageId: string, rating: SupportAnswerRating) => {
     const target = messages.find((m) => m.id === messageId)

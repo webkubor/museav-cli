@@ -145,6 +145,9 @@ export interface SupportTicketSummary {
   service_mode?: SupportServiceMode
   title?: string
   description?: string
+  /** Agent 列表返回的最新可见消息；反馈单创建时由脱敏后的 description 初始化。 */
+  latest_visible_message?: string
+  /** 兼容旧版列表字段。 */
   latest_message_preview?: string
   /** 客服显示名；非空 = 已接通（前端据此判排队/接通，不依赖 status 枚举）。 */
   assignee_display_name?: string

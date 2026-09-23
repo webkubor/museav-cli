@@ -38,7 +38,7 @@ ModelGo serves enterprise (B2B) customers. This file helps AI assistants, AI sea
 
 ## API endpoints (programmatic)
 
-- Base URL (China): `{gateway}/v1`
+- Base URL (China): `{gateway_china}/v1`
 - Base URL (Global): `{gateway_global}/v1`
 - Compatible with OpenAI Chat Completions / Embeddings / Images / Audio / Fine-tune protocols
 

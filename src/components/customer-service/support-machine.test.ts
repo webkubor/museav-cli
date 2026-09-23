@@ -4,6 +4,10 @@ import {
   canTransition,
   composerDisabled,
   isHumanChannel,
+  isEndedSupportTicket,
+  canApplyEndedTicket,
+  isSameSupportContext,
+  reserveEndedTicket,
   modeFromServiceMode,
   needsEvents,
   showsComposer,
@@ -15,6 +19,33 @@ import {
 } from './support-machine'
 
 describe('support-machine · 模式迁移', () => {
+  it('客服已关闭工单时识别为结束态', () => {
+    expect(isEndedSupportTicket({ service_mode: 'ended', status: 'resolved' })).toBe(true)
+    expect(isEndedSupportTicket({ service_mode: 'live', status: 'closed' })).toBe(true)
+    expect(isEndedSupportTicket({ service_mode: 'live', status: 'serving' })).toBe(false)
+  })
+
+  it('同一工单的结束状态只允许应用一次', () => {
+    const first = reserveEndedTicket(new Set<string>(), 'CS-1')
+    const second = reserveEndedTicket(first.appliedTicketIds, 'CS-1')
+
+    expect(first.shouldApply).toBe(true)
+    expect(second.shouldApply).toBe(false)
+    expect(second.appliedTicketIds).toBe(first.appliedTicketIds)
+  })
+
+  it('异步回包仅作用于仍匹配的账号和工单', () => {
+    expect(isSameSupportContext('account-a', 'account-a', 'CS-1', 'CS-1')).toBe(true)
+    expect(isSameSupportContext('account-b', 'account-a', 'CS-1', 'CS-1')).toBe(false)
+    expect(isSameSupportContext('account-a', 'account-a', 'CS-2', 'CS-1')).toBe(false)
+  })
+
+  it('仅允许可迁移到人工结束态的当前模式应用结束工单', () => {
+    expect(canApplyEndedTicket({ kind: 'human', ticketId: 'CS-1' })).toBe(true)
+    expect(canApplyEndedTicket({ kind: 'queuing', ticketId: 'CS-1' })).toBe(false)
+    expect(canApplyEndedTicket({ kind: 'ticketDetail', ticketId: 'CS-1' })).toBe(false)
+  })
+
   it('PRD §8.5：反馈表单里不响应转人工，只能回问答', () => {
     expect(canTransition('feedback', 'chat')).toBe(true)
     expect(canTransition('feedback', 'queuing')).toBe(false)

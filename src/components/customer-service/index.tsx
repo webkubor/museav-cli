@@ -19,6 +19,7 @@ import { answerStatusPresentation } from './answer-status'
 import { canStartHandoff, showsMessageThread } from './support-machine'
 import { SupportOrb } from './support-orb'
 import { supportOrbState } from './support-presentation'
+import { useMessageAutoScroll } from './use-message-scroll'
 
 function formatCsTimestamp(timestamp: number, t: (key: string, options?: Record<string, unknown>) => string) {
   const date = new Date(timestamp)
@@ -262,11 +263,7 @@ export function CustomerService() {
   const dragRef = useRef<{ startX: number; startY: number; startPosX: number; startPosY: number } | null>(null)
   const isDragging = useRef(false)
 
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-    }
-  }, [messages, isAsking, mode])
+  useMessageAutoScroll(scrollRef, messages, isAsking, mode)
 
   useEffect(() => {
     if (!isOpen) return

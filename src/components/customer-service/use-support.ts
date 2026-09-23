@@ -133,6 +133,7 @@ export function useSupport() {
   const ticketId = ticketIdOf(mode)
 
   const lastAccountId = useRef<string | null>(null)
+  const appliedAsyncTicketIds = useRef<Set<string>>(new Set())
 
   // 一次性清除迁移期废弃的历史缓存（旧 SSE hook 用过）。
   // 注意：不再清除 cs_cid —— #1057 要求 session_id 本地持久化（刷新/重开保留），
@@ -190,6 +191,12 @@ export function useSupport() {
         // §10/§12 要求摘要先过敏感检测：这里只取**用户自己的提问**和回答状态标签，
         // 不带回答正文、不带 API Key/Token（后端 sensitive.Hit 命中的那条也不会进来）。
         summary: buildHandoffSummary(messages, currentPagePath() ?? ''),
+      })
+      appendMessage({
+        id: crypto.randomUUID(),
+        role: 'system',
+        content: t('common.customerService.handoffStarted'),
+        createdAt: Date.now(),
       })
       go(modeFromServiceMode(resp.service_mode, resp.ticket_id, {
         ahead: resp.queue_position,
@@ -376,6 +383,8 @@ export function useSupport() {
         })
       }
       if (event.service_mode === 'async') {
+        if (appliedAsyncTicketIds.current.has(ticketId)) return
+        appliedAsyncTicketIds.current.add(ticketId)
         // 转异步后走异步回执、不再占用面板主态（PRD §8.6）。
         // 模式已由 modeFromServiceMode('async') 映射回 chat，排队人数/客服信息随之丢弃
         // —— 旧实现这里漏清 queuePosition，顶部还会显示「前方 N 人」。
@@ -393,8 +402,8 @@ export function useSupport() {
           kind: 'async_ticket',
           asyncTicket: {
             ticketNo: ticketNoOf(detail),
-            status: detail.status_label || detail.status,
-            slaText: ticketSlaTextOf(detail),
+            status: t('common.customerService.asyncTicket.pending'),
+            slaText: ticketSlaTextOf(detail) || t('common.customerService.asyncTicket.defaultEta'),
           },
         })
       }

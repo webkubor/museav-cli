@@ -145,6 +145,7 @@ export interface SupportTicketSummary {
   service_mode?: SupportServiceMode
   title?: string
   description?: string
+  latest_message_preview?: string
   /** 客服显示名；非空 = 已接通（前端据此判排队/接通，不依赖 status 枚举）。 */
   assignee_display_name?: string
   /** SLA / 下一步文案（「我们将在 1 个工作日内联系你。」）—— PRD 叫 sla_text，后端叫这个。 */

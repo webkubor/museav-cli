@@ -8,7 +8,37 @@
  * ⚠️ 目录 model_id 带厂商前缀（anthropic/claude-opus-4.6），但网关 /v1/models 认的是裸名
  * （claude-opus-4.6）。带前缀请求同样 403，所以这里统一剥掉前缀再挑。
  */
-import type { CatalogModelItem } from '@/types'
+import type { CatalogModelListParams } from '@/interfaces/catalog'
+import type { CatalogModelItem, CursorPage } from '@/types'
+
+const CONNECT_MODEL_PAGE_SIZE = 100
+
+/** 拉取某个快速接入客户端的完整模型目录；保留游标分页契约，不改变接口语义。 */
+export async function listAllConnectModels(
+  tool: 'claude-code' | 'codex',
+  listPage: (params: CatalogModelListParams) => Promise<CursorPage<CatalogModelItem>>
+): Promise<CatalogModelItem[]> {
+  const items: CatalogModelItem[] = []
+  const seenCursors = new Set<string>()
+  let cursor: string | undefined
+
+  while (true) {
+    const page = await listPage({
+      coding_tool: tool,
+      include_hidden: true,
+      page_size: CONNECT_MODEL_PAGE_SIZE,
+      ...(cursor ? { cursor } : {}),
+    })
+    items.push(...page.items)
+
+    const nextCursor = page.next_cursor
+    if (!page.has_more || !nextCursor || seenCursors.has(nextCursor)) break
+    seenCursors.add(nextCursor)
+    cursor = nextCursor
+  }
+
+  return items
+}
 
 /** 目录 model_id 带厂商前缀（anthropic/claude-opus-4.6），网关只认裸名，统一剥掉。 */
 export function stripVendorPrefix(id: string) {

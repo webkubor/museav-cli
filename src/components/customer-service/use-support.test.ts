@@ -201,4 +201,88 @@ describe('useSupport · agent-detected human handoff', () => {
     expect(requestHandoffMock).toHaveBeenCalledOnce()
     expect(requestHandoffMock.mock.calls[0][0].summary).not.toContain('secret-value')
   })
+
+  it.each(['success', 'failure'])('ignores an old handoff %s after switching accounts without changing the new conversation', async (outcome) => {
+    let resolveHandoff: (value: unknown) => void = () => {}
+    let rejectHandoff: (reason: Error) => void = () => {}
+    requestHandoffMock.mockImplementationOnce(() => new Promise((resolve, reject) => {
+      resolveHandoff = resolve
+      rejectHandoff = reject
+    }))
+    const { result, rerender } = renderHook(() => useSupport())
+    let pending: Promise<void> = Promise.resolve()
+    await act(async () => { pending = result.current.startHandoff() })
+    expect(requestHandoffMock).toHaveBeenCalledOnce()
+
+    await act(async () => {
+      authState.account = { account_id: 'account-2' }
+      rerender()
+    })
+    askSupportMock.mockResolvedValueOnce({ answer: '新账号回答', answer_status: 'answered' })
+    await act(async () => {
+      await result.current.ask('新账号的问题')
+    })
+    // Leave the new account in a recognizable chat state before the old request settles.
+    expect(result.current.messages.map((message) => message.content)).toContain('新账号的问题')
+    await act(async () => {
+      if (outcome === 'success') resolveHandoff({ service_mode: 'live', ticket_id: 'old-ticket', status: 'pending' })
+      else rejectHandoff(new Error('old account handoff failed'))
+      await pending
+    })
+    expect(result.current.mode.kind).toBe('chat')
+    expect(result.current.messages.some((message) => message.content.includes('handoff'))).toBe(false)
+    expect(requestErrorMock).not.toHaveBeenCalled()
+  })
+
+  it('includes a direct regex handoff question once in the summary', async () => {
+    const { result } = renderHook(() => useSupport())
+    await act(async () => result.current.ask('转人工处理我的账单'))
+    expect(askSupportMock).not.toHaveBeenCalled()
+    const summary = requestHandoffMock.mock.calls[0][0].summary as string
+    expect(summary.match(/转人工处理我的账单/g)).toHaveLength(1)
+    expect(result.current.messages.filter((message) => message.role === 'user')).toHaveLength(1)
+  })
+
+  it('lets a new account start another handoff while the old request remains pending', async () => {
+    let resolveOld: (value: unknown) => void = () => {}
+    requestHandoffMock.mockImplementationOnce(() => new Promise((resolve) => { resolveOld = resolve }))
+    const { result, rerender } = renderHook(() => useSupport())
+    let old: Promise<void> = Promise.resolve()
+    await act(async () => { old = result.current.startHandoff() })
+    await act(async () => {
+      authState.account = { account_id: 'account-2' }
+      rerender()
+    })
+    await act(async () => result.current.startHandoff())
+    expect(requestHandoffMock).toHaveBeenCalledTimes(2)
+    expect(result.current.mode).toMatchObject({ kind: 'queuing', ticketId: 'ticket-1' })
+    await act(async () => {
+      resolveOld({ service_mode: 'live', ticket_id: 'old-ticket', status: 'pending' })
+      await old
+    })
+    expect(result.current.mode).toMatchObject({ kind: 'queuing', ticketId: 'ticket-1' })
+  })
+
+  it('releases an anonymous pending ask when login changes null to an account', async () => {
+    authState.account = null
+    let resolveAsk: (value: unknown) => void = () => {}
+    askSupportMock.mockImplementationOnce(() => new Promise((resolve) => { resolveAsk = resolve }))
+      .mockResolvedValueOnce({ answer: '新账号回答', answer_status: 'answered' })
+    const { result, rerender } = renderHook(() => useSupport())
+    let pending: Promise<void> = Promise.resolve()
+    await act(async () => { pending = result.current.ask('匿名问题') })
+    await act(async () => {
+      authState.account = { account_id: 'account-2' }
+      rerender()
+    })
+    expect(result.current.isAsking).toBe(false)
+    expect(result.current.messages).toEqual([])
+    await act(async () => result.current.ask('登录后的问题'))
+    expect(askSupportMock).toHaveBeenCalledTimes(2)
+    await act(async () => {
+      resolveAsk({ answer: '迟到的匿名回答', answer_status: 'answered' })
+      await pending
+    })
+    expect(result.current.messages.map((message) => message.content)).toEqual(['登录后的问题', '新账号回答'])
+  })
 })

@@ -132,7 +132,7 @@ export function useSupport() {
   }, [mode])
   const [messages, setMessages] = useState<ChatItem[]>([])
   const [isAsking, setIsAsking] = useState(false)
-  const askGeneration = useRef(0)
+  const accountEpoch = useRef(0)
   const handoffPending = useRef(false)
   const [isCancellingHandoff, setIsCancellingHandoff] = useState(false)
   const [ticketDetail, setTicketDetail] = useState<SupportTicketDetail | null>(null)
@@ -145,7 +145,7 @@ export function useSupport() {
   /** 当前模式关联的工单号（取代原来那个全局 ticketId）。 */
   const ticketId = ticketIdOf(mode)
 
-  const lastAccountId = useRef<string | null>(null)
+  const lastAccountId = useRef<string | null>(account?.account_id ?? null)
   const appliedAsyncTicketIds = useRef<Set<string>>(new Set())
   const appliedEndedTicketIds = useRef<ReadonlySet<string>>(new Set())
   const activeAccountId = useRef(account?.account_id ?? null)
@@ -203,8 +203,8 @@ export function useSupport() {
   // 退出登录/切账号：清空私有会话上下文
   useEffect(() => {
     const currentId = account?.account_id ?? null
-    if (lastAccountId.current !== null && lastAccountId.current !== currentId) {
-      askGeneration.current += 1
+    if (lastAccountId.current !== currentId) {
+      accountEpoch.current += 1
       setIsAsking(false)
       // 回到 chat 即丢弃全部模式内数据（ticketId / 排队人数 / 客服信息），
       // 不用再逐个清 —— 这正是原先漏清 agentInfo 的地方
@@ -246,6 +246,8 @@ export function useSupport() {
       })
       return
     }
+    const epoch = accountEpoch.current
+    const accountId = account?.account_id ?? null
     handoffPending.current = true
     trackEvent('support_handoff_start')
     try {
@@ -258,6 +260,7 @@ export function useSupport() {
           ? [...messages, { id: '', role: 'user', content: trigger.question, createdAt: Date.now(), sensitiveHit: trigger.sensitiveHit }]
           : messages, currentPagePath() ?? ''),
       })
+      if (epoch !== accountEpoch.current || accountId !== activeAccountId.current) return
       appendMessage({
         id: crypto.randomUUID(),
         role: 'system',
@@ -271,11 +274,12 @@ export function useSupport() {
         status: resp.status,
       }))
     } catch (error) {
+      if (epoch !== accountEpoch.current || accountId !== activeAccountId.current) return
       appToast.requestError(error, t('common.customerService.handoffFailed'))
       go({ kind: 'chat' })
       appendMessage({ id: crypto.randomUUID(), role: 'system', content: t('common.customerService.handoffFailed'), createdAt: Date.now() })
     } finally {
-      handoffPending.current = false
+      if (epoch === accountEpoch.current) handoffPending.current = false
     }
   }, [mode, go, appendMessage, t, account, isLoading, messages])
   const startHandoff = useCallback(() => startHandoffWithTrigger(), [startHandoffWithTrigger])
@@ -283,12 +287,12 @@ export function useSupport() {
   const ask = useCallback(async (question: string) => {
     const trimmed = question.trim()
     if (!trimmed || isAsking) return
-    const generation = askGeneration.current
+    const generation = accountEpoch.current
     const accountId = account?.account_id ?? null
 
     if (HANDOFF_TRIGGER_RE.test(trimmed) && canStartHandoff(mode)) {
       appendMessage({ id: crypto.randomUUID(), role: 'user', content: trimmed, createdAt: Date.now() })
-      await startHandoff()
+      await startHandoffWithTrigger({ question: trimmed, sensitiveHit: false })
       return
     }
 
@@ -301,7 +305,7 @@ export function useSupport() {
         session_id: getOrCreateSupportSessionId(),
         page_path: currentPagePath(),
       })
-      if (generation !== askGeneration.current || accountId !== activeAccountId.current) return
+      if (generation !== accountEpoch.current || accountId !== activeAccountId.current) return
       appendMessage({
         id: crypto.randomUUID(),
         role: 'assistant',
@@ -319,7 +323,7 @@ export function useSupport() {
       })
       if (resp.intent === 'human_handoff') await startHandoffWithTrigger({ question: trimmed, sensitiveHit: resp.sensitive?.Hit === true })
     } catch (error) {
-      if (generation !== askGeneration.current || accountId !== activeAccountId.current) return
+      if (generation !== accountEpoch.current || accountId !== activeAccountId.current) return
       appToast.requestError(error, t('common.customerService.sendFailed'))
       appendMessage({
         id: crypto.randomUUID(),
@@ -328,9 +332,9 @@ export function useSupport() {
         createdAt: Date.now(),
       })
     } finally {
-      if (generation === askGeneration.current) setIsAsking(false)
+      if (generation === accountEpoch.current) setIsAsking(false)
     }
-  }, [isAsking, mode, account?.account_id, appendMessage, startHandoff, startHandoffWithTrigger, t])
+  }, [isAsking, mode, account?.account_id, appendMessage, startHandoffWithTrigger, t])
 
   const rateMessageAnswer = useCallback(async (messageId: string, rating: SupportAnswerRating) => {
     const target = messages.find((m) => m.id === messageId)

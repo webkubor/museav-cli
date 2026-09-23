@@ -9,15 +9,59 @@
  * 表格外面套 .cs-markdown-table-wrap 做横向滚动：模型输出的表格列数不可控，
  * 不兜住会把消息气泡直接撑破（样式见 styles/effects.css）。
  */
-import Markdown, { type Components } from 'react-markdown'
+import Markdown, { type Components, type Options } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { cn } from '@/lib/utils'
+
+type MarkdownNode = {
+  type: string
+  value?: string
+  url?: string
+  children?: MarkdownNode[]
+  position?: { start: { offset?: number }; end: { offset?: number } }
+  [key: string]: unknown
+}
+
+type RemarkPlugin = NonNullable<Options['remarkPlugins']>[number]
+
+/** 只把 GFM 自动识别的裸 URL / 邮箱还原成文本，保留显式 Markdown 链接和其他 GFM 语法。 */
+const remarkKeepBareAutolinksAsText = (() =>
+  (tree: MarkdownNode, file: { value: unknown }) => {
+    const source = String(file.value)
+
+    const transform = (node: MarkdownNode): MarkdownNode => {
+      const children = node.children?.map(transform)
+      const nextNode = children ? { ...node, children } : node
+      const start = node.position?.start.offset
+      const end = node.position?.end.offset
+      const visibleText = node.children?.length === 1 ? node.children[0]?.value : undefined
+
+      if (
+        node.type === 'link' &&
+        visibleText &&
+        start !== undefined &&
+        end !== undefined &&
+        source.slice(start, end) === visibleText
+      ) {
+        return { type: 'text', value: visibleText, position: node.position }
+      }
+
+      return nextNode
+    }
+
+    return transform(tree)
+  }) as RemarkPlugin
 
 const BASE_COMPONENTS: Components = {
   table: ({ children, ...props }) => (
     <div className="cs-markdown-table-wrap">
       <table {...props}>{children}</table>
     </div>
+  ),
+  a: ({ children, ...props }) => (
+    <a {...props} target="_blank" rel="noopener noreferrer">
+      {children}
+    </a>
   ),
 }
 
@@ -35,7 +79,10 @@ export function MarkdownContent({
 }) {
   return (
     <div className={cn('cs-markdown', className)}>
-      <Markdown remarkPlugins={[remarkGfm]} components={{ ...BASE_COMPONENTS, ...components }}>
+      <Markdown
+        remarkPlugins={[remarkGfm, remarkKeepBareAutolinksAsText]}
+        components={{ ...BASE_COMPONENTS, ...components }}
+      >
         {children}
       </Markdown>
     </div>

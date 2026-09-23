@@ -152,7 +152,7 @@ function MessageBubble({ msg, onRate, onStartHandoff }: { msg: ChatItem; onRate:
             : 'rounded-lg rounded-bl-sm border-mg-border bg-mg-fill-0'
         }`}
       >
-        {isUser ? msg.content : <MarkdownContent>{msg.content}</MarkdownContent>}
+        {isUser ? msg.content : <MarkdownContent linkifyBareUrls>{msg.content}</MarkdownContent>}
         {presentation.hintKey && <p className="m-0 mt-1.5 text-[11px] text-mg-text-3">{t(presentation.hintKey)}</p>}
         {presentation.showHandoffCta && (
           <button

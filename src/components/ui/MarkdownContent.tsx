@@ -23,14 +23,15 @@ type MarkdownNode = {
 }
 
 type RemarkPlugin = NonNullable<Options['remarkPlugins']>[number]
+const BARE_HTTP_URL = /^https?:\/\/[A-Za-z0-9\-._~:/?#[\]@!$&'()*+,;=%]+/i
 
-/** 只把 GFM 自动识别的裸 URL / 邮箱还原成文本，保留显式 Markdown 链接和其他 GFM 语法。 */
-const remarkKeepBareAutolinksAsText = (() =>
-  (tree: MarkdownNode, file: { value: unknown }) => {
+/** 按调用方策略处理 GFM 自动识别的裸 URL / 邮箱，保留显式 Markdown 链接和其他 GFM 语法。 */
+const remarkKeepBareAutolinksAsText = (linkifyBareUrls: boolean): RemarkPlugin =>
+  (() => (tree: MarkdownNode, file: { value: unknown }) => {
     const source = String(file.value)
 
-    const transform = (node: MarkdownNode): MarkdownNode => {
-      const children = node.children?.map(transform)
+    const transform = (node: MarkdownNode): MarkdownNode[] => {
+      const children = node.children?.flatMap(transform)
       const nextNode = children ? { ...node, children } : node
       const start = node.position?.start.offset
       const end = node.position?.end.offset
@@ -43,13 +44,38 @@ const remarkKeepBareAutolinksAsText = (() =>
         end !== undefined &&
         source.slice(start, end) === visibleText
       ) {
-        return { type: 'text', value: visibleText, position: node.position }
+        const url = linkifyBareUrls ? visibleText.match(BARE_HTTP_URL)?.[0] : undefined
+        if (url) {
+          if (url.length === visibleText.length) return [nextNode]
+          const linkEnd = start + url.length
+          const linkNode: MarkdownNode = {
+            ...nextNode,
+            url,
+            children: [{ ...node.children![0], value: url }],
+            position: node.position && {
+              start: node.position.start,
+              end: { ...node.position.end, offset: linkEnd },
+            },
+          }
+          return [
+            linkNode,
+            {
+              type: 'text',
+              value: visibleText.slice(url.length),
+              position: node.position && {
+                start: { ...node.position.start, offset: linkEnd },
+                end: node.position.end,
+              },
+            },
+          ]
+        }
+        return [{ type: 'text', value: visibleText, position: node.position }]
       }
 
-      return nextNode
+      return [nextNode]
     }
 
-    return transform(tree)
+    return transform(tree)[0] ?? tree
   }) as RemarkPlugin
 
 const BASE_COMPONENTS: Components = {
@@ -69,6 +95,7 @@ export function MarkdownContent({
   children,
   className,
   components,
+  linkifyBareUrls = false,
 }: {
   /** 原始 markdown 文本 */
   children: string
@@ -76,11 +103,13 @@ export function MarkdownContent({
   className?: string
   /** 调用方可覆盖/追加节点渲染（如模型体验把 a 换成走 SPA 导航的 MessageLink） */
   components?: Components
+  /** 需要可点击裸 URL 的场景显式开启；默认仍按普通文本显示。 */
+  linkifyBareUrls?: boolean
 }) {
   return (
     <div className={cn('cs-markdown', className)}>
       <Markdown
-        remarkPlugins={[remarkGfm, remarkKeepBareAutolinksAsText]}
+        remarkPlugins={[remarkGfm, remarkKeepBareAutolinksAsText(linkifyBareUrls)]}
         components={{ ...BASE_COMPONENTS, ...components }}
       >
         {children}

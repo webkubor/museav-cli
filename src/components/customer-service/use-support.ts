@@ -4,7 +4,7 @@ import { useAuthStore } from '@/store/auth'
 import { appToast } from '@/lib/app-toast'
 import { trackEvent } from '@/lib/track'
 import { storageKeys } from '@/lib/storage'
-import { ModelGoApiError } from '@/lib/request'
+import { ModelGoApiError, SENSITIVE_KEY_RE } from '@/lib/request'
 import {
   askSupport,
   cancelHandoff,
@@ -229,7 +229,7 @@ export function useSupport() {
 
   const startHandoffWithTrigger = useCallback(async (trigger?: { question: string; sensitiveHit: boolean }) => {
     // 「排队中不允许重复发起转接」由状态机判定（PRD §8.6），不再自己比 serviceMode
-    if (!canStartHandoff(mode) || handoffPending.current) return
+    if (!canStartHandoff(modeRef.current) || handoffPending.current) return
     // 未登录直接引导登录：转人工是登录态能力，发出去只会拿到 40101，
     // 再被 catch 成「转人工失败，请稍后重试」——用户会一直重试，而重试
     // 永远失败。同理这里也不能让 40101 走到 request.ts 的全局分支，
@@ -281,7 +281,7 @@ export function useSupport() {
     } finally {
       if (epoch === accountEpoch.current) handoffPending.current = false
     }
-  }, [mode, go, appendMessage, t, account, isLoading, messages])
+  }, [go, appendMessage, t, account, isLoading, messages])
   const startHandoff = useCallback(() => startHandoffWithTrigger(), [startHandoffWithTrigger])
 
   const ask = useCallback(async (question: string) => {
@@ -292,7 +292,9 @@ export function useSupport() {
 
     if (HANDOFF_TRIGGER_RE.test(trimmed) && canStartHandoff(mode)) {
       appendMessage({ id: crypto.randomUUID(), role: 'user', content: trimmed, createdAt: Date.now() })
-      await startHandoffWithTrigger({ question: trimmed, sensitiveHit: false })
+      // Direct triggers bypass /support/ask's sensitive.Hit; omit the entire question
+      // when the shared request redaction matcher spots a credential label.
+      await startHandoffWithTrigger({ question: trimmed, sensitiveHit: SENSITIVE_KEY_RE.test(trimmed) })
       return
     }
 
@@ -321,7 +323,9 @@ export function useSupport() {
         sensitiveHit: resp.sensitive?.Hit === true,
         rating: null,
       })
-      if (resp.intent === 'human_handoff') await startHandoffWithTrigger({ question: trimmed, sensitiveHit: resp.sensitive?.Hit === true })
+      if (resp.intent === 'human_handoff' && canStartHandoff(modeRef.current)) {
+        await startHandoffWithTrigger({ question: trimmed, sensitiveHit: resp.sensitive?.Hit === true })
+      }
     } catch (error) {
       if (generation !== accountEpoch.current || accountId !== activeAccountId.current) return
       appToast.requestError(error, t('common.customerService.sendFailed'))

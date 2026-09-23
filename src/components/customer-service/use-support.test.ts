@@ -243,6 +243,29 @@ describe('useSupport · agent-detected human handoff', () => {
     expect(result.current.messages.filter((message) => message.role === 'user')).toHaveLength(1)
   })
 
+  it('excludes a direct handoff question containing a token from the summary', async () => {
+    const { result } = renderHook(() => useSupport())
+    await act(async () => result.current.ask('转人工处理我的 token: secret-value'))
+    expect(requestHandoffMock).toHaveBeenCalledOnce()
+    expect(requestHandoffMock.mock.calls[0][0].summary).not.toContain('secret-value')
+  })
+
+  it('does not create another handoff when a pending ask returns after manual handoff succeeds', async () => {
+    let resolveAsk: (value: unknown) => void = () => {}
+    askSupportMock.mockImplementationOnce(() => new Promise((resolve) => { resolveAsk = resolve }))
+    const { result } = renderHook(() => useSupport())
+    let pending: Promise<void> = Promise.resolve()
+    await act(async () => { pending = result.current.ask('能帮我处理吗') })
+    await act(async () => result.current.startHandoff())
+    expect(result.current.mode.kind).toBe('queuing')
+    await act(async () => {
+      resolveAsk({ answer: '正在转接', answer_status: 'intent', intent: 'human_handoff' })
+      await pending
+    })
+    expect(requestHandoffMock).toHaveBeenCalledOnce()
+    expect(result.current.mode.kind).toBe('queuing')
+  })
+
   it('lets a new account start another handoff while the old request remains pending', async () => {
     let resolveOld: (value: unknown) => void = () => {}
     requestHandoffMock.mockImplementationOnce(() => new Promise((resolve) => { resolveOld = resolve }))

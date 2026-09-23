@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { calculateSpendableBalance } from './formatBalance'
+import { calculateSpendableBalance, parseBalanceAmount } from './formatBalance'
 
 describe('calculateSpendableBalance', () => {
   it('adds the available main, gift and reward buckets required by the PRD', () => {
@@ -12,5 +12,18 @@ describe('calculateSpendableBalance', () => {
 
   it('does not present a partial total before every bucket is available', () => {
     expect(calculateSpendableBalance('80.00', undefined, '5.00')).toBeUndefined()
+  })
+})
+
+describe('parseBalanceAmount', () => {
+  it('parses numeric strings including negatives', () => {
+    expect(parseBalanceAmount('0.00')).toBe(0)
+    expect(parseBalanceAmount('-5.00')).toBe(-5)
+  })
+
+  it('returns undefined for missing or non-numeric input', () => {
+    expect(parseBalanceAmount(undefined)).toBeUndefined()
+    expect(parseBalanceAmount('')).toBeUndefined()
+    expect(parseBalanceAmount('abc')).toBeUndefined()
   })
 })

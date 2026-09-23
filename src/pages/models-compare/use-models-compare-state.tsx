@@ -27,7 +27,7 @@ import { useSidebarCollapseStore } from '@/store/use-sidebar-collapse-store'
 import { useExperienceWorkbenchStore } from '@/store/use-experience-workbench-store'
 import { useAuthStore } from '@/store/auth'
 import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
-import { calculateSpendableBalance } from '@/pages/billing/formatBalance'
+import { calculateSpendableBalance, parseBalanceAmount } from '@/pages/billing/formatBalance'
 import { trackEvent } from '@/lib/track'
 import {
   experienceTaskLabel,
@@ -40,6 +40,8 @@ import {
   errorDisplayFields,
   offlineModelPlaceholder,
   defaultExperienceParams,
+  isModelLockedByBalance,
+  isOfflineModel,
   type ExperienceMessage,
   type ExperienceCategoryKey,
   type ExperienceTaskType,
@@ -64,7 +66,8 @@ export function useModelsCompareState() {
   const { modelsQuery } = useModels()
   const allModels = useMemo(() => modelsQuery.data?.items ?? [], [modelsQuery.data?.items])
 
-  // §9.1 余额资格状态机：与单模型页同口径，可消费合计为 0 时锁定付费模型列的发送
+  // §9.1 余额资格状态机：与单模型页同口径（isModelLockedByBalance）——付费列看可消费合计，
+  // 免费列只看主余额（#1091），按列判定
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
   const { data: balance } = useBalance(tenantId)
   const { data: balanceBreakdown } = useBalanceBreakdown(tenantId)
@@ -73,7 +76,11 @@ export function useModelsCompareState() {
     balanceBreakdown?.gift?.amount,
     balanceBreakdown?.reward?.amount,
   )
+  const mainBalance = parseBalanceAmount(balance?.available?.amount)
+  // 模型选择器用：可消费合计为 0 时置灰付费模型
   const isBalanceZero = spendableBalance !== undefined && spendableBalance <= 0
+  const isColumnLockedByBalance = (model: CatalogModelItem) =>
+    isModelLockedByBalance(model, { spendable: spendableBalance, main: mainBalance })
   // 需求方 #833（1.0.6）：各列上次发送被后端免费模型门槛（4032/4291）拒绝的场景，按列会话 id 记；
   // 该列再次发送时清掉。不进持久化 store——是一次发送的即时反馈，不该跨路由留存。
   const [columnFreeGates, setColumnFreeGates] = useState<Record<string, FreeModelGate>>({})
@@ -369,6 +376,10 @@ export function useModelsCompareState() {
     allowedAttachmentKinds,
   })
 
+  // 同步输入：在线列里只要有一列被余额锁，整次共享发送就锁（不做「部分列发送」，与原 #833 行为一致）
+  const syncBalanceLockedColumns = (columns ?? []).filter(
+    (c) => !isOfflineModel(c.model) && isColumnLockedByBalance(c.model),
+  )
   const excludeIdsFor = (idx: number) => (columns?.filter((_, i) => i !== idx).map((c) => c.model.id) ?? [])
 
   return {
@@ -419,6 +430,8 @@ export function useModelsCompareState() {
     pendingByDispatch,
     allModels,
     isBalanceZero,
+    isColumnLockedByBalance,
+    syncBalanceLockedColumns,
     columnFreeGates,
     setColumnFreeGate,
     updateColumn,

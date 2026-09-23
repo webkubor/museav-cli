@@ -8,6 +8,7 @@ import {
   estimateComposerSpend,
   videoResolutionOptions,
   withDefaultExperienceParams,
+  isModelLockedByBalance,
 } from './model-experience-data'
 import { ModelGoApiError } from '@/lib/request'
 import '@/i18n'
@@ -245,5 +246,36 @@ describe('estimateComposerSpend 预估费用口径（prd#851）', () => {
 
   it('未选模型 → ¥0.00', () => {
     expect(estimateComposerSpend(null, 'x', 4096, '¥')).toBe('¥0.00')
+  })
+})
+
+describe('isModelLockedByBalance 余额锁口径（shared/modelgo_prd#1091）', () => {
+  const freeModel = { promotion: { free: true } } as unknown as Parameters<typeof isModelLockedByBalance>[0]
+  const paidModel = { pricing: { input_per_1m: '1', output_per_1m: '2' } } as unknown as Parameters<typeof isModelLockedByBalance>[0]
+
+  it('免费模型只看主余额：主余额 0 + 赠送/奖励 > 0 ⇒ 锁', () => {
+    expect(isModelLockedByBalance(freeModel, { spendable: 100, main: 0 })).toBe(true)
+  })
+
+  it('免费模型：主余额为负同样锁（「不为 0」即 > 0）', () => {
+    expect(isModelLockedByBalance(freeModel, { spendable: 95, main: -5 })).toBe(true)
+  })
+
+  it('免费模型：主余额 > 0 放行', () => {
+    expect(isModelLockedByBalance(freeModel, { spendable: 1, main: 1 })).toBe(false)
+  })
+
+  it('付费模型仍看可消费合计：主余额 0 / 为负但赠送 > 0 ⇒ 放行（#1104）', () => {
+    expect(isModelLockedByBalance(paidModel, { spendable: 100, main: 0 })).toBe(false)
+    expect(isModelLockedByBalance(paidModel, { spendable: 95, main: -5 })).toBe(false)
+  })
+
+  it('付费模型：可消费合计 ≤ 0 ⇒ 锁', () => {
+    expect(isModelLockedByBalance(paidModel, { spendable: 0, main: 0 })).toBe(true)
+  })
+
+  it('快照未就绪（undefined）不做本地拦截，交后端兜底', () => {
+    expect(isModelLockedByBalance(freeModel, { spendable: undefined, main: undefined })).toBe(false)
+    expect(isModelLockedByBalance(paidModel, { spendable: undefined, main: 0 })).toBe(false)
   })
 })

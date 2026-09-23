@@ -707,6 +707,23 @@ export function isFreeModel(model: CatalogModelItem): boolean {
   return Boolean(model.promotion?.free)
 }
 
+/** 余额快照：spendable = 主 + 赠送 + 奖励（可消费合计）；main = 可用主余额（现金）。undefined = 未就绪。 */
+export interface BalanceSnapshot {
+  spendable: number | undefined
+  main: number | undefined
+}
+
+/**
+ * 余额是否锁定该模型的发送（本地预判，后端 billing 闸门才是真源，快照未就绪时不拦、交给后端 4032 兜底）。
+ * - 免费模型（shared/modelgo_prd#1091）：**只看主余额 > 0**，赠送 / 奖励余额不计入，负数同样拒；
+ *   与 billing `checkFreeModelBalanceGate` 同口径（原 #833 口径是可消费合计 > 0，已收窄）。
+ * - 其它模型（#833 / §9.1）：可消费合计 > 0 才能发（#1104：现金欠款但赠金 / 奖励为正仍可用付费模型）。
+ */
+export function isModelLockedByBalance(model: CatalogModelItem, balance: BalanceSnapshot): boolean {
+  const amount = isFreeModel(model) ? balance.main : balance.spendable
+  return amount !== undefined && amount <= 0
+}
+
 export function isPaidModel(model: CatalogModelItem): boolean {
   if (model.promotion?.free) return false
   if ((model.price_tiers ?? []).some((tier) => parseFloat(tier.price) > 0)) return true

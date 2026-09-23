@@ -151,18 +151,18 @@ function CompareColumnCard({ ctx, column, idx }: { ctx: ModelsCompareContext; co
         }
       />
 
-      {/* 需求方 #833（1.0.6）：余额为 0 时免费/付费模型一律锁定，按该列模型是否免费选文案。
+      {/* 需求方 #833 / #1091：按该列模型判余额锁（付费看可消费合计、免费只看主余额），按是否免费选文案。
           只在独立输入态渲染——同步输入态只有底部共享 composer 一条提示（原型 App.tsx:20219/20262
           的 composer 归属：!synchronized 才归列，synchronized 归 playground-shared-composer），
           否则 2 列 + 底部会叠出 3 条同文案提示。 */}
-      {!ctx.syncInput && ctx.isBalanceZero && (
+      {!ctx.syncInput && ctx.isColumnLockedByBalance(column.model) && (
         <ExperienceBalanceNotice free={isFreeModel(column.model)} lockedModelCount={1} />
       )}
 
       {/* 需求方 #833 场景三：该列上次发送被后端 4291 日限额拒绝 → 提示切换其他模型 + 查看用量；
           4032 余额门槛（本地余额快照滞后）复用场景一文案。本地已判余额 0 时不重复叠加。 */}
-      {!ctx.isBalanceZero && ctx.columnFreeGates[column.conversationId] === 'daily_limit' && <ExperienceFreeLimitNotice />}
-      {!ctx.isBalanceZero && ctx.columnFreeGates[column.conversationId] === 'balance_required' && (
+      {!ctx.isColumnLockedByBalance(column.model) && ctx.columnFreeGates[column.conversationId] === 'daily_limit' && <ExperienceFreeLimitNotice />}
+      {!ctx.isColumnLockedByBalance(column.model) && ctx.columnFreeGates[column.conversationId] === 'balance_required' && (
         <ExperienceBalanceNotice free lockedModelCount={1} />
       )}
 
@@ -219,7 +219,7 @@ function CompareColumnCard({ ctx, column, idx }: { ctx: ModelsCompareContext; co
               onChange={(v) => ctx.updateColumn(idx, { draft: v })}
               onSend={() => ctx.handleIndependentSend(idx)}
               isStreaming={column.streaming}
-              disabled={ctx.isBalanceZero}
+              disabled={ctx.isColumnLockedByBalance(column.model)}
               onStop={() => stream.abort(idx)}
               placeholder={ctx.compareTask === 'image_to_image'
                 ? t('modelsExperience.taskPlaceholder.image_to_image')

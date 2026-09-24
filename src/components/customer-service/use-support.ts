@@ -7,6 +7,7 @@ import { storageKeys } from '@/lib/storage'
 import { ModelGoApiError, SENSITIVE_KEY_RE } from '@/lib/request'
 import {
   askSupport,
+  attachSupportTicketAttachment,
   cancelHandoff,
   endHandoff,
   getSupportTicket,
@@ -17,6 +18,7 @@ import {
   reopenTicket,
   requestHandoff,
   submitSupportFeedback,
+  uploadSupportAttachment,
 } from '@/services/support'
 import { useSupportEvents } from './use-support-events'
 import { getOrCreateSupportSessionId, clearSupportSessionId } from './session-id'
@@ -517,14 +519,44 @@ export function useSupport() {
   // ---- 反馈 ----
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
 
-  const submitFeedback = useCallback(async (fields: Omit<SupportFeedbackRequest, 'client_submission_id' | 'page_path'>) => {
+  const submitFeedback = useCallback(async (
+    fields: Omit<SupportFeedbackRequest, 'client_submission_id' | 'page_path'>,
+    file?: File | null,
+  ) => {
     setFeedbackSubmitting(true)
     try {
+      // 先上传附件（可选）再建单：上传失败就中止，不留下「反馈已建、附件没带上」的半截状态。
+      let objectRef = ''
+      if (file) {
+        try {
+          const uploaded = await uploadSupportAttachment(file)
+          objectRef = uploaded.object_ref
+        } catch (error) {
+          appToast.requestError(error, t('common.customerService.feedback.attachmentFailed'))
+          return false
+        }
+      }
       const resp = await submitSupportFeedback({
         ...fields,
         client_submission_id: crypto.randomUUID(),
         page_path: currentPagePath(),
       })
+      // 建单已成功：关联失败只提示、不回滚反馈（用户拿到回执比附件更重要）。
+      const ticketID = resp.ticket_id || resp.ticket_no || ''
+      if (file && objectRef && ticketID) {
+        try {
+          await attachSupportTicketAttachment(ticketID, {
+            file_name: file.name,
+            mime_type: file.type,
+            object_ref: objectRef,
+            size_bytes: file.size,
+          })
+        } catch (error) {
+          // 上传已成功、只是关联失败：不能复用「附件上传失败」——事实不符，且按它去
+          // 「重试」会再建一张不带附件的重复工单。拿不到工单号时也走这里，不拼空 id。
+          appToast.requestError(error, t('common.customerService.feedback.attachmentAttachFailed'))
+        }
+      }
       trackEvent('support_feedback_submit', { category: fields.category })
       appendMessage({
         id: crypto.randomUUID(),

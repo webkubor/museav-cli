@@ -251,7 +251,7 @@ export function CustomerService() {
     // 三区行为由状态机推导，组件不再自己拼布尔组合（原先是 mode/serviceMode 交叉判断）
     showComposer, composerDisabled, showFeedbackEntry, isHumanChat,
     ask, rateMessageAnswer, startHandoff, cancelActiveHandoff, isCancellingHandoff, endActiveHandoff,
-    sendHumanReply, feedbackSubmitting, submitFeedback, openTicketDetail, reopenSelectedTicket, rateSelectedTicket,
+    sendHumanReply, feedbackSubmitting, submitFeedback, openTicketDetail, reopenSelectedTicket, rateSelectedTicket, supplementSelectedTicket,
   } = support
 
   const orbState = supportOrbState(support)
@@ -433,6 +433,7 @@ export function CustomerService() {
               onBack={() => go({ kind: 'tickets' })}
               onReopen={reopenSelectedTicket}
               onRate={rateSelectedTicket}
+              onSupplement={supplementSelectedTicket}
             />
           )}
           {mode.kind === 'feedback' && (

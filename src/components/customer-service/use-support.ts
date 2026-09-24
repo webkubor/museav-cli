@@ -13,6 +13,7 @@ import {
   listTicketMessages,
   rateAnswer,
   rateTicket,
+  supplementTicket,
   replyTicketMessage,
   reopenTicket,
   requestHandoff,
@@ -581,6 +582,20 @@ export function useSupport() {
     }
   }, [mode, t])
 
+  // 问题反馈「补充问题描述」（PRD §7.11）。返回是否成功：失败时由调用方保留输入框里的内容，
+  // 用户改一改就能重试。接口返回的就是补充后的详情（含 supplements），直接替换。
+  const supplementSelectedTicket = useCallback(async (content: string) => {
+    if (mode.kind !== 'ticketDetail') return false
+    try {
+      const detail = await supplementTicket(mode.ticketId, content)
+      setTicketDetail(detail)
+      return true
+    } catch (error) {
+      appToast.requestError(error, t('common.customerService.ticket.supplementFailed'))
+      return false
+    }
+  }, [mode, t])
+
   const rateSelectedTicket = useCallback(async (stars: number) => {
     if (mode.kind !== 'ticketDetail') return
     try {
@@ -618,6 +633,7 @@ export function useSupport() {
     openTicketDetail,
     reopenSelectedTicket,
     rateSelectedTicket,
+    supplementSelectedTicket,
   }
 }
 

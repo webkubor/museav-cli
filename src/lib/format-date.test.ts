@@ -4,9 +4,11 @@
  * API：无
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import '@/i18n'
-import { formatDuration, formatRelativeTime } from '@/lib/format-date'
+import { formatDuration, formatMonthDayTime, formatRelativeTime } from '@/lib/format-date'
+
+vi.mock('@/lib/timezone', () => ({ resolveTimeZone: () => 'Asia/Shanghai' }))
 
 describe('formatDuration', () => {
   it('毫秒小于一秒时保留 ms', () => {
@@ -70,5 +72,16 @@ describe('formatRelativeTime', () => {
   it('空值返回 —', () => {
     expect(formatRelativeTime(null)).toBe('—')
     expect(formatRelativeTime(undefined)).toBe('—')
+  })
+})
+
+describe('formatMonthDayTime', () => {
+  it('按用户显示时区输出固定 MM-DD HH:mm（跨零点也换日）', () => {
+    expect(formatMonthDayTime('2026-09-23T16:05:00Z')).toBe('09-24 00:05')
+  })
+
+  it('空值与非法值兜底为破折号', () => {
+    expect(formatMonthDayTime(undefined)).toBe('—')
+    expect(formatMonthDayTime('not-a-date')).toBe('—')
   })
 })

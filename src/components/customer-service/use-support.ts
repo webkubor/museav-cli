@@ -586,15 +586,25 @@ export function useSupport() {
   // 用户改一改就能重试。接口返回的就是补充后的详情（含 supplements），直接替换。
   const supplementSelectedTicket = useCallback(async (content: string) => {
     if (mode.kind !== 'ticketDetail') return false
+    const targetId = mode.ticketId
+    const accountId = account?.account_id ?? null
     try {
-      const detail = await supplementTicket(mode.ticketId, content)
-      setTicketDetail(detail)
+      const detail = await supplementTicket(targetId, content)
+      // 请求在途时用户可能已退回列表、换开了另一张单：晚到的回包不能盖掉那张单的详情，
+      // 否则屏幕显示 A、后续操作却打到 B。
+      if (isCurrentSupportTicket(targetId, accountId)) setTicketDetail(detail)
       return true
-    } catch (error) {
-      appToast.requestError(error, t('common.customerService.ticket.supplementFailed'))
+    } catch {
+      // 固定用 PRD 文案：业务错误的 message 是 support.invalid_transition 这类机器码，
+      // requestError 会优先把它原样上屏。
+      appToast.error(t('common.customerService.ticket.supplementFailed'))
+      // 最常见的失败是工单在详情打开期间已被受理完结（can_supplement 变 false）。
+      // 刷新详情，让入口按最新状态收起，而不是让用户对着旧入口反复重试。
+      const fresh = await getSupportTicket(targetId).catch(() => null)
+      if (fresh && isCurrentSupportTicket(targetId, accountId)) setTicketDetail(fresh)
       return false
     }
-  }, [mode, t])
+  }, [mode, account?.account_id, isCurrentSupportTicket, t])
 
   const rateSelectedTicket = useCallback(async (stars: number) => {
     if (mode.kind !== 'ticketDetail') return

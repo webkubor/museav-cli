@@ -8,7 +8,9 @@ import { describe, expect, it, vi } from 'vitest'
 import '@/i18n'
 import { formatDuration, formatMonthDayTime, formatRelativeTime } from '@/lib/format-date'
 
-vi.mock('@/lib/timezone', () => ({ resolveTimeZone: () => 'Asia/Shanghai' }))
+// 故意选一个和开发机（多为 Asia/Shanghai）、CI（多为 UTC）都不同的时区，
+// 漏传 timeZone 时输出才会变、测试才会红。
+vi.mock('@/lib/timezone', () => ({ resolveTimeZone: () => 'America/New_York' }))
 
 describe('formatDuration', () => {
   it('毫秒小于一秒时保留 ms', () => {
@@ -77,7 +79,10 @@ describe('formatRelativeTime', () => {
 
 describe('formatMonthDayTime', () => {
   it('按用户显示时区输出固定 MM-DD HH:mm（跨零点也换日）', () => {
-    expect(formatMonthDayTime('2026-09-23T16:05:00Z')).toBe('09-24 00:05')
+    // 纽约 9 月是 EDT（UTC-4）：02:05Z 是前一天 22:05
+    expect(formatMonthDayTime('2026-09-24T02:05:00Z')).toBe('09-23 22:05')
+    // 午夜走 h23，不能写成 24:05
+    expect(formatMonthDayTime('2026-09-24T04:05:00Z')).toBe('09-24 00:05')
   })
 
   it('空值与非法值兜底为破折号', () => {

@@ -5,7 +5,7 @@ import type { SupportTicketDetail, SupportTicketSummary } from '@/interfaces/sup
 const { listTickets } = vi.hoisted(() => ({ listTickets: vi.fn() }))
 vi.mock('@/services/support', () => ({ listSupportTickets: listTickets }))
 vi.mock('@/store/auth', () => ({ useAuthStore: (select: (state: { account: object }) => unknown) => select({ account: {} }) }))
-vi.mock('@/lib/timezone', () => ({ resolveTimeZone: () => 'Asia/Shanghai' }))
+vi.mock('@/lib/timezone', () => ({ resolveTimeZone: () => 'America/New_York' }))
 vi.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: vi.fn() },
   useTranslation: () => ({ t: (key: string, opts?: { time?: string }) => (opts?.time ? `${key}:${opts.time}` : key) }),
@@ -62,8 +62,8 @@ function renderDetail(detail: SupportTicketDetail, onSupplement = vi.fn().mockRe
 
 it('renders each supplement under the description with a 补充 · MM-DD HH:mm stamp (#1119)', () => {
   renderDetail(feedbackDetail)
-  // 用户显示时区 Asia/Shanghai：16:05Z → 次日 00:05
-  expect(screen.getByText('common.customerService.ticket.supplementAt:09-24 00:05')).toBeInTheDocument()
+  // 用户显示时区 America/New_York（EDT，UTC-4）：16:05Z → 12:05
+  expect(screen.getByText('common.customerService.ticket.supplementAt:09-23 12:05')).toBeInTheDocument()
   expect(screen.getByText(/第一次补充/)).toHaveTextContent('第一次补充 第二行')
 })
 

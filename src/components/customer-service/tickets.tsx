@@ -234,7 +234,7 @@ export function TicketDetailView({ detail, onBack, onReopen, onRate, onSupplemen
                 <span className="mg-text-caption text-mg-text-3">
                   {t('common.customerService.ticket.supplementAt', { time: formatMonthDayTime(item.created_at) })}
                 </span>
-                <p className="m-0 mg-text-body text-mg-text-1 whitespace-pre-wrap">{item.content}</p>
+                <p className="m-0 mg-text-body text-mg-text-1 whitespace-pre-wrap break-words">{item.content}</p>
               </div>
             ))}
             {ticketSlaTextOf(detail) && <p className="m-0 mg-text-caption text-mg-text-3">{ticketSlaTextOf(detail)}</p>}
@@ -251,6 +251,8 @@ export function TicketDetailView({ detail, onBack, onReopen, onRate, onSupplemen
                   placeholder={t('common.customerService.ticket.supplementPlaceholder')}
                   value={supplementText}
                   onChange={(e) => setSupplementText(e.target.value)}
+                  // 提交中锁住：成功后会清空输入框，点提交之后再打的字不会被发出去，不能静默吞掉
+                  disabled={supplementing}
                 />
                 <div className="flex justify-end gap-2">
                   <Button size="small" variant="secondary" onClick={closeSupplement} disabled={supplementing}>

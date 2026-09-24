@@ -2,6 +2,7 @@ import { get, getPage, post } from '@/lib/request'
 import type {
   SupportAskRequest,
   SupportAskResponse,
+  SupportAttachmentUploadResponse,
   SupportEventsResponse,
   SupportFeedbackRequest,
   SupportFeedbackResponse,
@@ -21,6 +22,38 @@ export function askSupport(body: SupportAskRequest) {
 
 export function submitSupportFeedback(body: SupportFeedbackRequest) {
   return post<SupportFeedbackResponse>('support/feedback', body)
+}
+
+/**
+ * 读 File 为 base64。web-api 的附件上传接口收 JSON
+ * `{file_name, mime_type, content_base64}`（不是 multipart），所以要自己转。
+ * 分块拼接避免 `String.fromCharCode(...bytes)` 在大文件上爆栈。
+ */
+export async function fileToBase64(file: File): Promise<string> {
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  let binary = ''
+  const chunk = 0x8000
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk))
+  }
+  return btoa(binary)
+}
+
+/** 上传附件到 OSS（web-api 中转），返回对象引用 object_ref。 */
+export async function uploadSupportAttachment(file: File): Promise<SupportAttachmentUploadResponse> {
+  return post<SupportAttachmentUploadResponse>('support/attachments', {
+    file_name: file.name,
+    mime_type: file.type,
+    content_base64: await fileToBase64(file),
+  })
+}
+
+/** 把已上传的对象关联到工单（`POST /support/tickets/:id/attachments`）。 */
+export function attachSupportTicketAttachment(
+  ticketId: string,
+  ref: { file_name: string; mime_type: string; object_ref: string; size_bytes: number },
+) {
+  return post<void>(`support/tickets/${ticketId}/attachments`, ref)
 }
 
 export function requestHandoff(body: SupportHandoffRequest) {

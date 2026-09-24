@@ -1,6 +1,6 @@
 /** Two-step email OTP login and registration, with optional enrolled TOTP. */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEventHandler } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
@@ -17,6 +17,7 @@ import {
 } from 'react-icons/lu'
 
 import { AuthLayout } from '@/components/auth/AuthLayout'
+import { CaptchaGate, type CaptchaGateHandle } from '@/components/auth/CaptchaGate'
 import { GlobalDiscountShowcase } from '@/components/auth/GlobalDiscountShowcase'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -73,6 +74,13 @@ export function GlobalEmailAuth() {
   const [resendSeconds, setResendSeconds] = useState(0)
   const [pendingProvider, setPendingProvider] = useState<GlobalOAuthProvider | null>(null)
   const [humanVerification, setHumanVerification] = useState<HumanVerificationState>('idle')
+  // 第二步「确认验证码」单独要求人机校验（后端 email-code/login 网关要求，跟手机号登录一致，
+  // prd#1092 boss 反馈：不能像之前那样在提交函数里裸调 getCaptchaParam() 弹一个没有预兆的滑块）。
+  // 照 PhoneAuth.tsx 的既有门禁写法：页面上放一条可见验证条，未通过时主动 open() 并提示，
+  // 而不是静默弹窗；40025（一次性四元组失效/未过）时把验证条退回可重验，验证码本身不用重发。
+  const [gateParam, setGateParam] = useState<string | null>(null)
+  const [gateActive, setGateActive] = useState(false)
+  const gateRef = useRef<CaptchaGateHandle | null>(null)
 
   const describeError = (error: unknown) => {
     if (isApiErrorCode(error, 40038) || isApiErrorCode(error, 40039)) {
@@ -164,19 +172,43 @@ export function GlobalEmailAuth() {
 
   const handleResend = async () => {
     if (resendSeconds > 0 || loading) return
+    // 验证条生效但未通过 → 主动调起挑战、给出提示后中止，等用户在可见 UI 里解完
+    // 再点一次「重新发送」；不裸调 getCaptchaParam()（那样会在毫无预兆的情况下弹窗）。
+    if (gateActive && !gateParam) {
+      gateRef.current?.open()
+      setServerError(t('account.auth.validation.securityVerificationRequired'))
+      return
+    }
     setLoading(true)
     setServerError('')
     try {
-      // 重发同样要带四元组：上一组已在首次发码时消费。
-      await sendCode(emailForm.getValues('email'), await getCaptchaParam())
+      // 重发同样要带四元组：优先复用验证条已通过的那一份，验证条不可用（未启用/
+      // SDK 不可用）时才退回一次性弹窗流，两条路径都保留原有 fail-open 降级。
+      await sendCode(emailForm.getValues('email'), gateParam ?? (await getCaptchaParam()))
+      // 人机校验四元组是一次性的；重发成功已消费这一组，登录前必须重新验证。
+      gateRef.current?.reset()
     } catch (error) {
-      setServerError(describeError(error))
+      // 40025 人机验证未通过（四元组一次性/已失效）：退回可重验态，验证码本身仍在
+      // 有效期内不用重新获取。
+      if (isApiErrorCode(error, 40025)) {
+        gateRef.current?.reset()
+        setServerError(t('account.auth.globalEmailAuth.codeCaptchaExpired'))
+      } else {
+        setServerError(describeError(error))
+      }
     } finally {
       setLoading(false)
     }
   }
 
   const handleCodeSubmit = async (data: CodeFields) => {
+    // 同上：确认验证码这步也要求人机校验（后端 email-code/login 强制要求，跟手机号
+    // 登录一致），门禁未通过时先调起可见挑战，不在函数里静默弹窗把用户吓一跳。
+    if (gateActive && !gateParam) {
+      gateRef.current?.open()
+      setServerError(t('account.auth.validation.securityVerificationRequired'))
+      return
+    }
     const email = emailForm.getValues('email')
     if ((totpRequired || totp) && !/^\d{6}$/.test(totp)) {
       setServerError(t('account.auth.validation.code6'))
@@ -188,7 +220,7 @@ export function GlobalEmailAuth() {
       await emailCodeLoginRegister(
         email,
         data.code,
-        await getCaptchaParam(),
+        gateParam ?? (await getCaptchaParam()),
         resolveReferralCode(searchParams) || undefined,
         searchParams.get('invitation') ?? undefined,
         totp || undefined,
@@ -204,7 +236,12 @@ export function GlobalEmailAuth() {
       )
       trackEvent('login_success', { method: 'email_code' }, { result: 'success' })
     } catch (error) {
-      setServerError(describeError(error))
+      if (isApiErrorCode(error, 40025)) {
+        gateRef.current?.reset()
+        setServerError(t('account.auth.globalEmailAuth.codeCaptchaExpired'))
+      } else {
+        setServerError(describeError(error))
+      }
     } finally {
       setLoading(false)
     }
@@ -234,9 +271,15 @@ export function GlobalEmailAuth() {
     setHumanVerification('idle')
     setResendSeconds(0)
     setServerError('')
+    // 同时重置 CaptchaGate 内部 verified 状态，避免重新进入第二步时 UI 与 gateParam 分裂。
+    gateRef.current?.reset()
     codeForm.reset({ code: '' })
   }
 
+
+  const onCodeFormSubmit: FormEventHandler<HTMLFormElement> = (event) => {
+    void codeForm.handleSubmit(handleCodeSubmit)(event)
+  }
 
   const title = step === 'code'
     ? t('account.auth.globalEmailAuth.checkEmailTitle')
@@ -346,7 +389,7 @@ export function GlobalEmailAuth() {
       ) : (
         <form
           className="auth-form-container auth-fade-in"
-          onSubmit={codeForm.handleSubmit(handleCodeSubmit)}
+          onSubmit={onCodeFormSubmit}
         >
           <div className="auth-global-code-note">
             <LuInfo size={17} aria-hidden="true" />
@@ -373,6 +416,12 @@ export function GlobalEmailAuth() {
               {t('account.auth.globalEmailAuth.codeSentHint')}
             </p>
           </div>
+
+          <CaptchaGate
+            onChange={setGateParam}
+            onAvailability={setGateActive}
+            handleRef={(h) => { gateRef.current = h }}
+          />
 
           {serverError && <p className="auth-error-message">{serverError}</p>}
 

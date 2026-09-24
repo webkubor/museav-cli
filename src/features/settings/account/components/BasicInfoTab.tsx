@@ -140,7 +140,6 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
           </div>
           <div className="account-settings-control">
             <Input
-             
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder={t('account.info.namePlaceholder')}
@@ -182,7 +181,6 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
           </div>
           <div className="account-settings-control">
             <Input
-             
               value={profile.email ? maskEmail(profile.email) : ''}
               placeholder={profile.email ? undefined : t('account.info.emailUnbound')}
               readOnly

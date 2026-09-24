@@ -244,6 +244,7 @@
         "failed": "验证失败，请稍后重试",
         "emailAlreadyRegistered": "该邮箱已注册。免密登录接口尚未上线，暂时无法通过验证码进入。",
         "codeSentHint": "验证码 5 分钟内有效，请尽快输入",
+        "codeCaptchaExpired": "安全验证已失效，请重新完成验证后再提交（验证码本身仍有效，无需重新获取）",
         "resend": "重新发送验证码",
         "resendCountdown": "{{seconds}} 秒后可重新发送",
         "successTitle": "验证成功",

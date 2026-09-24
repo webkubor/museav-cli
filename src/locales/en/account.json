@@ -244,6 +244,7 @@
         "failed": "Verification failed. Please try again.",
         "emailAlreadyRegistered": "This email is already registered. Passwordless sign-in is not available yet.",
         "codeSentHint": "The code is valid for 5 minutes.",
+        "codeCaptchaExpired": "Security verification expired. Please verify again before submitting — your code is still valid, no need to resend.",
         "resend": "Resend code",
         "resendCountdown": "Resend code in {{seconds}}s",
         "successTitle": "Verification complete",

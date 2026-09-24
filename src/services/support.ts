@@ -1,4 +1,4 @@
-import { get, getPage, post, apiV1Url, ModelGoApiError, SERVER_ERROR_MESSAGE } from '@/lib/request'
+import { get, getPage, post, apiV1Url, ModelGoApiError, SERVER_ERROR_MESSAGE, refreshCsrf } from '@/lib/request'
 import { injectHeaders } from '@/lib/request-headers'
 import type {
   SupportAskRequest,
@@ -40,6 +40,26 @@ export interface SupportAskStreamFrame {
  * path while the two services roll out independently.
  */
 export async function askSupportStream(
+  body: SupportAskRequest,
+  onFrame: (frame: SupportAskStreamFrame) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  try {
+    await askSupportStreamOnce(body, onFrame, signal)
+  } catch (err) {
+    // The raw fetch bypasses ky's CSRF self-heal; replay once after refreshing
+    // the token. 40302 is only ever the non-SSE envelope, so no frame has been
+    // emitted yet and the retry cannot double-emit.
+    if (err instanceof ModelGoApiError && err.code === 40302) {
+      await refreshCsrf()
+      await askSupportStreamOnce(body, onFrame, signal)
+      return
+    }
+    throw err
+  }
+}
+
+async function askSupportStreamOnce(
   body: SupportAskRequest,
   onFrame: (frame: SupportAskStreamFrame) => void,
   signal?: AbortSignal,

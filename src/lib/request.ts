@@ -197,7 +197,12 @@ export function isServerErrorCode(code: number) {
   return code >= 50000 && code < 60000
 }
 
-async function refreshCsrf() {
+/**
+ * Re-issue the CSRF token from GET /auth/session. Exported for the SSE path
+ * (services/support.ts), which cannot use the ky client and must retry 40302
+ * itself. See the #676 note below.
+ */
+export async function refreshCsrf() {
   try {
     const resp = await ky.get(apiPrefixUrl() + '/auth/session', { credentials: 'include' })
     // 必须接住响应体里的 csrf_token（需求方#676）：光重拉不取值，重放发的还是同一个

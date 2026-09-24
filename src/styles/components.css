@@ -450,9 +450,9 @@
    灰底 + 默认光标 + 无聚焦高亮，视觉上就是禁用框；但用 readOnly 而不是 disabled，
    文字不降到 opacity-50（原型里号码仍是正常深色可读），且值仍可选中复制、读屏可念。
    hover/focus-within 一并覆盖，否则上方 base 规则会把底色刷回 --mg-bg-0。 */
-.modern-input-readonly,
-.modern-input-readonly:hover,
-.modern-input-readonly:focus-within {
+.modern-input-wrapper.modern-input-readonly,
+.modern-input-wrapper.modern-input-readonly:hover,
+.modern-input-wrapper.modern-input-readonly:focus-within {
   /* 用 fill-1（6%）而不是 fill-0（3.5%）。
      2026-09-24 对着原型算过像素：原型的禁用底是实色 #f2f5f9，叠在白卡片上
      每通道差 13/10/6；fill-0 叠白后只差 6/6/0，**肉眼基本看不出是禁用框**（测试

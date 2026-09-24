@@ -1,6 +1,6 @@
 /** Two-step email OTP login and registration, with optional enrolled TOTP. */
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEventHandler } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
@@ -185,6 +185,8 @@ export function GlobalEmailAuth() {
       // 重发同样要带四元组：优先复用验证条已通过的那一份，验证条不可用（未启用/
       // SDK 不可用）时才退回一次性弹窗流，两条路径都保留原有 fail-open 降级。
       await sendCode(emailForm.getValues('email'), gateParam ?? (await getCaptchaParam()))
+      // 人机校验四元组是一次性的；重发成功已消费这一组，登录前必须重新验证。
+      gateRef.current?.reset()
     } catch (error) {
       // 40025 人机验证未通过（四元组一次性/已失效）：退回可重验态，验证码本身仍在
       // 有效期内不用重新获取。
@@ -269,10 +271,15 @@ export function GlobalEmailAuth() {
     setHumanVerification('idle')
     setResendSeconds(0)
     setServerError('')
-    setGateParam(null)
+    // 同时重置 CaptchaGate 内部 verified 状态，避免重新进入第二步时 UI 与 gateParam 分裂。
+    gateRef.current?.reset()
     codeForm.reset({ code: '' })
   }
 
+
+  const onCodeFormSubmit: FormEventHandler<HTMLFormElement> = (event) => {
+    void codeForm.handleSubmit(handleCodeSubmit)(event)
+  }
 
   const title = step === 'code'
     ? t('account.auth.globalEmailAuth.checkEmailTitle')
@@ -280,12 +287,6 @@ export function GlobalEmailAuth() {
   const subtitle = step === 'code'
     ? t('account.auth.globalEmailAuth.checkEmailSubtitle', { email: emailValue })
     : t('account.auth.globalEmailAuth.entrySubtitle')
-
-  // codeForm.handleSubmit(fn) never invokes fn synchronously; it returns a submit-event
-  // handler for later use (same established pattern as PhoneAuth.tsx's onSubmit, which
-  // reads gateRef.current the same way).
-  // eslint-disable-next-line react-hooks/refs
-  const onCodeFormSubmit = codeForm.handleSubmit(handleCodeSubmit)
 
   return (
     <AuthLayout

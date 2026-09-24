@@ -55,7 +55,7 @@ const feedbackDetail: SupportTicketDetail = {
   supplements: [{ id: 'sup_FB-20260923-001_0', content: '第一次补充\n第二行', created_at: '2026-09-23T16:05:00Z' }],
 }
 
-function renderDetail(detail: SupportTicketDetail, onSupplement = vi.fn().mockResolvedValue(true)) {
+function renderDetail(detail: SupportTicketDetail, onSupplement = vi.fn().mockResolvedValue('ok')) {
   render(<TicketDetailView detail={detail} onBack={vi.fn()} onReopen={vi.fn()} onRate={vi.fn()} onSupplement={onSupplement} />)
   return onSupplement
 }
@@ -75,6 +75,9 @@ it('submits a trimmed supplement and closes the form on success (#1119)', async 
 
   fireEvent.change(screen.getByRole('textbox', { name: 'common.customerService.ticket.supplement' }), { target: { value: '  补充复现步骤  ' } })
   fireEvent.click(submit)
+  // 提交中锁住输入框与取消：成功会清空，点提交后再补打的字不能被静默吞掉
+  expect(screen.getByRole('textbox', { name: 'common.customerService.ticket.supplement' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'common.cancel' })).toBeDisabled()
 
   await waitFor(() => expect(onSupplement).toHaveBeenCalledWith('补充复现步骤'))
   await waitFor(() => expect(screen.queryByRole('textbox')).not.toBeInTheDocument())
@@ -82,7 +85,7 @@ it('submits a trimmed supplement and closes the form on success (#1119)', async 
 })
 
 it('keeps the typed text when the supplement fails so the user can retry (#1119)', async () => {
-  const onSupplement = renderDetail(feedbackDetail, vi.fn().mockResolvedValue(false))
+  const onSupplement = renderDetail(feedbackDetail, vi.fn().mockResolvedValue('failed'))
   fireEvent.click(screen.getByRole('button', { name: 'common.customerService.ticket.supplement' }))
   const box = screen.getByRole('textbox', { name: 'common.customerService.ticket.supplement' })
   fireEvent.change(box, { target: { value: '会失败的补充' } })
@@ -96,4 +99,14 @@ it('keeps the typed text when the supplement fails so the user can retry (#1119)
 it('hides the supplement entry once the ticket can no longer take one', () => {
   renderDetail({ ...feedbackDetail, capabilities: { ...feedbackDetail.capabilities, can_supplement: false } })
   expect(screen.queryByRole('button', { name: 'common.customerService.ticket.supplement' })).not.toBeInTheDocument()
+})
+
+it('collapses the form when the ticket can no longer take a supplement (#1119)', async () => {
+  const onSupplement = renderDetail(feedbackDetail, vi.fn().mockResolvedValue('closed'))
+  fireEvent.click(screen.getByRole('button', { name: 'common.customerService.ticket.supplement' }))
+  fireEvent.change(screen.getByRole('textbox', { name: 'common.customerService.ticket.supplement' }), { target: { value: '工单已结' } })
+  fireEvent.click(screen.getByRole('button', { name: 'common.customerService.ticket.supplementSubmit' }))
+
+  await waitFor(() => expect(onSupplement).toHaveBeenCalled())
+  await waitFor(() => expect(screen.queryByRole('textbox')).not.toBeInTheDocument())
 })

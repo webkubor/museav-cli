@@ -11,7 +11,7 @@ import { formatMonthDayTime } from '@/lib/format-date'
 import { useAuthStore } from '@/store/auth'
 import { listSupportTickets } from '@/services/support'
 import { ticketAgentNameOf, ticketNoOf, ticketSlaTextOf, ticketStatusTextOf, ticketUnreadOf } from '@/interfaces/support'
-import type { SupportTicketDetail, SupportTicketFilter, SupportTicketSummary } from '@/interfaces/support'
+import type { SupplementResult, SupportTicketDetail, SupportTicketFilter, SupportTicketSummary } from '@/interfaces/support'
 
 const FILTERS: SupportTicketFilter[] = ['all', 'processing', 'ended']
 
@@ -154,9 +154,10 @@ export interface TicketDetailViewProps {
   onBack: () => void
   onReopen: () => void
   onRate: (stars: number) => void
-  /** 提交一条补充；返回是否成功（失败时保留输入内容供重试）。 */
-  onSupplement: (content: string) => Promise<boolean>
+  /** 提交一条补充，结果见 SupplementResult。 */
+  onSupplement: (content: string) => Promise<SupplementResult>
 }
+
 
 export function TicketDetailView({ detail, onBack, onReopen, onRate, onSupplement }: TicketDetailViewProps) {
   const { t } = useTranslation()
@@ -173,9 +174,10 @@ export function TicketDetailView({ detail, onBack, onReopen, onRate, onSupplemen
     const content = supplementText.trim()
     if (!content || supplementing) return
     setSupplementing(true)
-    const ok = await onSupplement(content)
+    const result = await onSupplement(content)
     setSupplementing(false)
-    if (ok) closeSupplement()
+    // closed 也要收起：否则工单被重开、入口回来时，旧表单会连同旧文字自己弹出来
+    if (result !== 'failed') closeSupplement()
   }
 
   return (

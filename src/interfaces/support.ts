@@ -125,6 +125,9 @@ export interface SupportTicketCapabilities {
 
 /** 建单后追加的一条「补充问题描述」。详情页在描述区块内按「补充 · 时间」渲染，
  *  不当作沟通消息（PRD §7.11）；时间由前端格式化，便于中英文本地化。 */
+/** 提交补充的结果 —— ok：成功，清空收起；failed：可重试，保留输入；closed：工单已不能补充，收起。 */
+export type SupplementResult = 'ok' | 'failed' | 'closed'
+
 export interface SupportTicketSupplement {
   id: string
   content: string

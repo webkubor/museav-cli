@@ -48,6 +48,7 @@ import type {
   SupportFeedbackRequest,
   SupportMessage,
   SupportTicketDetail,
+  SupplementResult,
 } from '@/interfaces/support'
 
 export type PanelMode = 'chat' | 'feedback' | 'tickets' | 'ticket-detail'
@@ -582,10 +583,11 @@ export function useSupport() {
     }
   }, [mode, t])
 
-  // 问题反馈「补充问题描述」（PRD §7.11）。返回是否成功：失败时由调用方保留输入框里的内容，
-  // 用户改一改就能重试。接口返回的就是补充后的详情（含 supplements），直接替换。
-  const supplementSelectedTicket = useCallback(async (content: string) => {
-    if (mode.kind !== 'ticketDetail') return false
+  // 问题反馈「补充问题描述」（PRD §7.11）。结果交给详情页决定输入框怎么处理：
+  // ok = 成功（清空收起）；failed = 失败但还能重试（保留内容）；closed = 工单已不能补充（收起）。
+  // 接口成功时返回的就是补充后的详情（含 supplements），直接替换。
+  const supplementSelectedTicket = useCallback(async (content: string): Promise<SupplementResult> => {
+    if (mode.kind !== 'ticketDetail') return 'failed'
     const targetId = mode.ticketId
     const accountId = account?.account_id ?? null
     try {
@@ -593,16 +595,31 @@ export function useSupport() {
       // 请求在途时用户可能已退回列表、换开了另一张单：晚到的回包不能盖掉那张单的详情，
       // 否则屏幕显示 A、后续操作却打到 B。
       if (isCurrentSupportTicket(targetId, accountId)) setTicketDetail(detail)
-      return true
-    } catch {
-      // 固定用 PRD 文案：业务错误的 message 是 support.invalid_transition 这类机器码，
-      // requestError 会优先把它原样上屏。
-      appToast.error(t('common.customerService.ticket.supplementFailed'))
-      // 最常见的失败是工单在详情打开期间已被受理完结（can_supplement 变 false）。
-      // 刷新详情，让入口按最新状态收起，而不是让用户对着旧入口反复重试。
-      const fresh = await getSupportTicket(targetId).catch(() => null)
-      if (fresh && isCurrentSupportTicket(targetId, accountId)) setTicketDetail(fresh)
-      return false
+      return 'ok'
+    } catch (error) {
+      // 已离开这张单：输入框随详情页卸载了，「内容已保留」不成立，也别把提示弹到别的界面上。
+      if (!isCurrentSupportTicket(targetId, accountId)) return 'failed'
+      const refresh = () => getSupportTicket(targetId)
+        .then((fresh) => {
+          if (isCurrentSupportTicket(targetId, accountId)) setTicketDetail(fresh)
+          return fresh
+        })
+        .catch(() => null)
+      // 同 sendHumanReply：只有「工单状态不允许」才按状态收口，其余错误照常走 requestError，
+      // 5xx / 超时 / 断网各有自己的提示。
+      if (error instanceof ModelGoApiError && error.rawMessage === 'support.invalid_transition') {
+        const fresh = await refresh()
+        if (!fresh || !fresh.capabilities.can_supplement) {
+          appToast.error(t('common.customerService.ticket.supplementClosed'))
+          return 'closed'
+        }
+      } else {
+        // 不等：超时的 POST 可能其实已经写进去了，刷新后那条会出现在列表里，
+        // 用户就不会再点一次写出重复的补充；而按钮也不必陪着刷新再转一轮。
+        void refresh()
+      }
+      appToast.requestError(error, t('common.customerService.ticket.supplementFailed'))
+      return 'failed'
     }
   }, [mode, account?.account_id, isCurrentSupportTicket, t])
 

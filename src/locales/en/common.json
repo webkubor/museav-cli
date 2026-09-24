@@ -368,6 +368,7 @@
         "supplementPlaceholder": "Add reproduction steps, impact, or anything the agent asked for",
         "supplementSubmit": "Submit addition",
         "supplementFailed": "Submission failed. Your text is kept — please retry.",
+        "supplementClosed": "This ticket can no longer take additions.",
         "replyAria": "Reply to the ticket",
         "replyPlaceholder": "Add details or reply to the agent",
         "replySend": "Send ticket message",

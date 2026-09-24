@@ -43,6 +43,7 @@ vi.mock('@/lib/track', () => ({ trackEvent: vi.fn() }))
 vi.mock('./use-support-events', () => ({ useSupportEvents: vi.fn() }))
 vi.mock('./session-id', () => ({ getOrCreateSupportSessionId: () => 'session-1', clearSupportSessionId: vi.fn() }))
 
+import { ModelGoApiError } from '@/lib/request'
 import { useSupport } from './use-support'
 
 describe('useSupport · 取消人工排队', () => {
@@ -330,6 +331,7 @@ describe('useSupport · 补充问题描述 (#1119)', () => {
     getSupportTicketMock.mockReset().mockImplementation(async (id: string) => detailOf(id))
     supplementTicketMock.mockReset()
     toastErrorMock.mockReset()
+    requestErrorMock.mockReset()
   })
 
   async function openDetail(result: { current: ReturnType<typeof useSupport> }, id: string) {
@@ -343,7 +345,7 @@ describe('useSupport · 补充问题描述 (#1119)', () => {
 
     let finish: (v: unknown) => void = () => {}
     supplementTicketMock.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve }))
-    let pending: Promise<boolean> = Promise.resolve(false)
+    let pending: Promise<string> = Promise.resolve('')
     act(() => { pending = result.current.supplementSelectedTicket('补充A') })
 
     await openDetail(result, 'FB-B')
@@ -351,23 +353,60 @@ describe('useSupport · 补充问题描述 (#1119)', () => {
 
     await act(async () => {
       finish({ ...detailOf('FB-A'), supplements: [{ id: 'sup_FB-A_0', content: '补充A', created_at: '2026-09-24T08:01:00Z' }] })
-      expect(await pending).toBe(true)
+      expect(await pending).toBe('ok')
     })
     expect(result.current.ticketDetail?.ticket_id).toBe('FB-B')
   })
 
-  it('on failure shows the PRD copy and refreshes the detail so a closed ticket drops the entry', async () => {
+  const apiError = (msg: string) => new ModelGoApiError({ code: 40001, msg } as ConstructorParameters<typeof ModelGoApiError>[0])
+
+  it('invalid_transition on a now-closed ticket: refreshes, says so, and reports closed', async () => {
     const { result } = renderHook(() => useSupport())
     await openDetail(result, 'FB-A')
-    expect(result.current.ticketDetail?.capabilities.can_supplement).toBe(true)
 
-    supplementTicketMock.mockRejectedValueOnce(new Error('support.invalid_transition'))
+    supplementTicketMock.mockRejectedValueOnce(apiError('support.invalid_transition'))
     getSupportTicketMock.mockResolvedValueOnce(detailOf('FB-A', false))
-    let ok = true
-    await act(async () => { ok = await result.current.supplementSelectedTicket('补充A') })
+    let outcome: string = ''
+    await act(async () => { outcome = await result.current.supplementSelectedTicket('补充A') })
 
-    expect(ok).toBe(false)
-    expect(toastErrorMock).toHaveBeenCalledWith('common.customerService.ticket.supplementFailed')
+    expect(outcome).toBe('closed')
+    expect(toastErrorMock).toHaveBeenCalledWith('common.customerService.ticket.supplementClosed')
+    expect(requestErrorMock).not.toHaveBeenCalled()
     expect(result.current.ticketDetail?.capabilities.can_supplement).toBe(false)
+  })
+
+  it('other failures keep the request-error path and refresh in the background', async () => {
+    const { result } = renderHook(() => useSupport())
+    await openDetail(result, 'FB-A')
+    getSupportTicketMock.mockClear()
+
+    const timeout = new Error('timeout of 30000ms exceeded')
+    supplementTicketMock.mockRejectedValueOnce(timeout)
+    let outcome: string = ''
+    await act(async () => { outcome = await result.current.supplementSelectedTicket('补充A') })
+
+    expect(outcome).toBe('failed')
+    expect(requestErrorMock).toHaveBeenCalledWith(timeout, 'common.customerService.ticket.supplementFailed')
+    expect(toastErrorMock).not.toHaveBeenCalled()
+    // 超时的 POST 可能已写入：刷新一次，让那条补充出现在列表里
+    expect(getSupportTicketMock).toHaveBeenCalledWith('FB-A')
+  })
+
+  it('a failure that lands after leaving the ticket shows nothing', async () => {
+    const { result } = renderHook(() => useSupport())
+    await openDetail(result, 'FB-A')
+
+    let fail: (e: unknown) => void = () => {}
+    supplementTicketMock.mockImplementationOnce(() => new Promise((_resolve, reject) => { fail = reject }))
+    let pending: Promise<string> = Promise.resolve('')
+    act(() => { pending = result.current.supplementSelectedTicket('补充A') })
+    act(() => result.current.go({ kind: 'tickets' }))
+
+    await act(async () => {
+      fail(new Error('network'))
+      expect(await pending).toBe('failed')
+    })
+    expect(requestErrorMock).not.toHaveBeenCalled()
+    expect(toastErrorMock).not.toHaveBeenCalled()
   })
 })

@@ -309,12 +309,15 @@
       },
       "asyncTicket": {
         "title": "Moved to an async ticket",
+        "pending": "Pending",
+        "defaultEta": "Within 2 hours",
         "ariaLabel": "Async ticket {{id}}",
         "idLabel": "Ticket number",
         "etaLabel": "Expected contact",
         "contact": "An agent will reach out using the contact details on your account. Watch for the follow-up.",
         "reason": "We are experiencing high volume and could not connect you to an agent."
       },
+      "handoffStarted": "We've connected you to customer support. Please wait.",
       "records": {
         "title": "Service records",
         "subtitle": "Track progress and continue the conversation",
@@ -393,7 +396,7 @@
       "answerStatus": {
         "intent": "Please add a workspace, time range, or Request ID so I can continue.",
         "needsLogin": "Sign in to query your account data",
-        "insufficientEvidence": "Not confirmed yet — you can submit feedback or ask for a human agent",
+        "insufficientEvidence": "Not confirmed yet — you can submit feedback",
         "degraded": "Evidence is limited; treat this as a rough guide",
         "outOfScope": "I can currently help only with ModelGo-related questions.",
         "suggestHandoff": "You can connect with a human agent if this doesn't help",
@@ -451,6 +454,9 @@
       "rulesLinkLabel": "View rules",
       "copyInviteLinkAria": "Copy referral link",
       "copyInviteCodeAria": "Copy {{label}}"
-    }
+    },
+    "newVersionTitle": "A new version is available",
+    "newVersionRefreshing": "Refreshing automatically to load the latest version…",
+    "newVersionRefreshFailed": "This page is still on the old version. Please refresh once manually."
   }
 }

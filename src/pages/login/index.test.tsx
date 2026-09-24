@@ -356,6 +356,7 @@ describe('LoginPage', () => {
         'captcha-param',
         undefined,
         undefined,
+        undefined,
       )
     })
   })
@@ -403,6 +404,18 @@ describe('LoginPage', () => {
     await waitFor(() => {
       expect(mockedCheckLoginEmail).toHaveBeenCalledWith('user@modelgo.com')
     })
+  })
+
+  it('guides an unknown domestic email to supported phone onboarding instead of signup', async () => {
+    marketState.value = 'china'
+    mockedCheckLoginEmail.mockResolvedValue({ registered: false, password_login_enabled: false })
+    renderLogin('/login?method=email')
+    fireEvent.change(screen.getByPlaceholderText('you@example.com'), { target: { value: 'new@example.invalid' } })
+    fireEvent.click(screen.getByRole('button', { name: '继续' }))
+    await waitFor(() => expect(mockedCheckLoginEmail).toHaveBeenCalledWith('new@example.invalid'))
+    expect(await screen.findByText(/请使用手机号/)).toBeInTheDocument()
+    expect(screen.queryByText('signup')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '使用手机号登录' })).toBeInTheDocument()
   })
 
   // qa#675：本文件把 useMarket 固定成 'global'，所以渲染的正是当初丢码的那条分支

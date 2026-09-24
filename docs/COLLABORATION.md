@@ -27,7 +27,7 @@ cd ../wt-my-branch && ln -s ../modelgo-console-web/node_modules .
 
 ```bash
 # 版本功能：推回版本分支（不是 test，见 CLAUDE.md 入场第 3 条），然后自己清三步
-git push origin HEAD:feature/v1.0.x-<当期版本分支>
+git push origin HEAD:release/vX.Y.Z
 git worktree remove ../wt-my-branch      # 详见 §4「手动合并」
 
 # cs land 只用于确实要直接落到某个集成分支的场合（它会自动回收 worktree + 分支）
@@ -387,12 +387,15 @@ PRD 原型 > 飞书文档 > 现状控制台代码
 
 **部署分支按环境定，不是按项目定**：测试 job 传 `GIT_BRANCH=<测试环境当前跟的分支>`，生产 job 传 `GIT_BRANCH=main` + `GIT_TAG`。
 
-> 🔴 **版本迭代期：测试环境跟当期版本分支，不跟 `test`**（owner 2026-09-10 拍板，
-> 实测佐证 `version.json`：`{"commit":"12f595b","branch":"release/v1.0.6"}`）。
+> 🔴 **`GIT_BRANCH` 传「测试环境当前跟的分支」，别照抄任何写死的值。**
+> ⚠️ 2026-09-10 owner 曾拍板「版本迭代期测试环境跟当期版本分支、不跟 `test`」，但
+> **2026-09-22 实测已不代表现状**：`console.test.modelgo.com/version.json` →
+> `{"version":"1.0.6","commit":"3c5b8f0c","branch":"test"}` —— 测试环境跑的是 `test`。
 >
-> - **部署**传 `GIT_BRANCH=release/v1.0.x`（当期版本分支），不是 `test`。
-> - **验证/冒烟也按同一条分支来**：跑 TestMgr 冒烟、UI 回归、QA 复验前，先确认测试环境上
->   跑的是版本分支的产物，别拿 `test` 分支的代码去对结论。
+> - **分支模型的定义处是 `CLAUDE.md` 入场第 3 条**（功能走版本分支 → 合入 `test` 跑测试环境；
+>   上线走版本分支 → `main`）。本文件只讲部署机制，**不复述模型**。
+> - **验证/冒烟前先读一眼 `version.json`**：确认环境上跑的是哪条分支的产物，别拿另一条分支的
+>   代码去对结论 —— **不预设它跟哪条**。
 > - **「更新测试环境」＝触发 Jenkins**，不等于把版本分支合进 `test`；合 `test` 是版本节奏的事
 >   （由 owner 定，见 `CLAUDE.md` 入场第 3 条），与能不能提测无关。
 > - 代码回流（`test` → 版本分支）只动源码、不动环境，**回流完必须再部一次**，否则环境仍是旧 commit。
@@ -424,17 +427,17 @@ git merge-base --is-ancestor origin/main origin/test && echo "可快进"
 > ⚠️ **`test` 是集成/部署来源分支，不是开发地**。别 `git checkout test` 直接在上面写代码——多个 session 共用同一工作树 + 同分支会互相踩（未提交改动串台、被迫 autostash rebase）。开发一律在隔离 worktree（见第 1 节），`test` 只接受**合并**。这与顶部「代码隔离 > 任务互斥」原则一致。
 
 > ⚠️ **2026-09-03 owner 拍板的分支定位**（覆盖本节以下流程里「一律 base test / land 到 test」的老写法）：
-> `main` 生产 · `test` 测试环境（**当前版本 1.0.6 在这里迭代**）· `feature/v1.0.x-*` 版本集成分支 · `hotfix/*` 临时需求。
+> `main` 生产 · `test` 测试环境（**部署时传它当前跟的分支，别写死**）· `release/vX.Y.Z` 版本集成分支 · `hotfix/*` 临时需求。
 > 版本功能走 **worktree → 版本分支 → 合入 test → 整批上线合 main**；
 > **何时把版本分支合进 `test` 由 owner 按版本节奏决定，agent 不要自己 land 到 test**。
 > 临时 / 紧急需求走 `hotfix/*`：从 `main` 分出、验完合 `main`、再回流 `test` 与当期版本分支。
 > 详见 `CLAUDE.md` 入场第 3 条。
 
 **日常开发流程（版本功能）：**
-1. 开隔离 worktree + 分支：`cs wt fix/<名> --base origin/feature/v1.0.x-<当期版本分支>`
+1. 切分支：`git switch -c fix/<iid>-<简述> origin/release/vX.Y.Z`（worktree 只在需要同时开两条分支时用，见 `CLAUDE.md` 入场第 4 条）
    （`--base` 取的是**本地**分支、会落后远端，所以显式带 `origin/`；2026-09-03 因此在旧基线上白改一轮）
 2. 在 worktree 里开发、提交（与其他 session 物理隔离，互不看见对方未提交改动）
-3. 推回版本分支：`git push origin HEAD:feature/v1.0.x-<当期版本分支>`
+3. 推回版本分支：`git push origin HEAD:release/vX.Y.Z`
    —— **不要 `cs land --base test`**，那会绕过版本节奏直接进测试环境分支
 4. 触发测试环境部署：由 owner 把版本分支合进 `test` 后再部署 `test/modelgo-console-web`
 5. **清理已由 `cs land` 自动完成，不用再手动跑**（2026-08-21 起）：land 成功后它会自动
@@ -469,7 +472,7 @@ git merge-base --is-ancestor origin/main origin/test && echo "可快进"
 4. 回流 `test`：`git checkout test && git merge main && git push origin test`
 5. **回流当期版本分支**（2026-09-03 补：版本在 test 迭代，只回流 test 不回流版本分支，
    下次版本合 test 时必在同一处冲突）：
-   `git push origin main:feature/v1.0.x-<当期版本分支>` 打不过去时用 merge，别 force
+   `git push origin main:release/vX.Y.Z` 打不过去时用 merge，别 force
 6. 触发测试环境部署（`test/modelgo-console-web`）
 
 **临时 / 紧急需求**走 `hotfix/*`，见上面「线上 hotfix 流程」——它的意义就是绕开版本节奏，
@@ -485,7 +488,7 @@ git merge-base --is-ancestor origin/main origin/test && echo "可快进"
 **部署到测试环境后要跑的冒烟清单，唯一真源是 TestMgr**（`https://qa.ops.modelgo.com/testmgr/`）。
 2026-09-10 找这份清单时在飞书和 QA 代码库里绕了两圈才问出来，所以钉在这里：
 
-| 当期版本 | V1.0.6 冒烟（扩容 120 条） |
+| 当期版本 | 跑当班版本分支的冒烟（**版本号别写死，以 TestMgr 里的任务为准**） |
 |:---|:---|
 | 入口 | <https://qa.ops.modelgo.com/testmgr/test-tasks/task-01m1gmt456jy35cxwdrf2hc6fg> |
 | 用例集 | `set-01m0y0yqtjnznsxgv54s02dhr8` |
@@ -589,6 +592,7 @@ await page.evaluate(() => window.__mg_nav.menus())  // 列出所有菜单
 
 1. **PWA 缓存**：部署后浏览器可能显示旧版 → 验部署前先注销 ServiceWorker + 清缓存，核对页脚 commit hash
 2. **Jenkins 双发布线**：国内 `prod/modelgo-console-web` + 国外 `prod-global/`，两条都要触发
+   - sitemap 是单 host 文件：国内生产构建必须注入 `SITEMAP_MARKET=china`，海外生产构建注入 `SITEMAP_MARKET=global`；未配置时生产构建会失败，避免把另一市场的地址发给爬虫。
 3. **React Query key 碰撞**：同一 queryKey 在不同页面存不同形状会崩溃 → 新查询前 grep 该 key 的既有消费方
 4. **测试 mock 竞态**：`useTenantRole→listTenants` 若没 mock 会发真请求 → 40101 → `clearAuth()` 异步洗掉下个用例的 store → 单跑过连跑挂
 5. **「照 PRD 还原页面」类任务，别边问边改**（2026-07-27 账单管理页教训）：这类任务真正的耗时不是代码量，是"先问答式排查、改完才发现漏了"来回绕。正确顺序是下面 §6.1 的一次性流程，不是每发现一处就单独走一轮问答-改码-验证。
@@ -761,7 +765,7 @@ git worktree list
 # ② 判断哪些是真残留：已合入 test 却还在的分支
 git fetch origin --prune                 # 先 prune，否则会把远端已删的分支误判成僵尸
 # 版本迭代期功能推的是版本分支，两个基线都要查一遍
-git branch --merged origin/feature/v1.0.x-<当期版本分支> | grep -vE '^\*|test|main'
+git branch --merged origin/release/vX.Y.Z | grep -vE '^\*|test|main'
 git branch --merged origin/test | grep -vE '^\*|test|main'
 
 # ③ 上一步列出来的，按 §4 补做（不是可选项）：

@@ -48,6 +48,15 @@ export type SupportMode =
 
 export type SupportModeKind = SupportMode['kind']
 
+/** 仅当前活动且未取消的工单可以应用迟到轮询快照。 */
+export function canApplyHandoffSnapshot(
+  ticketId: string,
+  activeTicketId: string | null,
+  suppressedTicketIds: ReadonlySet<string>,
+): boolean {
+  return activeTicketId === ticketId && !suppressedTicketIds.has(ticketId)
+}
+
 /**
  * 允许的迁移。列成表而不是散在各处的 setState，是为了让「哪些跳转是合法的」
  * 可被一眼读完、也可被测试钉住。
@@ -199,6 +208,38 @@ export function ticketIdOf(mode: SupportMode): string | null {
     default:
       return null
   }
+}
+
+/** 工单详情明确表示人工服务已结束时，禁止继续走用户回复接口。 */
+export function isEndedSupportTicket(ticket: Pick<SupportTicketDetail, 'service_mode' | 'status'>): boolean {
+  const status = ticket.status.trim().toLowerCase()
+  return ticket.service_mode === 'ended' || status === 'closed' || status === 'resolved'
+}
+
+/** 幂等预留结束态工单，避免长轮询与失败回复的详情回包重复追加评价卡。 */
+export function reserveEndedTicket(
+  appliedTicketIds: ReadonlySet<string>,
+  ticketId: string,
+): { appliedTicketIds: ReadonlySet<string>; shouldApply: boolean } {
+  if (appliedTicketIds.has(ticketId)) return { appliedTicketIds, shouldApply: false }
+  const nextAppliedTicketIds = new Set(appliedTicketIds)
+  nextAppliedTicketIds.add(ticketId)
+  return { appliedTicketIds: nextAppliedTicketIds, shouldApply: true }
+}
+
+/** 校验异步工单响应仍属于当前账号与当前面板工单。 */
+export function isSameSupportContext(
+  activeAccountId: string | null,
+  expectedAccountId: string | null,
+  activeTicketId: string | null,
+  expectedTicketId: string,
+): boolean {
+  return activeAccountId === expectedAccountId && activeTicketId === expectedTicketId
+}
+
+/** 结束态回包只允许从当前状态机认可的模式落地。 */
+export function canApplyEndedTicket(mode: SupportMode): boolean {
+  return canTransition(mode.kind, 'humanEnded')
 }
 
 /** 能否发起转人工：只有空态/问答里可以，其余模式（尤其排队中）不允许重复发起。 */

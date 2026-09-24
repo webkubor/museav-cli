@@ -2,7 +2,8 @@
  * 免费模型使用门槛（需求方 #833，1.0.6）的后端错误码识别。
  *
  * 后端（billing 经 gateway 透传，note 15550）在发送时返回两个独立错误码：
- *   - `4032 / free_model_balance_required`   可用余额 ≤ 0 → 场景一（余额为 0 用免费模型）
+ *   - `4032 / free_model_balance_required`   主余额 ≤ 0 → 场景一（#1091 起只看主余额/现金，赠送与奖励不计入；
+ *     原 #833 口径是可用合计 ≤ 0）
  *   - `4291 / free_model_daily_limit_reached` 当日 1000 次已用完 → 场景三（今日免费调用已达上限）
  * 它们与 #914 的每分钟限频（429 + rate_limit）是两条不同规则，不复用同一个码。
  *
@@ -35,7 +36,8 @@ const BALANCE_REQUIRED_REASON = 'free_model_balance'
 const DAILY_LIMIT_REASON = 'free_model_daily_limit'
 /** 网关固定英文人话（归一化后的判别片段），见文件头注释 */
 const DAILY_LIMIT_MESSAGE_HINT = 'free_model_quota_has_been_reached'
-const BALANCE_REQUIRED_MESSAGE_HINT = 'free_model_requires_the_account_to_keep_available_balance'
+/** 只取句首固定部分：#1091 后网关文案可能把 available balance 改成 main/cash balance，别因措辞变动掉回通用报错 */
+const BALANCE_REQUIRED_MESSAGE_HINT = 'free_model_requires_the_account'
 
 function normalize(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, '_')

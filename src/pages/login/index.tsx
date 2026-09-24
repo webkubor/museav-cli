@@ -172,8 +172,7 @@ function EmailLoginPage({ market, onUsePhone }: { market: Market; onUsePhone?: (
     try {
       const result = await checkLoginEmail(data.email)
       if (!result.registered) {
-        const method = market === 'china' ? '&method=email' : ''
-        navigate(`/signup?email=${encodeURIComponent(data.email)}${method}`)
+        setServerError(t('account.auth.domesticEmailLogin.registerViaPhone'))
         return
       }
       setEmail(data.email)

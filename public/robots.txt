@@ -12,6 +12,10 @@ Disallow: /
 Allow: /models
 Allow: /legal/
 
+# Public sitemap entry points for both console markets.
+Sitemap: https://console.modelgo.com/sitemap.xml
+Sitemap: https://console.modelgo.ai/sitemap.xml
+
 # 训练型爬虫一律拦截（含公开页，不喂数据采集）
 User-agent: GPTBot
 Disallow: /

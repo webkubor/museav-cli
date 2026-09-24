@@ -105,35 +105,6 @@ function MediaDownloadLink({ url, downloadRef, label }: {
   )
 }
 
-/** 思维链「思考过程」块（#334）：与正文分离的可折叠弱化区块。
- *  流式思考进行中（active）自动展开并显示「思考中…」，思考结束自动折叠；
- *  用户手动点过折叠开关后尊重用户选择、不再自动切换。 */
-function ThinkSection({ think, active }: { think: string; active: boolean }) {
-  const { t } = useTranslation()
-  const [open, setOpen] = useState(active)
-  const userToggledRef = useRef(false)
-  useEffect(() => {
-    if (!userToggledRef.current) setOpen(active)
-  }, [active])
-  return (
-    <div className="models-experience-think">
-      <button
-        type="button"
-        className="models-experience-think-toggle"
-        aria-expanded={open}
-        onClick={() => {
-          userToggledRef.current = true
-          setOpen((v) => !v)
-        }}
-      >
-        <LuChevronRight size={12} aria-hidden="true" className={cn('models-experience-think-chevron', open && 'is-open')} />
-        {t(active ? 'modelsExperience.thinkStreaming' : 'modelsExperience.thinkProcess')}
-      </button>
-      {open && think && <div className="models-experience-think-body">{think}</div>}
-    </div>
-  )
-}
-
 /** 媒体失败详情（qa#549）：上游供应商原始报错 + 我方 request_id/trace_id，默认收起。
  *  上游原文含供应商名与其内部 request_id，不适合直接当标题展示给终端用户，但排障/
  *  报障时有价值，所以降级成可展开的详情区，跟标题（message.error）分开。 */
@@ -222,15 +193,14 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
       {messages.length === 0 && emptyState}
       {messages.map((message, index) => {
         const isActiveStream = isStreaming && index === messages.length - 1 && message.role === 'assistant'
-        // 思维链拆分（#334）：assistant 对话内容里的 <think>...</think> 拆成独立思考块，
-        // 标签绝不外露。流式（含跨 chunk 半截标签）与历史恢复都汇入 content、在此统一解析。
+        // 过滤 assistant 消息中的思维链；包括媒体标题、流式与历史恢复路径。
         const parsed =
-          message.role === 'assistant' && !message.media
+          message.role === 'assistant'
             ? parseThinkContent(message.content, isActiveStream)
             : null
         const isThinking =
           message.role === 'assistant' &&
-          (parsed ? parsed.answer === '' && parsed.think === '' && !parsed.thinkOpen : message.content === '') &&
+          (parsed ? parsed.answer === '' : message.content === '') &&
           isStreaming &&
           index === messages.length - 1
         // 媒体结果的状态徽标（#308）：对话结果没有"任务"概念，不挂徽标。
@@ -318,8 +288,8 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
                           // 只有一条细控件、看不出这是「生成结果」，补波形图标与标题把它立成一张产物卡
                           <div key={mIdx} className="models-experience-audio-result">
                             <LuAudioLines size={28} aria-hidden="true" />
-                            {message.role === 'assistant' && message.content ? (
-                              <strong>{message.content}</strong>
+                            {message.role === 'assistant' && parsed?.answer ? (
+                              <strong>{parsed.answer}</strong>
                             ) : null}
                             <audio controls preload="metadata" src={m.url} className="models-experience-media-audio" />
                           </div>
@@ -345,12 +315,7 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
                     </span>
                   )}
                   {parsed ? (
-                    <>
-                      {(parsed.think || parsed.thinkOpen) && (
-                        <ThinkSection think={parsed.think} active={parsed.thinkOpen && isActiveStream} />
-                      )}
-                      <MarkdownContent components={{ a: MessageLink }}>{parsed.answer}</MarkdownContent>
-                    </>
+                    parsed.answer ? <MarkdownContent components={{ a: MessageLink }}>{parsed.answer}</MarkdownContent> : null
                   ) : message.content ? (
                     message.content.split('\n').map((line, lineIndex) => <p key={`${index}-${lineIndex}`}>{line}</p>)
                   ) : null}
@@ -379,7 +344,7 @@ export function ExperienceMessageList({ messages, isStreaming, showModelNameInMe
                   <span>{formatPlaygroundSpend(message.metrics, symbol)}</span>
                   {message.metrics.fastest && <em className="models-experience-winner-chip is-fast">{t('modelsExperience.fastest')}</em>}
                   {message.metrics.cheapest && <em className="models-experience-winner-chip is-cheap">{t('modelsExperience.cheapest')}</em>}
-                  {/* 复制回复只复制正文，不带 <think> 标签与思考过程（#334） */}
+                  {/* 复制回复只复制最终正文，不带 <think> 标签与思维链 */}
                   <MessageCopyButton content={parsed ? parsed.answer : message.content} />
                 </div>
               ) : null}

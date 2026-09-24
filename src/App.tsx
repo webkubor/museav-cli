@@ -2,6 +2,7 @@ import { useEffect, useState, lazy, Suspense, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation, useSearchParams } from 'react-router-dom'
 import { Providers } from '@/components/providers'
+import { VersionUpdateNotice } from '@/components/VersionUpdateNotice'
 import { useActiveTheme } from '@/hooks/use-active-theme'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { PublicShell } from '@/components/layout/PublicShell'
@@ -253,6 +254,9 @@ export default function App() {
 
   return (
     <Providers>
+      {/* 线上换版后提示刷新（qa#741）。放在 Providers 内 —— 它用 react-query 轮询，
+          必须拿得到 QueryClientProvider。自身不渲染 DOM。 */}
+      <VersionUpdateNotice />
       {/* 提示顶部居中，不能放 top-right —— 右上角被 header 占着（导航 + 头像 + 租户名/用户名，
           实测 console.test 在 1728px 宽下它们从 x=1106 一直排到 1703），而 toast 宽 360、
           贴右边缘，必然整个压在上面。用户反馈原话：「右上角提示会遮住 PayLinker，

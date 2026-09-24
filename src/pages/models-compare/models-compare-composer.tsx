@@ -26,11 +26,11 @@ export function CompareSharedComposer({ ctx }: { ctx: ModelsCompareContext }) {
 
   return (
     <>
-      {/* 需求方 #833（1.0.6）：余额为 0 时免费/付费模型一律锁定；全列免费才用免费模型场景文案 */}
-      {ctx.syncInput && ctx.isBalanceZero && columns.length > 0 && (
+      {/* 需求方 #833 / #1091：任一在线列被余额锁则共享发送锁定；被锁的列全是免费模型才用免费模型场景文案 */}
+      {ctx.syncInput && ctx.syncBalanceLockedColumns.length > 0 && (
         <ExperienceBalanceNotice
-          free={columns.every((c) => isFreeModel(c.model))}
-          lockedModelCount={columns.length}
+          free={ctx.syncBalanceLockedColumns.every((c) => isFreeModel(c.model))}
+          lockedModelCount={ctx.syncBalanceLockedColumns.length}
         />
       )}
 
@@ -94,7 +94,7 @@ export function CompareSharedComposer({ ctx }: { ctx: ModelsCompareContext }) {
             onChange={ctx.setSharedDraft}
             onSend={ctx.handleSyncSend}
             isStreaming={columns.some((c) => c.streaming)}
-            disabled={ctx.isBalanceZero}
+            disabled={ctx.syncBalanceLockedColumns.length > 0}
             onStop={() => stream.abortAll()}
             placeholder={ctx.compareTask === 'image_to_image'
               ? t('modelsExperience.taskPlaceholder.image_to_image')

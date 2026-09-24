@@ -309,12 +309,15 @@
       },
       "asyncTicket": {
         "title": "已转为异步问题单",
+        "pending": "待处理",
+        "defaultEta": "2小时内",
         "ariaLabel": "异步问题单 {{id}}",
         "idLabel": "工单编号",
         "etaLabel": "预计联系",
         "contact": "客服将通过账号预留联系方式主动联系你，请留意后续通知。",
         "reason": "当前咨询量较大，暂时未能接入人工客服。"
       },
+      "handoffStarted": "已为你转接人工客服，请稍候",
       "records": {
         "title": "服务记录",
         "subtitle": "查看处理进度与继续沟通",
@@ -393,7 +396,7 @@
       "answerStatus": {
         "intent": "请补充工作空间、时间范围或 Request ID，方便我继续处理",
         "needsLogin": "登录后可查询你的账户数据",
-        "insufficientEvidence": "暂时无法确认，建议提交反馈或转人工",
+        "insufficientEvidence": "暂时无法确认，建议提交反馈",
         "degraded": "当前证据不足，以上仅供参考",
         "outOfScope": "我目前仅支持 ModelGo 相关问题",
         "suggestHandoff": "如需人工协助，可转接客服",
@@ -451,6 +454,9 @@
       "rulesLinkLabel": "查看分润规则",
       "copyInviteLinkAria": "复制邀请链接",
       "copyInviteCodeAria": "复制{{label}}"
-    }
+    },
+    "newVersionTitle": "有新版本可用",
+    "newVersionRefreshing": "正在自动刷新以使用最新版本…",
+    "newVersionRefreshFailed": "页面仍是旧版本，请手动刷新一次。"
   }
 }

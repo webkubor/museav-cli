@@ -27,7 +27,8 @@
     "sync:permissions:global": "bun run scripts/sync-permissions.ts --market global",
     "sync:permissions:check": "bun run scripts/sync-permissions.ts --check",
     "check:i18n": "node scripts/check-i18n.mjs",
-    "check:orb-theme": "node scripts/check-orb-theme.mjs"
+    "check:orb-theme": "node scripts/check-orb-theme.mjs",
+    "audit:crawl": "node scripts/check-crawl-files.mjs"
   },
   "dependencies": {
     "@fingerprintjs/fingerprintjs": "^5.2.0",

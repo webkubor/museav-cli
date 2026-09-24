@@ -12,6 +12,8 @@ const messages: Record<string, string> = {
   'modelsExperience.retryAfterAdjust': '调整后重试',
   'modelsExperience.errorDetailShow': '查看详情',
   'modelsExperience.errorDetailHide': '收起详情',
+  'modelsExperience.modelThinking': '模型思考中',
+  'modelsExperience.thinkProcess': '思考过程',
 }
 
 vi.mock('react-i18next', async (importOriginal) => ({
@@ -93,5 +95,53 @@ describe('ExperienceMessageList · 媒体失败展示', () => {
       />,
     )
     expect(screen.queryByText('查看详情')).not.toBeInTheDocument()
+  })
+})
+
+describe('ExperienceMessageList · 思维链隐藏（#1124）', () => {
+  it('历史消息只显示最终回答，不显示思维链文本或入口', () => {
+    render(
+      <ExperienceMessageList
+        messages={[{ role: 'assistant', content: '<think>内部推理内容</think>对用户的最终回答' }]}
+        isStreaming={false}
+        emptyState={null}
+      />,
+    )
+
+    expect(screen.getByText('对用户的最终回答')).toBeInTheDocument()
+    expect(screen.queryByText('内部推理内容')).not.toBeInTheDocument()
+    expect(screen.queryByText('思考过程')).not.toBeInTheDocument()
+  })
+
+  it('流式思考只显示状态动画，不显示思维链文本', () => {
+    render(
+      <ExperienceMessageList
+        messages={[{ role: 'assistant', content: '<think>流式内部推理' }]}
+        isStreaming
+        emptyState={null}
+      />,
+    )
+
+    expect(screen.getByLabelText('模型思考中')).toBeInTheDocument()
+    expect(screen.queryByText('流式内部推理')).not.toBeInTheDocument()
+    expect(screen.queryByText('思考过程')).not.toBeInTheDocument()
+  })
+
+  it('音频产物标题也隐藏 assistant 思维链', () => {
+    render(
+      <ExperienceMessageList
+        messages={[{
+          role: 'assistant',
+          content: '<think>音频推理内容</think>最终语音说明',
+          media: [{ kind: 'audio', url: 'https://example.com/audio.mp3' }],
+        }]}
+        isStreaming={false}
+        isMediaTask
+        emptyState={null}
+      />,
+    )
+
+    expect(screen.getAllByText('最终语音说明')).toHaveLength(2)
+    expect(screen.queryByText('音频推理内容')).not.toBeInTheDocument()
   })
 })

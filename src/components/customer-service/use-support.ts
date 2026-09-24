@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/store/auth'
 import { appToast } from '@/lib/app-toast'
 import { trackEvent } from '@/lib/track'
 import { storageKeys } from '@/lib/storage'
+import { ModelGoApiError, SENSITIVE_KEY_RE } from '@/lib/request'
 import {
   askSupport,
   cancelHandoff,
@@ -21,10 +22,15 @@ import { useSupportEvents } from './use-support-events'
 import { getOrCreateSupportSessionId, clearSupportSessionId } from './session-id'
 import {
   canStartHandoff,
+  canApplyHandoffSnapshot,
   composerDisabled as composerDisabledOf,
+  canApplyEndedTicket,
   isHumanChannel,
+  isEndedSupportTicket,
+  isSameSupportContext,
   modeFromServiceMode,
   needsEvents,
+  reserveEndedTicket,
   serviceModeOf,
   showsComposer,
   showsFeedbackEntry,
@@ -120,8 +126,15 @@ export function useSupport() {
   // —— 漏一个就残留（见 support-machine.ts 顶部记的两个真实 bug）。
   // 现在这些数据随模式携带，切模式即失效，漏不掉。
   const [mode, setModeRaw] = useState<SupportMode>({ kind: 'chat' })
+  const modeRef = useRef(mode)
+  useLayoutEffect(() => {
+    modeRef.current = mode
+  }, [mode])
   const [messages, setMessages] = useState<ChatItem[]>([])
   const [isAsking, setIsAsking] = useState(false)
+  const accountEpoch = useRef(0)
+  const handoffPending = useRef(false)
+  const [isCancellingHandoff, setIsCancellingHandoff] = useState(false)
   const [ticketDetail, setTicketDetail] = useState<SupportTicketDetail | null>(null)
 
   /** 唯一的模式迁移入口：非法跳转被 transition() 拦下，不静默生效。 */
@@ -132,7 +145,51 @@ export function useSupport() {
   /** 当前模式关联的工单号（取代原来那个全局 ticketId）。 */
   const ticketId = ticketIdOf(mode)
 
-  const lastAccountId = useRef<string | null>(null)
+  const lastAccountId = useRef<string | null>(account?.account_id ?? null)
+  const appliedAsyncTicketIds = useRef<Set<string>>(new Set())
+  const appliedEndedTicketIds = useRef<ReadonlySet<string>>(new Set())
+  const activeAccountId = useRef(account?.account_id ?? null)
+  const activeMode = useRef(mode)
+
+  useLayoutEffect(() => {
+    activeAccountId.current = account?.account_id ?? null
+    activeMode.current = mode
+  }, [account?.account_id, mode])
+
+  const isCurrentSupportTicket = useCallback((ticketId: string, expectedAccountId: string | null) => (
+    isSameSupportContext(
+      activeAccountId.current,
+      expectedAccountId,
+      ticketIdOf(activeMode.current),
+      ticketId,
+    )
+  ), [])
+
+  const applyEndedTicket = useCallback((ticketId: string, expectedAccountId: string | null, detail: SupportTicketDetail) => {
+    if (!isCurrentSupportTicket(ticketId, expectedAccountId)) return
+    if (!canApplyEndedTicket(activeMode.current)) return
+    const reservation = reserveEndedTicket(appliedEndedTicketIds.current, ticketId)
+    appliedEndedTicketIds.current = reservation.appliedTicketIds
+    if (!reservation.shouldApply) return
+
+    setTicketDetail(detail)
+    go(modeFromServiceMode('ended', ticketId))
+    setMessages((prev) => prev.some((message) => message.kind === 'rating_card' && message.ratingCard?.ticketId === ticketId)
+      ? prev
+      : [...prev,
+        { id: crypto.randomUUID(), role: 'system', content: t('common.customerService.handoffEnded'), createdAt: Date.now() },
+        {
+          id: crypto.randomUUID(),
+          role: 'system',
+          content: '',
+          createdAt: Date.now(),
+          kind: 'rating_card',
+          ratingCard: { ticketId, agentName: ticketAgentNameOf(detail), agentNo: detail.agent_no },
+        },
+      ])
+  }, [go, isCurrentSupportTicket, t])
+  const suppressedHandoffTicketIds = useRef<ReadonlySet<string>>(new Set())
+  const cancellingHandoffTicketId = useRef<string | null>(null)
 
   // 一次性清除迁移期废弃的历史缓存（旧 SSE hook 用过）。
   // 注意：不再清除 cs_cid —— #1057 要求 session_id 本地持久化（刷新/重开保留），
@@ -146,12 +203,19 @@ export function useSupport() {
   // 退出登录/切账号：清空私有会话上下文
   useEffect(() => {
     const currentId = account?.account_id ?? null
-    if (lastAccountId.current !== null && lastAccountId.current !== currentId) {
+    if (lastAccountId.current !== currentId) {
+      accountEpoch.current += 1
+      setIsAsking(false)
       // 回到 chat 即丢弃全部模式内数据（ticketId / 排队人数 / 客服信息），
       // 不用再逐个清 —— 这正是原先漏清 agentInfo 的地方
       setMessages([])
       setModeRaw({ kind: 'chat' })
       setTicketDetail(null)
+      appliedEndedTicketIds.current = new Set()
+      appliedAsyncTicketIds.current = new Set()
+      suppressedHandoffTicketIds.current = new Set()
+      cancellingHandoffTicketId.current = null
+      handoffPending.current = false
       // 切账号必须换新会话：否则上一账号持久化的 session_id 会带到新账号，
       // 让后端把两人的多轮上下文串到一起（#1057 要求会话稳定，但不能跨账号）。
       clearSupportSessionId()
@@ -163,9 +227,9 @@ export function useSupport() {
     setMessages((prev) => [...prev, item])
   }, [])
 
-  const startHandoff = useCallback(async () => {
+  const startHandoffWithTrigger = useCallback(async (trigger?: { question: string; sensitiveHit: boolean }) => {
     // 「排队中不允许重复发起转接」由状态机判定（PRD §8.6），不再自己比 serviceMode
-    if (!canStartHandoff(mode)) return
+    if (!canStartHandoff(modeRef.current) || handoffPending.current) return
     // 未登录直接引导登录：转人工是登录态能力，发出去只会拿到 40101，
     // 再被 catch 成「转人工失败，请稍后重试」——用户会一直重试，而重试
     // 永远失败。同理这里也不能让 40101 走到 request.ts 的全局分支，
@@ -182,6 +246,9 @@ export function useSupport() {
       })
       return
     }
+    const epoch = accountEpoch.current
+    const accountId = account?.account_id ?? null
+    handoffPending.current = true
     trackEvent('support_handoff_start')
     try {
       const resp = await requestHandoff({
@@ -189,7 +256,16 @@ export function useSupport() {
         // PRD §8.6：转人工要自动交接当前页面与最近对话摘要，客服不用从头问一遍。
         // §10/§12 要求摘要先过敏感检测：这里只取**用户自己的提问**和回答状态标签，
         // 不带回答正文、不带 API Key/Token（后端 sensitive.Hit 命中的那条也不会进来）。
-        summary: buildHandoffSummary(messages, currentPagePath() ?? ''),
+        summary: buildHandoffSummary(trigger
+          ? [...messages, { id: '', role: 'user', content: trigger.question, createdAt: Date.now(), sensitiveHit: trigger.sensitiveHit }]
+          : messages, currentPagePath() ?? ''),
+      })
+      if (epoch !== accountEpoch.current || accountId !== activeAccountId.current) return
+      appendMessage({
+        id: crypto.randomUUID(),
+        role: 'system',
+        content: t('common.customerService.handoffStarted'),
+        createdAt: Date.now(),
       })
       go(modeFromServiceMode(resp.service_mode, resp.ticket_id, {
         ahead: resp.queue_position,
@@ -198,19 +274,27 @@ export function useSupport() {
         status: resp.status,
       }))
     } catch (error) {
+      if (epoch !== accountEpoch.current || accountId !== activeAccountId.current) return
       appToast.requestError(error, t('common.customerService.handoffFailed'))
       go({ kind: 'chat' })
       appendMessage({ id: crypto.randomUUID(), role: 'system', content: t('common.customerService.handoffFailed'), createdAt: Date.now() })
+    } finally {
+      if (epoch === accountEpoch.current) handoffPending.current = false
     }
-  }, [mode, go, appendMessage, t, account, isLoading, messages])
+  }, [go, appendMessage, t, account, isLoading, messages])
+  const startHandoff = useCallback(() => startHandoffWithTrigger(), [startHandoffWithTrigger])
 
   const ask = useCallback(async (question: string) => {
     const trimmed = question.trim()
     if (!trimmed || isAsking) return
+    const generation = accountEpoch.current
+    const accountId = account?.account_id ?? null
 
     if (HANDOFF_TRIGGER_RE.test(trimmed) && canStartHandoff(mode)) {
       appendMessage({ id: crypto.randomUUID(), role: 'user', content: trimmed, createdAt: Date.now() })
-      await startHandoff()
+      // Direct triggers bypass /support/ask's sensitive.Hit; omit the entire question
+      // when the shared request redaction matcher spots a credential label.
+      await startHandoffWithTrigger({ question: trimmed, sensitiveHit: SENSITIVE_KEY_RE.test(trimmed) })
       return
     }
 
@@ -223,6 +307,7 @@ export function useSupport() {
         session_id: getOrCreateSupportSessionId(),
         page_path: currentPagePath(),
       })
+      if (generation !== accountEpoch.current || accountId !== activeAccountId.current) return
       appendMessage({
         id: crypto.randomUUID(),
         role: 'assistant',
@@ -238,7 +323,11 @@ export function useSupport() {
         sensitiveHit: resp.sensitive?.Hit === true,
         rating: null,
       })
+      if (resp.intent === 'human_handoff' && canStartHandoff(modeRef.current)) {
+        await startHandoffWithTrigger({ question: trimmed, sensitiveHit: resp.sensitive?.Hit === true })
+      }
     } catch (error) {
+      if (generation !== accountEpoch.current || accountId !== activeAccountId.current) return
       appToast.requestError(error, t('common.customerService.sendFailed'))
       appendMessage({
         id: crypto.randomUUID(),
@@ -247,10 +336,9 @@ export function useSupport() {
         createdAt: Date.now(),
       })
     } finally {
-      setIsAsking(false)
+      if (generation === accountEpoch.current) setIsAsking(false)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAsking, mode, appendMessage, t])
+  }, [isAsking, mode, account?.account_id, appendMessage, startHandoffWithTrigger, t])
 
   const rateMessageAnswer = useCallback(async (messageId: string, rating: SupportAnswerRating) => {
     const target = messages.find((m) => m.id === messageId)
@@ -271,13 +359,24 @@ export function useSupport() {
   }, [messages])
 
   const cancelActiveHandoff = useCallback(async () => {
-    if (!ticketId) return
+    if (!ticketId || cancellingHandoffTicketId.current === ticketId
+      || !canApplyHandoffSnapshot(ticketId, ticketIdOf(modeRef.current), suppressedHandoffTicketIds.current)) return
     const isConnecting = mode.kind === 'connecting'
+    cancellingHandoffTicketId.current = ticketId
+    suppressedHandoffTicketIds.current = new Set([...suppressedHandoffTicketIds.current, ticketId])
+    setIsCancellingHandoff(true)
     try {
       await cancelHandoff(ticketId)
       trackEvent('support_handoff_cancel')
     } catch (error) {
+      suppressedHandoffTicketIds.current = new Set(
+        [...suppressedHandoffTicketIds.current].filter((id) => id !== ticketId),
+      )
       appToast.requestError(error)
+      return
+    } finally {
+      cancellingHandoffTicketId.current = null
+      setIsCancellingHandoff(false)
     }
     appendMessage({
       id: crypto.randomUUID(),
@@ -307,25 +406,45 @@ export function useSupport() {
   const sendHumanReply = useCallback(async (content: string) => {
     const trimmed = content.trim()
     if (!trimmed || !ticketId) return
-    appendMessage({ id: crypto.randomUUID(), role: 'user', content: trimmed, createdAt: Date.now() })
+    const accountId = account?.account_id ?? null
+    const messageId = crypto.randomUUID()
+    appendMessage({ id: messageId, role: 'user', content: trimmed, createdAt: Date.now() })
     try {
       await replyTicketMessage(ticketId, trimmed)
     } catch (error) {
+      setMessages((prev) => prev.filter((message) => message.id !== messageId))
+      if (!isCurrentSupportTicket(ticketId, accountId)) return
+      if (error instanceof ModelGoApiError && error.rawMessage === 'support.invalid_transition') {
+        try {
+          const detail = await getSupportTicket(ticketId)
+          if (!isCurrentSupportTicket(ticketId, accountId)) return
+          if (isEndedSupportTicket(detail)) {
+            applyEndedTicket(ticketId, accountId, detail)
+            return
+          }
+        } catch {
+          // Keep the original send error when refreshing ticket state also fails.
+        }
+      }
       appToast.requestError(error, t('common.customerService.sendFailed'))
     }
-  }, [ticketId, appendMessage, t])
+  }, [account?.account_id, ticketId, appendMessage, applyEndedTicket, isCurrentSupportTicket, t])
 
   // 长轮询：开关也由模式推导（PRD 只在人工线进行中需要）
   const eventsEnabled = needsEvents(mode)
   useSupportEvents(eventsEnabled, ticketId ?? undefined, useCallback(async (raw) => {
+    const accountId = account?.account_id ?? null
     // 后端的 /support/events 只是**变更信号**（events[] + server_versions），
     // 不带 service_mode / queue_position / has_new_messages —— 那三个是照 PRD 写的，
     // 从没下发过，长轮询因此空转：排队→接通、超时转异步、新消息全推不动。
     // 真状态一律回工单详情拿，这里把详情压成下面这套逻辑原本期待的形状。
     if (!ticketId) return
+    if (!canApplyHandoffSnapshot(ticketId, ticketIdOf(modeRef.current), suppressedHandoffTicketIds.current)) return
     if (raw && Array.isArray(raw.events) && raw.events.length === 0) return
     const detail = await getSupportTicket(ticketId).catch(() => null)
     if (!detail) return
+    if (!isCurrentSupportTicket(ticketId, accountId)) return
+    if (!canApplyHandoffSnapshot(ticketId, ticketIdOf(modeRef.current), suppressedHandoffTicketIds.current)) return
     const agentName = ticketAgentNameOf(detail)
     const event: SupportTicketSnapshot = {
       // 后端的 service_mode 只有 live / async 两个值，排队到哪一步不在里面：
@@ -360,22 +479,11 @@ export function useSupport() {
         appendMessage({ id: crypto.randomUUID(), role: 'system', content: t('common.customerService.handoffConnected'), createdAt: Date.now() })
       }
       if (event.service_mode === 'ended') {
-        appendMessage({ id: crypto.randomUUID(), role: 'system', content: t('common.customerService.handoffEnded'), createdAt: Date.now() })
-        appendMessage({
-          id: crypto.randomUUID(),
-          role: 'system',
-          content: '',
-          createdAt: Date.now(),
-          kind: 'rating_card',
-          ratingCard: {
-            ticketId: ticketId!,
-            // 只有 human 模式才有客服信息 —— 取不到就不带，绝不会带上一次的
-            agentName: mode.kind === 'human' ? mode.agentName : undefined,
-            agentNo: mode.kind === 'human' ? mode.agentNo : undefined,
-          },
-        })
+        applyEndedTicket(ticketId, accountId, detail)
       }
       if (event.service_mode === 'async') {
+        if (appliedAsyncTicketIds.current.has(ticketId)) return
+        appliedAsyncTicketIds.current.add(ticketId)
         // 转异步后走异步回执、不再占用面板主态（PRD §8.6）。
         // 模式已由 modeFromServiceMode('async') 映射回 chat，排队人数/客服信息随之丢弃
         // —— 旧实现这里漏清 queuePosition，顶部还会显示「前方 N 人」。
@@ -393,8 +501,8 @@ export function useSupport() {
           kind: 'async_ticket',
           asyncTicket: {
             ticketNo: ticketNoOf(detail),
-            status: detail.status_label || detail.status,
-            slaText: ticketSlaTextOf(detail),
+            status: t('common.customerService.asyncTicket.pending'),
+            slaText: ticketSlaTextOf(detail) || t('common.customerService.asyncTicket.defaultEta'),
           },
         })
       }
@@ -404,7 +512,7 @@ export function useSupport() {
         setMessages((prev) => mergeFreshAgentMessages(prev, page.items))
       }).catch(() => {})
     }
-  }, [mode, go, ticketId, appendMessage, t]))
+  }, [mode, go, ticketId, appendMessage, applyEndedTicket, isCurrentSupportTicket, t, account]))
 
   // ---- 反馈 ----
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
@@ -502,6 +610,7 @@ export function useSupport() {
     rateMessageAnswer,
     startHandoff,
     cancelActiveHandoff,
+    isCancellingHandoff,
     endActiveHandoff,
     sendHumanReply,
     feedbackSubmitting,

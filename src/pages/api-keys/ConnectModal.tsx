@@ -18,7 +18,7 @@ import { useAuthStore } from '@/store/auth'
 import { reportOnboardingStep } from '@/store/use-onboarding-store'
 import { LocaleNamespaces } from '@/components/i18n/LocaleNamespaces'
 import { CONNECT_ACTIONS, buildConnectSnippets, getConnectAction, MGC_CLIENT_OPTIONS, connectActionLabel, deriveRegionFromBaseUrl, buildMgcCommand, type ConnectParam } from './constants'
-import { buildConnectModelOptions, pickConnectModels } from './connect-models'
+import { buildConnectModelOptions, listAllConnectModels, pickConnectModels } from './connect-models'
 import { useQuery } from '@tanstack/react-query'
 import { listModels } from '@/services/catalog'
 import { listApiKeys, revealApiKey } from '@/services/api-keys'
@@ -75,22 +75,22 @@ function ConnectModalContent({ open, onClose, openAIBaseUrl, anthropicBaseUrl, c
   // 仅在弹窗打开时拉取，避免全局 Header 每页都打一次目录请求。
   const anthropicModelsQuery = useQuery({
     queryKey: ['catalog-models', 'connect-modal', 'claude-code'],
-    queryFn: () => listModels({ coding_tool: 'claude-code', include_hidden: true, page_size: 100 }),
+    queryFn: () => listAllConnectModels('claude-code', listModels),
     enabled: open,
     staleTime: 5 * 60_000,
   })
   const openaiModelsQuery = useQuery({
     queryKey: ['catalog-models', 'connect-modal', 'codex'],
-    queryFn: () => listModels({ coding_tool: 'codex', include_hidden: true, page_size: 100 }),
+    queryFn: () => listAllConnectModels('codex', listModels),
     enabled: open,
     staleTime: 5 * 60_000,
   })
   const anthropicModelOptions = useMemo(
-    () => buildConnectModelOptions(anthropicModelsQuery.data?.items ?? [], 'claude-code'),
+    () => buildConnectModelOptions(anthropicModelsQuery.data ?? [], 'claude-code'),
     [anthropicModelsQuery.data]
   )
   const openaiModelOptions = useMemo(
-    () => buildConnectModelOptions(openaiModelsQuery.data?.items ?? [], 'codex'),
+    () => buildConnectModelOptions(openaiModelsQuery.data ?? [], 'codex'),
     [openaiModelsQuery.data]
   )
   // 下拉未选时的默认项：沿用 #257 的挑选规则（旗舰 Claude / 最新 GPT），不是列表第一个

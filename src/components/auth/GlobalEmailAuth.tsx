@@ -1,14 +1,4 @@
-/**
- * Global 站两步式免密登录/注册。
- * 第一步选择 Google/GitHub 或提交邮箱，第二步单独完成邮箱验证码校验。
- *
- * 接口口径（2026-09-22 对齐真实后端，原型 mock 已全部拆除）：
- * - 发码 → `auth/email-code/send`（与国内邮箱腿同一个端点）
- * - 登录/注册 → `auth/email-code/login`（**后端尚未提供**，见 services/auth.ts 的 TODO；
- *   端点上线前这一步会返回 40401，页面按普通服务端错误展示，不再假装成功）
- * - 第三方 → 真实 `auth/oauth/:provider/authorize` 浏览器导航（先解人机校验再跳）
- * - 人机校验 → 真实 alicaptcha（getCaptchaOutcome），不再是定时器假通过
- */
+/** Two-step email OTP login and registration, with optional enrolled TOTP. */
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
@@ -78,6 +68,8 @@ export function GlobalEmailAuth() {
   const [captchaParam, setCaptchaParam] = useState<string | null>(null)
   const [step, setStep] = useState<EmailStep>('entry')
   const [serverError, setServerError] = useState('')
+  const [totp, setTotp] = useState('')
+  const [totpRequired, setTotpRequired] = useState(false)
   const [loading, setLoading] = useState(false)
   const [resendSeconds, setResendSeconds] = useState(0)
   const [pendingProvider, setPendingProvider] = useState<GlobalOAuthProvider | null>(null)
@@ -90,14 +82,12 @@ export function GlobalEmailAuth() {
   const [gateActive, setGateActive] = useState(false)
   const gateRef = useRef<CaptchaGateHandle | null>(null)
 
-  /**
-   * 错误文案统一走 getRequestErrorMessage：后端原文（如 40401 的 `resource not found`）
-   * 不许直接上屏，40401/5xx 一律归一成「服务暂不可用」。
-   * 40901「邮箱已注册」单独给词 —— 在"登录或注册合一"的流程里它本不该是错误，
-   * 但 auth/email-code/send 是**注册**发码端点（swagger 原文：邮箱已注册时返回业务错误），
-   * 所以老用户在这条路上根本发不出码。这是后端缺口，前端只能先说清楚。
-   */
   const describeError = (error: unknown) => {
+    if (isApiErrorCode(error, 40038) || isApiErrorCode(error, 40039)) {
+      setTotpRequired(true)
+      codeForm.reset({ code: '' })
+      return t('account.auth.globalEmailAuth.totpRetry')
+    }
     if (isApiErrorCode(error, 40901)) return t('account.auth.globalEmailAuth.emailAlreadyRegistered')
     return getRequestErrorMessage(error, t('account.auth.globalEmailAuth.failed'))
   }
@@ -132,15 +122,16 @@ export function GlobalEmailAuth() {
     }
   }, [isAuthenticated, isSessionLoading, navigate, redirectAfterLogin])
 
-  /** 真实人机校验：呈现挑战并等用户解题；未启用/SDK 不可用时按放行处理（后端 fail-open）。 */
+  /** 真实人机校验：呈现挑战并等用户解题；未获得有效参数时不允许继续。 */
   const runHumanVerification = async () => {
     setServerError('')
     setHumanVerification('verifying')
     try {
-      const { param, presented } = await getCaptchaOutcome()
-      if (!param && presented) {
+      const { param } = await getCaptchaOutcome()
+      if (!param) {
         // 呈现过但没解出来（关弹窗/超时）→ 退回未验证，不能放行
         setHumanVerification('idle')
+        setServerError(t('account.auth.validation.securityVerificationRequired'))
         return
       }
       setCaptchaParam(param)
@@ -171,6 +162,8 @@ export function GlobalEmailAuth() {
       codeForm.reset({ code: '' })
       setStep('code')
     } catch (error) {
+      setCaptchaParam(null)
+      setHumanVerification('idle')
       setServerError(describeError(error))
     } finally {
       setLoading(false)
@@ -215,6 +208,10 @@ export function GlobalEmailAuth() {
       return
     }
     const email = emailForm.getValues('email')
+    if ((totpRequired || totp) && !/^\d{6}$/.test(totp)) {
+      setServerError(t('account.auth.validation.code6'))
+      return
+    }
     setLoading(true)
     setServerError('')
     try {
@@ -224,6 +221,7 @@ export function GlobalEmailAuth() {
         gateParam ?? (await getCaptchaParam()),
         resolveReferralCode(searchParams) || undefined,
         searchParams.get('invitation') ?? undefined,
+        totp || undefined,
       )
       // 会话由服务端 cookie 下发，读回来填 store；导航交给上面 isAuthenticated 的 effect。
       const session = await getSession()
@@ -266,6 +264,8 @@ export function GlobalEmailAuth() {
 
   const useDifferentEmail = () => {
     setStep('entry')
+    setTotp('')
+    setTotpRequired(false)
     setHumanVerification('idle')
     setResendSeconds(0)
     setServerError('')
@@ -324,9 +324,10 @@ export function GlobalEmailAuth() {
           </div>
 
           <div>
-            <label className="modern-auth-label">{t('account.auth.fields.email')}</label>
+            <label htmlFor="global-auth-email" className="modern-auth-label">{t('account.auth.fields.email')}</label>
             <Input
               {...emailForm.register('email')}
+              id="global-auth-email"
               type="email"
               placeholder="you@company.com"
               autoComplete="email"
@@ -395,9 +396,10 @@ export function GlobalEmailAuth() {
           </div>
 
           <div>
-            <label className="modern-auth-label">{t('account.auth.globalEmailAuth.codeLabel')}</label>
+            <label htmlFor="global-auth-code" className="modern-auth-label">{t('account.auth.globalEmailAuth.codeLabel')}</label>
             <Input
               {...codeForm.register('code')}
+              id="global-auth-code"
               className="auth-global-code-input"
               type="text"
               inputMode="numeric"
@@ -421,6 +423,12 @@ export function GlobalEmailAuth() {
           />
 
           {serverError && <p className="auth-error-message">{serverError}</p>}
+
+          <div>
+            <label htmlFor="email-login-totp" className="modern-auth-label">{t('account.auth.globalEmailAuth.totpLabel')}</label>
+            <Input id="email-login-totp" value={totp} onChange={(event) => setTotp(event.target.value)} inputMode="numeric" maxLength={6} autoComplete="off" required={totpRequired} />
+            <p className="auth-prototype-code-hint">{t('account.auth.globalEmailAuth.totpHint')}</p>
+          </div>
 
           <Button type="submit" variant="brand" size="lg" loading={loading}>
             <LuMailCheck size={17} aria-hidden="true" />

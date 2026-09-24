@@ -16,13 +16,12 @@ import type {
   SwitchTenantRequest,
 } from '@/types'
 
-// qa#299 人机验证：登录/注册/发码携带 captcha_verify_param（可选——未启用或 SDK
-// 降级时不带，后端 fail-open）。仅当非空时并入请求体。
+// 仅携带非空人机校验结果；是否允许缺失由各端点决定，邮箱验证码登录失败关闭。
 function withCaptcha<T extends object>(body: T, captchaVerifyParam?: string | null): T {
   return captchaVerifyParam ? { ...body, captcha_verify_param: captchaVerifyParam } : body
 }
 
-/** 发送注册邮箱验证码（5 分钟有效；邮箱已注册返回 40901） */
+/** 发送登录/注册邮箱验证码（#1092）；已注册与新邮箱均返回相同有效期契约。 */
 export function sendEmailCode(email: string, captchaVerifyParam?: string | null) {
   return post<AuthMailTTLResponse>('auth/email-code/send', withCaptcha({ email }, captchaVerifyParam))
 }
@@ -30,15 +29,8 @@ export function sendEmailCode(email: string, captchaVerifyParam?: string | null)
 /**
  * 国际站邮箱免密登录/注册：以「邮箱 + 6 位验证码」建号或登录并下发 session cookie。
  *
- * TODO(后端待接)：`auth/email-code/login` **尚不存在**（2026-09-22 在 test 实测
- * `modelgo-web-api` 返回 40401 资源不存在；web-api swagger 的 /auth 路径里也没有它）。
- * 后端现有的两个邮箱端点都接不上这条流程：
- *   - `auth/email-code/send`   ✅ 发码，本文件上面那个 sendEmailCode 就是它；
- *   - `auth/email-code/verify` ⛔ 只校验、**不下发会话**，且会**一次性消费验证码** ——
- *     所以前端绝不能"先 verify 再 login"，那样第二步必然失败（手机号腿踩过同一个坑）。
- * 端点形状按已上线的 `auth/sms-code/login`（auth.SMSLoginRequest：code + captcha_verify_param
- * + referral_code + invitation_token）平移，后端就绪后只需改这一处 path。
- * ponytail: 单一接桩点。
+ * #1092：POST /auth/email-code/login 原子消费邮箱验证码；不能先调用 verify。
+ * 已启用两步验证的账号还须提供 totp。
  *
  * captcha_verify_param：登录侧实际是 fail-closed（手机号腿实测缺失/空值一律 40025），
  * 所以调用方必须把人机校验四元组传进来；发码时消费掉的那一组不能复用。
@@ -49,6 +41,7 @@ export function emailCodeLoginRegister(
   captchaVerifyParam?: string | null,
   referralCode?: string,
   invitationToken?: string,
+  totp?: string,
 ) {
   return post<LoginResult>(
     'auth/email-code/login',
@@ -58,6 +51,7 @@ export function emailCodeLoginRegister(
         code,
         ...(referralCode ? { referral_code: referralCode } : {}),
         ...(invitationToken ? { invitation_token: invitationToken } : {}),
+        ...(totp ? { totp } : {}),
       },
       captchaVerifyParam,
     ),

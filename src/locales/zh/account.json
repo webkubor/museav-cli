@@ -12,6 +12,7 @@
       "emailLabel": "邮箱地址",
       "emailHint": "用于接收账号通知与找回。",
       "nameLabel": "显示名称",
+      "nameHint": "展示在控制台右上角与成员列表。",
       "namePlaceholder": "请输入显示名称",
       "toastSuccess": "显示名称已保存",
       "toastError": "保存失败，请重试",

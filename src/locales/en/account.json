@@ -12,6 +12,7 @@
       "emailLabel": "Email",
       "emailHint": "Used for account notifications and recovery.",
       "nameLabel": "Display Name",
+      "nameHint": "Shown in the console header and member lists.",
       "namePlaceholder": "Enter display name",
       "toastSuccess": "Display name saved",
       "toastError": "Failed to save",

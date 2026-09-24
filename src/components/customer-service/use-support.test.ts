@@ -316,8 +316,9 @@ describe('useSupport · agent-detected human handoff', () => {
 })
 
 describe('useSupport · 补充问题描述 (#1119)', () => {
-  const detailOf = (id: string, canSupplement = true) => ({
+  const detailOf = (id: string, canSupplement = true, version = 1) => ({
     ticket_id: id,
+    version,
     ticket_type: 'feedback' as const,
     status: 'pending',
     created_at: '2026-09-24T08:00:00Z',
@@ -358,13 +359,22 @@ describe('useSupport · 补充问题描述 (#1119)', () => {
     expect(result.current.ticketDetail?.ticket_id).toBe('FB-B')
   })
 
-  const apiError = (msg: string) => new ModelGoApiError({ code: 40001, msg } as ConstructorParameters<typeof ModelGoApiError>[0])
+  const apiError = (msg: string, code = 40001) => new ModelGoApiError({ code, msg } as ConstructorParameters<typeof ModelGoApiError>[0])
+  // 线上真实形状（2026-09-24 test 实测）：agent 的 4001 经 web-api 包成 40001，机器码在 field_errors 里
+  const wrappedError = (supportCode: string) => new ModelGoApiError({
+    code: 40001,
+    msg: 'request validation failed',
+    data: { field_errors: [{ field: '_root', message: supportCode }] },
+  } as ConstructorParameters<typeof ModelGoApiError>[0])
 
-  it('invalid_transition on a now-closed ticket: refreshes, says so, and reports closed', async () => {
+  it.each([
+    ['wrapped by web-api into field_errors', () => wrappedError('support.invalid_transition')],
+    ['as the raw msg', () => apiError('support.invalid_transition')],
+  ])('invalid_transition (%s) on a now-closed ticket: refreshes, says so, and reports closed', async (_shape, makeError) => {
     const { result } = renderHook(() => useSupport())
     await openDetail(result, 'FB-A')
 
-    supplementTicketMock.mockRejectedValueOnce(apiError('support.invalid_transition'))
+    supplementTicketMock.mockRejectedValueOnce(makeError())
     getSupportTicketMock.mockResolvedValueOnce(detailOf('FB-A', false))
     let outcome: string = ''
     await act(async () => { outcome = await result.current.supplementSelectedTicket('补充A') })
@@ -421,13 +431,13 @@ describe('useSupport · 补充问题描述 (#1119)', () => {
     await act(async () => { await result.current.supplementSelectedTicket('补充A') })
 
     // 第二次：重试成功
-    const withSupplement = { ...detailOf('FB-A'), supplements: [{ id: 'sup_FB-A_0', content: '补充A', created_at: '2026-09-24T08:01:00Z' }] }
+    const withSupplement = { ...detailOf('FB-A', true, 2), supplements: [{ id: 'sup_FB-A_0', content: '补充A', created_at: '2026-09-24T08:01:00Z' }] }
     supplementTicketMock.mockResolvedValueOnce(withSupplement)
     await act(async () => { await result.current.supplementSelectedTicket('补充A') })
     expect(result.current.ticketDetail?.supplements).toHaveLength(1)
 
     // 旧刷新这时才回来，不能把刚补上的那条抹掉
-    await act(async () => { finishRefresh(detailOf('FB-A')) })
+    await act(async () => { finishRefresh(detailOf('FB-A', true, 1)) })
     expect(result.current.ticketDetail?.supplements).toHaveLength(1)
   })
 
@@ -436,7 +446,7 @@ describe('useSupport · 补充问题描述 (#1119)', () => {
     await openDetail(result, 'FB-A')
 
     let finishRefresh: (v: unknown) => void = () => {}
-    supplementTicketMock.mockRejectedValueOnce(apiError('support.invalid_transition'))
+    supplementTicketMock.mockRejectedValueOnce(wrappedError('support.invalid_transition'))
     getSupportTicketMock.mockImplementationOnce(() => new Promise((resolve) => { finishRefresh = resolve }))
     let pending: Promise<string> = Promise.resolve('')
     await act(async () => { pending = result.current.supplementSelectedTicket('补充A') })
@@ -461,5 +471,40 @@ describe('useSupport · 补充问题描述 (#1119)', () => {
     expect(outcome).toBe('failed')
     expect(toastErrorMock).toHaveBeenCalledWith('common.customerService.ticket.supplementFailed')
     expect(requestErrorMock).not.toHaveBeenCalled()
+  })
+
+  it('two supplement responses arriving out of order keep the newer ticket version', async () => {
+    const { result } = renderHook(() => useSupport())
+    await openDetail(result, 'FB-A')
+
+    let finishFirst: (v: unknown) => void = () => {}
+    supplementTicketMock.mockImplementationOnce(() => new Promise((resolve) => { finishFirst = resolve }))
+    let first: Promise<string> = Promise.resolve('')
+    act(() => { first = result.current.supplementSelectedTicket('补充A') })
+
+    const two = [
+      { id: 'sup_FB-A_0', content: '补充A', created_at: '2026-09-24T08:01:00Z' },
+      { id: 'sup_FB-A_1', content: '补充B', created_at: '2026-09-24T08:01:05Z' },
+    ]
+    supplementTicketMock.mockResolvedValueOnce({ ...detailOf('FB-A', true, 3), supplements: two })
+    await act(async () => { await result.current.supplementSelectedTicket('补充B') })
+
+    await act(async () => {
+      finishFirst({ ...detailOf('FB-A', true, 2), supplements: two.slice(0, 1) })
+      await first
+    })
+    expect(result.current.ticketDetail?.supplements).toHaveLength(2)
+  })
+
+  it('40401 goes to requestError instead of being read as a support.* code', async () => {
+    const { result } = renderHook(() => useSupport())
+    await openDetail(result, 'FB-A')
+
+    const notFound = apiError('support.ticket_not_found', 40401)
+    supplementTicketMock.mockRejectedValueOnce(notFound)
+    await act(async () => { await result.current.supplementSelectedTicket('补充A') })
+
+    expect(requestErrorMock).toHaveBeenCalledWith(notFound, 'common.customerService.ticket.supplementFailed')
+    expect(toastErrorMock).not.toHaveBeenCalled()
   })
 })

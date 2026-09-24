@@ -94,6 +94,17 @@ export interface SupportFeedbackResponse {
   sla_text?: string
 }
 
+/**
+ * `POST /support/attachments`（web-api 中转上传到 OSS）的响应。
+ * 拿到 `object_ref` 后再调 `POST /support/tickets/:id/attachments` 把附件关联到工单。
+ */
+export interface SupportAttachmentUploadResponse {
+  object_ref: string
+  file_name: string
+  mime_type: string
+  size_bytes: number
+}
+
 export interface SupportHandoffRequest {
   page_path?: string
   summary?: string

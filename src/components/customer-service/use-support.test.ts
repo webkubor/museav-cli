@@ -6,7 +6,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { askSupportMock, requestHandoffMock, cancelHandoffMock, requestErrorMock, toastErrorMock, getSupportTicketMock, supplementTicketMock, authState } = vi.hoisted(() => ({
+const { askSupportMock, requestHandoffMock, cancelHandoffMock, requestErrorMock, toastErrorMock, getSupportTicketMock, supplementTicketMock, authState, uploadSupportAttachmentMock, attachSupportTicketAttachmentMock, submitSupportFeedbackMock } = vi.hoisted(() => ({
   askSupportMock: vi.fn(),
   requestHandoffMock: vi.fn(),
   cancelHandoffMock: vi.fn(),
@@ -14,6 +14,9 @@ const { askSupportMock, requestHandoffMock, cancelHandoffMock, requestErrorMock,
   toastErrorMock: vi.fn(),
   getSupportTicketMock: vi.fn(),
   supplementTicketMock: vi.fn(),
+  uploadSupportAttachmentMock: vi.fn(),
+  attachSupportTicketAttachmentMock: vi.fn(),
+  submitSupportFeedbackMock: vi.fn(),
   authState: { account: null as null | { account_id: string }, isLoading: true },
 }))
 
@@ -26,6 +29,7 @@ vi.mock('@/store/auth', () => ({
 }))
 vi.mock('@/services/support', () => ({
   askSupport: askSupportMock,
+  attachSupportTicketAttachment: attachSupportTicketAttachmentMock,
   cancelHandoff: cancelHandoffMock,
   endHandoff: vi.fn(),
   getSupportTicket: getSupportTicketMock,
@@ -35,8 +39,9 @@ vi.mock('@/services/support', () => ({
   replyTicketMessage: vi.fn(),
   reopenTicket: vi.fn(),
   requestHandoff: requestHandoffMock,
-  submitSupportFeedback: vi.fn(),
+  submitSupportFeedback: submitSupportFeedbackMock,
   supplementTicket: supplementTicketMock,
+  uploadSupportAttachment: uploadSupportAttachmentMock,
 }))
 vi.mock('@/lib/app-toast', () => ({ appToast: { requestError: requestErrorMock, error: toastErrorMock } }))
 vi.mock('@/lib/track', () => ({ trackEvent: vi.fn() }))
@@ -506,5 +511,90 @@ describe('useSupport · 补充问题描述 (#1119)', () => {
 
     expect(requestErrorMock).toHaveBeenCalledWith(notFound, 'common.customerService.ticket.supplementFailed')
     expect(toastErrorMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('useSupport · 反馈附件上传与关联', () => {
+  beforeEach(() => {
+    authState.account = { account_id: 'account-1' }
+    authState.isLoading = false
+    uploadSupportAttachmentMock.mockReset()
+    attachSupportTicketAttachmentMock.mockReset()
+    submitSupportFeedbackMock.mockReset()
+    requestErrorMock.mockReset()
+  })
+
+  it('有附件时先上传再关联到工单', async () => {
+    uploadSupportAttachmentMock.mockResolvedValue({
+      object_ref: 'oss://modelgo-public/experience/support/acc-1/a.png',
+      file_name: 'a.png',
+      mime_type: 'image/png',
+      size_bytes: 3,
+    })
+    submitSupportFeedbackMock.mockResolvedValue({ ticket_id: 'FB-20260924-0001', status: 'pending', status_label: '等待客服受理' })
+    attachSupportTicketAttachmentMock.mockResolvedValue(undefined)
+
+    const { result } = renderHook(() => useSupport())
+    const file = new File(['png'], 'a.png', { type: 'image/png' })
+    let ok = false
+    await act(async () => {
+      ok = await result.current.submitFeedback({ category: 'bug', description: '上传的截图看不到' }, file)
+    })
+
+    expect(ok).toBe(true)
+    expect(uploadSupportAttachmentMock).toHaveBeenCalledOnce()
+    expect(attachSupportTicketAttachmentMock).toHaveBeenCalledWith(
+      'FB-20260924-0001',
+      expect.objectContaining({ object_ref: 'oss://modelgo-public/experience/support/acc-1/a.png', file_name: 'a.png', mime_type: 'image/png' }),
+    )
+  })
+
+  it('附件上传失败则中止提交、不建单', async () => {
+    uploadSupportAttachmentMock.mockRejectedValue(new Error('upload boom'))
+    const { result } = renderHook(() => useSupport())
+    let ok = true
+    await act(async () => {
+      ok = await result.current.submitFeedback({ category: 'bug', description: 'x' }, new File(['png'], 'a.png', { type: 'image/png' }))
+    })
+    expect(ok).toBe(false)
+    expect(submitSupportFeedbackMock).not.toHaveBeenCalled()
+    expect(requestErrorMock).toHaveBeenCalledOnce()
+  })
+
+  it('建单成功但关联失败时仍返回成功（回执照常）', async () => {
+    uploadSupportAttachmentMock.mockResolvedValue({ object_ref: 'oss://bkt/x', file_name: 'a.png', mime_type: 'image/png', size_bytes: 3 })
+    submitSupportFeedbackMock.mockResolvedValue({ ticket_id: 'FB-2', status: 'pending' })
+    attachSupportTicketAttachmentMock.mockRejectedValue(new Error('attach boom'))
+
+    const { result } = renderHook(() => useSupport())
+    let ok = false
+    await act(async () => {
+      ok = await result.current.submitFeedback({ category: 'bug', description: 'x' }, new File(['png'], 'a.png', { type: 'image/png' }))
+    })
+    expect(ok).toBe(true)
+    expect(requestErrorMock).toHaveBeenCalledOnce()
+  })
+
+  it('无附件时不触碰上传/关联', async () => {
+    submitSupportFeedbackMock.mockResolvedValue({ ticket_id: 'FB-3', status: 'pending' })
+    const { result } = renderHook(() => useSupport())
+    await act(async () => {
+      await result.current.submitFeedback({ category: 'bug', description: 'x' })
+    })
+    expect(uploadSupportAttachmentMock).not.toHaveBeenCalled()
+    expect(attachSupportTicketAttachmentMock).not.toHaveBeenCalled()
+  })
+
+  it('建单响应没有工单号时跳过关联，不发畸形请求', async () => {
+    uploadSupportAttachmentMock.mockResolvedValue({ object_ref: 'oss://bkt/x', file_name: 'a.png', mime_type: 'image/png', size_bytes: 3 })
+    submitSupportFeedbackMock.mockResolvedValue({ status: 'pending' })
+    const { result } = renderHook(() => useSupport())
+    let ok = false
+    await act(async () => {
+      ok = await result.current.submitFeedback({ category: 'bug', description: 'x' }, new File(['png'], 'a.png', { type: 'image/png' }))
+    })
+    expect(ok).toBe(true)
+    expect(attachSupportTicketAttachmentMock).not.toHaveBeenCalled()
+    expect(requestErrorMock).not.toHaveBeenCalled()
   })
 })

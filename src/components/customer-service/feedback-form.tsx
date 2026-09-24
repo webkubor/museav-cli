@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useState, type ChangeEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import { LuX } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 import { Textarea } from '@/components/ui/Textarea'
 import { Input } from '@/components/ui/Input'
 import { DateTimePicker } from '@/components/ui/DateTimePicker'
 import { Select, SelectItem } from '@/components/ui/Select'
 import { trackEvent } from '@/lib/track'
+import { ATTACHMENT_ACCEPT, ATTACHMENT_ALLOWED_MIME, ATTACHMENT_MAX_BYTES } from './feedback-attachment'
 
 /**
  * `<input type="datetime-local">` 要的本地时间串：YYYY-MM-DDTHH:mm。
@@ -21,10 +23,18 @@ function localDateTimeValue(date: Date): string {
 const CATEGORIES = ['bug', 'api_issue', 'billing', 'suggestion', 'other'] as const
 export type FeedbackCategory = typeof CATEGORIES[number]
 
+export interface FeedbackFields {
+  category: string
+  description: string
+  occurred_at?: string
+  request_id?: string
+}
+
 export interface FeedbackFormProps {
   submitting: boolean
   onCancel: () => void
-  onSubmit: (fields: { category: string; description: string; occurred_at?: string; request_id?: string }) => Promise<boolean>
+  /** file 非空时，调用方负责先上传再关联到工单（见 use-support 的 submitFeedback）。 */
+  onSubmit: (fields: FeedbackFields, file: File | null) => Promise<boolean>
 }
 
 export function FeedbackForm({ submitting, onCancel, onSubmit }: FeedbackFormProps) {
@@ -37,8 +47,38 @@ export function FeedbackForm({ submitting, onCancel, onSubmit }: FeedbackFormPro
   // 格式对齐 <input type="datetime-local"> 要的 YYYY-MM-DDTHH:mm（本地时区，不是 ISO/UTC）。
   const [occurredAt, setOccurredAt] = useState(() => localDateTimeValue(new Date()))
   const [requestId, setRequestId] = useState('')
-  const [fileName, setFileName] = useState('')
+  const [file, setFile] = useState<File | null>(null)
+  const [fileError, setFileError] = useState<string | undefined>()
+  // 清空后重选同一个文件不会再触发 change（input 的 value 没变），靠 key 重建输入框。
+  const [fileInputKey, setFileInputKey] = useState(0)
   const [errors, setErrors] = useState<{ category?: string; description?: string }>({})
+
+  function clearFile() {
+    setFile(null)
+    setFileError(undefined)
+    setFileInputKey((k) => k + 1)
+  }
+
+  function pickFile(e: ChangeEvent<HTMLInputElement>) {
+    const picked = e.target.files?.[0] ?? null
+    if (!picked) {
+      setFile(null)
+      setFileError(undefined)
+      return
+    }
+    if (!ATTACHMENT_ALLOWED_MIME.includes(picked.type)) {
+      setFile(null)
+      setFileError(t('common.customerService.feedback.attachmentInvalid'))
+      return
+    }
+    if (picked.size > ATTACHMENT_MAX_BYTES) {
+      setFile(null)
+      setFileError(t('common.customerService.feedback.attachmentTooLarge'))
+      return
+    }
+    setFile(picked)
+    setFileError(undefined)
+  }
 
   async function handleSubmit() {
     const trimmedDescription = description.trim()
@@ -54,13 +94,15 @@ export function FeedbackForm({ submitting, onCancel, onSubmit }: FeedbackFormPro
       description: trimmedDescription,
       occurred_at: occurredAt || undefined,
       request_id: requestId.trim() || undefined,
-    })
+    }, file)
     if (ok) {
       setCategory('')
       setDescription('')
       setOccurredAt('')
       setRequestId('')
-      setFileName('')
+      setFile(null)
+      setFileError(undefined)
+      setFileInputKey((k) => k + 1)
     }
   }
 
@@ -120,16 +162,34 @@ export function FeedbackForm({ submitting, onCancel, onSubmit }: FeedbackFormPro
 
       <div className="flex flex-col gap-1">
         <label className="mg-text-caption font-medium text-mg-text-2">{t('common.customerService.feedback.attachment')}</label>
-        {/* ponytail: 仅展示文件名，OSS 直传较重，先留 TODO；不阻断反馈提交主链路 */}
-        <label className="mg-tile flex items-center justify-between px-3 py-2 mg-text-caption text-mg-text-3 cursor-pointer hover:border-brand-mid/50">
-          <span className="truncate">{fileName || t('common.customerService.feedback.attachmentPlaceholder')}</span>
-          <input
-            type="file"
-            className="hidden"
-            aria-label={t('common.customerService.feedback.attachment')}
-            onChange={(e) => setFileName(e.target.files?.[0]?.name ?? '')}
-          />
-        </label>
+        <div className="flex items-center gap-2">
+          <label className="mg-tile flex min-w-0 flex-1 items-center justify-between px-3 py-2 mg-text-caption text-mg-text-3 cursor-pointer hover:border-brand-mid/50">
+            <span className="truncate">
+              {submitting && file
+                ? t('common.customerService.feedback.attachmentUploading')
+                : (file ? file.name : t('common.customerService.feedback.attachmentPlaceholder'))}
+            </span>
+            <input
+              key={fileInputKey}
+              type="file"
+              className="hidden"
+              accept={ATTACHMENT_ACCEPT}
+              aria-label={t('common.customerService.feedback.attachment')}
+              onChange={pickFile}
+            />
+          </label>
+          {file && !submitting && (
+            <button
+              type="button"
+              aria-label={t('common.customerService.feedback.attachmentClear')}
+              onClick={clearFile}
+              className="text-mg-text-2 hover:text-mg-text-1 p-1"
+            >
+              <LuX size={16} />
+            </button>
+          )}
+        </div>
+        {fileError && <span className="mg-text-caption text-mg-danger">{fileError}</span>}
       </div>
 
       <div className="mt-auto flex justify-end gap-2 pt-2">

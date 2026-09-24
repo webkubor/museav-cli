@@ -68,6 +68,23 @@ export function formatDateTimeYMD(iso: string | null | undefined): string {
   return `${get('year')}/${get('month')}/${get('day')} ${get('hour')}:${get('minute')}`
 }
 
+/** "09-24 16:06" — 工单「补充 · MM-DD HH:mm」（PRD §7.11 定的字序）。
+ * 同 formatDateTimeYMD 固定字序、按用户显示时区，不随 locale 变成 9/24 或 Sep 24。 */
+export function formatMonthDayTime(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  const parts = new Intl.DateTimeFormat('en-US', dateOptions({
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  })).formatToParts(d)
+  const get = (type: Intl.DateTimeFormatPart['type']) => parts.find((p) => p.type === type)?.value ?? ''
+  return `${get('month')}-${get('day')} ${get('hour')}:${get('minute')}`
+}
+
 /** "Jan 1, 12:00:00 AM" — 需要秒级精度的场景（日志列表） */
 export function formatDateTimeWithSeconds(iso: string | null | undefined): string {
   if (!iso) return '—'

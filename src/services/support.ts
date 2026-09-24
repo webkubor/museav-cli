@@ -86,8 +86,10 @@ export function replyTicketMessage(id: string, content: string) {
   return post<SupportMessage>(`support/tickets/${id}/messages`, { content })
 }
 
-export function supplementTicket(id: string, description: string) {
-  return post<void>(`support/tickets/${id}/supplements`, { description })
+export function supplementTicket(id: string, content: string) {
+  // agent 只认 content：原先发 { description } 会被判空，返回 40001（#1119）。
+  // 响应就是补充后的工单详情（含 supplements），调用方直接拿来刷新。
+  return post<SupportTicketDetail>(`support/tickets/${id}/supplements`, { content })
 }
 
 export function markTicketRead(id: string) {

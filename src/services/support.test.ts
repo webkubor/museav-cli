@@ -13,7 +13,7 @@ vi.mock('@/lib/request', () => ({
 }))
 
 import { post } from '@/lib/request'
-import { rateAnswer } from '@/services/support'
+import { rateAnswer, supplementTicket } from '@/services/support'
 
 const postMock = vi.mocked(post)
 
@@ -27,5 +27,18 @@ describe('rateAnswer', () => {
     expect(postMock).toHaveBeenLastCalledWith('support/answers/ans_1/rating', { rating: 'up' })
     rateAnswer('ans_2', 'dislike')
     expect(postMock).toHaveBeenLastCalledWith('support/answers/ans_2/rating', { rating: 'down' })
+  })
+})
+
+// #1119：agent 只读 content。原先发 { description }，后端判空内容返回 40001，
+// 补充入口即使做出来也永远提交失败。
+describe('supplementTicket', () => {
+  beforeEach(() => {
+    postMock.mockReset()
+  })
+
+  it('补充内容走 content 字段', () => {
+    supplementTicket('FB-1', '补充复现步骤')
+    expect(postMock).toHaveBeenLastCalledWith('support/tickets/FB-1/supplements', { content: '补充复现步骤' })
   })
 })

@@ -2,14 +2,16 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { Textarea } from '@/components/ui/Textarea'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Badge } from '@/components/ui/Badge'
 import { LuArrowLeft, LuSearch, LuInbox } from 'react-icons/lu'
 import { appToast } from '@/lib/app-toast'
+import { formatMonthDayTime } from '@/lib/format-date'
 import { useAuthStore } from '@/store/auth'
 import { listSupportTickets } from '@/services/support'
 import { ticketAgentNameOf, ticketNoOf, ticketSlaTextOf, ticketStatusTextOf, ticketUnreadOf } from '@/interfaces/support'
-import type { SupportTicketDetail, SupportTicketFilter, SupportTicketSummary } from '@/interfaces/support'
+import type { SupplementResult, SupportTicketDetail, SupportTicketFilter, SupportTicketSummary } from '@/interfaces/support'
 
 const FILTERS: SupportTicketFilter[] = ['all', 'processing', 'ended']
 
@@ -152,10 +154,31 @@ export interface TicketDetailViewProps {
   onBack: () => void
   onReopen: () => void
   onRate: (stars: number) => void
+  /** 提交一条补充，结果见 SupplementResult。 */
+  onSupplement: (content: string) => Promise<SupplementResult>
 }
 
-export function TicketDetailView({ detail, onBack, onReopen, onRate }: TicketDetailViewProps) {
+
+export function TicketDetailView({ detail, onBack, onReopen, onRate, onSupplement }: TicketDetailViewProps) {
   const { t } = useTranslation()
+  const [supplementOpen, setSupplementOpen] = useState(false)
+  const [supplementText, setSupplementText] = useState('')
+  const [supplementing, setSupplementing] = useState(false)
+
+  function closeSupplement() {
+    setSupplementText('')
+    setSupplementOpen(false)
+  }
+
+  async function submitSupplement() {
+    const content = supplementText.trim()
+    if (!content || supplementing) return
+    setSupplementing(true)
+    const result = await onSupplement(content)
+    setSupplementing(false)
+    // closed 也要收起：否则工单被重开、入口回来时，旧表单会连同旧文字自己弹出来
+    if (result !== 'failed') closeSupplement()
+  }
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
@@ -206,12 +229,56 @@ export function TicketDetailView({ detail, onBack, onReopen, onRate }: TicketDet
               )}
             </dl>
             {detail.description && <p className="m-0 mg-text-body text-mg-text-1 whitespace-pre-wrap">{detail.description}</p>}
+            {/* 建单后的补充照 PRD 原型 CustomerSupportTicketDetail.tsx 挂在描述区块里、
+                按「补充 · MM-DD HH:mm」前缀逐条追加，不当作沟通消息（PRD §7.11）。 */}
+            {detail.supplements?.map((item) => (
+              <div key={item.id} className="flex flex-col gap-0.5">
+                <span className="mg-text-caption text-mg-text-3">
+                  {t('common.customerService.ticket.supplementAt', { time: formatMonthDayTime(item.created_at) })}
+                </span>
+                <p className="m-0 mg-text-body text-mg-text-1 whitespace-pre-wrap break-words">{item.content}</p>
+              </div>
+            ))}
             {ticketSlaTextOf(detail) && <p className="m-0 mg-text-caption text-mg-text-3">{ticketSlaTextOf(detail)}</p>}
             {typeof detail.rating === 'number' && (
               <p className="m-0 mg-text-caption text-mg-warning">{'★'.repeat(detail.rating)}{'☆'.repeat(5 - detail.rating)}</p>
             )}
 
+            {detail.capabilities.can_supplement && supplementOpen && (
+              <div className="flex flex-col gap-2 mt-2">
+                <Textarea
+                  autoFocus
+                  rows={3}
+                  aria-label={t('common.customerService.ticket.supplement')}
+                  placeholder={t('common.customerService.ticket.supplementPlaceholder')}
+                  value={supplementText}
+                  onChange={(e) => setSupplementText(e.target.value)}
+                  // 提交中锁住：成功后会清空输入框，点提交之后再打的字不会被发出去，不能静默吞掉
+                  disabled={supplementing}
+                />
+                <div className="flex justify-end gap-2">
+                  <Button size="small" variant="secondary" onClick={closeSupplement} disabled={supplementing}>
+                    {t('common.cancel')}
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="brand"
+                    loading={supplementing}
+                    disabled={!supplementText.trim()}
+                    onClick={submitSupplement}
+                  >
+                    {t('common.customerService.ticket.supplementSubmit')}
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div className="flex gap-2 mt-2">
+              {detail.capabilities.can_supplement && !supplementOpen && (
+                <Button size="small" variant="secondary" onClick={() => setSupplementOpen(true)}>
+                  {t('common.customerService.ticket.supplement')}
+                </Button>
+              )}
               {detail.capabilities.can_reopen && (
                 <Button size="small" variant="secondary" onClick={onReopen}>{t('common.customerService.tickets.reopen')}</Button>
               )}

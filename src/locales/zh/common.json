@@ -371,6 +371,7 @@
         "supplementPlaceholder": "补充复现步骤、影响范围或客服追问的信息",
         "supplementSubmit": "提交补充",
         "supplementFailed": "提交失败，内容已保留，请重试。",
+        "supplementClosed": "工单状态已变更，无法继续补充。",
         "replyAria": "补充工单消息",
         "replyPlaceholder": "补充问题或回复客服",
         "replySend": "发送工单消息",

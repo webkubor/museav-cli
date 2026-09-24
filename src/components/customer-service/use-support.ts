@@ -4,7 +4,7 @@ import { useAuthStore } from '@/store/auth'
 import { appToast } from '@/lib/app-toast'
 import { trackEvent } from '@/lib/track'
 import { storageKeys } from '@/lib/storage'
-import { ModelGoApiError, SENSITIVE_KEY_RE } from '@/lib/request'
+import { isServerErrorCode, ModelGoApiError, SENSITIVE_KEY_RE } from '@/lib/request'
 import {
   askSupport,
   attachSupportTicketAttachment,
@@ -14,6 +14,7 @@ import {
   listTicketMessages,
   rateAnswer,
   rateTicket,
+  supplementTicket,
   replyTicketMessage,
   reopenTicket,
   requestHandoff,
@@ -49,6 +50,7 @@ import type {
   SupportFeedbackRequest,
   SupportMessage,
   SupportTicketDetail,
+  SupplementResult,
 } from '@/interfaces/support'
 
 export type PanelMode = 'chat' | 'feedback' | 'tickets' | 'ticket-detail'
@@ -117,6 +119,19 @@ function pickAnswerId(resp: SupportAskResponse): string | undefined {
 }
 
 const HANDOFF_TRIGGER_RE = /转\s*人工|找\s*客服|人工\s*处理|human\s*(agent|support)/i
+
+/**
+ * 取客服接口的 support.* 业务码。agent 的 4001 经 web-api 转成 40001 参数校验失败后，
+ * 机器码不在 msg 里，而在 data.field_errors[].message（2026-09-24 test 实测：
+ * `{code:40001,msg:"request validation failed",data:{field_errors:[{field:"_root",message:"support.invalid_transition"}]}}`）；
+ * 直连或未包装时则在 msg 上。两处都认。5xx / 40401 / 非 support.* 的错误返回 null。
+ */
+function supportErrorCodeOf(error: unknown): string | null {
+  // 40401 由 requestError 归一成「服务暂不可用」，不在这里截走
+  if (!(error instanceof ModelGoApiError) || isServerErrorCode(error.code) || error.code === 40401) return null
+  if (error.rawMessage?.startsWith('support.')) return error.rawMessage
+  return error.data?.field_errors?.map((f) => f.message).find((m): m is string => !!m?.startsWith('support.')) ?? null
+}
 
 export function useSupport() {
   const { t } = useTranslation()
@@ -613,6 +628,60 @@ export function useSupport() {
     }
   }, [mode, t])
 
+  // 补充相关的详情写入只接受「同一张单、版本不低于当前」的快照：agent 每次写 version +1，
+  // 所以两次提交回包颠倒、或失败后的刷新晚于紧接着那次成功重试时，旧快照不会盖掉新的
+  // （否则刚补上的那条会从屏幕上消失，用户再发一次就是重复补充）。
+  const applyNewerDetail = useCallback((detail: SupportTicketDetail) => {
+    setTicketDetail((prev) => (
+      prev && prev.ticket_id === detail.ticket_id && (prev.version ?? 0) > (detail.version ?? 0) ? prev : detail
+    ))
+  }, [])
+
+  // 问题反馈「补充问题描述」（PRD §7.11）。结果交给详情页决定输入框怎么处理：
+  // ok = 成功（清空收起）；failed = 失败但还能重试（保留内容）；closed = 工单已不能补充（收起）。
+  // 接口成功时返回的就是补充后的详情（含 supplements），直接替换。
+  const supplementSelectedTicket = useCallback(async (content: string): Promise<SupplementResult> => {
+    if (mode.kind !== 'ticketDetail') return 'failed'
+    const targetId = mode.ticketId
+    const accountId = account?.account_id ?? null
+    const stillHere = () => isCurrentSupportTicket(targetId, accountId)
+    try {
+      const detail = await supplementTicket(targetId, content)
+      // 请求在途时用户可能已退回列表、换开了另一张单：晚到的回包不能盖掉那张单的详情，
+      // 否则屏幕显示 A、后续操作却打到 B。
+      if (stillHere()) applyNewerDetail(detail)
+      return 'ok'
+    } catch (error) {
+      // 已离开这张单：输入框随详情页卸载了，「内容已保留」不成立，也别把提示弹到别的界面上。
+      if (!stillHere()) return 'failed'
+      const refresh = () => getSupportTicket(targetId)
+        .then((fresh) => {
+          if (stillHere()) applyNewerDetail(fresh)
+          return fresh
+        })
+        .catch(() => null)
+      const code = supportErrorCodeOf(error)
+      if (code === 'support.invalid_transition') {
+        // 同 sendHumanReply：工单状态不允许时，按刷新后的状态收口
+        const fresh = await refresh()
+        if (!stillHere()) return 'failed'
+        if (fresh && !fresh.capabilities.can_supplement) {
+          appToast.error(t('common.customerService.ticket.supplementClosed'))
+          return 'closed'
+        }
+      } else {
+        // 不等：超时的 POST 可能其实已经写进去了，刷新后那条会出现在列表里，
+        // 用户就不会再点一次写出重复的补充；而按钮也不必陪着刷新再转一轮。
+        void refresh()
+      }
+      // support.* 机器码不能原样上屏，改给 PRD 文案；其余（5xx / 超时 / 断网 / 404 / 429）
+      // 交给 requestError，各有更准确的提示。
+      if (code) appToast.error(t('common.customerService.ticket.supplementFailed'))
+      else appToast.requestError(error, t('common.customerService.ticket.supplementFailed'))
+      return 'failed'
+    }
+  }, [mode, account?.account_id, isCurrentSupportTicket, applyNewerDetail, t])
+
   const rateSelectedTicket = useCallback(async (stars: number) => {
     if (mode.kind !== 'ticketDetail') return
     try {
@@ -650,6 +719,7 @@ export function useSupport() {
     openTicketDetail,
     reopenSelectedTicket,
     rateSelectedTicket,
+    supplementSelectedTicket,
   }
 }
 

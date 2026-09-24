@@ -42,7 +42,7 @@ const FAQ_ITEMS = [
   { icon: LuReceipt, key: 'billing' },
 ] as const
 
-function MessageBubble({ msg, onRate, onStartHandoff }: { msg: ChatItem; onRate: (id: string, rating: 'like' | 'dislike') => void; onStartHandoff: () => void }) {
+export function MessageBubble({ msg, onRate, onStartHandoff }: { msg: ChatItem; onRate: (id: string, rating: 'like' | 'dislike') => void; onStartHandoff: () => void }) {
   const { t } = useTranslation()
 
   if (msg.kind === 'rating_card') {

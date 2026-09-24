@@ -385,4 +385,17 @@ describe('useSupport · 反馈附件上传与关联', () => {
     expect(uploadSupportAttachmentMock).not.toHaveBeenCalled()
     expect(attachSupportTicketAttachmentMock).not.toHaveBeenCalled()
   })
+
+  it('建单响应没有工单号时跳过关联，不发畸形请求', async () => {
+    uploadSupportAttachmentMock.mockResolvedValue({ object_ref: 'oss://bkt/x', file_name: 'a.png', mime_type: 'image/png', size_bytes: 3 })
+    submitSupportFeedbackMock.mockResolvedValue({ status: 'pending' })
+    const { result } = renderHook(() => useSupport())
+    let ok = false
+    await act(async () => {
+      ok = await result.current.submitFeedback({ category: 'bug', description: 'x' }, new File(['png'], 'a.png', { type: 'image/png' }))
+    })
+    expect(ok).toBe(true)
+    expect(attachSupportTicketAttachmentMock).not.toHaveBeenCalled()
+    expect(requestErrorMock).not.toHaveBeenCalled()
+  })
 })

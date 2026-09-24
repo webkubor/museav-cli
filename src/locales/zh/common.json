@@ -230,6 +230,7 @@
         "attachmentFailed": "附件上传失败，请重试",
         "attachmentInvalid": "仅支持 PNG / JPEG / WebP / PDF / TXT 格式",
         "attachmentTooLarge": "附件不能超过 5MB",
+        "attachmentAttachFailed": "附件关联失败，反馈已提交",
         "submitFailed": "提交失败，请稍后重试",
         "hint": "当前页面上下文会随反馈记录",
         "category": "问题类型",

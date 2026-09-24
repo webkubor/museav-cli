@@ -542,16 +542,19 @@ export function useSupport() {
         page_path: currentPagePath(),
       })
       // 建单已成功：关联失败只提示、不回滚反馈（用户拿到回执比附件更重要）。
-      if (file && objectRef) {
+      const ticketID = resp.ticket_id || resp.ticket_no || ''
+      if (file && objectRef && ticketID) {
         try {
-          await attachSupportTicketAttachment(resp.ticket_id || resp.ticket_no || '', {
+          await attachSupportTicketAttachment(ticketID, {
             file_name: file.name,
             mime_type: file.type,
             object_ref: objectRef,
             size_bytes: file.size,
           })
         } catch (error) {
-          appToast.requestError(error, t('common.customerService.feedback.attachmentFailed'))
+          // 上传已成功、只是关联失败：不能复用「附件上传失败」——事实不符，且按它去
+          // 「重试」会再建一张不带附件的重复工单。拿不到工单号时也走这里，不拼空 id。
+          appToast.requestError(error, t('common.customerService.feedback.attachmentAttachFailed'))
         }
       }
       trackEvent('support_feedback_submit', { category: fields.category })

@@ -45,6 +45,15 @@ function apiUrl(path: string, prefix: string = API_V1_PREFIX) {
   return `${apiBaseUrl()}/${prefix}/${path.replace(/^\/+/, '')}`
 }
 
+/**
+ * Absolute URL for a /api/v1 endpoint. Exposed for streaming callers: ky's
+ * response handling buffers the whole body, so an SSE consumer must fetch the
+ * stream itself (see services/support.ts askSupportStream).
+ */
+export function apiV1Url(path: string): string {
+  return apiUrl(normalizePath(path))
+}
+
 function apiPrefixUrl() {
   const base = apiBaseUrl()
   return base ? `${base}/${API_V1_PREFIX}` : `/${API_V1_PREFIX}`

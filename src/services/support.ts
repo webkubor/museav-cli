@@ -1,4 +1,5 @@
-import { get, getPage, post } from '@/lib/request'
+import { get, getPage, post, apiV1Url, ModelGoApiError, SERVER_ERROR_MESSAGE } from '@/lib/request'
+import { injectHeaders } from '@/lib/request-headers'
 import type {
   SupportAskRequest,
   SupportAskResponse,
@@ -18,6 +19,93 @@ import type { CursorPage } from '@/types'
 
 export function askSupport(body: SupportAskRequest) {
   return post<SupportAskResponse>('support/ask', body)
+}
+
+/** One relayed frame from `POST /support/ask` over SSE (#1157). */
+export interface SupportAskStreamFrame {
+  type: 'status' | 'answer' | 'done' | 'error'
+  stage?: string
+  data?: SupportAskResponse
+  error?: string
+}
+
+/**
+ * Ask the support bot over Server-Sent Events. The backend acknowledges the
+ * request with an immediate `status` frame — the byte the PRD §13 5s
+ * first-response budget is measured against — then sends the fully validated
+ * `answer` and a `done` frame.
+ *
+ * A web-api without SSE support answers the ordinary JSON envelope; that is
+ * surfaced as `status` + `answer` + `done` frames so callers keep one code
+ * path while the two services roll out independently.
+ */
+export async function askSupportStream(
+  body: SupportAskRequest,
+  onFrame: (frame: SupportAskStreamFrame) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const request = new Request(apiV1Url('support/ask'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
+    body: JSON.stringify(body),
+    credentials: 'include',
+  })
+  injectHeaders(request)
+
+  const resp = await fetch(request, { signal })
+  const contentType = resp.headers.get('content-type') ?? ''
+  if (!contentType.includes('text/event-stream')) {
+    const envelope = (await resp.json().catch(() => null)) as {
+      code?: number
+      msg?: string
+      message?: string
+      data?: SupportAskResponse
+      request_id?: string
+      trace_id?: string
+    } | null
+    if (!envelope || envelope.code !== 0 || !envelope.data) {
+      throw new ModelGoApiError({
+        code: envelope?.code ?? resp.status,
+        msg: envelope?.msg ?? envelope?.message ?? SERVER_ERROR_MESSAGE,
+        request_id: envelope?.request_id ?? resp.headers.get('x-request-id') ?? undefined,
+        trace_id: envelope?.trace_id ?? resp.headers.get('x-trace-id') ?? undefined,
+        data: null,
+      })
+    }
+    onFrame({ type: 'status', stage: 'retrieving' })
+    onFrame({ type: 'answer', data: envelope.data })
+    onFrame({ type: 'done' })
+    return
+  }
+  if (!resp.body) {
+    throw new Error(SERVER_ERROR_MESSAGE)
+  }
+
+  const reader = resp.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    let sep = buffer.indexOf('\n\n')
+    while (sep >= 0) {
+      const block = buffer.slice(0, sep)
+      buffer = buffer.slice(sep + 2)
+      const line = block.split('\n').find((l) => l.startsWith('data:'))
+      if (line) {
+        const payload = line.slice(5).trim()
+        if (payload) {
+          const frame = JSON.parse(payload) as SupportAskStreamFrame
+          if (frame.type === 'error') {
+            throw new Error(frame.error || SERVER_ERROR_MESSAGE)
+          }
+          onFrame(frame)
+        }
+      }
+      sep = buffer.indexOf('\n\n')
+    }
+  }
 }
 
 export function submitSupportFeedback(body: SupportFeedbackRequest) {

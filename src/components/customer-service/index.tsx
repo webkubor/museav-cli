@@ -16,6 +16,7 @@ import { HandoffHeaderStatus, RatingCard } from './human-chat'
 import { FeedbackForm } from './feedback-form'
 import { TicketsList, TicketDetailView } from './tickets'
 import { answerStatusPresentation } from './answer-status'
+import { extractFinalAnswer } from './final-answer'
 import { canStartHandoff, showsMessageThread } from './support-machine'
 import { SupportOrb } from './support-orb'
 import { supportOrbState } from './support-presentation'
@@ -139,6 +140,10 @@ export function MessageBubble({ msg, onRate, onStartHandoff }: { msg: ChatItem; 
   const presentation = msg.role === 'assistant'
     ? answerStatusPresentation(msg.answerStatus, msg.suggestHandoff)
     : { hintKey: null, showHandoffCta: false }
+  // 显示侧防线（#1124）：助手回答渲染前做结构化 <think> 抽取，标签与推理绝不上屏。
+  // 只作用于 assistant —— 用户消息与人工客服消息原样保留（人工客服的正文是真人写的，
+  // 不是模型输出，不该被这套模型输出清理规则改写）。语义与后端 ExtractFinalAnswer 一致。
+  const renderedContent = msg.role === 'assistant' ? extractFinalAnswer(msg.content) : msg.content
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: isUser ? 'flex-end' : 'flex-start', marginBottom: 16 }}>
@@ -152,7 +157,7 @@ export function MessageBubble({ msg, onRate, onStartHandoff }: { msg: ChatItem; 
             : 'rounded-lg rounded-bl-sm border-mg-border bg-mg-fill-0'
         }`}
       >
-        {isUser ? msg.content : <MarkdownContent linkifyBareUrls>{msg.content}</MarkdownContent>}
+        {isUser ? msg.content : <MarkdownContent linkifyBareUrls>{renderedContent}</MarkdownContent>}
         {presentation.hintKey && <p className="m-0 mt-1.5 text-[11px] text-mg-text-3">{t(presentation.hintKey)}</p>}
         {presentation.showHandoffCta && (
           <button

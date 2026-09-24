@@ -19,7 +19,9 @@
     "build": "tsc",
     "dev": "tsx src/index.ts",
     "prepublishOnly": "npm run build",
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "pub": "cs kyvault run --env TOKEN=secret://npm/kubor-company-publish -- npm publish --access public --//registry.npmjs.org/:_authToken=\"$TOKEN\"",
+    "notify": "node ../notify.mjs"
   },
   "engines": {
     "node": ">=20.19"

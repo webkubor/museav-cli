@@ -409,4 +409,57 @@ describe('useSupport · 补充问题描述 (#1119)', () => {
     expect(requestErrorMock).not.toHaveBeenCalled()
     expect(toastErrorMock).not.toHaveBeenCalled()
   })
+
+  it('a late background refresh does not undo the retry that succeeded meanwhile', async () => {
+    const { result } = renderHook(() => useSupport())
+    await openDetail(result, 'FB-A')
+
+    // 第一次：超时失败，后台刷新挂起（读到的是写入前的旧详情）
+    let finishRefresh: (v: unknown) => void = () => {}
+    supplementTicketMock.mockRejectedValueOnce(new Error('timeout of 30000ms exceeded'))
+    getSupportTicketMock.mockImplementationOnce(() => new Promise((resolve) => { finishRefresh = resolve }))
+    await act(async () => { await result.current.supplementSelectedTicket('补充A') })
+
+    // 第二次：重试成功
+    const withSupplement = { ...detailOf('FB-A'), supplements: [{ id: 'sup_FB-A_0', content: '补充A', created_at: '2026-09-24T08:01:00Z' }] }
+    supplementTicketMock.mockResolvedValueOnce(withSupplement)
+    await act(async () => { await result.current.supplementSelectedTicket('补充A') })
+    expect(result.current.ticketDetail?.supplements).toHaveLength(1)
+
+    // 旧刷新这时才回来，不能把刚补上的那条抹掉
+    await act(async () => { finishRefresh(detailOf('FB-A')) })
+    expect(result.current.ticketDetail?.supplements).toHaveLength(1)
+  })
+
+  it('leaving the ticket while the invalid_transition refresh is in flight shows nothing', async () => {
+    const { result } = renderHook(() => useSupport())
+    await openDetail(result, 'FB-A')
+
+    let finishRefresh: (v: unknown) => void = () => {}
+    supplementTicketMock.mockRejectedValueOnce(apiError('support.invalid_transition'))
+    getSupportTicketMock.mockImplementationOnce(() => new Promise((resolve) => { finishRefresh = resolve }))
+    let pending: Promise<string> = Promise.resolve('')
+    await act(async () => { pending = result.current.supplementSelectedTicket('补充A') })
+    act(() => result.current.go({ kind: 'tickets' }))
+
+    await act(async () => {
+      finishRefresh(detailOf('FB-A', false))
+      expect(await pending).toBe('failed')
+    })
+    expect(toastErrorMock).not.toHaveBeenCalled()
+    expect(requestErrorMock).not.toHaveBeenCalled()
+  })
+
+  it('other 4xx business codes show the PRD copy instead of the raw support.* code', async () => {
+    const { result } = renderHook(() => useSupport())
+    await openDetail(result, 'FB-A')
+
+    supplementTicketMock.mockRejectedValueOnce(apiError('support.version_conflict'))
+    let outcome = ''
+    await act(async () => { outcome = await result.current.supplementSelectedTicket('补充A') })
+
+    expect(outcome).toBe('failed')
+    expect(toastErrorMock).toHaveBeenCalledWith('common.customerService.ticket.supplementFailed')
+    expect(requestErrorMock).not.toHaveBeenCalled()
+  })
 })

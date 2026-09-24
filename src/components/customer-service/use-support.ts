@@ -4,7 +4,7 @@ import { useAuthStore } from '@/store/auth'
 import { appToast } from '@/lib/app-toast'
 import { trackEvent } from '@/lib/track'
 import { storageKeys } from '@/lib/storage'
-import { ModelGoApiError, SENSITIVE_KEY_RE } from '@/lib/request'
+import { isServerErrorCode, ModelGoApiError, SENSITIVE_KEY_RE } from '@/lib/request'
 import {
   askSupport,
   cancelHandoff,
@@ -583,6 +583,10 @@ export function useSupport() {
     }
   }, [mode, t])
 
+  // 每次提交补充 +1：失败后的后台刷新只有在期间没有新提交时才落地，
+  // 否则慢回的旧详情会盖掉紧接着那次成功提交的结果（刚补上的那条又消失）。
+  const supplementGen = useRef(0)
+
   // 问题反馈「补充问题描述」（PRD §7.11）。结果交给详情页决定输入框怎么处理：
   // ok = 成功（清空收起）；failed = 失败但还能重试（保留内容）；closed = 工单已不能补充（收起）。
   // 接口成功时返回的就是补充后的详情（含 supplements），直接替换。
@@ -590,26 +594,28 @@ export function useSupport() {
     if (mode.kind !== 'ticketDetail') return 'failed'
     const targetId = mode.ticketId
     const accountId = account?.account_id ?? null
+    const gen = ++supplementGen.current
+    const stillHere = () => isCurrentSupportTicket(targetId, accountId)
     try {
       const detail = await supplementTicket(targetId, content)
       // 请求在途时用户可能已退回列表、换开了另一张单：晚到的回包不能盖掉那张单的详情，
       // 否则屏幕显示 A、后续操作却打到 B。
-      if (isCurrentSupportTicket(targetId, accountId)) setTicketDetail(detail)
+      if (stillHere()) setTicketDetail(detail)
       return 'ok'
     } catch (error) {
       // 已离开这张单：输入框随详情页卸载了，「内容已保留」不成立，也别把提示弹到别的界面上。
-      if (!isCurrentSupportTicket(targetId, accountId)) return 'failed'
+      if (!stillHere()) return 'failed'
       const refresh = () => getSupportTicket(targetId)
         .then((fresh) => {
-          if (isCurrentSupportTicket(targetId, accountId)) setTicketDetail(fresh)
+          if (stillHere() && gen === supplementGen.current) setTicketDetail(fresh)
           return fresh
         })
         .catch(() => null)
-      // 同 sendHumanReply：只有「工单状态不允许」才按状态收口，其余错误照常走 requestError，
-      // 5xx / 超时 / 断网各有自己的提示。
       if (error instanceof ModelGoApiError && error.rawMessage === 'support.invalid_transition') {
+        // 同 sendHumanReply：工单状态不允许时，按刷新后的状态收口
         const fresh = await refresh()
-        if (!fresh || !fresh.capabilities.can_supplement) {
+        if (!stillHere()) return 'failed'
+        if (fresh && !fresh.capabilities.can_supplement) {
           appToast.error(t('common.customerService.ticket.supplementClosed'))
           return 'closed'
         }
@@ -618,7 +624,13 @@ export function useSupport() {
         // 用户就不会再点一次写出重复的补充；而按钮也不必陪着刷新再转一轮。
         void refresh()
       }
-      appToast.requestError(error, t('common.customerService.ticket.supplementFailed'))
+      // 4xx 业务错误的 message 是 support.* 机器码，requestError 会原样上屏，改给 PRD 文案；
+      // 5xx / 超时 / 断网交给 requestError，各有自己的提示。
+      if (error instanceof ModelGoApiError && !isServerErrorCode(error.code)) {
+        appToast.error(t('common.customerService.ticket.supplementFailed'))
+      } else {
+        appToast.requestError(error, t('common.customerService.ticket.supplementFailed'))
+      }
       return 'failed'
     }
   }, [mode, account?.account_id, isCurrentSupportTicket, t])

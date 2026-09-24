@@ -6,19 +6,32 @@
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { askSupportMock, requestHandoffMock, cancelHandoffMock, requestErrorMock, toastErrorMock, getSupportTicketMock, supplementTicketMock, authState, uploadSupportAttachmentMock, attachSupportTicketAttachmentMock, submitSupportFeedbackMock } = vi.hoisted(() => ({
-  askSupportMock: vi.fn(),
-  requestHandoffMock: vi.fn(),
-  cancelHandoffMock: vi.fn(),
-  requestErrorMock: vi.fn(),
-  toastErrorMock: vi.fn(),
-  getSupportTicketMock: vi.fn(),
-  supplementTicketMock: vi.fn(),
-  uploadSupportAttachmentMock: vi.fn(),
-  attachSupportTicketAttachmentMock: vi.fn(),
-  submitSupportFeedbackMock: vi.fn(),
-  authState: { account: null as null | { account_id: string }, isLoading: true },
-}))
+const { askSupportMock, askSupportStreamMock, requestHandoffMock, cancelHandoffMock, requestErrorMock, toastErrorMock, getSupportTicketMock, supplementTicketMock, authState, uploadSupportAttachmentMock, attachSupportTicketAttachmentMock, submitSupportFeedbackMock } = vi.hoisted(() => {
+  const askSupportMock = vi.fn()
+  // The hook consumes /support/ask as SSE: askSupportStream calls onFrame for
+  // the status/answer/done frames. Tests keep configuring askSupportMock's
+  // resolved value, and this adapter turns it into an answer frame.
+  const askSupportStreamMock = vi.fn(async (_body: unknown, onFrame: (frame: { type: string; stage?: string; data?: unknown }) => void) => {
+    const resp = await askSupportMock()
+    onFrame({ type: 'status', stage: 'retrieving' })
+    onFrame({ type: 'answer', data: resp })
+    onFrame({ type: 'done' })
+  })
+  return {
+    askSupportMock,
+    askSupportStreamMock,
+    requestHandoffMock: vi.fn(),
+    cancelHandoffMock: vi.fn(),
+    requestErrorMock: vi.fn(),
+    toastErrorMock: vi.fn(),
+    getSupportTicketMock: vi.fn(),
+    supplementTicketMock: vi.fn(),
+    uploadSupportAttachmentMock: vi.fn(),
+    attachSupportTicketAttachmentMock: vi.fn(),
+    submitSupportFeedbackMock: vi.fn(),
+    authState: { account: null as null | { account_id: string }, isLoading: true },
+  }
+})
 
 vi.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: vi.fn() },
@@ -29,6 +42,7 @@ vi.mock('@/store/auth', () => ({
 }))
 vi.mock('@/services/support', () => ({
   askSupport: askSupportMock,
+  askSupportStream: askSupportStreamMock,
   attachSupportTicketAttachment: attachSupportTicketAttachmentMock,
   cancelHandoff: cancelHandoffMock,
   endHandoff: vi.fn(),

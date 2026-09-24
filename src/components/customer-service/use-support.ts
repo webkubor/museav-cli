@@ -6,7 +6,7 @@ import { trackEvent } from '@/lib/track'
 import { storageKeys } from '@/lib/storage'
 import { isServerErrorCode, ModelGoApiError, SENSITIVE_KEY_RE } from '@/lib/request'
 import {
-  askSupport,
+  askSupportStream,
   attachSupportTicketAttachment,
   cancelHandoff,
   endHandoff,
@@ -319,29 +319,41 @@ export function useSupport() {
     setIsAsking(true)
     trackEvent('support_question_submit')
     try {
-      const resp = await askSupport({
-        message: trimmed,
-        session_id: getOrCreateSupportSessionId(),
-        page_path: currentPagePath(),
-      })
+      // /support/ask is consumed as SSE: the backend answers with an immediate
+      // status frame (so the first byte lands inside the PRD's 5s budget,
+      // #1157), then the validated answer. An older web-api answers the plain
+      // JSON envelope, which askSupportStream surfaces as the same answer frame.
+      const result: { answer?: SupportAskResponse } = {}
+      await askSupportStream(
+        {
+          message: trimmed,
+          session_id: getOrCreateSupportSessionId(),
+          page_path: currentPagePath(),
+        },
+        (frame) => {
+          if (frame.type === 'answer' && frame.data) result.answer = frame.data
+        },
+      )
+      const answer = result.answer
+      if (!answer) throw new Error('support/ask returned no answer')
       if (generation !== accountEpoch.current || accountId !== activeAccountId.current) return
       appendMessage({
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: resp.answer,
+        content: answer.answer,
         createdAt: Date.now(),
         // 后端实测返回 message_id（不是 PRD 写的 answer_id）；匿名态是
         // ans_ephemeral 占位，没落库、评分接口用不了，故不给评分控件。
-        answerId: pickAnswerId(resp),
-        answerStatus: resp.answer_status,
-        suggestHandoff: resp.suggest_handoff,
+        answerId: pickAnswerId(answer),
+        answerStatus: answer.answer_status,
+        suggestHandoff: answer.suggest_handoff,
         // 后端在响应里回 sensitive:{Hit,Kind}，PRD §10 要求命中后给用户明确提示
         // （命中内容不进模型/检索/埋点/人工摘要）。此前前端完全没读这个字段。
-        sensitiveHit: resp.sensitive?.Hit === true,
+        sensitiveHit: answer.sensitive?.Hit === true,
         rating: null,
       })
-      if (resp.intent === 'human_handoff' && canStartHandoff(modeRef.current)) {
-        await startHandoffWithTrigger({ question: trimmed, sensitiveHit: resp.sensitive?.Hit === true })
+      if (answer.intent === 'human_handoff' && canStartHandoff(modeRef.current)) {
+        await startHandoffWithTrigger({ question: trimmed, sensitiveHit: answer.sensitive?.Hit === true })
       }
     } catch (error) {
       if (generation !== accountEpoch.current || accountId !== activeAccountId.current) return

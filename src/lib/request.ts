@@ -45,6 +45,15 @@ function apiUrl(path: string, prefix: string = API_V1_PREFIX) {
   return `${apiBaseUrl()}/${prefix}/${path.replace(/^\/+/, '')}`
 }
 
+/**
+ * Absolute URL for a /api/v1 endpoint. Exposed for streaming callers: ky's
+ * response handling buffers the whole body, so an SSE consumer must fetch the
+ * stream itself (see services/support.ts askSupportStream).
+ */
+export function apiV1Url(path: string): string {
+  return apiUrl(normalizePath(path))
+}
+
 function apiPrefixUrl() {
   const base = apiBaseUrl()
   return base ? `${base}/${API_V1_PREFIX}` : `/${API_V1_PREFIX}`
@@ -188,7 +197,12 @@ export function isServerErrorCode(code: number) {
   return code >= 50000 && code < 60000
 }
 
-async function refreshCsrf() {
+/**
+ * Re-issue the CSRF token from GET /auth/session. Exported for the SSE path
+ * (services/support.ts), which cannot use the ky client and must retry 40302
+ * itself. See the #676 note below.
+ */
+export async function refreshCsrf() {
   try {
     const resp = await ky.get(apiPrefixUrl() + '/auth/session', { credentials: 'include' })
     // 必须接住响应体里的 csrf_token（需求方#676）：光重拉不取值，重放发的还是同一个

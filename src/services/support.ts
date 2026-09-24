@@ -1,5 +1,6 @@
 import { get, getPage, post, apiV1Url, ModelGoApiError, SERVER_ERROR_MESSAGE, refreshCsrf } from '@/lib/request'
 import { injectHeaders } from '@/lib/request-headers'
+import { handleSessionExpired } from '@/lib/auth/auth-controller'
 import type {
   SupportAskRequest,
   SupportAskResponse,
@@ -84,8 +85,14 @@ async function askSupportStreamOnce(
       trace_id?: string
     } | null
     if (!envelope || envelope.code !== 0 || !envelope.data) {
+      const code = envelope?.code ?? resp.status
+      // The raw fetch bypasses ky's afterResponse hook; mirror its session-expiry
+      // handling so a revoked session still prompts and returns to login.
+      if (code === 40101 && typeof window !== 'undefined') {
+        handleSessionExpired()
+      }
       throw new ModelGoApiError({
-        code: envelope?.code ?? resp.status,
+        code,
         msg: envelope?.msg ?? envelope?.message ?? SERVER_ERROR_MESSAGE,
         request_id: envelope?.request_id ?? resp.headers.get('x-request-id') ?? undefined,
         trace_id: envelope?.trace_id ?? resp.headers.get('x-trace-id') ?? undefined,

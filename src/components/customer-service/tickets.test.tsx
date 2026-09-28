@@ -154,6 +154,84 @@ it('offers a reload, not a dead end, when the detail fails for a transient reaso
   expect(onRetry).toHaveBeenCalled()
 })
 
+it('never flags a live human-service ticket as unread, even if a count comes down (#1153)', async () => {
+  listTickets.mockResolvedValue({
+    items: [{ ...ticket, ticket_id: 'CS-LIVE', ticket_type: 'human_support', service_mode: 'live', unread_count: 3 }],
+    next_cursor: null, has_more: false,
+  })
+  render(<TicketsList onSelect={vi.fn()} onClose={vi.fn()} />)
+  const row = await screen.findByRole('button', { name: /CS-LIVE/ })
+  expect(row).not.toHaveTextContent('common.customerService.tickets.unread')
+})
+
+const asyncDetail: SupportTicketDetail = {
+  ...ticket,
+  ticket_id: 'CS-ASYNC',
+  ticket_type: 'human_support',
+  service_mode: 'async',
+  status: 'processing',
+  unread_count: 2,
+  capabilities: { can_reopen: false, can_create_followup: false, can_reply: true },
+}
+
+it('renders the agent messages of an async ticket and a reply box at the bottom (#1154 #1152)', async () => {
+  const onReply = vi.fn().mockResolvedValue(true)
+  render(
+    <TicketDetailView
+      detail={asyncDetail}
+      messages={[{ id: 'm1', role: 'agent', content: '您好，已收到', createdAt: 0 }]}
+      renderMessage={(m) => <p>{m.content}</p>}
+      onReply={onReply}
+      onBack={vi.fn()} onReopen={vi.fn()} onRate={vi.fn()} onSupplement={vi.fn()}
+    />,
+  )
+  expect(screen.getByText('您好，已收到')).toBeInTheDocument()
+  const box = screen.getByRole('textbox', { name: 'common.customerService.tickets.detail.replyAria' })
+  fireEvent.change(box, { target: { value: '  还是不行  ' } })
+  fireEvent.click(screen.getByRole('button', { name: 'common.customerService.tickets.detail.replySend' }))
+  await waitFor(() => expect(onReply).toHaveBeenCalledWith('还是不行'))
+  await waitFor(() => expect(box).toHaveValue(''))
+})
+
+it('keeps a live human ticket detail as an archive without a reply box', () => {
+  render(
+    <TicketDetailView
+      detail={{ ...asyncDetail, service_mode: 'live' }}
+      onReply={vi.fn()}
+      onBack={vi.fn()} onReopen={vi.fn()} onRate={vi.fn()} onSupplement={vi.fn()}
+    />,
+  )
+  expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+})
+
+it('reports "latest seen" only once the last message scrolls into view, not on open (#1154)', () => {
+  let fire: (visible: boolean) => void = () => {}
+  const Original = globalThis.IntersectionObserver
+  globalThis.IntersectionObserver = class {
+    constructor(cb: (e: { isIntersecting: boolean }[]) => void) { fire = (v) => cb([{ isIntersecting: v }]) }
+    observe() {}
+    disconnect() {}
+  } as unknown as typeof IntersectionObserver
+  try {
+    const onLatestVisible = vi.fn()
+    render(
+      <TicketDetailView
+        detail={asyncDetail}
+        messages={[{ id: 'm1', role: 'agent', content: 'x', createdAt: 0 }]}
+        renderMessage={(m) => <p>{m.content}</p>}
+        onLatestVisible={onLatestVisible}
+        onBack={vi.fn()} onReopen={vi.fn()} onRate={vi.fn()} onSupplement={vi.fn()}
+      />,
+    )
+    fire(false)
+    expect(onLatestVisible).not.toHaveBeenCalled()
+    fire(true)
+    expect(onLatestVisible).toHaveBeenCalled()
+  } finally {
+    globalThis.IntersectionObserver = Original
+  }
+})
+
 it('shows the gateway request id from the response header as the error ID (#1150)', async () => {
   listTickets.mockRejectedValueOnce(Object.assign(new Error('boom'), { response: new Response(null, { status: 500, headers: { 'x-request-id': 'req-gw-1' } }) }))
   render(<TicketsList onSelect={vi.fn()} onClose={vi.fn()} />)

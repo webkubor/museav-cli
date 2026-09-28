@@ -12,6 +12,7 @@ import {
   endHandoff,
   getSupportTicket,
   listTicketMessages,
+  markTicketRead,
   rateAnswer,
   rateTicket,
   supplementTicket,
@@ -41,7 +42,7 @@ import {
   transition,
   type SupportMode,
 } from './support-machine'
-import { EPHEMERAL_ANSWER_ID, supportMessageRoleOf, ticketAgentNameOf, ticketNoOf, ticketSlaTextOf } from '@/interfaces/support'
+import { EPHEMERAL_ANSWER_ID, supportMessageRoleOf, ticketAgentNameOf, ticketNoOf, ticketSlaTextOf, ticketUnreadOf } from '@/interfaces/support'
 import type {
   SupportTicketSnapshot,
   SupportAnswerRating,
@@ -79,6 +80,11 @@ export interface ChatItem {
  * crypto.randomUUID()，跟服务端 id 对不上，所以只收 agent，避免把用户自己的
  * 发言再插一遍。
  */
+/** 工单消息 → 气泡。system 消息（状态变更）也保留，转异步单的「状态变更」同样算新消息。 */
+function toTicketChatItem(m: SupportMessage): ChatItem {
+  return { id: m.id, role: supportMessageRoleOf(m) ?? 'system', content: m.content, createdAt: Date.parse(m.created_at) || Date.now() }
+}
+
 export function mergeFreshAgentMessages(prev: ChatItem[], items: SupportMessage[]): ChatItem[] {
   const known = new Set(prev.map((m) => m.id))
   const fresh: ChatItem[] = []
@@ -155,6 +161,12 @@ export function useSupport() {
   const [ticketDetail, setTicketDetail] = useState<SupportTicketDetail | null>(null)
   // 详情取数失败要留在界面上：原先只弹 toast，详情页一直停在「加载中…」（#1151）
   const [ticketDetailError, setTicketDetailError] = useState<unknown>(null)
+  // 人工单详情的会话气泡（PRD 工单类型：人工服务 / 转异步都是「对话形态」）。
+  // 原先详情只渲染元信息，转异步单里客服发的消息用户根本看不到（#1154 实测）。
+  const [ticketMessages, setTicketMessages] = useState<ChatItem[]>([])
+  // 已读变化后递增，让入口角标重新拉一次未读数
+  const [unreadVersion, setUnreadVersion] = useState(0)
+  const detailRequestSeq = useRef(0)
 
   /** 唯一的模式迁移入口：非法跳转被 transition() 拦下，不静默生效。 */
   const go = useCallback((next: SupportMode) => {
@@ -231,6 +243,9 @@ export function useSupport() {
       setModeRaw({ kind: 'chat' })
       setTicketDetail(null)
       setTicketDetailError(null)
+      setTicketMessages([])
+      // 换号后旧账号在途的详情回包作废
+      detailRequestSeq.current++
       appliedEndedTicketIds.current = new Set()
       appliedAsyncTicketIds.current = new Set()
       suppressedHandoffTicketIds.current = new Set()
@@ -623,13 +638,71 @@ export function useSupport() {
     go({ kind: 'ticketDetail', ticketId: id })
     setTicketDetail(null)
     setTicketDetailError(null)
+    setTicketMessages([])
+    // 同步记下「最后一次打开的是哪张」：快速连点两张单时，先发的那张晚回包不能盖掉后一张。
+    // 不用 activeMode 判 —— 它在 layout effect 里才同步，回包快过渲染时会误判成已离开。
+    const token = ++detailRequestSeq.current
+    const stillOpen = () => detailRequestSeq.current === token
+    let detail: SupportTicketDetail
     try {
-      const detail = await getSupportTicket(id)
-      setTicketDetail(detail)
+      detail = await getSupportTicket(id)
     } catch (error) {
-      setTicketDetailError(error)
+      if (stillOpen()) setTicketDetailError(error)
+      return
+    }
+    if (!stillOpen()) return
+    setTicketDetail(detail)
+    if (detail.ticket_type === 'human_support' || detail.type === 'handoff') {
+      // 消息拉失败不挡详情：元信息照常看，气泡区为空
+      listTicketMessages(id)
+        .then((page) => { if (stillOpen()) setTicketMessages(page.items.map(toTicketChatItem)) })
+        .catch(() => {})
+    } else if (ticketUnreadOf(detail)) {
+      // 问题反馈：打开详情即已读（工单类型 PRD「已读口径」）—— 新消息只会是状态变更，就在标题旁
+      void markSelectedRead(id, detail)
     }
   }, [go])
+
+  /** 把已读游标推到这张单的最新消息；失败静默（下次打开再标），不打断用户看详情。 */
+  const markingRead = useRef<Set<string>>(new Set())
+  async function markSelectedRead(id: string, detail: SupportTicketDetail) {
+    // 可视区哨兵每次重渲染都可能再报一次「看到了」，在途时不重复打接口
+    if (markingRead.current.has(id)) return
+    markingRead.current.add(id)
+    try {
+      const fresh = await markTicketRead(id, detail.latest_message_seq ?? 0)
+      // 只写回仍在显示的那张（prev.ticket_id 比对）；换号时详情整个被清空，同样写不进去
+      setTicketDetail((prev) => (prev && prev.ticket_id === id ? { ...prev, ...fresh, capabilities: fresh?.capabilities ?? prev.capabilities } : prev))
+      setUnreadVersion((v) => v + 1)
+    } catch { /* 静默 */ } finally {
+      markingRead.current.delete(id)
+    }
+  }
+
+  // 转异步：最新一条客服消息或状态变更**滚进可视区**才判已读（不是打开即已读）。
+  // 由详情页的可视区哨兵回调触发；已读过 / 实时单 / 反馈单都不会走到请求。
+  const markSelectedTicketSeen = useCallback(() => {
+    if (mode.kind !== 'ticketDetail' || !ticketDetail || ticketDetail.ticket_id !== mode.ticketId) return
+    if (!ticketUnreadOf(ticketDetail)) return
+    void markSelectedRead(mode.ticketId, ticketDetail)
+  }, [mode, ticketDetail])
+
+  // 转异步详情底部的消息输入框（PRD 工单类型：转异步「底部为消息输入框」）
+  const replySelectedTicket = useCallback(async (content: string): Promise<boolean> => {
+    if (mode.kind !== 'ticketDetail') return false
+    const targetId = mode.ticketId
+    const accountId = account?.account_id ?? null
+    try {
+      const sent = await replyTicketMessage(targetId, content)
+      if (isCurrentSupportTicket(targetId, accountId)) {
+        setTicketMessages((prev) => [...prev, toTicketChatItem(sent ?? { id: crypto.randomUUID(), sender_type: 'user', content, created_at: new Date().toISOString() })])
+      }
+      return true
+    } catch (error) {
+      if (isCurrentSupportTicket(targetId, accountId)) appToast.requestError(error, t('common.customerService.sendFailed'))
+      return false
+    }
+  }, [mode, account?.account_id, isCurrentSupportTicket, t])
 
   const reopenSelectedTicket = useCallback(async () => {
     // 只在详情模式下有效：切走了就不该再对那张工单做写操作
@@ -718,6 +791,10 @@ export function useSupport() {
     ticketId,
     ticketDetail,
     ticketDetailError,
+    ticketMessages,
+    unreadVersion,
+    markSelectedTicketSeen,
+    replySelectedTicket,
     // 三区行为：由模式单向推导，组件不再自己拼布尔组合
     showComposer: showsComposer(mode),
     composerDisabled: composerDisabledOf(mode),

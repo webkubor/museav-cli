@@ -437,13 +437,18 @@
           "idLabel": "No.",
           "createdLabel": "Submitted",
           "updatedLabel": "Updated",
-          "agentLabel": "Agent"
+          "agentLabel": "Agent",
+          "conversation": "Conversation",
+          "replyAria": "Add a message to this ticket",
+          "replyPlaceholder": "Type a message — the agent will reply in this ticket",
+          "replySend": "Send"
         }
       },
       "loginRequired": {
         "handoff": "Sign in to reach a human agent — you can transfer right after signing in.",
         "tickets": "Sign in to view your service records"
       },
+      "unreadBadge": "{{count}} unread service records",
       "sensitiveHit": "A possible key or token was detected — it will not be logged or passed to an agent.",
       "orb": {
         "idle": "Here to help",

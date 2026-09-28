@@ -128,6 +128,8 @@ export interface SupportHandoffEndRequest {
 }
 
 export interface SupportTicketCapabilities {
+  /** 后端判定这张单现在能不能发消息（进行中的人工单为 true）。 */
+  can_reply?: boolean
   can_reopen: boolean
   can_create_followup: boolean
   /** 问题反馈单处理中（pending/processing）时为 true：详情底部给「补充问题描述」入口。 */
@@ -219,8 +221,21 @@ export function ticketAgentNameOf(t: Pick<SupportTicketSummary, 'assignee_displa
   return t.assignee_display_name || t.agent_name || undefined
 }
 
-export function ticketUnreadOf(t: Pick<SupportTicketSummary, 'unread_count' | 'unread'>): boolean {
-  return (t.unread_count ?? 0) > 0 || t.unread === true
+/** 实时人工单：会话当场在主面板进行，用户即时可见（工单类型 PRD「未读触发」：人工服务 → 不触发）。 */
+export function isLiveHumanTicket(t: Pick<SupportTicketSummary, 'ticket_type' | 'type' | 'service_mode'>): boolean {
+  return (t.ticket_type === 'human_support' || t.type === 'handoff') && t.service_mode === 'live'
+}
+
+/** 这张单计入的未读条数。实时人工单恒为 0 —— 后端 UnreadCount 同口径，前端再兜一层，
+ *  不能因为某次下发带了计数就把 live 单标成「有新消息」、或算进入口角标（#1153）。 */
+export function ticketUnreadCountOf(t: Pick<SupportTicketSummary, 'unread_count' | 'unread' | 'ticket_type' | 'type' | 'service_mode'>): number {
+  if (isLiveHumanTicket(t)) return 0
+  const n = t.unread_count ?? 0
+  return n > 0 ? n : t.unread === true ? 1 : 0
+}
+
+export function ticketUnreadOf(t: Pick<SupportTicketSummary, 'unread_count' | 'unread' | 'ticket_type' | 'type' | 'service_mode'>): boolean {
+  return ticketUnreadCountOf(t) > 0
 }
 
 export interface SupportTicketListParams {

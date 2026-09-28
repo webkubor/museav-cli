@@ -21,6 +21,8 @@ import { canStartHandoff, showsMessageThread } from './support-machine'
 import { SupportOrb } from './support-orb'
 import { supportOrbState } from './support-presentation'
 import { useMessageAutoScroll } from './use-message-scroll'
+import { useUnreadTotal } from './use-unread-total'
+import { useAuthStore } from '@/store/auth'
 
 function formatCsTimestamp(timestamp: number, t: (key: string, options?: Record<string, unknown>) => string) {
   const date = new Date(timestamp)
@@ -247,7 +249,7 @@ export function CustomerService() {
 
   const support = useSupport()
   const {
-    mode, go, messages, isAsking, ticketDetail, ticketDetailError,
+    mode, go, messages, isAsking, ticketDetail, ticketDetailError, ticketMessages, markSelectedTicketSeen, replySelectedTicket, unreadVersion,
     // 三区行为由状态机推导，组件不再自己拼布尔组合（原先是 mode/serviceMode 交叉判断）
     showComposer, composerDisabled, showFeedbackEntry, isHumanChat,
     ask, rateMessageAnswer, startHandoff, cancelActiveHandoff, isCancellingHandoff, endActiveHandoff,
@@ -255,6 +257,8 @@ export function CustomerService() {
   } = support
 
   const orbState = supportOrbState(support)
+  const loggedIn = useAuthStore((s) => Boolean(s.account))
+  const unreadTotal = useUnreadTotal(loggedIn, isOpen, unreadVersion)
 
   const [inputValue, setInputValue] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -373,6 +377,17 @@ export function CustomerService() {
             关闭图标（此前展开时头尾两个 X 同屏，多余且难看）。
             球只读状态、不驱动状态机（见 support-presentation.ts）。 */}
         <SupportOrb state={orbState} label={t('common.customerService.orb.open')} />
+        {/* 未读角标自己画：ai-orb 自带的角标只在 done 态显示，而入口平时是 idle，
+            传 unseen 永远出不来（#1148）。面板开着时不显示 —— 服务记录图标另有提示。 */}
+        {!isOpen && unreadTotal > 0 && (
+          <span
+            role="status"
+            aria-label={t('common.customerService.unreadBadge', { count: unreadTotal })}
+            className="pointer-events-none absolute -right-1 -top-1 min-w-[18px] rounded-full bg-mg-danger px-1 text-center text-[10px] font-medium leading-[18px] text-white"
+          >
+            {unreadTotal > 99 ? '99+' : unreadTotal}
+          </span>
+        )}
       </div>
 
       {/* 面板：表面走 .mg-float（同 Popover / Dialog 一档玻璃）+ 体系圆角 rounded-lg；
@@ -431,6 +446,10 @@ export function CustomerService() {
             <TicketDetailView
               detail={ticketDetail}
               error={ticketDetailError}
+              messages={ticketMessages}
+              renderMessage={(msg) => <MessageBubble msg={msg} onRate={rateMessageAnswer} onStartHandoff={startHandoff} />}
+              onLatestVisible={markSelectedTicketSeen}
+              onReply={replySelectedTicket}
               onRetry={() => openTicketDetail(mode.ticketId)}
               onBack={() => go({ kind: 'tickets' })}
               onReopen={reopenSelectedTicket}

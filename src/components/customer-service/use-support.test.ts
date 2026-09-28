@@ -827,3 +827,27 @@ it('reports the same read seq only once even if the response still says unread (
   }
   expect(markTicketReadMock).toHaveBeenCalledTimes(1)
 })
+
+it('reverse order: 转人工 while 新会话 is in flight is refused, then works once the new session is done (review 二审)', async () => {
+  authState.account = { account_id: 'acc-1' }
+  authState.isLoading = false
+  localStorage.setItem('mg:cs_cid', 'cs-old')
+  askSupportMock.mockReset().mockResolvedValue({ answer_id: 'a1', answer: '回答', status: 'answered' })
+  let finishSession: (v: unknown) => void = () => {}
+  createSessionMock.mockReset().mockImplementationOnce(() => new Promise((r) => { finishSession = r }))
+  requestHandoffMock.mockReset().mockResolvedValue({ service_mode: 'live', ticket_id: 'CS-9', status: 'pending' })
+  const { result } = renderHook(() => useSupport())
+  await act(async () => { await result.current.ask('先问一句') })
+
+  act(() => { void result.current.startNewSession() })
+  await act(async () => { await result.current.startHandoff() })
+  // 新会话在途：转人工不发出，不会产生孤儿单
+  expect(requestHandoffMock).not.toHaveBeenCalled()
+
+  await act(async () => { finishSession({ session_id: 'cs-new' }) })
+  expect(localStorage.getItem('mg:cs_cid')).toBe('cs-new')
+  // 新会话完成后转人工照常可用（旧写法这里会被永久锁死）
+  await act(async () => { await result.current.startHandoff() })
+  expect(requestHandoffMock).toHaveBeenCalledTimes(1)
+  expect(result.current.mode.kind).toBe('queuing')
+})

@@ -159,6 +159,13 @@ export function useSupport() {
   const [isAsking, setIsAsking] = useState(false)
   const accountEpoch = useRef(0)
   const handoffPending = useRef(false)
+  // 每次转人工一个令牌：在途标记只由发起它的那次复位，不再依赖 accountEpoch ——
+  // 「新会话」会推进代次，旧写法下 finally 判代次不等就永远不复位，之后再也发不起转人工
+  const handoffToken = useRef(0)
+  // 新会话请求在途：此时不许发起转人工，否则会话先回、代次一推，转人工回包被当过期丢掉，后端排队单成孤儿
+  const newSessionPending = useRef(false)
+  // 给按钮用的可渲染状态（ref 变了不触发渲染）
+  const [handoffInFlight, setHandoffInFlight] = useState(false)
   const [isCancellingHandoff, setIsCancellingHandoff] = useState(false)
   const [ticketDetail, setTicketDetail] = useState<SupportTicketDetail | null>(null)
   // 详情取数失败要留在界面上：原先只弹 toast，详情页一直停在「加载中…」（#1151）
@@ -258,6 +265,7 @@ export function useSupport() {
       suppressedHandoffTicketIds.current = new Set()
       cancellingHandoffTicketId.current = null
       handoffPending.current = false
+      setHandoffInFlight(false)
       // 切账号必须换新会话：否则上一账号持久化的 session_id 会带到新账号，
       // 让后端把两人的多轮上下文串到一起（#1057 要求会话稳定，但不能跨账号）。
       clearSupportSessionId()
@@ -271,7 +279,7 @@ export function useSupport() {
 
   const startHandoffWithTrigger = useCallback(async (trigger?: { question: string; sensitiveHit: boolean }) => {
     // 「排队中不允许重复发起转接」由状态机判定（PRD §8.6），不再自己比 serviceMode
-    if (!canStartHandoff(modeRef.current) || handoffPending.current) return
+    if (!canStartHandoff(modeRef.current) || handoffPending.current || newSessionPending.current) return
     // 未登录直接引导登录：转人工是登录态能力，发出去只会拿到 40101，
     // 再被 catch 成「转人工失败，请稍后重试」——用户会一直重试，而重试
     // 永远失败。同理这里也不能让 40101 走到 request.ts 的全局分支，
@@ -290,7 +298,9 @@ export function useSupport() {
     }
     const epoch = accountEpoch.current
     const accountId = account?.account_id ?? null
+    const token = ++handoffToken.current
     handoffPending.current = true
+    setHandoffInFlight(true)
     trackEvent('support_handoff_start')
     try {
       const resp = await requestHandoff({
@@ -321,7 +331,10 @@ export function useSupport() {
       go({ kind: 'chat' })
       appendMessage({ id: crypto.randomUUID(), role: 'system', content: t('common.customerService.handoffFailed'), createdAt: Date.now() })
     } finally {
-      if (epoch === accountEpoch.current) handoffPending.current = false
+      if (handoffToken.current === token) {
+        handoffPending.current = false
+        setHandoffInFlight(false)
+      }
     }
   }, [go, appendMessage, t, account, isLoading, messages])
   const startHandoff = useCallback(() => startHandoffWithTrigger(), [startHandoffWithTrigger])
@@ -581,15 +594,23 @@ export function useSupport() {
     // handoffPending 也因代次对不上永远复位不了，之后再也发不起转人工（2026-09-28 补审发现）
     if (startingNewSession || handoffPending.current || !canStartHandoff(mode)) return
     setStartingNewSession(true)
+    newSessionPending.current = true
     let nextId: string | null = null
     try {
       nextId = (await createSupportSession(peekSupportSessionId()))?.session_id ?? null
     } catch (error) {
       if (!isNotFoundError(error)) {
         appToast.requestError(error)
+        newSessionPending.current = false
         setStartingNewSession(false)
         return
       }
+    }
+    newSessionPending.current = false
+    // 等回包期间若已经发起了转人工（入口虽已拦，仍兜一层），就不换会话，别让它的回包被当过期丢掉
+    if (handoffPending.current) {
+      setStartingNewSession(false)
+      return
     }
     replaceSupportSessionId(nextId)
     // 在途的问答回包按代次丢弃，不会晚到写进新会话
@@ -852,6 +873,7 @@ export function useSupport() {
     ticketMessagesLoaded,
     startNewSession,
     startingNewSession,
+    handoffInFlight,
     unreadVersion,
     markSelectedTicketSeen,
     replySelectedTicket,

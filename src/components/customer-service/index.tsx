@@ -253,7 +253,7 @@ export function CustomerService() {
     // 三区行为由状态机推导，组件不再自己拼布尔组合（原先是 mode/serviceMode 交叉判断）
     showComposer, composerDisabled, showFeedbackEntry, isHumanChat,
     ask, rateMessageAnswer, startHandoff, cancelActiveHandoff, isCancellingHandoff, endActiveHandoff,
-    sendHumanReply, feedbackSubmitting, submitFeedback, startNewSession, startingNewSession, openTicketDetail, reopenSelectedTicket, rateSelectedTicket, supplementSelectedTicket,
+    sendHumanReply, feedbackSubmitting, submitFeedback, startNewSession, startingNewSession, handoffInFlight, openTicketDetail, reopenSelectedTicket, rateSelectedTicket, supplementSelectedTicket,
   } = support
 
   const orbState = supportOrbState(support)
@@ -509,7 +509,8 @@ export function CustomerService() {
                     <button
                       type="button"
                       onClick={startHandoff}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-mg-border bg-mg-fill-0/40 px-2.5 py-1.5 mg-text-caption font-medium text-mg-text-2 transition-colors hover:border-brand-mid/50 hover:text-brand-base"
+                      disabled={startingNewSession || handoffInFlight}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-mg-border bg-mg-fill-0/40 px-2.5 py-1.5 mg-text-caption font-medium text-mg-text-2 transition-colors hover:border-brand-mid/50 hover:text-brand-base disabled:opacity-50"
                     >
                       <LuUserRound size={13} />
                       {t('common.customerService.handoff.entry')}
@@ -530,7 +531,7 @@ export function CustomerService() {
                     <button
                       type="button"
                       onClick={startNewSession}
-                      disabled={startingNewSession}
+                      disabled={startingNewSession || handoffInFlight}
                       className="inline-flex items-center gap-1.5 rounded-lg border border-mg-border bg-mg-fill-0/40 px-2.5 py-1.5 mg-text-caption font-medium text-mg-text-2 transition-colors hover:border-brand-mid/50 hover:text-brand-base disabled:opacity-50"
                     >
                       <LuMessageSquarePlus size={13} />

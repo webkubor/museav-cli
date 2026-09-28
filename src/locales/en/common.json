@@ -384,6 +384,8 @@
       "like": "Helpful",
       "dislike": "Not helpful",
       "handoffFailed": "Failed to connect to a human agent. Please try again later.",
+      "handoffBusy": "A handoff or new chat is already in progress. Please wait and try again.",
+      "handoffRetryLater": "The new chat failed, so the handoff was not started. Please try again later.",
       "handoffConnected": "An agent has joined. You can start chatting.",
       "handoffEnded": "The session has ended. You're back with the assistant.",
       "handoffAsync": "The queue is taking longer than usual. Your request has moved to async processing — check service records for updates.",

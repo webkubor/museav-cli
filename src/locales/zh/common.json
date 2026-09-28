@@ -384,6 +384,8 @@
       "like": "有帮助",
       "dislike": "没帮助",
       "handoffFailed": "转人工失败，请稍后重试",
+      "handoffBusy": "转人工或新会话正在处理中，请稍候再试",
+      "handoffRetryLater": "新会话失败，转人工未能发起，请稍后重试",
       "handoffConnected": "客服已接入，可以开始咨询",
       "handoffEnded": "人工服务已结束，已返回平台助手",
       "handoffAsync": "排队时间较长，已转为异步处理，可在服务记录中查看进度",

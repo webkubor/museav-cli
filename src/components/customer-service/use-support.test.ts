@@ -905,3 +905,86 @@ it('A’s late new-session response does not release B’s in-flight new session
   expect(requestHandoffMock).not.toHaveBeenCalled()
   expect(result.current.startingNewSession).toBe(true)
 })
+
+// prd46#1171 —— 补审判定不阻塞发车、留待后续的 UI 项。判定口径：用户有没有得到反馈。
+describe('prd46#1171 · 在途与切号不吞用户操作', () => {
+  beforeEach(() => {
+    authState.account = { account_id: 'acc-1' }
+    authState.isLoading = false
+    localStorage.setItem('mg:cs_cid', 'cs-old')
+    requestErrorMock.mockReset()
+    askSupportMock.mockReset().mockResolvedValue({ answer_id: 'a1', answer: '回答', status: 'answered' })
+    requestHandoffMock.mockReset().mockResolvedValue({ service_mode: 'live', ticket_id: 'CS-7', status: 'pending' })
+  })
+
+  // #1171-1：在途时输入「转人工」原本静默 return —— 用户消息已上屏，入口却毫无反应
+  it('在途时输入「转人工」给出系统提示，而不是静默丢弃', async () => {
+    let finishSession: (v: unknown) => void = () => {}
+    createSessionMock.mockReset().mockImplementationOnce(() => new Promise((r) => { finishSession = r }))
+    const { result } = renderHook(() => useSupport())
+
+    act(() => { void result.current.startNewSession() })
+    await act(async () => { await result.current.ask('转人工') })
+
+    expect(requestHandoffMock).not.toHaveBeenCalled()
+    const roles = result.current.messages.map((m) => m.role)
+    expect(roles).toContain('user')
+    expect(result.current.messages.some((m) => m.content === 'common.customerService.handoffBusy')).toBe(true)
+    await act(async () => { finishSession({ session_id: 'cs-new' }) })
+  })
+
+  // #1171-2：后端判定的 human_handoff 被新会话在途挡下，随后新会话失败 → 转人工彻底消失
+  it('自动转人工被新会话挡下、且该新会话随后失败时，补出「请稍后重试转人工」', async () => {
+    let rejectSession: (r: unknown) => void = () => {}
+    createSessionMock.mockReset().mockImplementationOnce(() => new Promise((_r, rej) => { rejectSession = rej }))
+    askSupportMock.mockReset().mockResolvedValue({
+      answer_id: 'a2', answer: '正在为您转接', status: 'intent', intent: 'human_handoff', suggest_handoff: true,
+    })
+    const { result } = renderHook(() => useSupport())
+
+    act(() => { void result.current.startNewSession() })
+    await act(async () => { await result.current.ask('找人工') })
+    // 在途被挡：只留系统提示，不发请求
+    expect(requestHandoffMock).not.toHaveBeenCalled()
+    expect(result.current.messages.some((m) => m.content === 'common.customerService.handoffBusy')).toBe(true)
+
+    await act(async () => { rejectSession(Object.assign(new Error('down'), { response: { status: 503 } })) })
+    expect(result.current.messages.some((m) => m.content === 'common.customerService.handoffRetryLater')).toBe(true)
+  })
+
+  // 同一个记账标记不能在成功路径上冒出来：新会话成功就没有「重试转人工」这回事
+  it('新会话成功时不补重试提示（记账标记不得泄漏到下一次失败）', async () => {
+    let finishSession: (v: unknown) => void = () => {}
+    createSessionMock.mockReset().mockImplementationOnce(() => new Promise((r) => { finishSession = r }))
+    askSupportMock.mockReset().mockResolvedValue({
+      answer_id: 'a3', answer: '正在为您转接', status: 'intent', intent: 'human_handoff', suggest_handoff: true,
+    })
+    const { result } = renderHook(() => useSupport())
+
+    act(() => { void result.current.startNewSession() })
+    await act(async () => { await result.current.ask('找人工') })
+    await act(async () => { finishSession({ session_id: 'cs-new' }) })
+    expect(result.current.messages).toEqual([])
+
+    // 紧接着再来一次失败的新会话：不得出现上一轮遗留的重试提示
+    createSessionMock.mockRejectedValueOnce(Object.assign(new Error('down'), { response: { status: 503 } }))
+    await act(async () => { void result.current.startNewSession() })
+    expect(result.current.messages.some((m) => m.content === 'common.customerService.handoffRetryLater')).toBe(false)
+  })
+
+  // #1171-4：此前只覆盖了成功路径，切号 + 非 404 失败这一支没有用例
+  it('切号后旧账号的新会话失败不弹 toast、不留提示', async () => {
+    let rejectSession: (r: unknown) => void = () => {}
+    createSessionMock.mockReset().mockImplementationOnce(() => new Promise((_r, rej) => { rejectSession = rej }))
+    const { result, rerender } = renderHook(() => useSupport())
+    await act(async () => { await result.current.ask('A 的问题') })
+    act(() => { void result.current.startNewSession() })
+
+    authState.account = { account_id: 'acc-B' }
+    rerender(); await act(async () => {})
+    await act(async () => { rejectSession(Object.assign(new Error('down'), { response: { status: 503 } })) })
+
+    expect(requestErrorMock).not.toHaveBeenCalled()
+    expect(result.current.messages.some((m) => m.content === 'common.customerService.handoffRetryLater')).toBe(false)
+  })
+})

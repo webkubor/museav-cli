@@ -164,6 +164,10 @@ export function useSupport() {
   // 人工单详情的会话气泡（PRD 工单类型：人工服务 / 转异步都是「对话形态」）。
   // 原先详情只渲染元信息，转异步单里客服发的消息用户根本看不到（#1154 实测）。
   const [ticketMessages, setTicketMessages] = useState<ChatItem[]>([])
+  // 消息是否已拉回。没拉回之前气泡区是空的，可视区哨兵紧贴在元信息下面必然「可见」，
+  // 转异步单会被误判已读（2026-09-28 test 实测：未滚动 2.5s 内 read_seq 就被推满）。
+  // 拉取失败也保持 false：用户什么都没看到，不能算已读。
+  const [ticketMessagesLoaded, setTicketMessagesLoaded] = useState(false)
   // 已读变化后递增，让入口角标重新拉一次未读数
   const [unreadVersion, setUnreadVersion] = useState(0)
   const detailRequestSeq = useRef(0)
@@ -244,6 +248,7 @@ export function useSupport() {
       setTicketDetail(null)
       setTicketDetailError(null)
       setTicketMessages([])
+      setTicketMessagesLoaded(false)
       // 换号后旧账号在途的详情回包作废
       detailRequestSeq.current++
       appliedEndedTicketIds.current = new Set()
@@ -639,6 +644,7 @@ export function useSupport() {
     setTicketDetail(null)
     setTicketDetailError(null)
     setTicketMessages([])
+    setTicketMessagesLoaded(false)
     // 同步记下「最后一次打开的是哪张」：快速连点两张单时，先发的那张晚回包不能盖掉后一张。
     // 不用 activeMode 判 —— 它在 layout effect 里才同步，回包快过渲染时会误判成已离开。
     const token = ++detailRequestSeq.current
@@ -655,7 +661,11 @@ export function useSupport() {
     if (detail.ticket_type === 'human_support' || detail.type === 'handoff') {
       // 消息拉失败不挡详情：元信息照常看，气泡区为空
       listTicketMessages(id)
-        .then((page) => { if (stillOpen()) setTicketMessages(page.items.map(toTicketChatItem)) })
+        .then((page) => {
+          if (!stillOpen()) return
+          setTicketMessages(page.items.map(toTicketChatItem))
+          setTicketMessagesLoaded(true)
+        })
         .catch(() => {})
     } else if (ticketUnreadOf(detail)) {
       // 问题反馈：打开详情即已读（工单类型 PRD「已读口径」）—— 新消息只会是状态变更，就在标题旁
@@ -792,6 +802,7 @@ export function useSupport() {
     ticketDetail,
     ticketDetailError,
     ticketMessages,
+    ticketMessagesLoaded,
     unreadVersion,
     markSelectedTicketSeen,
     replySelectedTicket,

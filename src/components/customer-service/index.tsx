@@ -249,7 +249,7 @@ export function CustomerService() {
 
   const support = useSupport()
   const {
-    mode, go, messages, isAsking, ticketDetail, ticketDetailError, ticketMessages, markSelectedTicketSeen, replySelectedTicket, unreadVersion,
+    mode, go, messages, isAsking, ticketDetail, ticketDetailError, ticketMessages, ticketMessagesLoaded, markSelectedTicketSeen, replySelectedTicket, unreadVersion,
     // 三区行为由状态机推导，组件不再自己拼布尔组合（原先是 mode/serviceMode 交叉判断）
     showComposer, composerDisabled, showFeedbackEntry, isHumanChat,
     ask, rateMessageAnswer, startHandoff, cancelActiveHandoff, isCancellingHandoff, endActiveHandoff,
@@ -447,6 +447,7 @@ export function CustomerService() {
               detail={ticketDetail}
               error={ticketDetailError}
               messages={ticketMessages}
+              messagesLoaded={ticketMessagesLoaded}
               renderMessage={(msg) => <MessageBubble msg={msg} onRate={rateMessageAnswer} onStartHandoff={startHandoff} />}
               onLatestVisible={markSelectedTicketSeen}
               onReply={replySelectedTicket}

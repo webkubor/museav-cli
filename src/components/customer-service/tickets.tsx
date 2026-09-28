@@ -222,6 +222,8 @@ export interface TicketDetailViewProps {
   onSupplement: (content: string) => Promise<SupplementResult>
   /** 人工单的会话气泡；气泡长相由面板统一渲染（与主对话同一套），这里只管顺序与位置 */
   messages?: ChatItem[]
+  /** 人工单的会话是否已拉回；拉回前不判已读（空气泡区会让可视区哨兵假「可见」）。缺省视为已就绪。 */
+  messagesLoaded?: boolean
   renderMessage?: (msg: ChatItem) => ReactNode
   /** 最新一条消息滚进可视区时回调 —— 转异步单据此判已读 */
   onLatestVisible?: () => void
@@ -232,7 +234,7 @@ export interface TicketDetailViewProps {
 
 export function TicketDetailView({
   detail, error = null, onRetry, onBack, onReopen, onRate, onSupplement,
-  messages = [], renderMessage, onLatestVisible, onReply,
+  messages = [], messagesLoaded = true, renderMessage, onLatestVisible, onReply,
 }: TicketDetailViewProps) {
   const { t } = useTranslation()
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -248,14 +250,14 @@ export function TicketDetailView({
   const latestKey = messages.at(-1)?.id ?? ''
   useEffect(() => {
     const el = latestRef.current
-    if (!el || !onLatestVisible || !detail || !isHuman) return
+    if (!el || !onLatestVisible || !detail || !isHuman || !messagesLoaded) return
     if (typeof IntersectionObserver === 'undefined') { onLatestVisible(); return }
     const io = new IntersectionObserver((entries) => {
       if (entries.some((e) => e.isIntersecting)) onLatestVisible()
     }, { root: scrollRef.current, threshold: 0.6 })
     io.observe(el)
     return () => io.disconnect()
-  }, [latestKey, detail, isHuman, onLatestVisible])
+  }, [latestKey, detail, isHuman, messagesLoaded, onLatestVisible])
 
   async function submitReply() {
     const content = replyText.trim()

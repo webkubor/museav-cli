@@ -441,7 +441,13 @@
           "conversation": "会话记录",
           "replyAria": "补充工单消息",
           "replyPlaceholder": "输入消息，客服会在工单里回复你",
-          "replySend": "发送"
+          "replySend": "发送",
+          "categoryLabel": "问题类型",
+          "occurredLabel": "发生时间",
+          "requestIdLabel": "Request ID",
+          "attachmentsLabel": "附件",
+          "downloadAria": "下载附件 {{name}}",
+          "downloadFailed": "附件下载失败，请稍后重试"
         }
       },
       "loginRequired": {

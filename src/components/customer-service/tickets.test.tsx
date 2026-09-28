@@ -3,8 +3,17 @@ import { beforeEach, expect, it, vi } from 'vitest'
 import type { SupportTicketDetail, SupportTicketSummary } from '@/interfaces/support'
 
 // account 要是稳定引用：每次渲染给新对象会让列表的 effect（依赖 account）反复重拉
-const { listTickets, account } = vi.hoisted(() => ({ listTickets: vi.fn(), account: {} }))
-vi.mock('@/services/support', () => ({ listSupportTickets: listTickets }))
+const { listTickets, listAttachments, getAttachment, account } = vi.hoisted(() => ({
+  listTickets: vi.fn(),
+  listAttachments: vi.fn(async (): Promise<{ items: object[] }> => ({ items: [] })),
+  getAttachment: vi.fn(),
+  account: {},
+}))
+vi.mock('@/services/support', () => ({
+  listSupportTickets: listTickets,
+  listTicketAttachments: listAttachments,
+  getTicketAttachment: getAttachment,
+}))
 vi.mock('@/store/auth', () => ({ useAuthStore: (select: (state: { account: object }) => unknown) => select({ account }) }))
 vi.mock('@/lib/timezone', () => ({ resolveTimeZone: () => 'America/New_York' }))
 vi.mock('react-i18next', () => ({
@@ -230,4 +239,24 @@ it('reports "latest seen" only once the last message scrolls into view, not on o
   } finally {
     globalThis.IntersectionObserver = Original
   }
+})
+
+it('shows issue type, Request ID and a downloadable attachment on a feedback ticket (#1164)', async () => {
+  listAttachments.mockResolvedValueOnce({ items: [{ id: 'att1', file_name: 'trace.txt', download_url: 'https://cdn.example.com/trace.txt' }] })
+  const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+  render(<TicketDetailView detail={{ ...feedbackDetail, category: 'billing', request_id: 'req-34' }} onBack={vi.fn()} onReopen={vi.fn()} onRate={vi.fn()} onSupplement={vi.fn()} />)
+
+  expect(screen.getByText('common.customerService.tickets.detail.categoryLabel')).toBeInTheDocument()
+  expect(screen.getByText('common.customerService.feedback.categoryOptions.billing')).toBeInTheDocument()
+  expect(screen.getByText('req-34')).toBeInTheDocument()
+  fireEvent.click(await screen.findByRole('button', { name: 'common.customerService.tickets.detail.downloadAria' }))
+  expect(open).toHaveBeenCalledWith('https://cdn.example.com/trace.txt', '_blank', 'noopener,noreferrer')
+  open.mockRestore()
+})
+
+it('omits the Request ID and attachment rows entirely when they are empty (#1164)', async () => {
+  render(<TicketDetailView detail={{ ...feedbackDetail, category: 'bug' }} onBack={vi.fn()} onReopen={vi.fn()} onRate={vi.fn()} onSupplement={vi.fn()} />)
+  await waitFor(() => expect(listAttachments).toHaveBeenCalled())
+  expect(screen.queryByText('common.customerService.tickets.detail.requestIdLabel')).not.toBeInTheDocument()
+  expect(screen.queryByText('common.customerService.tickets.detail.attachmentsLabel')).not.toBeInTheDocument()
 })

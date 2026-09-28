@@ -247,7 +247,7 @@ export function CustomerService() {
 
   const support = useSupport()
   const {
-    mode, go, messages, isAsking, ticketDetail,
+    mode, go, messages, isAsking, ticketDetail, ticketDetailError,
     // 三区行为由状态机推导，组件不再自己拼布尔组合（原先是 mode/serviceMode 交叉判断）
     showComposer, composerDisabled, showFeedbackEntry, isHumanChat,
     ask, rateMessageAnswer, startHandoff, cancelActiveHandoff, isCancellingHandoff, endActiveHandoff,
@@ -430,6 +430,8 @@ export function CustomerService() {
           {mode.kind === 'ticketDetail' && (
             <TicketDetailView
               detail={ticketDetail}
+              error={ticketDetailError}
+              onRetry={() => openTicketDetail(mode.ticketId)}
               onBack={() => go({ kind: 'tickets' })}
               onReopen={reopenSelectedTicket}
               onRate={rateSelectedTicket}

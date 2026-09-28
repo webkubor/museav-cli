@@ -6,7 +6,8 @@ import { Textarea } from '@/components/ui/Textarea'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Badge } from '@/components/ui/Badge'
 import { LuArrowLeft, LuSearch, LuInbox } from 'react-icons/lu'
-import { appToast } from '@/lib/app-toast'
+import { ModelGoApiError } from '@/lib/request'
+import { isNotFoundError } from '@/lib/request-error-message'
 import { formatMonthDayTime } from '@/lib/format-date'
 import { useAuthStore } from '@/store/auth'
 import { listSupportTickets } from '@/services/support'
@@ -30,6 +31,11 @@ export function TicketsList({ onSelect, onClose }: TicketsListProps) {
   const [cursor, setCursor] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(false)
   const [loading, setLoading] = useState(false)
+  // 加载失败单独成态：原先 catch 里只弹 toast，列表仍是空数组，于是渲染成「暂无服务记录」——
+  // 用户会把加载失败读成「我没有记录」（#1150）。
+  const [loadError, setLoadError] = useState<unknown>(null)
+  // 空态文案要区分「本来就没有」与「搜不到」，按**发出请求时**的关键词判，不按输入框当前值
+  const [searchedQ, setSearchedQ] = useState('')
 
   async function load(reset: boolean) {
     // 未登录不发请求：拿到的只会是 40101，列表空着渲染「暂无服务记录」，
@@ -40,13 +46,18 @@ export function TicketsList({ onSelect, onClose }: TicketsListProps) {
       return
     }
     setLoading(true)
+    const keyword = q.trim()
     try {
-      const page = await listSupportTickets({ filter, q: q.trim() || undefined, cursor: reset ? undefined : cursor ?? undefined })
+      const page = await listSupportTickets({ filter, q: keyword || undefined, cursor: reset ? undefined : cursor ?? undefined })
       setItems((prev) => (reset ? page.items : [...prev, ...page.items]))
       setCursor(page.next_cursor)
       setHasMore(page.has_more)
+      setLoadError(null)
+      if (reset) setSearchedQ(keyword)
     } catch (error) {
-      appToast.requestError(error)
+      // 翻页失败保留已拿到的记录，只有首屏失败才换成错误态
+      if (reset) setItems([])
+      setLoadError(error)
     } finally {
       setLoading(false)
     }
@@ -92,10 +103,21 @@ export function TicketsList({ onSelect, onClose }: TicketsListProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-3">
-        {!loading && items.length === 0 && (
+        {!loading && loadError !== null && items.length === 0 && (
+          <RecordsNotice
+            title={t('common.customerService.tickets.loadFailed')}
+            description={t('common.customerService.tickets.loadFailedHint', { code: errorIdOf(loadError) })}
+            actionLabel={t('common.customerService.tickets.reload')}
+            onAction={() => load(true)}
+          />
+        )}
+        {!loading && loadError === null && items.length === 0 && (
           <EmptyState
             icon={<LuInbox />}
             title={account ? t('common.customerService.tickets.empty') : t('common.customerService.loginRequired.tickets')}
+            description={account
+              ? t(searchedQ ? 'common.customerService.tickets.emptySearch' : 'common.customerService.tickets.emptyHint')
+              : undefined}
           />
         )}
         <div className="flex flex-col gap-2">
@@ -137,6 +159,11 @@ export function TicketsList({ onSelect, onClose }: TicketsListProps) {
             </button>
           ))}
         </div>
+        {loadError !== null && items.length > 0 && (
+          <p role="alert" className="m-0 mt-3 mg-text-caption text-mg-danger text-center">
+            {t('common.customerService.tickets.loadFailedHint', { code: errorIdOf(loadError) })}
+          </p>
+        )}
         {hasMore && (
           <div className="flex justify-center mt-3">
             <Button size="small" variant="secondary" loading={loading} onClick={() => load(false)}>
@@ -149,8 +176,42 @@ export function TicketsList({ onSelect, onClose }: TicketsListProps) {
   )
 }
 
+/** 错误编号给用户报给客服用：优先 request_id / trace_id（后端日志能直接搜到），没有再退回业务码。 */
+function errorIdOf(error: unknown): string {
+  if (error instanceof ModelGoApiError) return error.requestId || error.traceId || String(error.code)
+  // 网关级 HTTP 5xx 抛的是 ky HTTPError，编号在响应头里（与 error-diagnostics 同口径）
+  const resp = (error as { response?: Response } | null)?.response
+  const headerId = resp?.headers?.get?.('x-request-id') || resp?.headers?.get?.('x-trace-id')
+  if (headerId) return headerId
+  return resp?.status ? `HTTP ${resp.status}` : 'NETWORK'
+}
+
+function isForbiddenError(error: unknown): boolean {
+  if (error instanceof ModelGoApiError) return Math.floor(error.code / 100) === 403
+  return (error as { response?: { status?: number } } | null)?.response?.status === 403
+}
+
+/** 服务记录的「出错了」提示块：role=alert 让读屏立刻播报，并给一个可执行的出路。 */
+function RecordsNotice({ title, description, actionLabel, onAction }: {
+  title: string
+  description: string
+  actionLabel: string
+  onAction: () => void
+}) {
+  return (
+    <section role="alert" className="py-12 flex flex-col items-center gap-1 text-center">
+      <p className="m-0 mg-text-body font-medium text-mg-text-1">{title}</p>
+      <p className="m-0 mg-text-caption text-mg-text-3">{description}</p>
+      <Button size="small" variant="secondary" className="mt-3" onClick={onAction}>{actionLabel}</Button>
+    </section>
+  )
+}
+
 export interface TicketDetailViewProps {
   detail: SupportTicketDetail | null
+  /** 取数失败的原始错误；null = 没出错（detail 仍为 null 即加载中） */
+  error?: unknown
+  onRetry?: () => void
   onBack: () => void
   onReopen: () => void
   onRate: (stars: number) => void
@@ -159,7 +220,7 @@ export interface TicketDetailViewProps {
 }
 
 
-export function TicketDetailView({ detail, onBack, onReopen, onRate, onSupplement }: TicketDetailViewProps) {
+export function TicketDetailView({ detail, error = null, onRetry, onBack, onReopen, onRate, onSupplement }: TicketDetailViewProps) {
   const { t } = useTranslation()
   const [supplementOpen, setSupplementOpen] = useState(false)
   const [supplementText, setSupplementText] = useState('')
@@ -191,7 +252,24 @@ export function TicketDetailView({ detail, onBack, onReopen, onRate, onSupplemen
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-3">
-        {!detail && <p className="mg-text-caption text-mg-text-3">{t('common.customerService.tickets.loading')}</p>}
+        {!detail && error === null && <p className="mg-text-caption text-mg-text-3">{t('common.customerService.tickets.loading')}</p>}
+        {/* 404 / 403 = 这张单用户看不了（已归档、换了账号），重试没用，只给「返回服务记录」；
+            其余（5xx / 超时 / 断网）是暂时性的，给「重新加载」 */}
+        {!detail && error !== null && (isNotFoundError(error) || isForbiddenError(error) || !onRetry ? (
+          <RecordsNotice
+            title={t('common.customerService.tickets.unavailable')}
+            description={t('common.customerService.tickets.unavailableHint')}
+            actionLabel={t('common.customerService.tickets.backToList')}
+            onAction={onBack}
+          />
+        ) : (
+          <RecordsNotice
+            title={t('common.customerService.tickets.loadFailed')}
+            description={t('common.customerService.tickets.loadFailedHint', { code: errorIdOf(error) })}
+            actionLabel={t('common.customerService.tickets.reload')}
+            onAction={onRetry}
+          />
+        ))}
         {detail && (
           <div className="flex flex-col gap-3">
             {detail.title && <p className="m-0 mg-text-body font-medium text-mg-text-1">{detail.title}</p>}

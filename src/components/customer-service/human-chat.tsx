@@ -30,7 +30,11 @@ export function HandoffHeaderStatus({ mode, onCancel, isCanceling = false, onEnd
            : t('common.customerService.handoff.connecting')))
     : mode.kind === 'connecting'
       ? t('common.customerService.handoff.connecting')
-      : t('common.customerService.handoff.connected', { name: mode.agentName ?? '', no: mode.agentNo ?? '' })
+      // 后端目前不下发工号（agent_no 恒空），整句模板会渲染成「王恩博 · 工号 」半截标签
+      // （2026-09-28 test 实测）。没工号就只显示姓名，都没有退回「已接入」。
+      : mode.agentNo
+        ? t('common.customerService.handoff.connected', { name: mode.agentName ?? '', no: mode.agentNo })
+        : mode.agentName || t('common.customerService.handoffConnected')
 
   return (
     <div className="flex items-center justify-between mt-0.5" aria-live="polite">

@@ -679,3 +679,34 @@ describe('useSupport · 转异步详情回复 (#1152)', () => {
     expect(result.current.ticketMessages.at(-1)).toMatchObject({ role: 'user', content: '还是 429' })
   })
 })
+
+describe('useSupport · 实时人工被客服结束 (#1134)', () => {
+  beforeEach(() => {
+    authState.account = { account_id: 'acc-1' }
+    authState.isLoading = false
+    requestHandoffMock.mockReset().mockResolvedValue({ service_mode: 'live', ticket_id: 'CS-LIVE', status: 'pending' })
+    getSupportTicketMock.mockReset()
+  })
+
+  it('enters the ended state with a rating card when the backend keeps service_mode=live but status=resolved', async () => {
+    const { useSupportEvents } = await import('./use-support-events')
+    const pushEvent = async () => {
+      const cb = vi.mocked(useSupportEvents).mock.calls.at(-1)![2]
+      await act(async () => { await cb({ events: [{ id: 'e', ticket_id: 'CS-LIVE', version: 9, type: 'x' }] }) })
+    }
+    const base = { ticket_id: 'CS-LIVE', ticket_type: 'human_support', service_mode: 'live', version: 1, created_at: '', updated_at: '', capabilities: { can_reopen: false, can_create_followup: false } }
+    const { result } = renderHook(() => useSupport())
+    await act(async () => result.current.startHandoff())
+    expect(result.current.mode.kind).toBe('queuing')
+
+    getSupportTicketMock.mockResolvedValue({ ...base, status: 'processing', assignee_display_name: '王恩博' })
+    await pushEvent()
+    expect(result.current.mode.kind).toBe('human')
+
+    // 2026-09-28 test 实测：客服 resolve 后 service_mode 仍是 live
+    getSupportTicketMock.mockResolvedValue({ ...base, status: 'resolved', status_label: '已解决', assignee_display_name: '王恩博' })
+    await pushEvent()
+    expect(result.current.mode.kind).toBe('humanEnded')
+    expect(result.current.messages.some((m) => m.kind === 'rating_card' && m.ratingCard?.ticketId === 'CS-LIVE')).toBe(true)
+  })
+})

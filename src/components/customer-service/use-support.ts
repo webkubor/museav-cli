@@ -501,10 +501,13 @@ export function useSupport() {
     const event: SupportTicketSnapshot = {
       // 后端的 service_mode 只有 live / async 两个值，排队到哪一步不在里面：
       // 有客服显示名 = 已接通，否则还在排队。不猜 status 枚举（只实测到 pending）。
-      service_mode: detail.service_mode === 'async'
-        ? 'async'
-        : detail.service_mode === 'ended'
-          ? 'ended'
+      // 客服在后台「解决」实时单后，后端 service_mode 仍是 live、只有 status 变 resolved
+      // （2026-09-28 test 实测 CS-20260928-3713）。只认 service_mode==='ended' 会一直停在
+      // 「已接入」，结束提示与评价卡都出不来 —— 与回复失败那条路径统一走 isEndedSupportTicket。
+      service_mode: isEndedSupportTicket(detail)
+        ? 'ended'
+        : detail.service_mode === 'async'
+          ? 'async'
           : agentName ? 'connected' : 'queueing',
       status_label: detail.status_label,
       agent_name: agentName,

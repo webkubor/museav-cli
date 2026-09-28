@@ -441,7 +441,13 @@
           "conversation": "Conversation",
           "replyAria": "Add a message to this ticket",
           "replyPlaceholder": "Type a message — the agent will reply in this ticket",
-          "replySend": "Send"
+          "replySend": "Send",
+          "categoryLabel": "Issue type",
+          "occurredLabel": "Occurred at",
+          "requestIdLabel": "Request ID",
+          "attachmentsLabel": "Attachments",
+          "downloadAria": "Download attachment {{name}}",
+          "downloadFailed": "Couldn't download the attachment. Please try again later."
         }
       },
       "loginRequired": {

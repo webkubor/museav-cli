@@ -11,6 +11,8 @@ import type {
   SupportHandoffEndRequest,
   SupportHandoffRequest,
   SupportHandoffResponse,
+  SupportAttachmentContent,
+  SupportTicketAttachment,
   SupportTicketDetail,
   SupportTicketListParams,
   SupportTicketSummary,
@@ -209,6 +211,15 @@ export function supplementTicket(id: string, content: string) {
 
 /** 把已读游标推进到 seq（agent MarkRead 只认 `seq`，空 body 等于标到 0、什么都不消）。
  *  回包是标记后的工单，unread_count 已重算。 */
+export function listTicketAttachments(id: string) {
+  return get<{ items: SupportTicketAttachment[] }>(`support/tickets/${id}/attachments`)
+}
+
+/** 单条附件（含 content_base64），给没有 download_url 的本地附件用。 */
+export function getTicketAttachment(id: string, attachmentId: string) {
+  return get<SupportAttachmentContent>(`support/tickets/${id}/attachments/${attachmentId}`)
+}
+
 export function markTicketRead(id: string, seq: number) {
   return post<SupportTicketDetail>(`support/tickets/${id}/read`, { seq })
 }

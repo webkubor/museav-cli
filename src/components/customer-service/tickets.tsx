@@ -8,12 +8,13 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Badge } from '@/components/ui/Badge'
 import { LuArrowLeft, LuSearch, LuInbox } from 'react-icons/lu'
 import { ModelGoApiError } from '@/lib/request'
+import { appToast } from '@/lib/app-toast'
 import { isNotFoundError } from '@/lib/request-error-message'
 import { formatMonthDayTime } from '@/lib/format-date'
 import { useAuthStore } from '@/store/auth'
-import { listSupportTickets } from '@/services/support'
+import { getTicketAttachment, listSupportTickets, listTicketAttachments } from '@/services/support'
 import { ticketAgentNameOf, ticketNoOf, ticketSlaTextOf, ticketStatusTextOf, ticketUnreadOf } from '@/interfaces/support'
-import type { SupplementResult, SupportTicketDetail, SupportTicketFilter, SupportTicketSummary } from '@/interfaces/support'
+import type { SupplementResult, SupportTicketAttachment, SupportTicketDetail, SupportTicketFilter, SupportTicketSummary } from '@/interfaces/support'
 import type { ChatItem } from './use-support'
 
 const FILTERS: SupportTicketFilter[] = ['all', 'processing', 'ended']
@@ -348,7 +349,10 @@ export function TicketDetailView({
                 </div>
               )}
             </dl>
+            {/* 问题反馈按 PRD 问题单顺序：问题类型 → 问题描述 → 发生时间 / Request ID / 附件 */}
+            {detail.ticket_type === 'feedback' && <FeedbackCategoryRow category={detail.category} />}
             {detail.description && <p className="m-0 mg-text-body text-mg-text-1 whitespace-pre-wrap">{detail.description}</p>}
+            {detail.ticket_type === 'feedback' && <FeedbackIssueFields detail={detail} />}
             {/* 建单后的补充照 PRD 原型 CustomerSupportTicketDetail.tsx 挂在描述区块里、
                 按「补充 · MM-DD HH:mm」前缀逐条追加，不当作沟通消息（PRD §7.11）。 */}
             {detail.supplements?.map((item) => (
@@ -433,6 +437,101 @@ export function TicketDetailView({
         </div>
       )}
     </div>
+  )
+}
+
+const fieldRow = 'flex gap-1.5'
+
+/**
+ * 问题反馈的「问题单」区（工单类型 PRD：问题类型、问题描述、发生时间、Request ID（如有）、
+ * 附件（如有，支持下载））。原先只渲染描述，其余字段接口给了也没读（#1164）。
+ * 问题描述仍在上方正文位置，这里补其余四项；为空的整行不显示。
+ */
+function FeedbackIssueFields({ detail }: { detail: SupportTicketDetail }) {
+  const { t } = useTranslation()
+  const [attachments, setAttachments] = useState<SupportTicketAttachment[]>([])
+  const ticketId = detail.ticket_id
+
+  useEffect(() => {
+    let cancelled = false
+    listTicketAttachments(ticketId)
+      .then((resp) => { if (!cancelled) setAttachments(resp?.items ?? []) })
+      // 附件是「如有」的附属信息：拉失败不打断详情，只是不显示这一行
+      .catch(() => { if (!cancelled) setAttachments([]) })
+    return () => { cancelled = true }
+  }, [ticketId])
+
+  async function download(item: SupportTicketAttachment) {
+    if (item.download_url) {
+      window.open(item.download_url, '_blank', 'noopener,noreferrer')
+      return
+    }
+    // 本地存储的附件没有直链，字节随单条接口的 content_base64 下发
+    try {
+      const full = await getTicketAttachment(ticketId, item.id)
+      if (!full?.content_base64) throw new Error('empty attachment')
+      const bytes = Uint8Array.from(atob(full.content_base64), (c) => c.charCodeAt(0))
+      const url = URL.createObjectURL(new Blob([bytes], { type: full.mime_type || 'application/octet-stream' }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = full.file_name || item.file_name
+      a.click()
+      setTimeout(() => URL.revokeObjectURL(url), 0)
+    } catch (error) {
+      appToast.requestError(error, t('common.customerService.tickets.detail.downloadFailed'))
+    }
+  }
+
+  if (!detail.occurred_at && !detail.request_id && attachments.length === 0) return null
+  return (
+    <dl className="m-0 flex flex-col gap-1 text-[11px]">
+      {detail.occurred_at && (
+        <div className={fieldRow}>
+          <dt className="shrink-0 text-mg-text-3">{t('common.customerService.tickets.detail.occurredLabel')}</dt>
+          <dd className="m-0 text-mg-text-2">{new Date(detail.occurred_at).toLocaleString()}</dd>
+        </div>
+      )}
+      {detail.request_id && (
+        <div className={fieldRow}>
+          <dt className="shrink-0 text-mg-text-3">{t('common.customerService.tickets.detail.requestIdLabel')}</dt>
+          <dd className="m-0 min-w-0 truncate font-mono text-mg-text-2" title={detail.request_id}>{detail.request_id}</dd>
+        </div>
+      )}
+      {attachments.length > 0 && (
+        <div className={fieldRow}>
+          <dt className="shrink-0 text-mg-text-3">{t('common.customerService.tickets.detail.attachmentsLabel')}</dt>
+          <dd className="m-0 min-w-0 flex flex-col gap-0.5">
+            {attachments.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => download(item)}
+                aria-label={t('common.customerService.tickets.detail.downloadAria', { name: item.file_name })}
+                className="min-w-0 truncate text-left text-brand-base hover:underline"
+                title={item.file_name}
+              >
+                {item.file_name}
+              </button>
+            ))}
+          </dd>
+        </div>
+      )}
+    </dl>
+  )
+}
+
+function FeedbackCategoryRow({ category }: { category?: string }) {
+  const { t } = useTranslation()
+  if (!category) return null
+  return (
+    <dl className="m-0 text-[11px]">
+      <div className={fieldRow}>
+        <dt className="shrink-0 text-mg-text-3">{t('common.customerService.tickets.detail.categoryLabel')}</dt>
+        <dd className="m-0 text-mg-text-2">
+          {t(`common.customerService.feedback.categoryOptions.${category}`, { defaultValue: category })}
+        </dd>
+      </div>
+    </dl>
   )
 }
 

@@ -105,6 +105,21 @@ export interface SupportAttachmentUploadResponse {
   size_bytes: number
 }
 
+/** 工单附件（`GET /support/tickets/:id/attachments` 的 items[]，字段照 agent handler）。
+ *  download_url 只有 OSS 附件才有；本地存储的附件要走单条下载接口拿 content_base64。 */
+export interface SupportTicketAttachment {
+  id: string
+  ticket_id?: string
+  file_name: string
+  mime_type?: string
+  size_bytes?: number
+  download_url?: string
+}
+
+export interface SupportAttachmentContent extends SupportTicketAttachment {
+  content_base64?: string
+}
+
 export interface SupportHandoffRequest {
   page_path?: string
   summary?: string
@@ -202,6 +217,11 @@ export interface SupportTicketDetail extends SupportTicketSummary {
   capabilities: SupportTicketCapabilities
   /** 只在详情接口下发（列表不带），按时间升序。 */
   supplements?: SupportTicketSupplement[]
+  /** 问题反馈的问题类型机器码（bug / api_issue / billing / suggestion / other）。 */
+  category?: string
+  request_id?: string
+  /** 反馈表单填写的发生时间。⚠️ 2026-09-28 核对 agent ticketView 尚未下发，前端有就显示。 */
+  occurred_at?: string
 }
 
 /** 统一取值口径：编号 / 状态文案 / SLA / 是否已接通，一处定义，调用方不再各拼各的。 */

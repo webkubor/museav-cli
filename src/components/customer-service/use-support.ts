@@ -290,7 +290,13 @@ export function useSupport() {
     setMessages((prev) => [...prev, item])
   }, [])
 
-  const startHandoffWithTrigger = useCallback(async (trigger?: { question: string; sensitiveHit: boolean }) => {
+  const startHandoffWithTrigger = useCallback(async (
+    trigger?: { question: string; sensitiveHit: boolean },
+    // 只有「后端判定的自动转人工」才记账（prd46#1171-2）。用户手动输入「转人工」被挡下时
+    // 已经拿到下面那条 handoffBusy 提示，若新会话随后失败又补一条 handoffRetryLater，
+    // 同一次被挡会收到两条反馈。两者都要「有反馈」，但只有自动那条会无声消失、必须补。
+    deferOnBlocked = false,
+  ) => {
     // 「排队中不允许重复发起转接」由状态机判定（PRD §8.6），不再自己比 serviceMode
     if (!canStartHandoff(modeRef.current)) return
     // 在途时不静默 return（prd46#1171-1）。用户那条「转人工」已经上屏了，入口却一声不吭地
@@ -298,12 +304,21 @@ export function useSupport() {
     if (handoffPending.current || newSessionPending.current) {
       // 被新会话在途挡下的自动转人工要记账：那次新会话若随后失败，这次转人工就彻底没了，
       // 界面里不会留下任何痕迹。消费点在 startNewSession 的失败分支（prd46#1171-2）。
-      if (newSessionPending.current) deferredHandoff.current = true
-      appendMessage({
-        id: crypto.randomUUID(),
-        role: 'system',
-        content: t('common.customerService.handoffBusy'),
-        createdAt: Date.now(),
+      if (newSessionPending.current && deferOnBlocked) deferredHandoff.current = true
+      // 同一在途原因不刷屏（评审 P2）：在途窗口可能很长（接口挂起时用户能连点多次），
+      // 逐次追加同一条提示会淹没对话。
+      // ⚠️ 两个坑都踩过：① 判重不能拿闭包里的 messages 比，连点时闭包落后于已排队的更新；
+      // ② 也不能只看末条 —— 用户每次手输的「转人工」正好插在两条提示中间。所以从末尾
+      // 回看、跳过 user 消息，找最近一条非用户消息。updater 拿到的是应用时刻的最新状态。
+      const busy = t('common.customerService.handoffBusy')
+      setMessages((prev) => {
+        for (let i = prev.length - 1; i >= 0; i--) {
+          const m = prev[i]
+          if (m.role === 'user') continue
+          if (m.role === 'system' && m.content === busy) return prev
+          break
+        }
+        return [...prev, { id: crypto.randomUUID(), role: 'system', content: busy, createdAt: Date.now() }]
       })
       return
     }
@@ -418,7 +433,8 @@ export function useSupport() {
         rating: null,
       })
       if (answer.intent === 'human_handoff' && canStartHandoff(modeRef.current)) {
-        await startHandoffWithTrigger({ question: trimmed, sensitiveHit: answer.sensitive?.Hit === true })
+        // 第二个参数 true：这是后端判定的自动转人工，被新会话在途挡下后需要记账
+        await startHandoffWithTrigger({ question: trimmed, sensitiveHit: answer.sensitive?.Hit === true }, true)
       }
     } catch (error) {
       if (generation !== accountEpoch.current || accountId !== activeAccountId.current) return

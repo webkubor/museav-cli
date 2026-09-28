@@ -952,7 +952,7 @@ describe('prd46#1171 · 在途与切号不吞用户操作', () => {
     expect(result.current.messages.some((m) => m.content === 'common.customerService.handoffRetryLater')).toBe(true)
   })
 
-  // 同一个记账标记不能在成功路径上冒出来：新会话成功就没有「重试转人工」这回事
+  // 同一记账标记不能在成功路径上冒出来：新会话成功就没有「重试转人工」这回事
   it('新会话成功时不补重试提示（记账标记不得泄漏到下一次失败）', async () => {
     let finishSession: (v: unknown) => void = () => {}
     createSessionMock.mockReset().mockImplementationOnce(() => new Promise((r) => { finishSession = r }))
@@ -970,6 +970,37 @@ describe('prd46#1171 · 在途与切号不吞用户操作', () => {
     createSessionMock.mockRejectedValueOnce(Object.assign(new Error('down'), { response: { status: 503 } }))
     await act(async () => { void result.current.startNewSession() })
     expect(result.current.messages.some((m) => m.content === 'common.customerService.handoffRetryLater')).toBe(false)
+  })
+
+  // 评审 P2：用户手输「转人工」被挡下时已经拿到 handoffBusy，不该再补一条重试提示
+  it('用户手输「转人工」被挡下后，新会话失败也不补重试提示（不重复反馈）', async () => {
+    let rejectSession: (r: unknown) => void = () => {}
+    createSessionMock.mockReset().mockImplementationOnce(() => new Promise((_r, rej) => { rejectSession = rej }))
+    const { result } = renderHook(() => useSupport())
+
+    act(() => { void result.current.startNewSession() })
+    await act(async () => { await result.current.ask('转人工') })
+    expect(result.current.messages.some((m) => m.content === 'common.customerService.handoffBusy')).toBe(true)
+
+    await act(async () => { rejectSession(Object.assign(new Error('down'), { response: { status: 503 } })) })
+    // 只该有 handoffBusy 一条；handoffRetryLater 是给「后端自动转人工」的补偿，手输路径没有
+    expect(result.current.messages.filter((m) => m.content === 'common.customerService.handoffBusy')).toHaveLength(1)
+    expect(result.current.messages.some((m) => m.content === 'common.customerService.handoffRetryLater')).toBe(false)
+  })
+
+  // 评审 P2：在途窗口可能很长（接口挂起），连点不应刷出多条同款提示
+  it('在途期间连点「转人工」不刷屏（同一条系统提示只出现一次）', async () => {
+    let rejectSession: (r: unknown) => void = () => {}
+    createSessionMock.mockReset().mockImplementationOnce(() => new Promise((_r, rej) => { rejectSession = rej }))
+    const { result } = renderHook(() => useSupport())
+
+    act(() => { void result.current.startNewSession() })
+    await act(async () => { await result.current.ask('转人工') })
+    await act(async () => { await result.current.ask('转人工') })
+    await act(async () => { await result.current.ask('转人工') })
+
+    expect(result.current.messages.filter((m) => m.content === 'common.customerService.handoffBusy')).toHaveLength(1)
+    await act(async () => { rejectSession(Object.assign(new Error('down'), { response: { status: 503 } })) })
   })
 
   // #1171-4：此前只覆盖了成功路径，切号 + 非 404 失败这一支没有用例

@@ -703,9 +703,16 @@ export function useSupport() {
     const targetId = mode.ticketId
     const accountId = account?.account_id ?? null
     try {
-      const sent = await replyTicketMessage(targetId, content)
+      // 回包不是一条消息：agent PostMessage 回的是 UserReply 的输出（工单 + 消息的包装），
+      // 当 SupportMessage 读会拿不到 content，渲染出空气泡（2026-09-28 test 实测）。
+      // 与主面板 sendHumanReply 同口径：先用用户输入上屏，成功后再按服务端列表对齐顺序与 id。
+      await replyTicketMessage(targetId, content)
       if (isCurrentSupportTicket(targetId, accountId)) {
-        setTicketMessages((prev) => [...prev, toTicketChatItem(sent ?? { id: crypto.randomUUID(), sender_type: 'user', content, created_at: new Date().toISOString() })])
+        const local: ChatItem = { id: crypto.randomUUID(), role: 'user', content, createdAt: Date.now() }
+        setTicketMessages((prev) => [...prev, local])
+        listTicketMessages(targetId)
+          .then((page) => { if (isCurrentSupportTicket(targetId, accountId) && page.items.length > 0) setTicketMessages(page.items.map(toTicketChatItem)) })
+          .catch(() => {})
       }
       return true
     } catch (error) {

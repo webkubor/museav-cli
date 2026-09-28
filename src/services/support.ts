@@ -237,6 +237,48 @@ export function reopenTicket(id: string) {
   return post<SupportTicketDetail>(`support/tickets/${id}/reopen`, {})
 }
 
-export function getSupportEvents(ticketId?: string) {
-  return get<SupportEventsResponse>('support/events', ticketId ? { ticket_id: ticketId } : undefined)
+/**
+ * 长轮询一轮 `GET /support/events`。
+ *
+ * agent PollEvents 只有**同时**带 `since_version` + `wait` 才会挂起：不带 wait 立即返回，
+ * 不带 since_version 每次回全量历史事件。原先两个都没传，面板每秒打 ~60 轮
+ * events + 详情 + 消息（2026-09-28 test 实测 40s 内 events 948 次）。
+ * 等到超时没有新事件时后端回 204 无响应体 → 这里返回 null，调用方原地再发下一轮。
+ * 契约与运营后台 watchEvents 同口径。走裸 fetch：ky 对 204 空体解析 JSON 会抛错。
+ */
+export async function pollSupportEvents(
+  query: { ticketId?: string; sinceVersion?: number; wait: number },
+  signal?: AbortSignal,
+): Promise<SupportEventsResponse | null> {
+  const qs = new URLSearchParams({ wait: String(query.wait) })
+  if (query.ticketId) qs.set('ticket_id', query.ticketId)
+  if (query.sinceVersion && query.sinceVersion > 0) qs.set('since_version', String(query.sinceVersion))
+  const request = new Request(`${apiV1Url('support/events')}?${qs}`, {
+    method: 'GET',
+    headers: { Accept: 'application/json' },
+    credentials: 'include',
+  })
+  injectHeaders(request)
+  const resp = await fetch(request, { signal })
+  if (resp.status === 204) return null
+  const envelope = (await resp.json().catch(() => null)) as {
+    code?: number
+    msg?: string
+    data?: SupportEventsResponse
+    request_id?: string
+    trace_id?: string
+  } | null
+  if (!resp.ok || !envelope || envelope.code !== 0) {
+    const code = envelope?.code ?? resp.status
+    // 裸 fetch 绕过了 ky 的 afterResponse：会话过期照样要提示并回登录（同 askSupportStream）
+    if (code === 40101 && typeof window !== 'undefined') handleSessionExpired()
+    throw new ModelGoApiError({
+      code,
+      msg: envelope?.msg ?? SERVER_ERROR_MESSAGE,
+      request_id: envelope?.request_id ?? resp.headers.get('x-request-id') ?? undefined,
+      trace_id: envelope?.trace_id ?? resp.headers.get('x-trace-id') ?? undefined,
+      data: null,
+    })
+  }
+  return envelope.data ?? null
 }

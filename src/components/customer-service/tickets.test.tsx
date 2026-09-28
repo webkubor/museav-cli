@@ -275,3 +275,30 @@ it('shows the gateway request id from the response header as the error ID (#1150
   // 测试的 t mock 不插值，这里只断言调用路径：错误编号取自响应头
   expect(screen.queryByText(/HTTP 500/)).not.toBeInTheDocument()
 })
+
+it('does not report "latest seen" while the messages are still loading, even if the empty sentinel is visible (#1154)', () => {
+  const fires: ((visible: boolean) => void)[] = []
+  const Original = globalThis.IntersectionObserver
+  globalThis.IntersectionObserver = class {
+    constructor(cb: (e: { isIntersecting: boolean }[]) => void) { fires.push((v) => cb([{ isIntersecting: v }])) }
+    observe() {}
+    disconnect() {}
+  } as unknown as typeof IntersectionObserver
+  try {
+    const onLatestVisible = vi.fn()
+    const props = { detail: asyncDetail, renderMessage: (m: { content: string }) => <p>{m.content}</p>, onLatestVisible, onBack: vi.fn(), onReopen: vi.fn(), onRate: vi.fn(), onSupplement: vi.fn() }
+    // 2026-09-28 test 实测：消息未回时哨兵贴在元信息下必然可见 —— 此时不能观察
+    const { rerender } = render(<TicketDetailView {...props} messages={[]} messagesLoaded={false} />)
+    fires.forEach((f) => f(true))
+    expect(onLatestVisible).not.toHaveBeenCalled()
+
+    // 消息回来后开始观察；哨兵被挤到下面、不可见时仍不判
+    rerender(<TicketDetailView {...props} messages={[{ id: 'm1', role: 'agent', content: 'x', createdAt: 0 }]} messagesLoaded />)
+    fires.at(-1)!(false)
+    expect(onLatestVisible).not.toHaveBeenCalled()
+    fires.at(-1)!(true)
+    expect(onLatestVisible).toHaveBeenCalledTimes(1)
+  } finally {
+    globalThis.IntersectionObserver = Original
+  }
+})

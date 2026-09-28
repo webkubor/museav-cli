@@ -9,10 +9,13 @@ const WAIT_SECONDS = 25
 /** 空轮（204 / 无事件）之间的最小间隔：后端万一不挂起立即返回，也不会打成风暴。 */
 const MIN_EMPTY_ROUND_MS = 2000
 
-/** 游标取已见过的最大版本：server_versions 与 events[].version 取大。 */
+/**
+ * 游标只取本轮真正拿到的 events[].version。
+ * 不用 server_versions：后端先 ListEvents(since) 再 GetTicket 取版本，两步之间若恰好写入新事件
+ * （如客服「解决」），server_versions 已是 V+1 而本轮 events 里没有 V+1 —— 游标一跳就永远漏掉它。
+ */
 function nextCursor(cursor: number, payload: SupportEventsResponse | null): number {
   let next = cursor
-  for (const v of payload?.server_versions ?? []) next = Math.max(next, v.version ?? 0)
   for (const e of payload?.events ?? []) next = Math.max(next, e.version ?? 0)
   return next
 }
@@ -20,8 +23,10 @@ function nextCursor(cursor: number, payload: SupportEventsResponse | null): numb
 function sleep(ms: number, signal: AbortSignal) {
   return new Promise<void>((resolve) => {
     if (ms <= 0 || signal.aborted) { resolve(); return }
-    const timer = setTimeout(resolve, ms)
-    signal.addEventListener('abort', () => { clearTimeout(timer); resolve() }, { once: true })
+    // 正常到点也要摘掉 abort 监听，否则每轮空轮都在同一个 signal 上多挂一个闭包直到卸载
+    const onAbort = () => { clearTimeout(timer); resolve() }
+    const timer = setTimeout(() => { signal.removeEventListener('abort', onAbort); resolve() }, ms)
+    signal.addEventListener('abort', onAbort, { once: true })
   })
 }
 

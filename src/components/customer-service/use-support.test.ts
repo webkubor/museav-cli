@@ -781,3 +781,49 @@ describe('useSupport · 新会话', () => {
     expect(result.current.messages.some((m) => m.content.includes('迟到的回答'))).toBe(false)
   })
 })
+
+describe('useSupport · 新会话不打断在途转人工（review 补审）', () => {
+  beforeEach(() => {
+    authState.account = { account_id: 'acc-1' }
+    authState.isLoading = false
+    localStorage.setItem('mg:cs_cid', 'cs-old')
+    createSessionMock.mockReset().mockResolvedValue({ session_id: 'cs-new' })
+    askSupportMock.mockReset().mockResolvedValue({ answer_id: 'a1', answer: '回答', status: 'answered' })
+  })
+
+  it('ignores 新会话 while a handoff request is in flight, so the handoff is neither orphaned nor blocked forever', async () => {
+    let finishHandoff: (v: unknown) => void = () => {}
+    requestHandoffMock.mockReset().mockImplementationOnce(() => new Promise((r) => { finishHandoff = r }))
+    const { result } = renderHook(() => useSupport())
+    await act(async () => { await result.current.ask('先问一句') })
+
+    act(() => { void result.current.startHandoff() })
+    await act(async () => result.current.startNewSession())
+    // 在途转人工期间不换会话、不清对话
+    expect(createSessionMock).not.toHaveBeenCalled()
+    expect(localStorage.getItem('mg:cs_cid')).toBe('cs-old')
+    expect(result.current.messages.length).toBeGreaterThan(0)
+
+    await act(async () => { finishHandoff({ service_mode: 'live', ticket_id: 'CS-1', status: 'pending' }) })
+    expect(result.current.mode.kind).toBe('queuing')
+  })
+})
+
+it('reports the same read seq only once even if the response still says unread (no /read loop)', async () => {
+  authState.account = { account_id: 'acc-1' }
+  authState.isLoading = false
+  markTicketReadMock.mockReset().mockResolvedValue({ unread_count: 2 }) // 异常回包：标完仍有未读
+  listTicketMessagesMock.mockReset().mockResolvedValue({ items: [], next_cursor: null, has_more: false })
+  getSupportTicketMock.mockReset().mockResolvedValue({
+    ticket_id: 'CS-R', ticket_type: 'human_support', service_mode: 'async', status: 'processing', version: 1,
+    latest_message_seq: 4, read_message_seq: 1, unread_count: 3, created_at: '', updated_at: '',
+    capabilities: { can_reopen: false, can_create_followup: false },
+  })
+  const { result } = renderHook(() => useSupport())
+  act(() => result.current.go({ kind: 'tickets' }))
+  await act(async () => result.current.openTicketDetail('CS-R'))
+  for (let i = 0; i < 3; i++) {
+    await act(async () => { result.current.markSelectedTicketSeen() })
+  }
+  expect(markTicketReadMock).toHaveBeenCalledTimes(1)
+})

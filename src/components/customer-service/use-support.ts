@@ -577,7 +577,9 @@ export function useSupport() {
   // 退回本地换一个 session_id —— 按钮先可用，后端上线后自动切到正式接口。
   const [startingNewSession, setStartingNewSession] = useState(false)
   const startNewSession = useCallback(async () => {
-    if (startingNewSession || !canStartHandoff(mode)) return
+    // 转人工请求在途时不许换会话：换了会让回包按代次作废 —— 后端已建的排队单成了没人看的孤儿，
+    // handoffPending 也因代次对不上永远复位不了，之后再也发不起转人工（2026-09-28 补审发现）
+    if (startingNewSession || handoffPending.current || !canStartHandoff(mode)) return
     setStartingNewSession(true)
     let nextId: string | null = null
     try {
@@ -708,14 +710,19 @@ export function useSupport() {
 
   /** 把已读游标推到这张单的最新消息；失败静默（下次打开再标），不打断用户看详情。 */
   const markingRead = useRef<Set<string>>(new Set())
+  // 已按哪个 seq 标过：同一张单同一 seq 只报一次。标完 setTicketDetail 会换对象、IO 重建，
+  // 哨兵仍在可视区就会马上再回调；若后端未读算法不止看 seq，回包 unread 仍 >0 就会一直打 /read
+  const markedSeq = useRef<Map<string, number>>(new Map())
   async function markSelectedRead(id: string, detail: SupportTicketDetail) {
     // 可视区哨兵每次重渲染都可能再报一次「看到了」，在途时不重复打接口
-    if (markingRead.current.has(id)) return
+    const seq = detail.latest_message_seq ?? 0
+    if (markingRead.current.has(id) || markedSeq.current.get(id) === seq) return
     markingRead.current.add(id)
     try {
       const fresh = await markTicketRead(id, detail.latest_message_seq ?? 0)
       // 只写回仍在显示的那张（prev.ticket_id 比对）；换号时详情整个被清空，同样写不进去
       setTicketDetail((prev) => (prev && prev.ticket_id === id ? { ...prev, ...fresh, capabilities: fresh?.capabilities ?? prev.capabilities } : prev))
+      markedSeq.current.set(id, seq)
       setUnreadVersion((v) => v + 1)
     } catch { /* 静默 */ } finally {
       markingRead.current.delete(id)

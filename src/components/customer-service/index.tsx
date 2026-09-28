@@ -257,8 +257,8 @@ export function CustomerService() {
   } = support
 
   const orbState = supportOrbState(support)
-  const loggedIn = useAuthStore((s) => Boolean(s.account))
-  const unreadTotal = useUnreadTotal(loggedIn, isOpen, unreadVersion)
+  const accountId = useAuthStore((s) => s.account?.account_id ?? null)
+  const unreadTotal = useUnreadTotal(accountId, isOpen, unreadVersion)
 
   const [inputValue, setInputValue] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)

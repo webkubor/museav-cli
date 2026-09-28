@@ -22,8 +22,8 @@ it('carries since_version + wait, advances the cursor, and only calls back when 
   expect(onEvent).toHaveBeenCalledTimes(1)
 
   await vi.advanceTimersByTimeAsync(0)
-  // 第二轮游标取已见最大版本（server_versions 5 > event 3）
-  expect(pollMock).toHaveBeenNthCalledWith(2, { ticketId: 'CS-1', sinceVersion: 5, wait: 25 }, expect.any(AbortSignal))
+  // 第二轮游标只取本轮拿到的 events[].version（3），不跟 server_versions（5）跳 —— 否则两步之间写入的事件会漏
+  expect(pollMock).toHaveBeenNthCalledWith(2, { ticketId: 'CS-1', sinceVersion: 3, wait: 25 }, expect.any(AbortSignal))
   expect(onEvent).toHaveBeenCalledTimes(1)
 })
 
@@ -48,4 +48,17 @@ it('aborts the in-flight poll when disabled', async () => {
   expect(seen?.aborted).toBe(false)
   rerender({ on: false })
   expect(seen?.aborted).toBe(true)
+})
+
+it('does not pile up abort listeners across idle rounds', async () => {
+  pollMock.mockResolvedValue(null)
+  const add = vi.spyOn(AbortSignal.prototype, 'addEventListener')
+  const remove = vi.spyOn(AbortSignal.prototype, 'removeEventListener')
+  renderHook(() => useSupportEvents(true, 'CS-1', vi.fn()))
+  await vi.advanceTimersByTimeAsync(20_000)
+  const added = add.mock.calls.filter((c) => c[0] === 'abort').length
+  const removed = remove.mock.calls.filter((c) => c[0] === 'abort').length
+  expect(added).toBeGreaterThan(3)
+  expect(added - removed).toBeLessThanOrEqual(1)
+  add.mockRestore(); remove.mockRestore()
 })

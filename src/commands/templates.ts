@@ -105,7 +105,7 @@ export async function createTemplate(client: StudioClient, opts: CreateTemplateO
   if (refs.length > MAX_REF_IMAGES) {
     throw new Error(`参考图 ${refs.length} 张，超出上限 ${MAX_REF_IMAGES} 张（--ref 最多传 ${MAX_REF_IMAGES} 个）`)
   }
-  const row = await client.createTemplate({
+  const { row, warnings } = await client.createTemplate({
     zh_name: opts.name,
     category: opts.category,
     ratio: opts.ratio,
@@ -134,6 +134,8 @@ export async function createTemplate(client: StudioClient, opts: CreateTemplateO
   })
 
   process.stderr.write(`✅ ${type === 'article' ? '文字' : '图片'}模板已建：${row.id}\n`)
+  // 同质度警告（相似度 80%-95% 区间，中台不拦但提醒确认）：明确打出来，不能建完就当没这回事
+  for (const w of warnings || []) process.stderr.write(`⚠️ ${w}\n`)
   process.stderr.write(`归属：${row.tenant_id ? '当前租户（其他租户看不到）' : '平台共享（所有租户可见）'}\n`)
   // 版本与创建人一并回显：建完就该知道这条模板在库里的身份，而不是回头去查
   process.stderr.write(`版本：${row.version || 'v1.0.0（服务端默认）'}\n`)

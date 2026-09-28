@@ -396,7 +396,11 @@ export class StudioClient {
     try { body = JSON.parse(text) } catch { body = { raw: text } }
     if (!resp.ok) {
       const msg = body.error || body.raw || `HTTP ${resp.status}`
-      throw new Error(`中台 API /api/${path} 失败: ${msg}`)
+      // 422（发布门槛/配置不合规）等错误会在 error 之外附一句 hint 说清楚具体差哪几项
+      // （见 templates.js checkPublishGate）；只吐 body.error 会把这句丢在响应体里没人看见，
+      // 用户只会看到「模板未达到发布门槛」这种无信息量的话。
+      const detail = body.hint ? `：${body.hint}` : ''
+      throw new Error(`中台 API /api/${path} 失败: ${msg}${detail}`)
     }
     return body
   }
@@ -426,13 +430,15 @@ export class StudioClient {
   }
 
   /** 新建图片模板。归属（是否关联租户）由服务端根据鉴权身份决定，见 CreateTemplateInput 注释 */
-  async createTemplate(input: CreateTemplateInput): Promise<TemplateOption> {
+  async createTemplate(input: CreateTemplateInput): Promise<{ row: TemplateOption; warnings?: string[] }> {
     const r = await this.request('templates', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),
     })
-    return r.row
+    // warnings：同质度检测落在警告区间时中台会带这个（2026-09-28），不是失败，
+    // 只是「确认一下是不是想建系列变体」——调用方决定要不要往上冒
+    return { row: r.row, warnings: r.warnings }
   }
 
   /**

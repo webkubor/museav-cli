@@ -405,7 +405,8 @@ templatesCmd
   .command('create')
   .description(
     '新建图片/文字模板——归属由账号身份自动决定：租户 apiKey 建的自动归该租户（其他租户看不到），' +
-      '平台管理员账号建的是平台共享模板（所有租户可见），个人账号不能建',
+      '平台管理员账号建的是平台共享模板（所有租户可见），个人账号不能建。' +
+      '与已有模板相似度 ≥95% 会被拒绝（判定为重复）；≥80% 仍能建成但会提示确认是否只是系列变体',
   )
   .requiredOption('--name <zh_name>', '模板中文名')
   .requiredOption('--prompt <template>', '提示词模板，占位符用 {key} 形式，如 "{artist} 在 {city} 的演唱会海报"')
@@ -431,7 +432,8 @@ templatesCmd
   .command('publish')
   .description(
     '把私有模板开放到共享池。会过发布门槛：参考图 1–5 张、ratio/category/description 齐全、' +
-      'prompt_template 的占位符都已在 fields 声明。不达标会被挡下并列出差哪几项',
+      'prompt_template 的占位符都已在 fields 声明、fields 的 key 是通用语义变量名（不能是业务词）、' +
+      '与公共池已有模板相似度 <80%。不达标会被挡下并列出差哪几项',
   )
   .argument('<id>', '模板 id')
   .action(withClient((client: StudioClient, id: string) => shareTemplate(client, id, 'share')))

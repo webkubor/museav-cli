@@ -1,9 +1,9 @@
 {
   "name": "museav-cli",
-  "version": "3.7.0",
+  "version": "3.8.0",
   "files": [
     "dist",
-  "CHANGELOG.md"
+    "CHANGELOG.md"
   ],
   "description": "MUSE AV 出图中台官方 CLI —— 命令行调中台 API 出图、出视频、读图逆向、图生模板",
   "type": "module",
@@ -22,7 +22,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
-    "prepublishOnly": "npm run build && node scripts/prepublish-gate.mjs",
+    "prepublishOnly": "npm run build && node scripts/prepublish-gate.mjs && node scripts/readme-gate.mjs",
     "test": "node --test test/*.test.mjs",
     "pub": "cs kyvault run --env TOKEN=secret://npm/kubor-company-publish -- npm publish --access public --//registry.npmjs.org/:_authToken=\"$TOKEN\"",
     "notify": "node ../notify.mjs"

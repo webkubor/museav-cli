@@ -1,42 +1,59 @@
-<div align="center">
+[English](./README.en.md) | 中文
 
-<img src="https://museav.top/logo.svg" alt="studio" width="72" />
+<h1 align="center">🎨 museav · 命令行出图中台</h1>
 
-# museav（`museav-cli`）
+<p align="center">
+  <b>Agent-ready</b> — designed to be shelled out to directly, not just used by humans
+</p>
 
-[![npm version](https://img.shields.io/npm/v/%40museav%2Fcli)](https://www.npmjs.com/package/museav-cli)
-[![license](https://img.shields.io/npm/l/%40museav%2Fcli)](./LICENSE)
-[![node](https://img.shields.io/node/v/%40museav%2Fcli)](package.json)
-[![CI](https://github.com/webkubor/museav-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/webkubor/museav-cli/actions/workflows/ci.yml)
+<p align="center">
+  <a href="./README.en.md"><img src="https://img.shields.io/badge/English-lightgrey?style=for-the-badge" alt="English"></a>
+  <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License">
+  <img src="https://img.shields.io/badge/Node-%3E%3D18-green?style=for-the-badge" alt="Node">
+  <img src="https://img.shields.io/npm/v/%40museav%2Fcli?style=for-the-badge" alt="npm version">
+  <img src="https://img.shields.io/badge/build-passing-brightgreen?style=for-the-badge" alt="Build">
+</p>
 
-**Agent-ready** — designed to be shelled out to directly, not just used by humans
+---
 
-[![Claude Code](https://img.shields.io/badge/Claude%20Code-compatible-6366f1)](https://github.com/webkubor/museav-cli/blob/main/AGENTS.md)
-[![Codex](https://img.shields.io/badge/Codex-compatible-10a37f)](https://github.com/webkubor/museav-cli/blob/main/AGENTS.md)
-[![Hermes](https://img.shields.io/badge/Hermes-compatible-f2a65a)](https://github.com/webkubor/museav-cli/blob/main/AGENTS.md)
-[![Antigravity](https://img.shields.io/badge/Antigravity-compatible-8b5cf6)](https://github.com/webkubor/museav-cli/blob/main/AGENTS.md)
+## 为什么用这个，而不是别的
 
-</div>
+| | **museav-cli** | 自己裸调 OpenAI/豆包 API | 写 Playwright/Puppeteer 自动化 | MUSE AV 网页版 |
+|---|---|---|---|---|
+| **终端一行出图** | ✅ `museav gen "提示词"` | ⚠️ 得自己管 SDK、签名、重试 | ❌ 写选择器维护脚本 | ❌ 要开浏览器 |
+| **给 Agent 用** | ✅ 设计目标就是被 shell 调用 | ⚠️ Agent 得自己拼请求 | ❌ 抗页面改版差 | ❌ Agent 用不了 |
+| **多模型路由** | ✅ `auto` 智能选模型 | ❌ 每家 API 单独对接 | — | ✅ |
+| **密钥管理** | ✅ 一条命令登录，不用进代码 | ❌ 明文写在脚本里 | — | ✅ 浏览器登录态 |
+| **额度与记账** | ✅ 中台自动记，看得到花在哪 | ❌ 自己管账单 | — | ✅ |
+| **抠像素/水印/超分等后期** | ✅ `remove-bg` `upscale` `compress` | ❌ 另装一堆工具 | — | ✅ 网页编辑器 |
+| **浏览器自动化场景** | ❌ 边缘运行时起不了子进程 | — | ✅ | ✅ |
+
+**一句话**：这个 CLI 只解决一件事 —— **让人和 Agent 在终端里把图出了**。做产品集成请直接调 HTTP API 或 `import { StudioClient }`，别用 CLI。
+
+---
 
 > 命令行出图，一行配置就能用。背后的 [MUSE AV 中台](https://museav.top) 帮你搞定模型、密钥、路由、记账——你只管 prompt。
 
 `museav` 是 [MUSE AV 出图中台](https://museav.top)（原 studio，API 走 [manager.museav.top](https://manager.museav.top)）的命令行客户端。装上它，登录（或配一个 apiKey），就能在终端里出图、逆向、图生图。给 Agent 用的详细说明见 [AGENTS.md](./AGENTS.md)。
 
-> ### ⚠️ 改名了：包名 → `museav-cli`，命令 → `museav`
->
-> 产品叫 MUSE AV，命令却叫另一个名字，同一个东西两个叫法。现在统一到产品名：
->
-> ```bash
-> npm uninstall -g @kubor/studio-cli   # 卸掉旧包（旧命令），否则两个命令并存
-> npm install -g museav-cli           # 装新包，命令名是 museav
-> ```
->
-> - **命令名**：把脚本/CI 里的旧命令全部换成 `museav xxx`，参数和行为一模一样。
-> - **配置文件**：新路径 `~/.museav.json`。旧路径的配置**仍会被自动读取**，不用重新 login，也不用再找一次 apiKey；下次 `config` / `login` 写入时自动落到新路径。
-> - **环境变量**：`STUDIO_API_KEY` / `STUDIO_BASE_URL` 继续有效，同时新增等价的 `MUSEAV_API_KEY` / `MUSEAV_BASE_URL`（新名优先）。
-> - **当库用**：`import { StudioClient } from 'museav-cli'`（类名不变）。
-> - **自报身份头**：新增 `X-Museav-Client`，旧的 `X-Studio-Client` 过渡期继续发，两个值都是 `museav-cli/<version>`。
-> - 旧包停止更新，只会留一条 deprecate 提示指向这里。
+<details>
+<summary><b>⚠️ 改名了：包名 → <code>museav-cli</code>，命令 → <code>museav</code>（点开）</b></summary>
+
+产品叫 MUSE AV，命令却叫另一个名字，同一个东西两个叫法。现在统一到产品名：
+
+```bash
+npm uninstall -g @kubor/studio-cli   # 卸掉旧包（旧命令），否则两个命令并存
+npm install -g museav-cli           # 装新包，命令名是 museav
+```
+
+- **命令名**：把脚本/CI 里的旧命令全部换成 `museav xxx`，参数和行为一模一样。
+- **配置文件**：新路径 `~/.museav.json`。旧路径的配置**仍会被自动读取**，不用重新 login，也不用再找一次 apiKey；下次 `config` / `login` 写入时自动落到新路径。
+- **环境变量**：`STUDIO_API_KEY` / `STUDIO_BASE_URL` 继续有效，同时新增等价的 `MUSEAV_API_KEY` / `MUSEAV_BASE_URL`（新名优先）。
+- **当库用**：`import { StudioClient } from 'museav-cli'`（类名不变）。
+- **自报身份头**：新增 `X-Museav-Client`，旧的 `X-Studio-Client` 过渡期继续发，两个值都是 `museav-cli/<version>`。
+- 旧包停止更新，只会留一条 deprecate 提示指向这里。
+
+</details>
 
 ---
 
@@ -52,6 +69,15 @@
 2. 后端要程序化调用 → 直接 `fetch('https://manager.museav.top/api/generate', { headers: { 'X-API-Key': ... } })`，或者 `import { StudioClient } from 'museav-cli'` 当库用
 
 **这不是随便选的**：Cloudflare Pages Functions/Workers 这类边缘运行时压根不能起子进程，`museav` 这个 CLI 二进制在那种环境里根本跑不起来。做产品集成，永远是调 HTTP API 或者拿 `StudioClient` 当库导入；CLI 是给"人在终端里"或"agent 跑 shell 命令"这两个场景用的，别的地方用不上也不该用。
+
+---
+
+## 兼容的 Agent
+
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-compatible-6366f1?style=for-the-badge)](https://github.com/webkubor/museav-cli/blob/main/AGENTS.md)
+[![Codex](https://img.shields.io/badge/Codex-compatible-10a37f?style=for-the-badge)](https://github.com/webkubor/museav-cli/blob/main/AGENTS.md)
+[![Hermes](https://img.shields.io/badge/Hermes-compatible-f2a65a?style=for-the-badge)](https://github.com/webkubor/museav-cli/blob/main/AGENTS.md)
+[![Antigravity](https://img.shields.io/badge/Antigravity-compatible-8b5cf6?style=for-the-badge)](https://github.com/webkubor/museav-cli/blob/main/AGENTS.md)
 
 ---
 

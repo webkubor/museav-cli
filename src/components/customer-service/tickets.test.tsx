@@ -260,3 +260,10 @@ it('omits the Request ID and attachment rows entirely when they are empty (#1164
   expect(screen.queryByText('common.customerService.tickets.detail.requestIdLabel')).not.toBeInTheDocument()
   expect(screen.queryByText('common.customerService.tickets.detail.attachmentsLabel')).not.toBeInTheDocument()
 })
+
+it('orders the feedback issue block as PRD lists it: issue type before the description (#1164)', () => {
+  render(<TicketDetailView detail={{ ...feedbackDetail, category: 'billing' }} onBack={vi.fn()} onReopen={vi.fn()} onRate={vi.fn()} onSupplement={vi.fn()} />)
+  const type = screen.getByText('common.customerService.tickets.detail.categoryLabel')
+  const description = screen.getByText('模型调用失败，请帮忙排查')
+  expect(type.compareDocumentPosition(description) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+})

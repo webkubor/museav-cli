@@ -89,12 +89,35 @@ try {
   }
   if (end === -1) throw new Error('npm pack --json 的 JSON 未闭合:\n' + out.slice(start, start + 200))
   const parsed = JSON.parse(out.slice(start, end))
-  // 新版给对象，旧版给数组——两种都收
-  const entry = Array.isArray(parsed) ? parsed[0] : parsed
-  if (!entry?.files) {
-    throw new Error('npm pack --json 结构异常，预期含 files 字段:\n' + out.slice(start, start + 200))
+  // npm pack --json 的顶层形状随版本变过，实测踩过三种：
+  //   旧版  [{ files: [...] }]                      数组
+  //   中间版 { files: [...] }                         对象
+  //   新版  { "museav-cli": { files: [...] } }        以包名为键的对象
+  // 与其跟着版本改（这个坑连踩三次，每次报错形状都不一样），不如不认形状——
+  // 在解析结果里递归找第一个带 files 数组的对象。包名、单包/多包都认。
+  const findFiles = (node, depth = 0) => {
+    if (depth > 6 || node == null) return null
+    if (Array.isArray(node)) {
+      for (const v of node) {
+        const r = findFiles(v, depth + 1)
+        if (r) return r
+      }
+      return null
+    }
+    if (typeof node === 'object') {
+      if (Array.isArray(node.files)) return node.files
+      for (const v of Object.values(node)) {
+        const r = findFiles(v, depth + 1)
+        if (r) return r
+      }
+    }
+    return null
   }
-  packFiles = entry.files.map(f => f.path)
+  const files = findFiles(parsed)
+  if (!files) {
+    throw new Error('npm pack --json 里找不到 files 字段:\n' + out.slice(start, start + 300))
+  }
+  packFiles = files.map(f => f.path)
 } catch (err) {
   console.error('[prepublish-gate] npm pack --dry-run 失败:', err.message)
   process.exit(2)

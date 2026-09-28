@@ -159,6 +159,12 @@ export interface CreateTemplateInput {
     quality?: string
     /** 表单字段声明——按中台契约放 config 顶层（不是 params_json 里），服务端校验/渲染都读这里 */
     fields?: Array<{ key: string; label: string }>
+    /**
+     * 模板自带参考图（1–5 张，2026-09-28 owner 定的上限）。
+     * 三类语义不同：文生图模板只当风格/构图参考不进垫图；图生图模板就是垫图本身。
+     * 建模板不是硬校验，但开放到公共池时服务端门槛会要求必须有。
+     */
+    default_reference_images?: string[]
     is_default?: boolean
   }>
 }
@@ -425,6 +431,36 @@ export class StudioClient {
       body: JSON.stringify(input),
     })
     return r.row
+  }
+
+  /**
+   * 删除模板。只有模板所有者本人或平台管理员可以删（owner 2026-09-28：
+   * 「自己的模板只要是私人模板，自己有增删改查的权利」）。
+   *
+   * ⚠️ 服务端会区分「物理删」和「停用」：有出图历史的模板（gen_jobs 外键 + use_count>0）
+   * 只做停用 active=false，不物理删——保留历史追溯链路。返回值要如实告诉用户哪种情况。
+   */
+  async deleteTemplate(id: string): Promise<{ ok: boolean; hard_deleted: boolean; reason?: string }> {
+    return this.request('templates', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
+  }
+
+  /**
+   * 开放/撤回模板的可见性（private ⇄ shared）。
+   *
+   * share 会过服务端发布门槛（2026-09-28）：参考图 1–5 张必填、ratio/category/description 齐全、
+   * prompt_template 的占位符都已在 fields 声明。不达标返回 422 带 hints。
+   * unshare 是收紧不校验。
+   */
+  async shareTemplate(id: string, action: 'share' | 'unshare'): Promise<{ ok: boolean; visibility?: string; tenant_id?: string | null }> {
+    return this.request('templates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, id }),
+    })
   }
 
   /** 新建视频模板。归属同图片模板：租户 apiKey 自动归租户，平台管理员归平台共享 */

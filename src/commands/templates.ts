@@ -61,7 +61,13 @@ interface CreateTemplateOpts {
   quality?: string
   fields?: string
   type?: string
+  /** 参考图直链，1–5 张。可重复传：--ref url1 --ref url2
+   *  建模板时不是硬校验（可以先建空壳再迭代），但**开放到公共池时必须有**（见 publish）*/
+  ref?: string[]
 }
+
+/** 单模板最多几张参考图（与服务端模板库门槛一致，2026-09-28 owner 定） */
+const MAX_REF_IMAGES = 5
 
 /**
  * museav templates create —— 新建图片模板。
@@ -90,6 +96,10 @@ export async function createTemplate(client: StudioClient, opts: CreateTemplateO
   }
 
   const type = opts.type === 'article' ? 'article' : 'image'
+  const refs = (opts.ref || []).filter(Boolean)
+  if (refs.length > MAX_REF_IMAGES) {
+    throw new Error(`参考图 ${refs.length} 张，超出上限 ${MAX_REF_IMAGES} 张（--ref 最多传 ${MAX_REF_IMAGES} 个）`)
+  }
   const row = await client.createTemplate({
     zh_name: opts.name,
     category: opts.category,
@@ -108,6 +118,11 @@ export async function createTemplate(client: StudioClient, opts: CreateTemplateO
         quality: opts.quality,
         // 契约要求 fields 在 config 顶层（服务端 validateConfig 读 cfg.fields）
         fields: fields.length ? fields : undefined,
+        // 模板自带参考图。三类模板的参考图语义不同（owner 2026-09-28）：
+        //   文生图模板 → 只作风格/构图参考，不进垫图
+        //   图生图模板 → 参考图就是垫图本身，生图基于它衍生
+        //   混合      → 由中台按 ref_slots 决定喂哪些
+        default_reference_images: refs.length ? refs : undefined,
         is_default: true,
       },
     ],
@@ -116,8 +131,54 @@ export async function createTemplate(client: StudioClient, opts: CreateTemplateO
   process.stderr.write(`✅ ${type === 'article' ? '文字' : '图片'}模板已建：${row.id}\n`)
   process.stderr.write(`归属：${row.tenant_id ? '当前租户（其他租户看不到）' : '平台共享（所有租户可见）'}\n`)
   if (fields.length) process.stderr.write(`占位符字段: ${fields.map((f) => f.key).join(', ')}\n`)
+  process.stderr.write(`参考图：${refs.length ? `${refs.length} 张` : '无'}\n`)
+  if (!refs.length) {
+    process.stderr.write(
+      `  ⚠️ 没传参考图。建模板不强制，但「开放到公共池」时必须有（1–${MAX_REF_IMAGES} 张）——\n` +
+      `     museav templates publish ${row.id} 会被服务端门槛挡下来。\n`,
+    )
+  }
   const fieldExample = fields.length ? ` --fields '{"${fields[0].key}":"..."}'` : ''
   process.stderr.write(`\n出图: museav gen --template ${row.id}${fieldExample}\n`)
+  if (refs.length) {
+    process.stderr.write(`开放到公共池: museav templates publish ${row.id}\n`)
+  }
   // stdout 只出新建的模板 id，便于脚本链式使用
   console.log(row.id)
+}
+
+/**
+ * museav templates delete —— 删除自己的模板。
+ *
+ * ⚠️ 服务端会区分两种结果（owner 2026-09-28）：
+ *   hard_deleted=true  → 物理删除，干净
+ *   hard_deleted=false → 有出图历史，只停用 active=false 保留追溯链路
+ * 只删别人建的要平台管理员权限，CLI 不做前置判断，让服务端说了算。
+ */
+export async function deleteTemplate(client: StudioClient, id: string): Promise<void> {
+  if (!id?.trim()) throw new Error('用法: museav templates delete <模板id>')
+  const r = await client.deleteTemplate(id)
+  if (r.hard_deleted) {
+    process.stderr.write(`✅ 已删除：${id}\n`)
+  } else {
+    process.stderr.write(`⚠️ 未物理删除：${r.reason || '该模板有出图历史'}\n`)
+    process.stderr.write(`   已改为停用（active=false），历史出图记录仍能查到当时用的哪个模板。\n`)
+  }
+}
+
+/**
+ * museav templates publish / unshare —— 控制模板可见性。
+ *
+ * publish（私有 → 平台共享/租户共享）会过服务端发布门槛：
+ *   参考图 1–5 张、ratio/category/description 齐全、prompt_template 的占位符都已在 fields 声明
+ * 不达标返回 422 并列出差哪几项。unshare 是收紧方向，不校验。
+ */
+export async function shareTemplate(client: StudioClient, id: string, action: 'share' | 'unshare'): Promise<void> {
+  if (!id?.trim()) throw new Error(`用法: museav templates ${action === 'share' ? 'publish' : 'unshare'} <模板id>`)
+  const r = await client.shareTemplate(id, action)
+  if (r.tenant_id) {
+    process.stderr.write(`✅ 已开放：同租户成员现在可以使用这个模板（tenant_id=${r.tenant_id}）\n`)
+  } else {
+    process.stderr.write('✅ 已开放：所有租户现在可以使用这个模板\n')
+  }
 }

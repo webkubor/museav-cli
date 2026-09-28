@@ -21,7 +21,7 @@ import { imageToTemplate } from './commands/image-to-template.js'
 import { upload } from './commands/upload.js'
 import { models } from './commands/models.js'
 import { skills } from './commands/skills.js'
-import { templates, createTemplate } from './commands/templates.js'
+import { templates, createTemplate, deleteTemplate, shareTemplate } from './commands/templates.js'
 import { videoTemplates, createVideoTemplate } from './commands/video-templates.js'
 import { balance } from './commands/balance.js'
 import { jobs } from './commands/jobs.js'
@@ -372,7 +372,32 @@ templatesCmd
   .option('--quality <level>', '质量: low / medium / high')
   .option('--fields <json>', '占位符字段说明，JSON 数组，如 \'[{"key":"artist","label":"艺人名"}]\'；不传则自动从 --prompt 里的 {key} 提取')
   .option('--type <type>', '模板类型：image（图片，默认） / article（文字）')
+  .option('--ref <url...>', '参考图直链，1–5 张，可重复传。建模板不强制，但开放到公共池时必须有')
   .action(withClient((client: StudioClient, opts: any) => createTemplate(client, opts)))
+
+templatesCmd
+  .command('delete')
+  .description(
+    '删除自己的模板（owner 2026-09-28：私人模板自己有增删改查的权利，删别人建的需要平台管理员）。' +
+      '⚠️ 有出图历史的模板只做停用 active=false 不物理删，保留历史追溯链路',
+  )
+  .argument('<id>', '模板 id')
+  .action(withClient((client: StudioClient, id: string) => deleteTemplate(client, id)))
+
+templatesCmd
+  .command('publish')
+  .description(
+    '把私有模板开放到共享池。会过发布门槛：参考图 1–5 张、ratio/category/description 齐全、' +
+      'prompt_template 的占位符都已在 fields 声明。不达标会被挡下并列出差哪几项',
+  )
+  .argument('<id>', '模板 id')
+  .action(withClient((client: StudioClient, id: string) => shareTemplate(client, id, 'share')))
+
+templatesCmd
+  .command('unshare')
+  .description('撤回已开放的模板，恢复为仅自己可见（收紧方向，不校验门槛）')
+  .argument('<id>', '模板 id')
+  .action(withClient((client: StudioClient, id: string) => shareTemplate(client, id, 'unshare')))
 
 const stickersCmd = program
   .command('stickers')

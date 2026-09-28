@@ -266,6 +266,7 @@ export function useSupport() {
       cancellingHandoffTicketId.current = null
       handoffPending.current = false
       setHandoffInFlight(false)
+      newSessionPending.current = false
       // 切账号必须换新会话：否则上一账号持久化的 session_id 会带到新账号，
       // 让后端把两人的多轮上下文串到一起（#1057 要求会话稳定，但不能跨账号）。
       clearSupportSessionId()
@@ -592,7 +593,10 @@ export function useSupport() {
   const startNewSession = useCallback(async () => {
     // 转人工请求在途时不许换会话：换了会让回包按代次作废 —— 后端已建的排队单成了没人看的孤儿，
     // handoffPending 也因代次对不上永远复位不了，之后再也发不起转人工（2026-09-28 补审发现）
-    if (startingNewSession || handoffPending.current || !canStartHandoff(mode)) return
+    // 用 ref 判重入：state 在重渲染前还是旧值，快速双击会连发两次
+    if (newSessionPending.current || handoffPending.current || !canStartHandoff(mode)) return
+    const epoch = accountEpoch.current
+    const accountId = account?.account_id ?? null
     setStartingNewSession(true)
     newSessionPending.current = true
     let nextId: string | null = null
@@ -607,6 +611,11 @@ export function useSupport() {
       }
     }
     newSessionPending.current = false
+    // 等回包期间切了账号：旧账号签发的 session_id 不能写给新账号（否则跨账号串问答上下文，#1057）
+    if (epoch !== accountEpoch.current || accountId !== activeAccountId.current) {
+      setStartingNewSession(false)
+      return
+    }
     // 等回包期间若已经发起了转人工（入口虽已拦，仍兜一层），就不换会话，别让它的回包被当过期丢掉
     if (handoffPending.current) {
       setStartingNewSession(false)
@@ -620,7 +629,7 @@ export function useSupport() {
     go({ kind: 'chat' })
     trackEvent('support_new_session')
     setStartingNewSession(false)
-  }, [startingNewSession, mode, go])
+  }, [mode, go, account?.account_id])
 
   // ---- 反馈 ----
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)

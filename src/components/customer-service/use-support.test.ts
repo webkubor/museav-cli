@@ -851,3 +851,32 @@ it('reverse order: 转人工 while 新会话 is in flight is refused, then works
   expect(requestHandoffMock).toHaveBeenCalledTimes(1)
   expect(result.current.mode.kind).toBe('queuing')
 })
+
+it('drops a new-session response that arrives after switching account, so B never inherits A’s session id (review 三审)', async () => {
+  authState.account = { account_id: 'acc-A' }
+  authState.isLoading = false
+  localStorage.setItem('mg:cs_cid', 'cs-A-old')
+  askSupportMock.mockReset().mockResolvedValue({ answer_id: 'a1', answer: '回答', status: 'answered' })
+  let finishSession: (v: unknown) => void = () => {}
+  createSessionMock.mockReset().mockImplementationOnce(() => new Promise((r) => { finishSession = r }))
+  const { result, rerender } = renderHook(() => useSupport())
+  await act(async () => { await result.current.ask('A 的问题') })
+  act(() => { void result.current.startNewSession() })
+
+  authState.account = { account_id: 'acc-B' }
+  rerender()
+  await act(async () => {})
+  await act(async () => { finishSession({ session_id: 'cs-issued-for-A' }) })
+  expect(localStorage.getItem('mg:cs_cid')).not.toBe('cs-issued-for-A')
+})
+
+it('a fast double click on 新会话 only calls the endpoint once', async () => {
+  authState.account = { account_id: 'acc-1' }
+  authState.isLoading = false
+  askSupportMock.mockReset().mockResolvedValue({ answer_id: 'a1', answer: '回答', status: 'answered' })
+  createSessionMock.mockReset().mockResolvedValue({ session_id: 'cs-x' })
+  const { result } = renderHook(() => useSupport())
+  await act(async () => { await result.current.ask('问一句') })
+  await act(async () => { void result.current.startNewSession(); void result.current.startNewSession() })
+  expect(createSessionMock).toHaveBeenCalledTimes(1)
+})

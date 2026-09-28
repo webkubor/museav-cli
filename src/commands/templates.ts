@@ -35,6 +35,10 @@ export async function templates(client: StudioClient, opts: { category?: string;
     return '[平台]'
   }
   const typeTag = (t: (typeof list)[number]) => (t.template_type === 'article' ? '[文字]' : t.template_type === 'image' ? '[图片]' : '')
+  // 版本号 2026-09-28 才有，早于那天的服务端响应不带这个字段；缺了就标「—」而不是假装有版本
+  const versionTag = (t: (typeof list)[number]) => t.version || '—'
+  // 创建人是自由文本（人名 / 账号 / 邮箱都出现过），这里只做截断展示，完整值以接口为准
+  const creatorTag = (t: (typeof list)[number]) => (t.created_by || '—')
 
   process.stderr.write(`可用模板（${list.length} 个）:\n`)
   for (const t of list) {
@@ -43,7 +47,8 @@ export async function templates(client: StudioClient, opts: { category?: string;
     const fields = cfg?.fields || cfg?.params_json?.fields || []
     const fieldHint = fields.length ? `字段:${fields.map((f) => f.key).join(',')}` : ''
     process.stderr.write(
-      `  ${t.id.padEnd(38)} ${(t.zh_name || '').padEnd(16)} ${(t.category || '').padEnd(10)} ${(t.ratio || '').padEnd(6)} ${typeTag(t).padEnd(8)} ${fieldHint.padEnd(20)} ${tag(t)}\n`,
+      `  ${t.id.padEnd(36)} ${(t.zh_name || '').padEnd(16)} ${versionTag(t).padEnd(7)} ${creatorTag(t).padEnd(10)} ` +
+      `${(t.category || '').padEnd(8)} ${(t.ratio || '').padEnd(6)} ${typeTag(t).padEnd(8)} ${fieldHint.padEnd(18)} ${tag(t)}\n`,
     )
   }
   process.stderr.write(`\n出图: museav gen --template <模板id> [--fields '{"key":"值"}']\n`)
@@ -130,6 +135,9 @@ export async function createTemplate(client: StudioClient, opts: CreateTemplateO
 
   process.stderr.write(`✅ ${type === 'article' ? '文字' : '图片'}模板已建：${row.id}\n`)
   process.stderr.write(`归属：${row.tenant_id ? '当前租户（其他租户看不到）' : '平台共享（所有租户可见）'}\n`)
+  // 版本与创建人一并回显：建完就该知道这条模板在库里的身份，而不是回头去查
+  process.stderr.write(`版本：${row.version || 'v1.0.0（服务端默认）'}\n`)
+  process.stderr.write(`创建人：${row.created_by || '（未记录，通常是租户侧建模板时没填）'}\n`)
   if (fields.length) process.stderr.write(`占位符字段: ${fields.map((f) => f.key).join(', ')}\n`)
   process.stderr.write(`参考图：${refs.length ? `${refs.length} 张` : '无'}\n`)
   if (!refs.length) {

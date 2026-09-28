@@ -115,6 +115,8 @@ export interface TemplateOption {
   zh_name: string
   description?: string
   ratio: string
+  /** 模板版本号（语义化版本，如 v1.0.0）。2026-09-28 起三张模板表都有；更早的服务端响应可能没有 */
+  version?: string
   /** image=图片模板 / article=文字模板（视频模板在 videoTemplates()） */
   template_type?: string
   sample_images?: string[] | null

@@ -73,6 +73,45 @@ museav gen "a Chinese ink-wash mountain at dawn" --ratio 3:4
 | `museav remove-bg <file>` | Remove background locally (no login) |
 | `museav upscale <file>` | 4x upscale locally (Real-ESRGAN) |
 | `museav compress <file>` | Compress a local image |
+| `museav skillhub tags` | List the live content tags accepted by Xiaohongshu SkillHub |
+| `museav skillhub publish ./my-skill --tag <tag>` | Publish a local Agent Skill to Xiaohongshu SkillHub. Dry-run by default — `--yes` is required to actually submit |
+
+### Publishing Skills to Xiaohongshu SkillHub
+
+`skillhub` is the only outbound channel MUSE AV ships: one CLI gives you both image
+generation and a way to distribute the Skills you build. Packing, QR-code authorization,
+upload and submission are delegated to the official
+[`redskillhub-upload`](https://www.npmjs.com/package/redskillhub-upload) CLI (bundled as a
+dependency), so a platform change only ever means bumping a dependency.
+
+```bash
+museav skillhub tags                                    # required: there is no default tag
+museav skillhub publish ./my-skill --tag 效率工具,编程开发   # dry-run — packs and validates locally
+museav skillhub publish ./my-skill --tag 效率工具 --yes    # real submit (QR code via the Xiaohongshu app)
+```
+
+**Without `--yes` nothing leaves your machine.** Submission is irreversible — the Skill ID
+is the platform's primary key and cannot be renamed across versions.
+
+#### Platform asset guardrail
+
+`skillhub` publishes to *someone else's* platform, and MUSE AV owns a set of public
+templates. Every publish is therefore scanned first:
+
+| Situation | Result |
+|---|---|
+| The Skill embeds a public template's **prompt body** | ❌ Rejected, and it names the offending template |
+| The Skill only **references** a template by `slug` | ✅ Allowed — that's normal integration, not redistribution |
+| The publish path sits in a platform-managed dir (`~/.museav-models`, `~/.museav-bin`) | ❌ Rejected |
+
+The line is deliberate: copying the body redistributes an asset; citing the slug does not.
+Blocking citations too would break museav's own integration Skills.
+
+If the template list can't be fetched (no `museav login`, or the API is unreachable), the CLI
+does not silently pretend the guardrail ran — it publishes anyway but says plainly that no
+check happened. Log in and re-run to get the full guardrail.
+
+See the [Chinese README](./README.md#把本地-agent-skill-发到小红书-skillhub-skillhub) for the full command surface.
 
 Run `museav <command> --help` for the full surface. For agent integration, read [AGENTS.md](./AGENTS.md).
 

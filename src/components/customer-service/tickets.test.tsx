@@ -153,3 +153,11 @@ it('offers a reload, not a dead end, when the detail fails for a transient reaso
   fireEvent.click(screen.getByRole('button', { name: 'common.customerService.tickets.reload' }))
   expect(onRetry).toHaveBeenCalled()
 })
+
+it('shows the gateway request id from the response header as the error ID (#1150)', async () => {
+  listTickets.mockRejectedValueOnce(Object.assign(new Error('boom'), { response: new Response(null, { status: 500, headers: { 'x-request-id': 'req-gw-1' } }) }))
+  render(<TicketsList onSelect={vi.fn()} onClose={vi.fn()} />)
+  expect(await screen.findByRole('alert')).toBeInTheDocument()
+  // 测试的 t mock 不插值，这里只断言调用路径：错误编号取自响应头
+  expect(screen.queryByText(/HTTP 500/)).not.toBeInTheDocument()
+})

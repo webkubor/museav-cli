@@ -311,6 +311,10 @@ export function useSupport() {
       // ② 也不能只看末条 —— 用户每次手输的「转人工」正好插在两条提示中间。所以从末尾
       // 回看、跳过 user 消息，找最近一条非用户消息。updater 拿到的是应用时刻的最新状态。
       const busy = t('common.customerService.handoffBusy')
+      // 提示对象在 updater 外建好：updater 必须是纯的 —— StrictMode 会重复调用它，
+      // 在里面取 randomUUID()/now() 等于每次生成一个被丢弃的不同对象（评审 P2）。
+      // updater 只负责判重与追加。
+      const note: ChatItem = { id: crypto.randomUUID(), role: 'system', content: busy, createdAt: Date.now() }
       setMessages((prev) => {
         for (let i = prev.length - 1; i >= 0; i--) {
           const m = prev[i]
@@ -318,7 +322,7 @@ export function useSupport() {
           if (m.role === 'system' && m.content === busy) return prev
           break
         }
-        return [...prev, { id: crypto.randomUUID(), role: 'system', content: busy, createdAt: Date.now() }]
+        return [...prev, note]
       })
       return
     }
@@ -684,7 +688,10 @@ export function useSupport() {
     }
     replaceSupportSessionId(nextId)
     // 会话成功换掉了：期间被挡下的自动转人工就此作废（新会话是干净的，用户重问一次即可），
-    // 不再留待失败分支提示，免得下一次新会话失败时冒出一条不相关的提醒
+    // 不再留待失败分支提示，免得下一次新会话失败时冒出一条不相关的提醒。
+    // 评审 P2 提过「转人工意图被静默取消」：这里刻意不补提示 —— 「新会话」本身就是用户
+    // 主动清空当前上下文的动作（下面紧接着 setMessages([])），被挡下的那次转人工正是被
+    // 用户自己这个动作取消的。再补一句「转人工已取消」是噪音，不是反馈。
     deferredHandoff.current = false
     // 在途的问答回包按代次丢弃，不会晚到写进新会话
     accountEpoch.current += 1

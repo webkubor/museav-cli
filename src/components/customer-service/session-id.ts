@@ -33,6 +33,26 @@ export function getOrCreateSupportSessionId(): string {
   }
 }
 
+/** 读当前会话 id，没有就返回 null（不生成）。 */
+export function peekSupportSessionId(): string | null {
+  try {
+    return localStorage.getItem(storageKeys.csConversationId())
+  } catch {
+    return null
+  }
+}
+
+/** 换成指定的会话 id（「新会话」拿到服务端签发的 id 后写入）；传 null 则本地新生成一个。 */
+export function replaceSupportSessionId(id: string | null): string {
+  const next = id || newSessionId()
+  try {
+    localStorage.setItem(storageKeys.csConversationId(), next)
+  } catch {
+    /* 隐私模式：不落盘，下一次 getOrCreate 会再生成 */
+  }
+  return next
+}
+
 /** 清除当前会话 id（用于「新会话」/ 登出 / 切账号）。 */
 export function clearSupportSessionId(): void {
   try {

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 
 import { MarkdownContent } from '@/components/ui/MarkdownContent'
-import { LuX, LuSendHorizontal, LuHistory, LuMessageSquareWarning, LuCheck, LuThumbsUp, LuThumbsDown, LuKeyRound, LuTerminal, LuSparkles, LuReceipt, LuUserRound } from 'react-icons/lu'
+import { LuX, LuSendHorizontal, LuHistory, LuMessageSquareWarning, LuCheck, LuThumbsUp, LuThumbsDown, LuKeyRound, LuTerminal, LuSparkles, LuReceipt, LuUserRound, LuMessageSquarePlus } from 'react-icons/lu'
 import { useSiteLogo } from '@/config/brand-assets'
 import { storageKeys } from '@/lib/storage'
 import { useCustomerServiceStore } from '@/store/use-customer-service-store'
@@ -253,7 +253,7 @@ export function CustomerService() {
     // 三区行为由状态机推导，组件不再自己拼布尔组合（原先是 mode/serviceMode 交叉判断）
     showComposer, composerDisabled, showFeedbackEntry, isHumanChat,
     ask, rateMessageAnswer, startHandoff, cancelActiveHandoff, isCancellingHandoff, endActiveHandoff,
-    sendHumanReply, feedbackSubmitting, submitFeedback, openTicketDetail, reopenSelectedTicket, rateSelectedTicket, supplementSelectedTicket,
+    sendHumanReply, feedbackSubmitting, submitFeedback, startNewSession, startingNewSession, openTicketDetail, reopenSelectedTicket, rateSelectedTicket, supplementSelectedTicket,
   } = support
 
   const orbState = supportOrbState(support)
@@ -504,6 +504,17 @@ export function CustomerService() {
                   （排队中/接通中不允许重复发起）。 */}
               {(showFeedbackEntry || canStartHandoff(mode)) && (
                 <div className="flex items-center gap-2">
+                  {/* 顺序：人工客服 · 问题反馈 · 新会话（2026-09-28 前端负责人口径）。 */}
+                  {canStartHandoff(mode) && (
+                    <button
+                      type="button"
+                      onClick={startHandoff}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-mg-border bg-mg-fill-0/40 px-2.5 py-1.5 mg-text-caption font-medium text-mg-text-2 transition-colors hover:border-brand-mid/50 hover:text-brand-base"
+                    >
+                      <LuUserRound size={13} />
+                      {t('common.customerService.handoff.entry')}
+                    </button>
+                  )}
                   {showFeedbackEntry && (
                     <button
                       type="button"
@@ -514,14 +525,16 @@ export function CustomerService() {
                       {t('common.customerService.feedback.entry')}
                     </button>
                   )}
-                  {canStartHandoff(mode) && (
+                  {/* 新会话：丢掉当前问答上下文从头开始（qa#751）。没有对话时点了没意义，不显示 */}
+                  {canStartHandoff(mode) && messages.length > 0 && (
                     <button
                       type="button"
-                      onClick={startHandoff}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-mg-border bg-mg-fill-0/40 px-2.5 py-1.5 mg-text-caption font-medium text-mg-text-2 transition-colors hover:border-brand-mid/50 hover:text-brand-base"
+                      onClick={startNewSession}
+                      disabled={startingNewSession}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-mg-border bg-mg-fill-0/40 px-2.5 py-1.5 mg-text-caption font-medium text-mg-text-2 transition-colors hover:border-brand-mid/50 hover:text-brand-base disabled:opacity-50"
                     >
-                      <LuUserRound size={13} />
-                      {t('common.customerService.handoff.entry')}
+                      <LuMessageSquarePlus size={13} />
+                      {t('common.customerService.newSession')}
                     </button>
                   )}
                 </div>

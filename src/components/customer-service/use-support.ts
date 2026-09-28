@@ -164,6 +164,7 @@ export function useSupport() {
   const handoffToken = useRef(0)
   // 新会话请求在途：此时不许发起转人工，否则会话先回、代次一推，转人工回包被当过期丢掉，后端排队单成孤儿
   const newSessionPending = useRef(false)
+  const newSessionToken = useRef(0)
   // 给按钮用的可渲染状态（ref 变了不触发渲染）
   const [handoffInFlight, setHandoffInFlight] = useState(false)
   const [isCancellingHandoff, setIsCancellingHandoff] = useState(false)
@@ -266,7 +267,9 @@ export function useSupport() {
       cancellingHandoffTicketId.current = null
       handoffPending.current = false
       setHandoffInFlight(false)
+      newSessionToken.current += 1
       newSessionPending.current = false
+      setStartingNewSession(false)
       // 切账号必须换新会话：否则上一账号持久化的 session_id 会带到新账号，
       // 让后端把两人的多轮上下文串到一起（#1057 要求会话稳定，但不能跨账号）。
       clearSupportSessionId()
@@ -597,6 +600,15 @@ export function useSupport() {
     if (newSessionPending.current || handoffPending.current || !canStartHandoff(mode)) return
     const epoch = accountEpoch.current
     const accountId = account?.account_id ?? null
+    // 每次新会话一个令牌：在途标记只由发起它的那次复位（同 handoffToken）。否则 A 切到 B 后，
+    // A 的旧回包会把 B 刚发起的新会话标记清掉，B 就能在新会话在途时转人工 —— 孤儿单换了个入口又出现
+    const token = ++newSessionToken.current
+    const release = () => {
+      if (newSessionToken.current !== token) return
+      newSessionPending.current = false
+      setStartingNewSession(false)
+    }
+    const stillSameAccount = () => epoch === accountEpoch.current && accountId === activeAccountId.current
     setStartingNewSession(true)
     newSessionPending.current = true
     let nextId: string | null = null
@@ -604,21 +616,20 @@ export function useSupport() {
       nextId = (await createSupportSession(peekSupportSessionId()))?.session_id ?? null
     } catch (error) {
       if (!isNotFoundError(error)) {
-        appToast.requestError(error)
-        newSessionPending.current = false
-        setStartingNewSession(false)
+        // 切号后旧账号的失败不弹到新账号界面上
+        if (stillSameAccount()) appToast.requestError(error)
+        release()
         return
       }
     }
-    newSessionPending.current = false
     // 等回包期间切了账号：旧账号签发的 session_id 不能写给新账号（否则跨账号串问答上下文，#1057）
-    if (epoch !== accountEpoch.current || accountId !== activeAccountId.current) {
-      setStartingNewSession(false)
+    if (!stillSameAccount()) {
+      release()
       return
     }
-    // 等回包期间若已经发起了转人工（入口虽已拦，仍兜一层），就不换会话，别让它的回包被当过期丢掉
+    // 等回包期间若已经发起了转人工（理论上不可达：入口已被 newSessionPending 挡住，仍兜一层）
     if (handoffPending.current) {
-      setStartingNewSession(false)
+      release()
       return
     }
     replaceSupportSessionId(nextId)
@@ -628,7 +639,7 @@ export function useSupport() {
     setMessages([])
     go({ kind: 'chat' })
     trackEvent('support_new_session')
-    setStartingNewSession(false)
+    release()
   }, [mode, go, account?.account_id])
 
   // ---- 反馈 ----

@@ -880,3 +880,28 @@ it('a fast double click on 新会话 only calls the endpoint once', async () => 
   await act(async () => { void result.current.startNewSession(); void result.current.startNewSession() })
   expect(createSessionMock).toHaveBeenCalledTimes(1)
 })
+
+it('A’s late new-session response does not release B’s in-flight new session (review 四审)', async () => {
+  authState.account = { account_id: 'acc-A' }
+  authState.isLoading = false
+  askSupportMock.mockReset().mockResolvedValue({ answer_id: 'a1', answer: '回答', status: 'answered' })
+  const finishers: ((v: unknown) => void)[] = []
+  createSessionMock.mockReset().mockImplementation(() => new Promise((r) => { finishers.push(r) }))
+  requestHandoffMock.mockReset().mockResolvedValue({ service_mode: 'live', ticket_id: 'CS-B', status: 'pending' })
+  const { result, rerender } = renderHook(() => useSupport())
+  await act(async () => { await result.current.ask('A 的问题') })
+  act(() => { void result.current.startNewSession() })          // A 发起（finishers[0]）
+
+  authState.account = { account_id: 'acc-B' }
+  rerender(); await act(async () => {})
+  await act(async () => { await result.current.ask('B 的问题') })
+  act(() => { void result.current.startNewSession() })          // B 发起（finishers[1]）
+  await act(async () => { finishers[0]({ session_id: 'cs-for-A' }) }) // A 晚到
+
+  // B 的新会话仍在途：再点不重复发、转人工仍被挡
+  await act(async () => { void result.current.startNewSession() })
+  expect(createSessionMock).toHaveBeenCalledTimes(2)
+  await act(async () => { await result.current.startHandoff() })
+  expect(requestHandoffMock).not.toHaveBeenCalled()
+  expect(result.current.startingNewSession).toBe(true)
+})

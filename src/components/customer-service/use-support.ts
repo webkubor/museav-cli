@@ -153,6 +153,8 @@ export function useSupport() {
   const handoffPending = useRef(false)
   const [isCancellingHandoff, setIsCancellingHandoff] = useState(false)
   const [ticketDetail, setTicketDetail] = useState<SupportTicketDetail | null>(null)
+  // 详情取数失败要留在界面上：原先只弹 toast，详情页一直停在「加载中…」（#1151）
+  const [ticketDetailError, setTicketDetailError] = useState<unknown>(null)
 
   /** 唯一的模式迁移入口：非法跳转被 transition() 拦下，不静默生效。 */
   const go = useCallback((next: SupportMode) => {
@@ -228,6 +230,7 @@ export function useSupport() {
       setMessages([])
       setModeRaw({ kind: 'chat' })
       setTicketDetail(null)
+      setTicketDetailError(null)
       appliedEndedTicketIds.current = new Set()
       appliedAsyncTicketIds.current = new Set()
       suppressedHandoffTicketIds.current = new Set()
@@ -619,11 +622,12 @@ export function useSupport() {
     // 模式切走就成了悬空引用（reopen/rate 还会拿它去打接口）
     go({ kind: 'ticketDetail', ticketId: id })
     setTicketDetail(null)
+    setTicketDetailError(null)
     try {
       const detail = await getSupportTicket(id)
       setTicketDetail(detail)
     } catch (error) {
-      appToast.requestError(error)
+      setTicketDetailError(error)
     }
   }, [go])
 
@@ -713,6 +717,7 @@ export function useSupport() {
     isAsking,
     ticketId,
     ticketDetail,
+    ticketDetailError,
     // 三区行为：由模式单向推导，组件不再自己拼布尔组合
     showComposer: showsComposer(mode),
     composerDisabled: composerDisabledOf(mode),

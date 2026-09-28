@@ -2,9 +2,10 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, expect, it, vi } from 'vitest'
 import type { SupportTicketDetail, SupportTicketSummary } from '@/interfaces/support'
 
-const { listTickets } = vi.hoisted(() => ({ listTickets: vi.fn() }))
+// account 要是稳定引用：每次渲染给新对象会让列表的 effect（依赖 account）反复重拉
+const { listTickets, account } = vi.hoisted(() => ({ listTickets: vi.fn(), account: {} }))
 vi.mock('@/services/support', () => ({ listSupportTickets: listTickets }))
-vi.mock('@/store/auth', () => ({ useAuthStore: (select: (state: { account: object }) => unknown) => select({ account: {} }) }))
+vi.mock('@/store/auth', () => ({ useAuthStore: (select: (state: { account: object }) => unknown) => select({ account }) }))
 vi.mock('@/lib/timezone', () => ({ resolveTimeZone: () => 'America/New_York' }))
 vi.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: vi.fn() },
@@ -109,4 +110,46 @@ it('collapses the form when the ticket can no longer take a supplement (#1119)',
 
   await waitFor(() => expect(onSupplement).toHaveBeenCalled())
   await waitFor(() => expect(screen.queryByRole('textbox')).not.toBeInTheDocument())
+})
+
+it('shows the guidance line under an empty list, and a different line for an empty search (#1149)', async () => {
+  listTickets.mockResolvedValue({ items: [], next_cursor: null, has_more: false })
+  render(<TicketsList onSelect={vi.fn()} onClose={vi.fn()} />)
+  expect(await screen.findByText('common.customerService.tickets.empty')).toBeInTheDocument()
+  expect(screen.getByText('common.customerService.tickets.emptyHint')).toBeInTheDocument()
+
+  fireEvent.change(screen.getByPlaceholderText('common.customerService.tickets.searchPlaceholder'), { target: { value: 'CS-404' } })
+  fireEvent.keyDown(screen.getByPlaceholderText('common.customerService.tickets.searchPlaceholder'), { key: 'Enter' })
+  expect(await screen.findByText('common.customerService.tickets.emptySearch')).toBeInTheDocument()
+  expect(screen.queryByText('common.customerService.tickets.emptyHint')).not.toBeInTheDocument()
+})
+
+it('renders a load failure as an alert with a reload button instead of the empty state (#1150)', async () => {
+  listTickets.mockRejectedValueOnce(Object.assign(new Error('boom'), { response: { status: 500 } }))
+  listTickets.mockResolvedValueOnce({ items: [ticket], next_cursor: null, has_more: false })
+  render(<TicketsList onSelect={vi.fn()} onClose={vi.fn()} />)
+
+  const alert = await screen.findByRole('alert')
+  expect(alert).toHaveTextContent('common.customerService.tickets.loadFailed')
+  expect(screen.queryByText('common.customerService.tickets.empty')).not.toBeInTheDocument()
+
+  fireEvent.click(screen.getByRole('button', { name: 'common.customerService.tickets.reload' }))
+  expect(await screen.findByRole('button', { name: /FB-20260923-001/ })).toBeInTheDocument()
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+})
+
+it('replaces the endless loading line with an inaccessible notice when the detail 404s (#1151)', () => {
+  const onBack = vi.fn()
+  render(<TicketDetailView detail={null} error={Object.assign(new Error('nf'), { response: { status: 404 } })} onRetry={vi.fn()} onBack={onBack} onReopen={vi.fn()} onRate={vi.fn()} onSupplement={vi.fn()} />)
+  expect(screen.queryByText('common.customerService.tickets.loading')).not.toBeInTheDocument()
+  expect(screen.getByRole('alert')).toHaveTextContent('common.customerService.tickets.unavailable')
+  fireEvent.click(screen.getByRole('button', { name: 'common.customerService.tickets.backToList' }))
+  expect(onBack).toHaveBeenCalled()
+})
+
+it('offers a reload, not a dead end, when the detail fails for a transient reason (#1151)', () => {
+  const onRetry = vi.fn()
+  render(<TicketDetailView detail={null} error={Object.assign(new Error('down'), { response: { status: 503 } })} onRetry={onRetry} onBack={vi.fn()} onReopen={vi.fn()} onRate={vi.fn()} onSupplement={vi.fn()} />)
+  fireEvent.click(screen.getByRole('button', { name: 'common.customerService.tickets.reload' }))
+  expect(onRetry).toHaveBeenCalled()
 })

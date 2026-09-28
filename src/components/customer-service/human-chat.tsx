@@ -98,7 +98,8 @@ export function RatingCard({ item, onSubmit, onSkip }: RatingCardProps) {
     >
       <p className="m-0 mg-text-caption font-medium text-mg-text-1">{t('common.customerService.handoff.rateService')}</p>
       {(card?.agentName || card?.agentNo) && (
-        <p className="m-0 text-[11px] text-mg-text-3">{card.agentName} · {card.agentNo}</p>
+        // 工号后端目前不下发，硬拼「姓名 · 工号」会留下「王恩博 ·」（2026-09-28 test 实测）
+        <p className="m-0 text-[11px] text-mg-text-3">{[card.agentName, card.agentNo].filter(Boolean).join(' · ')}</p>
       )}
       {/* 星级是单选组：原型用 role=radiogroup + 每颗星 aria-label「N 星」，
           读屏用户才知道当前选了几星、总共几档 */}

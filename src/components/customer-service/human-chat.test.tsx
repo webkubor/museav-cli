@@ -20,3 +20,10 @@ it('keeps the full「姓名 · 工号」line when the number exists', () => {
   render(<HandoffHeaderStatus mode={{ kind: 'human', ticketId: 'CS-1', agentName: '王恩博', agentNo: '1024' }} onCancel={noop} onEnd={noop} />)
   expect(screen.getByText('王恩博 · 工号 1024')).toBeInTheDocument()
 })
+
+it('rating card shows just the agent name when there is no employee number — no trailing「·」', async () => {
+  const { RatingCard } = await import('./human-chat')
+  render(<RatingCard item={{ id: 'r', role: 'system', content: '', createdAt: 0, kind: 'rating_card', ratingCard: { ticketId: 'CS-1', agentName: '王恩博' } }} onSubmit={noop} onSkip={noop} />)
+  expect(screen.getByText('王恩博')).toBeInTheDocument()
+  expect(screen.queryByText(/·/)).not.toBeInTheDocument()
+})

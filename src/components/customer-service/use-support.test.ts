@@ -781,3 +781,127 @@ describe('useSupport · 新会话', () => {
     expect(result.current.messages.some((m) => m.content.includes('迟到的回答'))).toBe(false)
   })
 })
+
+describe('useSupport · 新会话不打断在途转人工（review 补审）', () => {
+  beforeEach(() => {
+    authState.account = { account_id: 'acc-1' }
+    authState.isLoading = false
+    localStorage.setItem('mg:cs_cid', 'cs-old')
+    createSessionMock.mockReset().mockResolvedValue({ session_id: 'cs-new' })
+    askSupportMock.mockReset().mockResolvedValue({ answer_id: 'a1', answer: '回答', status: 'answered' })
+  })
+
+  it('ignores 新会话 while a handoff request is in flight, so the handoff is neither orphaned nor blocked forever', async () => {
+    let finishHandoff: (v: unknown) => void = () => {}
+    requestHandoffMock.mockReset().mockImplementationOnce(() => new Promise((r) => { finishHandoff = r }))
+    const { result } = renderHook(() => useSupport())
+    await act(async () => { await result.current.ask('先问一句') })
+
+    act(() => { void result.current.startHandoff() })
+    await act(async () => result.current.startNewSession())
+    // 在途转人工期间不换会话、不清对话
+    expect(createSessionMock).not.toHaveBeenCalled()
+    expect(localStorage.getItem('mg:cs_cid')).toBe('cs-old')
+    expect(result.current.messages.length).toBeGreaterThan(0)
+
+    await act(async () => { finishHandoff({ service_mode: 'live', ticket_id: 'CS-1', status: 'pending' }) })
+    expect(result.current.mode.kind).toBe('queuing')
+  })
+})
+
+it('reports the same read seq only once even if the response still says unread (no /read loop)', async () => {
+  authState.account = { account_id: 'acc-1' }
+  authState.isLoading = false
+  markTicketReadMock.mockReset().mockResolvedValue({ unread_count: 2 }) // 异常回包：标完仍有未读
+  listTicketMessagesMock.mockReset().mockResolvedValue({ items: [], next_cursor: null, has_more: false })
+  getSupportTicketMock.mockReset().mockResolvedValue({
+    ticket_id: 'CS-R', ticket_type: 'human_support', service_mode: 'async', status: 'processing', version: 1,
+    latest_message_seq: 4, read_message_seq: 1, unread_count: 3, created_at: '', updated_at: '',
+    capabilities: { can_reopen: false, can_create_followup: false },
+  })
+  const { result } = renderHook(() => useSupport())
+  act(() => result.current.go({ kind: 'tickets' }))
+  await act(async () => result.current.openTicketDetail('CS-R'))
+  for (let i = 0; i < 3; i++) {
+    await act(async () => { result.current.markSelectedTicketSeen() })
+  }
+  expect(markTicketReadMock).toHaveBeenCalledTimes(1)
+})
+
+it('reverse order: 转人工 while 新会话 is in flight is refused, then works once the new session is done (review 二审)', async () => {
+  authState.account = { account_id: 'acc-1' }
+  authState.isLoading = false
+  localStorage.setItem('mg:cs_cid', 'cs-old')
+  askSupportMock.mockReset().mockResolvedValue({ answer_id: 'a1', answer: '回答', status: 'answered' })
+  let finishSession: (v: unknown) => void = () => {}
+  createSessionMock.mockReset().mockImplementationOnce(() => new Promise((r) => { finishSession = r }))
+  requestHandoffMock.mockReset().mockResolvedValue({ service_mode: 'live', ticket_id: 'CS-9', status: 'pending' })
+  const { result } = renderHook(() => useSupport())
+  await act(async () => { await result.current.ask('先问一句') })
+
+  act(() => { void result.current.startNewSession() })
+  await act(async () => { await result.current.startHandoff() })
+  // 新会话在途：转人工不发出，不会产生孤儿单
+  expect(requestHandoffMock).not.toHaveBeenCalled()
+
+  await act(async () => { finishSession({ session_id: 'cs-new' }) })
+  expect(localStorage.getItem('mg:cs_cid')).toBe('cs-new')
+  // 新会话完成后转人工照常可用（旧写法这里会被永久锁死）
+  await act(async () => { await result.current.startHandoff() })
+  expect(requestHandoffMock).toHaveBeenCalledTimes(1)
+  expect(result.current.mode.kind).toBe('queuing')
+})
+
+it('drops a new-session response that arrives after switching account, so B never inherits A’s session id (review 三审)', async () => {
+  authState.account = { account_id: 'acc-A' }
+  authState.isLoading = false
+  localStorage.setItem('mg:cs_cid', 'cs-A-old')
+  askSupportMock.mockReset().mockResolvedValue({ answer_id: 'a1', answer: '回答', status: 'answered' })
+  let finishSession: (v: unknown) => void = () => {}
+  createSessionMock.mockReset().mockImplementationOnce(() => new Promise((r) => { finishSession = r }))
+  const { result, rerender } = renderHook(() => useSupport())
+  await act(async () => { await result.current.ask('A 的问题') })
+  act(() => { void result.current.startNewSession() })
+
+  authState.account = { account_id: 'acc-B' }
+  rerender()
+  await act(async () => {})
+  await act(async () => { finishSession({ session_id: 'cs-issued-for-A' }) })
+  expect(localStorage.getItem('mg:cs_cid')).not.toBe('cs-issued-for-A')
+})
+
+it('a fast double click on 新会话 only calls the endpoint once', async () => {
+  authState.account = { account_id: 'acc-1' }
+  authState.isLoading = false
+  askSupportMock.mockReset().mockResolvedValue({ answer_id: 'a1', answer: '回答', status: 'answered' })
+  createSessionMock.mockReset().mockResolvedValue({ session_id: 'cs-x' })
+  const { result } = renderHook(() => useSupport())
+  await act(async () => { await result.current.ask('问一句') })
+  await act(async () => { void result.current.startNewSession(); void result.current.startNewSession() })
+  expect(createSessionMock).toHaveBeenCalledTimes(1)
+})
+
+it('A’s late new-session response does not release B’s in-flight new session (review 四审)', async () => {
+  authState.account = { account_id: 'acc-A' }
+  authState.isLoading = false
+  askSupportMock.mockReset().mockResolvedValue({ answer_id: 'a1', answer: '回答', status: 'answered' })
+  const finishers: ((v: unknown) => void)[] = []
+  createSessionMock.mockReset().mockImplementation(() => new Promise((r) => { finishers.push(r) }))
+  requestHandoffMock.mockReset().mockResolvedValue({ service_mode: 'live', ticket_id: 'CS-B', status: 'pending' })
+  const { result, rerender } = renderHook(() => useSupport())
+  await act(async () => { await result.current.ask('A 的问题') })
+  act(() => { void result.current.startNewSession() })          // A 发起（finishers[0]）
+
+  authState.account = { account_id: 'acc-B' }
+  rerender(); await act(async () => {})
+  await act(async () => { await result.current.ask('B 的问题') })
+  act(() => { void result.current.startNewSession() })          // B 发起（finishers[1]）
+  await act(async () => { finishers[0]({ session_id: 'cs-for-A' }) }) // A 晚到
+
+  // B 的新会话仍在途：再点不重复发、转人工仍被挡
+  await act(async () => { void result.current.startNewSession() })
+  expect(createSessionMock).toHaveBeenCalledTimes(2)
+  await act(async () => { await result.current.startHandoff() })
+  expect(requestHandoffMock).not.toHaveBeenCalled()
+  expect(result.current.startingNewSession).toBe(true)
+})

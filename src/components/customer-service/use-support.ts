@@ -159,6 +159,14 @@ export function useSupport() {
   const [isAsking, setIsAsking] = useState(false)
   const accountEpoch = useRef(0)
   const handoffPending = useRef(false)
+  // 每次转人工一个令牌：在途标记只由发起它的那次复位，不再依赖 accountEpoch ——
+  // 「新会话」会推进代次，旧写法下 finally 判代次不等就永远不复位，之后再也发不起转人工
+  const handoffToken = useRef(0)
+  // 新会话请求在途：此时不许发起转人工，否则会话先回、代次一推，转人工回包被当过期丢掉，后端排队单成孤儿
+  const newSessionPending = useRef(false)
+  const newSessionToken = useRef(0)
+  // 给按钮用的可渲染状态（ref 变了不触发渲染）
+  const [handoffInFlight, setHandoffInFlight] = useState(false)
   const [isCancellingHandoff, setIsCancellingHandoff] = useState(false)
   const [ticketDetail, setTicketDetail] = useState<SupportTicketDetail | null>(null)
   // 详情取数失败要留在界面上：原先只弹 toast，详情页一直停在「加载中…」（#1151）
@@ -258,6 +266,10 @@ export function useSupport() {
       suppressedHandoffTicketIds.current = new Set()
       cancellingHandoffTicketId.current = null
       handoffPending.current = false
+      setHandoffInFlight(false)
+      newSessionToken.current += 1
+      newSessionPending.current = false
+      setStartingNewSession(false)
       // 切账号必须换新会话：否则上一账号持久化的 session_id 会带到新账号，
       // 让后端把两人的多轮上下文串到一起（#1057 要求会话稳定，但不能跨账号）。
       clearSupportSessionId()
@@ -271,7 +283,7 @@ export function useSupport() {
 
   const startHandoffWithTrigger = useCallback(async (trigger?: { question: string; sensitiveHit: boolean }) => {
     // 「排队中不允许重复发起转接」由状态机判定（PRD §8.6），不再自己比 serviceMode
-    if (!canStartHandoff(modeRef.current) || handoffPending.current) return
+    if (!canStartHandoff(modeRef.current) || handoffPending.current || newSessionPending.current) return
     // 未登录直接引导登录：转人工是登录态能力，发出去只会拿到 40101，
     // 再被 catch 成「转人工失败，请稍后重试」——用户会一直重试，而重试
     // 永远失败。同理这里也不能让 40101 走到 request.ts 的全局分支，
@@ -290,7 +302,9 @@ export function useSupport() {
     }
     const epoch = accountEpoch.current
     const accountId = account?.account_id ?? null
+    const token = ++handoffToken.current
     handoffPending.current = true
+    setHandoffInFlight(true)
     trackEvent('support_handoff_start')
     try {
       const resp = await requestHandoff({
@@ -321,7 +335,10 @@ export function useSupport() {
       go({ kind: 'chat' })
       appendMessage({ id: crypto.randomUUID(), role: 'system', content: t('common.customerService.handoffFailed'), createdAt: Date.now() })
     } finally {
-      if (epoch === accountEpoch.current) handoffPending.current = false
+      if (handoffToken.current === token) {
+        handoffPending.current = false
+        setHandoffInFlight(false)
+      }
     }
   }, [go, appendMessage, t, account, isLoading, messages])
   const startHandoff = useCallback(() => startHandoffWithTrigger(), [startHandoffWithTrigger])
@@ -577,17 +594,43 @@ export function useSupport() {
   // 退回本地换一个 session_id —— 按钮先可用，后端上线后自动切到正式接口。
   const [startingNewSession, setStartingNewSession] = useState(false)
   const startNewSession = useCallback(async () => {
-    if (startingNewSession || !canStartHandoff(mode)) return
+    // 转人工请求在途时不许换会话：换了会让回包按代次作废 —— 后端已建的排队单成了没人看的孤儿，
+    // handoffPending 也因代次对不上永远复位不了，之后再也发不起转人工（2026-09-28 补审发现）
+    // 用 ref 判重入：state 在重渲染前还是旧值，快速双击会连发两次
+    if (newSessionPending.current || handoffPending.current || !canStartHandoff(mode)) return
+    const epoch = accountEpoch.current
+    const accountId = account?.account_id ?? null
+    // 每次新会话一个令牌：在途标记只由发起它的那次复位（同 handoffToken）。否则 A 切到 B 后，
+    // A 的旧回包会把 B 刚发起的新会话标记清掉，B 就能在新会话在途时转人工 —— 孤儿单换了个入口又出现
+    const token = ++newSessionToken.current
+    const release = () => {
+      if (newSessionToken.current !== token) return
+      newSessionPending.current = false
+      setStartingNewSession(false)
+    }
+    const stillSameAccount = () => epoch === accountEpoch.current && accountId === activeAccountId.current
     setStartingNewSession(true)
+    newSessionPending.current = true
     let nextId: string | null = null
     try {
       nextId = (await createSupportSession(peekSupportSessionId()))?.session_id ?? null
     } catch (error) {
       if (!isNotFoundError(error)) {
-        appToast.requestError(error)
-        setStartingNewSession(false)
+        // 切号后旧账号的失败不弹到新账号界面上
+        if (stillSameAccount()) appToast.requestError(error)
+        release()
         return
       }
+    }
+    // 等回包期间切了账号：旧账号签发的 session_id 不能写给新账号（否则跨账号串问答上下文，#1057）
+    if (!stillSameAccount()) {
+      release()
+      return
+    }
+    // 等回包期间若已经发起了转人工（理论上不可达：入口已被 newSessionPending 挡住，仍兜一层）
+    if (handoffPending.current) {
+      release()
+      return
     }
     replaceSupportSessionId(nextId)
     // 在途的问答回包按代次丢弃，不会晚到写进新会话
@@ -596,8 +639,8 @@ export function useSupport() {
     setMessages([])
     go({ kind: 'chat' })
     trackEvent('support_new_session')
-    setStartingNewSession(false)
-  }, [startingNewSession, mode, go])
+    release()
+  }, [mode, go, account?.account_id])
 
   // ---- 反馈 ----
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
@@ -708,14 +751,19 @@ export function useSupport() {
 
   /** 把已读游标推到这张单的最新消息；失败静默（下次打开再标），不打断用户看详情。 */
   const markingRead = useRef<Set<string>>(new Set())
+  // 已按哪个 seq 标过：同一张单同一 seq 只报一次。标完 setTicketDetail 会换对象、IO 重建，
+  // 哨兵仍在可视区就会马上再回调；若后端未读算法不止看 seq，回包 unread 仍 >0 就会一直打 /read
+  const markedSeq = useRef<Map<string, number>>(new Map())
   async function markSelectedRead(id: string, detail: SupportTicketDetail) {
     // 可视区哨兵每次重渲染都可能再报一次「看到了」，在途时不重复打接口
-    if (markingRead.current.has(id)) return
+    const seq = detail.latest_message_seq ?? 0
+    if (markingRead.current.has(id) || markedSeq.current.get(id) === seq) return
     markingRead.current.add(id)
     try {
       const fresh = await markTicketRead(id, detail.latest_message_seq ?? 0)
       // 只写回仍在显示的那张（prev.ticket_id 比对）；换号时详情整个被清空，同样写不进去
       setTicketDetail((prev) => (prev && prev.ticket_id === id ? { ...prev, ...fresh, capabilities: fresh?.capabilities ?? prev.capabilities } : prev))
+      markedSeq.current.set(id, seq)
       setUnreadVersion((v) => v + 1)
     } catch { /* 静默 */ } finally {
       markingRead.current.delete(id)
@@ -845,6 +893,7 @@ export function useSupport() {
     ticketMessagesLoaded,
     startNewSession,
     startingNewSession,
+    handoffInFlight,
     unreadVersion,
     markSelectedTicketSeen,
     replySelectedTicket,

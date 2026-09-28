@@ -48,17 +48,26 @@ try {
   const out = execFileSync('npm', ['pack', '--dry-run', '--json'], {
     cwd: pkgRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit']
   })
-  // 不要直接 JSON.parse(out)：workflow 里那步 `npm install -g npm@latest` 会让
-  // runner 上的 npm 比本地新，不同版本的 pack --json 输出**两端都可能混入非 JSON 文本**
-  // （实测：本地 11.12.1 前后都干净；CI 上新版在 JSON 前有提示行、JSON 后还有收尾输出）。
-  // 整段 parse 会炸在两种完全不同的报错上（前置杂质报「Unexpected token」，
-  // 后置杂质报「Unexpected non-whitespace character after JSON at position N」），
-  // 而且本地永远复现不了。
+  // npm pack --json 的输出格式在版本间换过，而且**两端都可能混入非 JSON 文本**
+  // （publish.yml 里有 `npm install -g npm@latest`，CI 上的 npm 永远比本地新，
+  //   本地 npm 11.12.1 复现不出来）。实测踩过两种崩溃：
+  //   ① 前置杂质  → "Unexpected token"
+  //   ② 后置杂质  → "Unexpected non-whitespace character after JSON at position N"
+  //   ③ 顶层形状 → 对象字面量 { "files": [...] }，旧版本才是数组 [{ "files": [...] }]
+  // 直接 JSON.parse(out) 三种都炸，而且报错完全指不到真正的原因。
   //
-  // 解法：从第一个 '[' 起，逐字符做括号配对，找到**数组真正结束**的位置再截。
-  // 不能用 indexOf(']')——文件路径里可能有 ']'；也不能贪婪吃到结尾——后面有杂质。
-  const start = out.indexOf('[')
-  if (start === -1) throw new Error('npm pack --json 未返回 JSON 数组:\n' + out.slice(0, 200))
+  // 解法：从第一个 '[' 或 '{' 起逐字符做括号配对（跳过字符串、正确处理转义），
+  // 截出**第一个完整的 JSON 值**再解析。不能 indexOf(']')——文件路径里可能有 ']'。
+  const start = (() => {
+    const a = out.indexOf('[')
+    const b = out.indexOf('{')
+    if (a === -1) return b
+    if (b === -1) return a
+    return Math.min(a, b)
+  })()
+  if (start === -1) throw new Error('npm pack --json 未返回 JSON:\n' + out.slice(0, 200))
+  const openCh = out[start]
+  const closeCh = openCh === '[' ? ']' : '}'
   let depth = 0
   let end = -1
   let inStr = false
@@ -72,18 +81,20 @@ try {
       continue
     }
     if (c === '"') inStr = true
-    else if (c === '[') depth++
-    else if (c === ']') {
+    else if (c === openCh) depth++
+    else if (c === closeCh) {
       depth--
       if (depth === 0) { end = i + 1; break }
     }
   }
-  if (end === -1) throw new Error('npm pack --json 的 JSON 数组未闭合:\n' + out.slice(start, 200))
+  if (end === -1) throw new Error('npm pack --json 的 JSON 未闭合:\n' + out.slice(start, start + 200))
   const parsed = JSON.parse(out.slice(start, end))
-  if (!Array.isArray(parsed) || !parsed[0]?.files) {
-    throw new Error('npm pack --json 结构异常，预期 [{files:[{path}]}]:\n' + out.slice(start, end, start + 200))
+  // 新版给对象，旧版给数组——两种都收
+  const entry = Array.isArray(parsed) ? parsed[0] : parsed
+  if (!entry?.files) {
+    throw new Error('npm pack --json 结构异常，预期含 files 字段:\n' + out.slice(start, start + 200))
   }
-  packFiles = parsed[0].files.map(f => f.path)
+  packFiles = entry.files.map(f => f.path)
 } catch (err) {
   console.error('[prepublish-gate] npm pack --dry-run 失败:', err.message)
   process.exit(2)

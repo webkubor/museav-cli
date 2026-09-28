@@ -6,7 +6,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { askSupportMock, askSupportStreamMock, requestHandoffMock, cancelHandoffMock, requestErrorMock, toastErrorMock, getSupportTicketMock, supplementTicketMock, markTicketReadMock, listTicketMessagesMock, authState, uploadSupportAttachmentMock, attachSupportTicketAttachmentMock, submitSupportFeedbackMock } = vi.hoisted(() => {
+const { askSupportMock, askSupportStreamMock, requestHandoffMock, cancelHandoffMock, requestErrorMock, toastErrorMock, getSupportTicketMock, supplementTicketMock, markTicketReadMock, listTicketMessagesMock, replyTicketMessageMock, authState, uploadSupportAttachmentMock, attachSupportTicketAttachmentMock, submitSupportFeedbackMock } = vi.hoisted(() => {
   const askSupportMock = vi.fn()
   // The hook consumes /support/ask as SSE: askSupportStream calls onFrame for
   // the status/answer/done frames. Tests keep configuring askSupportMock's
@@ -28,6 +28,7 @@ const { askSupportMock, askSupportStreamMock, requestHandoffMock, cancelHandoffM
     supplementTicketMock: vi.fn(),
     markTicketReadMock: vi.fn(),
     listTicketMessagesMock: vi.fn(),
+    replyTicketMessageMock: vi.fn(),
     uploadSupportAttachmentMock: vi.fn(),
     attachSupportTicketAttachmentMock: vi.fn(),
     submitSupportFeedbackMock: vi.fn(),
@@ -53,7 +54,7 @@ vi.mock('@/services/support', () => ({
   markTicketRead: markTicketReadMock,
   rateAnswer: vi.fn(),
   rateTicket: vi.fn(),
-  replyTicketMessage: vi.fn(),
+  replyTicketMessage: replyTicketMessageMock,
   reopenTicket: vi.fn(),
   requestHandoff: requestHandoffMock,
   submitSupportFeedback: submitSupportFeedbackMock,
@@ -651,5 +652,30 @@ describe('useSupport · 服务记录已读 (#1154)', () => {
 
     act(() => result.current.markSelectedTicketSeen())
     await waitFor(() => expect(markTicketReadMock).toHaveBeenCalledWith('CS-1', 5))
+  })
+})
+
+describe('useSupport · 转异步详情回复 (#1152)', () => {
+  beforeEach(() => {
+    authState.account = { account_id: 'acc-1' }
+    authState.isLoading = false
+    getSupportTicketMock.mockReset().mockResolvedValue({
+      ticket_id: 'CS-9', ticket_type: 'human_support', service_mode: 'async', status: 'processing', version: 2,
+      created_at: '2026-09-28T03:00:00Z', updated_at: '2026-09-28T03:00:00Z',
+      capabilities: { can_reopen: false, can_create_followup: false, can_reply: true },
+    })
+    listTicketMessagesMock.mockReset().mockResolvedValue({ items: [], next_cursor: null, has_more: false })
+    // agent PostMessage 真实回包：UserReply 的输出，不是一条 SupportMessage
+    replyTicketMessageMock.mockReset().mockResolvedValue({ ticket: { ticket_id: 'CS-9', version: 3 }, message: { id: 'srv-1', seq: 6 } })
+  })
+
+  it('shows what the user typed even though the reply response is a ticket+message wrapper', async () => {
+    const { result } = renderHook(() => useSupport())
+    act(() => result.current.go({ kind: 'tickets' }))
+    await act(async () => result.current.openTicketDetail('CS-9'))
+    // 发送后服务端列表还是空（模拟延迟一致），本地那条必须带着内容留在屏上
+    listTicketMessagesMock.mockResolvedValue({ items: [], next_cursor: null, has_more: false })
+    await act(async () => { expect(await result.current.replySelectedTicket('还是 429')).toBe(true) })
+    expect(result.current.ticketMessages.at(-1)).toMatchObject({ role: 'user', content: '还是 429' })
   })
 })

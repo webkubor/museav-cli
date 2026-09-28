@@ -207,8 +207,10 @@ export function supplementTicket(id: string, content: string) {
   return post<SupportTicketDetail>(`support/tickets/${id}/supplements`, { content })
 }
 
-export function markTicketRead(id: string) {
-  return post<void>(`support/tickets/${id}/read`, {})
+/** 把已读游标推进到 seq（agent MarkRead 只认 `seq`，空 body 等于标到 0、什么都不消）。
+ *  回包是标记后的工单，unread_count 已重算。 */
+export function markTicketRead(id: string, seq: number) {
+  return post<SupportTicketDetail>(`support/tickets/${id}/read`, { seq })
 }
 
 export function rateAnswer(answerId: string, rating: 'like' | 'dislike') {

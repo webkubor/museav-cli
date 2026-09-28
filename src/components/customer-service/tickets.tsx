@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -13,6 +14,7 @@ import { useAuthStore } from '@/store/auth'
 import { listSupportTickets } from '@/services/support'
 import { ticketAgentNameOf, ticketNoOf, ticketSlaTextOf, ticketStatusTextOf, ticketUnreadOf } from '@/interfaces/support'
 import type { SupplementResult, SupportTicketDetail, SupportTicketFilter, SupportTicketSummary } from '@/interfaces/support'
+import type { ChatItem } from './use-support'
 
 const FILTERS: SupportTicketFilter[] = ['all', 'processing', 'ended']
 
@@ -214,11 +216,51 @@ export interface TicketDetailViewProps {
   onRate: (stars: number) => void
   /** 提交一条补充，结果见 SupplementResult。 */
   onSupplement: (content: string) => Promise<SupplementResult>
+  /** 人工单的会话气泡；气泡长相由面板统一渲染（与主对话同一套），这里只管顺序与位置 */
+  messages?: ChatItem[]
+  renderMessage?: (msg: ChatItem) => ReactNode
+  /** 最新一条消息滚进可视区时回调 —— 转异步单据此判已读 */
+  onLatestVisible?: () => void
+  /** 转异步单底部发消息；返回是否成功（失败保留输入） */
+  onReply?: (content: string) => Promise<boolean>
 }
 
 
-export function TicketDetailView({ detail, error = null, onRetry, onBack, onReopen, onRate, onSupplement }: TicketDetailViewProps) {
+export function TicketDetailView({
+  detail, error = null, onRetry, onBack, onReopen, onRate, onSupplement,
+  messages = [], renderMessage, onLatestVisible, onReply,
+}: TicketDetailViewProps) {
   const { t } = useTranslation()
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const latestRef = useRef<HTMLDivElement>(null)
+  const [replyText, setReplyText] = useState('')
+  const [replying, setReplying] = useState(false)
+  const isHuman = detail?.ticket_type === 'human_support' || detail?.type === 'handoff'
+  // 只有转异步单在详情里继续沟通；实时人工单的详情是那场会话的归档回看（工单类型 PRD）
+  const canReply = Boolean(detail && isHuman && detail.service_mode === 'async' && detail.capabilities.can_reply && onReply)
+
+  // 最新消息（或没有消息时的末尾）进入滚动容器可视区才算「看到了」：
+  // 打开即已读会让用户没滚到底就丢了提醒（用例负控）。
+  const latestKey = messages.at(-1)?.id ?? ''
+  useEffect(() => {
+    const el = latestRef.current
+    if (!el || !onLatestVisible || !detail || !isHuman) return
+    if (typeof IntersectionObserver === 'undefined') { onLatestVisible(); return }
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) onLatestVisible()
+    }, { root: scrollRef.current, threshold: 0.6 })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [latestKey, detail, isHuman, onLatestVisible])
+
+  async function submitReply() {
+    const content = replyText.trim()
+    if (!content || replying || !onReply) return
+    setReplying(true)
+    const ok = await onReply(content)
+    setReplying(false)
+    if (ok) setReplyText('')
+  }
   const [supplementOpen, setSupplementOpen] = useState(false)
   const [supplementText, setSupplementText] = useState('')
   const [supplementing, setSupplementing] = useState(false)
@@ -248,7 +290,7 @@ export function TicketDetailView({ detail, error = null, onRetry, onBack, onReop
         {detail && <Badge variant="outline" size="sm">{ticketStatusTextOf(detail)}</Badge>}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-3">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3">
         {!detail && error === null && <p className="mg-text-caption text-mg-text-3">{t('common.customerService.tickets.loading')}</p>}
         {/* 404 / 403 = 这张单用户看不了（已归档、换了账号），重试没用，只给「返回服务记录」；
             其余（5xx / 超时 / 断网）是暂时性的，给「重新加载」 */}
@@ -314,6 +356,12 @@ export function TicketDetailView({ detail, error = null, onRetry, onBack, onReop
                 <p className="m-0 mg-text-body text-mg-text-1 whitespace-pre-wrap break-words">{item.content}</p>
               </div>
             ))}
+            {isHuman && renderMessage && messages.length > 0 && (
+              <div className="flex flex-col pt-2 border-t border-mg-fill-0" aria-label={t('common.customerService.tickets.detail.conversation')}>
+                {messages.map((m) => <div key={m.id}>{renderMessage(m)}</div>)}
+              </div>
+            )}
+            {isHuman && <div ref={latestRef} aria-hidden className="h-px" />}
             {ticketSlaTextOf(detail) && <p className="m-0 mg-text-caption text-mg-text-3">{ticketSlaTextOf(detail)}</p>}
             {typeof detail.rating === 'number' && (
               <p className="m-0 mg-text-caption text-mg-warning">{'★'.repeat(detail.rating)}{'☆'.repeat(5 - detail.rating)}</p>
@@ -365,6 +413,22 @@ export function TicketDetailView({ detail, error = null, onRetry, onBack, onReop
           </div>
         )}
       </div>
+      {canReply && (
+        <div className="flex items-end gap-2 border-t border-mg-fill-0 px-4 py-3">
+          <Textarea
+            rows={2}
+            className="flex-1"
+            aria-label={t('common.customerService.tickets.detail.replyAria')}
+            placeholder={t('common.customerService.tickets.detail.replyPlaceholder')}
+            value={replyText}
+            disabled={replying}
+            onChange={(e) => setReplyText(e.target.value)}
+          />
+          <Button size="small" variant="brand" loading={replying} disabled={!replyText.trim()} onClick={submitReply}>
+            {t('common.customerService.tickets.detail.replySend')}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

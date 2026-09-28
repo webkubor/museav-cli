@@ -3,10 +3,10 @@
  * 路由：全站客服浮层
  * API：POST /support/handoff、POST /support/handoff/cancel
  */
-import { act, renderHook } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { askSupportMock, askSupportStreamMock, requestHandoffMock, cancelHandoffMock, requestErrorMock, toastErrorMock, getSupportTicketMock, supplementTicketMock, authState, uploadSupportAttachmentMock, attachSupportTicketAttachmentMock, submitSupportFeedbackMock } = vi.hoisted(() => {
+const { askSupportMock, askSupportStreamMock, requestHandoffMock, cancelHandoffMock, requestErrorMock, toastErrorMock, getSupportTicketMock, supplementTicketMock, markTicketReadMock, listTicketMessagesMock, authState, uploadSupportAttachmentMock, attachSupportTicketAttachmentMock, submitSupportFeedbackMock } = vi.hoisted(() => {
   const askSupportMock = vi.fn()
   // The hook consumes /support/ask as SSE: askSupportStream calls onFrame for
   // the status/answer/done frames. Tests keep configuring askSupportMock's
@@ -26,6 +26,8 @@ const { askSupportMock, askSupportStreamMock, requestHandoffMock, cancelHandoffM
     toastErrorMock: vi.fn(),
     getSupportTicketMock: vi.fn(),
     supplementTicketMock: vi.fn(),
+    markTicketReadMock: vi.fn(),
+    listTicketMessagesMock: vi.fn(),
     uploadSupportAttachmentMock: vi.fn(),
     attachSupportTicketAttachmentMock: vi.fn(),
     submitSupportFeedbackMock: vi.fn(),
@@ -47,7 +49,8 @@ vi.mock('@/services/support', () => ({
   cancelHandoff: cancelHandoffMock,
   endHandoff: vi.fn(),
   getSupportTicket: getSupportTicketMock,
-  listTicketMessages: vi.fn(),
+  listTicketMessages: listTicketMessagesMock,
+  markTicketRead: markTicketReadMock,
   rateAnswer: vi.fn(),
   rateTicket: vi.fn(),
   replyTicketMessage: vi.fn(),
@@ -610,5 +613,43 @@ describe('useSupport · 反馈附件上传与关联', () => {
     expect(ok).toBe(true)
     expect(attachSupportTicketAttachmentMock).not.toHaveBeenCalled()
     expect(requestErrorMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('useSupport · 服务记录已读 (#1154)', () => {
+  beforeEach(() => {
+    authState.account = { account_id: 'acc-1' }
+    authState.isLoading = false
+    markTicketReadMock.mockReset().mockResolvedValue({ unread_count: 0 })
+    listTicketMessagesMock.mockReset().mockResolvedValue({ items: [], next_cursor: null, has_more: false })
+    getSupportTicketMock.mockReset()
+  })
+  const base = {
+    version: 1, status: 'processing', created_at: '2026-09-24T08:00:00Z', updated_at: '2026-09-24T08:00:00Z',
+    latest_message_seq: 5, read_message_seq: 3, unread_count: 2,
+    capabilities: { can_reopen: false, can_create_followup: false },
+  }
+  async function open(result: { current: ReturnType<typeof useSupport> }, id: string) {
+    act(() => result.current.go({ kind: 'tickets' }))
+    await act(async () => result.current.openTicketDetail(id))
+  }
+
+  it('marks a feedback ticket read up to its latest seq as soon as the detail opens', async () => {
+    getSupportTicketMock.mockResolvedValue({ ...base, ticket_id: 'FB-1', ticket_type: 'feedback' })
+    const { result } = renderHook(() => useSupport())
+    await open(result, 'FB-1')
+    await waitFor(() => expect(markTicketReadMock).toHaveBeenCalledWith('FB-1', 5))
+    await waitFor(() => expect(result.current.ticketDetail?.unread_count).toBe(0))
+  })
+
+  it('does not mark an async human ticket read on open — only once the latest message is seen', async () => {
+    getSupportTicketMock.mockResolvedValue({ ...base, ticket_id: 'CS-1', ticket_type: 'human_support', service_mode: 'async' })
+    const { result } = renderHook(() => useSupport())
+    await open(result, 'CS-1')
+    expect(listTicketMessagesMock).toHaveBeenCalledWith('CS-1')
+    expect(markTicketReadMock).not.toHaveBeenCalled()
+
+    act(() => result.current.markSelectedTicketSeen())
+    await waitFor(() => expect(markTicketReadMock).toHaveBeenCalledWith('CS-1', 5))
   })
 })

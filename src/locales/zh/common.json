@@ -437,13 +437,18 @@
           "idLabel": "编号",
           "createdLabel": "提交时间",
           "updatedLabel": "最近更新",
-          "agentLabel": "客服"
+          "agentLabel": "客服",
+          "conversation": "会话记录",
+          "replyAria": "补充工单消息",
+          "replyPlaceholder": "输入消息，客服会在工单里回复你",
+          "replySend": "发送"
         }
       },
       "loginRequired": {
         "handoff": "转人工需要先登录，登录后可直接转接客服。",
         "tickets": "登录后查看服务记录"
       },
+      "unreadBadge": "{{count}} 条未读服务记录",
       "sensitiveHit": "已检测到疑似密钥或令牌，该内容不会被记录或转给人工客服。",
       "orb": {
         "idle": "随时帮你解答",

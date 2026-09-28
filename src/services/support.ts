@@ -175,6 +175,14 @@ export function attachSupportTicketAttachment(
   return post<void>(`support/tickets/${ticketId}/attachments`, ref)
 }
 
+/**
+ * 开新问答会话（qa#751，后端未上线前会 404）。传旧 id 让后端把旧会话标记结束；
+ * 返回服务端签发的新 session_id，后续 /support/ask 用它。
+ */
+export function createSupportSession(previousSessionId: string | null) {
+  return post<{ session_id: string }>('support/sessions', previousSessionId ? { previous_session_id: previousSessionId } : {})
+}
+
 export function requestHandoff(body: SupportHandoffRequest) {
   return post<SupportHandoffResponse>('support/handoff', body)
 }

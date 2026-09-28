@@ -9,6 +9,7 @@ import {
   askSupportStream,
   attachSupportTicketAttachment,
   cancelHandoff,
+  createSupportSession,
   endHandoff,
   getSupportTicket,
   listTicketMessages,
@@ -23,7 +24,8 @@ import {
   uploadSupportAttachment,
 } from '@/services/support'
 import { useSupportEvents } from './use-support-events'
-import { getOrCreateSupportSessionId, clearSupportSessionId } from './session-id'
+import { getOrCreateSupportSessionId, clearSupportSessionId, peekSupportSessionId, replaceSupportSessionId } from './session-id'
+import { isNotFoundError } from '@/lib/request-error-message'
 import {
   canStartHandoff,
   canApplyHandoffSnapshot,
@@ -569,6 +571,34 @@ export function useSupport() {
     }
   }, [mode, go, ticketId, appendMessage, applyEndedTicket, isCurrentSupportTicket, t, account]))
 
+  // ---- 新会话 ----
+  // 丢掉当前问答上下文、从头开始（底部服务条「新会话」）。只动智能问答，不碰任何工单。
+  // 优先走后端开会话接口（qa#751），让旧会话在服务端被标记结束；接口未上线（404）时
+  // 退回本地换一个 session_id —— 按钮先可用，后端上线后自动切到正式接口。
+  const [startingNewSession, setStartingNewSession] = useState(false)
+  const startNewSession = useCallback(async () => {
+    if (startingNewSession || !canStartHandoff(mode)) return
+    setStartingNewSession(true)
+    let nextId: string | null = null
+    try {
+      nextId = (await createSupportSession(peekSupportSessionId()))?.session_id ?? null
+    } catch (error) {
+      if (!isNotFoundError(error)) {
+        appToast.requestError(error)
+        setStartingNewSession(false)
+        return
+      }
+    }
+    replaceSupportSessionId(nextId)
+    // 在途的问答回包按代次丢弃，不会晚到写进新会话
+    accountEpoch.current += 1
+    setIsAsking(false)
+    setMessages([])
+    go({ kind: 'chat' })
+    trackEvent('support_new_session')
+    setStartingNewSession(false)
+  }, [startingNewSession, mode, go])
+
   // ---- 反馈 ----
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
 
@@ -813,6 +843,8 @@ export function useSupport() {
     ticketDetailError,
     ticketMessages,
     ticketMessagesLoaded,
+    startNewSession,
+    startingNewSession,
     unreadVersion,
     markSelectedTicketSeen,
     replySelectedTicket,

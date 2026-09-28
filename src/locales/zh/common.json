@@ -455,6 +455,7 @@
         "tickets": "登录后查看服务记录"
       },
       "unreadBadge": "{{count}} 条未读服务记录",
+      "newSession": "新会话",
       "sensitiveHit": "已检测到疑似密钥或令牌，该内容不会被记录或转给人工客服。",
       "orb": {
         "idle": "随时帮你解答",

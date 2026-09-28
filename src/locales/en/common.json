@@ -455,6 +455,7 @@
         "tickets": "Sign in to view your service records"
       },
       "unreadBadge": "{{count}} unread service records",
+      "newSession": "New chat",
       "sensitiveHit": "A possible key or token was detected — it will not be logged or passed to an agent.",
       "orb": {
         "idle": "Here to help",

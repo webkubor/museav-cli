@@ -6,7 +6,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { askSupportMock, askSupportStreamMock, requestHandoffMock, cancelHandoffMock, requestErrorMock, toastErrorMock, getSupportTicketMock, supplementTicketMock, markTicketReadMock, listTicketMessagesMock, replyTicketMessageMock, authState, uploadSupportAttachmentMock, attachSupportTicketAttachmentMock, submitSupportFeedbackMock } = vi.hoisted(() => {
+const { askSupportMock, askSupportStreamMock, requestHandoffMock, cancelHandoffMock, requestErrorMock, toastErrorMock, getSupportTicketMock, supplementTicketMock, markTicketReadMock, listTicketMessagesMock, replyTicketMessageMock, createSessionMock, authState, uploadSupportAttachmentMock, attachSupportTicketAttachmentMock, submitSupportFeedbackMock } = vi.hoisted(() => {
   const askSupportMock = vi.fn()
   // The hook consumes /support/ask as SSE: askSupportStream calls onFrame for
   // the status/answer/done frames. Tests keep configuring askSupportMock's
@@ -29,6 +29,7 @@ const { askSupportMock, askSupportStreamMock, requestHandoffMock, cancelHandoffM
     markTicketReadMock: vi.fn(),
     listTicketMessagesMock: vi.fn(),
     replyTicketMessageMock: vi.fn(),
+    createSessionMock: vi.fn(),
     uploadSupportAttachmentMock: vi.fn(),
     attachSupportTicketAttachmentMock: vi.fn(),
     submitSupportFeedbackMock: vi.fn(),
@@ -48,6 +49,7 @@ vi.mock('@/services/support', () => ({
   askSupportStream: askSupportStreamMock,
   attachSupportTicketAttachment: attachSupportTicketAttachmentMock,
   cancelHandoff: cancelHandoffMock,
+  createSupportSession: createSessionMock,
   endHandoff: vi.fn(),
   getSupportTicket: getSupportTicketMock,
   listTicketMessages: listTicketMessagesMock,
@@ -64,7 +66,16 @@ vi.mock('@/services/support', () => ({
 vi.mock('@/lib/app-toast', () => ({ appToast: { requestError: requestErrorMock, error: toastErrorMock } }))
 vi.mock('@/lib/track', () => ({ trackEvent: vi.fn() }))
 vi.mock('./use-support-events', () => ({ useSupportEvents: vi.fn() }))
-vi.mock('./session-id', () => ({ getOrCreateSupportSessionId: () => 'session-1', clearSupportSessionId: vi.fn() }))
+vi.mock('./session-id', () => ({
+  getOrCreateSupportSessionId: () => 'session-1',
+  clearSupportSessionId: vi.fn(),
+  peekSupportSessionId: () => localStorage.getItem('mg:cs_cid'),
+  replaceSupportSessionId: (id: string | null) => {
+    const next = id || `cs-local-${Math.random().toString(36).slice(2)}`
+    localStorage.setItem('mg:cs_cid', next)
+    return next
+  },
+}))
 
 import { ModelGoApiError } from '@/lib/request'
 import { useSupport } from './use-support'
@@ -708,5 +719,65 @@ describe('useSupport · 实时人工被客服结束 (#1134)', () => {
     await pushEvent()
     expect(result.current.mode.kind).toBe('humanEnded')
     expect(result.current.messages.some((m) => m.kind === 'rating_card' && m.ratingCard?.ticketId === 'CS-LIVE')).toBe(true)
+  })
+})
+
+describe('useSupport · 新会话', () => {
+  beforeEach(() => {
+    authState.account = { account_id: 'acc-1' }
+    authState.isLoading = false
+    localStorage.setItem('mg:cs_cid', 'cs-old')
+    createSessionMock.mockReset()
+    askSupportMock.mockReset().mockResolvedValue({ answer_id: 'a1', answer: '旧会话的回答', status: 'answered' })
+  })
+
+  async function withOneMessage() {
+    const { result } = renderHook(() => useSupport())
+    await act(async () => { await result.current.ask('第一个问题') })
+    expect(result.current.messages.length).toBeGreaterThan(0)
+    return result
+  }
+
+  it('asks the backend for a new session (passing the old id), then clears the chat', async () => {
+    createSessionMock.mockResolvedValue({ session_id: 'cs-from-server' })
+    const result = await withOneMessage()
+    await act(async () => result.current.startNewSession())
+    expect(createSessionMock).toHaveBeenCalledWith('cs-old')
+    expect(localStorage.getItem('mg:cs_cid')).toBe('cs-from-server')
+    expect(result.current.messages).toEqual([])
+    expect(result.current.mode.kind).toBe('chat')
+  })
+
+  it('falls back to a locally generated session id while the endpoint is not deployed (404)', async () => {
+    createSessionMock.mockRejectedValue(Object.assign(new Error('nf'), { response: { status: 404 } }))
+    const result = await withOneMessage()
+    await act(async () => result.current.startNewSession())
+    const id = localStorage.getItem('mg:cs_cid')
+    expect(id).toMatch(/^cs-/)
+    expect(id).not.toBe('cs-old')
+    expect(result.current.messages).toEqual([])
+    expect(requestErrorMock).not.toHaveBeenCalled()
+  })
+
+  it('keeps the conversation when the endpoint fails for another reason', async () => {
+    createSessionMock.mockRejectedValue(Object.assign(new Error('down'), { response: { status: 503 } }))
+    const result = await withOneMessage()
+    const before = result.current.messages.length
+    await act(async () => result.current.startNewSession())
+    expect(localStorage.getItem('mg:cs_cid')).toBe('cs-old')
+    expect(result.current.messages.length).toBe(before)
+  })
+
+  it('drops an answer that arrives after the reset instead of writing it into the new chat', async () => {
+    createSessionMock.mockResolvedValue({ session_id: 'cs-new' })
+    let finish: (v: unknown) => void = () => {}
+    askSupportMock.mockImplementationOnce(() => new Promise((r) => { finish = r }))
+    const { result } = renderHook(() => useSupport())
+    act(() => { void result.current.ask('慢问题') })
+    // 等转圈这一刻有一条用户消息在屏上
+    await act(async () => {})
+    await act(async () => result.current.startNewSession())
+    await act(async () => { finish({ answer_id: 'late', answer: '迟到的回答', status: 'answered' }) })
+    expect(result.current.messages.some((m) => m.content.includes('迟到的回答'))).toBe(false)
   })
 })

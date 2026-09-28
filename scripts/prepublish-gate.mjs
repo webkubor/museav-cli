@@ -48,7 +48,18 @@ try {
   const out = execFileSync('npm', ['pack', '--dry-run', '--json'], {
     cwd: pkgRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit']
   })
-  packFiles = JSON.parse(out)[0].files.map(f => f.path)
+  // 不要直接 JSON.parse(out)：workflow 里那步 `npm install -g npm@latest` 会让
+  // runner 上的 npm 比本地新，不同版本的 pack --json 会带不同的前置告警/提示行
+  // （实测 11.12.1 干净，更高版本会在 JSON 前混入文本），整段 parse 直接炸在
+  // 「Cannot read properties of undefined (reading 'files')」——报错还完全指不到
+  // 真正的原因。这里从第一个 '[' 开始截，把后面的 JSON 抠出来再解析。
+  const start = out.indexOf('[')
+  if (start === -1) throw new Error('npm pack --json 未返回 JSON 数组:\n' + out.slice(0, 200))
+  const parsed = JSON.parse(out.slice(start))
+  if (!Array.isArray(parsed) || !parsed[0]?.files) {
+    throw new Error('npm pack --json 结构异常，预期 [{files:[{path}]}]:\n' + out.slice(start, 200))
+  }
+  packFiles = parsed[0].files.map(f => f.path)
 } catch (err) {
   console.error('[prepublish-gate] npm pack --dry-run 失败:', err.message)
   process.exit(2)

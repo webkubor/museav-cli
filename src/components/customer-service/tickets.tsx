@@ -181,8 +181,11 @@ export function TicketsList({ onSelect, onClose }: TicketsListProps) {
 /** 错误编号给用户报给客服用：优先 request_id / trace_id（后端日志能直接搜到），没有再退回业务码。 */
 function errorIdOf(error: unknown): string {
   if (error instanceof ModelGoApiError) return error.requestId || error.traceId || String(error.code)
-  const status = (error as { response?: { status?: number } } | null)?.response?.status
-  return status ? `HTTP ${status}` : 'NETWORK'
+  // 网关级 HTTP 5xx 抛的是 ky HTTPError，编号在响应头里（与 error-diagnostics 同口径）
+  const resp = (error as { response?: Response } | null)?.response
+  const headerId = resp?.headers?.get?.('x-request-id') || resp?.headers?.get?.('x-trace-id')
+  if (headerId) return headerId
+  return resp?.status ? `HTTP ${resp.status}` : 'NETWORK'
 }
 
 function isForbiddenError(error: unknown): boolean {

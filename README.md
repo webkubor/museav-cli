@@ -129,6 +129,7 @@ npm install -g museav-cli           # 装新包，命令名是 museav
 | | **放大清晰度**（2M → 10M+ 级） | `upscale` |
 | | 去水印 | `remove-watermark` |
 | **素材与统计** | 上传素材 / 查任务 / 查余额 / 看当前模型 / 查身份 | `upload` / `jobs` / `balance` / `models` / `whoami` |
+| **对外分发**（小红书） | 把本地写好的 Agent Skill 发到小红书 SkillHub | `skillhub publish`（默认只预演，`--yes` 才真提交） |
 
 > 本地工具（`compress` / `remove-bg` / `upscale` / `remove-watermark`）**不用登录、不花一分钱**，装了就能用；其余命令需要一个凭证（个人 `login` 或租户 apiKey）。
 
@@ -538,6 +539,90 @@ IMG=$(museav products | node -e "process.stdin.once('data',d=>console.log(JSON.p
 museav gen --template <模板id> --ref "$IMG"
 ```
 
+### 把本地 Agent Skill 发到小红书 SkillHub `skillhub`
+
+> 2026-09-08 首发，3.6.0 移除，**2026-09-28 恢复**（见下方「为什么恢复」）。
+
+跟 `museav skills` **不是一回事**：`skills` 查的是中台的出图技能，
+`skillhub` 是把本地写好的 Agent Skill（`SKILL.md` 那种）发到小红书 SkillHub。
+
+**这是 MUSE AV 目前唯一一条出站通道**：用户装一个 CLI，就同时拿到「出图」和
+「把做好的 Skill 发到小红书」两件事，不用再装第二个工具、学第二套命令、单独配一遍登录。
+
+打包、扫码授权、上传、提交全部由小红书官方 CLI
+[`redskillhub-upload`](https://www.npmjs.com/package/redskillhub-upload) 完成
+（它是本包的依赖，装 museav 就带上了，不用另外全局装）。这里只做入口和护栏，
+**不重写平台协议**——平台改版跟着升依赖就行。
+
+```bash
+# 1. 先看可选内容标签（发布必须带，没有默认值）
+museav skillhub tags
+
+# 2. 预演：只本地打包 + 校验，不登录、不上传、不提交
+museav skillhub publish ./my-skill --tag 效率工具,编程开发
+
+# 3. 核对无误再真提交（未登录会出二维码，用小红书 App 扫）
+museav skillhub publish ./my-skill --tag 效率工具,编程开发 --yes
+```
+
+**不带 `--yes` 一定不会外发**——它只跑 dry-run 把待提交内容摊给你看：
+
+```
+待提交内容：
+  名称       museav-gen
+  Skill ID   museav-gen   ← 平台主键，提交后跨版本不可改
+  版本       0.1.0
+  简介       用 museav CLI 在命令行出图、出视频、读图逆向提示词。
+  来源       原创
+  标签       效率工具,编程开发
+```
+
+#### 平台资产护栏：公共模板不会被顺手续上去
+
+`skillhub` 会把东西发到**别人的平台**上，而 MUSE AV 里有一批平台公共模板
+（`museav templates --platform` 那些）。发布时 CLI 会扫一遍待发布的 Skill：
+
+| 情况 | 处理 |
+| --- | --- |
+| Skill 正文里包含平台公共模板的**提示词正文** | ❌ **拒绝发布**，并告诉你是哪张模板 |
+| Skill 里只**引用**平台模板的 `slug`（如教 agent `museav gen --template xxx`） | ✅ 放行 |
+| 发布路径落在 `~/.museav-models` / `~/.museav-bin` 等平台托管目录 | ❌ 拒绝 |
+
+线划在这里：**搬运正文 = 重新分发资产，拦；引用 slug = 正常集成，放行。**
+把引用也拦掉会挡死 museav 自己的集成类 Skill。
+
+扫不到模板清单时（没 `museav login` / 接口不通）不会默认放行装作有护栏，
+而是照发但**明确提示本次未做校验**。`museav login` 之后重跑就有完整护栏。
+
+转载稿要多带一个来源，原创稿不许带：
+
+```bash
+museav skillhub publish ./my-skill --tag 内容创作 --source repost --repost-source 知乎 --yes
+```
+
+其他：`--identifier <kebab-case>` 显式指定 Skill ID（不传由官方 CLI 从名称/目录名派生，
+派生不出来会报错）；`museav skillhub whoami` 查登录态，`skillhub logout` 清凭证，
+`skillhub login --cancel` 取消等待中的扫码。
+
+几个平台限制，踩之前先知道：
+
+- **只收文本类文件**：`.md` / `.js` / `.py` / `.json` / `.sh` / `.html` / `.css` 等；
+  `.mjs`、`.ts`、`.yaml`、图片都会被拒（报「目录中包含不支持上传的文件」）
+- 单文件 10MB、整包 30MB 上限
+- 目录里必须有 `SKILL.md`
+- **Skill ID 是平台主键，提交后跨版本不可改名**，第一次提交前想清楚
+
+#### 为什么恢复（3.6.0 移除过一次）
+
+3.6.0 移除它的理由是「一次都没用过」——当时实测 `skillhub whoami` 返回
+`loggedIn: false`，本地无凭证。这是**没被使用的功能，不是错的定位**：
+它不走在中台 API 上，但它承载的是「出图能力 → 分发能力」这条唯一的出站链路。
+定位红线是「不寄生第三方工具」，拦的是寄生，不是出站。
+
+代价是必须自己担起出站纪律——也就是上面那道平台资产护栏。这是恢复的代价，不是附赠。
+
+---
+
 ## 编程调用
 
 CLI 背后是一个干净的 `StudioClient` class，也可以当库用：
@@ -596,6 +681,9 @@ console.log(r.sculpt.light)  // 光影分析
 | `balance` | 上游余额 | JSON |
 | `jobs` | 查自己（租户则是自己业务下）的工作流 | JSON 数组 |
 | `config` | 配置中台（B 端 apikey，含 `--tenantBaseUrl`） | — |
+| `skillhub tags` | 查小红书 SkillHub 的内容标签（发布必须带 `--tag`，实时拉，不硬编码） | 中文标签名（每行一个） |
+| `skillhub publish <path>` | 把本地 Agent Skill 发到小红书 SkillHub；默认只预演，`--yes` 才真提交 | 待提交载荷 JSON |
+| `skillhub whoami` / `login` / `logout` | SkillHub 登录态 / 预登录 / 清凭证 | — |
 
 **stdout 只输出最终结果**，进度信息走 stderr——方便脚本和管道集成。
 

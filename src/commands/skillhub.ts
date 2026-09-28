@@ -13,9 +13,14 @@
  *    要免交互提交，只能往 stdin 推 `submit\n`（官方 SKILL.md 也是这个口径）。
  * 2. 缺 `--source` / `--tag` 时官方会转成交互提问读 stdin，和我们推的 `submit`
  *    抢同一条管道。所以这两个参数在本层就补齐/校验，绝不让它进交互分支。
+ *
+ * 一处**不**薄封装：平台公共模板护栏（`skillhub-guard.ts`）。打包授权上传提交全
+ * 委托官方，但「哪些东西有资格出站」是我们自己的资产纪律，官方管不了也不该管。
  */
 import { createRequire } from 'node:module'
 import { spawn } from 'node:child_process'
+import type { StudioClient, TemplateOption } from '../client.js'
+import { inspectPublishTarget, formatGuardRejection } from '../skillhub-guard.js'
 
 /** dry-run 只是本地打包 + 校验，两分钟够；真提交要等扫码授权，给 15 分钟 */
 const DRY_RUN_TIMEOUT_MS = 120_000
@@ -168,14 +173,48 @@ export async function skillhubPassthrough(
 }
 
 /**
+ * 尽力拉平台公共模板清单，失败返回 null（= 本次跳过内容校验）。
+ *
+ * 为什么不因拉不到就报错：没配 museav 凭证的人也应该能发自己写的本地 Skill，
+ * 拿中台清单当发布的前置条件会把 CLI 耦合死。护栏的价值在于「知道自己在守什么」，
+ * 所以拉不到时会在 stderr 明确说这次没校验，而不是静悄悄放行。
+ */
+async function loadPlatformTemplates(client: StudioClient | undefined): Promise<TemplateOption[] | null> {
+  if (!client) return null
+  try {
+    return await client.templates(undefined, 'platform')
+  } catch {
+    return null
+  }
+}
+
+/**
  * museav skillhub publish —— 默认只做 dry-run（不登录、不上传、不提交），
  * 把待提交载荷摊给人看；确认无误再加 --yes 真提交。
  *
  * 提交是外发且不可逆（Skill ID 是平台主键，跨版本不可改名），所以护栏不省：
- * 没有 --yes 一律不出网提交。
+ * 没有 --yes 一律不出网提交；平台公共模板一律不出网（见 skillhub-guard.ts）。
  */
-export async function skillhubPublish(skillPath: string, opts: SkillhubPublishOptions): Promise<void> {
+export async function skillhubPublish(
+  client: StudioClient | undefined,
+  skillPath: string,
+  opts: SkillhubPublishOptions,
+): Promise<void> {
   const args = buildPublishArgs(skillPath, opts)
+
+  // 平台公共资产护栏：dry-run 和真提交都跑，且都跑在出网之前。
+  // 只在「搬运模板正文」和「路径落在平台托管目录」时拦；引用 slug 放行。
+  const templates = await loadPlatformTemplates(client)
+  const guard = inspectPublishTarget({ skillPath, templates })
+  if (!guard.ok) {
+    throw new Error(formatGuardRejection(guard, skillPath))
+  }
+  if (!guard.contentChecked) {
+    process.stderr.write(
+      `⚠️  平台公共模板清单没取到（没登录 museav 或接口不通），本次未做「平台模板搬运」校验。\n` +
+      `   登录后重跑可获得完整护栏： museav login\n`,
+    )
+  }
 
   if (!opts.yes) {
     process.stderr.write(`预演发布 ${skillPath}（dry-run，不上传不提交）...\n`)

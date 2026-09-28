@@ -4,12 +4,23 @@ This CLI is designed to be used directly by coding agents (Claude Code, Codex, e
 
 ## What this is
 
-> 定位（2026-09-16 收口）：**中台 API 客户端 + 一套本地图像后期工具**。
+> 定位（2026-09-16 收口，2026-09-28 修订）：**中台 API 客户端 + 一套本地图像后期工具**。
 > 两条红线：① 不内置模型运行时 —— 要本地大模型推理就委托外部工具
 > （`reverse --local` → `vlm`/mlx-vlm-kit）；② 不寄生第三方工具 ——
-> 跟 MUSE AV 中台无关的能力不进这个 CLI（3.6.0 据此移除了发小红书的 `skillhub`）。
+> 跟 MUSE AV 中台无关的能力不进这个 CLI。
 > 本地图像那套（抠图/超分/去水印/压缩）是例外且**应当留下**：它不重复任何其它仓库，
 > museav-mcp 正是把本 CLI 当能力层在用。
+>
+> **红线 ② 的例外（2026-09-28 owner 定）**：`skillhub` 回来了。
+> 它确实不走在中台 API 上，但它是**出站分发**通道——让本地写好的 Agent Skill
+> 一条命令发到小红书 SkillHub，不需要用户另外装 CLI、另外学一套命令。
+> 3.6.0 移除它的理由是「一次都没用过」（当时 `whoami` 返回 `loggedIn: false`），
+> 那是**没被使用的功能，不是错的定位**。红线 ② 拦的是「寄生」，不是「出站」。
+>
+> `skillhub` 带来的新义务（比「多一个命令」重）：
+> 它会把东西发到**别人的平台**上，而 MUSE AV 里有一批平台公共模板。
+> 所以它必须带**出站护栏**，见 `src/skillhub-guard.ts`：
+> 平台公共模板的正文不得随 Skill 外发，引用 slug 则放行。改这个命令时别把护栏摘掉。
 
 A command-line client for the "studio" image-generation platform (`https://manager.museav.top`). It generates images from a prompt, reverse-engineers a prompt from an existing image, and lists your own generation history. All output is designed for machine consumption: **stdout carries only the final result** (a URL, a prompt string, or JSON); progress and human-readable info goes to stderr.
 

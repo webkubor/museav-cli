@@ -1,6 +1,6 @@
 {
   "name": "museav-cli",
-  "version": "3.8.0",
+  "version": "3.9.0",
   "files": [
     "dist",
     "CHANGELOG.md"
@@ -41,11 +41,14 @@
     "generate",
     "reverse",
     "image-to-template",
-    "出图"
+    "出图",
+    "skillhub",
+    "小红书"
   ],
   "license": "MIT",
   "dependencies": {
     "commander": "^14.0.3",
+    "redskillhub-upload": "^1.0.3",
     "update-notifier": "^7.3.1"
   },
   "devDependencies": {

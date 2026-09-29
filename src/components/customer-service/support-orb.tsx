@@ -6,6 +6,8 @@ import './support-orb-theme.css'
 
 interface SupportOrbProps {
   state: OrbState
+  /** 球体尺寸；入口由外层按钮承载交互时可覆盖被动头像默认值。 */
+  size?: number
   unseen?: number
   expanded?: boolean
   label?: string
@@ -13,7 +15,7 @@ interface SupportOrbProps {
 }
 
 /** 交互实例使用库的原生按钮；被动头像不进入键盘或读屏顺序。 */
-export function SupportOrb({ state, unseen = 0, expanded, label, onClick }: SupportOrbProps) {
+export function SupportOrb({ state, size, unseen = 0, expanded, label, onClick }: SupportOrbProps) {
   const { t } = useTranslation()
   const hostRef = useRef<HTMLSpanElement>(null)
   const instanceRef = useRef<AgentOrb | null>(null)
@@ -27,13 +29,13 @@ export function SupportOrb({ state, unseen = 0, expanded, label, onClick }: Supp
   useEffect(() => {
     if (!hostRef.current) return
     const orb = new AgentOrb(hostRef.current, {
-      size: interactive ? 56 : 40, follow: interactive, labels,
+      size: size ?? (interactive ? 56 : 40), follow: interactive, labels,
       onClick: (event) => clickRef.current?.(event),
     })
     if (!interactive) orb.el.tabIndex = -1
     instanceRef.current = orb
     return () => { orb.destroy(); instanceRef.current = null }
-  }, [interactive, labels])
+  }, [interactive, labels, size])
 
   useEffect(() => {
     const orb = instanceRef.current

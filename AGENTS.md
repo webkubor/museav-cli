@@ -154,3 +154,47 @@ const studio = new StudioClient({ baseUrl: 'https://manager.museav.top', apiKey:
 const job = await studio.generateAndWait({ prompt: 'a cat on the moon', ratio: '3:4' })
 console.log(job.cdn_url)
 ```
+
+## Changelog SOP：先定读者，再动笔（2026-09-29 owner 定）
+
+**第一步永远是「这份日志写给谁看」，不是「这批 commit 改了什么」。**
+
+### 三份日志，三类读者，不要互相串
+
+| 文件 | 版本号 | 读者 | 体例 |
+| :--- | :--- | :--- | :--- |
+| 本文件 `CHANGELOG.md` | 3.x | 开发者 / 技术租户 | 叙事式「以前…现在…」 |
+| `museav-web/src/changelog.js` | v0.x | 普通用户 / 创作者 | emoji 短条目，一件事一条 |
+| `museav-manager/public/CHANGELOG.md` | v1.x | 平台管理员（**不是**终端用户） | 平台运维视角 |
+
+2026-09-29 串过一次味：同一批用户侧内容被同时写进 manager 那份 —— 用户看不到、
+管理员才会读，只能 revert。**用户侧内容只进本文件。**
+
+### 这份日志的读者是「把 museav 接进自己流程的人」
+
+他关心的是：这条改动让他少写什么、少等多久、报错时能不能看懂。他**不关心**
+内部实现，但接受必要的命令、参数、文件路径 —— 这是 CLI 与 C 端的唯一区别：
+命令名就是产品本身，藏起来反而没法用。所以 CLI 的日志可以写代码块，
+C 端一条都不行。
+
+写每一条时先回答三个问题：
+
+1. **他原来会踩什么坑**？「以前…」那几行必须是真实的痛，不是修辞。
+2. **现在他少做了什么 / 多拿到了什么**？
+3. **要不要他改用法**？要改就必须给出改前改后的确切命令。
+
+### 口吻
+
+- 简体中文，克制，不营销腔，不堆感叹号。
+- 段落式，不是清单式 —— 清单是 C 端的体例。
+- 不写：内部服务名、中台接口路径、数据库、部署流水线。
+- 修 bug 必须先写「以前会怎样」，否则读者判断不了跟自己有没有关系。
+- 一个改动一条，不要把五个功能挤成一段。
+
+### 发版守卫（`.github/workflows/publish.yml` 会拦）
+
+四者必须一致，差一个就红：`CHANGELOG` 顶部版本 == `package.json` 的 `version`
+== `git tag` == 冒烟跑出来的 `museav --version`。
+
+**本地 `npm publish` 不算正式发布**：不触发 Actions，租户群收不到通知、
+`/api/cli-guide` 的版本号也不会同步。正式发布一律打 `v*` tag。

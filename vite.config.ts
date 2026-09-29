@@ -115,12 +115,37 @@ function emitLlmsTxt(): Plugin {
   }
 }
 
-function emitSitemap(env: Record<string, string>, mode: string): Plugin {
-  const configuredMarket = process.env.SITEMAP_MARKET
-  const market = configuredMarket || (mode === 'production' ? '' : 'china')
-  if (market && !['china', 'global'].includes(market)) {
-    throw new Error(`SITEMAP_MARKET must be china|global, received: ${market}`)
+/**
+ * 构建期市场判定。优先级：显式 SITEMAP_MARKET > Jenkins 工作区路径。
+ *
+ * 为什么加第二级（2026-09-29，#1183）：`713e0775` 让 production 强制要
+ * SITEMAP_MARKET，但 Jenkins 两个 prod job 从没配过它（共享库 devops/cicd），
+ * 而改那边要运维排期。结果 1.0.7 连挂 4 次，只能先把「缺变量就中断」降级成
+ * 「缺就跳过」放行 —— 于是线上至今没有 sitemap.xml，而 robots.txt 已声明它。
+ *
+ * 推导依据是 Jenkins 内置的 WORKSPACE：两条发布线的目录名不同
+ * （实测 /data/jenkins/workspace/prod/… vs /data/jenkins/workspace/prod-global/…），
+ * 是这条流水线里**不需要运维新增任何配置**就能拿到的市场信号。
+ * SITEMAP_MARKET 仍是首选 —— 显式配置永远压过推导，运维补上后无需改本文件。
+ */
+function resolveBuildMarket(mode: string): 'china' | 'global' | '' {
+  const configured = process.env.SITEMAP_MARKET
+  if (configured) {
+    if (!['china', 'global'].includes(configured)) {
+      throw new Error(`SITEMAP_MARKET must be china|global, received: ${configured}`)
+    }
+    return configured as 'china' | 'global'
   }
+  // dev/test 不经这条推导：默认国内，与本文件其余部分的历史行为一致
+  if (mode !== 'production') return 'china'
+  // prod-global 必须先判：它同样含 'prod' 子串
+  if (/(^|[/-])prod-global([/-]|$)/.test(process.env.WORKSPACE || '')) return 'global'
+  if (/(^|[/-])prod([/-]|$)/.test(process.env.WORKSPACE || '')) return 'china'
+  return ''
+}
+
+function emitSitemap(env: Record<string, string>, mode: string): Plugin {
+  const market = resolveBuildMarket(mode)
 
   return {
     name: 'emit-market-sitemap',
@@ -155,8 +180,9 @@ function emitSitemap(env: Record<string, string>, mode: string): Plugin {
       // 且错了没人报警。跳过则只是没有 sitemap.xml，可控且可见（下面 warn）。
       if (!market) {
         this.warn(
-          'SITEMAP_MARKET not set (china|global) — 跳过 sitemap.xml 生成。'
-          + '生产 job 需在 Jenkins 侧补该环境变量，否则本站缺 sitemap。',
+          '无法判定构建市场（既无 SITEMAP_MARKET，WORKSPACE 也不含 prod/prod-global）'
+          + '—— 跳过 sitemap.xml 生成，本站将缺 sitemap。'
+          + 'Jenkins 侧补 SITEMAP_MARKET=china|global 可显式指定。',
         )
         return
       }

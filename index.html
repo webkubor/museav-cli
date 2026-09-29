@@ -83,7 +83,11 @@
     </script>
     <script>
       // 市场前置(域名秒定,渲染前执行零闪烁):国际站(.ai)切 title/favicon/lang。
-      // 单一构建产物供 prod/prod-global 两条发布线共用;test/localhost 默认国内,运行时可切。
+      // ⚠️ 这段是**兜底**,不是市场判定的主依据 —— prod/prod-global 已是按
+      // SITEMAP_MARKET 分别构建的两份产物(实测 2026-09-29:国内
+      // index-vIrDj27z.js vs 国外 index-DFSuBRaO.js,戳记同为 2c44e066)。
+      // 原注释写「单一构建产物供两条线共用」,在按市场分构建后已过期,留着会
+      // 让人以为不该有两个产物。test/localhost 不带 SITEMAP_MARKET,仍靠这段兜底。
       ;(function () {
         if (!location.hostname.toLowerCase().endsWith('modelgo.ai')) return
         document.title = 'ModelGo Console'

@@ -57,7 +57,7 @@
       "selectWorkspaceFirst": "先在「工作空间」筛选里选一个",
       "more": "更多筛选",
       "requestIdSearch": "Request ID 精确检索",
-      "searchPlaceholder": "输入 Request ID、模型、错误摘要或成员",
+      "searchPlaceholder": "请输入 Request ID 进行搜索",
       "member": "成员",
       "allMembers": "全部成员",
       "guardrailLabel": "护栏",
@@ -204,6 +204,12 @@
       "payloadEmpty": "暂无原始 Payload",
       "payloadTruncated": "已截断",
       "payloadCopied": "Payload 已复制",
+      "sseSummary": {
+        "reasoning": "【推理 reasoning_content】",
+        "content": "【回答 content】",
+        "empty": "(空)",
+        "merged": "合并 {{n}} 个 chunk"
+      },
       "taskArtifact": {
         "title": "任务产物",
         "taskStatus": "任务状态",

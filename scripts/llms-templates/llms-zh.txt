@@ -1,0 +1,57 @@
+# ModelGo 控制台
+
+> 企业级 AI 模型 API 聚合平台。一个 API Key 接入所有主流大模型,兼容 OpenAI 协议,支持工作空间隔离、预算管控、用量审计与安全护栏。ModelGo 同时提供兼容各厂的 API 网关、Web 控制台与在线体验。
+
+ModelGo 主要面向企业(toB)客户。本文件帮助 AI 助手、AI 搜索与检索型爬虫快速定位 ModelGo 控制台的可公开访问页面与关键文档。
+
+## 公开页面（无需登录）
+
+- [模型广场]({site}/models): 浏览全部可接入模型,按厂商、能力、价格筛选
+- [模型发现]({site}/models/discovery): 跨厂商模型对比页,质量 × 成本 × 时延 × 用量多维分析
+- [服务条款]({site}/legal/terms): 平台使用条款
+- [隐私政策]({site}/legal/privacy): 隐私与数据处理
+- [Cookie 偏好]({site}/legal/cookies): Cookie 与追踪偏好
+
+## 帮助文档（docs 子站）
+
+- [文档首页]({docs}): API 接入、SDK 用法、控制台操作全指南
+- [快速开始]({docs}/quickstart): 一行代码接入,5 分钟跑通第一个调用
+- [API 参考]({docs}/api): 所有 REST 端点、参数、错误码
+- [SDK 下载]({docs}/sdk): Python / Node.js / Go / Java SDK
+- [错误码对照表]({docs}/errors): 排查调用失败
+- [计费与配额]({docs}/billing): 按量计费规则、套餐、企业合约
+- [安全护栏]({docs}/guardrails): 输入输出审计、敏感词、限速策略
+- [常见问题]({docs}/faq): 客户高频问题汇总
+
+## 主站（marketing 子站）
+
+- [产品总览]({site_web}): ModelGo 完整产品介绍
+- [定价]({site_web}/pricing): 按量计费、企业套餐、定制方案
+- [客户案例]({site_web}/customers): 已接入企业案例
+- [产品更新]({site_web}/changelog): 版本日志、新功能、修复
+
+## 公司与合规
+
+- [关于我们]({site_web}/about): 公司介绍、联系方式
+- [ICP 备案]({site_web}/icp): 浙ICP备2026032844号-1(国内市场)
+- [数据处理协议]({site_web}/dpa): 企业级数据处理协议(DPA)模板
+- [安全合规]({site_web}/security): 信息安全、等保合规说明
+
+## API 端点（编程入口）
+
+- 基础 URL(国内): `{gateway}/v1`
+- 基础 URL(海外): `{gateway_global}/v1`
+- 兼容 OpenAI Chat Completions / Embeddings / Images / Audio / Fine-tune 全套协议
+
+## 客户支持
+
+- 控制台内工单:登录后在「帮助」入口提交
+- 企业客户专属支持邮箱:见定价页或商务合同
+- 状态页:见主站 footer
+
+## 备注
+
+- 控制台(本子站)是登录态应用,登录后页面默认不被收录;本 llms.txt 仅指引 AI 检索公开可访问内容
+- AI 训练型爬虫(GPTBot / anthropic-ai / Google-Extended / CCBot / Meta-ExternalAgent)在 robots.txt 中已 Disallow,不会被收录用于训练
+- 本文件每行不超过 80 字符以兼容老旧爬虫;段落与链接以 Markdown 渲染优先
+- 本文件不收集任何用户数据,无追踪,无 cookie

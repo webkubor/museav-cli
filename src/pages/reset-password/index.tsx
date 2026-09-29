@@ -130,7 +130,7 @@ export default function ResetPasswordPage() {
               width: '48px',
               height: '48px',
               borderRadius: '14px',
-              background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
+              background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)', // allow-raw-color 成功态对勾图标的装饰渐变（green-100→200）；--mg-success 系 token 色相不同，无等值映射，改值即视觉回归
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

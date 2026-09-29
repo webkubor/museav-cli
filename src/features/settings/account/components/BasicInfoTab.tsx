@@ -130,117 +130,115 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({ profile }) => {
         </div>
       </div>
 
-      {/* 表单 */}
-      <div className="flex flex-col gap-5 max-w-[480px]">
-        {/* 手机号仅国内(china)有意义:国外账号无手机号绑定,按 market 约束不展示该模块 */}
-        {market === 'china' && profile.phone && (
-          <div className="space-y-2">
-            <span className="block text-xs font-semibold uppercase tracking-wider text-mg-text-2">
-              {t('account.info.phoneLabel')}
-            </span>
-            <div className="flex gap-2.5">
-              <Input className="flex-1" value={maskPhone(profile.phone)} readOnly aria-label={t('account.info.phoneLabel')} />
-              <Button variant="outline" className="shrink-0 rounded-sm px-4 font-semibold" onClick={() => openRebind('phone')}>
-                {t('account.info.rebind.changePhone')}
-              </Button>
-            </div>
-            <span className="block text-xs leading-relaxed text-mg-text-3">
-              {t('account.info.phoneHint')}
-            </span>
+      {/* 表单：两栏「标签 | 控件」行，对齐原型 .account-settings-row（prd#1093 #4/#5）。
+          字段顺序也按原型走：显示名称 → 手机号码 → 邮箱地址。此前是手机 → 邮箱 → 显示名称。 */}
+      <div className="max-w-[720px]">
+        <div className="account-settings-row">
+          <div className="account-settings-label">
+            <strong className="text-[13px] font-semibold text-mg-text-1">{t('account.info.nameLabel')}</strong>
+            <span className="text-xs leading-relaxed text-mg-text-3">{t('account.info.nameHint')}</span>
           </div>
-        )}
-
-        <div className="space-y-2">
-          <span className="block text-xs font-semibold uppercase tracking-wider text-mg-text-2">
-            {t('account.info.emailLabel')}
-          </span>
-          <div className="flex gap-2.5">
+          <div className="account-settings-control">
             <Input
-              className="flex-1"
-              value={profile.email ? maskEmail(profile.email) : ''}
-              placeholder={profile.email ? undefined : t('account.info.emailUnbound')}
-              readOnly
-              aria-label={t('account.info.emailLabel')}
-            />
-            {profile.email && (
-              <Button variant="outline" className="shrink-0 rounded-sm px-4 font-semibold" onClick={() => openRebind('email')}>
-                {t('account.info.rebind.changeEmail')}
-              </Button>
-            )}
-          </div>
-          {profile.email ? (
-            <span className="block text-xs leading-relaxed text-mg-text-3">{t('account.info.emailHint')}</span>
-          ) : (
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs leading-relaxed text-mg-text-3">{t('account.info.emailUnboundHint')}</span>
-              <button
-                type="button"
-                onClick={() => { setEmailInput(''); setEmailCode(''); setEmailBindOpen(true); trackEvent('account.email:bind_open') }}
-                className="shrink-0 text-xs font-bold text-brand-base hover:text-brand-base/80 bg-transparent border-none p-0 cursor-pointer transition-colors"
-              >
-                {t('account.info.bindEmail')}
-              </button>
-            </div>
-          )}
-
-          {/* modal={false} + 拦外部交互：人机验证浮层 portal 在 Dialog 之外，见 ContactRebindDialog 同款注释 */}
-          <Modal
-            open={emailBindOpen}
-            onClose={() => { if (!bindEmailMutation.isPending) setEmailBindOpen(false) }}
-            size="md"
-            modal={false}
-            onPointerDownOutside={(event) => event.preventDefault()}
-            onInteractOutside={(event) => event.preventDefault()}
-            title={t('account.info.bindEmailTitle')}
-            description={t('account.info.bindEmailDesc')}
-            footer={(
-              <>
-                <Button variant="outline" disabled={bindEmailMutation.isPending} className="h-8 rounded-lg px-3 text-xs" onClick={() => setEmailBindOpen(false)}>{t('common.cancel')}</Button>
-                <Button variant="brand" loading={bindEmailMutation.isPending} disabled={!emailValid || emailCode.trim().length === 0} className="h-8 rounded-lg px-4 text-xs font-semibold" onClick={() => bindEmailMutation.mutate()}>{t('account.info.bindEmailConfirm')}</Button>
-              </>
-            )}
-          >
-            <div className="space-y-3">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold uppercase tracking-wider text-mg-text-2">{t('account.info.emailLabel')}</label>
-                <Input value={emailInput} disabled={bindEmailMutation.isPending} onChange={(e) => setEmailInput(e.target.value)} placeholder="you@example.com" size="sm" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold uppercase tracking-wider text-mg-text-2">{t('account.auth.fields.code')}</label>
-                <Input
-                  value={emailCode}
-                  disabled={bindEmailMutation.isPending}
-                  onChange={(e) => setEmailCode(e.target.value)}
-                  placeholder={t('account.info.emailCodePlaceholder')}
-                  size="sm"
-                  suffix={<VerificationCodeButton onSend={handleSendEmailCode} disabled={!emailValid} />}
-                />
-              </div>
-            </div>
-          </Modal>
-        </div>
-
-        <div className="space-y-2">
-          <span className="block text-xs font-semibold uppercase tracking-wider text-mg-text-2">
-            {t('account.info.nameLabel')}
-          </span>
-          <div className="flex gap-2.5">
-            <Input
-              className="flex-1"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder={t('account.info.namePlaceholder')}
+              aria-label={t('account.info.nameLabel')}
             />
             <Button
               variant="brand"
               disabled={!isDirty || updateMutation.isPending}
               onClick={() => updateMutation.mutate()}
-              className="rounded-sm px-5 font-semibold transition-all"
+              className="shrink-0 rounded-sm px-5 font-semibold transition-all"
             >
               {updateMutation.isPending ? t('common.loading') : t('common.save')}
             </Button>
           </div>
         </div>
+
+        {/* 手机号仅国内(china)有意义:国外账号无手机号绑定,按 market 约束不展示该模块 */}
+        {market === 'china' && profile.phone && (
+          <div className="account-settings-row">
+            <div className="account-settings-label">
+              <strong className="text-[13px] font-semibold text-mg-text-1">{t('account.info.phoneLabel')}</strong>
+              <span className="text-xs leading-relaxed text-mg-text-3">{t('account.info.phoneHint')}</span>
+            </div>
+            <div className="account-settings-control">
+              <Input value={maskPhone(profile.phone)} readOnly aria-label={t('account.info.phoneLabel')} />
+              <Button variant="outline" className="shrink-0 rounded-sm px-4 font-semibold" onClick={() => openRebind('phone')}>
+                {t('account.info.rebind.changePhone')}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <div className="account-settings-row">
+          <div className="account-settings-label">
+            <strong className="text-[13px] font-semibold text-mg-text-1">{t('account.info.emailLabel')}</strong>
+            {/* hint 两态统一走 emailHint：原型未绑定态的说明也是「用于接收账号通知与找回。」，
+               而不是把状态（暂未绑定）当说明——状态已由框内 placeholder「未绑定」表达 */}
+            <span className="text-xs leading-relaxed text-mg-text-3">{t('account.info.emailHint')}</span>
+          </div>
+          <div className="account-settings-control">
+            <Input
+              value={profile.email ? maskEmail(profile.email) : ''}
+              placeholder={profile.email ? undefined : t('account.info.emailUnbound')}
+              readOnly
+              aria-label={t('account.info.emailLabel')}
+            />
+            {profile.email ? (
+              <Button variant="outline" className="shrink-0 rounded-sm px-4 font-semibold" onClick={() => openRebind('email')}>
+                {t('account.info.rebind.changeEmail')}
+              </Button>
+            ) : (
+              /* 未绑定态的绑定入口按原型是按钮（与「更换手机号」同款、同在框右侧），
+                 不是原来那个挤在 hint 右下角的文字链（prd#1093 需求 #5） */
+              <Button
+                variant="outline"
+                className="shrink-0 rounded-sm px-4 font-semibold"
+                onClick={() => { setEmailInput(''); setEmailCode(''); setEmailBindOpen(true); trackEvent('account.email:bind_open') }}
+              >
+                {t('account.info.bindEmail')}
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* modal={false} + 拦外部交互：人机验证浮层 portal 在 Dialog 之外，见 ContactRebindDialog 同款注释 */}
+        <Modal
+          open={emailBindOpen}
+          onClose={() => { if (!bindEmailMutation.isPending) setEmailBindOpen(false) }}
+          size="md"
+          modal={false}
+          onPointerDownOutside={(event) => event.preventDefault()}
+          onInteractOutside={(event) => event.preventDefault()}
+          title={t('account.info.bindEmailTitle')}
+          description={t('account.info.bindEmailDesc')}
+          footer={(
+            <>
+              <Button variant="outline" disabled={bindEmailMutation.isPending} className="h-8 rounded-lg px-3 text-xs" onClick={() => setEmailBindOpen(false)}>{t('common.cancel')}</Button>
+              <Button variant="brand" loading={bindEmailMutation.isPending} disabled={!emailValid || emailCode.trim().length === 0} className="h-8 rounded-lg px-4 text-xs font-semibold" onClick={() => bindEmailMutation.mutate()}>{t('account.info.bindEmailConfirm')}</Button>
+            </>
+          )}
+        >
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-mg-text-2">{t('account.info.emailLabel')}</label>
+              <Input value={emailInput} disabled={bindEmailMutation.isPending} onChange={(e) => setEmailInput(e.target.value)} placeholder="you@example.com" size="sm" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-mg-text-2">{t('account.auth.fields.code')}</label>
+              <Input
+                value={emailCode}
+                disabled={bindEmailMutation.isPending}
+                onChange={(e) => setEmailCode(e.target.value)}
+                placeholder={t('account.info.emailCodePlaceholder')}
+                size="sm"
+                suffix={<VerificationCodeButton onSend={handleSendEmailCode} disabled={!emailValid} />}
+              />
+            </div>
+          </div>
+        </Modal>
 
         {rebindMode && (
           <ContactRebindDialog key={rebindMode} mode={rebindMode} profile={profile} onClose={() => setRebindMode(null)} />

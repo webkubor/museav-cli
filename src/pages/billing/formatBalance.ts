@@ -9,6 +9,13 @@ export function formatBalance(amountStr: string | undefined): { main: string; ex
   return { main: s, exact: s }
 }
 
+/** 余额金额字符串 → 数字；缺失或非数字返回 undefined（调用方按「快照未就绪」处理，不做本地拦截）。 */
+export function parseBalanceAmount(amount: string | undefined): number | undefined {
+  if (amount === undefined || amount === null || amount === '') return undefined
+  const n = Number(amount)
+  return Number.isFinite(n) ? n : undefined
+}
+
 /** PRD：可消费合计 = 可用主余额 + 赠送余额 + 奖励余额。 */
 export function calculateSpendableBalance(
   availableMain: string | undefined,

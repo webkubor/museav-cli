@@ -22,6 +22,8 @@ describe('detectFreeModelGate（#833）', () => {
   it('网关原样透传的两句固定英文人话（web-api 不包信封、metadata.reason 已丢）也能认出', () => {
     expect(detectFreeModelGate(new Error("today's free-model quota has been reached; please try again after midnight Beijing time or switch to another model"))).toBe('daily_limit')
     expect(detectFreeModelGate(new Error('this free model requires the account to keep available balance above zero; please top up to continue'))).toBe('balance_required')
+    // #1091：网关文案若改为点明主余额，仍能认出
+    expect(detectFreeModelGate(new Error('this free model requires the account to keep main balance above zero; please top up to continue'))).toBe('balance_required')
   })
 
   it('网关整段信封被当成字符串（历史消息 error 摘录）时按 metadata.reason 判', () => {
@@ -48,5 +50,10 @@ describe('detectFreeModelGate（#833）', () => {
     expect(detectFreeModelGate(new Error('HTTP 502'))).toBeNull()
     expect(detectFreeModelGate(null)).toBeNull()
     expect(detectFreeModelGate(undefined)).toBeNull()
+  })
+
+  it('#1091 收窄识别串后的反例：同样以「the account」开头但与余额无关的错误人话不误判', () => {
+    expect(detectFreeModelGate(new Error('please verify the account identity before continuing'))).toBeNull()
+    expect(detectFreeModelGate(new Error('the account has been suspended pending review'))).toBeNull()
   })
 })

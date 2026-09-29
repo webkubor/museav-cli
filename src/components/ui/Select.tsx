@@ -178,19 +178,26 @@ interface SelectProps {
   size?: SelectSize
   /** 埋点/可测性：透传到触发器（值 = 埋点 event key），供自动化定位 */
   'data-track'?: string
+  /**
+   * 可访问名，透传到触发器。
+   * 本组件的 props 是白名单式的（不 ...props 展开），所以 aria-label 必须显式列出，
+   * 否则调用方传了会被静默丢掉 —— 客服反馈表单就踩过：视觉上有 <label>，但它没有
+   * htmlFor 关联，读屏念不出「问题类型」这个字段名。
+   */
+  'aria-label'?: string
 }
 
 interface SelectComponent extends React.FC<SelectProps> {
   Option: typeof SelectItem
 }
 
-const Select = (({ value, defaultValue, onChange, placeholder, disabled, className, children, emptyText, size = "md", 'data-track': dataTrack }: SelectProps) => {
+const Select = (({ value, defaultValue, onChange, placeholder, disabled, className, children, emptyText, size = "md", 'data-track': dataTrack, 'aria-label': ariaLabel }: SelectProps) => {
   const { t } = useTranslation()
   const isEmpty = React.Children.count(children) === 0
   const resolvedEmptyText = emptyText ?? t('common.select.empty')
   return (
     <SelectRoot value={value} defaultValue={defaultValue} onValueChange={onChange} disabled={disabled || isEmpty}>
-      <SelectTrigger className={className} triggerSize={size} data-track={dataTrack}>
+      <SelectTrigger className={className} triggerSize={size} data-track={dataTrack} aria-label={ariaLabel}>
         <SelectValue placeholder={isEmpty ? resolvedEmptyText : placeholder} />
       </SelectTrigger>
       {!isEmpty && (

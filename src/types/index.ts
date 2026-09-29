@@ -28,6 +28,8 @@ export type {
   TenantBrief,
   UpdateProfileRequest,
   ChangePasswordRequest,
+  SetDefaultWorkspaceRequest,
+  SetDefaultWorkspaceResponse,
   DeleteAccountRequest,
   DeleteAccountResult,
   Preferences,

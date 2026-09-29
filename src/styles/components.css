@@ -446,6 +446,24 @@
   opacity: 0.7;
 }
 
+/* 只读态（prd#1093 需求 #4/#5：账号设置的手机号/邮箱以「禁用框」展示）：
+   灰底 + 默认光标 + 无聚焦高亮，视觉上就是禁用框；但用 readOnly 而不是 disabled，
+   文字不降到 opacity-50（原型里号码仍是正常深色可读），且值仍可选中复制、读屏可念。
+   hover/focus-within 一并覆盖，否则上方 base 规则会把底色刷回 --mg-bg-0。 */
+.modern-input-wrapper.modern-input-readonly,
+.modern-input-wrapper.modern-input-readonly:hover,
+.modern-input-wrapper.modern-input-readonly:focus-within {
+  /* 用 fill-1（6%）而不是 fill-0（3.5%）。
+     2026-09-24 对着原型算过像素：原型的禁用底是实色 #f2f5f9，叠在白卡片上
+     每通道差 13/10/6；fill-0 叠白后只差 6/6/0，**肉眼基本看不出是禁用框**（测试
+     环境上实测确认：类挂上了、CSS 也在，但跟普通白框无区别）。
+     fill-1 叠白后差 10/10/0，是三个挡位里最接近原型的一个。 */
+  background-color: var(--mg-fill-1) !important;
+  border-color: var(--mg-border) !important;
+  box-shadow: var(--shadow-sm) !important;
+  cursor: default;
+}
+
 .modern-input-field:hover,
 .modern-input-wrapper:hover {
   border-color: var(--mg-control-border-hover) !important;
@@ -787,7 +805,7 @@ body:not([theme-mode='dark']) header.mg-glass-bar-strong {
 
 .mg-toast-title {
   color: inherit !important;
-  font-size: 13.5px !important;
+  font-size: 14px !important;
   line-height: 1.4 !important;
   font-weight: 600 !important;
 }
@@ -826,4 +844,52 @@ body:not([theme-mode='dark']) header.mg-glass-bar-strong {
 @keyframes mg-cs-dot-bounce {
   0%, 80%, 100% { transform: scale(1); opacity: 0.4; }
   40% { transform: scale(1.4); opacity: 1; }
+}
+
+/* 账号设置的「标签 | 控件」行（prd#1093 需求 #4/#5，对齐原型 .account-settings-row）。
+   原型是两栏 grid：左栏 240px 放标签 + 说明文字，右栏放输入框 + 操作按钮，行与行之间
+   用一条 hairline 分隔。此前实现是纵向堆叠（标签在上、框在中、说明在下），
+   和原型是两种结构 —— 只调底色对不上「与原型图保持一致」。
+   窄屏（<640px）退回单栏堆叠，否则 240px 标签栏会把输入框挤没。 */
+.account-settings-row {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+  padding: 14px 0;
+  border-top: 1px solid var(--mg-border);
+}
+
+/* 第一行不要上边框 —— 上面已有头像区的分隔，两条线叠在一起会显得脏。 */
+.account-settings-row:first-of-type {
+  border-top: 0;
+}
+
+.account-settings-row > .account-settings-label {
+  display: grid;
+  gap: 3px;
+  align-content: center;
+}
+
+.account-settings-row > .account-settings-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 输入框定宽 260px（对齐原型 .account-settings-control input 的 width: 260px），按钮在其右侧。
+   宽度必须写在这里、而不是页面传 w-[260px]：`.modern-input-wrapper` 自带 `@apply ... w-full`，
+   那是未分层 CSS，和页面的任意值类同优先级但位置更靠后 —— 页面传的宽度会被它静默盖掉，
+   结果输入框撑满整行、把按钮挤到下一行（2026-09-24 实测 inputW==ctrlWidth==462px）。
+   flex-basis + flex-grow:0 从布局层定宽，不跟 w-full 抢同一个属性，也不必上 !important。 */
+.account-settings-row > .account-settings-control > .modern-input-wrapper {
+  flex: 0 1 260px;
+}
+
+@media (max-width: 640px) {
+  .account-settings-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
 }

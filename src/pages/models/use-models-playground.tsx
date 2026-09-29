@@ -21,7 +21,7 @@ import { useExperienceWorkbenchStore } from '@/store/use-experience-workbench-st
 import { prettyModelName } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
 import { useBalance, useBalanceBreakdown } from '@/hooks/use-balance'
-import { calculateSpendableBalance } from '@/pages/billing/formatBalance'
+import { calculateSpendableBalance, parseBalanceAmount } from '@/pages/billing/formatBalance'
 import { trackEvent, trackPageView } from '@/lib/track'
 import { appToast } from '@/lib/app-toast'
 import type { CatalogModelItem } from '@/types'
@@ -50,6 +50,7 @@ import {
   modelEntryTask,
   offlineModelPlaceholder,
   isOfflineModel,
+  isModelLockedByBalance,
   modelSupportsAttachment,
   defaultExperienceParams,
   withDefaultExperienceParams,
@@ -172,8 +173,8 @@ export function useModelsPlayground() {
         : categoryTasks[0]
   const needsFileTask = !isDialogue && taskNeedsFile(effectiveTask)
 
-  // §9.1 余额资格状态机 + 需求方 #833（1.0.6）：可消费合计（主+赠送+奖励）为 0 时，
-  // 付费与免费模型一律禁止发送（免费模型也要求余额 > 0，防脚本薅羊毛），文案按免费/付费分场景。
+  // §9.1 余额资格状态机 + 需求方 #833（1.0.6）+ #1091（1.0.7）：付费模型看可消费合计（主+赠送+奖励）> 0；
+  // 免费模型只看主余额 > 0（赠送 / 奖励不计入，防脚本薅羊毛），判据见 isModelLockedByBalance，文案按免费/付费分场景。
   const tenantId = useAuthStore((s) => s.activeTenantId) ?? ''
   const { data: balance } = useBalance(tenantId)
   const { data: balanceBreakdown } = useBalanceBreakdown(tenantId)
@@ -182,8 +183,11 @@ export function useModelsPlayground() {
     balanceBreakdown?.gift?.amount,
     balanceBreakdown?.reward?.amount,
   )
+  const mainBalance = parseBalanceAmount(balance?.available?.amount)
+  // 模型选择器用：可消费合计为 0 时置灰付费模型（免费模型仍可选，发送时再按主余额拦）
   const isBalanceZero = spendableBalance !== undefined && spendableBalance <= 0
-  const isBlockedByBalance = isBalanceZero && !!selectedModel
+  const isBlockedByBalance = !!selectedModel
+    && isModelLockedByBalance(selectedModel, { spendable: spendableBalance, main: mainBalance })
   /** dialogue 类允许附哪种附件（§7.5）。对话类的音频附件在真实 task 枚举里没有对应的子任务
    *  （image_to_text/video_to_text 之外没有 audio 版本），先不开放，只开放能对应到真实
    *  任务枚举的图片/视频。image/audio/video 类不走这条通用回形针路径，改用 needsFileTask

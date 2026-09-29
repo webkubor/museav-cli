@@ -162,6 +162,8 @@
         "sat": "六"
       },
       "monthLabel": "{{year}}年 {{month}}月",
+      "prevMonth": "上个月",
+      "nextMonth": "下个月",
       "presetsTitle": "常用时间",
       "customLabel": "自定义日期区间",
       "deadline": "截止",
@@ -170,6 +172,13 @@
       "selectBelow": "请在下方选择",
       "pending": "待选择",
       "apply": "确定应用"
+    },
+    "dateTimePicker": {
+      "placeholder": "选择日期与时间",
+      "time": "时间",
+      "hour": "时",
+      "minute": "分",
+      "apply": "确定"
     },
     "customerService": {
       "thinking": "思考中…",
@@ -195,20 +204,11 @@
         "subtitle": "请尽量补充完整信息，当前页面上下文会随反馈一并记录。",
         "required": "必填",
         "optional": "选填",
-        "issueTypeLabel": "问题类型",
-        "issueTypePlaceholder": "请选择问题类型",
-        "issueTypes": {
-          "functionality": "功能异常",
-          "apiCall": "调用问题",
-          "billing": "账单问题",
-          "suggestion": "产品建议",
-          "other": "其他"
-        },
         "descriptionLabel": "问题描述",
         "descriptionPlaceholder": "描述遇到的问题和期望结果",
         "occurredAtLabel": "发生时间",
         "requestIdLabel": "Request ID",
-        "requestIdPlaceholder": "用于关联调用日志，选填",
+        "requestIdPlaceholder": "用于关联调用日志",
         "attachmentLabel": "截图或附件",
         "attachmentPick": "选择本地文件",
         "attachmentClear": "移除已选文件",
@@ -228,7 +228,27 @@
         },
         "attachmentUploading": "上传中…",
         "attachmentFailed": "附件上传失败，请重试",
-        "submitFailed": "提交失败，请稍后重试"
+        "attachmentInvalid": "仅支持 PNG / JPEG / WebP / PDF / TXT 格式",
+        "attachmentTooLarge": "附件不能超过 5MB",
+        "attachmentAttachFailed": "附件关联失败，反馈已提交",
+        "submitFailed": "提交失败，请稍后重试",
+        "hint": "当前页面上下文会随反馈记录",
+        "category": "问题类型",
+        "categoryPlaceholder": "请选择问题类型",
+        "categoryRequired": "请选择问题类型",
+        "categoryOptions": {
+          "bug": "功能异常",
+          "api_issue": "调用问题",
+          "billing": "账单问题",
+          "suggestion": "产品建议",
+          "other": "其他"
+        },
+        "description": "问题描述",
+        "descriptionRequired": "请填写问题描述",
+        "occurredAt": "发生时间（选填）",
+        "requestId": "Request ID（选填）",
+        "attachment": "截图或附件（选填）",
+        "attachmentPlaceholder": "选择文件"
       },
       "quickQuestionsTitle": "常见问题",
       "quickQuestions": {
@@ -247,10 +267,11 @@
         "thanks": "感谢反馈"
       },
       "handoff": {
-        "queueing": "排队中",
+        "entry": "人工客服",
+        "queueing": "排队中 · 前方 {{position}} 人",
         "queueingWithPosition": "排队中 · 前方 {{count}} 人",
         "connecting": "正在连接人工客服",
-        "connected": "已接入人工客服",
+        "connected": "{{name}} · 工号 {{no}}",
         "cancelQueue": "取消排队",
         "cancelConnect": "取消转接",
         "end": "结束服务",
@@ -263,7 +284,20 @@
         "sendFailed": "消息发送失败，请重试。",
         "composerConnecting": "正在连接人工客服…",
         "composerLive": "输入要咨询的问题",
-        "agentInitial": "客"
+        "agentInitial": "客",
+        "cancelConnecting": "取消转接",
+        "endService": "结束服务",
+        "humanPlaceholder": "输入要咨询的问题",
+        "rateService": "请评价本次人工服务",
+        "starAria": "评价 {{star}} 星",
+        "submitRating": "提交评价",
+        "skipRating": "暂不评价",
+        "ratingSubmitted": "已提交 {{stars}} 星评价，感谢反馈",
+        "ratingSkipped": "本次暂未评价",
+        "ratingAria": "客服评价",
+        "ratingSubmittedAria": "客服评价已提交",
+        "ratingSkippedAria": "客服评价已跳过",
+        "starsAria": "客服星级"
       },
       "humanRating": {
         "title": "请评价本次人工服务",
@@ -278,11 +312,15 @@
       },
       "asyncTicket": {
         "title": "已转为异步问题单",
+        "pending": "待处理",
+        "defaultEta": "2小时内",
         "ariaLabel": "异步问题单 {{id}}",
         "idLabel": "工单编号",
         "etaLabel": "预计联系",
-        "contact": "客服将通过账号预留联系方式主动联系你，请留意后续通知。"
+        "contact": "客服将通过账号预留联系方式主动联系你，请留意后续通知。",
+        "reason": "当前咨询量较大，暂时未能接入人工客服。"
       },
+      "handoffStarted": "已为你转接人工客服，请稍候",
       "records": {
         "title": "服务记录",
         "subtitle": "查看处理进度与继续沟通",
@@ -333,6 +371,7 @@
         "supplementPlaceholder": "补充复现步骤、影响范围或客服追问的信息",
         "supplementSubmit": "提交补充",
         "supplementFailed": "提交失败，内容已保留，请重试。",
+        "supplementClosed": "工单状态已变更，无法继续补充。",
         "replyAria": "补充工单消息",
         "replyPlaceholder": "补充问题或回复客服",
         "replySend": "发送工单消息",
@@ -341,6 +380,93 @@
         "attachmentAria": "添加工单附件",
         "downloadAttachment": "下载附件 {{name}}",
         "downloadFailed": "附件下载失败，请稍后重试。"
+      },
+      "like": "有帮助",
+      "dislike": "没帮助",
+      "handoffFailed": "转人工失败，请稍后重试",
+      "handoffBusy": "转人工或新会话正在处理中，请稍候再试",
+      "handoffRetryLater": "新会话失败，转人工未能发起，请稍后重试",
+      "handoffConnected": "客服已接入，可以开始咨询",
+      "handoffEnded": "人工服务已结束，已返回平台助手",
+      "handoffAsync": "排队时间较长，已转为异步处理，可在服务记录中查看进度",
+      "handoffQueueCancelled": "已取消排队",
+      "handoffConnectCancelled": "已取消转接",
+      "feedbackFailed": "反馈提交失败，请稍后重试",
+      "reopenSuccess": "已重新打开工单",
+      "faq": {
+        "apiKey": "如何创建 API Key",
+        "callModel": "如何调用模型 API",
+        "chooseModel": "如何选择合适的模型",
+        "billing": "如何查看用量与账单"
+      },
+      "answerStatus": {
+        "intent": "请补充工作空间、时间范围或 Request ID，方便我继续处理",
+        "needsLogin": "登录后可查询你的账户数据",
+        "insufficientEvidence": "暂时无法确认，建议提交反馈",
+        "degraded": "当前证据不足，以上仅供参考",
+        "outOfScope": "我目前仅支持 ModelGo 相关问题",
+        "suggestHandoff": "如需人工协助，可转接客服",
+        "handoffCta": "转人工"
+      },
+      "tickets": {
+        "title": "服务记录",
+        "back": "返回",
+        "empty": "暂无服务记录",
+        "loading": "加载中…",
+        "loadMore": "加载更多",
+        "emptyHint": "提交问题反馈或联系人工客服后，处理进度会显示在这里。",
+        "emptySearch": "没有匹配的编号或标题。",
+        "loadFailed": "服务记录暂时无法加载",
+        "loadFailedHint": "请稍后重试。错误编号：{{code}}",
+        "reload": "重新加载",
+        "unavailable": "该服务记录不可访问",
+        "unavailableHint": "记录可能已归档，或当前账号没有查看权限。",
+        "backToList": "返回服务记录",
+        "reopen": "重新打开",
+        "searchPlaceholder": "搜索服务记录",
+        "filters": {
+          "all": "全部",
+          "processing": "处理中",
+          "ended": "已结束"
+        },
+        "types": {
+          "feedback": "问题反馈",
+          "handoff": "人工服务"
+        },
+        "unread": "有新消息",
+        "detail": {
+          "typeLabel": "类型",
+          "idLabel": "编号",
+          "createdLabel": "提交时间",
+          "updatedLabel": "最近更新",
+          "agentLabel": "客服",
+          "conversation": "会话记录",
+          "replyAria": "补充工单消息",
+          "replyPlaceholder": "输入消息，客服会在工单里回复你",
+          "replySend": "发送",
+          "categoryLabel": "问题类型",
+          "occurredLabel": "发生时间",
+          "requestIdLabel": "Request ID",
+          "attachmentsLabel": "附件",
+          "downloadAria": "下载附件 {{name}}",
+          "downloadFailed": "附件下载失败，请稍后重试"
+        }
+      },
+      "loginRequired": {
+        "handoff": "转人工需要先登录，登录后可直接转接客服。",
+        "tickets": "登录后查看服务记录"
+      },
+      "unreadBadge": "{{count}} 条未读服务记录",
+      "newSession": "新会话",
+      "sensitiveHit": "已检测到疑似密钥或令牌，该内容不会被记录或转给人工客服。",
+      "orb": {
+        "idle": "随时帮你解答",
+        "thinking": "正在理解你的问题",
+        "working": "正在处理",
+        "asking": "等待你补充信息",
+        "done": "回复已送达",
+        "error": "暂时未能完成",
+        "open": "打开智能助手"
       }
     },
     "referralInviteCard": {
@@ -354,6 +480,9 @@
       "rulesLinkLabel": "查看分润规则",
       "copyInviteLinkAria": "复制邀请链接",
       "copyInviteCodeAria": "复制{{label}}"
-    }
+    },
+    "newVersionTitle": "有新版本可用",
+    "newVersionRefreshing": "正在自动刷新以使用最新版本…",
+    "newVersionRefreshFailed": "页面仍是旧版本，请手动刷新一次。"
   }
 }

@@ -2,6 +2,12 @@
 /* ── 精选轮播（对齐 PRD 原型）────────────────────────────────
    相邻卡片露边：绝对定位 + 按 --slide-offset 水平位移，非激活项 scale/opacity
    弱化，|offset|>1 隐藏。背景图直接铺满 banner；无图时只保留中性兜底。 */
+/* ── 本页 palette（1.0.7 主题色 100% token 化收口）：
+   无全局 token 对应的页面色；值即变量名（可读自证），只在本文件内使用。 ── */
+:root {
+  --cfeat-ffffff: #fff;
+}
+
 .mg-featured { display: grid; gap: 10px; margin-bottom: 18px; }
 /* 轨道高度是**内容预算**，不是随手定的数字：slide 绝对定位撑不出高度，只能写死。
    最坏一屏（带徽章）左列这笔账：
@@ -129,10 +135,10 @@
   color: var(--brand-base);
 }
 .mg-featured-actions button.mg-featured-try {
-  background: var(--brand-base); border-color: var(--brand-base); color: #fff;
+  background: var(--brand-base); border-color: var(--brand-base); color: var(--cfeat-ffffff);
 }
 .mg-featured-actions button.mg-featured-try:hover {
-  background: var(--brand-deep); border-color: var(--brand-deep); color: #fff;
+  background: var(--brand-deep); border-color: var(--brand-deep); color: var(--cfeat-ffffff);
 }
 
 .mg-featured-dots { display: flex; justify-content: center; gap: 6px; }

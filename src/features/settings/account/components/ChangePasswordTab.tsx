@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { LuCheck, LuLock, LuEye, LuEyeOff } from 'react-icons/lu'
 import { changePassword } from '@/services/account'
@@ -8,16 +8,10 @@ import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { appToast } from '@/lib/app-toast'
 
-/**
- * 登录密码：对齐原型 AccountPasswordDialog——「行 + 按钮 → 两步弹窗(验证身份 → 设新密码)」。
- *
- * 当前仅支持已设置密码的用户通过当前密码验证后修改密码；忘记密码走独立的邮箱重置流程。
- */
-const HAS_PASSWORD = true // TODO(待后端 has_password)：暂无法探测，按已设密码处理
-
-function PasswordDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+function PasswordDialog({ open, onClose, hasPassword }: { open: boolean; onClose: () => void; hasPassword: boolean }) {
   const { t } = useTranslation()
-  const [step, setStep] = useState<'verify' | 'set'>('verify')
+  const queryClient = useQueryClient()
+  const [step, setStep] = useState<'verify' | 'set'>(hasPassword ? 'verify' : 'set')
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -37,7 +31,7 @@ function PasswordDialog({ open, onClose }: { open: boolean; onClose: () => void 
   const pwdType = showPwd ? 'text' : 'password'
 
   const reset = () => {
-    setStep('verify')
+    setStep(hasPassword ? 'verify' : 'set')
     setCurrentPassword('')
     setNewPassword('')
     setConfirmPassword('')
@@ -47,8 +41,9 @@ function PasswordDialog({ open, onClose }: { open: boolean; onClose: () => void 
 
   const mutation = useMutation({
     mutationFn: () =>
-      changePassword({ current_password: currentPassword, new_password: newPassword }),
+      changePassword({ ...(hasPassword ? { current_password: currentPassword } : {}), new_password: newPassword }),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['account-profile'] })
       appToast.success(t('account.security.toastSuccess'))
       onClose()
       reset()
@@ -89,7 +84,7 @@ function PasswordDialog({ open, onClose }: { open: boolean; onClose: () => void 
       open={open}
       onClose={handleClose}
       size="md"
-      title={HAS_PASSWORD ? t('account.security.changePassword') : t('account.security.setPassword')}
+      title={hasPassword ? t('account.security.changePassword') : t('account.security.setPassword')}
       footer={
         step === 'verify' ? (
           <div className="flex justify-end gap-2">
@@ -98,16 +93,16 @@ function PasswordDialog({ open, onClose }: { open: boolean; onClose: () => void 
           </div>
         ) : (
           <div className="flex justify-end gap-2">
-            <Button size="small" variant="secondary" disabled={mutation.isPending} onClick={() => { setStep('verify'); setError('') }}>{t('account.security.previous')}</Button>
+            <Button size="small" variant="secondary" disabled={mutation.isPending} onClick={() => { if (hasPassword) { setStep('verify'); setError('') } else { handleClose() } }}>{t(hasPassword ? 'account.security.previous' : 'common.cancel')}</Button>
             <Button size="small" variant="brand" loading={mutation.isPending} onClick={complete}>
-              {HAS_PASSWORD ? t('account.security.completeChange') : t('account.security.completeSet')}
+              {hasPassword ? t('account.security.completeChange') : t('account.security.completeSet')}
             </Button>
           </div>
         )
       }
     >
       {/* 步骤指示：验证身份 → 设置新密码 */}
-      <div className="mb-5 flex items-center gap-2 text-xs font-semibold">
+      {hasPassword && <div className="mb-5 flex items-center gap-2 text-xs font-semibold">
           <span className={step === 'verify' ? 'text-brand-base' : 'text-mg-success'}>
             <span className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-current/10 align-middle">
               {step === 'set' ? <LuCheck size={11} /> : '1'}
@@ -119,15 +114,17 @@ function PasswordDialog({ open, onClose }: { open: boolean; onClose: () => void 
           <span className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-current/10 align-middle">2</span>
           {t('account.security.setNewPassword')}
         </span>
-      </div>
+      </div>}
 
       {step === 'verify' ? (
         <div className="space-y-3">
           <div>
-            <span className="mb-2 block text-xs font-semibold text-mg-text-2">{t('account.security.currentPassword')}</span>
+            <label htmlFor="account-current-password" className="mb-2 block text-xs font-semibold text-mg-text-2">{t('account.security.currentPassword')}</label>
             <Input
               type={pwdType}
               autoFocus
+              id="account-current-password"
+              autoComplete="current-password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               placeholder={t('account.security.currentPlaceholder')}
@@ -138,10 +135,12 @@ function PasswordDialog({ open, onClose }: { open: boolean; onClose: () => void 
       ) : (
         <div className="space-y-3">
           <div>
-            <span className="mb-2 block text-xs font-semibold text-mg-text-2">{t('account.security.newPassword')}</span>
+            <label htmlFor="account-new-password" className="mb-2 block text-xs font-semibold text-mg-text-2">{t('account.security.newPassword')}</label>
             <Input
               type={pwdType}
               autoFocus
+              id="account-new-password"
+              autoComplete="new-password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder={t('account.security.newPlaceholder')}
@@ -149,9 +148,11 @@ function PasswordDialog({ open, onClose }: { open: boolean; onClose: () => void 
             />
           </div>
           <div>
-            <span className="mb-2 block text-xs font-semibold text-mg-text-2">{t('account.security.confirmPassword')}</span>
+            <label htmlFor="account-confirm-password" className="mb-2 block text-xs font-semibold text-mg-text-2">{t('account.security.confirmPassword')}</label>
             <Input
               type={pwdType}
+              id="account-confirm-password"
+              autoComplete="new-password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder={t('account.security.confirmPlaceholder')}
@@ -170,7 +171,7 @@ function PasswordDialog({ open, onClose }: { open: boolean; onClose: () => void 
  * 「登录密码」行——不自带卡片，由 index.tsx 的「安全与登录」统一卡片承载，
  * 与偏好设置页同一「一张卡 + 分隔行」结构（DESIGN.md Card 铁律）。
  */
-export const ChangePasswordTab: React.FC = () => {
+export const ChangePasswordTab: React.FC<{ hasPassword: boolean }> = ({ hasPassword }) => {
   const { t } = useTranslation()
   const [dialogOpen, setDialogOpen] = useState(false)
 
@@ -180,21 +181,24 @@ export const ChangePasswordTab: React.FC = () => {
         <div className="min-w-0">
           <div className="text-[14px] font-bold text-mg-text-1">{t('account.security.passwordTitle')}</div>
           <div className="mt-1 text-xs leading-relaxed text-mg-text-3">
-            {HAS_PASSWORD ? t('account.security.passwordDesc') : t('account.security.passwordNotSetDesc')}
+            {hasPassword ? t('account.security.passwordDesc') : t('account.security.passwordNotSetDesc')}
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-3">
-          <span className="hidden items-center gap-1.5 text-mg-text-3 sm:flex">
-            <LuLock size={13} />
-            <span className="font-mono text-sm tracking-widest">{HAS_PASSWORD ? '••••••••' : t('account.security.notSet')}</span>
-          </span>
+          {/* prd#1093：未设置密码时只展示按钮，不展示锁图标/掩码预览（未设置态无锁可言） */}
+          {hasPassword && (
+            <span className="hidden items-center gap-1.5 text-mg-text-3 sm:flex">
+              <LuLock size={13} />
+              <span className="font-mono text-sm tracking-widest">••••••••</span>
+            </span>
+          )}
           <Button size="small" variant="brand" onClick={() => setDialogOpen(true)}>
-            {HAS_PASSWORD ? t('account.security.changePassword') : t('account.security.setPassword')}
+            {hasPassword ? t('account.security.changePassword') : t('account.security.setPassword')}
           </Button>
         </div>
       </div>
 
-      <PasswordDialog open={dialogOpen} onClose={() => setDialogOpen(false)} />
+      {dialogOpen && <PasswordDialog open hasPassword={hasPassword} onClose={() => setDialogOpen(false)} />}
     </>
   )
 }

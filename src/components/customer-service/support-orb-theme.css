@@ -1,0 +1,51 @@
+/**
+ * 客服状态球的配色 —— 接管 ai-orb 的默认橙，改从品牌色派生（prd#1061 口径）。
+ *
+ * ai-orb 的默认配色是橙色系（--ao-hi #ffc79a / --ao-mid #ff8a50 / --ao-lo #e8632f），
+ * 而 SupportOrb 的头部注释写着「配色由控制台 CSS 接管」—— 接是打算接的，
+ * 但这份文件一直没写，于是球在任何市场、任何明暗下都是橙的，
+ * 与品牌色（国内 #223de5 蓝 / 国际站另一套）完全脱节。
+ *
+ * 三档从 --brand-base 派生，不写死任何色值：
+ *   hi  高光  品牌色提亮 —— 球体左上的受光面
+ *   mid 主色  品牌色本身 —— 球体主调
+ *   lo  暗部  品牌色压暗 —— 球体右下的背光面
+ *   glow 光晕 跟 mid，working 态用 hi（库的既有差异，保留）
+ *   ink 眼睛  从品牌深色阶取值，让球心高光上的表情仍有清晰对比；此前白色瞳孔
+ *            叠在浅色球心高光上几乎消失。
+ *
+ * 用 oklab 混色而不是 srgb：srgb 下往黑白里混会掉饱和、发灰，
+ * oklab 的明度是感知线性的，提亮压暗后色相不漂。
+ *
+ * 深色档改用 --brand-mid（库给的提亮版）。深色背景上直接用 --brand-base 太沉，
+ * 球会糊进背景里 —— 与 --mg-nav-text-active 那条同一个理由（见 tokens.css）。
+ *
+ * ⚠️ 这四个变量名由 ai-orb 定义，不是本仓自有 token。升级 ai-orb 时要核对它有没有改名：
+ * 改了名这里会静默失效（球变回橙色，不报错）。
+ */
+
+.cs-orb .agent-orb {
+  --ao-hi: color-mix(in oklab, var(--brand-base) 55%, #fff);
+  --ao-mid: var(--brand-base);
+  --ao-lo: color-mix(in oklab, var(--brand-base) 78%, #000);
+  --ao-glow: var(--brand-base);
+  /* 深色品牌瞳孔压在球心高光上，浅色球心也能看清表情。 */
+  --ao-ink: var(--brand-deep);
+}
+
+/* working 态的光晕用高光色 —— 保留库的既有差异，只换色系不改行为 */
+.cs-orb .agent-orb.is-working {
+  --ao-glow: color-mix(in oklab, var(--brand-base) 55%, #fff);
+}
+
+[data-theme='dark'] .cs-orb .agent-orb {
+  --ao-hi: color-mix(in oklab, var(--brand-mid) 58%, #fff);
+  --ao-mid: var(--brand-mid);
+  --ao-lo: color-mix(in oklab, var(--brand-mid) 72%, #000);
+  --ao-glow: var(--brand-mid);
+  --ao-ink: var(--brand-deep);
+}
+
+[data-theme='dark'] .cs-orb .agent-orb.is-working {
+  --ao-glow: color-mix(in oklab, var(--brand-mid) 58%, #fff);
+}

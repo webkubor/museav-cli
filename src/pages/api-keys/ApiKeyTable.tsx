@@ -208,7 +208,7 @@ export function ApiKeyTable({
                 onClick={() => onOpenDetail(record)}
               >
                 <TableCell>
-                  <TruncatedText text={record.name} maxWidth={200} className="font-semibold text-mg-text-1 text-[13.5px]" />
+                  <TruncatedText text={record.name} maxWidth={200} className="font-semibold text-mg-text-1 text-sm" />
                   {/* #298：名称下方掩码 + 复制完整明文按钮 */}
                   <div className="mt-1 flex items-center gap-1.5">
                     <span className="font-mono text-xs text-mg-text-3 tracking-tight cursor-help" title={t('apiKeys.table.maskedTitle')}>{record.masked}</span>

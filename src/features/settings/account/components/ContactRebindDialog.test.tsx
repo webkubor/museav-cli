@@ -43,6 +43,8 @@ await loadLocaleNamespaces(['common', 'account'])
 
 const profile: AccountProfile = {
   account_id: 'acc_1',
+  has_password: true,
+  default_workspace_id: '',
   email: 'louie@example.com',
   email_verified_at: '',
   display_name: 'Louie',

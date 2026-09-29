@@ -12,6 +12,7 @@
       "emailLabel": "邮箱地址",
       "emailHint": "用于接收账号通知与找回。",
       "nameLabel": "显示名称",
+      "nameHint": "展示在控制台右上角与成员列表。",
       "namePlaceholder": "请输入显示名称",
       "toastSuccess": "显示名称已保存",
       "toastError": "保存失败，请重试",
@@ -179,6 +180,7 @@
         "phone": "请输入手机号",
         "mainlandPhone": "请输入中国大陆手机号",
         "code6": "6 位数字",
+        "emailCode6": "6 位邮箱验证码",
         "smsCode6": "6 位短信验证码",
         "enterCode6": "请输入 6 位验证码",
         "referralCode": "如有推荐邀请码请填写，如 MG-XXXX"
@@ -200,6 +202,11 @@
         "showPassword": "显示密码",
         "hidePassword": "隐藏密码"
       },
+      "marketSwitcher": {
+        "ariaLabel": "切换站点",
+        "china": "中国站",
+        "global": "Global"
+      },
       "login": {
         "title": "欢迎回来",
         "subtitle": "登录到你的 ModelGo 账号",
@@ -217,11 +224,52 @@
         "sessionFailed": "登录成功但获取会话失败，请刷新重试",
         "invalidCredentials": "邮箱或密码错误"
       },
+      "domesticEmailLogin": {
+        "title": "邮箱登录",
+        "subtitle": "未注册的邮箱将进入账号创建流程",
+        "registerViaPhone": "此邮箱尚未注册，请使用手机号登录创建账号。"
+      },
+      "globalEmailAuth": {
+        "entryTitle": "登录 / 注册",
+        "entrySubtitle": "选择一种方式继续使用 ModelGo",
+        "continueWith": "使用 {{provider}} 继续",
+        "continueEmail": "使用邮箱继续",
+        "accountNotice": "首次使用？继续操作将自动创建账号",
+        "humanVerification": "点击完成人机验证",
+        "humanVerifying": "正在进行人机验证…",
+        "humanVerified": "人机验证已完成",
+        "checkEmailTitle": "检查你的邮箱",
+        "checkEmailSubtitle": "请输入发送至 {{email}} 的 6 位验证码",
+        "codeLabel": "6 位验证码",
+        "codeHelp": "暂时没有收到？请稍等片刻，并检查垃圾邮件文件夹。",
+        "submit": "验证并继续",
+        "failed": "验证失败，请稍后重试",
+        "emailAlreadyRegistered": "该邮箱已注册。免密登录接口尚未上线，暂时无法通过验证码进入。",
+        "codeSentHint": "验证码 5 分钟内有效，请尽快输入",
+        "codeCaptchaExpired": "安全验证已失效，请重新完成验证后再提交（验证码本身仍有效，无需重新获取）",
+        "resend": "重新发送验证码",
+        "resendCountdown": "{{seconds}} 秒后可重新发送",
+        "successTitle": "验证成功",
+        "successDescription": "{{identity}} 已完成登录 / 注册演示",
+        "oauthSuccessDescription": "{{identity}} 已完成第三方登录 / 注册演示",
+        "useAnotherEmail": "使用其他邮箱",
+        "restart": "返回登录方式",
+        "discountShowcase": {
+          "title": "实时模型折扣",
+          "summary": "最高节省 {{discount}}%",
+          "discount": "−{{discount}}%",
+          "footer": "预览价格 · 始终低于官方定价",
+          "browse": "浏览全部模型"
+        },
+        "totpLabel": "身份验证器验证码（已启用时填写）",
+        "totpHint": "如果已启用双重验证，请输入身份验证器中的 6 位验证码。",
+        "totpRetry": "请填写有效的身份验证器验证码。请重新获取邮箱验证码，并一同提交。"
+      },
       "phoneLogin": {
-        "title": "登录 / 注册",
-        "subtitle": "未注册的手机号将自动注册并登录",
+        "title": "手机号登录",
+        "subtitle": "未注册的手机号将自动创建账号",
         "useEmail": "使用邮箱登录",
-        "submit": "登录 / 注册",
+        "submit": "验证并继续",
         "referralNotice": "邀请码 {{code}} 已应用，注册后自动生效"
       },
       "signup": {
@@ -300,6 +348,7 @@
       "legal": {
         "signupPrefix": "注册即代表同意",
         "phonePrefix": "登录 / 注册即代表同意",
+        "emailCodePrefix": "登录 / 注册即代表同意",
         "bindingPrefix": "绑定即代表同意",
         "terms": "服务条款",
         "privacy": "隐私政策",

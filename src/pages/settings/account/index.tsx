@@ -96,7 +96,7 @@ export default function AccountSettingsPage() {
         <TabsContent value="security">
           <div className="max-w-[620px] pt-2">
             <div className="mg-tile flex flex-col p-6">
-              <ChangePasswordTab />
+              <ChangePasswordTab hasPassword={profile.has_password} />
               <OAuthBindingTab connections={profile.connected_oauth} />
               {/* 注销账号功能未测试,暂不上线——隐藏渲染,组件代码(DeleteAccountSection)保留,测试通过后放开 */}
               {/* <DeleteAccountSection /> */}

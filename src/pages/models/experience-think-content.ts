@@ -1,8 +1,8 @@
 /**
- * 模型思维链（<think>...</think>）解析（#334，shared/modelgo_prd#334）。
+ * 模型思维链（<think>...</think>）过滤（PRD shared/modelgo_prd#1124）。
  *
- * 会输出思维链的模型（如 MiniMax M3）把推理段落用 <think> 标签内联在正文里返回，
- * 渲染层必须把它拆成独立的「思考过程」块，标签本身绝不外露给用户。
+ * 模型可能把推理段落用 <think> 标签内联在正文里返回；仅保留标签外的最终答复，
+ * 思维链正文与原始标签都不得展示给用户，也不单独保存在解析结果中。
  *
  * 覆盖三条路径（都汇入 ExperienceMessage.content、在 ExperienceMessageList 渲染时解析）：
  * 1. 流式 SSE：标签可能跨 chunk 到达——只有开标签没闭合时，后续内容整段按思考中处理；
@@ -12,15 +12,13 @@
  */
 
 const OPEN_TAG = '<think>'
-const CLOSE_TAG = '</think>'
+const OPEN_START_RE = /<think\b/i
+const OPEN_TAG_RE = /<think\b[^<>]*>/i
+const CLOSE_TAG_RE = /<\/think\s*>/i
 
 export interface ThinkParseResult {
-  /** 思考过程文本（多段 think 合并、去掉标签本身），无思维链时为空串 */
-  think: string
   /** 正文（think 段以外的内容） */
   answer: string
-  /** 是否存在未闭合的 <think>（流式思考进行中，其后内容全部计入 think） */
-  thinkOpen: boolean
 }
 
 /** 末尾半截标签暂扣：流式 chunk 可能停在标签中间（如 "…<thi"），
@@ -35,41 +33,47 @@ function trimPartialTagTail(text: string, tag: string): string {
 }
 
 /**
- * 把含 <think> 标签的模型输出拆成 思考过程 / 正文。
+ * 过滤含 <think> 标签的模型输出，只返回标签外的正文。
  *
  * @param streaming 该消息是否仍在流式接收中——只有在途时才暂扣末尾的半截标签，
  *                  已定稿的消息若真以 "<" 之类字符结尾（如数学表达式）不能被误剪。
  */
 export function parseThinkContent(content: string, streaming = false): ThinkParseResult {
   if (!content.toLowerCase().includes('<think') && !(streaming && content.includes('<'))) {
-    return { think: '', answer: content, thinkOpen: false }
+    return { answer: content }
   }
   let answer = ''
-  let think = ''
-  let thinkOpen = false
+  let thinkDepth = 0
   let rest = content
   for (;;) {
-    if (!thinkOpen) {
-      const idx = rest.toLowerCase().indexOf(OPEN_TAG)
-      if (idx === -1) {
+    if (thinkDepth === 0) {
+      const openTag = OPEN_TAG_RE.exec(rest)
+      const malformedOpenIndex = OPEN_START_RE.exec(rest)?.index
+      if (malformedOpenIndex !== undefined && (!openTag || malformedOpenIndex < openTag.index)) {
+        answer += rest.slice(0, malformedOpenIndex)
+        break
+      }
+      if (!openTag || openTag.index === undefined) {
         answer += streaming ? trimPartialTagTail(rest, OPEN_TAG) : rest
         break
       }
-      answer += rest.slice(0, idx)
-      rest = rest.slice(idx + OPEN_TAG.length)
-      thinkOpen = true
+      answer += rest.slice(0, openTag.index)
+      rest = rest.slice(openTag.index + openTag[0].length)
+      thinkDepth = 1
     } else {
-      const idx = rest.toLowerCase().indexOf(CLOSE_TAG)
-      if (idx === -1) {
-        const chunk = streaming ? trimPartialTagTail(rest, CLOSE_TAG) : rest
-        think += think && chunk ? `\n\n${chunk}` : chunk
-        break
+      const nestedOpenStart = OPEN_START_RE.exec(rest)
+      const closeTag = CLOSE_TAG_RE.exec(rest)
+      if (nestedOpenStart && (closeTag === null || nestedOpenStart.index < closeTag.index)) {
+        const nestedTag = OPEN_TAG_RE.exec(rest.slice(nestedOpenStart.index))
+        const nestedLength = nestedTag?.index === 0 ? nestedTag[0].length : '<think'.length
+        rest = rest.slice(nestedOpenStart.index + nestedLength)
+        thinkDepth += 1
+        continue
       }
-      const chunk = rest.slice(0, idx)
-      think += think && chunk ? `\n\n${chunk}` : chunk
-      rest = rest.slice(idx + CLOSE_TAG.length)
-      thinkOpen = false
+      if (!closeTag || closeTag.index === undefined) break
+      rest = rest.slice(closeTag.index + closeTag[0].length)
+      thinkDepth -= 1
     }
   }
-  return { think: think.trim(), answer: answer.trim(), thinkOpen }
+  return { answer: answer.trim() }
 }

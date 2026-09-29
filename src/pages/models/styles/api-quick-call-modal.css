@@ -1,4 +1,16 @@
 /* ── API 快捷调用弹窗（PRD §7.7） ────────────────────────────────────────── */
+/* ── 本页 palette（1.0.7 主题色 100% token 化收口）：
+   无全局 token 对应的页面色；值即变量名（可读自证），只在本文件内使用。 ── */
+:root {
+  --aqc-202124: #202124;
+  --aqc-6e7378: #6e7378;
+  --aqc-9aa0a6: #9aa0a6;
+  --aqc-e8eaed: #e8eaed;
+  --aqc-e8eaee: #e8eaee;
+  --aqc-f8f9fa: #f8f9fa;
+  --aqc-w-a8: rgba(255,255,255,0.08);
+}
+
 .api-quick-call-header {
   display: flex;
   align-items: center;
@@ -31,7 +43,7 @@
 }
 
 .api-quick-call-model-id-value {
-  font-size: 12.5px;
+  font-size: 12px;
   font-family: var(--mg-font-mono, monospace);
   color: var(--mg-text-1);
   flex: 1;
@@ -58,19 +70,19 @@
   margin: 0;
   padding: 14px 16px;
   border-radius: var(--radius-md);
-  background: #f8f9fa;
-  border: 1px solid #e8eaee;
+  background: var(--aqc-f8f9fa);
+  border: 1px solid var(--aqc-e8eaee);
   overflow-x: auto;
-  font-size: 12.5px;
+  font-size: 12px;
   line-height: 1.6;
-  color: #202124;
+  color: var(--aqc-202124);
   white-space: pre;
 }
 [theme-mode='dark'] .api-quick-call-code-pre,
 body[theme-mode='dark'] .api-quick-call-code-pre {
-  background: #202124;
-  border-color: rgba(255, 255, 255, 0.08);
-  color: #e8eaed;
+  background: var(--aqc-202124);
+  border-color: var(--aqc-w-a8);
+  color: var(--aqc-e8eaed);
 }
 
 .api-code-lines {
@@ -87,11 +99,11 @@ body[theme-mode='dark'] .api-quick-call-code-pre {
   width: 2ch;
   margin-right: 16px;
   text-align: right;
-  color: #9aa0a6;
+  color: var(--aqc-9aa0a6);
   user-select: none;
 }
 [theme-mode='dark'] .api-code-line::before,
-body[theme-mode='dark'] .api-code-line::before { color: #6e7378; }
+body[theme-mode='dark'] .api-code-line::before { color: var(--aqc-6e7378); }
 
 .api-quick-call-footer {
   display: flex;

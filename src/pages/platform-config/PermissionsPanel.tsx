@@ -95,7 +95,7 @@ export function PermissionsPanel() {
               {[
                 { k: '运营编辑什么', tone: 'text-mg-text-2', v: '在 controller-web「菜单权限管理」给角色勾「能看的菜单 + 能点的操作」，保存 ≤30s 生效。' },
                 { k: '后端返什么', tone: 'text-brand-base', v: '/auth/session 里 permissions.granted = 该用户在当前租户+工作空间下被勾中的权限码数组（如 dashboard:view、api_keys:create）；切租户/工作空间后重拉要返回新数组。' },
-                { k: '现在有没有', tone: 'text-mg-text-2', v: '有：session 已在返 granted + menus，运营矩阵在 controller-web 可编辑。要补的是「新增页面的新权限码先登记进矩阵」+「数据接口自身按角色裁剪」(#357/#359)。' },
+                { k: '现在有没有', tone: 'text-mg-text-2', v: '有：session 已在返 granted + menus，运营矩阵在 controller-web 可编辑。要补的是「新增页面的新权限码先登记进矩阵」+「数据接口自身按角色裁剪」(#357/#359)。' }, // allow-raw-color: #357/#359 是关联工单号（GitLab issue 编号），不是色值
                 { k: '不用做什么', tone: 'text-mg-text-3', v: '不用给每个页面单独做权限接口（session 一次给全）；不用前端存权限表（已删）；不用前端兜底数据过滤（后端说了算）。' },
                 { k: '前端已做', tone: 'text-mg-success', v: '按 granted：没权限的菜单隐藏、直接敲 URL 也拦成 403；新建/删除等按钮按对应权限码显隐。' },
               ].map((row) => (

@@ -80,6 +80,93 @@ const TEXT_SCALE = [
 const nearestScale = (px) => TEXT_SCALE.reduce((best, cur) =>
   Math.abs(cur[1] - px) < Math.abs(best[1] - px) ? cur : best)
 const sh = (cmd) => execSync(cmd, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
+/**
+ * 裸色值（2026-09-18 · 1.0.7 主题色 100% token 化，owner 口径）：
+ * hex / rgb() / hsl() 只许出现在——
+ *   ① 自定义属性定义行（token 层 / 页面 palette 层，如 --mx-canvas-a: #EDF5FF）
+ *   ② var(--x, <fallback>) 与 cssColor('--x', '<fallback>') 的 fallback 参数
+ * 使用行一律 var(--xxx)。写死色值 = 明暗 × 市场（四象限）任一维度切不动；
+ * AuthLayout 曾手写 isDomestic ? indigo : emerald 分支，色值还停在旧 brand——
+ * 硬编码不只是「不跟随」，而是主动跟 token 漂移。
+ * 豁免：数据色文件（厂商 logo 色 / 日志级别色是内容不是主题）；行内写
+ * allow-raw-color 可显式豁免并需写清理由（canvas 绘制等 CSS 够不着的场景）。
+ */
+const RAW_HEX_RE = /#[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F](?:[0-9a-fA-F]{3})?\b/g
+const RAW_FUNC_COLOR_RE = /\b(?:rgba?|hsla?)\(/g
+const RAW_COLOR_EXEMPT_PATH =
+  /(?:\.test\.tsx?$|^src\/(?:types|services|config)\/|brand-colors\.ts$|model-format\.ts$|^src\/index\.css$|^src\/styles\/(?:tokens|brand|components|effects|auth)\.css$)/
+/** 定义行（CSS 的 `--x:` 与 JS 对象键 `'--x':`，如 theme.ts 的 buildBrandPalette）：
+ *  token/palette 层写色值是本职，不是违规。 */
+const PROP_DEF_RE = /^\s*['"]?--[a-zA-Z0-9-]+['"]?\s*:/
+
+/**
+ * 把一个文件解析成 Map<行号, 可检查代码>：剥块注释/行注释（状态机跨行），
+ * 剥 url(...) 内容（内联 SVG data URI 里的 fill="#fff" 不是主题色），
+ * 剥 var()/cssColor() 的 fallback 参数（括号平衡，嵌套安全），
+ * 自定义属性定义行不进 map（定义层写色值是本职）。
+ */
+function rawColorCheckable(file) {
+  const map = new Map()
+  let text = ''
+  try { text = readFileSync(`${cwd}/${file}`, 'utf8') } catch { return map }
+  const isCss = /\.css$/.test(file)
+  let inBlock = false
+  for (let i = 0; i < text.split('\n').length; i++) {
+    const raw = text.split('\n')[i]
+    if (raw.includes('allow-raw-color')) continue // 行级豁免（须附理由）
+    if (PROP_DEF_RE.test(raw)) continue // 定义行：色值住这里
+    // —— 注释剥离（状态机）——
+    let code = ''
+    let rest = raw
+    while (rest.length) {
+      if (inBlock) {
+        const end = rest.indexOf('*/')
+        if (end === -1) { rest = ''; break }
+        rest = rest.slice(end + 2); inBlock = false
+      } else {
+        const blockStart = rest.indexOf('/*')
+        const lineStart = isCss ? -1 : rest.indexOf('//')
+        if (lineStart !== -1 && (blockStart === -1 || lineStart < blockStart)) {
+          code += rest.slice(0, lineStart); break
+        }
+        if (blockStart === -1) { code += rest; break }
+        code += rest.slice(0, blockStart)
+        rest = rest.slice(blockStart + 2); inBlock = true
+      }
+    }
+    // —— url(...) 剥离 ——
+    code = code.replace(/url\([^)]*\)/g, 'url()')
+    // —— 首参是 var() 的色函数不算硬编码：rgba(var(--brand-base-rgb), .55)
+    //    是体系内标准模式（tokens.css 的 -rgb 分量 token 惯例）——
+    code = code.replace(/\b(?:rgba?|hsla?)\(var\([^)]*\)[^)]*\)/g, 'FUNC(var)')
+    // —— 首参是模板插值的不算字面值：canvas 从 token 解析出的 r/g/b 组装色值
+    //    （ParticleLinesBackground 的 rgba(${r},${g},${b},1) 色源是 --brand-base）——
+    code = code.replace(/\b(?:rgba?|hsla?)\(\s*\$\{[^)]*\)/g, 'FUNC(tpl)')
+    // —— var()/cssColor() fallback 剥离（括号平衡）——
+    let stripped = ''
+    let pos = 0
+    for (const m of code.matchAll(/\b(?:var|cssColor)\(/g)) {
+      let depth = 1
+      let k = m.index + m[0].length
+      let lastComma = -1
+      let d = 1
+      let j = k
+      while (j < code.length && d > 0) {
+        if (code[j] === '(') d++
+        else if (code[j] === ')') { d--; if (d === 0) break }
+        else if (code[j] === ',' && d === 1 && lastComma === -1) lastComma = j
+        j++
+      }
+      if (d !== 0) break // 未闭合（跨行 fallback 罕见），保守放弃该函数的剥离
+      stripped += code.slice(pos, lastComma === -1 ? j : lastComma) + (lastComma === -1 ? '' : ')')
+      pos = j
+    }
+    stripped += code.slice(pos)
+    if (stripped.trim()) map.set(i + 1, stripped)
+  }
+  return map
+}
+
 const full = process.argv.includes('--full')
 
 const tryDiffBase = () => {
@@ -94,6 +181,9 @@ const fontWarns = []
 const designWarns = []
 /** 简写重置是阻断级：它会静默击穿组件样式，且替代写法就在旁边，没有留存量的理由 */
 const shorthandBlocks = []
+/** 裸色值是阻断级（2026-09-18 起）：1.0.7 存量已清零，只拦新增。
+ *  替代写法就是收进 token/palette 定义行再 var() 引用，一行的事。 */
+const colorBlocks = []
 let diffBase = 'HEAD'
 if (!full) {
   const base = tryDiffBase()
@@ -156,6 +246,14 @@ if (full) {
         }
       }
     })
+    if (!RAW_COLOR_EXEMPT_PATH.test(file)) {
+      for (const [lineNo, code] of rawColorCheckable(file)) {
+        const hits = [...code.matchAll(RAW_HEX_RE)].length + [...code.matchAll(RAW_FUNC_COLOR_RE)].length
+        if (hits) {
+          colorBlocks.push(`✗ ${file}:${lineNo}  裸色值 ×${hits} —— 色值只许住在自定义属性定义行（token/palette 层）或 var()/cssColor() 的 fallback 里，使用行一律 var(--xxx)`)
+        }
+      }
+    }
   }
 } else {
   // 默认：只查相对 base 新增的行（与 stylelint-diff.mjs 同一套逻辑）
@@ -187,6 +285,8 @@ if (full) {
 
   for (const file of files) {
     const added = addedLinesWithText(file)
+    // 裸色值按行检查需要注释上下文（跨行块注释状态机），整文件预计算一次
+    const rawColorLines = RAW_COLOR_EXEMPT_PATH.test(file) ? new Map() : rawColorCheckable(file)
     // 内容面毛玻璃要看「整个选择器块」，不能逐行判断：选择器和 backdrop-filter 分处两行。
     // 只在块内两者同时出现、且该块有改动行时才报。
     if (/\.css$/.test(file) && added.size) {
@@ -242,6 +342,16 @@ if (full) {
           `或页面级字阶变量。字号不成档位就没有主次关系。`
         )
       }
+      const rc = rawColorLines.get(lineNo)
+      if (rc) {
+        const hits = [...rc.matchAll(RAW_HEX_RE)].length + [...rc.matchAll(RAW_FUNC_COLOR_RE)].length
+        if (hits) {
+          colorBlocks.push(
+            `✗ ${file}:${lineNo}  裸色值 ×${hits} —— 色值收进自定义属性定义行（token/palette）再 var() 引用；` +
+            `canvas 等 CSS 够不着的场景行内写 allow-raw-color 并注明理由`
+          )
+        }
+      }
     }
   }
 }
@@ -262,6 +372,13 @@ if (shorthandBlocks.length) {
   console.error(`\n❌ ${shorthandBlocks.length} 处简写属性重置 —— 会静默击穿组件样式，必须改掉：`)
   for (const b of shorthandBlocks) console.error('   ' + b)
   console.error('   确有必要时在同一行加 /* allow-shorthand-reset */ 豁免，并写清为什么。')
+  process.exit(1)
+}
+
+if (colorBlocks.length) {
+  console.error(`\n❌ ${colorBlocks.length} 处裸色值 —— 色值只许住在定义行（token/palette 层）或 fallback 里，使用行一律 var(--xxx)：`)
+  for (const b of colorBlocks.slice(0, 400)) console.error('   ' + b)
+  if (colorBlocks.length > 400) console.error(`   …… 另 ${colorBlocks.length - 400} 处`)
   process.exit(1)
 }
 

@@ -30,6 +30,7 @@ import {
   listRewardRecords,
 } from '@/services/referral'
 
+import { tierDisplayName } from './tier-label'
 import type { ReferralCommissionRecord, ReferralInvitee, ReferralStats } from './referral-data'
 import type { ReferralOverview } from '@/services/referral'
 
@@ -291,7 +292,8 @@ export default function ReferralPage() {
                   className="flex items-center justify-between py-2.5 px-3 -mx-3 rounded-lg transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-mg-text-2">{tier.name}</span>
+                    {/* 名字只在展示层翻译（prd#1098）；key / current 判定仍用后端原值 */}
+                    <span className="text-sm font-semibold text-mg-text-2">{tierDisplayName(tier.name)}</span>
                     {tier.current && (
                       <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-bold border bg-[var(--mg-brand-selected-bg)] text-[var(--mg-brand-base)] border-[var(--mg-state-selected-border)]">
                         {text.tierCurrent}
@@ -429,8 +431,10 @@ function TierBadge({ name, rate, fallback }: { name?: string; rate?: number; fal
     '战略伙伴': 'bg-[var(--mg-brand-selected-bg)] text-[var(--mg-brand-base)] border-[var(--mg-state-selected-border)]',
     'Strategic Partner': 'bg-[var(--mg-brand-selected-bg)] text-[var(--mg-brand-base)] border-[var(--mg-state-selected-border)]',
   }
+  // 配色按后端原值查（翻译只改显示，不能把色表带歪），文案走界面语言（prd#1098）。
   const cls = colorMap[name] ?? 'bg-mg-fill-0 text-mg-text-2 border-mg-border'
-  const label = typeof rate === 'number' && rate > 0 ? `${name} · ${rate}%` : name
+  const display = tierDisplayName(name)
+  const label = typeof rate === 'number' && rate > 0 ? `${display} · ${rate}%` : display
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold border ${cls}`}>
       {label}

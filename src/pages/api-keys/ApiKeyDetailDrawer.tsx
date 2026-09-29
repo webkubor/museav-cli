@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button'
 import { InfoTip } from '@/components/ui/InfoTip'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { LuArrowRight, LuTriangleAlert, LuRefreshCw, LuCopy, LuLoaderCircle } from 'react-icons/lu'
+import { useAuthStore } from '@/store/auth'
 import { formatDateTimeYMD } from '@/lib/format-date'
 import { formatMoney } from '@/lib/utils'
 import { appToast } from '@/lib/app-toast'
@@ -131,6 +132,11 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
   const { t } = useTranslation()
   const navigate = useNavigate()
   const keyId = item?.api_key_id
+  // 个人租户没有「成员」概念，个人护栏/个人预算两槽不适用（V1.0.7 小需求#9），与 use-guardrails-page.tsx 的 showMember 同一口径
+  const activeTenantId = useAuthStore((s) => s.activeTenantId)
+  const tenants = useAuthStore((s) => s.tenants)
+  const isPersonalTenant = tenants.find((tt) => tt.tenant_id === activeTenantId)?.type === 'personal'
+  const visibleLayerSlots = isPersonalTenant ? LAYER_SLOTS.filter((slot) => slot.key !== 'member') : LAYER_SLOTS
   const { copy } = useCopy()
   // 复制完整 Key（需求方#84 ①）：reveal 取回明文再复制，掩码只是展示
   const [revealCopying, setRevealCopying] = useState(false)
@@ -224,7 +230,12 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
   const effectiveLayers = effective?.layers
   const effectiveView = effectiveLayers && {
     layers: effectiveLayers,
-    budgets: effective?.effective?.budgets ?? [],
+    // 个人租户同样不展示「个人预算」档（#1095 需求图：创建弹窗里这一档被明确圈掉，抽屉是同一语义的另一处）。
+    // 滤在归一化处而不是渲染处：下面「有档才渲染」的门槛也跟着用过滤后的长度，
+    // 个人租户下只有 per_member 一档时整个预算闸门区块不出现，而不是留个空标题。
+    budgets: (effective?.effective?.budgets ?? []).filter(
+      (b) => !isPersonalTenant || b.aggregation_scope !== 'per_member',
+    ),
     ipWhitelist: effective?.effective?.ip_whitelist ?? [],
     modelBlacklist: effective?.effective?.model_blacklist ?? [],
   }
@@ -387,8 +398,8 @@ export function ApiKeyDetailDrawer({ open, onClose, workspaceId, item, canAction
                   {t('apiKeys.effectivePreview')}
                   <InfoTip text={t('apiKeys.budget.runtimeCheckTip')} />
                 </div>
-                <div className="grid grid-cols-3 gap-2.5">
-                  {LAYER_SLOTS.map((slot) => {
+                <div className={`grid gap-2.5 ${visibleLayerSlots.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                  {visibleLayerSlots.map((slot) => {
                     // 个人护栏（member）：PRD 语义——服务 Key「个人预算不适用」；否则责任人绑定的 active 个人护栏(提额优先)，无则「全局默认个人预算」
                     if (slot.key === 'member') {
                       const isServiceKey = deriveKeyType(view) === 'service'

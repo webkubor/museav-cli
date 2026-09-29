@@ -26,7 +26,9 @@
     "sync:permissions:cn": "bun run scripts/sync-permissions.ts --market china",
     "sync:permissions:global": "bun run scripts/sync-permissions.ts --market global",
     "sync:permissions:check": "bun run scripts/sync-permissions.ts --check",
-    "check:i18n": "node scripts/check-i18n.mjs"
+    "check:i18n": "node scripts/check-i18n.mjs",
+    "check:orb-theme": "node scripts/check-orb-theme.mjs",
+    "audit:crawl": "node scripts/check-crawl-files.mjs"
   },
   "dependencies": {
     "@fingerprintjs/fingerprintjs": "^5.2.0",
@@ -42,6 +44,7 @@
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.13",
     "@tanstack/react-query": "^5.100.14",
+    "ai-orb": "^0.2.0",
     "ai-sse-kit": "^0.3.0",
     "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",

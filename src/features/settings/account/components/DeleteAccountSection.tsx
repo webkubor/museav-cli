@@ -55,11 +55,11 @@ export const DeleteAccountSection: React.FC = () => {
 
   return (
     <div className="rounded-md border border-mg-danger/30 bg-mg-danger/5 p-5" style={{ maxWidth: '480px' }}>
-      <div style={{ marginBottom: '14px' }}>
-        <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--mg-danger)', marginBottom: '6px' }}>
+      <div className="mb-[14px]">
+        <div className="mb-[6px] text-sm font-bold text-mg-danger">
           {t('account.security.deleteTitle')}
         </div>
-        <div style={{ fontSize: '12.5px', lineHeight: 1.6, color: 'var(--mg-text-2)' }}>
+        <div className="text-xs leading-relaxed text-mg-text-2">
           {t('account.security.deleteDesc')}
         </div>
       </div>

@@ -216,6 +216,27 @@ export async function refreshCsrf() {
   }
 }
 
+let sessionValidityCheck: Promise<boolean> | null = null
+
+/**
+ * A feature endpoint can also return 40101 for its own authorization/validation
+ * failure. Only clear the app-wide auth state when the shared session endpoint
+ * independently confirms that the user's session has expired.
+ */
+function isSharedSessionExpired(): Promise<boolean> {
+  if (!sessionValidityCheck) {
+    sessionValidityCheck = ky
+      .get(apiPrefixUrl() + '/auth/session', { credentials: 'include', timeout: 5000, retry: 0 })
+      .json<ApiResponse<unknown>>()
+      .then((body) => body.code === 40101)
+      .catch(() => false)
+      .finally(() => {
+        sessionValidityCheck = null
+      })
+  }
+  return sessionValidityCheck
+}
+
 const client = ky.create({
   timeout: 30000,
   retry: { limit: 2, methods: ['get'] },
@@ -238,15 +259,14 @@ const client = ky.create({
             await response.clone().json()
 
           if (body.code === 40101 && typeof window !== 'undefined') {
-            // 未登录：清掉内存鉴权态，交给 ProtectedRoute 做 SPA 跳转。
-            // 绝不能用 window.location.href（硬刷新会重置 SessionLoader 的
-            // isFetchingSession 与 isLoading，配合 /login 守卫形成
-            // /login <-> /dashboard 全页无限刷新）。
+            // The shared session endpoint reports the initial unauthenticated
+            // state itself, so it must not recursively trigger this check.
             if (request.url.includes('/auth/session')) return
             if (window.location.pathname === '/login') return
-            // 会话过期不静默跳登录：先给用户明确提示，再清鉴权态触发 SPA 跳转。
-            // toast 自带「相同内容 4s 去重」，多个并发请求同时 401 也只提示一次。
-            handleSessionExpired()
+            // A feature-level 40101 must stay local. Confirm the shared session
+            // before clearing auth, so a support-service validation failure
+            // cannot send the whole console back to login.
+            if (await isSharedSessionExpired()) handleSessionExpired()
             return
           }
 

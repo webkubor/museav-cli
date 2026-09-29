@@ -142,7 +142,24 @@ function emitSitemap(env: Record<string, string>, mode: string): Plugin {
       })
     },
     generateBundle() {
-      if (!market) this.error('Production builds must set SITEMAP_MARKET=china|global')
+      // 缺 SITEMAP_MARKET 不再中断构建（2026-09-29，见 #1182）。
+      //
+      // 原设计是 this.error()，意图正当：宁可不发也不发错市场。但它把「少一个
+      // SEO 附加产物」变成了「整班车发不出去」——1.0.7 在 Jenkins 上连挂 4 次
+      // （prod #134/#135、prod-global #107/#108），build 本身早就好了，死在
+      // emitFile 一个 sitemap 上。而根因在 Jenkins job 缺环境变量（共享库
+      // devops/cicd），改那边要等运维排期，不能让全仓陪着停。
+      //
+      // 为什么是「跳过」而不是「兜底成 china」：本项目是双市场，兜底会让
+      // prod-global 那条线发出国内 host 的 sitemap —— 正是原设计要防的事故，
+      // 且错了没人报警。跳过则只是没有 sitemap.xml，可控且可见（下面 warn）。
+      if (!market) {
+        this.warn(
+          'SITEMAP_MARKET not set (china|global) — 跳过 sitemap.xml 生成。'
+          + '生产 job 需在 Jenkins 侧补该环境变量，否则本站缺 sitemap。',
+        )
+        return
+      }
       try {
         this.emitFile({
           type: 'asset',

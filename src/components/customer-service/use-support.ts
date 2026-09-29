@@ -165,6 +165,10 @@ export function useSupport() {
   // 新会话请求在途：此时不许发起转人工，否则会话先回、代次一推，转人工回包被当过期丢掉，后端排队单成孤儿
   const newSessionPending = useRef(false)
   const newSessionToken = useRef(0)
+  // 记账用：一次自动转人工（后端答 human_handoff）被 newSessionPending 挡下（prd46#1171-2）。
+  // 若那次新会话随后失败（非 404 走 catch 分支），这次转人工就彻底丢了 —— 后端已判定的意图
+  // 用户再也收不到任何提示，界面里只剩一个失败的新会话。由 startNewSession 在失败分支消费。
+  const deferredHandoff = useRef(false)
   // 给按钮用的可渲染状态（ref 变了不触发渲染）
   const [handoffInFlight, setHandoffInFlight] = useState(false)
   const [isCancellingHandoff, setIsCancellingHandoff] = useState(false)
@@ -246,7 +250,11 @@ export function useSupport() {
   }, [])
 
   // 退出登录/切账号：清空私有会话上下文
-  useEffect(() => {
+  //
+  // 用 useLayoutEffect 而非 useEffect（prd46#1171-5）：账号刚切、这个重置还没跑完的那一两帧里
+  // （useEffect 要等浏览器绘制后才执行，中间存在一个空窗），用户点「新会话」会打在这个半初始化
+  // 状态上 —— 点击被丢弃、界面毫无反应。改到布局阶段同步跑完，切号那次 commit 里不留空窗。
+  useLayoutEffect(() => {
     const currentId = account?.account_id ?? null
     if (lastAccountId.current !== currentId) {
       accountEpoch.current += 1
@@ -267,6 +275,7 @@ export function useSupport() {
       cancellingHandoffTicketId.current = null
       handoffPending.current = false
       setHandoffInFlight(false)
+      deferredHandoff.current = false
       newSessionToken.current += 1
       newSessionPending.current = false
       setStartingNewSession(false)
@@ -281,9 +290,42 @@ export function useSupport() {
     setMessages((prev) => [...prev, item])
   }, [])
 
-  const startHandoffWithTrigger = useCallback(async (trigger?: { question: string; sensitiveHit: boolean }) => {
+  const startHandoffWithTrigger = useCallback(async (
+    trigger?: { question: string; sensitiveHit: boolean },
+    // 只有「后端判定的自动转人工」才记账（prd46#1171-2）。用户手动输入「转人工」被挡下时
+    // 已经拿到下面那条 handoffBusy 提示，若新会话随后失败又补一条 handoffRetryLater，
+    // 同一次被挡会收到两条反馈。两者都要「有反馈」，但只有自动那条会无声消失、必须补。
+    deferOnBlocked = false,
+  ) => {
     // 「排队中不允许重复发起转接」由状态机判定（PRD §8.6），不再自己比 serviceMode
-    if (!canStartHandoff(modeRef.current) || handoffPending.current || newSessionPending.current) return
+    if (!canStartHandoff(modeRef.current)) return
+    // 在途时不静默 return（prd46#1171-1）。用户那条「转人工」已经上屏了，入口却一声不吭地
+    // 退出 —— 界面上看起来像系统没听见，下一次还会再问一遍。给一条系统提示说清「为什么没反应」。
+    if (handoffPending.current || newSessionPending.current) {
+      // 被新会话在途挡下的自动转人工要记账：那次新会话若随后失败，这次转人工就彻底没了，
+      // 界面里不会留下任何痕迹。消费点在 startNewSession 的失败分支（prd46#1171-2）。
+      if (newSessionPending.current && deferOnBlocked) deferredHandoff.current = true
+      // 同一在途原因不刷屏（评审 P2）：在途窗口可能很长（接口挂起时用户能连点多次），
+      // 逐次追加同一条提示会淹没对话。
+      // ⚠️ 两个坑都踩过：① 判重不能拿闭包里的 messages 比，连点时闭包落后于已排队的更新；
+      // ② 也不能只看末条 —— 用户每次手输的「转人工」正好插在两条提示中间。所以从末尾
+      // 回看、跳过 user 消息，找最近一条非用户消息。updater 拿到的是应用时刻的最新状态。
+      const busy = t('common.customerService.handoffBusy')
+      // 提示对象在 updater 外建好：updater 必须是纯的 —— StrictMode 会重复调用它，
+      // 在里面取 randomUUID()/now() 等于每次生成一个被丢弃的不同对象（评审 P2）。
+      // updater 只负责判重与追加。
+      const note: ChatItem = { id: crypto.randomUUID(), role: 'system', content: busy, createdAt: Date.now() }
+      setMessages((prev) => {
+        for (let i = prev.length - 1; i >= 0; i--) {
+          const m = prev[i]
+          if (m.role === 'user') continue
+          if (m.role === 'system' && m.content === busy) return prev
+          break
+        }
+        return [...prev, note]
+      })
+      return
+    }
     // 未登录直接引导登录：转人工是登录态能力，发出去只会拿到 40101，
     // 再被 catch 成「转人工失败，请稍后重试」——用户会一直重试，而重试
     // 永远失败。同理这里也不能让 40101 走到 request.ts 的全局分支，
@@ -395,7 +437,8 @@ export function useSupport() {
         rating: null,
       })
       if (answer.intent === 'human_handoff' && canStartHandoff(modeRef.current)) {
-        await startHandoffWithTrigger({ question: trimmed, sensitiveHit: answer.sensitive?.Hit === true })
+        // 第二个参数 true：这是后端判定的自动转人工，被新会话在途挡下后需要记账
+        await startHandoffWithTrigger({ question: trimmed, sensitiveHit: answer.sensitive?.Hit === true }, true)
       }
     } catch (error) {
       if (generation !== accountEpoch.current || accountId !== activeAccountId.current) return
@@ -618,6 +661,17 @@ export function useSupport() {
       if (!isNotFoundError(error)) {
         // 切号后旧账号的失败不弹到新账号界面上
         if (stillSameAccount()) appToast.requestError(error)
+        // 新会话失败 → 期间被挡下的自动转人工不会再有机会发起（prd46#1171-2）。
+        // 后端已判定的 human_handoff 意图此前在这条路径上彻底消失，界面上只剩一个失败的新会话。
+        if (stillSameAccount() && deferredHandoff.current) {
+          deferredHandoff.current = false
+          appendMessage({
+            id: crypto.randomUUID(),
+            role: 'system',
+            content: t('common.customerService.handoffRetryLater'),
+            createdAt: Date.now(),
+          })
+        }
         release()
         return
       }
@@ -633,6 +687,12 @@ export function useSupport() {
       return
     }
     replaceSupportSessionId(nextId)
+    // 会话成功换掉了：期间被挡下的自动转人工就此作废（新会话是干净的，用户重问一次即可），
+    // 不再留待失败分支提示，免得下一次新会话失败时冒出一条不相关的提醒。
+    // 评审 P2 提过「转人工意图被静默取消」：这里刻意不补提示 —— 「新会话」本身就是用户
+    // 主动清空当前上下文的动作（下面紧接着 setMessages([])），被挡下的那次转人工正是被
+    // 用户自己这个动作取消的。再补一句「转人工已取消」是噪音，不是反馈。
+    deferredHandoff.current = false
     // 在途的问答回包按代次丢弃，不会晚到写进新会话
     accountEpoch.current += 1
     setIsAsking(false)
@@ -640,7 +700,7 @@ export function useSupport() {
     go({ kind: 'chat' })
     trackEvent('support_new_session')
     release()
-  }, [mode, go, account?.account_id])
+  }, [mode, go, account?.account_id, appendMessage, t])
 
   // ---- 反馈 ----
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)

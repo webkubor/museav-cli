@@ -1,6 +1,6 @@
 {
   "name": "museav-cli",
-  "version": "3.9.1",
+  "version": "3.9.2",
   "files": [
     "dist",
     "CHANGELOG.md"

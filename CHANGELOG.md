@@ -1,5 +1,23 @@
 # Changelog
 
+## 3.9.2 (2026-10-02)
+
+### `gen` 补上 `--model`：图片和视频终于能点名模型了
+
+`museav gen` 从来没有 `--model`，而下游（museav-mcp 的 `gen_background`）早就按 `--model`
+传值 —— commander 直接 `error: unknown option '--model'`。也就是说「点名模型 / 视频档次」
+这条路从来没通过，只是没人从命令行试过。
+
+现在 `--model` 图片与视频都收，取值一律用**对外名**（`museav models` /
+`museav models --video` 下发的那套）。内部渠道代号（`artsdance-*` / `doubao-*` /
+`minimax-h3`）是上游身份，不该由调用方持有；中台负责把对外名归一回内部代号。
+不传＝中台智能路由，按这次的时长 / 分辨率挑一个能满足的档次。
+
+```bash
+museav gen --video --model "MiniMax H3" -p "雨夜，少年拔剑，镜头缓慢推进"
+museav models --video      # 看当前可选的档次（清单来自中台，CLI 不硬编码）
+```
+
 ## 3.9.1 (2026-09-29)
 
 ### 模板发布被拒时，终于会告诉你**差哪几项**

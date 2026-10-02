@@ -69,6 +69,9 @@ export async function gen(client: StudioClient, opts: {
   fields?: string
   ratio?: string
   quality?: string
+  // 指定模型 / 视频档次（对外名）。图片与视频都收：不传时出图由技能/模板/路由决定，
+  // 视频走中台智能路由。中台负责把对外名归一回内部渠道代号。
+  model?: string
   ref?: string[]      // 可重复：--ref a.jpg --ref b.jpg，顺序即「图片1、图片2…」
   transparent?: boolean   // 透明背景 PNG；能不能做由中台按上游能力判定，做不了会明确报错
   project?: string    // 工作区 id|名：生成结果归档进该项目（账户身份才生效）
@@ -208,6 +211,8 @@ export async function gen(client: StudioClient, opts: {
     )
     const { jobId } = await client.generateVideo({
       prompt: opts.prompt,
+      // 留空 = 中台智能路由（按这次的时长/分辨率挑一个能满足的档次）
+      model: opts.model,
       ratio: opts.ratio,
       duration: opts.duration,
       image_url: referenceImage,
@@ -251,6 +256,7 @@ export async function gen(client: StudioClient, opts: {
       template_id: opts.template,
       template_fields: templateFields,
       ratio: opts.ratio,
+      model: opts.model,
       quality: opts.quality as 'low' | 'medium' | 'high' | undefined,
       reference_image: referenceImage,
       reference_images: referenceImages,

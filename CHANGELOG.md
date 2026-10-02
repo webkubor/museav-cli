@@ -23,6 +23,38 @@ museav poster-templates rm <id>
 
 需要先升级到 3.10.0：旧版本的 CLI 没有这两个子命令。
 
+## 3.9.3 (2026-10-02)
+
+### 发版链路修好：npm 12 换了 `npm pack --json` 的返回形状，门禁当场炸
+
+3.9.2 的 publish 在 CI 里挂了 —— 挂的不是代码，是发版门禁自己：`publish.yml` 会先
+`npm i -g npm@latest`（现在是 12.x），而 npm 12 把 `npm pack --json` 的返回从数组
+`[{ files }]` 改成了以包名为键的对象 `{ "museav-cli": { files } }`。门禁里写的是
+`JSON.parse(out)[0].files`，于是 `[0]` 是 undefined，报
+`Cannot read properties of undefined (reading 'files')` —— 而它前面所有校验都是绿的，
+看起来像代码问题，其实是解析形状。
+
+现在两种形状都收，认不出形状时给一句能看懂的话。本地用 npm 11 与 npm 12 各跑一遍都过。
+（3.9.2 因此没发出去，版本从 3.9.1 直接到 3.9.3。）
+
+## 3.9.2 (2026-10-02)
+
+### `gen` 补上 `--model`：图片和视频终于能点名模型了
+
+`museav gen` 从来没有 `--model`，而下游（museav-mcp 的 `gen_background`）早就按 `--model`
+传值 —— commander 直接 `error: unknown option '--model'`。也就是说「点名模型 / 视频档次」
+这条路从来没通过，只是没人从命令行试过。
+
+现在 `--model` 图片与视频都收，取值一律用**对外名**（`museav models` /
+`museav models --video` 下发的那套）。内部渠道代号（`artsdance-*` / `doubao-*` /
+`minimax-h3`）是上游身份，不该由调用方持有；中台负责把对外名归一回内部代号。
+不传＝中台智能路由，按这次的时长 / 分辨率挑一个能满足的档次。
+
+```bash
+museav gen --video --model "MiniMax H3" -p "雨夜，少年拔剑，镜头缓慢推进"
+museav models --video      # 看当前可选的档次（清单来自中台，CLI 不硬编码）
+```
+
 ## 3.9.1 (2026-09-29)
 
 ### 模板发布被拒时，终于会告诉你**差哪几项**

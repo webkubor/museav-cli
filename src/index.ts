@@ -172,7 +172,12 @@ program
   // 透明背景是上游的 background 参数，不是提示词能表达的东西——提示词里写
   // "transparent background" 只是在描述构图，模型照样铺一层白底。这个开关才是抠图开关。
   .option('--transparent', '透明背景 PNG（抠掉背景，带 alpha 通道）。仅部分上游支持，不支持时中台明确报错、不会悄悄给白底图；服务端自动强制 PNG 输出（JPEG 没有 alpha 通道）')
-  .option('--video', '生成视频（走 /api/videos 链路；档次由中台按参数自动挑，想看当前用哪个跑 museav models --video）')
+  .option('--video', '生成视频（走 /api/videos 链路；不传 --model 时档次由中台按参数自动挑，想看当前用哪个跑 museav models --video）')
+  // 指定模型 / 视频档次。取值一律用**对外名**（`museav models` / `museav models --video` 下发的那一套）：
+  // 内部渠道代号（artsdance-* / doubao-* / minimax-h3）是上游身份，不该由调用方持有，中台两个入口
+  // 都会把对外名归一回内部代号。这里也不写死具体取值——清单来自中台，硬编码一批名字，
+  // 上游换档次时就全成了没人认得的字符串。
+  .option('--model <name>', '指定模型 / 视频档次（对外名；列表见 museav models 与 museav models --video）。不传=中台智能路由')
   .option('--duration <sec>', '视频时长（秒，仅 --video；由模型与上游支持范围决定）', (v) => Number(v))
   .option('--image <file>', '图生视频首帧图（仅 --video，自动上传）')
   .option('--project <id|名>', '归档进该工作区（museav projects 查；账户身份才生效）')

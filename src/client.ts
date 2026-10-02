@@ -523,7 +523,18 @@ export class StudioClient {
     return this.request('poster-templates', { method: 'POST', body: fd })
   }
 
-  /** 删除版式模板 */
+  /** 更新版式模板：name / prompt 至少传一个；传 filePath 则替换底图。账户 Key 只能改自己上传的 */
+  async updatePosterTemplate(id: string, patch: { name?: string; prompt?: string; filePath?: string }): Promise<any> {
+    const fd = new FormData()
+    if (patch.name !== undefined) fd.append('name', patch.name)
+    if (patch.prompt !== undefined) fd.append('prompt', patch.prompt)
+    if (patch.filePath) {
+      fd.append('file', new Blob([new Uint8Array(readFileSync(patch.filePath))]), basename(patch.filePath))
+    }
+    return this.request(`poster-templates?id=${encodeURIComponent(id)}`, { method: 'PUT', body: fd })
+  }
+
+  /** 删除版式模板（账户 Key 只能删自己上传的） */
   async deletePosterTemplate(id: string): Promise<void> {
     await this.request(`poster-templates?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
   }

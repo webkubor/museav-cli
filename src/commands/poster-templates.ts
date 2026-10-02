@@ -31,3 +31,23 @@ export async function createPosterTemplate(
   process.stderr.write(`✅ 版式模板已保存：${id}\n`)
   console.log(id)
 }
+
+export async function updatePosterTemplate(
+  client: StudioClient,
+  id: string,
+  opts: { name?: string; prompt?: string; file?: string },
+): Promise<void> {
+  if (opts.name === undefined && opts.prompt === undefined && !opts.file) {
+    throw new Error('至少传一个：--name / --prompt / --file')
+  }
+  if (opts.name !== undefined && !opts.name.trim()) throw new Error('--name 不能为空')
+  const row = await client.updatePosterTemplate(id, { name: opts.name, prompt: opts.prompt, filePath: opts.file })
+  process.stderr.write(`✅ 版式模板已更新：${row?.template?.id || id}\n`)
+  console.log(row?.template?.id || id)
+}
+
+export async function removePosterTemplate(client: StudioClient, id: string): Promise<void> {
+  await client.deletePosterTemplate(id)
+  process.stderr.write(`✅ 版式模板已删除：${id}\n`)
+  console.log(id)
+}

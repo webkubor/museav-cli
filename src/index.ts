@@ -31,7 +31,7 @@ import { feedback } from './commands/feedback.js'
 import { products } from './commands/products.js'
 import { assets } from './commands/assets.js'
 import { stickers, createSticker } from './commands/stickers.js'
-import { posterTemplates, createPosterTemplate } from './commands/poster-templates.js'
+import { posterTemplates, createPosterTemplate, updatePosterTemplate, removePosterTemplate } from './commands/poster-templates.js'
 
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8')) as { name: string; version: string }
 // 每 12 小时最多查一次 npm registry，过期才提示，不拖慢日常调用
@@ -466,6 +466,19 @@ posterTemplatesCmd
   .requiredOption('--name <名称>', '版式名称')
   .requiredOption('--prompt <描述>', '版式固定描述，{城市} {明星} 会自动替换')
   .action(withClient((client: StudioClient, file: string, opts: any) => createPosterTemplate(client, file, opts)))
+
+posterTemplatesCmd
+  .command('update <id>')
+  .description('改版式模板：名称 / 描述 / 底图至少传一个。账户 Key 只能改自己上传的，租户 Key 可改本租户全部')
+  .option('--name <名称>', '新版式名称')
+  .option('--prompt <描述>', '新版式描述，{城市} {明星} 会自动替换')
+  .option('--file <底图>', '替换封面底图（旧底图同步删除）')
+  .action(withClient((client: StudioClient, id: string, opts: any) => updatePosterTemplate(client, id, opts)))
+
+posterTemplatesCmd
+  .command('rm <id>')
+  .description('删版式模板（连同底图）。账户 Key 只能删自己上传的，租户 Key 可删本租户全部')
+  .action(withClient((client: StudioClient, id: string) => removePosterTemplate(client, id)))
 
 program
   .command('products')

@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.9.3 (2026-10-02)
+
+### 发版链路修好：npm 12 换了 `npm pack --json` 的返回形状，门禁当场炸
+
+3.9.2 的 publish 在 CI 里挂了 —— 挂的不是代码，是发版门禁自己：`publish.yml` 会先
+`npm i -g npm@latest`（现在是 12.x），而 npm 12 把 `npm pack --json` 的返回从数组
+`[{ files }]` 改成了以包名为键的对象 `{ "museav-cli": { files } }`。门禁里写的是
+`JSON.parse(out)[0].files`，于是 `[0]` 是 undefined，报
+`Cannot read properties of undefined (reading 'files')` —— 而它前面所有校验都是绿的，
+看起来像代码问题，其实是解析形状。
+
+现在两种形状都收，认不出形状时给一句能看懂的话。本地用 npm 11 与 npm 12 各跑一遍都过。
+（3.9.2 因此没发出去，版本从 3.9.1 直接到 3.9.3。）
+
 ## 3.9.2 (2026-10-02)
 
 ### `gen` 补上 `--model`：图片和视频终于能点名模型了

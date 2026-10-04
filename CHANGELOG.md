@@ -1,5 +1,35 @@
 # Changelog
 
+## 3.11.0 (2026-10-04)
+
+### 出视频能点名 H3，还能给首尾帧和参考素材
+
+`gen --video` 补齐高级输入 —— 以前只有 `--image`（首帧）一个：
+
+```bash
+# 点名 H3（不点名时中台智能路由仍走便宜的 Seedance）
+museav gen --video --model "MiniMax H3" --duration 5 -p "雪夜孤灯，镜头缓推"
+
+# 首尾帧：给首帧 + 尾帧，模型补中间过程
+museav gen --video --model "MiniMax H3" --image 首帧.png --last-frame 尾帧.png -p "…"
+
+# 参考素材：外观/主体参考，最多 9 张图 + 3 段视频 + 3 段音频
+museav gen --video --model "MiniMax H3" --reference-image 角色.png --reference-image 兵器.png -p "…"
+
+# 先增强提示词再生成（走中台转 MiniMax H3-Context-IR）
+museav gen --video --model "MiniMax H3" --enhance -p "一个人站在雪地里"
+```
+
+另新增独立命令 `museav enhance`：只输出增强后的提示词（stdout），其余信息走 stderr，
+方便管道与复制。
+
+```bash
+museav enhance -p "一只猫在窗台上伸懒腰" --duration 5 --ratio 9:16
+```
+
+**本地就拦，不浪费上游调用**：首尾帧与参考素材**互斥**（MiniMax 官方限制）、
+参考图 ≤9 / 参考视频 ≤3 / 参考音频 ≤3、这些参数只在 `--video` 下有意义 —— 误用直接报错。
+
 ## 3.10.0 (2026-10-02)
 
 ### 版式模板终于能改、能删了

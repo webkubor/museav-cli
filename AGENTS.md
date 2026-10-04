@@ -131,6 +131,22 @@ museav remove-watermark ./poster.jpg     # stdout: path to <name>-clean.png
 # List your own (or, if using a tenant apiKey, your tenant's) recent jobs as JSON
 museav jobs --limit 10 --status failed
 
+# Subjects ("IP subjects" / IP 主体): the entity an image belongs to — a character, product,
+# scene or brand. Use this instead of an asset library when several images are THE SAME THING:
+# five photos of one character are unrelated rows in `projects assets`, but one subject owns them all.
+# Enums are copied from the server (subjects.js / assets.js), never invented here:
+#   --kind    product|person|scene|brand              (default: person)
+#   --persona real|virtual                            (kind=person ONLY — the server rejects it elsewhere)
+#   --role    raw|standard|view_front|view_side|view_back|output   (three-view sheet roles)
+# stdout is machine-readable: create → subject id, add-asset → image URL, list/show → JSON.
+# Local validation is Chinese and happens BEFORE any upload, so a typo never costs a round-trip.
+museav subjects create --project <ws> --name '顾栖月' --kind person --persona virtual \
+  --traits '{"发型":"长直发","脸型":"鹅蛋脸"}'
+museav subjects add-asset <subject-id> ./front.png --role view_front   # local file: uploaded for you
+museav subjects add-asset <subject-id> --url https://img.webkubor.online/refs/... --role view_side
+museav subjects show <subject-id>      # subject + images grouped by role; three views at a glance
+museav subjects list --project <ws>    # omit --project to list PERSONAL subjects only (server semantics)
+
 # Tenant-apiKey-only: list the tenant's OWN product catalog / asset library.
 # This data does NOT live on the studio platform — it lives on the tenant's own
 # backend (a different domain), which this CLI calls directly using the same apiKey.
@@ -160,6 +176,9 @@ Full flag reference: `museav <command> --help`. Full command table and auth deta
   不要再往 CLI 里内置第二个模型运行时。
 - `gen` polls until the job finishes or times out (default 600s controlled by the underlying `generateAndWait`); a timeout throws, it does not hang forever.
 - `jobs --limit`/`--status` are filtered **client-side** — the server always returns your most recent 50 jobs; you cannot page past that.
+- **`subjects` has no "get one subject by id" endpoint** — `GET /api/subjects` filters by project (or personal), nothing else. So `subjects show <id>` / `add-asset <id>` scan personal + every project (`N+2` requests) unless you pass `--project`. That scan is deliberate: it buys you not having to repeat `--project` on every follow-up call.
+- **Registering the same image twice is refused** (one row per image per project). To change an image's `role`, delete the old registration first or use a different file — you cannot re-register it under a second role.
+- A subject and its images must live in the **same project**; `add-asset` therefore sends the subject's own `workspace_id` (which may legitimately be `null` for a personal subject).
 - Non-zero exit code + a message on stderr is the only failure signal; there's no separate machine-readable error format on stdout.
 
 ## Programmatic use (no shell-out)

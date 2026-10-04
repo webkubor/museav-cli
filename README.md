@@ -125,6 +125,7 @@ npm install -g museav-cli           # 装新包，命令名是 museav
 | | 一张图做成可复用模板 | `image-to-template` |
 | | 建/查图片模板、视频模板 | `templates` / `video-templates` |
 | **项目管理**（中台） | 工作区（项目）+ 每个项目自己的素材库 | `projects`、`projects assets` |
+| | **IP 主体**：人物/产品/场景/品牌本身，带特征和三视图 | `subjects`（别名 `ip`） |
 | | 素材直链垫图、作品归档进项目 | `gen --project`、`jobs --project` |
 | **本地图像处理**（免登录/免费/离线） | 压缩图片 | `compress` |
 | | 抠图去背景（输出透明 PNG） | `remove-bg` |
@@ -516,6 +517,60 @@ museav jobs --project meso                             # 只看该项目的任�
 
 素材是**母版不压缩**（跟垫图上传的视觉压缩是两回事），类型按字节判定（图片/音频/视频）。`--project` 收 id 或名称，重名时提示用 id。**需要中台部署 `workspace-assets` 接口后可用**（含账户 Key 白名单放行）。
 
+### IP 主体与三视图 `subjects`
+
+`projects assets` 解决的是「这张图存在哪个项目」；`subjects` 解决的是**「这几张图是同一个人」**——
+素材库里 5 张同一个角色的图彼此无关，系统不知道它们是一个角色。主体就是那个**能被引用的实体**：
+出图时引用主体，而不是引用某一张图。适合在本地维护一批 IP 人物设定（人名、三视图、特征）再传进中台的私有资产库。
+
+```bash
+# 建一个主体（= 一个 IP 人物）；不传 --project 就是个人主体（项目是可选的）
+museav subjects create --project 江湖 --name '顾栖月' --kind person --persona virtual \
+  --traits '{"发型":"长直发","脸型":"鹅蛋脸"}'
+
+# 三视图一张张传：本地文件自动上传，stdout 出直链
+museav subjects add-asset <主体id> ./顾栖月-正面.png --role view_front
+museav subjects add-asset <主体id> ./顾栖月-侧面.png --role view_side
+museav subjects add-asset <主体id> ./顾栖月-背面.png --role view_back --name '顾栖月-背面'
+
+# 已经是中台直链（如 museav upload 刚传完的）→ 免重复上传
+museav subjects add-asset <主体id> --url https://img.webkubor.online/refs/... --role view_side
+
+museav subjects list --project 江湖     # 列主体（stdout: JSON，含 traits）
+museav subjects show <主体id>           # 看这个主体 + 名下的图，按 role 分组、三视图一眼可见
+```
+
+`museav subjects show` 的输出（三视图缺哪张一眼看得出来）：
+
+```
+主体：顾栖月（人物 · 虚拟人）
+  id: dbc68c98-…
+  项目: 6f250169-…
+  特征: 发型=长直发  脸型=鹅蛋脸
+  三视图: 正面✓  侧面✓  背面—
+
+名下素材（2 张）:
+  [view_front 正面] 1 张
+    294b790f-…  顾栖月-正面   https://img.webkubor.online/refs/…
+```
+
+**枚举值以中台为准，CLI 不发明**（本地先判一次只为把错误说清楚）：
+
+| 参数 | 取值 |
+|---|---|
+| `--kind` | `product` 产品 / `person` 人物 / `scene` 场景 / `brand` 品牌（默认 `person`） |
+| `--persona` | `real` 真人 / `virtual` 虚拟人（**只有 `--kind person` 能写**，别的类型服务端会拒） |
+| `--role` | `raw` 原图 / `standard` 标准图 / **`view_front` 正面 / `view_side` 侧面 / `view_back` 背面** / `output` 成品（默认 `raw`） |
+
+几条边界，写在这儿省得踩：
+
+- **同一项目下同类同名会被拒**（409「这个项目里已经有同名的同类主体了」），换名字或先删。
+- **同一张图在同一项目里只能登记一次**（要改 role 请先删旧登记，或换一张新图）。
+- `--url` **只收中台图库直链**（`https://img.webkubor.online/…`）：外站地址服务端不收（登记了也取不回来），
+  外站图先 `museav upload <file>` 转进来。
+- 主体必须和它名下的图**在同一个项目**里，跨项目挂会被服务端拒。
+- 名字 1–60 字；每个项目最多 200 个主体。
+
 ### 查模型 / 余额
 
 ```bash
@@ -709,6 +764,11 @@ console.log(r.sculpt.light)  // 光影分析
 | `slideshow` / `slideshow-layouts` | **已下线（3.0.0）**，出片走 reel-kit；跑一下会打印迁移说明 | 迁移指引 |
 | `projects` | 工作区（项目）列表：一账户多项目，各带自己的素材库 | 项目 id 列表 |
 | `projects assets --project` | 项目素材库：ls / add / rm（垫图母版，人像库/产品库各管各的） | `id<TAB>url` 行 |
+| `subjects`（别名 `ip`） | **IP 主体**：人物/产品/场景/品牌本身 + 它名下的图（领域模型，带 role 与三视图） | 主体 id 列表 |
+| `subjects create` | 新建主体（`--kind` / `--persona` / `--traits`，同项目同类同名会 409） | 主体 id |
+| `subjects list` | 列主体（`--project` 按项目；不传 = 只看个人主体） | JSON 数组 |
+| `subjects show <主体id\|名>` | 看主体 + 名下素材，按 role 分组、三视图一眼可见 | JSON（subject + by_role） |
+| `subjects add-asset <主体id\|名> [file]` | 本地文件自动上传后登记到主体；`--url <中台直链>` 免重复上传 | 图片直链 |
 | `models` | 看中台当前在用的模型 / 视频档次（`--video`）——只读，不用于选择 | 名称列表 |
 | `balance` | 上游余额 | JSON |
 | `jobs` | 查自己（租户则是自己业务下）的工作流 | JSON 数组 |

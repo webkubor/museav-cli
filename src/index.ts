@@ -7,7 +7,7 @@
 import { readFileSync, writeFileSync, chmodSync } from 'node:fs'
 import { Command } from 'commander'
 import updateNotifier from 'update-notifier'
-import { StudioClient } from './client.js'
+import { StudioClient, SUBJECT_KINDS, PERSONA_SOURCES, ASSET_ROLES } from './client.js'
 import { TenantClient } from './tenant-client.js'
 import { loadConfig, saveConfig, clearToken } from './config.js'
 import { login } from './commands/login.js'
@@ -18,6 +18,7 @@ import { enhance } from './commands/enhance.js'
 import { reverse } from './commands/reverse.js'
 import { compressCmd, removeBgCmd, upscaleCmd, removeWatermarkCmd } from './commands/img-tools.js'
 import { projects, createProject, listAssets, addAsset, removeAsset, resolveWorkspace } from './commands/projects.js'
+import { createSubject, listSubjects, showSubject, addSubjectAsset } from './commands/subjects.js'
 import { imageToTemplate } from './commands/image-to-template.js'
 import { upload } from './commands/upload.js'
 import { models } from './commands/models.js'
@@ -314,6 +315,51 @@ assetsCmd
   .command('rm <id>')
   .description('删除素材（硬删：R2 对象 + 记录）')
   .action(withClient((client: StudioClient, id: string) => removeAsset(client, { id })))
+
+// 主体（IP 主体）：被生成的那个东西**本身**。素材库里 5 张同一个角色的图彼此无关，
+// 主体就是那个「能被引用的实体」——出图引用主体，而不是引用某一张图。
+// 与 projects assets 不是一回事：那边是项目素材列表（workspace_assets），这边是
+// 领域模型（subjects + assets，有主体归属和 role）。两张表并存，见 asset-domain-model.md §5。
+const subjectsCmd = program
+  .command('subjects')
+  .alias('ip')
+  .description('IP 主体（subjects）：人物/产品/场景/品牌本身 + 它名下的图（人像三视图 view_front/view_side/view_back）')
+  .option('--project <id|名>', '项目（不传 = 只看个人主体，跟服务端语义一致）')
+  .option('--kind <kind>', `按类型过滤：${SUBJECT_KINDS.join('|')}`)
+  .action(withClient((client: StudioClient, opts: any) => listSubjects(client, opts)))
+
+subjectsCmd
+  .command('create')
+  .description('新建主体（= 一个 IP 人物/产品/场景/品牌）')
+  .option('--project <id|名>', '归属项目（不传 = 个人主体，服务端允许项目为空）')
+  .requiredOption('--name <name>', '主体名字（1–60 字）；同项目下同类不能重名')
+  .option('--kind <kind>', `主体类型：${SUBJECT_KINDS.join('|')}（默认 person）`)
+  .option('--persona <source>', `形象来源：${PERSONA_SOURCES.join('|')}（真人/虚拟人，仅 --kind person 可用）`)
+  .option('--traits <json>', '人物特征 JSON 对象，如 \'{"发型":"长直发","脸型":"鹅蛋脸"}\'')
+  .action(withClient((client: StudioClient, opts: any) => createSubject(client, opts)))
+
+subjectsCmd
+  .command('list')
+  .description('列主体（stdout: JSON 数组，含 traits）')
+  .option('--project <id|名>', '项目（不传 = 只看个人主体）')
+  .option('--kind <kind>', `按类型过滤：${SUBJECT_KINDS.join('|')}`)
+  .action(withClient((client: StudioClient, opts: any) => listSubjects(client, opts)))
+
+subjectsCmd
+  .command('show <主体id|名>')
+  .description('看这个主体 + 它名下的图（按 role 分组，三视图一眼可见）')
+  .option('--project <id|名>', '只在该项目里找（不传则个人 + 全部项目扫一遍）')
+  .action(withClient((client: StudioClient, id: string, opts: any) => showSubject(client, id, opts)))
+
+subjectsCmd
+  .command('add-asset <主体id|名> [file]')
+  .description('把一张图登记到主体名下：本地文件自动上传；已是中台直链用 --url 免重复上传')
+  .option('--project <id|名>', '只在该项目里找主体（不传则个人 + 全部项目扫一遍）')
+  .option('--url <中台直链>', '中台图库直链（https://img.webkubor.online/…），与 file 二选一；外站地址不收')
+  .option('--role <role>', `素材角色：${ASSET_ROLES.join('|')}（默认 raw；人像三视图用 view_front/view_side/view_back）`)
+  .option('--name <name>', '素材名，如「顾栖月-正面」')
+  .action(withClient((client: StudioClient, id: string, file: string | undefined, opts: any) =>
+    addSubjectAsset(client, id, file, opts)))
 
 program
   .command('reverse <input>')

@@ -74,11 +74,38 @@ museav gen "a Chinese ink-wash mountain at dawn" --ratio 3:4
 | `museav templates create --ref <url>` | Create a template with reference images (1–5) |
 | `museav templates publish <id>` | Open a private template to the shared pool (passes a quality gate) |
 | `museav templates delete <id>` | Delete your own template |
+| `museav subjects create --project <ws> --name "Gu Qiyue" --kind person --persona virtual --traits '{"hair":"long"}'` | Create a **subject** (an IP character / product / scene / brand) with its traits |
+| `museav subjects add-asset <subject-id> ./front.png --role view_front` | Upload a local image and register it on that subject (`view_front` / `view_side` / `view_back` / `raw` / `standard` / `output`) |
+| `museav subjects add-asset <subject-id> --url <platform-url> --role view_side` | Register an existing platform URL without re-uploading |
+| `museav subjects list --project <ws>` / `museav subjects show <subject-id>` | List subjects / show one subject with its images grouped by role (three views at a glance) |
 | `museav remove-bg <file>` | Remove background locally (no login) |
 | `museav upscale <file>` | 4x upscale locally (Real-ESRGAN) |
 | `museav compress <file>` | Compress a local image |
 | `museav skillhub tags` | List the live content tags accepted by Xiaohongshu SkillHub |
 | `museav skillhub publish ./my-skill --tag <tag>` | Publish a local Agent Skill to Xiaohongshu SkillHub. Dry-run by default — `--yes` is required to actually submit |
+
+### Subjects: "these five images are the same character"
+
+`museav projects assets` answers *which project does this file live in*. `museav subjects` answers
+*which of these files are the same thing*. Five images of one character are unrelated rows in an
+asset library — the platform has no idea they belong together. A **subject** is the entity you can
+reference, so you generate against the character rather than against one arbitrary photo.
+
+It is the intended path for keeping a private IP bible (names, three-view sheets, traits) on your
+own machine and pushing it into the platform's private asset library.
+
+```bash
+museav subjects create --project jianghu --name 'Gu Qiyue' --kind person --persona virtual \
+  --traits '{"hair":"long straight","face":"oval"}'
+museav subjects add-asset <subject-id> ./front.png --role view_front    # local file: uploaded for you
+museav subjects add-asset <subject-id> --url https://img.webkubor.online/refs/... --role view_side
+museav subjects show <subject-id>     # subject + its images grouped by role; three views at a glance
+```
+
+Enums come from the platform, not from the CLI: `--kind` is `product|person|scene|brand`,
+`--persona` is `real|virtual` (**only** valid with `--kind person`), `--role` is
+`raw|standard|view_front|view_side|view_back|output`. `--url` accepts **platform URLs only**
+(anything else is refused server-side — run `museav upload <file>` first to bring an external image in).
 
 ### Publishing Skills to Xiaohongshu SkillHub
 

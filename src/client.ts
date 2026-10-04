@@ -111,6 +111,67 @@ export interface WorkspaceAsset {
   created_at?: string
 }
 
+/**
+ * ── 主体（subjects）与领域素材（assets）──
+ *
+ * 三个枚举都是**服务端真源的抄本**，不是这里定的：
+ *   SUBJECT_KINDS / PERSONA_SOURCES → museav-manager/functions/api/subjects.js
+ *   ASSET_ROLES                     → museav-manager/functions/api/assets.js
+ * 服务端改了这边没跟上，表现是「本地放行、服务端 400」——所以本地校验只用来
+ * 把错误说清楚（中文 + 可选值），判据仍以服务端为准。
+ */
+export const SUBJECT_KINDS = ['product', 'person', 'scene', 'brand'] as const
+export const PERSONA_SOURCES = ['real', 'virtual'] as const
+/** 三视图角色（view_front / view_side / view_back）是人像的正面/侧面/背面 */
+export const ASSET_ROLES = ['raw', 'standard', 'view_front', 'view_side', 'view_back', 'output'] as const
+
+export type SubjectKind = (typeof SUBJECT_KINDS)[number]
+export type PersonaSource = (typeof PERSONA_SOURCES)[number]
+export type AssetRole = (typeof ASSET_ROLES)[number]
+
+/** 主体名称上限，与 subjects.js 的 MAX_NAME 同值 */
+export const SUBJECT_MAX_NAME = 60
+
+/**
+ * 主体（GET/POST /api/subjects）—— 被生成/被拍摄的那个真实世界的东西。
+ * 「同一个产品的 5 张图」靠它才有共同引用，否则系统不知道它们是同一个东西。
+ */
+export interface Subject {
+  id: string
+  /** 挂项目的主体按项目隔离；为空 = 个人主体（没选项目的创作） */
+  workspace_id: string | null
+  kind: SubjectKind
+  name: string
+  /** 人物特征（发型/脸型…），服务端存 jsonb，缺省是 {} */
+  traits: Record<string, unknown>
+  /** 真人 / 虚拟人，只有 kind=person 才有值（服务端拒绝给别的类型写） */
+  persona_source: PersonaSource | null
+  created_by?: string | null
+  created_at?: string
+  updated_at?: string
+  /** 列表接口附带的聚合：名下素材张数 / 非 raw 张数 / 形象版本数 */
+  asset_count?: number
+  processed_count?: number
+  likeness_count?: number
+  current_likeness?: { id: string; name: string } | null
+}
+
+/** 领域素材（GET/POST /api/assets）—— 一张具体的图/视频，可选归属某个主体 */
+export interface DomainAsset {
+  id: string
+  workspace_id: string | null
+  subject_id: string | null
+  /** 库里只存 key（域名会变，见 assets.js 的 toKey） */
+  r2_key: string
+  /** 服务端按 r2_key 派生的公网直链 */
+  url: string
+  media_type: 'image' | 'video' | 'audio'
+  origin: string
+  role: AssetRole
+  name: string | null
+  created_at?: string
+}
+
 /** 图片/文字模板清单项（GET /api/templates，template_type=image|article） */
 export interface TemplateOption {
   id: string
@@ -652,6 +713,91 @@ export class StudioClient {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
     })
+  }
+
+  // ── 主体（subjects）与领域素材（assets）──
+  // 与上面 workspace-assets 是两张表：workspace-assets 是「项目素材列表」的读模型（只有
+  // cdn_url + tags），assets 是领域模型（有主体归属、角色、派生关系）。迁移期并存，见
+  // museav-manager/docs/asset-domain-model.md §5。CLI 两条都保留，不是重复实现。
+
+  /**
+   * 列主体。**不传 workspaceId = 看个人主体**（workspace_id 为空的那批），
+   * 不是「看全部」—— 服务端 ownerFilter 就是这么分的，CLI 不发明第三种语义。
+   * 要看某个项目的就传项目 id；要跨项目找某个主体见 commands/subjects.ts 的 scanSubjects。
+   */
+  async subjects(workspaceId?: string | null, kind?: SubjectKind): Promise<Subject[]> {
+    const params = new URLSearchParams()
+    if (workspaceId) params.set('workspace_id', workspaceId)
+    if (kind) params.set('kind', kind)
+    const qs = params.toString() ? `?${params}` : ''
+    const r = await this.request(`subjects${qs}`)
+    return Array.isArray(r) ? r : []
+  }
+
+  /** 新建主体（POST /api/subjects）。不传 workspaceId = 建个人主体（服务端允许，项目是可选的） */
+  async createSubject(input: {
+    workspaceId?: string | null
+    kind: SubjectKind
+    name: string
+    traits?: Record<string, unknown>
+    personaSource?: PersonaSource | null
+  }): Promise<Subject> {
+    const r = await this.request('subjects', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        workspace_id: input.workspaceId ?? null,
+        kind: input.kind,
+        name: input.name,
+        traits: input.traits ?? {},
+        persona_source: input.personaSource ?? null,
+      }),
+    })
+    return r.subject ?? r
+  }
+
+  /**
+   * 列某个主体名下的素材。workspaceId 必须与该主体所在项目一致（服务端按项目过滤），
+   * 个人主体传 null / 不传。
+   */
+  async subjectAssets(subjectId: string, workspaceId?: string | null): Promise<DomainAsset[]> {
+    const params = new URLSearchParams({ subject_id: subjectId })
+    if (workspaceId) params.set('workspace_id', workspaceId)
+    const r = await this.request(`assets?${params}`)
+    return Array.isArray(r) ? r : []
+  }
+
+  /**
+   * 登记一张图到主体（POST /api/assets）。
+   *
+   * r2KeyOrUrl 既收中台图库直链也收裸 key —— 服务端 toKey() 会归一，**但只认中台自己的域名**：
+   * 外站 http(s) 地址会被归一成 null 然后 400（登记了也取不回来）。本地预检见 commands/subjects.ts。
+   *
+   * workspace_id 必须传**主体自己的那个值**（可能是 null）：服务端校验
+   * `subject.workspace_id !== body.workspace_id` 就报「主体不存在或不属于这个项目」，
+   * 个人主体两边都得是 null 才对得上。
+   */
+  async registerAsset(input: {
+    workspaceId: string | null
+    subjectId?: string | null
+    r2KeyOrUrl: string
+    role?: AssetRole
+    mediaType?: 'image' | 'video' | 'audio'
+    name?: string
+  }): Promise<DomainAsset> {
+    const r = await this.request('assets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        workspace_id: input.workspaceId,
+        subject_id: input.subjectId ?? null,
+        r2_key: input.r2KeyOrUrl,
+        role: input.role || 'raw',
+        media_type: input.mediaType || 'image',
+        ...(input.name ? { name: input.name } : {}),
+      }),
+    })
+    return r.asset ?? r
   }
 
   /**

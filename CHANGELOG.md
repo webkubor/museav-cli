@@ -1,5 +1,30 @@
 # Changelog
 
+## 3.12.0 (2026-10-04)
+
+### IP 人设能上传进中台了（`museav ip` / `museav subjects`）
+
+角色资产以前只在你本地的 IP 工作台里，开源平台一发布就跟着走了。新增一组命令，把
+「人设 + 三视图」按中台的主体（subject）模型存进去 —— 那是平台侧的私有资产，不进任何开源仓。
+
+```bash
+# 建一个 IP 人物（必填：项目 / 类型 / 名字；选填：特征、真人还是虚拟人）
+museav subjects create --project "IP账户运营" --name "顾栖月" --kind person --persona virtual \
+  --traits '{"发型":"长直发","脸型":"鹅蛋脸"}'
+
+# 挂三视图（角色自带 view_front / view_side / view_back，别名 museav ip）
+museav subjects add-asset <主体id> 正面.png --role view_front
+museav subjects add-asset <主体id> --url <中台直链> --role view_side   # 已是直链就不重复上传
+
+# 看这个角色的图按角色分组，三视图一眼看到齐没齐
+museav subjects show <主体id>
+```
+
+- 主体必填：项目、类型（`product` / `person` / `scene` / `brand`）、名字（同项目同类不能重名）
+- 选填：`traits`（特征，jsonb）、`persona`（**仅 person**：真人 / 虚拟人）
+- 枚举与限制都照抄服务端真源，本地先中文拦（类型、role、名字长度、外链格式），不发无谓请求
+- `add-asset` 会带主体自己的 `workspace_id`（个人主体是 `null`）—— 少传就会被判「主体不属于这个项目」
+
 ## 3.11.0 (2026-10-04)
 
 ### 出视频能点名 H3，还能给首尾帧和参考素材

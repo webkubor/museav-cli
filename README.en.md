@@ -64,6 +64,10 @@ museav gen "a Chinese ink-wash mountain at dawn" --ratio 3:4
 | Command | What it does |
 |---|---|
 | `museav gen "<prompt>"` | Generate an image (text-to-image or image-to-image with `--ref`) |
+| `museav gen --video --image a.png --last-frame b.png` | Video from first/last frames (mutually exclusive with the `--reference-*` inputs) |
+| `museav gen --video --reference-image a.png --reference-video b.mp4` | Multimodal reference-to-video (images ≤9, videos ≤3, audios ≤3) |
+| `museav enhance -p "<rough idea>"` | Enhance a rough idea into a structured video prompt (H3-Context-IR). Enhances only — no video, no generation credits; stdout is the prompt alone |
+| `museav gen --video --enhance --prompt "<rough idea>"` | Enhance the prompt first, then submit the video in one go |
 | `museav reverse <image>` | Read an image → output an English prompt |
 | `museav image-to-template <image>` | Turn an image into a reusable template |
 | `museav templates` | List available templates |

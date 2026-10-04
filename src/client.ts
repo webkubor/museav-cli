@@ -28,6 +28,9 @@ const CLIENT_ID = (() => {
   }
 })()
 
+/** H3 提示词上限（官方 7000 字符，中台 enhance-prompt 按同一数字校验） */
+const ENHANCE_MAX_PROMPT = 7000
+
 /**
  * 自报身份的头名。**过渡期两个头一起发，值都是 CLIENT_ID。**
  *
@@ -691,6 +694,53 @@ export class StudioClient {
      throw new Error(`出图超时（${(maxAttempts * intervalMs) / 1000}s 未返回，jobId: ${jobId}）`)
    }
 
+   /**
+    * 提示词增强（POST /api/enhance-prompt）：把粗糙想法补成 H3 能听懂的结构化提示词。
+    *
+    * 中台转 MiniMax 官方 **H3-Context-IR**（`/v2/h3_context_ir`），
+    * **只返回增强后的提示词，不生成视频**（所以不占生成额度，但上游按 token 计费）。
+    *
+    * 返回的 prompt 可以直接喂 generateVideo()：`gen --video --enhance` 就是这么串的。
+    * images/videos/audios 是给增强器看的**上下文**（对应官方 role=reference_image/…），
+    * 这里不涉及「首尾帧 vs 参考素材」那条互斥规则——那是生成链路的限制，增强不做生成。
+    */
+   async enhancePrompt(opts: {
+     /** 原始提示词，≤ 7000 字符（H3 上限，超了上游直接拒） */
+     prompt: string
+     /** 参考图 URL ≤9 / 参考视频 ≤3 / 参考音频 ≤3 */
+     images?: string[]
+     videos?: string[]
+     audios?: string[]
+     /** 目标时长/比例只作上下文，告诉增强器这段片子要多长、什么画幅 */
+     duration?: number
+     ratio?: string
+   }): Promise<{ prompt: string; taskId: string | null; originalLength: number; enhancedLength: number }> {
+     const prompt = (opts.prompt || '').trim()
+     if (!prompt) throw new Error('提示词增强需要 prompt')
+     // 上限本地拦一道：中台也会拦（400），但等一趟往返才发现「写太长」不值当
+     if (prompt.length > ENHANCE_MAX_PROMPT) {
+       throw new Error(`提示词超长（${prompt.length} 字符，H3 上限 ${ENHANCE_MAX_PROMPT}）`)
+     }
+     const body: Record<string, unknown> = { prompt }
+     if (opts.images?.length) body.images = opts.images
+     if (opts.videos?.length) body.videos = opts.videos
+     if (opts.audios?.length) body.audios = opts.audios
+     if (opts.duration != null) body.duration = opts.duration
+     if (opts.ratio) body.ratio = opts.ratio
+     const r = await this.request('enhance-prompt', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify(body),
+     })
+     return {
+       prompt: r.prompt,
+       taskId: r.task_id ?? null,
+       // 中台给的字数是**原始入参**的长度，本地算一遍会因 trim 对不上，直接用它下发的
+       originalLength: r.original_length ?? prompt.length,
+       enhancedLength: r.enhanced_length ?? (r.prompt || '').length,
+     }
+   }
+
    /** 提交视频任务（POST /api/videos）——video 走独立链路，不走图片 queue */
    async generateVideo(opts: {
      prompt?: string
@@ -699,6 +749,22 @@ export class StudioClient {
      duration?: number
      /** 图生视频：首帧/参考图 URL（中台内部自动上传垫图后拿到 URL 再传这里） */
      image_url?: string
+     /**
+      * 首帧 / 尾帧 URL。跟 image_url 是同一件事的两代字段名，**两个都要发**：
+      * image_url 是旧名（中台 volcengine 适配器只认它），first_frame/last_frame 是
+      * 归一后的新名（openai-video / minimax-v2 适配器只认它，见中台 _video-adapters.js
+      * 的 normalizeVideoInputs）。只发其中一个，路由到另一家上游时首帧就静默丢了。
+      */
+     first_frame?: string
+     last_frame?: string
+     /**
+      * 多模态参考素材：参考图 ≤9 / 参考视频 ≤3 / 参考音频 ≤3（上限来自上游官方）。
+      * ⚠️ **与首帧/尾帧互斥**（MiniMax H3 官方限制；Seedance 允许混用，中台按上游分别校验）。
+      * 本地能拦就本地拦，别等上传完一堆文件再被中台 400。
+      */
+     reference_images?: string[]
+     reference_videos?: string[]
+     reference_audios?: string[]
     template_id?: string
     input?: string | Record<string, string>
     callback_url?: string
@@ -711,6 +777,11 @@ export class StudioClient {
     if (opts.ratio) body.ratio = opts.ratio
     if (opts.duration != null) body.duration = opts.duration
     if (opts.image_url) body.image_url = opts.image_url
+    if (opts.first_frame) body.first_frame = opts.first_frame
+    if (opts.last_frame) body.last_frame = opts.last_frame
+    if (opts.reference_images?.length) body.reference_images = opts.reference_images
+    if (opts.reference_videos?.length) body.reference_videos = opts.reference_videos
+    if (opts.reference_audios?.length) body.reference_audios = opts.reference_audios
     if (opts.template_id) body.template_id = opts.template_id
     if (opts.input) body.input = opts.input
     if (opts.callback_url) body.callback_url = opts.callback_url

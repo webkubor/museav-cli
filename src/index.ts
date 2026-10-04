@@ -14,6 +14,7 @@ import { login } from './commands/login.js'
 import { bindFeishu } from './commands/bind-feishu.js'
 import { printWelcome } from './commands/welcome.js'
 import { gen } from './commands/gen.js'
+import { enhance } from './commands/enhance.js'
 import { reverse } from './commands/reverse.js'
 import { compressCmd, removeBgCmd, upscaleCmd, removeWatermarkCmd } from './commands/img-tools.js'
 import { projects, createProject, listAssets, addAsset, removeAsset, resolveWorkspace } from './commands/projects.js'
@@ -179,10 +180,31 @@ program
   // 上游换档次时就全成了没人认得的字符串。
   .option('--model <name>', '指定模型 / 视频档次（对外名；列表见 museav models 与 museav models --video）。不传=中台智能路由')
   .option('--duration <sec>', '视频时长（秒，仅 --video；由模型与上游支持范围决定）', (v) => Number(v))
-  .option('--image <file>', '图生视频首帧图（仅 --video，自动上传）')
+  .option('--image <file>', '图生视频首帧图（仅 --video，自动上传）。与 --reference-image/-video/-audio 互斥')
+  // 视频高级输入（H3/Seedance）。上限与互斥规则都由 CLI 本地先拦（见 gen.ts），
+  // help 里写清"仅 --video"与上限，用户不用先传完素材才被告知超了。
+  .option('--last-frame <file>', '视频尾帧图（仅 --video，自动上传；可与 --image 单独或成对使用）。与 --reference-image/-video/-audio 互斥')
+  .option('--reference-image <file|url>', '视频参考图（仅 --video，最多 9 张，可重复传；本地文件自动上传，http(s) 直链直接用）。与首尾帧互斥',
+    (v: string, acc: string[]) => [...acc, v], [] as string[])
+  .option('--reference-video <file|url>', '视频参考视频（仅 --video，最多 3 个，可重复传）。与首尾帧互斥',
+    (v: string, acc: string[]) => [...acc, v], [] as string[])
+  .option('--reference-audio <file|url>', '视频参考音频（仅 --video，最多 3 个，可重复传）。与首尾帧互斥',
+    (v: string, acc: string[]) => [...acc, v], [] as string[])
+  .option('--enhance', '提交视频前先增强提示词（仅 --video，需配合 --prompt）：调中台 /api/enhance-prompt 转 MiniMax H3-Context-IR，用返回的提示词提交；增强前后字数打到 stderr')
   .option('--project <id|名>', '归档进该工作区（museav projects 查；账户身份才生效）')
   .option('--batch <file>', '批量出图：文件每行一条（\'#\' 注释与空行跳过，\'-\' 读 stdin），走 /api/generate-batch 中台排队消化；配合 --skill/--template 时每行是业务描述，否则是完整提示词；其余选项作为公共参数')
   .action(withClient((client: StudioClient, opts: any) => gen(client, opts)))
+
+program
+  .command('enhance')
+  .description('提示词增强（中台转 MiniMax H3-Context-IR）：把粗糙想法补成结构化视频提示词。只返回提示词、不生成视频，所以不占生成额度')
+  .option('-p, --prompt <text>', '粗糙想法 / 原始提示词（必填，最长 7000 字符）')
+  // 可重复，与 gen 的素材参数同规矩：直链直接用，本地文件自动上传
+  .option('--image <file|url>', '参考图，最多 9 张，可重复传（本地文件自动上传，http(s) 直链直接用）',
+    (v: string, acc: string[]) => [...acc, v], [] as string[])
+  .option('--duration <sec>', '目标时长（秒）：只作上下文告诉增强器这段片子多长，不创建视频任务', (v) => Number(v))
+  .option('-r, --ratio <ratio>', '目标宽高比: 3:4 / 9:16 / 1:1 / 4:3 / 16:9（同样只作上下文）')
+  .action(withClient((client: StudioClient, opts: any) => enhance(client, opts)))
 
 program
   .command('compress <file>')

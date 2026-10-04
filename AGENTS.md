@@ -63,6 +63,23 @@ museav gen --prompt 'a poster, neon lights, cyberpunk' --ratio 9:16
 museav gen --video --prompt 'a cat stretching on a windowsill, cinematic' --ratio 9:16
 museav gen --video --image logo.png --prompt 'logo glows slowly, background fades' --ratio 1:1
 
+# Advanced video inputs (H3 / Seedance): first+last frame, or multimodal references.
+# ⚠️ Those two are MUTUALLY EXCLUSIVE (MiniMax H3 official rule) — pick one:
+#   frames     → --image (first) / --last-frame (last)
+#   references → --reference-image (≤9) / --reference-video (≤3) / --reference-audio (≤3)
+# Both are repeatable (except --image/--last-frame), and accept either a local file
+# (uploaded for you) or an http(s) URL (used as-is). The CLI rejects violations locally,
+# BEFORE uploading anything — a bad combination never costs you an upload round-trip.
+museav gen --video --image start.png --last-frame end.png --prompt 'slow push-in'
+museav gen --video --prompt 'same camera move, travel film' --reference-video move.mp4
+
+# Prompt enhancement (POST /api/enhance-prompt → MiniMax H3-Context-IR). It ENHANCES ONLY —
+# no video is generated, so it costs no generation credits (upstream bills per token).
+# `--enhance` enhances then submits; `museav enhance` only prints the enhanced prompt on
+# stdout (pipe it: `museav gen --video --prompt "$(museav enhance -p '...')"`).
+museav gen --video --enhance --prompt 'a cat stretching' --duration 5 --ratio 9:16
+museav enhance -p 'a cat stretching' --duration 5 --ratio 9:16
+
 # Generate from a pre-configured image template instead of a raw prompt (deterministic
 # placeholder substitution server-side, no chat cost). List available templates first —
 # the output shows which placeholder keys (if any) each template needs.

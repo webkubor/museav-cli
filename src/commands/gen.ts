@@ -6,6 +6,11 @@ import { resolveWorkspace } from './projects.js'
 /** 与中台/各租户后台口径一致：一次最多 5 张参考图 */
 const MAX_REFS = 5
 
+/** 视频参考素材上限（上游官方数字，中台按同一套校验）：图 ≤9、视频 ≤3、音频 ≤3 */
+const MAX_REF_IMAGES = 9
+const MAX_REF_VIDEOS = 3
+const MAX_REF_AUDIOS = 3
+
 /** 中台 /api/generate-batch 的单批上限；更大批量 CLI 自动分批 */
 const BATCH_CHUNK = 32
 
@@ -13,6 +18,30 @@ const BATCH_CHUNK = 32
 function readBatchLines(file: string): string[] {
   const raw = file === '-' ? readFileSync(0, 'utf8') : readFileSync(file, 'utf8')
   return raw.split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#'))
+}
+
+/**
+ * 素材入参（本地文件或 http(s) 直链）→ 中台 URL 数组。gen 与 enhance 共用。
+ *
+ * 直链（典型来源：museav projects assets 的素材库 URL）本身就是中台 CDN 地址，
+ * 直接用，不再绕一趟上传。本地路径走 uploadRef（图片会先压到视觉模型够用的尺寸）。
+ * **串行不并发**：顺序即语义——提示词里写「参考图片1…图片2…」时，第 N 个参数
+ * 对应的就是第 N 张，并发抢跑会把这个对应关系打乱。
+ */
+export async function resolveMediaUrls(client: StudioClient, sources: string[], label: string): Promise<string[]> {
+  const urls: string[] = []
+  for (const [i, src] of sources.entries()) {
+    if (/^https?:\/\//.test(src)) {
+      urls.push(src)
+      process.stderr.write(`  ${label}${i + 1} 直链: ${src}\n`)
+      continue
+    }
+    process.stderr.write(`上传${label} [${label}${i + 1}] ${src} ...\n`)
+    const up = await client.uploadRef(src)
+    urls.push(up.url)
+    process.stderr.write(`  ${label}${i + 1} 就绪: ${up.url}\n`)
+  }
+  return urls
 }
 
 /**
@@ -81,6 +110,12 @@ export async function gen(client: StudioClient, opts: {
   video?: boolean
   duration?: number
   image?: string
+  // 视频高级输入（H3/Seedance）。首尾帧与参考素材**互斥**，上限见 MAX_REF_*
+  lastFrame?: string          // --last-frame：尾帧（本地文件自动上传）
+  referenceImage?: string[]   // --reference-image，可重复，≤9
+  referenceVideo?: string[]   // --reference-video，可重复，≤3（文件或直链）
+  referenceAudio?: string[]   // --reference-audio，可重复，≤3（文件或直链）
+  enhance?: boolean           // --enhance：提交前先调 /api/enhance-prompt 增强提示词
 }): Promise<void> {
   // prompt / skill / template 三选一。commander 不好表达互斥，在这里校验，报错要说清怎么改
   const picked = [opts.prompt, opts.skill, opts.template].filter(Boolean).length
@@ -110,6 +145,45 @@ export async function gen(client: StudioClient, opts: {
   // 视频没有 alpha 通道这回事（mp4 不带透明），本地就拦掉，别让用户等一趟往返才知道
   if (opts.video && opts.transparent) {
     throw new Error('--transparent 仅图片出图支持：视频输出是 mp4，没有 alpha 通道')
+  }
+
+  // ── 视频高级输入（首尾帧 / 参考素材 / 提示词增强）的本地校验 ──
+  //
+  // 三条都在**上传之前**拦：参考视频动辄几十 MB，先传完再被中台 400 是白等一场。
+  // 上限数字与中台一致（图 9 / 视频 3 / 音频 3），互斥规则见下面的长注释。
+  const refImages = opts.referenceImage || []
+  const refVideos = opts.referenceVideo || []
+  const refAudios = opts.referenceAudio || []
+  if (!opts.video) {
+    const videoOnly = [
+      refImages.length ? `--reference-image（${refImages.length} 个）` : '',
+      refVideos.length ? `--reference-video（${refVideos.length} 个）` : '',
+      refAudios.length ? `--reference-audio（${refAudios.length} 个）` : '',
+      opts.lastFrame ? '--last-frame' : '',
+      opts.enhance ? '--enhance' : '',
+    ].filter(Boolean)
+    if (videoOnly.length) {
+      throw new Error(`${videoOnly.join(' / ')} 仅 --video 有意义（尾帧、参考素材、提示词增强都是视频链路的能力）`)
+    }
+  } else {
+    if (refImages.length > MAX_REF_IMAGES) throw new Error(`视频参考图最多 ${MAX_REF_IMAGES} 张，收到 ${refImages.length} 张`)
+    if (refVideos.length > MAX_REF_VIDEOS) throw new Error(`视频参考视频最多 ${MAX_REF_VIDEOS} 个，收到 ${refVideos.length} 个`)
+    if (refAudios.length > MAX_REF_AUDIOS) throw new Error(`视频参考音频最多 ${MAX_REF_AUDIOS} 个，收到 ${refAudios.length} 个`)
+    // 首尾帧（--image / --last-frame）与参考素材（--reference-*）互斥。
+    // 这不是中台发明的限制，是 MiniMax H3 官方规定：content 里出现 reference_* 就不能再出现
+    // first_frame/last_frame，反之亦然。Seedance 系反而允许混用（一律按外观参考处理），
+    // 中台按上游分别校验——本地一律先拦，免得素材白传一趟（文案说清二选一怎么改）。
+    const hasFrames = Boolean(opts.image || opts.lastFrame)
+    const hasRefs = refImages.length + refVideos.length + refAudios.length > 0
+    if (hasFrames && hasRefs) {
+      throw new Error(
+        '首尾帧与参考素材互斥（MiniMax H3 官方限制，二选一）：要么用 --image / --last-frame 走图生视频，' +
+        '要么用 --reference-image / --reference-video / --reference-audio 走多模态参考生视频',
+      )
+    }
+    if (opts.enhance && !opts.prompt) {
+      throw new Error('--enhance 需要配合 --prompt：增强的是你自己的提示词（--template / --skill 的提示词在服务端展开，本端拿不到）')
+    }
   }
   let templateFields: Record<string, string> | undefined
   if (opts.fields) {
@@ -206,16 +280,57 @@ export async function gen(client: StudioClient, opts: {
   if (opts.video) {
     if (opts.quality) throw new Error('--quality 仅图片出图支持')
     if (opts.skill) throw new Error('--video 暂不支持配合 --skill（视频模板走 --template，清单用 museav video-templates 查）')
+
+    // 尾帧 + 参考素材：本地文件先上传成 URL（直链直接用），顺序即语义
+    const lastFrameUrl = opts.lastFrame ? (await resolveMediaUrls(client, [opts.lastFrame], '尾帧'))[0] : undefined
+    const refImageUrls = await resolveMediaUrls(client, refImages, '参考图')
+    const refVideoUrls = await resolveMediaUrls(client, refVideos, '参考视频')
+    const refAudioUrls = await resolveMediaUrls(client, refAudios, '参考音频')
+
+    // --enhance：先让中台把粗糙想法补成 H3 听得懂的结构化提示词，再用增强后的提交。
+    // 增强器把这些图按「参考图」语义读（官方 role=reference_image）——首帧也一并给它，
+    // 让它知道画面从哪一帧起；这里只是**上下文**，不涉及生成链路那条首尾帧/参考素材互斥。
+    let videoPrompt = opts.prompt
+    if (opts.enhance) {
+      const contextImages = [...new Set([...(referenceImage ? [referenceImage] : []), ...refImageUrls])]
+      process.stderr.write(`提示词增强中（H3-Context-IR，通常几十秒）...\n`)
+      const enhanced = await client.enhancePrompt({
+        prompt: videoPrompt!,
+        images: contextImages.length ? contextImages : undefined,
+        videos: refVideoUrls.length ? refVideoUrls : undefined,
+        audios: refAudioUrls.length ? refAudioUrls : undefined,
+        duration: opts.duration,
+        ratio: opts.ratio,
+      })
+      videoPrompt = enhanced.prompt
+      // 字数对比走 stderr：stdout 只放结果 URL（管道/agent 靠它取片）
+      process.stderr.write(`提示词已增强: ${enhanced.originalLength} 字 → ${enhanced.enhancedLength} 字\n`)
+    }
+
+    const inputHint = [
+      referenceImage ? '图生视频' : '',
+      lastFrameUrl ? '带尾帧' : '',
+      refImageUrls.length + refVideoUrls.length + refAudioUrls.length
+        ? `参考素材 ${refImageUrls.length} 图/${refVideoUrls.length} 视频/${refAudioUrls.length} 音频`
+        : '',
+      opts.enhance ? '提示词已增强' : '',
+    ].filter(Boolean)
     process.stderr.write(
-      `提交视频: ${opts.template ? `模板 ${opts.template}` : opts.prompt?.slice(0, 40) || ''}${opts.image ? ' · 图生视频' : ''}\n`,
+      `提交视频: ${opts.template ? `模板 ${opts.template}` : videoPrompt?.slice(0, 40) || ''}${inputHint.length ? ` · ${inputHint.join(' · ')}` : ''}\n`,
     )
     const { jobId } = await client.generateVideo({
-      prompt: opts.prompt,
+      prompt: videoPrompt,
       // 留空 = 中台智能路由（按这次的时长/分辨率挑一个能满足的档次）
       model: opts.model,
       ratio: opts.ratio,
       duration: opts.duration,
       image_url: referenceImage,
+      // 两个字段名各有一家上游认（见 client.generateVideo 的注释），一起发才不会丢首帧
+      first_frame: referenceImage,
+      last_frame: lastFrameUrl,
+      reference_images: refImageUrls.length ? refImageUrls : undefined,
+      reference_videos: refVideoUrls.length ? refVideoUrls : undefined,
+      reference_audios: refAudioUrls.length ? refAudioUrls : undefined,
       template_id: opts.template,
       input: templateFields,
       workspace_id: workspaceId,

@@ -119,6 +119,8 @@ npm install -g museav-cli           # 装新包，命令名是 museav
 |---|---|---|
 | **AI 生成**（中台） | 文字出图 / 垫图出图 / 技能出图 / 模板出图 | `gen`（含 `--ref` 垫图、`--transparent` 透明底） |
 | | 文生视频 / 图生视频 | `gen --video` |
+| | 首尾帧、参考图/视频/音频（多模态参考生视频） | `gen --video --last-frame` / `--reference-image` / `--reference-video` / `--reference-audio` |
+| | 提示词增强（只增强、不生成） | `gen --video --enhance` / `enhance` |
 | | 从已有图片反推提示词 | `reverse` |
 | | 一张图做成可复用模板 | `image-to-template` |
 | | 建/查图片模板、视频模板 | `templates` / `video-templates` |
@@ -260,6 +262,36 @@ museav gen --video --image logo.png --prompt 'logo 缓缓发光，背景渐暗' 
 URL=$(museav gen --prompt '海报')
 curl -o poster.png "$URL"
 ```
+
+### 视频高级输入：首尾帧 / 参考素材 / 提示词增强
+
+```bash
+# 尾帧（配合 --image 首帧 = 首尾帧之间过渡；也可以只给尾帧）
+museav gen --video --image 开头.png --last-frame 结尾.png --prompt '镜头缓缓推进'
+
+# 多模态参考素材：给图/给视频/给音频，让模型照着它们的外观、运镜、节奏来
+museav gen --video --prompt '同款运镜的旅行短片' \
+  --reference-image 主角.png --reference-image 产品.png \
+  --reference-video 运镜参考.mp4 \
+  --reference-audio 节奏参考.mp3
+
+# 提示词增强：先把粗糙想法补成结构化提示词，再出片
+museav gen --video --enhance --prompt '一只猫在窗台上伸懒腰' --duration 5 --ratio 9:16
+
+# 只想拿到增强后的提示词（不出片，可存文件/传阅/复用）
+museav enhance -p '一只猫在窗台上伸懒腰' --duration 5 --ratio 9:16 > prompt.txt
+```
+
+三条规则，CLI 本地就拦（不会先传完素材才告诉你不行）：
+
+| 规则 | 说明 |
+|---|---|
+| **上限** | 参考图 ≤ 9、参考视频 ≤ 3、参考音频 ≤ 3（上游官方数字） |
+| **互斥** | 首尾帧（`--image` / `--last-frame`）与参考素材（`--reference-*`）**二选一** —— MiniMax H3 官方限制；Seedance 允许混用，中台按上游分别校验，本地一律先拦 |
+| **素材形态** | 本地文件自动上传；`http(s)://` 直链（如 `museav projects assets` 里的素材 URL）直接用，不绕一趟上传 |
+
+`--enhance` 走中台 `/api/enhance-prompt`（转 MiniMax 官方 H3-Context-IR）：**只增强、不生成**，
+所以不占生成额度。增强前后字数打在 stderr，stdout 仍然只有结果 URL。
 
 ### 用图片模板出图 `gen --template`
 

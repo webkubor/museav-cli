@@ -31,7 +31,7 @@ import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
 import { createHash } from 'node:crypto'
-import { EXCLUDE, isRuntime, collectAllFiles, detectChangedRuntime } from './gate-lib.mjs'
+import { EXCLUDE, isRuntime, collectAllFiles, detectChangedRuntime, packEntry } from './gate-lib.mjs'
 
 const GATE_VERSION = 1
 
@@ -48,17 +48,7 @@ try {
   const out = execFileSync('npm', ['pack', '--dry-run', '--json'], {
     cwd: pkgRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit']
   })
-  // `npm pack --json` 的返回形状随 npm 版本变：npm 11 是数组 `[{ files }]`，
-  // npm 12 改成以包名为键的对象 `{ "museav-cli": { files } }`。
-  // 发版链路跑的是 `npm i -g npm@latest`（见 .github/workflows/publish.yml），形状由上游定，
-  // 不能只认一种：2026-10-02 实踩 —— v3.9.2 的 publish 就是死在这一行，
-  // 报 "Cannot read properties of undefined (reading 'files')"，而它前面所有校验都是绿的。
-  const parsed = JSON.parse(out)
-  const entry = Array.isArray(parsed) ? parsed[0] : Object.values(parsed)[0]
-  if (!entry || !Array.isArray(entry.files)) {
-    throw new Error(`npm pack --json 的返回形状认不出（顶层是 ${Array.isArray(parsed) ? 'array' : typeof parsed}）`)
-  }
-  packFiles = entry.files.map((f) => f.path)
+  packFiles = packEntry(JSON.parse(out)).files.map(f => f.path)
 } catch (err) {
   console.error('[prepublish-gate] npm pack --dry-run 失败:', err.message)
   process.exit(2)

@@ -47,7 +47,7 @@ if [ -n "$open_release" ]; then
   branch_fmt="fix/<iid>-<简述> 或 feature/<版本>-<简述>"
 else
   mode="hotfix"; base="origin/main"; targets="test,main"
-  next="MR→test 合并 + Jenkins 部署测试环境并核对 version.json 后，挪「待验证」；QA 在测试环境验过会改成「待上线」——只有看到「待上线」才可合 MR→main（由 owner 合），之后发生产（cn + intl）"
+  next="MR→test 合并 + Jenkins 部署测试环境并核对 version.json 后，挪「待验证」；QA 在测试环境验过会改成「待上线」——看到「待上线」才合 MR→main、打 tag release-YYYYMMDD-N、发 cn + intl 生产（agent 可代办）"
   branch_fmt="hotfix/<iid>-<简述>（一单一分支）"
 fi
 

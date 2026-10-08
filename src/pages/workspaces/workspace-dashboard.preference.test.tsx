@@ -36,4 +36,22 @@ describe('real workspace parent keeps personal preferences reachable #1097', () 
     fireEvent.click(screen.getByRole('button', { name: 'workspaces.detail.settings.save' }))
     await waitFor(() => expect(setDefaultWorkspace).toHaveBeenCalledWith({ workspace_id: 'member-ws' }))
   })
+  it('切到另一个空间时设置表单按新空间重建，不残留上一个空间的名称（prd46#1206 QA 复现）', async () => {
+    const byId: Record<string, WorkspaceDetail> = {
+      'ws-a': { workspace_id: 'ws-a', name: 'Workspace A', slug: 'a', is_default: false } as WorkspaceDetail,
+      'ws-b': { workspace_id: 'ws-b', name: 'Workspace B', slug: 'b', is_default: false } as WorkspaceDetail,
+    }
+    vi.mocked(getWorkspace).mockImplementation(async (id: string) => byId[id])
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+    const view = (id: string) => <QueryClientProvider client={qc}><MemoryRouter><WorkspaceDashboard workspaceId={id} initialTab="settings" onDeleted={vi.fn()} /></MemoryRouter></QueryClientProvider>
+    // 先把 A、B 的详情都加载进缓存，再从 B 切回已缓存的 A：此时 dashboard 不经过 loading，
+    // 设置表单若不按空间重建就会沿用 B 的本地 state（QA 现场就是切回已看过的空间）
+    const { rerender } = render(view('ws-a'))
+    expect(await screen.findByDisplayValue('Workspace A')).toBeInTheDocument()
+    rerender(view('ws-b'))
+    expect(await screen.findByDisplayValue('Workspace B')).toBeInTheDocument()
+    rerender(view('ws-a'))
+    await waitFor(() => expect(screen.getByDisplayValue('Workspace A')).toBeInTheDocument())
+    expect(screen.queryByDisplayValue('Workspace B')).not.toBeInTheDocument()
+  })
 })

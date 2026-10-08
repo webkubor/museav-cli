@@ -268,7 +268,10 @@ export function WorkspaceDashboard({ workspaceId, onDeleted, initialTab }: Works
         )}
         {canViewSettings && (
           <TabsContent value="settings">
-            <SettingsTab ws={ws} onDeleted={onDeleted} />
+            {/* key 按空间重建设置表单：名称/描述是挂载时取一次的本地 state，切到另一张卡片时不重置，
+                点「保存」会把 A 空间改成 B 的名字（prd46#1206 QA 复现）。只 key 设置表单，不 key 整个
+                dashboard——它挂载时会写回活跃空间（见 prd46#1207）。 */}
+            <SettingsTab key={ws.workspace_id} ws={ws} onDeleted={onDeleted} />
           </TabsContent>
         )}
       </Tabs>

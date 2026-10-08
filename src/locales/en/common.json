@@ -444,6 +444,7 @@
           "replyPlaceholder": "Type a message — the agent will reply in this ticket",
           "replySend": "Send",
           "categoryLabel": "Issue type",
+          "descriptionLabel": "Issue description",
           "occurredLabel": "Occurred at",
           "requestIdLabel": "Request ID",
           "attachmentsLabel": "Attachments",

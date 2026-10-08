@@ -5,6 +5,7 @@ import type {
   SupportAskRequest,
   SupportAskResponse,
   SupportAttachmentUploadResponse,
+  SupportEventItem,
   SupportEventsResponse,
   SupportFeedbackRequest,
   SupportFeedbackResponse,
@@ -235,6 +236,12 @@ export function markTicketRead(id: string, seq: number) {
 export function rateAnswer(answerId: string, rating: 'like' | 'dislike') {
   // 后端契约实测（qa#731）：只收 up/down，like/dislike 会被 40001 support.empty_content 拒
   return post<void>(`support/answers/${answerId}/rating`, { rating: rating === 'like' ? 'up' : 'down' })
+}
+
+/** 工单处理记录（`GET /support/tickets/:id/events`）。后端只回 visible_to_user 的事件，按版本升序。 */
+export async function listTicketEvents(id: string): Promise<SupportEventItem[]> {
+  const data = await get<{ events?: SupportEventItem[] }>(`support/tickets/${id}/events`)
+  return data?.events ?? []
 }
 
 export function rateTicket(id: string, rating: number) {

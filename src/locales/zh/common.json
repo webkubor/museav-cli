@@ -444,6 +444,7 @@
           "replyPlaceholder": "输入消息，客服会在工单里回复你",
           "replySend": "发送",
           "categoryLabel": "问题类型",
+          "descriptionLabel": "问题描述",
           "occurredLabel": "发生时间",
           "requestIdLabel": "Request ID",
           "attachmentsLabel": "附件",

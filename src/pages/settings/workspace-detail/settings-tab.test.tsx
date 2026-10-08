@@ -3,10 +3,12 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SettingsTab } from './settings-tab'
 import { getProfile, setDefaultWorkspace } from '@/services/account'
+import { updateWorkspace } from '@/services/workspaces'
 import { appToast } from '@/lib/app-toast'
 import type { AccountProfile, WorkspaceDetail } from '@/types'
 vi.mock('react-i18next', async (importOriginal) => ({ ...await importOriginal<typeof import('react-i18next')>(), useTranslation: () => ({ t: (key: string) => key }) }))
-vi.mock('@/hooks/use-permissions', () => ({ usePermissions: () => ({ hasPermission: () => false }) }))
+const perms = vi.hoisted(() => ({ allow: false }))
+vi.mock('@/hooks/use-permissions', () => ({ usePermissions: () => ({ hasPermission: () => perms.allow }) }))
 vi.mock('@/services/account', () => ({ getProfile: vi.fn(), setDefaultWorkspace: vi.fn() }))
 vi.mock('@/services/workspaces', () => ({ updateWorkspace: vi.fn(), deleteWorkspace: vi.fn() }))
 vi.mock('@/lib/app-toast', () => ({ appToast: { success: vi.fn(), requestError: vi.fn() } }))
@@ -19,7 +21,7 @@ function setup() {
   render(<QueryClientProvider client={client}><SettingsTab ws={ws} onDeleted={vi.fn()} /></QueryClientProvider>)
   return { invalidation }
 }
-beforeEach(() => { vi.clearAllMocks();vi.mocked(getProfile).mockResolvedValue(profile(''));vi.mocked(setDefaultWorkspace).mockResolvedValue({ default_workspace_id: 'w-own' }) })
+beforeEach(() => { vi.clearAllMocks();perms.allow = false;vi.mocked(updateWorkspace).mockResolvedValue({} as never);vi.mocked(getProfile).mockResolvedValue(profile(''));vi.mocked(setDefaultWorkspace).mockResolvedValue({ default_workspace_id: 'w-own' }) })
 const saveButton = () => screen.getByRole('button', { name: 'workspaces.detail.settings.save' })
 
 describe('默认空间：表单内一行、随「保存」提交（prd46#1206，账户偏好 #1097）', () => {
@@ -67,5 +69,32 @@ describe('默认空间：表单内一行、随「保存」提交（prd46#1206，
     await screen.findByRole('alert');expect(screen.queryByRole('switch')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'common.retry' }))
     expect(await screen.findByRole('switch')).toBeEnabled()
+  })
+  it('名称与默认空间一起改：一次保存两个都提交，只弹一条「空间设置已保存」', async () => {
+    perms.allow = true;setup()
+    const toggle = await screen.findByRole('switch')
+    fireEvent.change(screen.getByDisplayValue('Owned'), { target: { value: 'Renamed' } })
+    fireEvent.click(toggle)
+    vi.mocked(getProfile).mockResolvedValue(profile('w-own'))
+    fireEvent.click(saveButton())
+    await waitFor(() => expect(appToast.success).toHaveBeenCalledWith('workspaces.detail.settings.settingsSaved'))
+    expect(updateWorkspace).toHaveBeenCalledWith('w-own', expect.objectContaining({ name: 'Renamed' }))
+    expect(setDefaultWorkspace).toHaveBeenCalledWith({ workspace_id: 'w-own' })
+    expect(appToast.success).toHaveBeenCalledTimes(1)
+  })
+  it('一项失败时不弹成功提示', async () => {
+    perms.allow = true;vi.mocked(setDefaultWorkspace).mockRejectedValue(new Error('boom'));setup()
+    const toggle = await screen.findByRole('switch')
+    fireEvent.change(screen.getByDisplayValue('Owned'), { target: { value: 'Renamed' } })
+    fireEvent.click(toggle);fireEvent.click(saveButton())
+    await waitFor(() => expect(appToast.requestError).toHaveBeenCalled())
+    expect(appToast.success).not.toHaveBeenCalled()
+  })
+  it('保存成功、资料拉回后开关变为「已是默认」置灰，保存不可再点', async () => {
+    setup();const toggle = await screen.findByRole('switch')
+    fireEvent.click(toggle);vi.mocked(getProfile).mockResolvedValue(profile('w-own'));fireEvent.click(saveButton())
+    await waitFor(() => expect(screen.getByText('workspaces.detail.settings.defaultWorkspaceCurrent')).toBeInTheDocument())
+    expect(toggle).toBeChecked();expect(toggle).toBeDisabled();expect(saveButton()).toBeDisabled()
+    expect(setDefaultWorkspace).toHaveBeenCalledTimes(1)
   })
 })

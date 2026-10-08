@@ -53,7 +53,11 @@ export function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted:
   })
   const preferenceMutation = useMutation({
     mutationFn: () => setDefaultWorkspace({ workspace_id: ws.workspace_id }),
-    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['account-profile'] }) },
+    // 等 profile 拉回再结束 pending：否则拉回前 isDefault 仍是 false，开关和「保存」会短暂解锁，能重复提交
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['account-profile'] })
+      setWantDefaultFor(null)
+    },
     onError: (err: unknown) => appToast.requestError(err, t('workspaces.detail.settings.preferenceError')),
   })
   const saving = renameMutation.isPending || preferenceMutation.isPending
@@ -132,7 +136,7 @@ export function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted:
             <Switch
               id="default-workspace"
               checked={isDefault || defaultChanged}
-              disabled={isDefault || saving}
+              disabled={isDefault || saving || profileQuery.isFetching}
               onCheckedChange={(on) => setWantDefaultFor(on ? ws.workspace_id : null)}
             />
           )}

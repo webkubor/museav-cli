@@ -34,6 +34,8 @@ describe('mapApiProtocols — 后端协议 → 内部协议', () => {
   it('dashscope_realtime 保留为 WebSocket 专用示例协议', () => {
     expect(mapApiProtocols(['dashscope_realtime'])).toEqual(['dashscope_realtime'])
     expect(languagesForProtocol('dashscope_realtime')).toEqual(['nodejs', 'python'])
+    expect(languageLabel('dashscope_realtime', 'nodejs')).toBe('Node.js')
+    expect(languageLabel('dashscope_realtime', 'python')).toBe('Python')
   })
   it('content_generation 原样保留，不被丢掉也不折成 native（线上空 Tab 的直接成因）', () => {
     expect(mapApiProtocols(['content_generation'])).toEqual(['content_generation'])

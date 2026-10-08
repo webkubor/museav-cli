@@ -105,12 +105,12 @@ function isAnthropicProtocol(protocol: ApiProtocol): boolean {
 }
 
 /**
- * 平台托管链路（异步内容生成任务 / 各家原生透传兜底）：示例是裸 curl / fetch /
- * requests，不经过任何厂商 SDK。语言 Tab 因此不能挂「(OpenAI)」后缀——挂了会让人
- * 以为可以拿 openai SDK 直连这个端点。
+ * 平台通用链路（异步内容生成任务 / 各家原生透传 / Realtime WebSocket）：示例是
+ * 通用 HTTP/WebSocket 客户端，不经过 OpenAI/Anthropic SDK。语言 Tab 因此不能挂
+ * 「(OpenAI)」后缀，避免误导用户。
  */
 function isPlatformLane(protocol: ApiProtocol): boolean {
-  return protocol === 'content_generation' || protocol === 'native'
+  return protocol === 'content_generation' || protocol === 'native' || protocol === 'dashscope_realtime'
 }
 
 const LANGUAGE_LABEL: Record<ApiCodeLanguage, string> = {

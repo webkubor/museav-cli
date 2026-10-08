@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
 import { trackAction } from '@/lib/track'
 import { errorCodeOf } from '@/lib/request-error-message'
 import { updateWorkspace, deleteWorkspace } from '@/services/workspaces'
 import type { WorkspaceDetail } from '@/types'
+import { getProfile } from '@/services/account'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
@@ -18,7 +19,11 @@ export function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted:
   const { t } = useTranslation()
   const qc = useQueryClient()
   const { hasPermission } = usePermissions()
-  // 默认空间入口已迁到空间管理列表的卡片上（prd46#1209，原型 a4c9a2b 删掉了设置页这一行），本页不再出现
+  // 默认空间入口已迁到空间管理列表的卡片上（prd46#1209，原型 a4c9a2b 删掉了设置页这一行），本页不再出现。
+  // 但「默认空间不可删除」要跟着默认走（原型危险区读同一个 isDefault）：账户偏好指向本空间时也禁删；
+  // 结构上的 is_default 后端本就不让删，两者任一即保护
+  const profileQuery = useQuery({ queryKey: ['account-profile'], queryFn: getProfile })
+  const isProtectedDefault = ws.is_default || profileQuery.data?.default_workspace_id === ws.workspace_id
   const canRename = hasPermission(PERMS.WORKSPACE_RENAME)
   const canDelete = hasPermission(PERMS.WORKSPACE_DELETE)
   const canEditSettings = hasPermission(PERMS.WORKSPACE_SETTINGS_EDIT)
@@ -108,7 +113,7 @@ export function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted:
         <div className="text-xs font-bold text-mg-danger uppercase tracking-wider">
           {t('workspaces.detail.settings.dangerTitle')}
         </div>
-        {ws.is_default ? (
+        {isProtectedDefault ? (
           <p className="text-xs text-mg-text-3">{t('workspaces.detail.settings.defaultCannotDelete')}</p>
         ) : canDelete ? (
           <>

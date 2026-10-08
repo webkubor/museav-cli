@@ -163,7 +163,16 @@ interface WorkspaceDashboardProps {
  */
 export function WorkspaceDashboard({ workspaceId, onDeleted, initialTab }: WorkspaceDashboardProps) {
   const { t } = useTranslation()
-  const [tab, setTab] = useState<'overview' | 'members' | 'logs' | 'settings'>(initialTab ?? 'overview')
+  // 切换到另一个空间时页签回到「概览」（原型点卡片 setActiveTab("overview")）；按 workspaceId 记，
+  // 无需 effect。深链 initialTab 只对首个空间生效
+  const [tabState, setTabState] = useState<{ ws: string; tab: 'overview' | 'members' | 'logs' | 'settings' }>(
+    () => ({ ws: workspaceId, tab: initialTab ?? 'overview' }),
+  )
+  // 空间一变就把页签重置为概览（React「渲染期按 prop 变化调整 state」写法，不走 effect）；
+  // 只比对「上次所在空间」，A→B→A 回到 A 时同样回到概览，不恢复 A 当初的页签
+  if (tabState.ws !== workspaceId) setTabState({ ws: workspaceId, tab: 'overview' })
+  const tab = tabState.ws === workspaceId ? tabState.tab : 'overview'
+  const setTab = (next: 'overview' | 'members' | 'logs' | 'settings') => setTabState({ ws: workspaceId, tab: next })
   // Option B：进入某空间管理详情即把它设为活跃空间，并按它重解析权限——
   // 使 4 个 tab 显隐 + tab 内成员/设置/日志按钮 gating 都按「所看空间」的角色（如空间负责人）解析（需求方#255）。
   useEffect(() => {
@@ -176,9 +185,9 @@ export function WorkspaceDashboard({ workspaceId, onDeleted, initialTab }: Works
   const { hasPermission } = usePermissions()
   const canViewMembers = isEnterprise && hasPermission(PERMS.WORKSPACE_MEMBERS_VIEW)
   const canViewLogs = hasPermission(PERMS.OBSERVABILITY_VIEW)
-  // Every workspace member can manage their own default-workspace preference.
-  // Administrative actions keep their individual permission gates in SettingsTab.
-  const canViewSettings = true
+  // 默认空间入口已迁到列表卡片（prd46#1209），设置页签回到原型口径：只有能管理该空间的人可见
+  // （原型 visibleSpaceManagementTabs：非管理者只看概览 / 成员）。此前为让成员设默认才对所有人放开
+  const canViewSettings = hasPermission(PERMS.WORKSPACE_SETTINGS_EDIT)
   const activeTab = (
     (tab === 'members' && !canViewMembers)
     || (tab === 'logs' && !canViewLogs)

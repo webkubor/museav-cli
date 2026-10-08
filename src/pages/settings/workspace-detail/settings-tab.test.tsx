@@ -25,11 +25,19 @@ beforeEach(() => { vi.clearAllMocks();perms.allow = false;vi.mocked(updateWorksp
 const saveButton = () => screen.getByRole('button', { name: 'workspaces.detail.settings.save' })
 
 describe('设置页不再有默认空间开关（入口迁到空间卡片，prd46#1209）', () => {
-  it('不渲染开关，也不请求账户偏好', async () => {
+  it('不渲染默认空间开关', async () => {
     perms.allow = true;setup()
     expect(await screen.findByDisplayValue('Owned')).toBeInTheDocument()
     expect(screen.queryByRole('switch')).not.toBeInTheDocument()
-    expect(getProfile).not.toHaveBeenCalled()
+  })
+  it('账户偏好指向本空间时「默认空间不可删除」、不给删除（原型危险区跟随默认）', async () => {
+    perms.allow = true;vi.mocked(getProfile).mockResolvedValue(profile('w-own'));setup()
+    expect(await screen.findByText('workspaces.detail.settings.defaultCannotDelete')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'workspaces.detail.settings.delete' })).not.toBeInTheDocument()
+  })
+  it('偏好是别的空间且本空间非结构默认时可删', async () => {
+    perms.allow = true;vi.mocked(getProfile).mockResolvedValue(profile('w-other'));setup()
+    expect(await screen.findByRole('button', { name: 'workspaces.detail.settings.delete' })).toBeInTheDocument()
   })
   it('保存只提交名称/描述', async () => {
     perms.allow = true;setup()

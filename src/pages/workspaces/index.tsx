@@ -86,10 +86,8 @@ export default function WorkspacesPage() {
     || ''
   const setDefaultMutation = useMutation({
     mutationFn: (workspaceId: string) => setDefaultWorkspace({ workspace_id: workspaceId }),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['account-profile'] })
-      appToast.success(t('workspaces.detail.settings.preferenceSaved'))
-    },
+    // 原型设完即生效、不弹提示：「默认」标签移到这张卡就是反馈。失败才提示
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['account-profile'] }),
     onError: (err: unknown) => appToast.requestError(err, t('workspaces.detail.settings.preferenceError')),
   })
   // 按钮只给能管理该空间的人（原型 canManageWorkspace：租户 owner/admin 或空间负责人）

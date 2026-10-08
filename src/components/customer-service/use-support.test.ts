@@ -763,6 +763,46 @@ describe('useSupport · 用户主动结束人工服务 (prd46#1202)', () => {
     expect(result.current.mode).toEqual({ kind: 'chat' })
   })
 
+  it('评价卡带上当前人工会话的客服姓名', async () => {
+    const { endHandoff } = await import('@/services/support')
+    vi.mocked(endHandoff).mockReset().mockResolvedValue(undefined)
+    const result = await connected()
+
+    await act(async () => result.current.endActiveHandoff())
+    expect(ratingCards(result.current.messages)[0].ratingCard).toMatchObject({ agentName: '王恩博' })
+  })
+
+  it('结束服务后不评价、直接再转人工，能进入排队态（不卡在已结束）', async () => {
+    const { endHandoff } = await import('@/services/support')
+    vi.mocked(endHandoff).mockReset().mockResolvedValue(undefined)
+    const result = await connected()
+    await act(async () => result.current.endActiveHandoff())
+    expect(result.current.mode.kind).toBe('humanEnded')
+
+    requestHandoffMock.mockResolvedValueOnce({ service_mode: 'live', ticket_id: 'CS-NEXT', status: 'pending' })
+    await act(async () => result.current.startHandoff())
+    expect(result.current.mode).toMatchObject({ kind: 'queuing', ticketId: 'CS-NEXT' })
+  })
+
+  it('评价卡双击只提交一次', async () => {
+    const { endHandoff } = await import('@/services/support')
+    let release: () => void = () => {}
+    vi.mocked(endHandoff).mockReset()
+      .mockResolvedValueOnce(undefined)
+      .mockImplementationOnce(() => new Promise<void>((resolve) => { release = resolve }))
+    const result = await connected()
+    await act(async () => result.current.endActiveHandoff())
+
+    await act(async () => {
+      const first = result.current.rateEndedHandoff('CS-LIVE', 5)
+      await result.current.rateEndedHandoff('CS-LIVE', 5)
+      release()
+      await first
+    })
+    expect(endHandoff).toHaveBeenCalledTimes(2) // 1 次结束 + 1 次评分
+    expect(ratingCards(result.current.messages)[0].ratingCard?.submittedStars).toBe(5)
+  })
+
   it('结束接口失败时留在人工态、不出评价卡', async () => {
     const { endHandoff } = await import('@/services/support')
     vi.mocked(endHandoff).mockReset().mockRejectedValue(new Error('end failed'))

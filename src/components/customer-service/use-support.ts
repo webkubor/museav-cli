@@ -217,7 +217,7 @@ export function useSupport() {
   // 人工会话结束的两条路径（客服在后台点已解决 / 用户点「结束服务」）共用这一处收尾：
   // 结束提示 +「每个已结束的人工会话一张」评价卡（PRD §7.6/§7.7）。按 ticketId 预留，
   // 长轮询晚到的 ended 回包不会再追加第二张。
-  const enterHumanEnded = useCallback((ticketId: string, detail: SupportTicketDetail | null) => {
+  const enterHumanEnded = useCallback((ticketId: string, detail: SupportTicketDetail | null, agent?: { agentName?: string; agentNo?: string }) => {
     const reservation = reserveEndedTicket(appliedEndedTicketIds.current, ticketId)
     appliedEndedTicketIds.current = reservation.appliedTicketIds
     if (!reservation.shouldApply) return
@@ -234,7 +234,11 @@ export function useSupport() {
           content: '',
           createdAt: Date.now(),
           kind: 'rating_card',
-          ratingCard: { ticketId, agentName: detail ? ticketAgentNameOf(detail) : undefined, agentNo: detail?.agent_no },
+          ratingCard: {
+            ticketId,
+            agentName: agent?.agentName ?? (detail ? ticketAgentNameOf(detail) : undefined),
+            agentNo: agent?.agentNo ?? detail?.agent_no,
+          },
         },
       ])
   }, [go, t])
@@ -514,28 +518,45 @@ export function useSupport() {
   // 旧实现结束后直接 go(chat)，评价卡只有「客服后台点已解决」那条长轮询路径会出，
   // 用户自己结束的会话永远拿不到评价卡。先结束再评价、而不是等评价时才结束：
   // 用户不评价直接关面板，会话也不会一直挂在客服那边（同原型 endHumanSupport）。
+  // 客服名/工号取当前人工模式自带的（长轮询时写进 mode），不读 ticketDetail——
+  // 人工态下 ticketDetail 没人维护，可能是空，也可能是之前在服务记录里看过的另一张单。
+  const endingHandoffTicketId = useRef<string | null>(null)
   const endActiveHandoff = useCallback(async () => {
-    if (!ticketId || mode.kind !== 'human') return
+    const current = activeMode.current
+    if (current.kind !== 'human' || endingHandoffTicketId.current === current.ticketId) return
+    const { ticketId: endingId, agentName, agentNo } = current
+    const expectedAccountId = activeAccountId.current
+    endingHandoffTicketId.current = endingId
     try {
-      await endHandoff(ticketId, {})
+      await endHandoff(endingId, {})
     } catch (error) {
       appToast.requestError(error)
       return
+    } finally {
+      endingHandoffTicketId.current = null
     }
     trackEvent('support_handoff_end')
-    enterHumanEnded(ticketId, ticketDetail?.id === ticketId ? ticketDetail : null)
-  }, [ticketId, mode.kind, ticketDetail, enterHumanEnded])
+    // 请求在途时切了账号 / 已被长轮询收尾：不往新上下文里追加旧单的结束提示和评价卡
+    if (!isCurrentSupportTicket(endingId, expectedAccountId)) return
+    enterHumanEnded(endingId, null, { agentName, agentNo })
+  }, [enterHumanEnded, isCurrentSupportTicket])
 
   // 评价卡「提交 / 暂不评价」。后端 /handoff/end 结束幂等、评分一次性，专门支持
   // 「先结束、评分后到」（agent EndSessionWithRating）。用卡片自己的 ticketId，
   // 不读当前模式：用户可能已切去别的模式再回来评价。接口失败不标「已提交」，
   // 否则评分静默丢失。
+  const ratingTicketIds = useRef<ReadonlySet<string>>(new Set())
   const rateEndedHandoff = useCallback(async (cardTicketId: string, rating?: number, skip?: boolean) => {
+    // 双击防重：后端评分只收一次，第二发会报错 toast，而卡片已显示「已提交」，提示自相矛盾
+    if (ratingTicketIds.current.has(cardTicketId)) return
+    ratingTicketIds.current = new Set([...ratingTicketIds.current, cardTicketId])
     try {
       await endHandoff(cardTicketId, { rating, skip })
     } catch (error) {
       appToast.requestError(error)
       return
+    } finally {
+      ratingTicketIds.current = new Set([...ratingTicketIds.current].filter((id) => id !== cardTicketId))
     }
     if (rating) trackEvent('support_human_rating', { rating })
     else if (skip) trackEvent('support_human_rating', { skipped: true })

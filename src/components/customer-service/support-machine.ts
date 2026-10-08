@@ -72,8 +72,9 @@ const TRANSITIONS: Record<SupportModeKind, readonly SupportModeKind[]> = {
   queuing: ['connecting', 'human', 'chat'],
   connecting: ['human', 'chat'],
   human: ['humanEnded', 'chat'],
-  // 人工结束后恢复问答与反馈入口
-  humanEnded: ['chat', 'feedback', 'tickets'],
+  // 人工结束后恢复问答与反馈入口；也能直接再次转人工（同 chat）。少了 queuing 时，
+  // 用户结束服务不评价就再转人工：后端已建新单，前端 go() 被拦、界面不动，新单成孤儿（prd46#1202 review）
+  humanEnded: ['chat', 'feedback', 'tickets', 'queuing'],
   tickets: ['ticketDetail', 'chat'],
   ticketDetail: ['tickets', 'chat'],
 }

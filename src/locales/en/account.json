@@ -255,10 +255,7 @@
           "discount": "−{{discount}}%",
           "footer": "Preview prices · Always below list",
           "browse": "Browse all models"
-        },
-        "totpLabel": "Authenticator code (if enabled)",
-        "totpHint": "If you enabled two-factor authentication, enter the 6-digit code from your authenticator.",
-        "totpRetry": "A valid authenticator code is required. Request a new email code, then submit both codes."
+        }
       },
       "phoneLogin": {
         "title": "Phone Sign In",

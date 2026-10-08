@@ -19,7 +19,6 @@ vi.mock('@/lib/track', () => ({ trackEvent: vi.fn() }))
 const key = (name: string) => `account.auth.globalEmailAuth.${name}`
 const button = (name: string) => screen.getByRole('button', { name: key(name) })
 const codeInput = () => screen.getByLabelText(key('codeLabel'))
-const totpInput = () => screen.getByLabelText(key('totpLabel'))
 const setAuth = vi.fn()
 function setup() { render(<MemoryRouter initialEntries={['/login?ref=ATTR&invitation=INV']}><GlobalEmailAuth /></MemoryRouter>) }
 async function goToCode() {
@@ -63,33 +62,37 @@ describe('GlobalEmailAuth factors and recovery #1092', () => {
     fireEvent.click(button('continueEmail'));await screen.findByPlaceholderText('account.auth.placeholders.emailCode6')
     expect(sendEmailCode).toHaveBeenLastCalledWith('fixture@example.invalid', 'retry-send-captcha')
   })
-  it('uses a fresh login captcha, forwards both factors and fills auth from confirmed session', async () => {
+  it('uses a fresh login captcha, forwards the email code and fills auth from confirmed session', async () => {
     await goToCode()
     expect(sendEmailCode).toHaveBeenCalledWith('fixture@example.invalid', 'send-captcha')
-    fireEvent.change(totpInput(), { target: { value: '654321' } });submitCode()
-    await waitFor(() => expect(emailCodeLoginRegister).toHaveBeenCalledWith('fixture@example.invalid', '123456', 'login-captcha', 'ATTR', 'INV', '654321'))
+    submitCode()
+    await waitFor(() => expect(emailCodeLoginRegister).toHaveBeenCalledWith('fixture@example.invalid', '123456', 'login-captcha', 'ATTR', 'INV'))
     await waitFor(() => expect(setAuth).toHaveBeenCalledWith({ account_id: 'a' }, 't', [], 'w', ['read']))
   })
-  it('rejects a malformed optional TOTP before login and does not fetch session', async () => {
-    await goToCode();fireEvent.change(totpInput(), { target: { value: 'abc123' } });submitCode()
-    await screen.findByText('account.auth.validation.code6')
-    expect(emailCodeLoginRegister).not.toHaveBeenCalled();expect(getSession).not.toHaveBeenCalled()
+  it('renders no authenticator/TOTP input on the verify step and never sends totp', async () => {
+    await goToCode()
+    // 第二步只有：6 位邮箱验证码 + 人机校验 + 提交按钮，没有任何 TOTP/身份验证器输入。
+    expect(screen.queryByLabelText(key('totpLabel'))).toBeNull()
+    expect(screen.queryByLabelText(key('totpHint'))).toBeNull()
+    expect(screen.queryAllByRole('textbox')).toHaveLength(1)
+    submitCode()
+    await waitFor(() => expect(emailCodeLoginRegister).toHaveBeenCalledTimes(1))
+    const body = vi.mocked(emailCodeLoginRegister).mock.calls[0]
+    expect(body).not.toContain('totp')
+    expect(body).toEqual(['fixture@example.invalid', '123456', 'login-captcha', 'ATTR', 'INV'])
   })
-  it.each([40038, 40039])('clears consumed email code and requires a new code plus TOTP after %s', async (code) => {
-    vi.mocked(emailCodeLoginRegister).mockRejectedValueOnce(new ModelGoApiError({ code, msg: 'second factor required' }))
+  it.each([40038, 40039])('maps second-factor code %s to the generic login failure path (no TOTP prompt)', async (code) => {
+    vi.mocked(emailCodeLoginRegister).mockRejectedValueOnce(new ModelGoApiError({ code, msg: '' }))
     await goToCode();submitCode()
-    await screen.findByText(key('totpRetry'))
-    expect(codeInput()).toHaveValue('');expect(totpInput()).toBeRequired()
+    await screen.findByText(key('failed'))
+    expect(screen.queryByLabelText(key('totpLabel'))).toBeNull()
     expect(getSession).not.toHaveBeenCalled();expect(setAuth).not.toHaveBeenCalled()
-    fireEvent.change(totpInput(), { target: { value: '654321' } });submitCode('222222')
-    await waitFor(() => expect(emailCodeLoginRegister).toHaveBeenLastCalledWith('fixture@example.invalid', '222222', 'login-captcha', 'ATTR', 'INV', '654321'))
-    await waitFor(() => expect(setAuth).toHaveBeenCalledTimes(1))
   })
   it('requires human verification again after returning to another email', async () => {
-    await goToCode();fireEvent.change(totpInput(), { target: { value: '654321' } });fireEvent.click(button('useAnotherEmail'))
+    await goToCode();fireEvent.click(button('useAnotherEmail'))
     expect(button('continueEmail')).toBeDisabled()
     fireEvent.click(button('humanVerification'));await waitFor(() => expect(button('continueEmail')).toBeEnabled())
     fireEvent.click(button('continueEmail'));await screen.findByPlaceholderText('account.auth.placeholders.emailCode6')
-    expect(totpInput()).toHaveValue('');expect(totpInput()).not.toBeRequired()
+    expect(screen.queryByLabelText(key('totpLabel'))).toBeNull()
   })
 })

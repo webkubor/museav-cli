@@ -1,4 +1,4 @@
-/** Two-step email OTP login and registration, with optional enrolled TOTP. */
+/** Two-step email OTP login and registration. */
 
 import { useEffect, useMemo, useRef, useState, type FormEventHandler } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
@@ -68,8 +68,6 @@ export function GlobalEmailAuth() {
   const [captchaParam, setCaptchaParam] = useState<string | null>(null)
   const [step, setStep] = useState<EmailStep>('entry')
   const [serverError, setServerError] = useState('')
-  const [totp, setTotp] = useState('')
-  const [totpRequired, setTotpRequired] = useState(false)
   const [loading, setLoading] = useState(false)
   const [resendSeconds, setResendSeconds] = useState(0)
   const [pendingProvider, setPendingProvider] = useState<GlobalOAuthProvider | null>(null)
@@ -83,11 +81,6 @@ export function GlobalEmailAuth() {
   const gateRef = useRef<CaptchaGateHandle | null>(null)
 
   const describeError = (error: unknown) => {
-    if (isApiErrorCode(error, 40038) || isApiErrorCode(error, 40039)) {
-      setTotpRequired(true)
-      codeForm.reset({ code: '' })
-      return t('account.auth.globalEmailAuth.totpRetry')
-    }
     if (isApiErrorCode(error, 40901)) return t('account.auth.globalEmailAuth.emailAlreadyRegistered')
     return getRequestErrorMessage(error, t('account.auth.globalEmailAuth.failed'))
   }
@@ -210,10 +203,6 @@ export function GlobalEmailAuth() {
       return
     }
     const email = emailForm.getValues('email')
-    if ((totpRequired || totp) && !/^\d{6}$/.test(totp)) {
-      setServerError(t('account.auth.validation.code6'))
-      return
-    }
     setLoading(true)
     setServerError('')
     try {
@@ -223,7 +212,6 @@ export function GlobalEmailAuth() {
         gateParam ?? (await getCaptchaParam()),
         resolveReferralCode(searchParams) || undefined,
         searchParams.get('invitation') ?? undefined,
-        totp || undefined,
       )
       // 会话由服务端 cookie 下发，读回来填 store；导航交给上面 isAuthenticated 的 effect。
       const session = await getSession()
@@ -266,8 +254,6 @@ export function GlobalEmailAuth() {
 
   const useDifferentEmail = () => {
     setStep('entry')
-    setTotp('')
-    setTotpRequired(false)
     setHumanVerification('idle')
     setResendSeconds(0)
     setServerError('')
@@ -423,12 +409,6 @@ export function GlobalEmailAuth() {
           />
 
           {serverError && <p className="auth-error-message">{serverError}</p>}
-
-          <div>
-            <label htmlFor="email-login-totp" className="modern-auth-label">{t('account.auth.globalEmailAuth.totpLabel')}</label>
-            <Input id="email-login-totp" value={totp} onChange={(event) => setTotp(event.target.value)} inputMode="numeric" maxLength={6} autoComplete="off" required={totpRequired} />
-            <p className="auth-prototype-code-hint">{t('account.auth.globalEmailAuth.totpHint')}</p>
-          </div>
 
           <Button type="submit" variant="brand" size="lg" loading={loading}>
             <LuMailCheck size={17} aria-hidden="true" />

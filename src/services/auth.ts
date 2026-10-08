@@ -30,7 +30,6 @@ export function sendEmailCode(email: string, captchaVerifyParam?: string | null)
  * 国际站邮箱免密登录/注册：以「邮箱 + 6 位验证码」建号或登录并下发 session cookie。
  *
  * #1092：POST /auth/email-code/login 原子消费邮箱验证码；不能先调用 verify。
- * 已启用两步验证的账号还须提供 totp。
  *
  * captcha_verify_param：登录侧实际是 fail-closed（手机号腿实测缺失/空值一律 40025），
  * 所以调用方必须把人机校验四元组传进来；发码时消费掉的那一组不能复用。
@@ -41,7 +40,6 @@ export function emailCodeLoginRegister(
   captchaVerifyParam?: string | null,
   referralCode?: string,
   invitationToken?: string,
-  totp?: string,
 ) {
   return post<LoginResult>(
     'auth/email-code/login',
@@ -51,7 +49,6 @@ export function emailCodeLoginRegister(
         code,
         ...(referralCode ? { referral_code: referralCode } : {}),
         ...(invitationToken ? { invitation_token: invitationToken } : {}),
-        ...(totp ? { totp } : {}),
       },
       captchaVerifyParam,
     ),

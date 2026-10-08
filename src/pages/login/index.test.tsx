@@ -356,7 +356,6 @@ describe('LoginPage', () => {
         'captcha-param',
         undefined,
         undefined,
-        undefined,
       )
     })
   })

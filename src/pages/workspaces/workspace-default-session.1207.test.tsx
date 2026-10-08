@@ -153,6 +153,24 @@ describe('② 看详情只重解析权限，不改写活跃空间（prd46#1207 �
     expect(localStorage.getItem(storageKeys.activeWorkspaceId(TENANT))).toBe('ws-preferred')
   })
 
+  it('连点两张卡片时只认最后一次：先发的慢响应不得覆盖后发的权限', async () => {
+    // 点 A（慢）→ 点 B（快）。B 先回，A 后回；最终权限必须是 B 的。
+    let resolveA!: (v: SessionResult) => void
+    vi.mocked(getSession)
+      .mockImplementationOnce(() => new Promise<SessionResult>((res) => { resolveA = res }))
+      .mockResolvedValueOnce(sessionResult('ws-B', ['perm:B']))
+
+    const pA = resolvePermissionsForWorkspace('ws-A')
+    const pB = resolvePermissionsForWorkspace('ws-B')
+    await pB
+    expect(useAuthStore.getState().permissions).toEqual(['perm:B'])
+
+    resolveA(sessionResult('ws-A', ['perm:A']))
+    await pA
+
+    expect(useAuthStore.getState().permissions).toEqual(['perm:B'])
+  })
+
   it('重解析失败时静默保持原权限，不阻断查看详情', async () => {
     useAuthStore.setState({ permissions: ['old:perm'] })
     vi.mocked(getSession).mockRejectedValueOnce(new Error('boom'))

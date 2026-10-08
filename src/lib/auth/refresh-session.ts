@@ -90,9 +90,19 @@ export async function switchActiveWorkspace(workspaceId: string): Promise<void> 
  * 显隐依赖它。若只删掉挂载副作用而不补重解析，非默认空间的负责人进自有空间会重新看不到
  * 设置/成员 tab —— 那正是需求方#255 修过的 bug。所以这里保留「重解析权限」，只去掉「改写活跃空间」。
  */
+/**
+ * 「最新一次请求胜出」令牌：空间管理页点卡片不跳路由，连点 A→B 会并发两次重解析。
+ * 没有这道闸时，A 的慢响应可能后到并覆盖 B 的权限，页面显示的是 B、权限却是 A 的
+ * （tab 多了或少了，且不可复现）。只认最后一次发起的请求，旧响应直接丢弃。
+ */
+let latestPermissionsRequest = 0
+
 export async function resolvePermissionsForWorkspace(workspaceId: string): Promise<void> {
+  const token = ++latestPermissionsRequest
   try {
     const result = await getSession(workspaceId)
+    // 期间已有更新的请求发出 ⇒ 本次是过期响应，丢弃，不许回写
+    if (token !== latestPermissionsRequest) return
     const store = useAuthStore.getState()
     // 只落权限面；activeWorkspaceId / localStorage 一律不动
     store.setPermissions(result.permissions?.granted ?? null)

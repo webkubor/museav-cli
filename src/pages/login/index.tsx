@@ -270,7 +270,6 @@ function EmailLoginPage({ market, onUsePhone }: { market: Market; onUsePhone?: (
     <AuthLayout
       title={t(market === 'china' ? 'account.auth.domesticEmailLogin.title' : 'account.auth.login.title')}
       subtitle={t(market === 'china' ? 'account.auth.domesticEmailLogin.subtitle' : 'account.auth.login.subtitle')}
-      showMarketSwitcher
       footer={
         onUsePhone ? (
           <span>

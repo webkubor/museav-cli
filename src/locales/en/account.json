@@ -202,11 +202,6 @@
         "showPassword": "Show password",
         "hidePassword": "Hide password"
       },
-      "marketSwitcher": {
-        "ariaLabel": "Switch site",
-        "china": "China",
-        "global": "Global"
-      },
       "login": {
         "title": "Welcome Back",
         "subtitle": "Sign in to your ModelGo account",

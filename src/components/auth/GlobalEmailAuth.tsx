@@ -293,7 +293,6 @@ export function GlobalEmailAuth() {
       title={title}
       subtitle={subtitle}
       aside={<GlobalDiscountShowcase />}
-      showMarketSwitcher
     >
       {step === 'entry' ? (
         <form

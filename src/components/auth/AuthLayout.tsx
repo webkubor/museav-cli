@@ -1,8 +1,6 @@
 import type { ReactNode } from 'react'
 import { useSiteLogo } from '@/config/brand-assets'
-import { useLangStore } from '@/store/use-brand-store'
 import { cn } from '@/lib/utils'
-import { AuthMarketSwitcher } from '@/components/auth/AuthMarketSwitcher'
 
 interface AuthLayoutProps {
   /** 鉴权卡片大标题 */
@@ -17,8 +15,6 @@ interface AuthLayoutProps {
   aside?: ReactNode
   /** 是否使用宽版卡片布局 */
   wide?: boolean
-  /** 登录/注册页展示中国站与 Global 的站点切换 */
-  showMarketSwitcher?: boolean
 }
 
 /**
@@ -31,10 +27,8 @@ export function AuthLayout({
   children,
   aside,
   wide = false,
-  showMarketSwitcher = false,
 }: AuthLayoutProps) {
-  // market 只给站点切换器用；氛围球配色已改走 brand token（release/v1.0.7 的 #1061），不再按市场写死色值。
-  const market = useLangStore((s) => s.market)
+  // 氛围球配色已改走 brand token（release/v1.0.7 的 #1061），不再按市场写死色值。
   const siteLogo = useSiteLogo()
 
   // 双氛围球：品牌 token 的 rgb 分量（--brand-base-rgb 随市场 × 明暗四象限自动切换）。
@@ -44,8 +38,6 @@ export function AuthLayout({
 
   return (
     <div className="auth-layout-container">
-      {showMarketSwitcher && <AuthMarketSwitcher market={market} />}
-
       {/* 🔮 氛围球一（left-bottom） */}
       <div
         className="auth-blur-orb-primary"

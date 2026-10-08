@@ -223,7 +223,7 @@ let sessionValidityCheck: Promise<boolean> | null = null
  * failure. Only clear the app-wide auth state when the shared session endpoint
  * independently confirms that the user's session has expired.
  */
-function isSharedSessionExpired(): Promise<boolean> {
+export function isSharedSessionExpired(): Promise<boolean> {
   if (!sessionValidityCheck) {
     sessionValidityCheck = ky
       .get(apiPrefixUrl() + '/auth/session', { credentials: 'include', timeout: 5000, retry: 0 })

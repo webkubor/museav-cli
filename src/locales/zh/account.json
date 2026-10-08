@@ -202,11 +202,6 @@
         "showPassword": "显示密码",
         "hidePassword": "隐藏密码"
       },
-      "marketSwitcher": {
-        "ariaLabel": "切换站点",
-        "china": "中国站",
-        "global": "Global"
-      },
       "login": {
         "title": "欢迎回来",
         "subtitle": "登录到你的 ModelGo 账号",

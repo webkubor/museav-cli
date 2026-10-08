@@ -81,6 +81,9 @@ describe('默认空间入口在空间卡片上 (prd46#1209)', () => {
     expect(btn).toHaveAttribute('aria-describedby', 'ws-default-tip-ws-b')
     fireEvent.click(selectBtn('Beta'))
     expect(selectBtn('Beta')).toHaveAttribute('aria-pressed', 'true')
+    // 选中流光（qa#468）：aria-pressed 挪到内部按钮后由卡片显式加
+    expect(card('Beta')).toHaveClass('mg-running-border')
+    expect(card('Alpha')).not.toHaveClass('mg-running-border')
     expect(setDefaultWorkspace).not.toHaveBeenCalled()
   })
 

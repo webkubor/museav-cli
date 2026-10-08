@@ -217,7 +217,8 @@ export default function WorkspacesPage() {
                   className={cn(
                     "group/card relative flex flex-col gap-2.5 p-3.5 min-h-[176px] cursor-pointer transition-colors border rounded-lg has-[[data-card-select]:focus-visible]:ring-2 has-[[data-card-select]:focus-visible]:ring-brand-base has-[[data-card-select]:focus-visible]:ring-offset-2",
                     isSelected
-                      ? "border-brand-base bg-brand-base/5"
+                      // aria-pressed 挪到了内部选中按钮上，Card 自己不再据此加选中流光，这里显式补上（qa#468 统一选中语言）
+                      ? "border-brand-base bg-brand-base/5 mg-running-border"
                       : "bg-mg-bg-0 border-mg-border/40 hover:bg-mg-fill-0/20 hover:border-mg-border/60"
                   )}
                 >
@@ -272,7 +273,12 @@ export default function WorkspacesPage() {
                       却不带信息，而且它正好落在早先 @slug 的位置，被连着误认成「slug 显示成
                       —」报了缺陷（需求方#632）。slug 本身按 prd#596 已在 6815dbf8 移除。 */}
                   {ws.description && (
-                    <p className="pointer-events-none relative text-xs text-mg-text-3 leading-relaxed line-clamp-2" title={ws.description}>
+                    // 描述被截两行时要靠 title 看全文，所以这行单独接收鼠标；点它同样选中卡片
+                    <p
+                      className="relative text-xs text-mg-text-3 leading-relaxed line-clamp-2 cursor-pointer"
+                      title={ws.description}
+                      onClick={() => selectWorkspace(ws.workspace_id)}
+                    >
                       {ws.description}
                     </p>
                   )}

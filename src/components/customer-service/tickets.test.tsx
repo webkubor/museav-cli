@@ -365,3 +365,57 @@ it('人工单评分读 human_rating (#1202 附带项)', () => {
   renderDetail({ ...asyncDetail, ticket_type: 'human_support', status: 'resolved', human_rating: 4 })
   expect(screen.getByText('★★★★☆')).toBeInTheDocument()
 })
+
+// ── 补充附件流程（#1198 review：改动风险最高的一块）────────────────────────
+function pickFile(name = 'shot.png', type = 'image/png') {
+  const input = screen.getByLabelText('common.customerService.feedback.attachment') as HTMLInputElement
+  fireEvent.change(input, { target: { files: [new File(['x'], name, { type })] } })
+}
+const openSupplement = () => fireEvent.click(screen.getByRole('button', { name: 'common.customerService.ticket.supplement' }))
+const submitButton = () => screen.getByRole('button', { name: 'common.customerService.ticket.supplementSubmit' })
+
+it('只传附件：上传并挂到工单，不调文字补充，表单收起 (#1198)', async () => {
+  uploadAttachment.mockReset().mockResolvedValue({ object_ref: 'obj-1', file_name: 'shot.png', mime_type: 'image/png', size_bytes: 1 })
+  attachAttachment.mockReset().mockResolvedValue(undefined)
+  const onSupplement = renderDetail(feedbackTicket)
+  openSupplement()
+  pickFile()
+  fireEvent.click(submitButton())
+  await waitFor(() => expect(attachAttachment).toHaveBeenCalledWith('FB-20260923-001', expect.objectContaining({ object_ref: 'obj-1' })))
+  expect(onSupplement).not.toHaveBeenCalled()
+  await waitFor(() => expect(screen.queryByRole('button', { name: 'common.customerService.ticket.supplementSubmit' })).not.toBeInTheDocument())
+})
+
+it('附件失败时不提交文字，文字留在框里可重试 (#1198)', async () => {
+  uploadAttachment.mockReset().mockRejectedValue(new Error('upload failed'))
+  attachAttachment.mockReset()
+  const onSupplement = renderDetail(feedbackTicket)
+  openSupplement()
+  fireEvent.change(screen.getByLabelText('common.customerService.ticket.supplement'), { target: { value: '补一句' } })
+  pickFile()
+  fireEvent.click(submitButton())
+  await waitFor(() => expect(uploadAttachment).toHaveBeenCalled())
+  expect(onSupplement).not.toHaveBeenCalled()
+  expect(screen.getByLabelText('common.customerService.ticket.supplement')).toHaveValue('补一句')
+})
+
+it('附件成功、文字失败：重试只发文字，不重复挂附件 (#1198)', async () => {
+  uploadAttachment.mockReset().mockResolvedValue({ object_ref: 'obj-2', file_name: 'shot.png', mime_type: 'image/png', size_bytes: 1 })
+  attachAttachment.mockReset().mockResolvedValue(undefined)
+  const onSupplement = vi.fn().mockResolvedValueOnce('failed').mockResolvedValueOnce('ok')
+  renderDetail(feedbackTicket, onSupplement)
+  openSupplement()
+  fireEvent.change(screen.getByLabelText('common.customerService.ticket.supplement'), { target: { value: '补一句' } })
+  pickFile()
+  fireEvent.click(submitButton())
+  await waitFor(() => expect(onSupplement).toHaveBeenCalledTimes(1))
+  expect(screen.getByLabelText('common.customerService.ticket.supplement')).toHaveValue('补一句')
+  fireEvent.click(submitButton())
+  await waitFor(() => expect(onSupplement).toHaveBeenCalledTimes(2))
+  expect(attachAttachment).toHaveBeenCalledTimes(1)
+})
+
+it('human_rating 为 0 视为未评分，不显示空星 (#1198 review)', () => {
+  renderDetail({ ...asyncDetail, ticket_type: 'human_support', status: 'resolved', human_rating: 0 })
+  expect(screen.queryByText('☆☆☆☆☆')).not.toBeInTheDocument()
+})

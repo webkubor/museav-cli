@@ -425,7 +425,7 @@ export function TicketDetailView({
             {isHuman && <div ref={latestRef} aria-hidden className="h-px" />}
             {/* 后端对反馈单无条件下发「我们将在 1 个工作日内联系你。」，处理中 / 已解决还挂着
                 就成了错误承诺；只在待处理时展示（prd46#1198 #5） */}
-            {detail.status === 'pending' && ticketSlaTextOf(detail) && (
+            {(!isFeedback || detail.status === 'pending') && ticketSlaTextOf(detail) && (
               <p className="m-0 mg-text-caption text-mg-text-3">{ticketSlaTextOf(detail)}</p>
             )}
             {detail.status === 'resolved' && detail.resolution && (
@@ -451,6 +451,8 @@ export function TicketDetailView({
                   // 提交中锁住：成功后会清空输入框，点提交之后再打的字不会被发出去，不能静默吞掉
                   disabled={supplementing}
                 />
+                {/* 附件只给反馈单：其它工单详情没有「附件」行，传了用户也看不到结果（原型同） */}
+                {isFeedback && (
                 <div className="flex items-center gap-2">
                   <label className="mg-tile flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 px-3 py-1.5 mg-text-caption text-mg-text-3 hover:border-brand-mid/50">
                     <LuPaperclip size={13} aria-hidden className="shrink-0" />
@@ -476,6 +478,7 @@ export function TicketDetailView({
                     </button>
                   )}
                 </div>
+                )}
                 {supplementFileError && <span className="mg-text-caption text-mg-danger">{supplementFileError}</span>}
                 <div className="flex justify-end gap-2">
                   <Button size="small" variant="secondary" onClick={closeSupplement} disabled={supplementing}>
@@ -661,7 +664,8 @@ function TicketHandlingLog({ ticketId, refreshKey }: { ticketId: string; refresh
     if (!ticketId) return
     let cancelled = false
     listTicketEvents(ticketId)
-      .then((items) => { if (!cancelled) setEvents(items.filter((e) => e.visible_to_user !== false)) })
+      // 没有 summary 的事件不展示，避免把 ticket.claimed 这类机器码直接打到屏上
+      .then((items) => { if (!cancelled) setEvents(items.filter((e) => e.visible_to_user !== false && e.summary)) })
       .catch(() => { if (!cancelled) setEvents([]) })
     return () => { cancelled = true }
   }, [ticketId, refreshKey])
@@ -673,7 +677,7 @@ function TicketHandlingLog({ ticketId, refreshKey }: { ticketId: string; refresh
       <ol className="m-0 flex list-none flex-col gap-2 p-0">
         {events.map((event) => (
           <li key={event.id} className="flex flex-col gap-0.5">
-            <p className="m-0 mg-text-caption text-mg-text-2">{event.summary || event.type}</p>
+            <p className="m-0 mg-text-caption text-mg-text-2 break-words">{event.summary}</p>
             <p className="m-0 mg-text-caption text-mg-text-3">
               {[event.created_at ? formatMonthDayTime(event.created_at) : '', event.actor_name].filter(Boolean).join(' · ')}
             </p>

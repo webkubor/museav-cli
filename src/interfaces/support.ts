@@ -243,7 +243,9 @@ export function ticketSlaTextOf(t: Pick<SupportTicketSummary, 'next_step'> & { s
 
 /** 人工服务评分：后端字段是 human_rating，旧代码读 rating 导致已评分的单在详情里不显示星级（prd46#1202 附带项）。 */
 export function ticketRatingOf(t: Pick<SupportTicketDetail, 'human_rating' | 'rating'>): number | undefined {
-  return t.human_rating ?? t.rating
+  // 0 / 越界都当未评分：否则会显示 5 颗空星、还把评分入口藏掉
+  const v = t.human_rating ?? t.rating
+  return typeof v === 'number' && v >= 1 && v <= 5 ? v : undefined
 }
 
 export function ticketAgentNameOf(t: Pick<SupportTicketSummary, 'assignee_display_name'> & { agent_name?: string }): string | undefined {

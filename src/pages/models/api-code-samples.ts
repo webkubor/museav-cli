@@ -41,6 +41,7 @@ export type ApiProtocol =
   | 'anthropic_messages'
   | 'openai_video'
   | 'content_generation'
+  | 'dashscope_realtime'
   | 'openai'
   | 'anthropic'
   | 'native'
@@ -72,6 +73,7 @@ export const PROTOCOL_LABEL: Record<ApiProtocol, string> = {
   anthropic_messages: 'Anthropic Messages',
   // 与后端目录、model-format.ts 的 PROTOCOL_LABEL_ZH 同口径（中英同名专名）
   content_generation: 'Content Generation',
+  dashscope_realtime: 'DashScope Realtime',
   // 原生协议不展示推理供应商名称
   native: '原生 API',
 }
@@ -93,6 +95,7 @@ export const PROTOCOL_LABEL_EN: Record<ApiProtocol, string> = {
   openai_transcriptions: 'OpenAI Transcriptions',
   anthropic_messages: 'Anthropic Messages',
   content_generation: 'Content Generation',
+  dashscope_realtime: 'DashScope Realtime',
   native: 'Native API',
 }
 
@@ -102,12 +105,12 @@ function isAnthropicProtocol(protocol: ApiProtocol): boolean {
 }
 
 /**
- * 平台托管链路（异步内容生成任务 / 各家原生透传兜底）：示例是裸 curl / fetch /
- * requests，不经过任何厂商 SDK。语言 Tab 因此不能挂「(OpenAI)」后缀——挂了会让人
- * 以为可以拿 openai SDK 直连这个端点。
+ * 平台通用链路（异步内容生成任务 / 各家原生透传 / Realtime WebSocket）：示例是
+ * 通用 HTTP/WebSocket 客户端，不经过 OpenAI/Anthropic SDK。语言 Tab 因此不能挂
+ * 「(OpenAI)」后缀，避免误导用户。
  */
 function isPlatformLane(protocol: ApiProtocol): boolean {
-  return protocol === 'content_generation' || protocol === 'native'
+  return protocol === 'content_generation' || protocol === 'native' || protocol === 'dashscope_realtime'
 }
 
 const LANGUAGE_LABEL: Record<ApiCodeLanguage, string> = {
@@ -128,6 +131,7 @@ const LANGUAGE_LABEL: Record<ApiCodeLanguage, string> = {
  *   保留最基础的 cURL/Node.js/Python 通用示例。
  */
 export function languagesForProtocol(protocol: ApiProtocol): ApiCodeLanguage[] {
+  if (protocol === 'dashscope_realtime') return ['nodejs', 'python']
   if (isAnthropicProtocol(protocol)) return ['curl', 'python', 'claudeCode']
   switch (protocol) {
     case 'openai':
@@ -190,6 +194,7 @@ const PROTOCOL_TO_API: Record<PublicProtocol, ApiProtocol> = {
   anthropic_messages: 'anthropic_messages',
   openai_video: 'openai_video',
   content_generation: 'content_generation',
+  dashscope_realtime: 'dashscope_realtime',
   // ── 过渡期旧值：语义等于各自的端点粒度同名值 ──
   openai: 'openai',
   anthropic: 'anthropic',
@@ -266,6 +271,7 @@ const ENDPOINT_PATH: Record<ApiProtocol, string> = {
   anthropic: '/v1/messages',
   anthropic_messages: '/v1/messages',
   content_generation: '/v1/content_generation/tasks',
+  dashscope_realtime: '/api-ws/v1/realtime',
   native: '/v1/content_generation/tasks',
 }
 
@@ -319,6 +325,42 @@ export function buildCodeSample(protocol: ApiProtocol, language: ApiCodeLanguage
   // 示例里的注释也要跟界面语言走：英文站复制到的代码带中文注释，等于把中文
   // 漏进了对外英文页面（同 shared/modelgo_prd#1067 的那类整块未适配）。
   const isZh = isZhLang()
+
+  if (protocol === 'dashscope_realtime') {
+    const realtimeEndpoint = `wss://${getGatewayDomain()}${ENDPOINT_PATH[protocol]}?model=${encodeURIComponent(modelId)}`
+    if (language === 'python') {
+      return [
+        `# pip install "websockets>=14"`,
+        `import asyncio`,
+        `import os`,
+        `import websockets`,
+        ``,
+        `async def main():`,
+        `    async with websockets.connect(`,
+        `        "${realtimeEndpoint}",`,
+        `        additional_headers={"Authorization": f"Bearer {os.environ['MODELGO_API_KEY']}"},`,
+        `    ) as ws:`,
+        `        print(await ws.recv())  # session.created`,
+        `        await ws.send('{"type":"session.update","session":{"modalities":["text","audio"]}}')`,
+        `        print(await ws.recv())  # session.updated`,
+        ``,
+        `asyncio.run(main())`,
+      ].join('\n')
+    }
+    return [
+      `// npm install ws`,
+      `import WebSocket from "ws";`,
+      ``,
+      `const ws = new WebSocket("${realtimeEndpoint}", {`,
+      `  headers: { Authorization: \`Bearer \${process.env.MODELGO_API_KEY}\` },`,
+      `});`,
+      ``,
+      `ws.on("open", () => {`,
+      `  ws.send(JSON.stringify({ type: "session.update", session: { modalities: ["text", "audio"] } }));`,
+      `});`,
+      `ws.on("message", (data) => console.log(data.toString()));`,
+    ].join('\n')
+  }
 
   switch (language) {
     case 'curl':

@@ -24,6 +24,7 @@ import {
   PROTOCOL_LABEL,
   PROTOCOL_LABEL_EN,
   buildCodeSample,
+  languagesForProtocol,
   type ApiProtocol,
   type ApiCodeLanguage,
 } from '../api-code-samples'
@@ -78,7 +79,11 @@ export function ApiQuickCallModal({
 
   const activeProtocol = protocols.includes(protocol) ? protocol : protocols[0]
   // 语言 Tab 固定 cURL/Node.js/Python（PRD §7.7），不随协议变化
-  const languages = PLAYGROUND_LANGUAGES
+  // 语言 Tab 也按协议过滤（同详情页 ApiAccessPanel）：realtime 只有 Node.js / Python，
+  // 写死三语会出现「cURL」标签下却是 Node.js 代码（prd46#1211 review）
+  const protocolLanguages = languagesForProtocol(activeProtocol)
+  const filtered = PLAYGROUND_LANGUAGES.filter((lang) => protocolLanguages.includes(lang))
+  const languages = filtered.length > 0 ? filtered : PLAYGROUND_LANGUAGES
   const activeLanguage = languages.includes(language) ? language : languages[0]
   const codeSample = buildCodeSample(activeProtocol, activeLanguage, modelId)
 

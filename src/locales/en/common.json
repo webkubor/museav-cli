@@ -271,7 +271,6 @@
         "queueing": "In queue · {{position}} ahead",
         "queueingWithPosition": "In queue · {{count}} ahead of you",
         "connecting": "Connecting to an agent",
-        "connected": "{{name}} · #{{no}}",
         "cancelQueue": "Cancel queue",
         "cancelConnect": "Cancel transfer",
         "end": "End session",

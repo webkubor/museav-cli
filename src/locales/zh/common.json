@@ -271,7 +271,6 @@
         "queueing": "排队中 · 前方 {{position}} 人",
         "queueingWithPosition": "排队中 · 前方 {{count}} 人",
         "connecting": "正在连接人工客服",
-        "connected": "{{name}} · 工号 {{no}}",
         "cancelQueue": "取消排队",
         "cancelConnect": "取消转接",
         "end": "结束服务",

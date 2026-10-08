@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WorkspaceDashboard } from './workspace-dashboard'
@@ -22,19 +22,14 @@ beforeEach(() => {
   vi.mocked(setDefaultWorkspace).mockResolvedValue({ default_workspace_id: 'member-ws' })
 })
 describe('real workspace parent keeps personal preferences reachable #1097', () => {
-  it('opens settings deep link for member while administrative controls remain unavailable', async () => {
+  it('成员打开设置深链：只读字段，没有默认空间开关与管理操作（默认入口已迁到卡片，prd46#1209）', async () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
     render(<QueryClientProvider client={qc}><MemoryRouter><WorkspaceDashboard workspaceId="member-ws" initialTab="settings" onDeleted={vi.fn()} /></MemoryRouter></QueryClientProvider>)
-    const toggle = await screen.findByRole('switch')
+    expect(await screen.findByDisplayValue('Member workspace')).toBeDisabled()
     expect(screen.getByRole('tab', { name: /workspaces.detail.tabs.settings/ })).toHaveAttribute('aria-selected', 'true')
-    expect(toggle).toBeEnabled()
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'workspaces.detail.settings.delete' })).not.toBeInTheDocument()
-    expect(screen.getByDisplayValue('Member workspace')).toBeDisabled()
-    // 默认空间是账户偏好，成员也能设：拨开关只改表单，点「保存」才提交（prd46#1206）
-    fireEvent.click(toggle)
     expect(setDefaultWorkspace).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByRole('button', { name: 'workspaces.detail.settings.save' }))
-    await waitFor(() => expect(setDefaultWorkspace).toHaveBeenCalledWith({ workspace_id: 'member-ws' }))
   })
   it('切到另一个空间时设置表单按新空间重建，不残留上一个空间的名称（prd46#1206 QA 复现）', async () => {
     const byId: Record<string, WorkspaceDetail> = {

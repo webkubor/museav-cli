@@ -25,7 +25,9 @@
       "forwardUnknown": "Forward unknown",
       "metaMembers": "{{count}} members",
       "metaKeys": "{{count}} API Keys",
-      "metaGuardrails": "{{count}} guardrails"
+      "metaGuardrails": "{{count}} guardrails",
+      "setDefault": "Set as default",
+      "setDefaultTip": "Open this workspace by default after you sign in. Applies only to your account; other members’ defaults are unaffected."
     },
     "countSuffix": "{{count}} spaces",
     "searchPlaceholder": "Search by name, slug or workspace ID",
@@ -188,10 +190,6 @@
         "deleteSuccess": "Workspace deleted",
         "deleteError": "Delete failed",
         "defaultCannotDelete": "Default workspace cannot be deleted",
-        "defaultWorkspace": "Default workspace",
-        "defaultWorkspaceCurrent": "This is your default workspace",
-        "settingsSaved": "Workspace settings saved",
-        "defaultWorkspaceHint": "Open this workspace by default when you sign in. This preference applies only to your account across devices.",
         "preferenceSaved": "Default workspace preference saved",
         "preferenceError": "Could not load or save your default workspace. Please try again."
       }

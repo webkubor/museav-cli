@@ -263,7 +263,9 @@ export function WorkspaceDashboard({ workspaceId, onDeleted, initialTab }: Works
         )}
         {canViewLogs && (
           <TabsContent value="logs">
-            <LogsForwardingTab workspaceId={workspaceId} />
+            {/* 同 SettingsTab：采集/广播开关是挂载时取一次的本地 state，切回已缓存空间时不重置，
+                点开关会把上一个空间的设置写进当前空间（prd46#1206 review 发现，同根因） */}
+            <LogsForwardingTab key={workspaceId} workspaceId={workspaceId} />
           </TabsContent>
         )}
         {canViewSettings && (

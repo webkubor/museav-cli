@@ -3,7 +3,7 @@
  * 勾选可开票充值单（全选/单选）→ 选发票抬头 → 提交申请；无抬头时按钮置灰并引导去新增。
  * 需求方 #836：所选充值单合计 ≥ ¥50 才可提交（后端需同口径校验防直调绕过）。
  */
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
@@ -69,6 +69,16 @@ export function ApplyInvoiceTab({
     () => recharges.filter((r) => r.invoice_status === 'billable').map((r) => r.recharge_id),
     [recharges]
   )
+  // #1192：原型默认全选可开票充值单，此前默认是空选中（0/7）。只在首次拿到数据时seed一次，
+  // 之后用户手动取消勾选不会被后续 refetch（比如弹窗重新打开复用同一 query）强行拉回全选。
+  const didSeedSelection = useRef(false)
+  useEffect(() => {
+    if (!didSeedSelection.current && allBillableIds.length > 0) {
+      setSelected(allBillableIds)
+      didSeedSelection.current = true
+    }
+  }, [allBillableIds])
+
   const isAllSelected = useMemo(
     () => allBillableIds.length > 0 && allBillableIds.every((id) => selected.includes(id)),
     [allBillableIds, selected]

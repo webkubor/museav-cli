@@ -284,6 +284,7 @@
       "applySuccess": "已提交开票申请，系统正在自动开票",
       "applyFailed": "开票提交失败，请重试",
       "statusAll": "全部状态",
+      "pagerSummary": "共 {{count}} 条记录 · 每页 10 条",
       "searchPlaceholder": "搜索发票号 / 抬头",
       "recordsLoadFailed": "开票记录加载失败",
       "emptyFiltered": "当前筛选条件下没有发票记录",

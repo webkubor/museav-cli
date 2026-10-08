@@ -284,6 +284,7 @@
       "applySuccess": "Invoice application submitted. The system is issuing the invoice.",
       "applyFailed": "Failed to submit invoice application. Please try again.",
       "statusAll": "All Statuses",
+      "pagerSummary": "{{count}} records total \u00b7 10 per page",
       "searchPlaceholder": "Search invoice no. / title",
       "recordsLoadFailed": "Failed to load invoice records",
       "emptyFiltered": "No invoice records match the current filters",

@@ -94,6 +94,10 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
 
   const set = (k: keyof CreateInvoiceTitleRequest, v: string) => setForm((f) => ({ ...f, [k]: v }))
 
+  // #1192：原型要求必填项未填完时「保存」置灰，此前按钮恒可点、校验只在点击后用 toast 提示。
+  // 邮箱格式不在这里校验（留给 handleSave 的 toast），按钮disabled只管「有没有填」。
+  const isFormValid = Boolean(form.company_name.trim() && form.tax_id.trim() && form.email.trim())
+
   const handleSave = () => {
     if (!form.company_name.trim()) return appToast.warning(t('billing.invoice.companyNameRequired'))
     if (!form.tax_id.trim()) return appToast.warning(t('billing.invoice.taxIdRequired'))
@@ -151,7 +155,7 @@ export function InvoiceTitleTab({ tenantId }: { tenantId: string }) {
           <Button variant="outline" className="flex-1" onClick={() => setView('list')}>
             {t('billing.invoice.cancel')}
           </Button>
-          <Button variant="brand" className="flex-1" loading={create.isPending} onClick={handleSave}>
+          <Button variant="brand" className="flex-1" loading={create.isPending} disabled={!isFormValid} onClick={handleSave}>
             {t('billing.invoice.save')}
           </Button>
         </div>

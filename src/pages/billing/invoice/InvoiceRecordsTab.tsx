@@ -26,7 +26,8 @@ const STATUS_CLASS: Record<InvoiceRecord['status'], string> = {
   voided: 'bg-mg-fill-0 text-mg-text-3',
 }
 
-const STATUS_FILTERS: Array<'all' | InvoiceRecord['status']> = ['all', 'pending', 'invoicing', 'invoiced', 'failed', 'voided']
+// #1192：原型只要求「全部状态 / 开票中 / 已开票」三档；其他状态（待开票/失败/已作废）仍会在记录列表里展示（见下方 status badge），只是不进筛选选项。
+const STATUS_FILTERS: Array<'all' | InvoiceRecord['status']> = ['all', 'invoicing', 'invoiced']
 
 export function InvoiceRecordsTab({
   tenantId,
@@ -70,6 +71,8 @@ export function InvoiceRecordsTab({
   })
 
   const records: InvoiceRecord[] = data?.pages.flatMap((p) => p.items) ?? []
+  // #1192：分页区缺少摘要文案；总数取首页返回的 total（后端每页都回同一个总数）
+  const totalRecords = data?.pages[0]?.total ?? 0
 
   const loadMore = () => {
     void fetchNextPage().then((res) => {
@@ -107,6 +110,10 @@ export function InvoiceRecordsTab({
           className="flex-1"
         />
       </div>
+
+      {totalRecords > 0 && (
+        <p className="text-xs text-mg-text-3">{t('billing.invoice.pagerSummary', { count: totalRecords })}</p>
+      )}
 
       {/* 列表 */}
       {isLoading && records.length === 0 ? (

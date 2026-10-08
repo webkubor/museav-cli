@@ -59,6 +59,7 @@
       "descPlaceholder": "Describe the purpose...",
       "ownerLabel": "Workspace owner",
       "initialMembersLabel": "Initial members",
+      "initialMembersHint": "The owner joins automatically and is locked at the top of the list. Add other regular members here (up to {{count}}).",
       "ownerBadge": "Owner",
       "initialMembersPlaceholder": "Search organization members and press Enter",
       "inviteLabel": "Initial members (Optional)",

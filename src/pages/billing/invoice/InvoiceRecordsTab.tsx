@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
 import { appToast } from '@/lib/app-toast'
 import { listInvoiceRecords, getInvoiceDownloadUrl } from '@/services/invoice'
 import type { InvoiceRecord, InvoiceTitleType } from '@/types'
@@ -71,8 +72,6 @@ export function InvoiceRecordsTab({
   })
 
   const records: InvoiceRecord[] = data?.pages.flatMap((p) => p.items) ?? []
-  // #1192：分页区缺少摘要文案；总数取首页返回的 total（后端每页都回同一个总数）
-  const totalRecords = data?.pages[0]?.total ?? 0
 
   const loadMore = () => {
     void fetchNextPage().then((res) => {
@@ -111,10 +110,6 @@ export function InvoiceRecordsTab({
         />
       </div>
 
-      {totalRecords > 0 && (
-        <p className="text-xs text-mg-text-3">{t('billing.invoice.pagerSummary', { count: totalRecords })}</p>
-      )}
-
       {/* 列表 */}
       {isLoading && records.length === 0 ? (
         <EmptyState title={t('billing.invoice.loading')} />
@@ -139,51 +134,75 @@ export function InvoiceRecordsTab({
           ) : undefined}
         />
       ) : (
-        records.map((r) => {
-          return (
-            <div key={r.invoice_no} className="rounded-md border border-mg-border p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 space-y-1.5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-bold text-mg-text-1">{r.invoice_no}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_CLASS[r.status]}`}>
-                      {t(`billing.invoice.status.${r.status}`)}
-                    </span>
-                    <span className="rounded-md bg-mg-fill-0 px-2 py-0.5 text-xs text-mg-text-2">
-                      {t(`billing.invoice.titleType.${r.title_type as InvoiceTitleType}`)}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-mg-text-3">
-                    <span>{formatDateTimeWithSeconds(r.created_at)}</span>
-                    <span>{r.company_name}</span>
-                    <span>
-                      {t('billing.invoice.totalWithTax')}{' '}
-                      <span className="font-semibold text-mg-text-2">
-                        {currencySymbol}
-                        {r.total_amount}
+        // #1192：原型要求七列表格（App.tsx:15983-15993）：申请时间/发票号/发票抬头/金额/充值单/状态/操作，不再用卡片。
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('billing.invoice.cols.applyTime')}</TableHead>
+                <TableHead>{t('billing.invoice.cols.invoiceNo')}</TableHead>
+                <TableHead>{t('billing.invoice.cols.title')}</TableHead>
+                <TableHead>{t('billing.invoice.cols.amount')}</TableHead>
+                <TableHead>{t('billing.invoice.cols.recharge')}</TableHead>
+                <TableHead>{t('billing.invoice.cols.status')}</TableHead>
+                <TableHead>{t('billing.invoice.cols.action')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {records.map((r) => (
+                <TableRow key={r.invoice_no}>
+                  <TableCell className="text-xs text-mg-text-3 whitespace-nowrap">
+                    {formatDateTimeWithSeconds(r.created_at)}
+                  </TableCell>
+                  <TableCell className="text-xs text-mg-text-2">
+                    <div className="flex flex-col">
+                      <span className="font-mono">{r.invoice_no}</span>
+                      {r.tax_serial && (
+                        <span className="text-mg-text-3">{t('billing.invoice.taxSerial', { serial: r.tax_serial })}</span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs text-mg-text-1">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="font-semibold">{r.company_name}</span>
+                      <span className="rounded-md bg-mg-fill-0 px-2 py-0.5 text-xs text-mg-text-2">
+                        {t(`billing.invoice.titleType.${r.title_type as InvoiceTitleType}`)}
                       </span>
                     </span>
-                    <span>{t('billing.invoice.rechargeCount', { count: r.recharge_count })}</span>
-                    {r.tax_serial && <span>{t('billing.invoice.taxSerial', { serial: r.tax_serial })}</span>}
-                  </div>
-                  {r.status === 'failed' && r.error_msg && (
-                    <div className="flex items-start gap-1 text-xs text-mg-danger">
-                      <LuCircleAlert size={13} className="mt-0.5 shrink-0" />
-                      <span>{r.error_msg}</span>
-                    </div>
-                  )}
-                </div>
-                <div className="shrink-0">
-                  {r.status === 'invoiced' && canDownload && (
-                    <Button variant="outline" size="sm" onClick={() => download(r.invoice_no, r.status)}>
-                      <LuDownload size={13} className="mr-1" /> {t('billing.invoice.download')}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          )
-        })
+                  </TableCell>
+                  <TableCell className="text-xs font-semibold text-mg-text-1 whitespace-nowrap">
+                    {currencySymbol}{r.total_amount}
+                  </TableCell>
+                  <TableCell className="text-xs text-mg-text-2 whitespace-nowrap">
+                    {t('billing.invoice.rechargeCount', { count: r.recharge_count })}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    <span className="inline-flex items-center gap-1">
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_CLASS[r.status]}`}
+                        title={r.status === 'failed' && r.error_msg ? r.error_msg : undefined}
+                      >
+                        {t(`billing.invoice.status.${r.status}`)}
+                      </span>
+                      {r.status === 'failed' && r.error_msg && (
+                        <LuCircleAlert size={13} className="text-mg-danger shrink-0" aria-label={r.error_msg} />
+                      )}
+                    </span>
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {r.status === 'invoiced' && canDownload ? (
+                      <Button variant="outline" size="sm" onClick={() => download(r.invoice_no, r.status)}>
+                        <LuDownload size={13} className="mr-1" /> {t('billing.invoice.download')}
+                      </Button>
+                    ) : (
+                      <span className="text-mg-text-3">-</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
 
       {hasNextPage && (

@@ -214,29 +214,36 @@ export function useSupport() {
     )
   ), [])
 
-  const applyEndedTicket = useCallback((ticketId: string, expectedAccountId: string | null, detail: SupportTicketDetail) => {
-    if (!isCurrentSupportTicket(ticketId, expectedAccountId)) return
-    if (!canApplyEndedTicket(activeMode.current)) return
+  // 人工会话结束的两条路径（客服在后台点已解决 / 用户点「结束服务」）共用这一处收尾：
+  // 结束提示 +「每个已结束的人工会话一张」评价卡（PRD §7.6/§7.7）。按 ticketId 预留，
+  // 长轮询晚到的 ended 回包不会再追加第二张。
+  const enterHumanEnded = useCallback((ticketId: string, detail: SupportTicketDetail | null) => {
     const reservation = reserveEndedTicket(appliedEndedTicketIds.current, ticketId)
     appliedEndedTicketIds.current = reservation.appliedTicketIds
     if (!reservation.shouldApply) return
 
-    setTicketDetail(detail)
+    if (detail) setTicketDetail(detail)
     go(modeFromServiceMode('ended', ticketId))
     setMessages((prev) => prev.some((message) => message.kind === 'rating_card' && message.ratingCard?.ticketId === ticketId)
       ? prev
       : [...prev,
-        { id: crypto.randomUUID(), role: 'system', content: t('common.customerService.handoffEnded'), createdAt: Date.now() },
+        { id: crypto.randomUUID(), role: 'system', content: t('common.customerService.handoff.ended'), createdAt: Date.now() },
         {
           id: crypto.randomUUID(),
           role: 'system',
           content: '',
           createdAt: Date.now(),
           kind: 'rating_card',
-          ratingCard: { ticketId, agentName: ticketAgentNameOf(detail), agentNo: detail.agent_no },
+          ratingCard: { ticketId, agentName: detail ? ticketAgentNameOf(detail) : undefined, agentNo: detail?.agent_no },
         },
       ])
-  }, [go, isCurrentSupportTicket, t])
+  }, [go, t])
+
+  const applyEndedTicket = useCallback((ticketId: string, expectedAccountId: string | null, detail: SupportTicketDetail) => {
+    if (!isCurrentSupportTicket(ticketId, expectedAccountId)) return
+    if (!canApplyEndedTicket(activeMode.current)) return
+    enterHumanEnded(ticketId, detail)
+  }, [enterHumanEnded, isCurrentSupportTicket])
   const suppressedHandoffTicketIds = useRef<ReadonlySet<string>>(new Set())
   const cancellingHandoffTicketId = useRef<string | null>(null)
 
@@ -503,19 +510,43 @@ export function useSupport() {
     go({ kind: 'chat' })
   }, [ticketId, mode, go, appendMessage, t])
 
-  const endActiveHandoff = useCallback(async (rating?: number, skip?: boolean) => {
-    if (!ticketId) return
+  // 顶栏「结束服务」：先结束会话，成功后再出结束提示 + 评价卡（prd46#1202）。
+  // 旧实现结束后直接 go(chat)，评价卡只有「客服后台点已解决」那条长轮询路径会出，
+  // 用户自己结束的会话永远拿不到评价卡。先结束再评价、而不是等评价时才结束：
+  // 用户不评价直接关面板，会话也不会一直挂在客服那边（同原型 endHumanSupport）。
+  const endActiveHandoff = useCallback(async () => {
+    if (!ticketId || mode.kind !== 'human') return
     try {
-      await endHandoff(ticketId, { rating, skip })
-      trackEvent('support_handoff_end')
-      if (rating) trackEvent('support_human_rating', { rating })
-      else if (skip) trackEvent('support_human_rating', { skipped: true })
+      await endHandoff(ticketId, {})
     } catch (error) {
       appToast.requestError(error)
+      return
     }
-    setMessages((prev) => prev.map((m) => (m.kind === 'rating_card' ? { ...m, ratingCard: { ...m.ratingCard!, submittedStars: rating, skipped: skip } } : m)))
-    go({ kind: 'chat' })
-  }, [ticketId, go])
+    trackEvent('support_handoff_end')
+    enterHumanEnded(ticketId, ticketDetail?.id === ticketId ? ticketDetail : null)
+  }, [ticketId, mode.kind, ticketDetail, enterHumanEnded])
+
+  // 评价卡「提交 / 暂不评价」。后端 /handoff/end 结束幂等、评分一次性，专门支持
+  // 「先结束、评分后到」（agent EndSessionWithRating）。用卡片自己的 ticketId，
+  // 不读当前模式：用户可能已切去别的模式再回来评价。接口失败不标「已提交」，
+  // 否则评分静默丢失。
+  const rateEndedHandoff = useCallback(async (cardTicketId: string, rating?: number, skip?: boolean) => {
+    try {
+      await endHandoff(cardTicketId, { rating, skip })
+    } catch (error) {
+      appToast.requestError(error)
+      return
+    }
+    if (rating) trackEvent('support_human_rating', { rating })
+    else if (skip) trackEvent('support_human_rating', { skipped: true })
+    setMessages((prev) => prev.map((m) => (
+      m.kind === 'rating_card' && m.ratingCard?.ticketId === cardTicketId
+        ? { ...m, ratingCard: { ...m.ratingCard, submittedStars: rating, skipped: skip } }
+        : m
+    )))
+    const current = activeMode.current
+    if (current.kind === 'humanEnded' && current.ticketId === cardTicketId) go({ kind: 'chat' })
+  }, [go])
 
   const sendHumanReply = useCallback(async (content: string) => {
     const trimmed = content.trim()
@@ -969,6 +1000,7 @@ export function useSupport() {
     cancelActiveHandoff,
     isCancellingHandoff,
     endActiveHandoff,
+    rateEndedHandoff,
     sendHumanReply,
     feedbackSubmitting,
     submitFeedback,

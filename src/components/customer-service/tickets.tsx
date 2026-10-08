@@ -142,7 +142,7 @@ export function TicketsList({ onSelect, onClose }: TicketsListProps) {
                   {item.display_type
                     || t(`common.customerService.tickets.types.${item.ticket_type ?? item.type}`, { defaultValue: item.ticket_type ?? item.type ?? '' })}
                 </span>
-                <Badge variant="outline" size="sm">{ticketStatusTextOf(item)}</Badge>
+                <Badge variant="outline" size="sm">{ticketStatusTextOf(item, t)}</Badge>
               </div>
               {item.title && <p className="m-0 mt-1 mg-text-caption font-medium text-mg-text-1 line-clamp-2" title={item.title}>{item.title}</p>}
               {(item.latest_visible_message || item.latest_message_preview) && (
@@ -348,7 +348,7 @@ export function TicketDetailView({
         <p className="m-0 min-w-0 flex-1 truncate mg-text-caption text-mg-text-3" title={detail ? ticketNoOf(detail) : undefined}>
           {detail ? ticketNoOf(detail) : ''}
         </p>
-        {detail && <Badge variant="outline" size="sm">{ticketStatusTextOf(detail)}</Badge>}
+        {detail && <Badge variant="outline" size="sm">{ticketStatusTextOf(detail, t)}</Badge>}
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3">

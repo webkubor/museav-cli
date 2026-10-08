@@ -431,6 +431,12 @@
           "feedback": "Feedback",
           "handoff": "Agent service"
         },
+        "statuses": {
+          "pending": "Pending",
+          "processing": "Processing",
+          "resolved": "Resolved",
+          "cancelled": "Cancelled"
+        },
         "unread": "New",
         "detail": {
           "typeLabel": "Type",

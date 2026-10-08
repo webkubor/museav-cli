@@ -74,7 +74,14 @@ export async function refreshSession(): Promise<void> {
  */
 export async function switchActiveWorkspace(workspaceId: string): Promise<void> {
   useAuthStore.getState().setActiveWorkspaceId(workspaceId)
-  await refreshSession()
+  // 必须显式按**刚选中的空间**重拉，不能走 refreshSession()：
+  // 在 /workspace/A/* 深链上切到 B 时，路由跳转还没发生、URL 仍是 A，
+  // getSessionForActiveWorkspace() 会按 URL 解析成 A，把活跃空间又写回 A —— 用户的切换当场失效。
+  try {
+    applySessionToStore(await getSession(workspaceId))
+  } catch {
+    /* 失败静默：已设的活跃空间保留，权限下次整页刷新自然纠正 */
+  }
 }
 
 /**

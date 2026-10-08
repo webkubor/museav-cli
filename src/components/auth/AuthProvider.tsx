@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // 首拉会话：空间从接口读（非空间路由不传参，由后端落到默认空间偏好；空间专属路由按 URL 传参，prd46#1207）。
     getInitialSession()
       // 落 store 逻辑与权限热刷新共用（lib/auth/refresh-session）：
-      // 工作区恢复 localStorage 优先、account 全字段直传（phone 等守卫依赖）。
+      // 工作区以**接口下发值**为准（localStorage 只是缓存，prd46#1207）、account 全字段直传（phone 等守卫依赖）。
       .then((result: SessionResult) => {
         applySessionToStore(result)
         hydrateTimeZone(result.account.account_id)

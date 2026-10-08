@@ -17,6 +17,7 @@ import {
   getInitialSession,
   getSessionWorkspaceIdFromLocation,
   resolvePermissionsForWorkspace,
+  switchActiveWorkspace,
 } from '@/lib/auth/refresh-session'
 import { useAuthStore } from '@/store/auth'
 import { storageKeys } from '@/lib/storage'
@@ -204,5 +205,38 @@ describe('设为默认空间后的即时反馈', () => {
       expect(setDefaultWorkspace).toHaveBeenCalledWith({ workspace_id: 'ws-2' })
       expect(useAuthStore.getState().activeWorkspaceId).toBe('ws-2')
     })
+  })
+})
+
+// 评审（Codex / Claude Code）发现的两条回归，均由「看详情不再改写活跃空间」这一解耦带出。
+describe('解耦带出的回归（评审发现）', () => {
+  it('在 /workspace/A/* 深链上切到 B：必须按 B 重拉，不能被滞后的 URL(A) 写回 A', async () => {
+    setPath('/workspace/ws-A/api-keys')
+    localStorage.setItem(storageKeys.activeTenantId(), TENANT)
+    useAuthStore.setState({ activeWorkspaceId: 'ws-A' })
+    // 后端按请求回显：传谁返回谁
+    vi.mocked(getSession).mockImplementation(async (id?: string) => sessionResult(id || 'ws-FALLBACK'))
+
+    // 切换发生在导航之前，此刻 location 仍是 /workspace/ws-A/*
+    await switchActiveWorkspace('ws-B')
+
+    expect(getSession).toHaveBeenCalledWith('ws-B')
+    expect(useAuthStore.getState().activeWorkspaceId).toBe('ws-B')
+    expect(localStorage.getItem(storageKeys.activeWorkspaceId(TENANT))).toBe('ws-B')
+  })
+
+  it('在非活跃空间里改完负责人，要按「所看空间」重解析权限，而不是活跃空间', async () => {
+    // 活跃空间 A，正在空间管理里看 B；对 B 执行了改权限的操作
+    localStorage.setItem(storageKeys.activeTenantId(), TENANT)
+    localStorage.setItem(storageKeys.activeWorkspaceId(TENANT), 'ws-ACTIVE')
+    useAuthStore.setState({ activeWorkspaceId: 'ws-ACTIVE' })
+    vi.mocked(getSession).mockImplementation(async (id?: string) => sessionResult(id || 'ws-ACTIVE', [`perm:${id}`]))
+
+    await resolvePermissionsForWorkspace('ws-VIEWED')
+
+    expect(getSession).toHaveBeenLastCalledWith('ws-VIEWED')
+    expect(useAuthStore.getState().permissions).toEqual(['perm:ws-VIEWED'])
+    // 且活跃空间不被这次操作带走
+    expect(useAuthStore.getState().activeWorkspaceId).toBe('ws-ACTIVE')
   })
 })

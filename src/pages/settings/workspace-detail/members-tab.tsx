@@ -23,7 +23,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/Table'
 import { MemberAvatar } from '@/components/MemberAvatar'
 import { appToast } from '@/lib/app-toast'
-import { refreshSession } from '@/lib/auth/refresh-session'
+import { resolvePermissionsForWorkspace } from '@/lib/auth/refresh-session'
 
 export function MembersTab({ workspaceId }: { workspaceId: string }) {
   const { t } = useTranslation()
@@ -107,9 +107,11 @@ export function MembersTab({ workspaceId }: { workspaceId: string }) {
       qc.invalidateQueries({ queryKey: ['workspace-members', workspaceId] })
       qc.invalidateQueries({ queryKey: ['workspace-detail', workspaceId] })
       qc.invalidateQueries({ queryKey: ['workspaces'] })
-      // 负责人变更改变权限面（含把负责人从自己身上转走）：热刷新会话，
-      // 菜单/tab/按钮 gating 立即随新权限变化，不再要求手动刷新页面
-      void refreshSession()
+      // 负责人变更改变权限面（含把负责人从自己身上转走）：按**本 tab 所属空间**重解析权限，
+      // tab/按钮 gating 立即随新权限变化。不能用无参 refreshSession()——空间管理页里看的
+      // 可能不是活跃空间（prd46#1207 起「看详情」不再改写活跃空间），无参会去解析活跃空间，
+      // 刚操作的这个空间反而被打回错误权限。
+      void resolvePermissionsForWorkspace(workspaceId)
     },
     onError: (err: unknown) => appToast.requestError(err, t('workspaces.detail.members.setOwnerError')),
   })

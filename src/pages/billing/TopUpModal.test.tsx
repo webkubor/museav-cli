@@ -89,7 +89,7 @@ describe('TopUpModal', () => {
     vi.spyOn(window, 'open').mockReturnValue(paymentWindow)
 
     renderModal()
-    fireEvent.click(screen.getByRole('button', { name: '前往支付 ¥100' }))
+    fireEvent.click(screen.getByRole('button', { name: '前往支付 ¥500' }))
 
     await waitFor(() => {
       expect(paymentWindow.location.href).toContain('/billing/wechat-cashier')
@@ -107,7 +107,7 @@ describe('TopUpModal', () => {
     vi.spyOn(window, 'open').mockReturnValue(paymentWindow)
 
     renderModal()
-    fireEvent.click(screen.getByRole('button', { name: '前往支付 ¥100' }))
+    fireEvent.click(screen.getByRole('button', { name: '前往支付 ¥500' }))
 
     await waitFor(() => {
       expect(paymentWindow.location.href).toContain('/billing/wechat-cashier')
@@ -116,14 +116,14 @@ describe('TopUpModal', () => {
     expect(cashierURL.pathname).toBe('/billing/wechat-cashier')
     expect(cashierURL.searchParams.get('qr')).toBe('weixin://wxpay/bizpayurl?pr=test')
     expect(cashierURL.searchParams.get('order')).toBe('WX202606100001')
-    expect(cashierURL.searchParams.get('amount')).toBe('100')
+    expect(cashierURL.searchParams.get('amount')).toBe('500')
     expect(cashierURL.searchParams.get('currency')).toBe('CNY')
     expect(cashierURL.searchParams.get('payee')).toBe('杭州词元共生科技有限公司')
     expect(screen.queryByText('WX202606100001')).not.toBeInTheDocument()
     expect(close).not.toHaveBeenCalled()
     expect(createRecharge).toHaveBeenCalledWith(
       'tnt_1',
-      expect.objectContaining({ channel: 'wechat', currency: 'CNY', amount: '100' })
+      expect.objectContaining({ channel: 'wechat', currency: 'CNY', amount: '500' })
     )
     await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith('充值订单已创建，请完成支付'))
   })
@@ -146,7 +146,7 @@ describe('TopUpModal', () => {
     vi.spyOn(window, 'open').mockReturnValue(paymentWindow)
 
     renderModal()
-    fireEvent.click(screen.getByRole('button', { name: '前往支付 ¥100' }))
+    fireEvent.click(screen.getByRole('button', { name: '前往支付 ¥500' }))
 
     await waitFor(() => {
       expect(paymentWindow.location.href).toBe('https://wx.tenpay.com/cgi-bin/mmpayweb-bin/checkmweb?prepay_id=test')
@@ -160,12 +160,12 @@ describe('TopUpModal', () => {
     renderModal()
     const input = screen.getByPlaceholderText('自定义金额') as HTMLInputElement
 
-    expect(input.value).toBe('100') // 初始默认面额也要显示，不是空白
+    expect(input.value).toBe('500') // #1192：初始默认面额改为 500，也要显示，不是空白
 
-    fireEvent.click(screen.getByRole('button', { name: '¥500' }))
-    expect(input.value).toBe('500')
+    fireEvent.click(screen.getByRole('button', { name: '¥1,000' }))
+    expect(input.value).toBe('1000')
     // 预设仍是「预设」——光回填不该把口径翻成 custom，提交按钮跟着面额走
-    expect(screen.getByRole('button', { name: '前往支付 ¥500' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '前往支付 ¥1,000' })).toBeInTheDocument()
 
     // 手动改数才切到自定义
     fireEvent.change(input, { target: { value: '888' } })

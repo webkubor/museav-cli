@@ -47,7 +47,8 @@ interface TopUpModalProps {
 export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
-  const [amount, setAmount] = useState('100')
+  // #1192：原型默认选中面额 500，此前写死 100
+  const [amount, setAmount] = useState('500')
   const [customMode, setCustomMode] = useState(false)
 
   const { currency, symbol: currencySymbol } = useCurrency()

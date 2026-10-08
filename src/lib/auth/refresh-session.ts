@@ -13,13 +13,24 @@ import { useAuthStore } from '@/store/auth'
 import { storageKeys } from '@/lib/storage'
 import type { SessionResult } from '@/types'
 
-/** 把 /auth/session 结果落进 auth store（AuthProvider 首拉与热刷新共用，空间以接口下发为准，prd46#1207） */
+/**
+ * 把 /auth/session 结果落进 auth store（AuthProvider 首拉与热刷新共用）。
+ *
+ * 空间以**接口下发值优先**（prd46#1207）：原写法是 `persistedWs || result.active_workspace_id`，
+ * 缓存压过接口，用户设的默认空间永远落不回来。
+ * 但方向只能反过来、不能把缓存整个丢掉：接口**没给**空间时（降级/异常响应里该字段为空），
+ * 直接传 undefined 会让 store 的 `activeWorkspaceId || null` 把活跃空间清空，侧栏空间直接丢。
+ * 所以是「接口有就用接口，接口没给才退回缓存」—— 浏览器实测发现，见 workspace-default-session.1207.test。
+ */
 export function applySessionToStore(result: SessionResult): void {
+  const persistedWs = result.active_tenant_id
+    ? localStorage.getItem(storageKeys.activeWorkspaceId(result.active_tenant_id))
+    : null
   useAuthStore.getState().setAuth(
     result.account,
     result.active_tenant_id,
     result.tenants,
-    result.active_workspace_id,
+    result.active_workspace_id || persistedWs || undefined,
     result.permissions?.granted ?? null,
     result.permissions?.menus ?? [],
   )

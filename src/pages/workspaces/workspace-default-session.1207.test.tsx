@@ -106,6 +106,18 @@ describe('① 空间落点以接口为准（prd46#1207 ①）', () => {
     expect(localStorage.getItem(storageKeys.activeWorkspaceId(TENANT))).toBe('ws-new-project')
   })
 
+  // 浏览器实测揪出来的：接口不给空间时若直接传 undefined，store 的 `activeWorkspaceId || null`
+  // 会把活跃空间清空（侧栏空间直接没了）。方向必须是「接口优先、缓存兜底」，不是「丢掉缓存」。
+  it('接口没下发空间时退回缓存兜底，不得把活跃空间清空', () => {
+    localStorage.setItem(storageKeys.activeTenantId(), TENANT)
+    localStorage.setItem(storageKeys.activeWorkspaceId(TENANT), 'ws-cached')
+    useAuthStore.setState({ activeWorkspaceId: 'ws-cached' })
+
+    applySessionToStore(sessionResult(''))
+
+    expect(useAuthStore.getState().activeWorkspaceId).toBe('ws-cached')
+  })
+
   it('非空间路由刷新时不带 workspace_id，让后端按账号在该企业的默认偏好落点', async () => {
     // QA 复现前提：localStorage 里压着上次被空间管理页写进去的 Default。
     // 显式参数优先于默认偏好 —— 发出去就等于永远落回 Default。

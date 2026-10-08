@@ -20,6 +20,7 @@ import { useTenantRole } from '@/hooks/use-tenant-role'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card } from '@/components/ui/Card'
+import { InfoTip } from '@/components/ui/InfoTip'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { cn } from '@/lib/utils'
 import { trackAction, trackPageView, trackEvent } from '@/lib/track'
@@ -245,7 +246,13 @@ export default function WorkspacesPage() {
                       // 偏好读失败也给入口（这里是默认空间唯一入口），写操作本身不依赖读结果
                       // 悬停/聚焦卡片才显示（原型 .space-card:hover / :focus-within）；触屏无 hover 时常显。
                       // 点击不冒泡：不选中卡片、不跳转、不改写当前活动空间（#1209 验收）
-                      <span className="group/tip pointer-events-auto relative z-[1] shrink-0">
+                      <InfoTip
+                        text={t('workspaces.card.setDefaultTip')}
+                        id={`ws-default-tip-${ws.workspace_id}`}
+                        side="bottom"
+                        align="end"
+                        className="pointer-events-auto z-[1] shrink-0"
+                      >
                         <Button
                           variant="secondary"
                           size="small"
@@ -257,14 +264,7 @@ export default function WorkspacesPage() {
                         >
                           {t('workspaces.card.setDefault')}
                         </Button>
-                        <span
-                          id={`ws-default-tip-${ws.workspace_id}`}
-                          role="tooltip"
-                          className="pointer-events-none absolute right-0 top-[calc(100%+6px)] z-[var(--mg-z-tooltip)] w-max max-w-[260px] rounded-[var(--mg-tooltip-radius)] mg-float px-[var(--mg-tooltip-pad-x)] py-[var(--mg-tooltip-pad-y)] text-left mg-text-caption font-medium leading-snug text-mg-text-2 opacity-0 transition-opacity duration-150 group-hover/tip:opacity-100 group-focus-within/tip:opacity-100"
-                        >
-                          {t('workspaces.card.setDefaultTip')}
-                        </span>
-                      </span>
+                      </InfoTip>
                     ) : null}
                   </div>
 

@@ -4,7 +4,7 @@
  * API：POST /support/handoff、POST /support/handoff/cancel
  */
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { askSupportMock, askSupportStreamMock, requestHandoffMock, cancelHandoffMock, requestErrorMock, toastErrorMock, getSupportTicketMock, supplementTicketMock, markTicketReadMock, listTicketMessagesMock, replyTicketMessageMock, createSessionMock, authState, uploadSupportAttachmentMock, attachSupportTicketAttachmentMock, submitSupportFeedbackMock } = vi.hoisted(() => {
   const askSupportMock = vi.fn()
@@ -719,6 +719,111 @@ describe('useSupport · 实时人工被客服结束 (#1134)', () => {
     await pushEvent()
     expect(result.current.mode.kind).toBe('humanEnded')
     expect(result.current.messages.some((m) => m.kind === 'rating_card' && m.ratingCard?.ticketId === 'CS-LIVE')).toBe(true)
+  })
+})
+
+describe('useSupport · 用户主动结束人工服务 (prd46#1202)', () => {
+  const base = { ticket_id: 'CS-LIVE', ticket_type: 'human_support', service_mode: 'live', version: 1, created_at: '', updated_at: '', capabilities: { can_reopen: false, can_create_followup: false } }
+
+  beforeEach(() => {
+    authState.account = { account_id: 'acc-1' }
+    authState.isLoading = false
+    requestHandoffMock.mockReset().mockResolvedValue({ service_mode: 'live', ticket_id: 'CS-LIVE', status: 'pending' })
+    getSupportTicketMock.mockReset().mockResolvedValue({ ...base, status: 'processing', assignee_display_name: '王恩博' })
+    requestErrorMock.mockReset()
+  })
+  afterEach(() => requestErrorMock.mockReset())
+
+  async function connected() {
+    const { useSupportEvents } = await import('./use-support-events')
+    const { result } = renderHook(() => useSupport())
+    await act(async () => result.current.startHandoff())
+    const cb = vi.mocked(useSupportEvents).mock.calls.at(-1)![2]
+    await act(async () => { await cb({ events: [{ id: 'e', ticket_id: 'CS-LIVE', version: 2, type: 'x' }] }) })
+    expect(result.current.mode.kind).toBe('human')
+    return result
+  }
+  const ratingCards = (messages: { kind?: string; ratingCard?: { ticketId: string; submittedStars?: number } }[]) =>
+    messages.filter((m) => m.kind === 'rating_card' && m.ratingCard?.ticketId === 'CS-LIVE')
+
+  it('点「结束服务」先结束会话，再出结束提示 + 评价卡（不再直接回在线态）', async () => {
+    const { endHandoff } = await import('@/services/support')
+    vi.mocked(endHandoff).mockReset().mockResolvedValue(undefined)
+    const result = await connected()
+
+    await act(async () => result.current.endActiveHandoff())
+    expect(endHandoff).toHaveBeenCalledWith('CS-LIVE', {})
+    expect(result.current.mode).toEqual({ kind: 'humanEnded', ticketId: 'CS-LIVE' })
+    expect(result.current.messages.some((m) => m.content === 'common.customerService.handoff.ended')).toBe(true)
+    expect(ratingCards(result.current.messages)).toHaveLength(1)
+
+    await act(async () => result.current.rateEndedHandoff('CS-LIVE', 5))
+    expect(endHandoff).toHaveBeenLastCalledWith('CS-LIVE', { rating: 5, skip: undefined })
+    expect(ratingCards(result.current.messages)[0].ratingCard?.submittedStars).toBe(5)
+    expect(result.current.mode).toEqual({ kind: 'chat' })
+  })
+
+  it('评价卡带上当前人工会话的客服姓名', async () => {
+    const { endHandoff } = await import('@/services/support')
+    vi.mocked(endHandoff).mockReset().mockResolvedValue(undefined)
+    const result = await connected()
+
+    await act(async () => result.current.endActiveHandoff())
+    expect(ratingCards(result.current.messages)[0].ratingCard).toMatchObject({ agentName: '王恩博' })
+  })
+
+  it('结束服务后不评价、直接再转人工，能进入排队态（不卡在已结束）', async () => {
+    const { endHandoff } = await import('@/services/support')
+    vi.mocked(endHandoff).mockReset().mockResolvedValue(undefined)
+    const result = await connected()
+    await act(async () => result.current.endActiveHandoff())
+    expect(result.current.mode.kind).toBe('humanEnded')
+
+    requestHandoffMock.mockResolvedValueOnce({ service_mode: 'live', ticket_id: 'CS-NEXT', status: 'pending' })
+    await act(async () => result.current.startHandoff())
+    expect(result.current.mode).toMatchObject({ kind: 'queuing', ticketId: 'CS-NEXT' })
+  })
+
+  it('评价卡双击只提交一次', async () => {
+    const { endHandoff } = await import('@/services/support')
+    let release: () => void = () => {}
+    vi.mocked(endHandoff).mockReset()
+      .mockResolvedValueOnce(undefined)
+      .mockImplementationOnce(() => new Promise<void>((resolve) => { release = resolve }))
+    const result = await connected()
+    await act(async () => result.current.endActiveHandoff())
+
+    await act(async () => {
+      const first = result.current.rateEndedHandoff('CS-LIVE', 5)
+      await result.current.rateEndedHandoff('CS-LIVE', 5)
+      release()
+      await first
+    })
+    expect(endHandoff).toHaveBeenCalledTimes(2) // 1 次结束 + 1 次评分
+    expect(ratingCards(result.current.messages)[0].ratingCard?.submittedStars).toBe(5)
+  })
+
+  it('结束接口失败时留在人工态、不出评价卡', async () => {
+    const { endHandoff } = await import('@/services/support')
+    vi.mocked(endHandoff).mockReset().mockRejectedValue(new Error('end failed'))
+    const result = await connected()
+
+    await act(async () => result.current.endActiveHandoff())
+    expect(requestErrorMock).toHaveBeenCalledOnce()
+    expect(result.current.mode.kind).toBe('human')
+    expect(ratingCards(result.current.messages)).toHaveLength(0)
+  })
+
+  it('提交评分失败时不把评价卡标成「已提交」', async () => {
+    const { endHandoff } = await import('@/services/support')
+    vi.mocked(endHandoff).mockReset().mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('rate failed'))
+    const result = await connected()
+
+    await act(async () => result.current.endActiveHandoff())
+    await act(async () => result.current.rateEndedHandoff('CS-LIVE', 4))
+    expect(requestErrorMock).toHaveBeenCalledOnce()
+    expect(ratingCards(result.current.messages)[0].ratingCard?.submittedStars).toBeUndefined()
+    expect(result.current.mode.kind).toBe('humanEnded')
   })
 })
 

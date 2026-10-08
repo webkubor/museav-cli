@@ -47,7 +47,7 @@ if [ -n "$open_release" ]; then
   branch_fmt="fix/<iid>-<简述> 或 feature/<版本>-<简述>"
 else
   mode="hotfix"; base="origin/main"; targets="test,main"
-  next="MR→test 合并 + Jenkins 部署测试环境并核对 version.json 后，挪「待验证」；QA 通过再合 MR→main 发生产（cn + intl）"
+  next="MR→test 合并 + Jenkins 部署测试环境并核对 version.json 后，挪「待验证」；QA 在测试环境验过会改成「待上线」——只有看到「待上线」才可合 MR→main（由 owner 合），之后发生产（cn + intl）"
   branch_fmt="hotfix/<iid>-<简述>（一单一分支）"
 fi
 
@@ -61,7 +61,7 @@ fi
 echo "📦 发版模式：$([ "$mode" = hotfix ] && echo 'hotfix 线上修复（本仓没有在开的班车）' || echo "班车在开：$open_release")"
 echo "   切分支：  git switch -c ${branch_fmt} $base"
 if [ "$mode" = hotfix ]; then
-  echo "   开 MR：   → test（先合，测试环境验）+ → main（QA 通过后合，发生产）；两个 MR 别设 remove_source_branch"
+  echo "   开 MR：   → test（先合，测试环境验）+ → main（只开不合，等单子变「待上线」）；两个 MR 别设 remove_source_branch"
 else
   echo "   开 MR：   → $open_release"
 fi

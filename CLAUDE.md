@@ -26,8 +26,10 @@ use_count: 0
 >    （本仓有没有带未上线提交的 `release/*` —— 只有 GitLab 里程碑、本仓没开分支不算班车在开）。
 >
 >    两种模式下单子状态怎么走（脚本也会打出来）：
->    - **hotfix**：MR→`test` 合并 + Jenkins 部署测试环境、核对 `version.json` 后挪 **`待验证`**，
->      交 QA；QA 通过再合 MR→`main` 发生产（cn + intl 两个 Jenkins 文件夹）。
+>    - **hotfix**：MR→`test` 合并 + Jenkins 部署测试环境、核对 `version.json` 后挪 **`待验证`**，交 QA。
+>      QA 在测试环境验过会把单子改成 **`待上线`** —— **这是合 `main` 的唯一放行信号**：之后合 MR→`main`、
+>      打 tag（`release-YYYYMMDD-N`）、发生产（cn + intl 两个 Jenkins 文件夹），agent 可全程代办。
+>      没变「待上线」之前，agent 不自己判断「可以合了」。
 >    - **班车**：合入当班 release 后保持 `进行中`；版本分支何时进 `test`、何时交 QA 由 owner 按节奏定，
 >      agent 不要替 owner 推进阶段（2026-09-14 踩过：客服单被三个人在四个状态间拨了 7 次）。
 >

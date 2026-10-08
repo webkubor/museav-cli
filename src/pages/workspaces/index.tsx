@@ -261,7 +261,9 @@ export default function WorkspacesPage() {
                           loading={setDefaultMutation.isPending && setDefaultMutation.variables === ws.workspace_id}
                           disabled={setDefaultMutation.isPending}
                           onClick={() => setDefaultMutation.mutate(ws.workspace_id)}
-                          className="h-[26px] px-2 text-xs font-semibold transition-opacity duration-150 opacity-0 pointer-events-none group-hover/card:opacity-100 group-hover/card:pointer-events-auto group-focus-within/card:opacity-100 group-focus-within/card:pointer-events-auto [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto"
+                          // 对齐原型：不悬停 / 不聚焦卡片时 visibility:hidden（读屏、Tab 都跳过），出现时上浮 2px 淡入；
+                          // 触屏（hover:none）常显。卡片选中按钮获得焦点后 focus-within 让它可被 Tab 到
+                          className="h-[26px] px-2 text-xs font-semibold transition-[opacity,transform,visibility] duration-150 invisible opacity-0 translate-y-0.5 group-hover/card:visible group-hover/card:opacity-100 group-hover/card:translate-y-0 group-focus-within/card:visible group-focus-within/card:opacity-100 group-focus-within/card:translate-y-0 [@media(hover:none)]:visible [@media(hover:none)]:opacity-100 [@media(hover:none)]:translate-y-0"
                         >
                           {t('workspaces.card.setDefault')}
                         </Button>

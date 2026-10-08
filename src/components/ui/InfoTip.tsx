@@ -60,7 +60,10 @@ export function InfoTip({
         id={id}
         className={cn(
           // 表面统一走 mg-float（同 Popover / Dialog 一档玻璃），不再单写 bg-mg-bg-3 + shadow-lg
-          'pointer-events-none absolute z-[var(--mg-z-tooltip)] w-max max-w-[260px] rounded-[var(--mg-tooltip-radius)] mg-float px-[var(--mg-tooltip-pad-x)] py-[var(--mg-tooltip-pad-y)] text-left mg-text-caption font-medium leading-snug text-mg-text-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100',
+          'pointer-events-none absolute z-[var(--mg-z-tooltip)] w-max max-w-[260px] rounded-[var(--mg-tooltip-radius)] mg-float px-[var(--mg-tooltip-pad-x)] py-[var(--mg-tooltip-pad-y)] text-left mg-text-caption font-medium leading-snug text-mg-text-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100',
+          // ⓘ 是纯说明，聚焦即展开；自定义触发器多为按钮，只在键盘聚焦（focus-visible）时展开——
+          // 否则鼠标点完按钮焦点还在，提示会一直挂着（对齐原型 .space-card-default-action:focus-visible）
+          children ? 'invisible -translate-y-0.5 transition-[opacity,transform,visibility] group-hover:visible group-hover:translate-y-0 group-has-[:focus-visible]:visible group-has-[:focus-visible]:translate-y-0 group-has-[:focus-visible]:opacity-100' : 'group-focus-within:opacity-100',
           // ⓘ 图标高 14px，沿用固定偏移；自定义触发器高度不定，贴着触发器边缘
           children ? (side === 'top' ? 'bottom-full mb-1.5' : 'top-full mt-1.5') : (side === 'top' ? 'bottom-6' : 'top-6'),
           align === 'center' ? 'left-1/2 -translate-x-1/2' : 'right-0',

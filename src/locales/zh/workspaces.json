@@ -25,7 +25,9 @@
       "forwardUnknown": "转发未知",
       "metaMembers": "{{count}} 成员",
       "metaKeys": "{{count}} API Keys",
-      "metaGuardrails": "{{count}} 护栏"
+      "metaGuardrails": "{{count}} 护栏",
+      "setDefault": "设为默认空间",
+      "setDefaultTip": "登录后默认进入此工作空间，仅对当前账户生效，其他成员的默认空间不受影响。"
     },
     "countSuffix": "{{count}} 个空间",
     "searchPlaceholder": "搜索空间名称、Slug 或 Workspace ID",
@@ -187,11 +189,9 @@
         "delete": "删除工作空间",
         "deleteSuccess": "工作空间已删除",
         "deleteError": "删除失败",
-        "defaultCannotDelete": "默认工作空间不可删除",
-        "defaultWorkspace": "默认工作空间",
-        "defaultWorkspaceHint": "登录后默认进入此工作空间，仅影响你自己的账号，并在不同设备间同步。",
-        "preferenceSaved": "默认工作空间偏好已保存",
-        "preferenceError": "无法读取或保存默认工作空间，请重试。"
+        "defaultCannotDelete": "默认空间不可删除",
+        "preferenceSaved": "默认空间已保存",
+        "preferenceError": "无法读取或保存默认空间，请重试。"
       }
     },
     "noMatchTitle": "没有匹配的工作空间",

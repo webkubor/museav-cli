@@ -13,6 +13,7 @@ vi.mock('ky', () => {
 vi.mock('@/lib/auth/auth-controller', () => ({ handleSessionExpired }))
 
 import './request'
+import { askSupportStream, pollSupportEvents } from '@/services/support'
 
 type ResponseBody = { code: number }
 type ResponseLike = {
@@ -58,6 +59,40 @@ describe('40101 session handling', () => {
       request: { url: 'https://api.example.com/api/v1/support/tickets?filter=all' },
       response: response(40101),
     })
+
+    expect(handleSessionExpired).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([
+    ['support ask', () => askSupportStream({ message: 'hello' }, () => {})],
+    ['support events', () => pollSupportEvents({ wait: 1 })],
+  ])('keeps the shared session for a %s 40101 when auth/session is valid', async (_name, request) => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ code: 40101, msg: 'support unauthorized' }), {
+        status: 401,
+        headers: { 'content-type': 'application/json' },
+      }),
+    )
+
+    await expect(request()).rejects.toMatchObject({ code: 40101 })
+
+    expect(getMock).toHaveBeenCalledWith(expect.stringContaining('/auth/session'), expect.objectContaining({ credentials: 'include' }))
+    expect(handleSessionExpired).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['support ask', () => askSupportStream({ message: 'hello' }, () => {})],
+    ['support events', () => pollSupportEvents({ wait: 1 })],
+  ])('clears the shared session for a %s 40101 when auth/session is expired', async (_name, request) => {
+    getMock.mockReturnValue({ json: vi.fn().mockResolvedValue({ code: 40101 }) })
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ code: 40101, msg: 'support unauthorized' }), {
+        status: 401,
+        headers: { 'content-type': 'application/json' },
+      }),
+    )
+
+    await expect(request()).rejects.toMatchObject({ code: 40101 })
 
     expect(handleSessionExpired).toHaveBeenCalledTimes(1)
   })

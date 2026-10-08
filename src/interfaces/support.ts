@@ -212,7 +212,11 @@ export interface SupportTicketDetail extends SupportTicketSummary {
   /** 后端实测用 assignee_display_name；agent_name/agent_no 从未下发，保留兼容。 */
   agent_name?: string
   agent_no?: string
+  /** 后端下发的人工服务评分字段是 human_rating；rating 是早期口径，兼容保留。读取一律走 ticketRatingOf。 */
+  human_rating?: number
   rating?: number
+  /** 客服解决工单时填写的解决结论（agent ticketView.resolution，已脱敏）。 */
+  resolution?: string
   sla_text?: string
   capabilities: SupportTicketCapabilities
   /** 只在详情接口下发（列表不带），按时间升序。 */
@@ -235,6 +239,11 @@ export function ticketStatusTextOf(t: Pick<SupportTicketSummary, 'status_label' 
 
 export function ticketSlaTextOf(t: Pick<SupportTicketSummary, 'next_step'> & { sla_text?: string }): string | undefined {
   return t.next_step || t.sla_text || undefined
+}
+
+/** 人工服务评分：后端字段是 human_rating，旧代码读 rating 导致已评分的单在详情里不显示星级（prd46#1202 附带项）。 */
+export function ticketRatingOf(t: Pick<SupportTicketDetail, 'human_rating' | 'rating'>): number | undefined {
+  return t.human_rating ?? t.rating
 }
 
 export function ticketAgentNameOf(t: Pick<SupportTicketSummary, 'assignee_display_name'> & { agent_name?: string }): string | undefined {

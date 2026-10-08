@@ -3,16 +3,22 @@ import { beforeEach, expect, it, vi } from 'vitest'
 import type { SupportTicketDetail, SupportTicketSummary } from '@/interfaces/support'
 
 // account 要是稳定引用：每次渲染给新对象会让列表的 effect（依赖 account）反复重拉
-const { listTickets, listAttachments, getAttachment, account } = vi.hoisted(() => ({
+const { listTickets, listAttachments, getAttachment, listEvents, uploadAttachment, attachAttachment, account } = vi.hoisted(() => ({
   listTickets: vi.fn(),
   listAttachments: vi.fn(async (): Promise<{ items: object[] }> => ({ items: [] })),
   getAttachment: vi.fn(),
+  listEvents: vi.fn(async (): Promise<object[]> => []),
+  uploadAttachment: vi.fn(),
+  attachAttachment: vi.fn(),
   account: {},
 }))
 vi.mock('@/services/support', () => ({
   listSupportTickets: listTickets,
   listTicketAttachments: listAttachments,
   getTicketAttachment: getAttachment,
+  listTicketEvents: listEvents,
+  uploadSupportAttachment: uploadAttachment,
+  attachSupportTicketAttachment: attachAttachment,
 }))
 vi.mock('@/store/auth', () => ({ useAuthStore: (select: (state: { account: object }) => unknown) => select({ account }) }))
 vi.mock('@/lib/timezone', () => ({ resolveTimeZone: () => 'America/New_York' }))
@@ -301,4 +307,61 @@ it('does not report "latest seen" while the messages are still loading, even if 
   } finally {
     globalThis.IntersectionObserver = Original
   }
+})
+
+// ── prd46#1198：问题反馈工单详情对齐 PRD §7.10/§7.11 ───────────────────────────
+const feedbackTicket: SupportTicketDetail = { ...feedbackDetail, title: '后端固定标题', description: '模型调用失败，请帮忙排查', status: 'processing', next_step: '我们将在 1 个工作日内联系你。' }
+
+it('顶栏是「工单详情」+ 编号，反馈单不渲染后端写死的「问题反馈」标题 (#1198)', () => {
+  renderDetail(feedbackTicket)
+  expect(screen.getByText('common.customerService.ticket.title')).toBeInTheDocument()
+  expect(screen.queryByText('后端固定标题')).not.toBeInTheDocument()
+})
+
+it('问题描述带字段标签，补充续写在描述之后 (#1198)', () => {
+  renderDetail(feedbackTicket)
+  const label = screen.getByText('common.customerService.tickets.detail.descriptionLabel')
+  const description = screen.getByText('模型调用失败，请帮忙排查')
+  const supplement = screen.getByText(/第一次补充/)
+  expect(label.compareDocumentPosition(description) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  expect(description.compareDocumentPosition(supplement) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+})
+
+it('SLA 文案只在待处理时显示 (#1198)', () => {
+  const { unmount } = render(<TicketDetailView detail={feedbackTicket} onBack={vi.fn()} onReopen={vi.fn()} onRate={vi.fn()} onSupplement={vi.fn()} />)
+  expect(screen.queryByText('我们将在 1 个工作日内联系你。')).not.toBeInTheDocument()
+  unmount()
+  renderDetail({ ...feedbackTicket, status: 'pending' })
+  expect(screen.getByText('我们将在 1 个工作日内联系你。')).toBeInTheDocument()
+})
+
+it('已解决时展示解决结论 (#1198)', () => {
+  renderDetail({ ...feedbackTicket, status: 'resolved', resolution: '已为你补发额度' })
+  expect(screen.getByText('common.customerService.ticket.resolution')).toBeInTheDocument()
+  expect(screen.getByText('已为你补发额度')).toBeInTheDocument()
+})
+
+it('拉取并按顺序渲染处理记录 (#1198)', async () => {
+  listEvents.mockResolvedValueOnce([
+    { id: 'e1', ticket_id: 'FB-1', version: 1, type: 'ticket.created', summary: '用户提交问题反馈', actor_name: '用户', visible_to_user: true, created_at: '2026-10-08T01:00:00Z' },
+    { id: 'e2', ticket_id: 'FB-1', version: 2, type: 'ticket.claimed', summary: '客服领取工单', actor_name: '客服', visible_to_user: true, created_at: '2026-10-08T02:00:00Z' },
+  ])
+  renderDetail(feedbackTicket)
+  expect(await screen.findByText('common.customerService.ticket.handlingTitle')).toBeInTheDocument()
+  const first = screen.getByText('用户提交问题反馈')
+  const second = screen.getByText('客服领取工单')
+  expect(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+})
+
+it('处理记录接口失败时不显示这一块，也不打断详情 (#1198)', async () => {
+  listEvents.mockRejectedValueOnce(new Error('404'))
+  renderDetail(feedbackTicket)
+  await waitFor(() => expect(listEvents).toHaveBeenCalled())
+  expect(screen.queryByText('common.customerService.ticket.handlingTitle')).not.toBeInTheDocument()
+  expect(screen.getByText('模型调用失败，请帮忙排查')).toBeInTheDocument()
+})
+
+it('人工单评分读 human_rating (#1202 附带项)', () => {
+  renderDetail({ ...asyncDetail, ticket_type: 'human_support', status: 'resolved', human_rating: 4 })
+  expect(screen.getByText('★★★★☆')).toBeInTheDocument()
 })

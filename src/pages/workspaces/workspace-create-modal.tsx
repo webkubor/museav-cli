@@ -203,6 +203,8 @@ export function WorkspaceCreateModal({ open, onClose, workspaceCount }: Workspac
                   lockedBadge={t('workspaces.modal.ownerBadge')}
                   placeholder={t('workspaces.modal.initialMembersPlaceholder')}
                 />
+                {/* #1194：负责人自动加入、该框用来选普通成员，此前无说明用户分不清语义；补一句固定说明，不随选中数变化 */}
+                <p className="text-xs text-mg-text-3">{t('workspaces.modal.initialMembersHint', { count: MAX_INVITE_MEMBERS })}</p>
               </div>
             </div>
           )}

@@ -57,6 +57,7 @@
       "descPlaceholder": "简述该工作空间的用途...",
       "ownerLabel": "空间负责人",
       "initialMembersLabel": "初始成员",
+      "initialMembersHint": "负责人会自动加入并锁定在列表首位，这里继续添加的是其他普通成员（最多 {{count}} 人）。",
       "ownerBadge": "负责人",
       "initialMembersPlaceholder": "搜索企业成员，回车添加",
       "inviteLabel": "初始成员 (选填)",

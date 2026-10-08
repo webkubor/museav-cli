@@ -30,11 +30,9 @@ export function HandoffHeaderStatus({ mode, onCancel, isCanceling = false, onEnd
            : t('common.customerService.handoff.connecting')))
     : mode.kind === 'connecting'
       ? t('common.customerService.handoff.connecting')
-      // 后端目前不下发工号（agent_no 恒空），整句模板会渲染成「王恩博 · 工号 」半截标签
-      // （2026-09-28 test 实测）。没工号就只显示姓名，都没有退回「已接入」。
-      : mode.agentNo
-        ? t('common.customerService.handoff.connected', { name: mode.agentName ?? '', no: mode.agentNo })
-        : mode.agentName || t('common.customerService.handoffConnected')
+      // 人工服务中不向用户展示客服姓名/工号，固定显示「人工客服」（prd46#1201，V1.0.7 线上验收第 4 条
+      // 产品要求；PRD §7.6「显示客服姓名、工号」待产品修订）
+      : t('common.customerService.handoff.entry')
 
   return (
     <div className="flex items-center justify-between mt-0.5" aria-live="polite">
@@ -96,11 +94,8 @@ export function RatingCard({ item, onSubmit, onSkip }: RatingCardProps) {
       role="group"
       aria-label={t('common.customerService.handoff.ratingAria')}
     >
+      {/* 评价卡不展示客服名称（prd46#1201，同顶栏口径） */}
       <p className="m-0 mg-text-caption font-medium text-mg-text-1">{t('common.customerService.handoff.rateService')}</p>
-      {(card?.agentName || card?.agentNo) && (
-        // 工号后端目前不下发，硬拼「姓名 · 工号」会留下「王恩博 ·」（2026-09-28 test 实测）
-        <p className="m-0 text-[11px] text-mg-text-3">{[card.agentName, card.agentNo].filter(Boolean).join(' · ')}</p>
-      )}
       {/* 星级是单选组：原型用 role=radiogroup + 每颗星 aria-label「N 星」，
           读屏用户才知道当前选了几星、总共几档 */}
       <div className="flex items-center gap-1" role="radiogroup" aria-label={t('common.customerService.handoff.starsAria')}>

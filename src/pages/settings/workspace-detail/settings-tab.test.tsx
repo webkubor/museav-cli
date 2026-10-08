@@ -20,41 +20,51 @@ function setup() {
   return { invalidation }
 }
 beforeEach(() => { vi.clearAllMocks();vi.mocked(getProfile).mockResolvedValue(profile(''));vi.mocked(setDefaultWorkspace).mockResolvedValue({ default_workspace_id: 'w-own' }) })
-describe('account default workspace preference #1097', () => {
-  it('allows an ordinary member to choose a default without rename/delete permission', async () => {
+const saveButton = () => screen.getByRole('button', { name: 'workspaces.detail.settings.save' })
+
+describe('默认空间：表单内一行、随「保存」提交（prd46#1206，账户偏好 #1097）', () => {
+  it('拨开关只改表单，点保存才提交；成员无空间编辑权限也能设', async () => {
     const { invalidation } = setup()
     const toggle = await screen.findByRole('switch')
     expect(toggle).not.toBeChecked();expect(toggle).toBeEnabled()
-    expect(screen.queryByRole('button', { name: 'workspaces.detail.settings.save' })).not.toBeInTheDocument()
-    vi.mocked(getProfile).mockResolvedValue(profile('w-own'));fireEvent.click(toggle)
+    expect(saveButton()).toBeDisabled()
+    fireEvent.click(toggle)
+    expect(toggle).toBeChecked();expect(setDefaultWorkspace).not.toHaveBeenCalled()
+    vi.mocked(getProfile).mockResolvedValue(profile('w-own'))
+    fireEvent.click(saveButton())
     await waitFor(() => expect(setDefaultWorkspace).toHaveBeenCalledWith({ workspace_id: 'w-own' }))
     await waitFor(() => expect(invalidation).toHaveBeenCalledWith({ queryKey: ['account-profile'] }))
-    await waitFor(() => expect(toggle).toBeChecked())
+    await waitFor(() => expect(appToast.success).toHaveBeenCalledWith('workspaces.detail.settings.preferenceSaved'))
   })
-  it('clears an existing saved preference with explicit empty string', async () => {
+  it('已是默认空间：开关开启且置灰不可关闭，并提示「当前空间是默认空间」', async () => {
     vi.mocked(getProfile).mockResolvedValue(profile('w-own'));setup()
-    const toggle = await screen.findByRole('switch');expect(toggle).toBeChecked()
-    fireEvent.click(toggle)
-    await waitFor(() => expect(setDefaultWorkspace).toHaveBeenCalledWith({ workspace_id: '' }))
+    const toggle = await screen.findByRole('switch')
+    expect(toggle).toBeChecked();expect(toggle).toBeDisabled()
+    expect(screen.getByText('workspaces.detail.settings.defaultWorkspaceCurrent')).toBeInTheDocument()
   })
-  it('does not confuse another preferred workspace or tenant default with this preference', async () => {
+  it('别的空间是默认时，本空间开关为关', async () => {
     vi.mocked(getProfile).mockResolvedValue(profile('w-other'));setup()
     expect(await screen.findByRole('switch')).not.toBeChecked()
   })
-  it('disables pending writes and does not optimistically alter state after rejection', async () => {
+  it('开关拨回关闭则没有改动，保存不可点', async () => {
+    setup()
+    const toggle = await screen.findByRole('switch')
+    fireEvent.click(toggle);fireEvent.click(toggle)
+    expect(toggle).not.toBeChecked();expect(saveButton()).toBeDisabled()
+  })
+  it('保存失败：报错、不弹成功提示，开关保持用户的选择可重试', async () => {
     let reject!: (error: Error) => void
     vi.mocked(setDefaultWorkspace).mockImplementation(() => new Promise((_, fail) => { reject = fail }))
-    const { invalidation } = setup();const toggle = await screen.findByRole('switch');fireEvent.click(toggle)
-    await waitFor(() => expect(toggle).toBeDisabled());fireEvent.click(toggle)
-    expect(setDefaultWorkspace).toHaveBeenCalledTimes(1)
+    setup();const toggle = await screen.findByRole('switch');fireEvent.click(toggle);fireEvent.click(saveButton())
+    await waitFor(() => expect(toggle).toBeDisabled())
     const error = new Error('membership removed');await act(async () => reject(error))
     await waitFor(() => expect(appToast.requestError).toHaveBeenCalledWith(error, 'workspaces.detail.settings.preferenceError'))
-    expect(toggle).not.toBeChecked();expect(toggle).toBeEnabled();expect(invalidation).not.toHaveBeenCalled()
+    expect(appToast.success).not.toHaveBeenCalled()
+    expect(toggle).toBeChecked();expect(toggle).toBeEnabled();expect(saveButton()).toBeEnabled()
   })
-  it('hides the switch on load failure and offers a working retry', async () => {
+  it('偏好读取失败时隐藏开关，重试可恢复', async () => {
     vi.mocked(getProfile).mockRejectedValueOnce(new Error('offline'));setup()
     await screen.findByRole('alert');expect(screen.queryByRole('switch')).not.toBeInTheDocument()
-    expect(setDefaultWorkspace).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: 'common.retry' }))
     expect(await screen.findByRole('switch')).toBeEnabled()
   })

@@ -188,7 +188,9 @@
         "deleteSuccess": "工作空间已删除",
         "deleteError": "删除失败",
         "defaultCannotDelete": "默认工作空间不可删除",
-        "defaultWorkspace": "默认工作空间",
+        "defaultWorkspace": "默认空间",
+        "defaultWorkspaceCurrent": "当前空间是默认空间",
+        "settingsSaved": "空间设置已保存",
         "defaultWorkspaceHint": "登录后默认进入此工作空间，仅影响你自己的账号，并在不同设备间同步。",
         "preferenceSaved": "默认工作空间偏好已保存",
         "preferenceError": "无法读取或保存默认工作空间，请重试。"

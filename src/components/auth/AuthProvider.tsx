@@ -8,7 +8,7 @@
 import { useEffect, type ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth'
-import { getSessionForActiveWorkspace, applySessionToStore } from '@/lib/auth/refresh-session'
+import { getInitialSession, applySessionToStore } from '@/lib/auth/refresh-session'
 import { toLoginWithRedirect } from '@/lib/redirect'
 import { getPreferences } from '@/services/preferences'
 import { saveTimeZone } from '@/lib/timezone'
@@ -39,8 +39,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isAuthenticated || isFetchingSession) return
     isFetchingSession = true
-    // 首拉即按持久化的活跃空间解析权限（非默认空间不带 id 会少 tab/按钮，需求方#255）。
-    getSessionForActiveWorkspace()
+    // 首拉会话：空间从接口读（非空间路由不传参，由后端落到默认空间偏好；空间专属路由按 URL 传参，prd46#1207）。
+    getInitialSession()
       // 落 store 逻辑与权限热刷新共用（lib/auth/refresh-session）：
       // 工作区恢复 localStorage 优先、account 全字段直传（phone 等守卫依赖）。
       .then((result: SessionResult) => {

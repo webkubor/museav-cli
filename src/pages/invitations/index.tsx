@@ -5,9 +5,8 @@ import { useNavigate, useSearchParams, useParams, Link } from 'react-router-dom'
 
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { previewInvitation, acceptInvitation } from '@/services/invitations'
-import { getSessionForActiveWorkspace } from '@/lib/auth/refresh-session'
+import { getSessionForActiveWorkspace, applySessionToStore } from '@/lib/auth/refresh-session'
 import { useAuthStore } from '@/store/auth'
-import { storageKeys } from '@/lib/storage'
 import { toLoginWithRedirect } from '@/lib/redirect'
 import type { InvitationPreview } from '@/types'
 
@@ -20,7 +19,6 @@ export default function InvitationsPage() {
   const token = tokenParam ?? searchParams.get('token') ?? ''
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const isSessionLoading = useAuthStore((s) => s.isLoading)
-  const setAuth = useAuthStore((s) => s.setAuth)
 
   const [preview, setPreview] = useState<InvitationPreview | null>(null)
   // token 为空属可在首次渲染判定的静态错误，直接作为初始状态，effect 只负责拉取预览
@@ -51,14 +49,7 @@ export default function InvitationsPage() {
       const result = await acceptInvitation(token)
       try {
         const session = await getSessionForActiveWorkspace()
-        const persistedWs = localStorage.getItem(storageKeys.activeWorkspaceId(session.active_tenant_id))
-        setAuth(
-          session.account,
-          session.active_tenant_id,
-          session.tenants,
-          persistedWs || session.active_workspace_id,
-          session.permissions?.granted ?? null
-        )
+        applySessionToStore(session)
       } catch {
         // getSession 失败不阻塞跳转，SessionLoader 会在下次渲染时重新拉取
       }

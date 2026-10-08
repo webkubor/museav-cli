@@ -44,7 +44,7 @@ import {
   transition,
   type SupportMode,
 } from './support-machine'
-import { EPHEMERAL_ANSWER_ID, supportMessageRoleOf, ticketAgentNameOf, ticketNoOf, ticketSlaTextOf, ticketUnreadOf } from '@/interfaces/support'
+import { EPHEMERAL_ANSWER_ID, supportMessageRoleOf, ticketAgentNameOf, ticketNoOf, ticketSlaTextOf, ticketStatusTextOf, ticketUnreadOf } from '@/interfaces/support'
 import type {
   SupportTicketSnapshot,
   SupportAnswerRating,
@@ -805,9 +805,9 @@ export function useSupport() {
         feedbackReceipt: {
           // 后端实测只给 ticket_id（FB-20260914-8315），没有 ticket_no —— 读错字段
           // 的后果是回执卡「反馈编号」整行空白；status 是机器码（pending），
-          // 上屏要用 status_label（「等待客服受理」）。
+          // 上屏要按机器码取规范名（「待处理」），不能透传 status_label（「等待客服受理」）。
           ticketNo: resp.ticket_id || resp.ticket_no || '',
-          status: resp.status_label || resp.status,
+          status: ticketStatusTextOf(resp, t),
           // 后端把 SLA 放在 next_step（「我们将在 1 个工作日内联系你。」），不是 sla_text
           slaText: resp.next_step || resp.sla_text,
           category: fields.category,

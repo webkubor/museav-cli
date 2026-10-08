@@ -51,7 +51,9 @@ it('renders all five ticket row elements using the agent latest-visible-message 
 
   const row = await screen.findByRole('button', { name: /FB-20260923-001/ })
   expect(row).toHaveTextContent('问题反馈')
-  expect(row).toHaveTextContent('等待客服受理')
+  // #1199：状态徽标走 PRD 规范名（测试 i18n mock 回显 key），不再透传后端 pending 的描述文案
+  expect(row).toHaveTextContent('common.customerService.tickets.statuses.pending')
+  expect(row).not.toHaveTextContent('等待客服受理')
   expect(row).toHaveTextContent('模型调用失败')
   expect(row).toHaveTextContent('模型调用失败，请帮忙排查')
   expect(row).toHaveTextContent('FB-20260923-001')

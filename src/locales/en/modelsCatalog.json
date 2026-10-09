@@ -253,12 +253,12 @@
     },
     "error.loadDetail": "Failed to load model detail. Please try again.",
     "discovery": {
-      "title": "Model Discovery",
+      "title": "Rankings",
       "subtitle": "Compare performance, cost and speed across models by output type and task.",
       "backToCatalog": "Back to Marketplace",
-      "entry": "Model Discovery",
+      "entry": "Rankings",
       "placeholder": "Analysis modules are being wired up.",
-      "backToDiscovery": "Back to Discovery"
+      "backToDiscovery": "Back to Rankings"
     },
     "outputModality": {
       "label": "Output modality",

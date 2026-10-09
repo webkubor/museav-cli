@@ -27,6 +27,7 @@ import { getCaptchaParam } from '@/lib/aliyun-captcha'
 import { CaptchaGate, type CaptchaGateHandle } from '@/components/auth/CaptchaGate'
 import { trackEvent } from '@/lib/track'
 import { resolveReferralCode, clearPersistedReferralCode } from '@/pages/signup/referral-code'
+import { resolveAdSource, clearPersistedAdSource } from '@/pages/signup/ad-source'
 
 function createPhoneAuthSchema(t: TFunction) {
   return z.object({
@@ -127,8 +128,15 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
     setLoading(true)
     setServerError('')
     try {
-      await phoneLoginRegister(data.phone, data.code, gateParam ?? (await getCaptchaParam()), referralCode || undefined)
+      await phoneLoginRegister(
+        data.phone,
+        data.code,
+        gateParam ?? (await getCaptchaParam()),
+        referralCode || undefined,
+        resolveAdSource(searchParams),
+      )
       clearPersistedReferralCode()
+      clearPersistedAdSource()
       const session = await getSession()
       setAuth(
         session.account,

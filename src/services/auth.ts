@@ -5,6 +5,7 @@
  */
 import { apiBaseUrl, get, post } from '@/lib/request'
 import { setCsrfToken } from '@/lib/auth/csrf-token'
+import type { AdSourceFields } from '@/pages/signup/ad-source'
 import type { AuthMailTTLResponse } from '@/interfaces/auth'
 import type {
   CheckLoginEmailResult,
@@ -40,6 +41,7 @@ export function emailCodeLoginRegister(
   captchaVerifyParam?: string | null,
   referralCode?: string,
   invitationToken?: string,
+  adSource?: AdSourceFields,
 ) {
   return post<LoginResult>(
     'auth/email-code/login',
@@ -49,6 +51,8 @@ export function emailCodeLoginRegister(
         code,
         ...(referralCode ? { referral_code: referralCode } : {}),
         ...(invitationToken ? { invitation_token: invitationToken } : {}),
+        // 广告来源（投放归因）：无广告参数时不带字段，老流量请求体与改动前一致
+        ...(adSource && Object.keys(adSource).length > 0 ? adSource : {}),
       },
       captchaVerifyParam,
     ),
@@ -96,13 +100,22 @@ export function phoneLoginRegister(
   phone: string,
   code: string,
   captchaVerifyParam?: string | null,
-  referralCode?: string
+  referralCode?: string,
+  adSource?: AdSourceFields,
 ) {
   // referral_code 推荐归因（需求方#714）：后端 PhoneLoginCommand 目前缺该字段（registerPhoneOnce
   // 写死空串），前端先按邮箱注册腿同名契约上送，后端补齐前会被忽略、不影响注册。后端单见 qa 看板。
   return post<LoginResult>(
     'auth/sms-code/login',
-    withCaptcha({ phone, code, ...(referralCode ? { referral_code: referralCode } : {}) }, captchaVerifyParam)
+    withCaptcha(
+      {
+        phone,
+        code,
+        ...(referralCode ? { referral_code: referralCode } : {}),
+        ...(adSource && Object.keys(adSource).length > 0 ? adSource : {}),
+      },
+      captchaVerifyParam
+    )
   )
 }
 

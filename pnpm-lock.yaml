@@ -193,8 +193,8 @@ importers:
         specifier: ^8.0.12
         version: 8.0.14(@types/node@24.12.4)(jiti@2.7.0)
       vite-plugin-agent-eyes:
-        specifier: ^0.13.2
-        version: 0.13.2(vite@8.0.14(@types/node@24.12.4)(jiti@2.7.0))
+        specifier: ^0.15.1
+        version: 0.15.1(vite@8.0.14(@types/node@24.12.4)(jiti@2.7.0))
       vitest:
         specifier: ^4.1.8
         version: 4.1.8(@types/node@24.12.4)(jsdom@29.1.1)(vite@8.0.14(@types/node@24.12.4)(jiti@2.7.0))
@@ -4765,10 +4765,11 @@ packages:
       vue:
         optional: true
 
-  vite-plugin-agent-eyes@0.13.2:
-    resolution: {integrity: sha512-DpW5td+nyjW1ivLg5YAR2yUzjBRxOXE02XIrXZA4+As+/TTe7Vkc6y+e5SOnHFbIBVuZFZvR6RTlaxMQyK2fCQ==}
+  vite-plugin-agent-eyes@0.15.1:
+    resolution: {integrity: sha512-+dwL2ezC3szfzdfT7mc/pUkOX2dl21JCZtArMqzPtRY/FfJdbv0Q49YGN9GqpSV84vLV9zopQqTEKdwdzR89lg==}
+    engines: {node: '>=20.19'}
     peerDependencies:
-      vite: '>=4 <9'
+      vite: '>=4 <10'
 
   vite@8.0.14:
     resolution: {integrity: sha512-s4BJJ+5y1pYL6Otw51FHhVJQhPnuRinKig64g/1+EUNaJsd3gCKdD31IPFvswUgW9/60QT9oFHbZHbQK5imcxw==}
@@ -4899,8 +4900,8 @@ packages:
     resolution: {integrity: sha512-OTIk8iR8/aCRWBqvxrzxR0hgxWpnYBblY1S5hDWBQfk/VFmJwzmJgQFN3WsoUKHISv2eAwe+PpbUzyL1CKTLXg==}
     engines: {node: ^20.17.0 || >=22.9.0}
 
-  ws@8.21.0:
-    resolution: {integrity: sha512-Vsp28b7DRcimFQvrqu2Wek3z1iYxDCWqHYB8Qsnk/S4RfaCQzPGPyBNuVjJV3cd6UiKtUtp6sNM77gWvzcCH+g==}
+  ws@8.22.0:
+    resolution: {integrity: sha512-Ydggc987+RO0AnWtZ/7Wq9FtNvcrL1b/RO0ud9mWjUPgDrsAAwQSF51sm2hm1XofbU/4jkpGEsLFsZZxU+1DOg==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
       bufferutil: ^4.0.1
@@ -10177,10 +10178,10 @@ snapshots:
       react: 19.2.6
       react-dom: 19.2.6(react@19.2.6)
 
-  vite-plugin-agent-eyes@0.13.2(vite@8.0.14(@types/node@24.12.4)(jiti@2.7.0)):
+  vite-plugin-agent-eyes@0.15.1(vite@8.0.14(@types/node@24.12.4)(jiti@2.7.0)):
     dependencies:
       vite: 8.0.14(@types/node@24.12.4)(jiti@2.7.0)
-      ws: 8.21.0
+      ws: 8.22.0
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -10264,7 +10265,7 @@ snapshots:
     dependencies:
       signal-exit: 4.1.0
 
-  ws@8.21.0: {}
+  ws@8.22.0: {}
 
   xml-name-validator@5.0.0: {}
 

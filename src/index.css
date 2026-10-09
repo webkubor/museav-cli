@@ -84,6 +84,16 @@
    缺 base 即悬空 var → 整条 CSS 声明静默失效（不报错、样式悄悄没了）。 */
 @import "modelgo-design-tokens/base.css";
 @import "modelgo-design-tokens/console.css";
+/* prd46#1215 bug（模型广场导航栏缺阴影底色）：补引真源 tokens.css。
+   库的 split 脚本只把 CSS 变量拆进 base/console 投影，**组件类**（.mg-glass-bar、
+   .mg-layer-* 等 19 个）只存在于真源 tokens.css —— 此前只引两个投影，导致
+   .mg-glass-bar（顶栏玻璃底色+blur+2px 亮边）在构建产物里根本不存在：
+   DashboardHeader 挂了这个类、public-shell.css 注释也写着「样式已上收到
+   规范的 .mg-glass-bar」，但类本体从未编译进去——深色档顶栏完全透明、
+   内容直接穿过导航；浅色档靠 components.css 的 var(--mg-surface-3) 白底兜着。
+   官网两端（global-web/web）一直全量 import 真源，是同一库的正确用法。
+   变量部分与 base/console 投影重复定义同值，覆盖无害。 */
+@import "modelgo-design-tokens/tokens.css";
 @import "./styles/tokens.css";      /* 控制台独有 token（库里没有的）；与库重复的部分已按 qa#611 ④ 撤除 */
 @import "./styles/brand.css";       /* 左上角品牌区：品牌字体 + 双色 wordmark + 漂浮光晕 logo */
 @import "./styles/auth.css";        /* 登录/注册/鉴权页样式 */

@@ -242,6 +242,7 @@
         "emailAlreadyRegistered": "This email is already registered. Passwordless sign-in is not available yet.",
         "codeSentHint": "The code is valid for 5 minutes.",
         "codeCaptchaExpired": "Security verification expired. Please verify again before submitting — your code is still valid, no need to resend.",
+        "secondFactorUnavailable": "This account has two-factor authentication enabled, which email-code sign-in doesn't support yet. Please contact support.",
         "resend": "Resend code",
         "resendCountdown": "Resend code in {{seconds}}s",
         "successTitle": "Verification complete",

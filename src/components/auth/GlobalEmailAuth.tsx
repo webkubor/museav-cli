@@ -55,6 +55,9 @@ type HumanVerificationState = 'idle' | 'verifying' | 'verified'
 
 const RESEND_SECONDS = 60
 
+
+const isSecondFactorError = (error: unknown) => isApiErrorCode(error, 40038) || isApiErrorCode(error, 40039)
+
 export function GlobalEmailAuth() {
   const { t } = useTranslation('account')
   const [searchParams] = useSearchParams()
@@ -82,6 +85,9 @@ export function GlobalEmailAuth() {
 
   const describeError = (error: unknown) => {
     if (isApiErrorCode(error, 40901)) return t('account.auth.globalEmailAuth.emailAlreadyRegistered')
+    // 40038/40039 = 后端要求二次验证（身份验证器）。本页没有、也不该有 TOTP 输入（prd46#1205），
+    // 后端原文「请输入身份验证器验证码」会指向一个不存在的输入框，改用前端自己的文案。
+    if (isSecondFactorError(error)) return t('account.auth.globalEmailAuth.secondFactorUnavailable')
     return getRequestErrorMessage(error, t('account.auth.globalEmailAuth.failed'))
   }
 
@@ -224,10 +230,13 @@ export function GlobalEmailAuth() {
       )
       trackEvent('login_success', { method: 'email_code' }, { result: 'success' })
     } catch (error) {
+      // 人机校验四元组一次性：本次提交已消费，任何失败都要重置，否则下一次提交必然先吃一次 40025。
+      gateRef.current?.reset()
       if (isApiErrorCode(error, 40025)) {
-        gateRef.current?.reset()
         setServerError(t('account.auth.globalEmailAuth.codeCaptchaExpired'))
       } else {
+        // 开了二次验证的账号拿邮箱验证码重提必然再被拒（本页不收 TOTP），清空以免用户原样重提。
+        if (isSecondFactorError(error)) codeForm.reset({ code: '' })
         setServerError(describeError(error))
       }
     } finally {
@@ -324,7 +333,7 @@ export function GlobalEmailAuth() {
             )}
           </div>
 
-          {serverError && <p className="auth-error-message">{serverError}</p>}
+          {serverError && <p className="auth-error-message" role="alert">{serverError}</p>}
 
           <p className="auth-global-assurance">
             <span>{t('account.auth.globalEmailAuth.accountNotice')}</span>
@@ -408,7 +417,7 @@ export function GlobalEmailAuth() {
             handleRef={(h) => { gateRef.current = h }}
           />
 
-          {serverError && <p className="auth-error-message">{serverError}</p>}
+          {serverError && <p className="auth-error-message" role="alert">{serverError}</p>}
 
           <Button type="submit" variant="brand" size="lg" loading={loading}>
             <LuMailCheck size={17} aria-hidden="true" />

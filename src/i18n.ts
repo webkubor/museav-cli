@@ -13,12 +13,14 @@ import zhNav from './locales/zh/nav.json'
 import zhOnboarding from './locales/zh/onboarding.json'
 import zhPromo from './locales/zh/promo.json'
 import zhSidebarSettings from './locales/zh/sidebarSettings.json'
+import zhBilling from './locales/zh/billing.json'
 import enCommon from './locales/en/common.json'
 import enHeader from './locales/en/header.json'
 import enNav from './locales/en/nav.json'
 import enOnboarding from './locales/en/onboarding.json'
 import enPromo from './locales/en/promo.json'
 import enSidebarSettings from './locales/en/sidebarSettings.json'
+import enBilling from './locales/en/billing.json'
 
 export const localeNamespaces = [
   'account',
@@ -59,7 +61,12 @@ export const localeNamespaces = [
 export type LocaleNamespace = typeof localeNamespaces[number]
 
 // onboarding 进核心包：新手指南入口常驻侧栏底部，懒加载会先闪一帧 i18n key
-const coreLocaleNamespaces = ['common', 'header', 'nav', 'onboarding', 'promo', 'sidebarSettings'] satisfies LocaleNamespace[]
+// billing 进核心包（prd46#1215 bug：充值弹框慢/要点两下）：全局充值弹窗 TopUpModal 常驻
+// DashboardLayout，此前靠 LocaleNamespaces 异步门控挂载——ns 加载完成前组件不在树上，
+// 用户点「充值」openRecharge() 置了 zustand 却无订阅者，零反馈直到语言包加载完弹窗才
+// 「突然」出现（弱网数百 ms），被当成「没点上」再点一次。静态进核心包后随首屏 bundle
+// 一起就位，弹窗挂载不再有窗口期。体积代价：billing.json 中英各 ~4KB gz，可接受。
+const coreLocaleNamespaces = ['common', 'header', 'nav', 'onboarding', 'promo', 'sidebarSettings', 'billing'] satisfies LocaleNamespace[]
 
 const resources = {
   zh: {
@@ -69,6 +76,7 @@ const resources = {
     onboarding: zhOnboarding,
     promo: zhPromo,
     sidebarSettings: zhSidebarSettings,
+    billing: zhBilling,
   },
   en: {
     common: enCommon,
@@ -77,6 +85,7 @@ const resources = {
     onboarding: enOnboarding,
     promo: enPromo,
     sidebarSettings: enSidebarSettings,
+    billing: enBilling,
   }
 }
 

@@ -33,8 +33,6 @@ import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { PhoneBindingGuard } from '@/components/auth/PhoneBindingGuard'
 import { TopUpModal } from '@/pages/billing/TopUpModal'
 import { useRechargeStore } from '@/store/use-recharge-store'
-import { LocaleNamespaces } from '@/components/i18n/LocaleNamespaces'
-import type { LocaleNamespace } from '@/i18n'
 import { navConfig } from '@/config/nav'
 import type { NavItem } from '@/config/nav'
 import { installAgentTools } from '@/lib/dev-agent-tools'
@@ -50,12 +48,13 @@ import { ParticleLinesBackground } from './ParticleLinesBackground'
 import './layout.css'
 
 /**
- * 全局充值弹框依赖 billing 语言包，但它挂在布局层、任意路由都能弹出（模型体验/对比页的
- * 「去充值」）。语言包按路由懒加载，模型页不带 billing，直接弹会显示 i18n key
- * （shared/modelgo_prd#833 复验 BUG-1）。在布局层为弹框单独兜一次 billing 加载，
- * 与页面路由解耦；数组放模块级，避免每次渲染新引用触发重复加载。
+ * ~~全局充值弹框依赖 billing 语言包……在布局层为弹框单独兜一次 billing 加载~~
+ * （prd46#1215 bug 修复）billing 已进 i18n 核心包（见 src/i18n.ts coreLocaleNamespaces
+ * 的注释），TopUpModal 不再需要 LocaleNamespaces 异步门控——那层门控正是
+ * 「点击充值 ~1s 无反馈 / 要点两下」的根因：ns 加载完成前组件不在树上，
+ * openRecharge() 置了 zustand 却没有订阅者。模型体验/对比页的「去充值」
+ * 也不会再闪 i18n key（#833 复验 BUG-1），因为核心包随首屏 bundle 静态就位。
  */
-const RECHARGE_MODAL_NAMESPACES: readonly LocaleNamespace[] = ['billing']
 
 
 const isDevTools = import.meta.env.VITE_SHOW_DEV_TOOLS === 'true'
@@ -317,10 +316,8 @@ export function DashboardLayout() {
           <PhoneBindingGuard />
 
           {/* 全局充值弹框：任意入口经 useRechargeStore.open() 就地弹出，挂一次即可。
-              billing 语言包由 LocaleNamespaces 兜底加载（见 RECHARGE_MODAL_NAMESPACES 说明） */}
-          <LocaleNamespaces namespaces={RECHARGE_MODAL_NAMESPACES} fallback={null}>
-            <TopUpModal visible={rechargeOpen} onClose={closeRecharge} tenantId={activeTenantId ?? ''} />
-          </LocaleNamespaces>
+              billing 语言包已进 i18n 核心包（静态 bundle，见上方注释），无需 LocaleNamespaces 门控。 */}
+          <TopUpModal visible={rechargeOpen} onClose={closeRecharge} tenantId={activeTenantId ?? ''} />
 
           {/* 渲染主视图区域 */}
           <div className={cn(

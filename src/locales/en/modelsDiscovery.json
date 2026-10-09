@@ -1,7 +1,7 @@
 {
   "modelsDiscovery": {
     "page": {
-      "title": "Model Discovery",
+      "title": "Rankings",
       "subtitle": "Industry benchmarks, expert analysis and ModelGo platform data, brought together to help your team pick a model",
       "snapshot": "Snapshot {{date}}",
       "snapshotLoading": "Loading snapshot…",

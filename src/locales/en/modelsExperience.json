@@ -49,7 +49,7 @@
     "balanceZeroFreeHint": "Free models are not charged, but your main balance must be greater than {{symbol}}0 (gift and reward balances don't count). Top up to continue sending.",
     "recharge": "Top up",
     "freeDailyLimitTitle": "Today's free calls have reached the limit",
-    "freeDailyLimitHint": "This account has used 1,000 free model calls today. The quota resets tomorrow at 00:00. You can also switch to another model to continue.",
+    "freeDailyLimitHint": "The quota resets tomorrow at 00:00. You can also switch to another model to continue.",
     "viewUsage": "View usage",
     "openApiCall": "Open API call",
     "openModelSettings": "Open model settings",

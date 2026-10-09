@@ -49,7 +49,7 @@
     "balanceZeroFreeHint": "免费模型不会扣费，但使用前主余额需大于 {{symbol}}0（赠送与奖励余额不计入）。充值后即可继续发送。",
     "recharge": "去充值",
     "freeDailyLimitTitle": "今日免费调用已达上限",
-    "freeDailyLimitHint": "当前账户今日已使用 1,000 次免费模型调用，额度将于明日 00:00 恢复。你也可以切换至其他模型继续使用。",
+    "freeDailyLimitHint": "额度将于明日 00:00 恢复。你也可以切换至其他模型继续使用。",
     "viewUsage": "查看用量",
     "openApiCall": "打开 API 调用",
     "openModelSettings": "打开模型设置",

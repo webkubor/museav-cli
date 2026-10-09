@@ -27,9 +27,14 @@ export function matchConsoleRoute(pathname: string): ConsoleRouteMeta | undefine
   return CONSOLE_ROUTES.find((r) => r.scope === 'tenant' && (p === r.path || p.startsWith(r.path + '/')))
 }
 
-/** 顶栏导航收敛（#360）：对齐 PRD 原型 console 顶栏的 5 项，顺序固定。
- *  「首页 / 说明文档」跨端外链，「模型广场 / 模型体验 / 控制台」为站内页。
- *  企业治理 / 推荐计划 / 更新日志 已从顶栏移除（前两者在侧栏可达，更新日志归站点导航）。 */
+/** 顶栏导航收敛（#360）：对齐 PRD 原型 console 顶栏，顺序固定。
+ *  「首页 / 说明文档」跨端外链，「模型广场 / 模型排行 / 模型体验 / 控制台」为站内页。
+ *  企业治理 / 推荐计划 / 更新日志 已从顶栏移除（前两者在侧栏可达，更新日志归站点导航）。
+ *
+ *  2026-10-09 prd46#1215：新增「模型排行」（原「模型发现」，英文 Rankings），
+ *  按需求方要求紧跟「模型广场」之后。⚠️ 它的路由是 /models/discovery —— **路由没改名**，
+ *  只改了对外文案。改路由要连带动 301、埋点 page key、面包屑与已发出去的链接，
+ *  收益为零；本次只做对外可见的更名。 */
 export function buildSyncedNav(
   t: TFunction,
   marketConfig: MarketConfig,
@@ -40,7 +45,10 @@ export function buildSyncedNav(
     // 首页按界面语言带官网语言前缀（#374：切成中文后跳过去仍是英文站——官网 Astro 用
     // 路径式 i18n，中文在 /zh/ 下，此前这里只给了 siteUrl 根路径）
     { key: 'home', label: t('nav.home'), href: siteUrlForLocale(market, locale) },
-    { key: 'models', label: t('nav.models'), to: '/models', match: (p) => p.startsWith('/models') && !p.startsWith('/models/playground') && !p.startsWith('/models/compare') },
+    // 模型广场：/models 下除 playground / compare / discovery 之外的页面都算它
+    // （新增 discovery 这条排除项 —— 不排除的话停在模型排行页时两个导航项会同时高亮）
+    { key: 'models', label: t('nav.models'), to: '/models', match: (p) => p.startsWith('/models') && !p.startsWith('/models/playground') && !p.startsWith('/models/compare') && !p.startsWith('/models/discovery') },
+    { key: 'rankings', label: t('nav.rankings'), to: '/models/discovery', match: (p) => p.startsWith('/models/discovery') },
     { key: 'modelExplore', label: t('nav.modelExplore'), to: '/models/playground', match: (p) => p.startsWith('/models/playground') || p.startsWith('/models/compare') },
     { key: 'docs', label: t('nav.docsMenu'), href: appendCrossSiteParams(marketConfig.docsUrl) },
     // 控制台：回到站内；在非 models/playground 的控制台页高亮

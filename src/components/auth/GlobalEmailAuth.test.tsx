@@ -16,6 +16,13 @@ vi.mock('@/services/auth', () => ({ sendEmailCode: vi.fn(), emailCodeLoginRegist
 vi.mock('@/lib/aliyun-captcha', () => ({ getCaptchaOutcome: vi.fn(), getCaptchaParam: vi.fn() }))
 vi.mock('@/lib/login-intent', () => ({ navigateAfterLogin: vi.fn() }))
 vi.mock('@/lib/track', () => ({ trackEvent: vi.fn() }))
+// 默认验证条不可用（null 会话 → 走一次性弹窗兜底）；单条用例可换成可控的假会话。
+const gate = vi.hoisted(() => ({ session: null as null | { show: () => void; reset: () => void; destroy: () => void } }))
+vi.mock('@/lib/alicaptcha', () => ({ createAlicaptchaSession: vi.fn(async (_lang: string, hooks: { onVerified: (p: string) => void }) => {
+  if (!gate.session) return null
+  gate.session.show = vi.fn(() => hooks.onVerified('gate-param'))
+  return gate.session
+}) }))
 const key = (name: string) => `account.auth.globalEmailAuth.${name}`
 const button = (name: string) => screen.getByRole('button', { name: key(name) })
 const codeInput = () => screen.getByLabelText(key('codeLabel'))
@@ -34,7 +41,7 @@ function submitCode(code = '123456') {
   fireEvent.click(button('submit'))
 }
 beforeEach(() => {
-  vi.clearAllMocks();sessionStorage.clear();localStorage.clear()
+  vi.clearAllMocks();sessionStorage.clear();localStorage.clear();gate.session = null
   useAuthStore.setState({ isAuthenticated: false, isLoading: false, setAuth })
   vi.mocked(getCaptchaOutcome).mockResolvedValue({ param: 'send-captcha', presented: true })
   vi.mocked(getCaptchaParam).mockResolvedValue('login-captcha')
@@ -72,8 +79,6 @@ describe('GlobalEmailAuth factors and recovery #1092', () => {
   it('renders no authenticator/TOTP input on the verify step and never sends totp', async () => {
     await goToCode()
     // 第二步只有：6 位邮箱验证码 + 人机校验 + 提交按钮，没有任何 TOTP/身份验证器输入。
-    expect(screen.queryByLabelText(key('totpLabel'))).toBeNull()
-    expect(screen.queryByLabelText(key('totpHint'))).toBeNull()
     expect(screen.queryAllByRole('textbox')).toHaveLength(1)
     submitCode()
     await waitFor(() => expect(emailCodeLoginRegister).toHaveBeenCalledTimes(1))
@@ -81,12 +86,30 @@ describe('GlobalEmailAuth factors and recovery #1092', () => {
     expect(body).not.toContain('totp')
     expect(body).toEqual(['fixture@example.invalid', '123456', 'login-captcha', 'ATTR', 'INV'])
   })
-  it.each([40038, 40039])('maps second-factor code %s to the generic login failure path (no TOTP prompt)', async (code) => {
-    vi.mocked(emailCodeLoginRegister).mockRejectedValueOnce(new ModelGoApiError({ code, msg: '' }))
+  it.each([40038, 40039])('second-factor code %s shows our own copy instead of the backend TOTP prompt, and clears the spent code', async (code) => {
+    // 后端真实提示语非空（生产拿到的永远是它），以前用空 msg 只覆盖到 fallback 分支。
+    vi.mocked(emailCodeLoginRegister).mockRejectedValueOnce(new ModelGoApiError({ code, msg: '请输入身份验证器验证码' }))
     await goToCode();submitCode()
-    await screen.findByText(key('failed'))
-    expect(screen.queryByLabelText(key('totpLabel'))).toBeNull()
+    expect(await screen.findByRole('alert')).toHaveTextContent(key('secondFactorUnavailable'))
+    expect(screen.queryByText('请输入身份验证器验证码')).toBeNull()
+    expect(codeInput()).toHaveValue('')
+    expect(screen.queryAllByRole('textbox')).toHaveLength(1)
     expect(getSession).not.toHaveBeenCalled();expect(setAuth).not.toHaveBeenCalled()
+  })
+  it('resets the one-time captcha gate after a non-40025 login failure, so the next submit re-verifies first', async () => {
+    gate.session = { show: vi.fn(), reset: vi.fn(), destroy: vi.fn() }
+    vi.mocked(emailCodeLoginRegister).mockRejectedValueOnce(new ModelGoApiError({ code: 40038, msg: '请输入身份验证器验证码' }))
+    await goToCode()
+    fireEvent.click(await screen.findByRole('button', { name: 'account.auth.captcha.clickToVerify' }))
+    await screen.findByText('account.auth.captcha.verified')
+    submitCode()
+    await waitFor(() => expect(emailCodeLoginRegister).toHaveBeenCalledWith('fixture@example.invalid', '123456', 'gate-param', 'ATTR', 'INV'))
+    await waitFor(() => expect(gate.session!.reset).toHaveBeenCalled())
+    // 四元组已被消费：再提交必须先调起验证，不能拿旧的那组去撞 40025。
+    submitCode()
+    expect(await screen.findByText('account.auth.validation.securityVerificationRequired')).toBeInTheDocument()
+    expect(gate.session!.show).toHaveBeenCalledTimes(2)
+    expect(emailCodeLoginRegister).toHaveBeenCalledTimes(1)
   })
   it('requires human verification again after returning to another email', async () => {
     await goToCode();fireEvent.click(button('useAnotherEmail'))

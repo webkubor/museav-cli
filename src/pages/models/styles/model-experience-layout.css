@@ -257,40 +257,6 @@
   font-size: 12px;
 }
 
-/* 空态示例 Prompt（PRD §7.2，视觉改版按 Figma「模型体验」稿）：从空态区内的胶囊行
-   挪到输入框下方的三张横排卡片，仅首次进入（无消息）时展示 */
-.models-experience-sample-cards {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin: 0 18px 16px;
-}
-
-.models-experience-sample-cards button {
-  padding: 12px 14px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--mg-border);
-  background: var(--mg-surface-3);
-  color: var(--mg-text-2);
-  font-size: 12px;
-  font-weight: 520;
-  line-height: 1.7;
-  text-align: left;
-  cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease;
-}
-
-.models-experience-sample-cards button:hover {
-  border-color: color-mix(in srgb, var(--brand-base) 45%, transparent);
-  color: var(--mg-text-1);
-}
-
-@media (max-width: 860px) {
-  .models-experience-sample-cards {
-    grid-template-columns: 1fr;
-  }
-}
-
 @media (max-width: 980px) {
   .models-experience-page {
     height: auto;

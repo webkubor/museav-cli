@@ -155,20 +155,6 @@
     },
     "attachmentRequiredImage": "请先上传一张图片。",
     "attachmentRequiredAudio": "请先上传要转写的音频。",
-    "samplePrompts": {
-      "compare": {
-        "label": "对比选型",
-        "prompt": "帮我比较三个适合企业知识库问答的模型，重点看成本、上下文长度和稳定性。"
-      },
-      "explain": {
-        "label": "概念解释",
-        "prompt": "用一段话向非技术同事解释什么是模型网关，说明它解决了什么问题。"
-      },
-      "translate": {
-        "label": "正式翻译",
-        "prompt": "把这句话翻译成英文并保持正式语气：我们下周三上午十点召开产品评审会，请准时参加。"
-      }
-    },
     "apiModal": {
       "title": "{{name}} 的 API 调用",
       "getApiKey": "获取 API Key",

@@ -5,12 +5,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WorkspaceDashboard } from './workspace-dashboard'
 import { getWorkspace } from '@/services/workspaces'
 import { getProfile, setDefaultWorkspace } from '@/services/account'
+import { switchActiveWorkspace, resolvePermissionsForWorkspace } from '@/lib/auth/refresh-session'
 import type { WorkspaceDetail, AccountProfile } from '@/types'
 vi.mock('react-i18next', async (importOriginal) => ({ ...await importOriginal<typeof import('react-i18next')>(), useTranslation: () => ({ t: (key: string) => key }) }))
 const perms = vi.hoisted(() => ({ allow: false }))
 vi.mock('@/hooks/use-permissions', () => ({ usePermissions: () => ({ hasPermission: () => perms.allow }) }))
 vi.mock('@/hooks/use-tenant-role', () => ({ useTenantRole: () => ({ isEnterprise: true }) }))
-vi.mock('@/lib/auth/refresh-session', () => ({ switchActiveWorkspace: vi.fn() }))
+vi.mock('@/lib/auth/refresh-session', () => ({ switchActiveWorkspace: vi.fn(), resolvePermissionsForWorkspace: vi.fn() }))
 vi.mock('@/services/account', () => ({ getProfile: vi.fn(), setDefaultWorkspace: vi.fn() }))
 vi.mock('@/services/workspaces', () => ({ getWorkspace: vi.fn(), updateWorkspace: vi.fn(), deleteWorkspace: vi.fn() }))
 vi.mock('@/pages/settings/workspace-detail', async () => ({ SettingsTab: (await import('@/pages/settings/workspace-detail/settings-tab')).SettingsTab, MembersTab: () => null, LogsForwardingTab: () => null }))
@@ -51,5 +52,13 @@ describe('real workspace parent keeps personal preferences reachable #1097', () 
     fireEvent.mouseDown(settingsTab, { button: 0 })
     expect(await screen.findByDisplayValue('Workspace A')).toBeInTheDocument()
     expect(screen.queryByDisplayValue('Workspace B')).not.toBeInTheDocument()
+  })
+  // prd46#1207 ②：看详情 ≠ 换当前空间。挂载时改写活跃空间会把默认空间落点污染成列表第一张卡。
+  it('挂载只按所看空间重解析权限，不调用 switchActiveWorkspace（prd46#1207 ②）', async () => {
+    perms.allow = true
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+    render(<QueryClientProvider client={qc}><MemoryRouter><WorkspaceDashboard workspaceId="member-ws" onDeleted={vi.fn()} /></MemoryRouter></QueryClientProvider>)
+    await waitFor(() => expect(resolvePermissionsForWorkspace).toHaveBeenCalledWith('member-ws'))
+    expect(switchActiveWorkspace).not.toHaveBeenCalled()
   })
 })

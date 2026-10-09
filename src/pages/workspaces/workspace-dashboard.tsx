@@ -2,8 +2,7 @@
  * 空间管理主工作台（详情面板 + 概览）
  */
 import { useEffect, useState } from 'react'
-import { useAuthStore } from '@/store/auth'
-import { switchActiveWorkspace } from '@/lib/auth/refresh-session'
+import { resolvePermissionsForWorkspace } from '@/lib/auth/refresh-session'
 import { useTranslation } from 'react-i18next'
 import {
   LuChevronRight,
@@ -173,12 +172,11 @@ export function WorkspaceDashboard({ workspaceId, onDeleted, initialTab }: Works
   if (tabState.ws !== workspaceId) setTabState({ ws: workspaceId, tab: 'overview' })
   const tab = tabState.ws === workspaceId ? tabState.tab : 'overview'
   const setTab = (next: 'overview' | 'members' | 'logs' | 'settings') => setTabState({ ws: workspaceId, tab: next })
-  // Option B：进入某空间管理详情即把它设为活跃空间，并按它重解析权限——
-  // 使 4 个 tab 显隐 + tab 内成员/设置/日志按钮 gating 都按「所看空间」的角色（如空间负责人）解析（需求方#255）。
+  // 看哪个空间就按哪个空间解析权限（4 个 tab 显隐 + tab 内按钮 gating 依赖它，需求方#255），
+  // 但**不把它设成活跃空间**——那会在进页时把当前空间改写成列表第一张卡，连带污染刷新后的
+  // 默认空间落点（prd46#1207 ②）。两件事已在 refresh-session 拆开。
   useEffect(() => {
-    if (workspaceId && workspaceId !== useAuthStore.getState().activeWorkspaceId) {
-      void switchActiveWorkspace(workspaceId)
-    }
+    if (workspaceId) void resolvePermissionsForWorkspace(workspaceId)
   }, [workspaceId])
   // 个人租户没有企业成员，空间管理不该有「成员」tab（无人可邀请/管理）；仅企业租户显示。
   const { isEnterprise } = useTenantRole()

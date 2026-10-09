@@ -78,7 +78,7 @@ export default function WorkspacesPage() {
   // 「默认」是账户偏好（GET /account/profile.default_workspace_id，#1097 契约；提示文案
   // 「仅对当前账户生效」即产品口径）。账户还没设偏好时回退 is_default——此时登录实际落到的
   // 就是它，显示是准确的。不再只读 is_default：否则设完标签不动，用户必然以为没生效（#1207 ①）。
-  const profileQuery = useQuery({ queryKey: ['account-profile'], queryFn: getProfile })
+  const profileQuery = useQuery({ queryKey: ['account-profile', activeTenantId], queryFn: getProfile, enabled: !!activeTenantId })
   // 偏好指向的空间不在当前列表里（如已被移出该空间）也回退 is_default，否则所有卡片都没有「默认」
   const preferredId = profileQuery.data?.default_workspace_id
   const defaultWorkspaceId = (preferredId && items.some((w) => w.workspace_id === preferredId) ? preferredId : '')
@@ -87,7 +87,11 @@ export default function WorkspacesPage() {
   const setDefaultMutation = useMutation({
     mutationFn: (workspaceId: string) => setDefaultWorkspace({ workspace_id: workspaceId }),
     // 原型设完即生效、不弹提示：「默认」标签移到这张卡就是反馈。失败才提示
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['account-profile'] }),
+    onSuccess: (_, workspaceId) => {
+      queryClient.invalidateQueries({ queryKey: ['account-profile'] })
+      // 设为默认后同步切到该空间，侧栏切换器即刻对齐，刷新时接口亦返回此空间（prd46#1207）
+      useAuthStore.getState().setActiveWorkspaceId(workspaceId)
+    },
     onError: (err: unknown) => appToast.requestError(err, t('workspaces.detail.settings.preferenceError')),
   })
   // 按钮只给能管理该空间的人（原型 canManageWorkspace：租户 owner/admin 或空间负责人）

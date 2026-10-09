@@ -196,7 +196,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
       s.account,
       s.active_tenant_id,
       s.tenants,
-      useAuthStore.getState().activeWorkspaceId ?? s.active_workspace_id,
+      s.active_workspace_id,
       s.permissions?.granted ?? null,
       s.permissions?.menus ?? []
     )
@@ -209,14 +209,17 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
       setAuth(account!, tenant.tenant_id, tenants, undefined)
       // 新会话 granted 用于判断「当前页在目标租户是否可访问」——故 await 后再决定跳转（原为 fire-and-forget）
       let grantedNew: string[] = []
+      let newSessionWsId = ''
       try {
         const s = await getSession()
         applyRefreshedSession(s, tenant.tenant_id)
         grantedNew = s.permissions?.granted ?? []
+        newSessionWsId = s.active_workspace_id
       } catch (err) {
         console.warn('[permissions] 切换组织后会话重拉失败，使用本地矩阵回退', err)
       }
       queryClient.invalidateQueries({ queryKey: ['tenants'] })
+      queryClient.invalidateQueries({ queryKey: ['account-profile'] })
       ;(['api-keys', 'guardrails', 'observability', 'billing', 'referral', 'usage', 'logs'] as const)
         .forEach((k) => queryClient.removeQueries({ queryKey: [k] }))
       let defaultWs: { workspace_id: string; name?: string } | undefined
@@ -226,7 +229,14 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
           queryFn: () => listWorkspaces(),
           staleTime: 0,
         })
-        defaultWs = wsItems.find((w) => w.is_default) ?? wsItems[0]
+        // 优先用新会话下发的落点（后端已按账号在该企业的默认偏好算过）；
+        // 会话重拉失败（newSessionWsId 为空）才退回结构默认空间。
+        // 注意别写成 `newSessionWsId && find(...)`：空串是 falsy 但不是 undefined，
+        // ?? 不会兜底，defaultWs 会变成 '' 导致活跃空间被清空。
+        const fromSession = newSessionWsId
+          ? wsItems.find((w) => w.workspace_id === newSessionWsId)
+          : undefined
+        defaultWs = fromSession ?? wsItems.find((w) => w.is_default) ?? wsItems[0]
         setActiveWorkspaceId(defaultWs?.workspace_id ?? '')
       } catch {
         setActiveWorkspaceId('')

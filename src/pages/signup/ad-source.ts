@@ -27,6 +27,7 @@ export type AdSourceFields = Partial<Record<(typeof AD_SOURCE_KEYS)[number], str
 const AD_SOURCE_SESSION_KEY = 'mg_ad_source'
 const MAX_VALUE_LENGTH = 200
 const MAX_AGE_MS = 24 * 60 * 60 * 1000
+const PLACEHOLDER_ORIGIN = 'https://placeholder.invalid'
 
 /** 从 query 里挑出广告来源字段，空值与未知键丢弃，值截断到 200 字符。 */
 export function adSourceFromSearchParams(searchParams: URLSearchParams): AdSourceFields {
@@ -52,9 +53,11 @@ function sanitizeAdSource(raw: unknown): AdSourceFields | undefined {
 /** 只解析站内相对路径的 redirect（以单个 / 开头），外域或协议相对地址一律忽略。 */
 function adSourceFromRedirect(searchParams: URLSearchParams): AdSourceFields {
   const redirect = searchParams.get('redirect')
-  if (!redirect || !redirect.startsWith('/') || redirect.startsWith('//')) return {}
+  if (!redirect || !redirect.startsWith('/') || redirect.startsWith('//') || redirect.includes('\\')) return {}
   try {
-    return adSourceFromSearchParams(new URL(redirect, 'https://placeholder.invalid').searchParams)
+    const url = new URL(redirect, PLACEHOLDER_ORIGIN)
+    if (url.origin !== PLACEHOLDER_ORIGIN) return {}
+    return adSourceFromSearchParams(url.searchParams)
   } catch {
     return {}
   }

@@ -155,20 +155,6 @@
       "audio": "Audio (MP3/WAV/M4A/OGG/WebM, ≤25MB)",
       "video": "Video (MP4/WebM/MOV, ≤100MB)"
     },
-    "samplePrompts": {
-      "compare": {
-        "label": "Compare models",
-        "prompt": "Help me compare three models suited for enterprise knowledge-base Q&A, focusing on cost, context length, and stability."
-      },
-      "explain": {
-        "label": "Explain a concept",
-        "prompt": "Explain in one paragraph to a non-technical colleague what a model gateway is and what problem it solves."
-      },
-      "translate": {
-        "label": "Formal translation",
-        "prompt": "Translate this into English in a formal tone: We're holding a product review meeting at 10am next Wednesday, please attend on time."
-      }
-    },
     "apiModal": {
       "title": "API call for {{name}}",
       "getApiKey": "Get API Key",

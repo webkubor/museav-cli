@@ -18,13 +18,28 @@
          （owner 2026-09-17：只要对外的门户都需要加）。
 
          与站内 @model-go/track 是两条线：track 报自有后端，这条报 Google。
-         别用 track 去封装它，也别把两者的事件名混在一起。 -->
+         别用 track 去封装它，也别把两者的事件名混在一起。
+
+         linker.domains 是跨域衡量（cross-domain measurement）的握手名单，控制台这端
+         尤其不能少：官网是转化漏斗的入口、控制台是出口，不配的话用户从 modelgo.ai
+         点进 console.modelgo.ai 会被 GA4 算成两个访客的两次会话，而且控制台这一跳的
+         来源被改写成 "modelgo.ai / referral" —— 广告与自然搜索的原始来源在跨域那一刻
+         丢失，投放花的钱归因不到注册。
+         跨域衡量是**双向握手**：只有官网单边配、控制台不认，链路照样断，所以四端
+         （国内外官网 + 本控制台的 cn/intl 两个域名）必须写同一份名单。
+         本仓一份 index.html 同时发 console.modelgo.com 与 console.modelgo.ai，
+         名单里两个域名都要在。 -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-WCEKH5ZZEH"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'G-WCEKH5ZZEH');
+      gtag('config', 'G-WCEKH5ZZEH', {
+        linker: {
+          domains: ['modelgo.ai', 'console.modelgo.ai', 'modelgo.com', 'console.modelgo.com'],
+          accept_incoming: true
+        }
+      });
     </script>
     <script>
       // PWA 下线迁移：历史版本给用户浏览器装过 ServiceWorker，不清会一直由旧 SW

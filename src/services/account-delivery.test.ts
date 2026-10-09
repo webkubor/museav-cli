@@ -21,11 +21,12 @@ describe('account API contracts #1092 #1093 #1097', () => {
     await changePassword({ new_password: 'Newpassw0rd!' })
     expect(http.post).toHaveBeenCalledWith('account/password', { new_password: 'Newpassw0rd!' })
   })
-  it('forwards both factors and attribution to atomic login without verifying first', async () => {
-    await emailCodeLoginRegister('fixture@example.invalid', '123456', 'fresh-captcha', 'REF', 'INVITE', '654321')
+  it('forwards the email code, captcha and attribution to atomic login without verifying first', async () => {
+    await emailCodeLoginRegister('fixture@example.invalid', '123456', 'fresh-captcha', 'REF', 'INVITE')
     expect(http.post).toHaveBeenCalledExactlyOnceWith('auth/email-code/login', {
-      email: 'fixture@example.invalid', code: '123456', captcha_verify_param: 'fresh-captcha', referral_code: 'REF', invitation_token: 'INVITE', totp: '654321',
+      email: 'fixture@example.invalid', code: '123456', captcha_verify_param: 'fresh-captcha', referral_code: 'REF', invitation_token: 'INVITE',
     })
+    expect(http.post.mock.calls[0][1]).not.toHaveProperty('totp')
   })
   it('omits absent optional factors and retains send endpoint for existing users', async () => {
     await emailCodeLoginRegister('fixture@example.invalid', '123456', 'fresh-captcha')

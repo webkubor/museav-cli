@@ -47,3 +47,8 @@ dist-ssr
 # QA / agent 的取证截图（browser-harness 截的验收图），只在本地留档，不进仓库。
 # 2026-09-17：V1.0.6 期间被一次 `git add -A` 误提交了 812K 进来，清掉并挡住。
 .evidence/
+
+# 同上：agent 跑浏览器验证的产物落点（lite-browser / ui-runtime-audit 的截图等）。
+# 2026-10-09：prd46#1215 验收留下 output/test-artifacts/*.png 共 3.1M 浮在工作区。
+# 与 .evidence/ 同类，一并挡住 —— 这类取证图只在单子 note 里引用，不该进仓库。
+output/

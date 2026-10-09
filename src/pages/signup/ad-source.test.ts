@@ -34,6 +34,7 @@ describe('ad-source', () => {
   it('does not unwrap external redirect targets', () => {
     expect(resolveAdSource(new URLSearchParams({ redirect: 'https://evil.example/?gclid=x' }))).toBeUndefined()
     expect(resolveAdSource(new URLSearchParams({ redirect: '//evil.example/?gclid=x' }))).toBeUndefined()
+    expect(resolveAdSource(new URLSearchParams({ redirect: '/\\evil.example/?gclid=x' }))).toBeUndefined()
   })
 
   it('returns undefined when nothing was ever captured', () => {

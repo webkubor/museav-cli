@@ -21,6 +21,21 @@ describe('ad-source', () => {
     expect(resolveAdSource(sp)).toEqual({ utm_campaign: 'c7' })
   })
 
+  it('ignores persisted records older than 24h', () => {
+    resolveAdSource(new URLSearchParams('gclid=old'), 1_000)
+    expect(resolveAdSource(new URLSearchParams(''), 1_000 + 24 * 60 * 60 * 1000)).toBeUndefined()
+  })
+
+  it('drops tampered persisted fields that are not whitelisted strings', () => {
+    sessionStorage.setItem('mg_ad_source', JSON.stringify({ captured_at: Date.now(), fields: { gclid: 'ok', evil: 'x', utm_source: 42 } }))
+    expect(resolveAdSource(new URLSearchParams(''))).toEqual({ gclid: 'ok' })
+  })
+
+  it('does not unwrap external redirect targets', () => {
+    expect(resolveAdSource(new URLSearchParams({ redirect: 'https://evil.example/?gclid=x' }))).toBeUndefined()
+    expect(resolveAdSource(new URLSearchParams({ redirect: '//evil.example/?gclid=x' }))).toBeUndefined()
+  })
+
   it('returns undefined when nothing was ever captured', () => {
     expect(resolveAdSource(new URLSearchParams('aff=CN1'))).toBeUndefined()
   })

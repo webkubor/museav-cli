@@ -20,6 +20,7 @@ const quote = (amount: string, bonus: string, extra: Record<string, unknown> = {
 const toastSuccess = vi.fn()
 const toastError = vi.fn()
 const useWechatPayeeMock = vi.hoisted(() => vi.fn<() => string>(() => '杭州词元共生科技有限公司'))
+const useCurrencyMock = vi.hoisted(() => vi.fn<() => { currency: string; symbol: string }>(() => ({ currency: 'CNY', symbol: '¥' })))
 
 vi.mock('@/services/billing', () => ({
   createRecharge: (tenantId: string, body: unknown) => createRecharge(tenantId, body),
@@ -29,7 +30,7 @@ vi.mock('@/services/billing', () => ({
 vi.mock('@/lib/track', () => ({ trackEvent: (...args: unknown[]) => trackEvent(...args) }))
 
 vi.mock('@/hooks/use-platform-config', () => ({
-  useCurrency: () => ({ currency: 'CNY', symbol: '¥' }),
+  useCurrency: () => useCurrencyMock(),
   useEnabledChannels: () => ['wechat'],
   useWechatPayee: () => useWechatPayeeMock(),
 }))
@@ -96,6 +97,7 @@ async function clickPay(name: string) {
 
 describe('TopUpModal', () => {
   beforeEach(() => {
+    useCurrencyMock.mockReturnValue({ currency: 'CNY', symbol: '¥' })
     createRecharge.mockReset().mockResolvedValue({
       order_no: 'WX202606100001',
       status: 'pending',
@@ -204,13 +206,50 @@ describe('TopUpModal', () => {
     expect(screen.getByRole('button', { name: '前往支付 ¥888' })).toBeInTheDocument()
   })
 
-  // ─── prd46#1240 首冲赠金 ───
-  it('renders six presets and no bonus promise when the quote API is not live yet', async () => {
+  it('caps server-returned CNY presets at five and keeps custom sixth (#1260)', async () => {
+    const configured = ['10', '50', '100', '500', '1000', '5000', '10000']
+    quoteRecharges.mockReset().mockResolvedValue({
+      items: configured.map((amount) => quote(amount, '0')),
+    })
     renderModal()
-    for (const label of ['¥10', '¥50', '¥100', '¥500', '¥1,000', '¥5,000']) {
+    await waitFor(() => expect(quoteRecharges).toHaveBeenCalled())
+    expect(quoteRecharges).toHaveBeenCalledWith('tnt_1', { currency: 'CNY', amounts: ['10', '50', '100', '500', '1000'] })
+    for (const label of ['¥10', '¥50', '¥100', '¥500', '¥1,000']) {
       expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
     }
+    expect(screen.queryByRole('button', { name: '¥5,000' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '¥10,000' })).not.toBeInTheDocument()
+    const cards = document.querySelectorAll('.billing-recharge-presets > button')
+    expect(cards).toHaveLength(6)
+    expect(cards[5]).toHaveTextContent('自定义额度')
+  })
+
+  it('keeps USD at five presets with custom amount sixth (#1260)', async () => {
+    useCurrencyMock.mockReturnValue({ currency: 'USD', symbol: '$' })
+    renderModal()
+    for (const label of ['$0.1', '$5', '$10', '$100', '$500']) {
+      expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
+    }
+    await waitFor(() => expect(quoteRecharges).toHaveBeenCalledWith('tnt_1', {
+      currency: 'USD', amounts: ['0.1', '5', '10', '100', '500'],
+    }))
+    const cards = document.querySelectorAll('.billing-recharge-presets > button')
+    expect(cards).toHaveLength(6)
+    expect(cards[5]).toHaveTextContent('自定义额度')
+  })
+
+  // ─── prd46#1240 首冲赠金 ───
+  it('limits CNY to five presets and places custom amount sixth (#1260)', async () => {
+    renderModal()
+    for (const label of ['¥10', '¥50', '¥100', '¥500', '¥1,000']) {
+      expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
+    }
+    expect(screen.queryByRole('button', { name: '¥5,000' })).not.toBeInTheDocument()
+    const cards = document.querySelectorAll('.billing-recharge-presets > button')
+    expect(cards).toHaveLength(6)
+    expect(cards[5]).toHaveTextContent('自定义额度')
     await waitFor(() => expect(screen.getByRole('button', { name: '前往支付 ¥500' })).toBeEnabled())
+    expect(quoteRecharges).toHaveBeenCalledWith('tnt_1', { currency: 'CNY', amounts: ['10', '50', '100', '500', '1000'] })
     expect(screen.queryByText(/首冲加赠/)).not.toBeInTheDocument()
     expect(screen.queryByText(/送 ¥/)).not.toBeInTheDocument()
     expect(screen.queryByText('首冲赠金 · 赠送余额')).not.toBeInTheDocument()
@@ -224,7 +263,7 @@ describe('TopUpModal', () => {
     vi.spyOn(window, 'open').mockReturnValue(paymentWindow)
 
     renderModal()
-    expect(await screen.findByText('首冲加赠，最高送 ¥500')).toBeInTheDocument()
+    expect(await screen.findByText('首冲加赠，最高送 ¥100')).toBeInTheDocument()
     expect(screen.getByText('送 ¥50 · 到账 ¥550')).toBeInTheDocument()
     // ¥10 未命中梯度：不展示赠金
     expect(screen.queryByText(/送 ¥0/)).not.toBeInTheDocument()

@@ -29,11 +29,17 @@ const validReferralCode = (code: string | null | undefined) => (code && REFERRAL
 
 /** 解析邀请码：URL 命中即持久化并返回；否则回退 sessionStorage 里上次持久化的值。 */
 export function resolveReferralCode(searchParams: URLSearchParams): string {
-  const fromUrl = validReferralCode(referralCodeFromSearchParams(searchParams))
+  const rawFromUrl = referralCodeFromSearchParams(searchParams)
+  const fromUrl = validReferralCode(rawFromUrl)
   try {
     if (fromUrl) {
       sessionStorage.setItem(REFERRAL_CODE_SESSION_KEY, fromUrl)
       return fromUrl
+    }
+    // URL 带了码但格式无效：以本次链接为准，清掉旧缓存，不回退到上一个推荐人
+    if (rawFromUrl) {
+      sessionStorage.removeItem(REFERRAL_CODE_SESSION_KEY)
+      return ''
     }
     return validReferralCode(sessionStorage.getItem(REFERRAL_CODE_SESSION_KEY))
   } catch {

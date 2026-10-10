@@ -34,6 +34,15 @@ describe('oauthAuthorizeUrl attribution passthrough', () => {
     expect(new URL(oauthAuthorizeUrl('google', '/')).searchParams.has('referral_code')).toBe(false)
   })
 
+  it('an invalid referral in the URL clears the previously cached one', () => {
+    setSearch('?aff=OLD-1')
+    oauthAuthorizeUrl('google', '/')
+    setSearch('?aff=%3Cbad%3E')
+    expect(new URL(oauthAuthorizeUrl('google', '/')).searchParams.has('referral_code')).toBe(false)
+    setSearch('')
+    expect(new URL(oauthAuthorizeUrl('google', '/')).searchParams.has('referral_code')).toBe(false)
+  })
+
   it('falls back to the session-persisted ad source after the URL lost it', () => {
     setSearch('?gclid=persisted')
     oauthAuthorizeUrl('google', '/')

@@ -39,6 +39,11 @@ describe('oauthAuthorizeUrl attribution passthrough', () => {
     oauthAuthorizeUrl('google', '/')
     setSearch('?aff=%3Cbad%3E')
     expect(new URL(oauthAuthorizeUrl('google', '/')).searchParams.has('referral_code')).toBe(false)
+    // 空值 ?aff= 同样以本次链接为准
+    setSearch('?aff=OLD-2')
+    oauthAuthorizeUrl('google', '/')
+    setSearch('?aff=')
+    expect(new URL(oauthAuthorizeUrl('google', '/')).searchParams.has('referral_code')).toBe(false)
     setSearch('')
     expect(new URL(oauthAuthorizeUrl('google', '/')).searchParams.has('referral_code')).toBe(false)
   })

@@ -36,8 +36,8 @@ export function resolveReferralCode(searchParams: URLSearchParams): string {
       sessionStorage.setItem(REFERRAL_CODE_SESSION_KEY, fromUrl)
       return fromUrl
     }
-    // URL 带了码但格式无效：以本次链接为准，清掉旧缓存，不回退到上一个推荐人
-    if (rawFromUrl) {
+    // URL 带了推荐参数（含空值 ?aff=）但不合法：以本次链接为准，清掉旧缓存，不回退到上一个推荐人
+    if (rawFromUrl || searchParams.has('aff') || searchParams.has('ref')) {
       sessionStorage.removeItem(REFERRAL_CODE_SESSION_KEY)
       return ''
     }

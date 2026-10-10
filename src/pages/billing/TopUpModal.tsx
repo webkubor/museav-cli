@@ -1,7 +1,8 @@
-import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useRef, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { createRecharge } from '@/services/billing'
+import { createRecharge, quoteRecharges, type RechargeQuote } from '@/services/billing'
+import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import { useCurrency, useEnabledChannels, useWechatPayee } from '@/hooks/use-platform-config'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PERMS } from '@/config/permissions'
@@ -16,6 +17,31 @@ import {
 } from '@/constants/recharge-channels'
 import { BRAND_COLORS } from '@/constants/brand-colors'
 import { amountBand } from './billing-tracking'
+import {
+  findQuote,
+  hasBonus,
+  isQuoteUnavailableError,
+  quoteChanged,
+  quoteStatusOf,
+  sameAmount,
+  type QuoteStatus,
+} from './recharge-quote'
+
+import { LuGift } from 'react-icons/lu'
+
+/**
+ * 推荐档位（只是快捷入口，赠金以服务端报价为准）。
+ * 国际站 USD 对齐 PRD 原型 BillingRechargeModal（modelgo_prd 954612b）：5 档 + 「自定义额度」卡；
+ * 国内站 CNY 沿用 PRD《首冲赠金活动与梯度配置》§4 的推荐档位。
+ */
+const PRESETS_BY_CURRENCY: Record<string, string[]> = {
+  USD: ['0.1', '5', '10', '100', '500'],
+  CNY: ['10', '50', '100', '500', '1000', '5000'],
+}
+const DEFAULT_AMOUNT_BY_CURRENCY: Record<string, string> = { USD: '10', CNY: '500' }
+/** 最低充值额：国际站 $0.10（原型 + prd46#1232），国内站沿用 ≥ ¥0.01 */
+const MIN_AMOUNT_BY_CURRENCY: Record<string, number> = { USD: 0.1, CNY: 0.01 }
+const AMOUNT_PATTERN = /^\d+(?:\.\d{1,2})?$/
 
 function buildWechatCashierURL(params: {
   qrCodeUrl: string
@@ -47,11 +73,18 @@ interface TopUpModalProps {
 export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
-  // #1192：原型默认选中面额 500，此前写死 100
-  const [amount, setAmount] = useState('500')
-  const [customMode, setCustomMode] = useState(false)
 
   const { currency, symbol: currencySymbol } = useCurrency()
+  const PRESETS = PRESETS_BY_CURRENCY[currency] ?? PRESETS_BY_CURRENCY.CNY
+  const minAmount = MIN_AMOUNT_BY_CURRENCY[currency] ?? 0.01
+  // 选中项：某个预设金额，或「自定义额度」卡（原型交互：选中自定义卡才出现输入框）
+  const [selected, setSelected] = useState<string>(() => DEFAULT_AMOUNT_BY_CURRENCY[currency] ?? '500')
+  const [customInput, setCustomInput] = useState('')
+  const customMode = selected === 'custom'
+  const amount = customMode ? customInput : selected
+  const numAmount = Number(amount)
+  const isAmountValid = AMOUNT_PATTERN.test(amount) && Number.isFinite(numAmount) && numAmount >= minAmount
+
   const enabledChannels = useEnabledChannels()
   const wechatPayee = useWechatPayee()
   // 提交处兜底权限（弹窗是全局单挂载点，多入口共用它）：无 billing.recharge:create 不得下单，
@@ -68,23 +101,121 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
     CHANNELS.some((c) => c.value === channel) ? channel : (CHANNELS[0]?.value ?? 'alipay')
   ) as RechargePaymentChannel
 
-  const PRESETS = ['100', '500', '1000', '5000']
+  // ─── 首冲赠金报价（prd46#1240）：打开弹框即取预设档报价；自定义金额防抖后单独报价 ───
+  const quoteEnabled = visible && canRecharge && !!tenantId
+  const presetQuotes = useQuery({
+    queryKey: ['recharge-quotes', tenantId, currency, PRESETS.join(',')],
+    queryFn: () => quoteRecharges(tenantId, { currency, amounts: PRESETS }),
+    enabled: quoteEnabled,
+    retry: false,
+    staleTime: 0,
+  })
+  const presetStatus: QuoteStatus = quoteStatusOf(presetQuotes)
+  // 接口不存在 = 后端未上线：整个赠金能力关闭，弹框只做普通充值，不做任何赠金承诺
+  const quoteUnavailable = presetStatus === 'unavailable'
+
+  const debouncedCustom = useDebouncedValue(customInput, 400)
+  const customValid = customMode && isAmountValid && debouncedCustom === customInput
+  const customQuote = useQuery({
+    queryKey: ['recharge-quote', tenantId, currency, debouncedCustom],
+    queryFn: () => quoteRecharges(tenantId, { currency, amounts: [debouncedCustom] }),
+    enabled: quoteEnabled && !quoteUnavailable && customValid,
+    retry: false,
+    staleTime: 0,
+  })
+
+  // 加载中一律不展示旧值（react-query 重取期间仍保留上次 data）
+  const presetItems = presetQuotes.isFetching ? undefined : presetQuotes.data?.items
+  const currentStatus: QuoteStatus = quoteUnavailable
+    ? 'unavailable'
+    : !customMode
+      ? presetStatus
+      : customValid ? quoteStatusOf(customQuote) : 'loading'
+  const currentQuote: RechargeQuote | undefined = quoteUnavailable
+    ? undefined
+    : !customMode
+      ? findQuote(presetItems, amount)
+      : customQuote.isFetching ? undefined : findQuote(customQuote.data?.items, amount)
+  // 首冲资格：服务端说有资格且活动生效（原型 firstRechargeEligible）
+  const eligible = !quoteUnavailable && !!presetItems?.some((q) => q.eligible && q.activity_active)
+  const maxPresetBonus = (presetItems ?? []).filter((q) => hasBonus(q)).reduce((m, q) => Math.max(m, Number(q.bonus_amount)), 0)
+
+  // 复校验发现报价变化时置位：本次不下单，展示新报价，用户再点一次才提交
+  const [quoteChangedNotice, setQuoteChangedNotice] = useState(false)
+  const [requoting, setRequoting] = useState(false)
+
+  const handleClose = () => {
+    setQuoteChangedNotice(false)
+    onClose()
+  }
+
+  // #1241 recharge_dialog_view：每次打开、首屏报价落定后记一次
+  const viewTracked = useRef(false)
+  useEffect(() => {
+    if (!visible) {
+      viewTracked.current = false
+      return
+    }
+    if (viewTracked.current || presetStatus === 'loading') return
+    viewTracked.current = true
+    trackEvent('recharge_dialog_view', {
+      activity_active: eligible,
+      default_amount: amount,
+      quote_status: presetStatus,
+    })
+  }, [visible, presetStatus, eligible, amount])
+
+  // #1241 recharge_custom_amount_valid：自定义金额输入停稳且通过校验后记一次（同值不重复）
+  const lastValidCustom = useRef('')
+  useEffect(() => {
+    if (!customValid || lastValidCustom.current === debouncedCustom) return
+    lastValidCustom.current = debouncedCustom
+    trackEvent('recharge_custom_amount_valid', { amount: debouncedCustom })
+  }, [customValid, debouncedCustom])
 
   const recharge = useMutation({
-    mutationFn: () =>
+    mutationFn: (quoteId: string | undefined) =>
       createRecharge(tenantId, {
         amount,
         currency,
         channel: effectiveChannel,
         return_url: window.location.href,
+        ...(quoteId ? { quote_id: quoteId } : {}),
       }),
     onError: (err: Error) => appToast.requestError(err, t('billing.rechargeModal.error')),
   })
 
-  const handleSubmit = () => {
-    if (!canRecharge) return
+  const handleSubmit = async () => {
+    if (!canRecharge || !isAmountValid) return
+    // 先同步开窗（在点击手势内），避免下面的 await 让浏览器拦截弹窗
     const paymentWindow = window.open('about:blank', '_blank')
     if (paymentWindow) paymentWindow.opener = null
+
+    // 下单前复校验：重新报价，资格或赠金变化时要求用户重新确认，不凭前端旧值下单
+    let quoteId: string | undefined
+    if (!quoteUnavailable) {
+      setRequoting(true)
+      try {
+        const fresh = findQuote((await quoteRecharges(tenantId, { currency, amounts: [amount] })).items, amount)
+        if (!quoteChangedNotice && quoteChanged(currentQuote, fresh)) {
+          paymentWindow?.close()
+          setQuoteChangedNotice(true)
+          presetQuotes.refetch()
+          if (customMode) customQuote.refetch()
+          return
+        }
+        quoteId = fresh?.quote_id
+      } catch (err) {
+        if (!isQuoteUnavailableError(err)) {
+          paymentWindow?.close()
+          appToast.error(t('billing.rechargeModal.quoteFailed'))
+          return
+        }
+      } finally {
+        setRequoting(false)
+      }
+    }
+    setQuoteChangedNotice(false)
 
     // §11.2 billing_recharge_submit：提交充值金额那一刻上报，amount_type 区分预设面额/自定义金额
     trackEvent('billing_recharge_submit', {
@@ -92,8 +223,15 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
       amount_type: customMode ? 'custom' : 'preset',
       pay_channel: effectiveChannel,
     })
+    // #1241 recharge_payment_submit：实付 / 赠金 / 渠道 / 报价状态
+    trackEvent('recharge_payment_submit', {
+      amount,
+      bonus_amount: hasBonus(currentQuote) ? currentQuote.bonus_amount : '0',
+      pay_channel: effectiveChannel,
+      quote_status: currentStatus,
+    })
 
-    recharge.mutate(undefined, {
+    recharge.mutate(quoteId, {
       onSuccess: (data) => {
         queryClient.invalidateQueries({ queryKey: ['balance', tenantId] })
         queryClient.invalidateQueries({ queryKey: ['billing', 'recharges', tenantId] })
@@ -116,7 +254,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
           appToast.error(t('billing.rechargeModal.error'))
           return
         }
-        onClose()
+        handleClose()
         appToast.success(t('billing.rechargeModal.success'))
         if (paymentWindow && !paymentWindow.closed) {
           paymentWindow.location.href = redirectURL
@@ -133,65 +271,149 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
     })
   }
 
-  const numAmount = parseFloat(amount) || 0
+  const quoteBlocking = !quoteUnavailable && isAmountValid && (currentStatus === 'loading' || currentStatus === 'error')
+  const fmt = (v: string | number) => formatMoney(v, currencySymbol)
+  const bonusShown = hasBonus(currentQuote) ? currentQuote.bonus_amount : '0'
+  const creditedShown = currentQuote ? currentQuote.credited_total : amount
+  const quotePending = eligible && isAmountValid && currentStatus === 'loading'
+  const retryQuote = () => (customMode ? customQuote.refetch() : presetQuotes.refetch())
+
+  const selectPreset = (p: string) => {
+    setSelected(p)
+    setQuoteChangedNotice(false)
+    // #1241 recharge_amount_select
+    trackEvent('recharge_amount_select', { amount: p, bonus_hit: hasBonus(findQuote(presetItems, p)), quote_status: presetStatus })
+  }
+
+  const cardClass = (active: boolean) => cn(
+    'rounded-md border py-2.5 px-2 cursor-pointer text-center transition-colors',
+    active
+      ? 'border-brand-base bg-brand-glow text-brand-base'
+      : 'border-mg-border text-mg-text-2 hover:text-mg-text-1 hover:border-brand-base/40'
+  )
 
   return (
     <Modal
       open={visible}
-      onClose={onClose}
+      onClose={handleClose}
       title={t('billing.rechargeModal.title')}
       className="modal-glow-flow"
     >
       <div className="billing-recharge-body space-y-5">
-        {/* 金额选择标签 */}
-        <div>
-          <div className="text-xs text-mg-text-3 font-bold mb-2.5 tracking-wider">{t('billing.rechargeModal.amount')}</div>
+        {/* 充值金额：标题 + 首冲加赠摘要（原型 billing-recharge-heading） */}
+        <section aria-labelledby="billing-recharge-amount-label">
+          <div className="flex items-center justify-between gap-2 mb-2.5">
+            <div id="billing-recharge-amount-label" className="text-xs text-mg-text-3 font-bold tracking-wider">{t('billing.rechargeModal.amount')}</div>
+            {eligible && maxPresetBonus > 0 && (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-brand-base">
+                <LuGift size={12} aria-hidden="true" />
+                {t('billing.rechargeModal.bonusSummary', { max: fmt(maxPresetBonus) })}
+              </span>
+            )}
+          </div>
           <div className="billing-recharge-presets grid grid-cols-3 gap-2">
             {PRESETS.map((p) => {
-              const active = amount === p && !customMode
+              const active = !customMode && sameAmount(selected, p)
+              const quote = findQuote(presetItems, p)
+              const line = hasBonus(quote)
+                ? t('billing.rechargeModal.bonusPreset', { bonus: fmt(quote.bonus_amount), total: fmt(quote.credited_total) })
+                : ''
               return (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => { setAmount(p); setCustomMode(false) }}
-                  className={cn(
-                    "rounded-md border py-2.5 cursor-pointer text-center",
-                    active
-                      ? "border-brand-base bg-brand-glow text-brand-base"
-                      : "border-mg-border text-mg-text-2 hover:text-mg-text-1 hover:border-brand-base/40"
-                  )}
-                >
+                <button key={p} type="button" aria-pressed={active} onClick={() => selectPreset(p)} className={cardClass(active)}>
                   {/* 需求方#433：面额加千分位（$1,000），符合海外金额阅读习惯 */}
-                  <span className={cn("text-[15px] font-bold font-mono", active && "text-brand-base")}>{formatMoney(p, currencySymbol)}</span>
+                  <strong className={cn('block text-[15px] font-bold font-mono', active && 'text-brand-base')}>{fmt(p)}</strong>
+                  {line && <span className="block mt-0.5 text-[11px] text-mg-text-3 truncate" title={line}>{line}</span>}
                 </button>
               )
             })}
+            {/* 原型：第 6 张「自定义额度」卡，选中后才出现输入框 */}
+            <button type="button" aria-pressed={customMode} onClick={() => { setSelected('custom'); setQuoteChangedNotice(false) }} className={cardClass(customMode)}>
+              <strong className={cn('block text-[14px] font-bold', customMode && 'text-brand-base')}>{t('billing.rechargeModal.customCard')}</strong>
+              <span className="block mt-0.5 text-[11px] text-mg-text-3">{t('billing.rechargeModal.customCardHint')}</span>
+            </button>
           </div>
-          {/* 自定义金额 */}
-          <div className="relative mt-2.5">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-mg-text-3 text-sm font-medium">{currencySymbol}</span>
-            <input
-              type="number"
-              min="1"
-              step="0.01"
-              // 需求方#903 复验⑤：输入框始终回填当前金额，点预设面额后能看见选了多少
-              // （PRD 原型 modelgo_prd/src/App.tsx 的充值弹窗就是 value={amount} 直绑）。
-              // customMode 退化成**纯埋点口径**——只标记「这个数是用户自己敲的」，不再控制显隐；
-              // 此前 value={customMode ? amount : ''} 让点了 ¥500 之后输入框空白，用户以为没选上。
-              value={amount}
-              // 不在 onFocus 里置 customMode：光点一下输入框不算改金额，否则预设选中态会平白丢掉、
-              // 埋点也会把 preset 误报成 custom。真正敲了字才在 onChange 里翻牌。
-              onChange={(e) => {
-                // qa#282：金额最多两位小数（法币最小单位是分），禁止 0.001 这类超精度输入
-                const sanitized = e.target.value.match(/^\d*\.?\d{0,2}/)?.[0] ?? e.target.value
-                setAmount(sanitized)
-                setCustomMode(true)
-              }}
-              className="w-full h-10 pl-7 pr-3 rounded-md border border-mg-border bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-brand-base/40 focus:border-brand-base transition-all font-semibold font-mono text-mg-text-1"
-              placeholder={t('billing.rechargeModal.customAmount')}
-            />
-          </div>
+          {customMode && (
+            <div className="relative mt-2.5">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-mg-text-3 text-sm font-medium" aria-hidden="true">{currencySymbol}</span>
+              <input
+                aria-label={t('billing.rechargeModal.customAmount')}
+                aria-invalid={!isAmountValid}
+                autoComplete="off"
+                autoFocus
+                inputMode="decimal"
+                type="number"
+                min={minAmount}
+                step="0.01"
+                value={customInput}
+                onChange={(e) => {
+                  // qa#282：金额最多两位小数（法币最小单位是分），禁止 0.001 这类超精度输入
+                  const sanitized = e.target.value.match(/^\d*\.?\d{0,2}/)?.[0] ?? e.target.value
+                  setCustomInput(sanitized)
+                  setQuoteChangedNotice(false)
+                }}
+                className="w-full h-10 pl-7 pr-3 rounded-md border border-mg-border bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-brand-base/40 focus:border-brand-base transition-all font-semibold font-mono text-mg-text-1"
+                placeholder={t('billing.rechargeModal.customAmount')}
+              />
+            </div>
+          )}
+          {presetStatus === 'error' && (
+            <div className="mt-2 flex items-center gap-2 text-xs text-mg-text-3">
+              <span>{t('billing.rechargeModal.quoteFailed')}</span>
+              <Button variant="link" size="sm" onClick={() => presetQuotes.refetch()}>{t('billing.rechargeModal.quoteRetry')}</Button>
+            </div>
+          )}
+        </section>
+
+        {/* 明细（原型 billing-recharge-breakdown）：支付 / 获得 两张卡 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5" aria-live="polite">
+          <section className="mg-tile p-3 space-y-1.5" aria-labelledby="billing-recharge-pay-title">
+            <h3 id="billing-recharge-pay-title" className="text-xs font-bold text-mg-text-3">{t('billing.rechargeModal.payTitle')}</h3>
+            <div className="flex justify-between text-xs text-mg-text-2">
+              <span>{t('billing.rechargeModal.amount')}</span>
+              <span className="font-mono">{isAmountValid ? fmt(amount) : '—'}</span>
+            </div>
+            <div className="flex justify-between text-sm text-mg-text-1">
+              <strong>{t('billing.rechargeModal.payTotal')}</strong>
+              <strong className="font-mono">{isAmountValid ? fmt(amount) : '—'}</strong>
+            </div>
+          </section>
+          <section className="mg-tile p-3 space-y-1.5" aria-labelledby="billing-recharge-get-title">
+            <h3 id="billing-recharge-get-title" className="text-xs font-bold text-mg-text-3">{t('billing.rechargeModal.getTitle')}</h3>
+            <div className="flex justify-between text-xs text-mg-text-2">
+              <span>{t('billing.rechargeModal.getMain')}</span>
+              <span className="font-mono">{isAmountValid ? fmt(amount) : '—'}</span>
+            </div>
+            {/* 赠金行：只在服务端确认有资格且活动生效时出现；加载中不展示旧值，失败可重试 */}
+            {eligible && (
+              <div className="flex justify-between items-center text-xs text-mg-text-2">
+                <span>{t('billing.rechargeModal.getBonus')}</span>
+                {currentStatus === 'error' && isAmountValid ? (
+                  <Button variant="link" size="sm" onClick={retryQuote}>{t('billing.rechargeModal.quoteRetry')}</Button>
+                ) : (
+                  <span className={cn('font-mono', Number(bonusShown) > 0 && 'text-brand-base font-semibold')}>
+                    {!isAmountValid ? '—' : quotePending ? t('billing.rechargeModal.quoteLoading') : `+${fmt(bonusShown)}`}
+                  </span>
+                )}
+              </div>
+            )}
+            <div className="flex justify-between text-sm text-mg-text-1">
+              <strong>{t('billing.rechargeModal.getTotal')}</strong>
+              <strong className="font-mono text-brand-base">
+                {!isAmountValid ? '—' : quotePending ? t('billing.rechargeModal.quoteLoading') : fmt(creditedShown)}
+              </strong>
+            </div>
+          </section>
         </div>
+        {!isAmountValid && (
+          <p className="text-xs text-mg-text-3" id="billing-recharge-input-hint">
+            {t('billing.rechargeModal.amountHint', { min: fmt(minAmount) })}
+          </p>
+        )}
+        {quoteChangedNotice && (
+          <div role="alert" className="text-xs font-medium text-mg-warning">
+            {t('billing.rechargeModal.quoteChanged')}
+          </div>
+        )}
 
         {/* 支付方式 */}
         <div>
@@ -231,17 +453,16 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
           </div>
         </div>
 
-        {/* 提交 */}
+        {/* 提交：按钮只显示实付金额，赠金不算进「前往支付」，避免误解为支付额 */}
         <Button
           variant="brand"
-          disabled={numAmount <= 0 || recharge.isPending || !canRecharge}
+          disabled={!isAmountValid || recharge.isPending || requoting || quoteBlocking || !canRecharge}
           onClick={handleSubmit}
           className="w-full h-11 text-sm font-bold rounded-md"
         >
-          {/* 需求方#432：币种符号跟随结算币种（此前文案里写死 ¥，国际站 USD 也显示人民币符号） */}
-          {recharge.isPending
+          {recharge.isPending || requoting
             ? t('billing.rechargeModal.submitting')
-            : t('billing.rechargeModal.submit', { amount: formatMoney(numAmount, currencySymbol) })
+            : t('billing.rechargeModal.submit', { amount: isAmountValid ? fmt(amount) : '' })
           }
         </Button>
       </div>

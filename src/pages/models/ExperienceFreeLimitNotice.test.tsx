@@ -27,7 +27,8 @@ describe('免费模型日限额提示条 · 场景三（#833）', () => {
     )
     expect(screen.getByText('今日免费调用已达上限')).toBeTruthy()
     expect(
-      screen.getByText('当前账户今日已使用 1,000 次免费模型调用，额度将于明日 00:00 恢复。你也可以切换至其他模型继续使用。', { exact: false }),
+      // #1215/#1231：日限额次数由后端配置（海外改为 50），文案不再写死次数
+      screen.getByText('额度将于明日 00:00 恢复。你也可以切换至其他模型继续使用。', { exact: false }),
     ).toBeTruthy()
     expect(screen.getByRole('button', { name: '查看用量' })).toBeTruthy()
   })

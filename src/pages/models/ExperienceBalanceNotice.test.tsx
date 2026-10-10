@@ -27,14 +27,14 @@ beforeAll(async () => {
 })
 
 describe('余额拦截提示条 · 两套文案逐字（#833）', () => {
-  it('免费模型走场景一：文案指向「主余额」，并点明赠送与奖励余额不计入（#1091）', () => {
+  it('免费模型（#1231 不再受余额限制）：只作后端 4032 兜底，文案中性且不引导充值', () => {
     render(<ExperienceBalanceNotice free lockedModelCount={1} />)
 
-    expect(screen.getByText('主余额不足，暂时无法使用免费模型')).toBeTruthy()
+    expect(screen.getByText('免费模型暂时不可用')).toBeTruthy()
     expect(
-      screen.getByText('免费模型不会扣费，但使用前主余额需大于 ¥0（赠送与奖励余额不计入）。充值后即可继续发送。', { exact: false }),
+      screen.getByText('本次免费模型调用暂未被放行，请稍后重试，或切换至其他模型继续使用。', { exact: false }),
     ).toBeTruthy()
-    expect(screen.getByRole('button', { name: '去充值' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: '去充值' })).toBeNull()
   })
 
   it('付费模型走场景二：另一套文案，且「已为你保留」后是句号不是逗号（原型口径 C6）', () => {

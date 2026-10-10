@@ -705,14 +705,14 @@ export interface BalanceSnapshot {
 }
 
 /**
- * 余额是否锁定该模型的发送（本地预判，后端 billing 闸门才是真源，快照未就绪时不拦、交给后端 4032 兜底）。
- * - 免费模型（shared/modelgo_prd#1091）：**只看主余额 > 0**，赠送 / 奖励余额不计入，负数同样拒；
- *   与 billing `checkFreeModelBalanceGate` 同口径（原 #833 口径是可消费合计 > 0，已收窄）。
+ * 余额是否锁定该模型的发送（本地预判，后端 billing 闸门才是真源，快照未就绪时不拦）。
+ * - 免费模型（shared/modelgo_prd#1231，1.0.8【all】）：**不再受余额限制**，仍受免费额度与限流约束。
+ *   原 #1091「主余额 > 0 才能用」已取消；后端未同步前若仍返回 4032，由 detectFreeModelGate 走现有提示兜底。
  * - 其它模型（#833 / §9.1）：可消费合计 > 0 才能发（#1104：现金欠款但赠金 / 奖励为正仍可用付费模型）。
  */
 export function isModelLockedByBalance(model: CatalogModelItem, balance: BalanceSnapshot): boolean {
-  const amount = isFreeModel(model) ? balance.main : balance.spendable
-  return amount !== undefined && amount <= 0
+  if (isFreeModel(model)) return false
+  return balance.spendable !== undefined && balance.spendable <= 0
 }
 
 export function isPaidModel(model: CatalogModelItem): boolean {

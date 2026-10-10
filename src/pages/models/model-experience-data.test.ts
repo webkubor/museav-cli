@@ -249,16 +249,14 @@ describe('estimateComposerSpend 预估费用口径（prd#851）', () => {
   })
 })
 
-describe('isModelLockedByBalance 余额锁口径（shared/modelgo_prd#1091）', () => {
+describe('isModelLockedByBalance 余额锁口径（shared/modelgo_prd#1231）', () => {
   const freeModel = { promotion: { free: true } } as unknown as Parameters<typeof isModelLockedByBalance>[0]
   const paidModel = { pricing: { input_per_1m: '1', output_per_1m: '2' } } as unknown as Parameters<typeof isModelLockedByBalance>[0]
 
-  it('免费模型只看主余额：主余额 0 + 赠送/奖励 > 0 ⇒ 锁', () => {
-    expect(isModelLockedByBalance(freeModel, { spendable: 100, main: 0 })).toBe(true)
-  })
-
-  it('免费模型：主余额为负同样锁（「不为 0」即 > 0）', () => {
-    expect(isModelLockedByBalance(freeModel, { spendable: 95, main: -5 })).toBe(true)
+  it('免费模型不再受余额限制：主余额 0 / 为负 / 合计为 0 都放行（#1231 取消 #1091 主余额锁）', () => {
+    expect(isModelLockedByBalance(freeModel, { spendable: 100, main: 0 })).toBe(false)
+    expect(isModelLockedByBalance(freeModel, { spendable: 95, main: -5 })).toBe(false)
+    expect(isModelLockedByBalance(freeModel, { spendable: 0, main: 0 })).toBe(false)
   })
 
   it('免费模型：主余额 > 0 放行', () => {

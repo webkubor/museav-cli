@@ -9,7 +9,10 @@ import { trackEvent } from '@/lib/track'
 
 vi.mock('@/lib/track', () => ({ trackEvent: vi.fn() }))
 
-/** 把当前地址换成给定 URL 并清掉上一次用例留下的待上报标记。 */
+const T0 = 1_760_000_000_000
+const MINUTE = 60 * 1000
+
+/** 把当前地址换成给定 URL。 */
 function goto(url: string) {
   window.history.replaceState(null, '', url)
 }
@@ -27,9 +30,9 @@ describe('新注册标记捕获与上报', () => {
 
   it('capture 只认显式 true，并把它从地址栏摘掉', () => {
     goto('/dashboard?foo=1&is_new_account=true&bar=2')
-    captureNewAccountFlag()
+    captureNewAccountFlag(T0)
     expect(window.location.search).toBe('?foo=1&bar=2')
-    flushNewAccountSignUp()
+    flushNewAccountSignUp(T0)
     expect(trackEvent).toHaveBeenCalledWith('sign_up', { method: 'oauth' }, { result: 'success' })
   })
 
@@ -38,38 +41,61 @@ describe('新注册标记捕获与上报', () => {
       vi.clearAllMocks()
       resetNewAccountStateForTest()
       goto(`/dashboard?is_new_account=${encodeURIComponent(value)}`)
-      captureNewAccountFlag()
+      captureNewAccountFlag(T0)
       expect(window.location.search).toBe('')
-      flushNewAccountSignUp()
+      flushNewAccountSignUp(T0)
       expect(trackEvent).not.toHaveBeenCalled()
     }
   })
 
   it('没有该参数时不动地址栏、不发事件', () => {
     goto('/dashboard?tab=usage')
-    captureNewAccountFlag()
+    captureNewAccountFlag(T0)
     expect(window.location.search).toBe('?tab=usage')
-    flushNewAccountSignUp()
+    flushNewAccountSignUp(T0)
     expect(trackEvent).not.toHaveBeenCalled()
   })
 
-  it('flush 只上报一次：重复调用不会重复记账', () => {
+  it('flush 幂等：调用几次都只上报一次（多条会话成功路径共用它）', () => {
     goto('/dashboard?is_new_account=true')
-    captureNewAccountFlag()
-    flushNewAccountSignUp()
-    flushNewAccountSignUp()
+    captureNewAccountFlag(T0)
+    flushNewAccountSignUp(T0)
+    flushNewAccountSignUp(T0)
+    flushNewAccountSignUp(T0)
     expect(trackEvent).toHaveBeenCalledTimes(1)
   })
 
   it('会话没成立（未 flush）就不上报，标记不会自己漏出去', () => {
     goto('/dashboard?is_new_account=true')
-    captureNewAccountFlag()
+    captureNewAccountFlag(T0)
+    expect(trackEvent).not.toHaveBeenCalled()
+  })
+
+  it('超过 5 分钟时效窗口的陈旧标记直接丢弃', () => {
+    goto('/dashboard?is_new_account=true')
+    captureNewAccountFlag(T0)
+    flushNewAccountSignUp(T0 + 5 * MINUTE + 1)
+    expect(trackEvent).not.toHaveBeenCalled()
+  })
+
+  it('恰好在窗口边界内仍然上报', () => {
+    goto('/dashboard?is_new_account=true')
+    captureNewAccountFlag(T0)
+    flushNewAccountSignUp(T0 + 5 * MINUTE)
+    expect(trackEvent).toHaveBeenCalledTimes(1)
+  })
+
+  it('过期被丢弃后再次 flush 也不会补发', () => {
+    goto('/dashboard?is_new_account=true')
+    captureNewAccountFlag(T0)
+    flushNewAccountSignUp(T0 + 6 * MINUTE)
+    flushNewAccountSignUp(T0 + 6 * MINUTE)
     expect(trackEvent).not.toHaveBeenCalled()
   })
 
   it('保留 hash 与其它查询参数，不做整串重写', () => {
     goto('/dashboard?redirect=%2Fusage&is_new_account=true#section-2')
-    captureNewAccountFlag()
+    captureNewAccountFlag(T0)
     expect(window.location.pathname).toBe('/dashboard')
     expect(window.location.search).toBe('?redirect=%2Fusage')
     expect(window.location.hash).toBe('#section-2')

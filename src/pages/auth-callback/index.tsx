@@ -9,6 +9,7 @@ import { appToast } from '@/lib/app-toast'
 import { trackEvent } from '@/lib/track'
 import { clearPersistedReferralCode } from '@/pages/signup/referral-code'
 import { clearPersistedAdSource } from '@/pages/signup/ad-source'
+import { flushNewAccountSignUp } from '@/lib/new-account'
 
 /** OAuth 登录/注册成功后清掉本标签页缓存的推荐码与广告来源，防止被后续登录串号归因（prd46#1242） */
 function clearPersistedAttribution() {
@@ -42,6 +43,9 @@ export default function AuthCallbackPage() {
           result.permissions?.granted ?? null
         )
         trackEvent('login_success', { method: 'oauth' }, { result: 'success' })
+        // 新注册补发 sign_up（prd#1242）：标记由 main.tsx 从回跳 URL 捕获，这里会话已成立。
+        // 与 AuthProvider 的首拉会话共用同一个幂等函数，谁先成功谁记账，不会重复也不会漏。
+        flushNewAccountSignUp()
         clearPersistedAttribution()
         void navigateAfterLogin(navigate, redirect)
       })
@@ -56,6 +60,7 @@ export default function AuthCallbackPage() {
             result.permissions?.granted ?? null
           )
           trackEvent('login_success', { method: 'oauth' }, { result: 'success' })
+          flushNewAccountSignUp()
           clearPersistedAttribution()
           void navigateAfterLogin(navigate, redirect)
         } catch {

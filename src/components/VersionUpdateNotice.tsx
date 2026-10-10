@@ -1,14 +1,19 @@
 /**
- * 检测到线上换版后短暂提示并自动刷新（qa#741）。挂在 App 根部，自身不渲染内容。
+ * 检测到线上换版后，在下一次路由切换时静默刷新（qa#741，口径对齐 prd#838）。
+ * 挂在 BrowserRouter 内，自身不渲染内容。
+ *
+ * 口径来自 prd#838「新版本发布不再弹窗提示，改为默认自动更新」：
+ *   · 不在前端显示任何提示（此前 toast + 1.5s 强刷与它冲突，已移除）；
+ *   · 刷新放在下一次路由切换，避免打断正在输入 / 流式生成的用户；
+ *     长时间停留同一页则保持旧版本直到切页。
+ * 检测本身（每 5 分钟轮询 /version.json）仍由 useLatestVersionCommit 负责。
  */
 import { useEffect, useRef } from 'react'
-import { toast } from '@/lib/toast'
+import { useLocation } from 'react-router-dom'
 import { reloadCurrentPage } from '@/lib/page-navigation'
 import { getRefreshAction, useLatestVersionCommit } from '@/lib/version-check'
 
 const PENDING_REFRESH_KEY = 'app-version-refresh-target'
-const REFRESH_DELAY_MS = 1500
-type ScheduledRefresh = { commit: string; timer: number }
 
 function readPendingRefresh(): string | null {
   try {
@@ -28,69 +33,32 @@ function writePendingRefresh(commit: string | null): boolean {
   }
 }
 
-/** 发现新版时提示用户并自动刷新；同一 commit 仅自动尝试一次。 */
+/** 发现新版后，在路由切换时静默刷新；同一 commit 仅自动尝试一次。 */
 export function VersionUpdateNotice() {
   const latestCommit = useLatestVersionCommit()
-  const scheduledRefresh = useRef<ScheduledRefresh | undefined>(undefined)
-  const effectGeneration = useRef(0)
+  const { pathname } = useLocation()
+  const lastPathname = useRef(pathname)
 
   useEffect(() => {
-    const generation = ++effectGeneration.current
-    if (!latestCommit) {
-      if (scheduledRefresh.current) {
-        window.clearTimeout(scheduledRefresh.current.timer)
-        scheduledRefresh.current = undefined
-        writePendingRefresh(null)
-      }
-      return
-    }
-
-    const cleanupScheduledRefresh = () => {
-      window.queueMicrotask(() => {
-        if (
-          effectGeneration.current !== generation ||
-          scheduledRefresh.current?.commit !== latestCommit
-        ) {
-          return
-        }
-        window.clearTimeout(scheduledRefresh.current.timer)
-        scheduledRefresh.current = undefined
-        writePendingRefresh(null)
-      })
-    }
-
-    if (scheduledRefresh.current?.commit === latestCommit) return cleanupScheduledRefresh
-    if (scheduledRefresh.current) {
-      window.clearTimeout(scheduledRefresh.current.timer)
-      scheduledRefresh.current = undefined
-      writePendingRefresh(null)
-    }
+    const routeChanged = lastPathname.current !== pathname
+    lastPathname.current = pathname
 
     const navigation = window.performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined
-    const navigationType = navigation?.type
-    const action = getRefreshAction(latestCommit, __BUILD_COMMIT__, readPendingRefresh(), navigationType)
+    const action = getRefreshAction(latestCommit, __BUILD_COMMIT__, readPendingRefresh(), navigation?.type)
+
+    // 已是最新（或线上没给 commit）：清掉上一次刷新留下的标记，不做任何事
     if (action === 'none') {
       writePendingRefresh(null)
       return
     }
-
-    if (action === 'already-attempted') {
-      toast.updateRefreshFailed()
-      return
-    }
-
-    if (!writePendingRefresh(latestCommit)) {
-      toast.updateRefreshFailed()
-      return
-    }
-    toast.updateRefreshing()
-    const timer = window.setTimeout(() => {
-      scheduledRefresh.current = undefined
-      reloadCurrentPage()
-    }, REFRESH_DELAY_MS)
-    scheduledRefresh.current = { commit: latestCommit, timer }
-    return cleanupScheduledRefresh
-  }, [latestCommit])
+    // 首次渲染 / 同一页内轮询到新版：只记着，不动用户正在用的页面
+    if (!routeChanged) return
+    // 同一新版刷新后仍拿到旧 bundle：停止重试，避免重载循环（按 prd#838 也不弹提示）
+    if (action === 'already-attempted') return
+    // 标记写不进去就不冒险刷新，否则无法防循环
+    if (!latestCommit || !writePendingRefresh(latestCommit)) return
+    reloadCurrentPage()
+  }, [latestCommit, pathname])
 
   return null
 }

@@ -1,5 +1,4 @@
 import { toast as sonnerToast } from 'sonner'
-import i18n from '@/i18n'
 
 // 相同 type+content 防重复
 const recentKeys = new Set<string>()
@@ -18,23 +17,6 @@ function formattedContent(description?: string) {
 }
 
 export const toast = {
-  /**
-   * 新版自动刷新提示（qa#741），固定 id 防止轮询产生重复提示。
-   */
-  updateRefreshing() {
-    sonnerToast.info(i18n.t('common.newVersionTitle'), {
-      id: 'app-version-update',
-      duration: 1800,
-      description: i18n.t('common.newVersionRefreshing'),
-    })
-  },
-  updateRefreshFailed() {
-    sonnerToast.warning(i18n.t('common.newVersionTitle'), {
-      id: 'app-version-update',
-      duration: Infinity,
-      description: i18n.t('common.newVersionRefreshFailed'),
-    })
-  },
   success(title: string, description?: string) {
     const key = `success:${title}`
     if (dedup(key)) return

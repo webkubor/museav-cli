@@ -64,6 +64,14 @@ function buildWechatCashierURL(params: {
   return url.toString()
 }
 
+/** 一次提交的不可变参数：复校验与下单必须是同一组金额/币种/渠道，避免等待期间被改动 */
+interface SubmitParams {
+  amount: string
+  currency: string
+  channel: RechargePaymentChannel
+  quoteId?: string
+}
+
 interface TopUpModalProps {
   visible: boolean
   onClose: () => void
@@ -174,38 +182,40 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
   }, [customValid, debouncedCustom])
 
   const recharge = useMutation({
-    mutationFn: (quoteId: string | undefined) =>
+    mutationFn: (p: SubmitParams) =>
       createRecharge(tenantId, {
-        amount,
-        currency,
-        channel: effectiveChannel,
+        amount: p.amount,
+        currency: p.currency,
+        channel: p.channel,
         return_url: window.location.href,
-        ...(quoteId ? { quote_id: quoteId } : {}),
+        ...(p.quoteId ? { quote_id: p.quoteId } : {}),
       }),
     onError: (err: Error) => appToast.requestError(err, t('billing.rechargeModal.error')),
   })
 
   const handleSubmit = async () => {
-    if (!canRecharge || !isAmountValid) return
+    if (!canRecharge || !isAmountValid || requoting) return
+    // 点击这一刻锁定提交参数；复校验期间金额/渠道控件也会禁用
+    const submit: SubmitParams = { amount, currency, channel: effectiveChannel }
+    const shownQuote = currentQuote
     // 先同步开窗（在点击手势内），避免下面的 await 让浏览器拦截弹窗
     const paymentWindow = window.open('about:blank', '_blank')
     if (paymentWindow) paymentWindow.opener = null
 
     // 下单前复校验：重新报价，资格或赠金变化时要求用户重新确认，不凭前端旧值下单
-    let quoteId: string | undefined
     if (!quoteUnavailable) {
       setRequoting(true)
       try {
-        const fresh = findQuote((await quoteRecharges(tenantId, { currency, amounts: [amount] })).items, amount)
+        const fresh = findQuote((await quoteRecharges(tenantId, { currency: submit.currency, amounts: [submit.amount] })).items, submit.amount)
         // 每次都比较展示值与最新报价：二次确认期间报价再变，也要再次确认，不能凭 notice 状态放行
-        if (quoteChanged(currentQuote, fresh)) {
+        if (quoteChanged(shownQuote, fresh)) {
           paymentWindow?.close()
           setQuoteChangedNotice(true)
           presetQuotes.refetch()
           if (customMode) customQuote.refetch()
           return
         }
-        quoteId = fresh?.quote_id
+        submit.quoteId = fresh?.quote_id
       } catch (err) {
         if (!isQuoteUnavailableError(err)) {
           paymentWindow?.close()
@@ -220,29 +230,29 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
 
     // §11.2 billing_recharge_submit：提交充值金额那一刻上报，amount_type 区分预设面额/自定义金额
     trackEvent('billing_recharge_submit', {
-      amount_band: amountBand(numAmount),
+      amount_band: amountBand(submit.amount),
       amount_type: customMode ? 'custom' : 'preset',
-      pay_channel: effectiveChannel,
+      pay_channel: submit.channel,
     })
     // #1241 recharge_payment_submit：实付 / 赠金 / 渠道 / 报价状态
     trackEvent('recharge_payment_submit', {
-      amount,
-      bonus_amount: hasBonus(currentQuote) ? currentQuote.bonus_amount : '0',
-      pay_channel: effectiveChannel,
+      amount: submit.amount,
+      bonus_amount: hasBonus(shownQuote) ? shownQuote.bonus_amount : '0',
+      pay_channel: submit.channel,
       quote_status: currentStatus,
     })
 
-    recharge.mutate(quoteId, {
+    recharge.mutate(submit, {
       onSuccess: (data) => {
         queryClient.invalidateQueries({ queryKey: ['balance', tenantId] })
         queryClient.invalidateQueries({ queryKey: ['billing', 'recharges', tenantId] })
 
-        const redirectURL = (effectiveChannel === 'wechat' || effectiveChannel === 'stripe_wechat') && data.payment.qr_code_url
+        const redirectURL = (submit.channel === 'wechat' || submit.channel === 'stripe_wechat') && data.payment.qr_code_url
           ? buildWechatCashierURL({
               qrCodeUrl: data.payment.qr_code_url,
               orderNo: data.order_no,
-              amount,
-              currency,
+              amount: submit.amount,
+              currency: submit.currency,
               payee: wechatPayee,
               returnTo: window.location.href,
               tenant: tenantId,
@@ -251,7 +261,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
         if (!redirectURL) {
           paymentWindow?.close()
           // 下单成功但拿不到支付跳转地址：视为提交侧失败，结果尚未同步到支付渠道
-          trackEvent('billing_recharge_result', { result: 'fail', failure_reason: 'missing_redirect_url', pay_channel: effectiveChannel })
+          trackEvent('billing_recharge_result', { result: 'fail', failure_reason: 'missing_redirect_url', pay_channel: submit.channel })
           appToast.error(t('billing.rechargeModal.error'))
           return
         }
@@ -267,11 +277,13 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
         paymentWindow?.close()
         // §11.2 billing_recharge_result：下单请求本身失败（跳支付渠道前），alipay/stripe 的渠道侧
         // 支付结果目前无回跳页可读取（现状缺口，非本单埋点范围），只有此处 + 微信收银台轮询能拿到结果
-        trackEvent('billing_recharge_result', { result: 'fail', failure_reason: err.message || 'create_recharge_failed', pay_channel: effectiveChannel })
+        trackEvent('billing_recharge_result', { result: 'fail', failure_reason: err.message || 'create_recharge_failed', pay_channel: submit.channel })
       },
     })
   }
 
+  // 复校验 / 下单进行中锁住金额与渠道，保证提交参数不变
+  const controlsLocked = requoting || recharge.isPending
   const quoteBlocking = !quoteUnavailable && isAmountValid && (currentStatus === 'loading' || currentStatus === 'error')
   const fmt = (v: string | number) => formatMoney(v, currencySymbol)
   const bonusShown = hasBonus(currentQuote) ? currentQuote.bonus_amount : '0'
@@ -287,7 +299,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
   }
 
   const cardClass = (active: boolean) => cn(
-    'rounded-md border py-2.5 px-2 cursor-pointer text-center transition-colors',
+    'rounded-md border py-2.5 px-2 cursor-pointer text-center transition-colors disabled:cursor-not-allowed disabled:opacity-60',
     active
       ? 'border-brand-base bg-brand-glow text-brand-base'
       : 'border-mg-border text-mg-text-2 hover:text-mg-text-1 hover:border-brand-base/40'
@@ -320,7 +332,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
                 ? t('billing.rechargeModal.bonusPreset', { bonus: fmt(quote.bonus_amount), total: fmt(quote.credited_total) })
                 : ''
               return (
-                <button key={p} type="button" aria-pressed={active} onClick={() => selectPreset(p)} className={cardClass(active)}>
+                <button key={p} type="button" aria-pressed={active} disabled={controlsLocked} onClick={() => selectPreset(p)} className={cardClass(active)}>
                   {/* 需求方#433：面额加千分位（$1,000），符合海外金额阅读习惯 */}
                   <strong className={cn('block text-[15px] font-bold font-mono', active && 'text-brand-base')}>{fmt(p)}</strong>
                   {line && <span className="block mt-0.5 text-[11px] text-mg-text-3 truncate" title={line}>{line}</span>}
@@ -328,7 +340,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
               )
             })}
             {/* 原型：第 6 张「自定义额度」卡，选中后才出现输入框 */}
-            <button type="button" aria-pressed={customMode} onClick={() => { setSelected('custom'); setQuoteChangedNotice(false) }} className={cardClass(customMode)}>
+            <button type="button" aria-pressed={customMode} disabled={controlsLocked} onClick={() => { setSelected('custom'); setQuoteChangedNotice(false) }} className={cardClass(customMode)}>
               <strong className={cn('block text-[14px] font-bold', customMode && 'text-brand-base')}>{t('billing.rechargeModal.customCard')}</strong>
               <span className="block mt-0.5 text-[11px] text-mg-text-3">{t('billing.rechargeModal.customCardHint')}</span>
             </button>
@@ -341,6 +353,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
                 aria-invalid={!isAmountValid}
                 autoComplete="off"
                 autoFocus
+                disabled={controlsLocked}
                 inputMode="decimal"
                 type="number"
                 min={minAmount}
@@ -430,6 +443,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
                 <button
                   key={c.value}
                   type="button"
+                  disabled={controlsLocked}
                   onClick={() => setChannel(c.value)}
                   className={cn(
                     "rounded-md border py-2.5 px-3 cursor-pointer",

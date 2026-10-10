@@ -278,6 +278,30 @@ describe('TopUpModal', () => {
     expect(createRecharge).not.toHaveBeenCalled()
   })
 
+  it('locks amount/channel controls while re-quoting so the order uses the clicked amount', async () => {
+    let release: () => void = () => {}
+    let n = 0
+    quoteRecharges.mockReset().mockImplementation(async (_t, body) => {
+      n += 1
+      // 第二次（下单前复校验）挂起，模拟慢请求
+      if (n === 2) await new Promise<void>((r) => { release = r })
+      return { items: body.amounts.map((a) => quote(a, String(Number(a) / 10))) }
+    })
+    const paymentWindow = { close: vi.fn(), closed: false, location: { href: '' } } as unknown as Window
+    vi.spyOn(window, 'open').mockReturnValue(paymentWindow)
+
+    renderModal()
+    await screen.findByText('送 ¥50 · 到账 ¥550')
+    await clickPay('前往支付 ¥500')
+    // 复校验进行中：金额卡被禁用，点了也不生效
+    const other = screen.getByRole('button', { name: /¥1,000/ })
+    expect(other).toBeDisabled()
+    fireEvent.click(other)
+    release()
+    await waitFor(() => expect(createRecharge).toHaveBeenCalled())
+    expect(createRecharge.mock.calls[0][1]).toMatchObject({ amount: '500', quote_id: 'q-500-50' })
+  })
+
   it('blocks ordering on a failed quote and lets the user retry', async () => {
     quoteRecharges.mockReset().mockRejectedValue(new Error('boom'))
     renderModal()

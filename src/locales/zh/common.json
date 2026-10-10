@@ -485,9 +485,6 @@
       "rulesLinkLabel": "查看分润规则",
       "copyInviteLinkAria": "复制邀请链接",
       "copyInviteCodeAria": "复制{{label}}"
-    },
-    "newVersionTitle": "有新版本可用",
-    "newVersionRefreshing": "正在自动刷新以使用最新版本…",
-    "newVersionRefreshFailed": "页面仍是旧版本，请手动刷新一次。"
+    }
   }
 }

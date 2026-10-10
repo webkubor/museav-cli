@@ -91,7 +91,8 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
   const queryClient = useQueryClient()
 
   const { currency, symbol: currencySymbol } = useCurrency()
-  const PRESETS = PRESETS_BY_CURRENCY[currency] ?? PRESETS_BY_CURRENCY.CNY
+  // #1260：两站最多五个快捷档位，下一格保留给自定义；报价与渲染共用裁剪后的列表。
+  const PRESETS = (PRESETS_BY_CURRENCY[currency] ?? PRESETS_BY_CURRENCY.CNY).slice(0, 5)
   const minAmount = MIN_AMOUNT_BY_CURRENCY[currency] ?? 0.01
   // 选中项：某个预设金额，或「自定义额度」卡（原型交互：选中自定义卡才出现输入框）
   const [selected, setSelected] = useState<string>(() => DEFAULT_AMOUNT_BY_CURRENCY[currency] ?? '500')

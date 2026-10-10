@@ -335,8 +335,11 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
     trackEvent('recharge_amount_select', { amount: p, bonus_hit: hasBonus(findQuote(presetItems, p)), quote_status: presetStatus })
   }
 
+  // 档位卡尺寸对齐 PRD 原型（redesign.css `.billing-recharge-presets button`：min-height 53px、
+  // 纵向居中、金额 + 赠金副行两行结构）。高度走控件档 token：原型 53px 落在本控制台的
+  // xl 控件档（56px），有副行/无副行的卡片等高，不会因为没赠金就矮一截（需求方 2026-10-10 反馈）。
   const cardClass = (active: boolean) => cn(
-    'rounded-md border py-2.5 px-2 cursor-pointer text-center transition-colors disabled:cursor-not-allowed disabled:opacity-60',
+    'flex min-h-[var(--mg-control-height-xl)] flex-col items-center justify-center rounded-md border py-2 px-2 cursor-pointer text-center transition-colors disabled:cursor-not-allowed disabled:opacity-60',
     active
       ? 'border-brand-base bg-brand-glow text-brand-base'
       : 'border-mg-border text-mg-text-2 hover:text-mg-text-1 hover:border-brand-base/40'
@@ -371,15 +374,15 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
               return (
                 <button key={p} type="button" aria-pressed={active} disabled={controlsLocked} onClick={() => selectPreset(p)} className={cardClass(active)}>
                   {/* 需求方#433：面额加千分位（$1,000），符合海外金额阅读习惯 */}
-                  <strong className={cn('block text-[15px] font-bold font-mono', active && 'text-brand-base')}>{fmt(p)}</strong>
-                  {line && <span className="block mt-0.5 text-[11px] text-mg-text-3 truncate" title={line}>{line}</span>}
+                  <strong className={cn('block text-base font-bold font-mono', active && 'text-brand-base')}>{fmt(p)}</strong>
+                  {line && <span className="block mt-0.5 text-xs text-mg-text-3 truncate" title={line}>{line}</span>}
                 </button>
               )
             })}
             {/* 原型：第 6 张「自定义额度」卡，选中后才出现输入框 */}
             <button type="button" aria-pressed={customMode} disabled={controlsLocked} onClick={() => { setSelected('custom'); setQuoteChangedNotice(false) }} className={cardClass(customMode)}>
-              <strong className={cn('block text-[14px] font-bold', customMode && 'text-brand-base')}>{t('billing.rechargeModal.customCard')}</strong>
-              <span className="block mt-0.5 text-[11px] text-mg-text-3">{t('billing.rechargeModal.customCardHint')}</span>
+              <strong className={cn('block text-sm font-bold', customMode && 'text-brand-base')}>{t('billing.rechargeModal.customCard')}</strong>
+              <span className="block mt-0.5 text-xs text-mg-text-3">{t('billing.rechargeModal.customCardHint')}</span>
             </button>
           </div>
           {customMode && (
@@ -415,8 +418,10 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
           )}
         </section>
 
-        {/* 明细（原型 billing-recharge-breakdown）：支付 / 获得 两张卡 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5" aria-live="polite">
+        {/* 明细（原型 billing-recharge-breakdown）：支付 / 获得 两张卡纵排。
+            原型 CSS 是单列 grid（无 grid-template-columns），此前实现成 sm 以上两列，
+            与原型不符（需求方 2026-10-10：「支付和到账总额纵向展示」）。 */}
+        <div className="grid grid-cols-1 gap-2.5" aria-live="polite">
           <section className="mg-tile p-3 space-y-1.5" aria-labelledby="billing-recharge-pay-title">
             <h3 id="billing-recharge-pay-title" className="text-xs font-bold text-mg-text-3">{t('billing.rechargeModal.payTitle')}</h3>
             <div className="flex justify-between text-xs text-mg-text-2">

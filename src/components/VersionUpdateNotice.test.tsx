@@ -32,14 +32,20 @@ function Nav() {
   return null
 }
 function mount(strict = false) {
-  const tree = (
+  const tree = () => (
     <MemoryRouter initialEntries={['/a']}>
       <Nav />
       <VersionUpdateNotice />
     </MemoryRouter>
   )
-  return render(strict ? <StrictMode>{tree}</StrictMode> : tree)
+  const wrap = () => (strict ? <StrictMode>{tree()}</StrictMode> : tree())
+  const view = render(wrap())
+  // 模拟 /version.json 的响应到达：改完 latestCommit 后重渲染（必须是新元素，否则 React 会跳过渲染）
+  return { ...view, responseArrived: () => view.rerender(wrap()) }
 }
+/** 整页刷新后的新文档：导航类型是 reload。 */
+const asReloadedDocument = () =>
+  vi.spyOn(window.performance, 'getEntriesByType').mockReturnValue([{ type: 'reload' } as PerformanceNavigationTiming])
 
 describe('VersionUpdateNotice（prd#838：静默、切页时刷新）', () => {
   beforeEach(() => {
@@ -112,5 +118,50 @@ describe('VersionUpdateNotice（prd#838：静默、切页时刷新）', () => {
     go('/b')
     expect(blocked.setItem).toHaveBeenCalledWith(KEY, 'new-commit')
     expect(reloadCurrentPage).not.toHaveBeenCalled()
+  })
+
+  // 真实时序：刷新后的新文档首次渲染时 /version.json 还没回来（latestCommit 为 undefined），
+  // 响应到达后才有值。上面几条防循环用例都是一上来就给好 latestCommit，覆盖不到这一步（#1255 验收项 5）。
+  it('新文档里 /version.json 还没回来时不清防循环标记；响应到达后仍是旧 bundle，切页不再重载', () => {
+    asReloadedDocument()
+    window.sessionStorage.setItem(KEY, 'new-commit')
+    latestCommit.current = undefined
+    const { responseArrived } = mount(true)
+    expect(window.sessionStorage.getItem(KEY)).toBe('new-commit')
+    latestCommit.current = 'new-commit'
+    responseArrived()
+    go('/b')
+    go('/c')
+    expect(reloadCurrentPage).not.toHaveBeenCalled()
+  })
+
+  it('响应到达后确认已是新版，才清掉刷新标记', () => {
+    asReloadedDocument()
+    window.sessionStorage.setItem(KEY, 'new-commit')
+    latestCommit.current = undefined
+    const { responseArrived } = mount()
+    expect(window.sessionStorage.getItem(KEY)).toBe('new-commit')
+    latestCommit.current = 'old-commit'
+    responseArrived()
+    expect(window.sessionStorage.getItem(KEY)).toBeNull()
+  })
+
+  it('完整链路：旧页切页刷新一次，刷新后仍是旧 bundle，之后无论切多少次页都不再刷新', () => {
+    const firstDocument = mount()
+    go('/b')
+    expect(reloadCurrentPage).toHaveBeenCalledOnce()
+    firstDocument.unmount()
+
+    // 整页刷新后的新文档：标记还在 sessionStorage，bundle 仍是旧的，/version.json 还没回来
+    asReloadedDocument()
+    latestCommit.current = undefined
+    const secondDocument = mount()
+    latestCommit.current = 'new-commit'
+    secondDocument.responseArrived()
+    go('/b')
+    go('/a')
+    go('/c')
+    expect(reloadCurrentPage).toHaveBeenCalledOnce()
+    expect(window.sessionStorage.getItem(KEY)).toBe('new-commit')
   })
 })

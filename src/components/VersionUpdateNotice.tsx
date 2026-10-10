@@ -46,9 +46,12 @@ export function VersionUpdateNotice() {
     const navigation = window.performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined
     const action = getRefreshAction(latestCommit, __BUILD_COMMIT__, readPendingRefresh(), navigation?.type)
 
-    // 已是最新（或线上没给 commit）：清掉上一次刷新留下的标记，不做任何事
+    // 已是最新（线上 commit 已拿到且与当前 bundle 一致，或线上没给 commit）：清掉上一次刷新留下的标记
+    // ⚠️ latestCommit 为 undefined 是「/version.json 还没回来」，不是「已是最新」：刷新后的新文档
+    // 首次渲染必然处在这个状态，此时清标记会把上一个文档刚写的防循环标记抹掉，刷新后仍拿到旧
+    // bundle（CDN / 边缘缓存 / SW）时每次切页都会再整页刷新一次（#1255 验收项 5）
     if (action === 'none') {
-      writePendingRefresh(null)
+      if (latestCommit !== undefined) writePendingRefresh(null)
       return
     }
     // 首次渲染 / 同一页内轮询到新版：只记着，不动用户正在用的页面

@@ -46,9 +46,11 @@ export function VersionUpdateNotice() {
     const navigation = window.performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined
     const action = getRefreshAction(latestCommit, __BUILD_COMMIT__, readPendingRefresh(), navigation?.type)
 
-    // 已是最新（或线上没给 commit）：清掉上一次刷新留下的标记，不做任何事
+    // 仅在已取得非空线上 commit 且与当前 bundle 一致时，清掉上次刷新标记。
+    // 请求未返回、失败或缺少 commit 都不能证明已更新；此时清标记会让旧 bundle
+    // 在之后每次切页时重复刷新（#1255 验收项 5）。
     if (action === 'none') {
-      writePendingRefresh(null)
+      if (latestCommit && latestCommit === __BUILD_COMMIT__) writePendingRefresh(null)
       return
     }
     // 首次渲染 / 同一页内轮询到新版：只记着，不动用户正在用的页面

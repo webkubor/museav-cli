@@ -306,12 +306,15 @@ describe('TopUpModal', () => {
 
   // prd46#1238：报价在复校验与下单之间过期/变化，后端下单返回 40912 + data.quote
   it('on 40912 shows the latest quote from data.quote and waits for the user to confirm again', async () => {
+    // 下单冲突之后，服务端报价也已是最新的 ¥20（与 data.quote 一致）
+    let conflicted = false
     quoteRecharges.mockReset().mockImplementation(async (_t, body) => ({
-      items: body.amounts.map((a) => quote(a, String(Number(a) / 10))),
+      items: body.amounts.map((a) => (conflicted && Number(a) === 500 ? quote(a, '20', { quote_id: 'q-new' }) : quote(a, String(Number(a) / 10)))),
     }))
-    createRecharge.mockReset().mockRejectedValueOnce(
-      apiError(40912, { quote: quote('500', '20', { quote_id: 'q-new' }) }),
-    )
+    createRecharge.mockImplementationOnce(async () => {
+      conflicted = true
+      throw apiError(40912, { quote: quote('500', '20', { quote_id: 'q-new' }) })
+    })
     const paymentWindow = { close: vi.fn(), closed: false, location: { href: '' } } as unknown as Window
     vi.spyOn(window, 'open').mockReturnValue(paymentWindow)
 
@@ -325,6 +328,11 @@ describe('TopUpModal', () => {
     // 报价冲突不弹「创建失败」
     expect(toastError).not.toHaveBeenCalled()
     expect(trackEvent).toHaveBeenCalledWith('billing_recharge_result', expect.objectContaining({ failure_reason: 'quote_changed' }))
+
+    // 用户确认后再点：复校验与展示一致，放行并带新 quote_id 下单
+    await clickPay('前往支付 ¥500')
+    await waitFor(() => expect(createRecharge).toHaveBeenCalledTimes(2))
+    expect(createRecharge.mock.calls[1][1]).toMatchObject({ amount: '500', quote_id: 'q-new' })
   })
 
   it('on 40912 without a usable data.quote falls back to re-quoting', async () => {

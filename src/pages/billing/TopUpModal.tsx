@@ -202,17 +202,25 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
     },
   })
 
-  /** 下单返回 40912：用 data.quote 换掉展示中的同金额报价；拿不到或金额对不上就重新报价 */
-  const applyConflictQuote = (err: unknown, submitAmount: string, custom: boolean) => {
+  /**
+   * 下单返回 40912：用 data.quote 换掉展示中的同金额报价；拿不到或金额对不上就重新报价。
+   * 先取消进行中的报价请求，免得旧请求晚到把新报价覆盖回去；资格 / 活动状态变了，
+   * 其余预设档的赠金也已失效（自定义金额时摘要同样读预设档），一并重新报价。
+   */
+  const applyConflictQuote = async (err: unknown, submitAmount: string, custom: boolean, shown?: RechargeQuote) => {
     const latest = quoteFromConflictError(err)
-    if (latest && sameAmount(latest.amount, submitAmount)) {
-      const patch = (old?: { items: RechargeQuote[] }) => (old ? { items: replaceQuote(old.items, latest) } : old)
-      queryClient.setQueryData(presetQuotesKey, patch)
-      if (custom) queryClient.setQueryData(customQuoteKey(submitAmount), patch)
+    if (!latest || !sameAmount(latest.amount, submitAmount)) {
+      presetQuotes.refetch()
+      if (custom) customQuote.refetch()
       return
     }
-    presetQuotes.refetch()
-    if (custom) customQuote.refetch()
+    const patch = (old?: { items: RechargeQuote[] }) => (old ? { items: replaceQuote(old.items, latest) } : old)
+    const targetKey = custom ? customQuoteKey(submitAmount) : presetQuotesKey
+    await queryClient.cancelQueries({ queryKey: targetKey, exact: true })
+    queryClient.setQueryData(targetKey, patch)
+    if (!shown || shown.eligible !== latest.eligible || shown.activity_active !== latest.activity_active) {
+      presetQuotes.refetch()
+    }
   }
 
   const handleSubmit = async () => {
@@ -300,7 +308,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
         paymentWindow?.close()
         if (isQuoteConflictError(err)) {
           setQuoteChangedNotice(true)
-          applyConflictQuote(err, submit.amount, submitCustom)
+          void applyConflictQuote(err, submit.amount, submitCustom, shownQuote)
           trackEvent('billing_recharge_result', { result: 'fail', failure_reason: 'quote_changed', pay_channel: submit.channel })
           return
         }

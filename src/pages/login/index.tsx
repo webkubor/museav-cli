@@ -29,6 +29,7 @@ import { throttleMessage } from '@/lib/auth/server-throttle'
 import { getRedirectTarget } from '@/lib/redirect'
 import { navigateAfterLogin } from '@/lib/login-intent'
 import { resolveReferralCode } from '@/pages/signup/referral-code'
+import { resolveAdSource } from '@/pages/signup/ad-source'
 import { storageKeys } from '@/lib/storage'
 import { trackEvent } from '@/lib/track'
 import type { Market } from '@/lib/market'
@@ -95,6 +96,8 @@ export default function LoginPage() {
   // 也不必等将来新增第三种登录方式时再补一次。
   useEffect(() => {
     resolveReferralCode(searchParams)
+    // 广告来源同理：落地即持久化，之后跳转/OAuth 回跳 URL 丢了也能在注册时取回
+    resolveAdSource(searchParams)
   }, [searchParams])
 
   // 写活：国内是否提供邮箱登录入口，跟随平台配置（enabled_login_methods 含 password）。

@@ -35,6 +35,7 @@ import { useAuthStore } from '@/store/auth'
 import { getRedirectTarget } from '@/lib/redirect'
 import { navigateAfterLogin } from '@/lib/login-intent'
 import { resolveReferralCode } from '@/pages/signup/referral-code'
+import { resolveAdSource, clearPersistedAdSource } from '@/pages/signup/ad-source'
 import { trackEvent } from '@/lib/track'
 
 /** 本页固定两个第三方入口（国际站允许集 = google / github，见 SocialLogin 的域名权威口径）。 */
@@ -218,7 +219,9 @@ export function GlobalEmailAuth() {
         gateParam ?? (await getCaptchaParam()),
         resolveReferralCode(searchParams) || undefined,
         searchParams.get('invitation') ?? undefined,
+        resolveAdSource(searchParams),
       )
+      clearPersistedAdSource()
       // 会话由服务端 cookie 下发，读回来填 store；导航交给上面 isAuthenticated 的 effect。
       const session = await getSession()
       setAuth(

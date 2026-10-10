@@ -19,6 +19,8 @@ export interface CreateRechargeRequest {
   channel: 'alipay' | 'wechat' | 'stripe' | 'stripe_wechat' | 'stripe_alipay'
   return_url?: string
   promo_code?: string
+  /** 首冲赠金报价快照 id（prd46#1240 / #1237）；有报价时随单提交，后端按快照结算 */
+  quote_id?: string
 }
 
 export interface RechargeCreated {

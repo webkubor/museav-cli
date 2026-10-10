@@ -1,6 +1,7 @@
 /**
  * 余额为 0 的发送拦截提示条（需求方 #833，1.0.6）。
- * 免费模型 / 付费模型分别用场景一 / 场景二文案；「去充值」统一走全局充值弹窗
+ * 付费模型：余额不足 + 「去充值」。免费模型（#1231 起不再受余额限制）：只在后端仍返回 4032 时兜底，
+ * 文案中性、不引导充值。「去充值」统一走全局充值弹窗
  * （不再跳 /billing，当前模型与输入原地保留，与文案承诺一致）。
  * 免费模型日限额提示（场景三）待后端错误码交付后接入（#833 后端项）。
  * 体验页、模型对比的共享/独立输入三处复用。
@@ -30,15 +31,18 @@ export function ExperienceBalanceNotice({ free, lockedModelCount }: {
         </strong>
         {t(free ? 'modelsExperience.balanceZeroFreeHint' : 'modelsExperience.balanceInsufficientHint', { symbol })}
       </span>
-      <button
-        type="button"
-        onClick={() => {
-          trackEvent('playground_recharge_click', { locked_model_count: lockedModelCount })
-          openRecharge()
-        }}
-      >
-        {t('modelsExperience.recharge')}
-      </button>
+      {/* #1231：免费模型已不受余额限制，这一路只剩后端 4032 兜底，引导重试/换模型，不引导充值 */}
+      {!free && (
+        <button
+          type="button"
+          onClick={() => {
+            trackEvent('playground_recharge_click', { locked_model_count: lockedModelCount })
+            openRecharge()
+          }}
+        >
+          {t('modelsExperience.recharge')}
+        </button>
+      )}
     </div>
   )
 }

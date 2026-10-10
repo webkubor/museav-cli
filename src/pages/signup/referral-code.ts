@@ -23,15 +23,19 @@ export function referralCodeFromSearchParams(searchParams: URLSearchParams) {
  */
 const REFERRAL_CODE_SESSION_KEY = 'mg_referral_code'
 
+/** 合法邀请码：字母数字与 -_，1–64 位。外部链接塞的超长 / 异形值一律当作没有（prd46#1242） */
+const REFERRAL_CODE_PATTERN = /^[A-Za-z0-9_-]{1,64}$/
+const validReferralCode = (code: string | null | undefined) => (code && REFERRAL_CODE_PATTERN.test(code) ? code : '')
+
 /** 解析邀请码：URL 命中即持久化并返回；否则回退 sessionStorage 里上次持久化的值。 */
 export function resolveReferralCode(searchParams: URLSearchParams): string {
-  const fromUrl = referralCodeFromSearchParams(searchParams)
+  const fromUrl = validReferralCode(referralCodeFromSearchParams(searchParams))
   try {
     if (fromUrl) {
       sessionStorage.setItem(REFERRAL_CODE_SESSION_KEY, fromUrl)
       return fromUrl
     }
-    return sessionStorage.getItem(REFERRAL_CODE_SESSION_KEY) ?? ''
+    return validReferralCode(sessionStorage.getItem(REFERRAL_CODE_SESSION_KEY))
   } catch {
     return fromUrl
   }

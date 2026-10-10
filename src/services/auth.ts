@@ -173,9 +173,9 @@ export function oauthAuthorizeUrl(
     for (const [key, value] of Object.entries(adSource ?? {})) {
       if (value) query.set(key, value)
     }
-    // 推荐码只收合法格式（字母数字与 -_，≤64），外部链接塞的超长/异形值不进 OAuth state
+    // 推荐码格式校验在 resolveReferralCode 内统一完成（邮箱 / 手机号 / OAuth 三个入口一致）
     const referralCode = resolveReferralCode(current)
-    if (/^[A-Za-z0-9_-]{1,64}$/.test(referralCode)) query.set('referral_code', referralCode)
+    if (referralCode) query.set('referral_code', referralCode)
   }
   return `${apiBaseUrl()}/api/v1/auth/oauth/${provider}/authorize?${query.toString()}`
 }

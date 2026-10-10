@@ -48,3 +48,30 @@ export function quoteChanged(shown: RechargeQuote | undefined, fresh: RechargeQu
   if (!showBonus || !freshBonus) return false
   return !sameAmount(shown.bonus_amount, fresh.bonus_amount) || !sameAmount(shown.credited_total, fresh.credited_total)
 }
+
+/** 下单时报价冲突（过期 / 资格或赠金已变 / 与金额不符）：后端 40912，data.quote 带最新报价（prd46#1238） */
+export const QUOTE_CONFLICT_CODE = 40912
+
+function isRechargeQuote(v: unknown): v is RechargeQuote {
+  if (!v || typeof v !== 'object') return false
+  const q = v as Record<string, unknown>
+  return typeof q.amount === 'string' && typeof q.eligible === 'boolean' && typeof q.activity_active === 'boolean'
+    && typeof q.bonus_amount === 'string' && typeof q.credited_total === 'string'
+}
+
+export function isQuoteConflictError(err: unknown): boolean {
+  return !!err && typeof err === 'object' && (err as { code?: unknown }).code === QUOTE_CONFLICT_CODE
+}
+
+/** 从 40912 的 data.quote 取最新报价；形状不对返回 undefined（调用方改为重新报价） */
+export function quoteFromConflictError(err: unknown): RechargeQuote | undefined {
+  if (!isQuoteConflictError(err)) return undefined
+  const data = (err as { data?: unknown }).data
+  const quote = data && typeof data === 'object' ? (data as { quote?: unknown }).quote : undefined
+  return isRechargeQuote(quote) ? quote : undefined
+}
+
+/** 用最新报价替换同金额的旧项；列表里没有该金额时原样返回 */
+export function replaceQuote(items: RechargeQuote[], quote: RechargeQuote): RechargeQuote[] {
+  return items.map((q) => (sameAmount(q.amount, quote.amount) ? quote : q))
+}

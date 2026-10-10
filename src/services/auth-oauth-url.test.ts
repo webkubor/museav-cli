@@ -26,6 +26,14 @@ describe('oauthAuthorizeUrl attribution passthrough', () => {
     expect(url.searchParams.has('foo')).toBe(false)
   })
 
+  it('drops malformed or oversized referral codes', () => {
+    setSearch(`?aff=${'x'.repeat(65)}`)
+    expect(new URL(oauthAuthorizeUrl('google', '/')).searchParams.has('referral_code')).toBe(false)
+    sessionStorage.clear()
+    setSearch('?aff=%3Cscript%3E')
+    expect(new URL(oauthAuthorizeUrl('google', '/')).searchParams.has('referral_code')).toBe(false)
+  })
+
   it('falls back to the session-persisted ad source after the URL lost it', () => {
     setSearch('?gclid=persisted')
     oauthAuthorizeUrl('google', '/')

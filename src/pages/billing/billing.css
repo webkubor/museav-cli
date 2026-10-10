@@ -112,6 +112,16 @@
   min-height: 0;
 }
 
+/* 充值弹框「获得」卡 = 这次充值的结果，用一层极轻的品牌描边和「支付」卡分开层次
+   （需求方 2026-10-10：视觉上有点层次和优化，不动文案与排列）。
+   写在 CSS 而不是用 border-brand-* 工具类：.mg-tile 的 border 在无层样式表里，
+   优先级高于 Tailwind 的 @layer utilities，工具类盖不动它（写了像没生效）；
+   compound 选择器压过 .mg-tile 的通用描边，和 catalog-grid-card.css 同一手法。
+   只换描边色，保留 .mg-tile 的玻璃表面与卡片阴影。 */
+.mg-tile.billing-recharge-result {
+  border-color: color-mix(in oklab, var(--brand-base) 16%, var(--mg-tile-border));
+}
+
 @media (max-width: 639px) {
   .billing-balance-actions {
     width: 100%;

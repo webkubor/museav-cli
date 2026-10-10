@@ -197,7 +197,8 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
       setRequoting(true)
       try {
         const fresh = findQuote((await quoteRecharges(tenantId, { currency, amounts: [amount] })).items, amount)
-        if (!quoteChangedNotice && quoteChanged(currentQuote, fresh)) {
+        // 每次都比较展示值与最新报价：二次确认期间报价再变，也要再次确认，不能凭 notice 状态放行
+        if (quoteChanged(currentQuote, fresh)) {
           paymentWindow?.close()
           setQuoteChangedNotice(true)
           presetQuotes.refetch()

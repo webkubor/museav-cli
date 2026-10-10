@@ -7,6 +7,7 @@ import { getCaptchaOutcome, getCaptchaParam } from '@/lib/aliyun-captcha'
 import { emailCodeLoginRegister, getSession, sendEmailCode } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
 import { ModelGoApiError } from '@/lib/request'
+import { trackEvent } from '@/lib/track'
 
 vi.mock('react-i18next', async (importOriginal) => ({ ...await importOriginal<typeof import('react-i18next')>(), useTranslation: () => ({ t: (key: string) => key }) }))
 vi.mock('@/components/auth/AuthLayout', () => ({ AuthLayout: ({ children }: { children: ReactNode }) => <main>{children}</main> }))
@@ -117,5 +118,23 @@ describe('GlobalEmailAuth factors and recovery #1092', () => {
     fireEvent.click(button('humanVerification'));await waitFor(() => expect(button('continueEmail')).toBeEnabled())
     fireEvent.click(button('continueEmail'));await screen.findByPlaceholderText('account.auth.placeholders.emailCode6')
     expect(screen.queryByLabelText(key('totpLabel'))).toBeNull()
+  })
+  it('新注册补发 sign_up，老账号只发 login_success（prd#1242）', async () => {
+    vi.mocked(emailCodeLoginRegister).mockResolvedValue({ is_new_account: true } as never)
+    await goToCode();submitCode()
+    await waitFor(() => expect(trackEvent).toHaveBeenCalledWith('sign_up', { method: 'email_code' }, { result: 'success' }))
+    expect(trackEvent).toHaveBeenCalledWith('login_success', { method: 'email_code' }, { result: 'success' })
+  })
+  it('后端未给新注册标记时不发 sign_up（字段缺失）', async () => {
+    vi.mocked(emailCodeLoginRegister).mockResolvedValue({} as never)
+    await goToCode();submitCode()
+    await waitFor(() => expect(trackEvent).toHaveBeenCalledWith('login_success', { method: 'email_code' }, { result: 'success' }))
+    expect(vi.mocked(trackEvent).mock.calls.some(([event]) => event === 'sign_up')).toBe(false)
+  })
+  it('后端标记为 false 时不发 sign_up', async () => {
+    vi.mocked(emailCodeLoginRegister).mockResolvedValue({ is_new_account: false } as never)
+    await goToCode();submitCode()
+    await waitFor(() => expect(trackEvent).toHaveBeenCalledWith('login_success', { method: 'email_code' }, { result: 'success' }))
+    expect(vi.mocked(trackEvent).mock.calls.some(([event]) => event === 'sign_up')).toBe(false)
   })
 })

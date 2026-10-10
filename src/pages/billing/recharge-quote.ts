@@ -41,6 +41,7 @@ export function findQuote(items: RechargeQuote[] | undefined, amount: string): R
 
 /** 下单前复校验：资格、活动状态、赠金或到账任一变化，都要求用户重新确认 */
 export function quoteChanged(shown: RechargeQuote | undefined, fresh: RechargeQuote | undefined): boolean {
+  if (shown && fresh && (shown.eligible !== fresh.eligible || shown.activity_active !== fresh.activity_active)) return true
   const showBonus = hasBonus(shown)
   const freshBonus = hasBonus(fresh)
   if (showBonus !== freshBonus) return true

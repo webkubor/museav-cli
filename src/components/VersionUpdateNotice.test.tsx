@@ -122,10 +122,10 @@ describe('VersionUpdateNotice（prd#838：静默、切页时刷新）', () => {
 
   // 真实时序：刷新后的新文档首次渲染时 /version.json 还没回来（latestCommit 为 undefined），
   // 响应到达后才有值。上面几条防循环用例都是一上来就给好 latestCommit，覆盖不到这一步（#1255 验收项 5）。
-  it('新文档里 /version.json 还没回来时不清防循环标记；响应到达后仍是旧 bundle，切页不再重载', () => {
+  it.each([undefined, ''])('线上 commit 未知（%s）时保留防循环标记；后续拿到同一目标版本时不再刷新', (unknownCommit) => {
     asReloadedDocument()
     window.sessionStorage.setItem(KEY, 'new-commit')
-    latestCommit.current = undefined
+    latestCommit.current = unknownCommit
     const { responseArrived } = mount(true)
     expect(window.sessionStorage.getItem(KEY)).toBe('new-commit')
     latestCommit.current = 'new-commit'

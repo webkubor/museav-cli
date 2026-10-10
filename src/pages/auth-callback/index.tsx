@@ -7,6 +7,14 @@ import { getRedirectTarget } from '@/lib/redirect'
 import { navigateAfterLogin } from '@/lib/login-intent'
 import { appToast } from '@/lib/app-toast'
 import { trackEvent } from '@/lib/track'
+import { clearPersistedReferralCode } from '@/pages/signup/referral-code'
+import { clearPersistedAdSource } from '@/pages/signup/ad-source'
+
+/** OAuth 登录/注册成功后清掉本标签页缓存的推荐码与广告来源，防止被后续登录串号归因（prd46#1242） */
+function clearPersistedAttribution() {
+  clearPersistedReferralCode()
+  clearPersistedAdSource()
+}
 
 export default function AuthCallbackPage() {
   const { t } = useTranslation()
@@ -34,6 +42,7 @@ export default function AuthCallbackPage() {
           result.permissions?.granted ?? null
         )
         trackEvent('login_success', { method: 'oauth' }, { result: 'success' })
+        clearPersistedAttribution()
         void navigateAfterLogin(navigate, redirect)
       })
       .catch(async () => {
@@ -47,6 +56,7 @@ export default function AuthCallbackPage() {
             result.permissions?.granted ?? null
           )
           trackEvent('login_success', { method: 'oauth' }, { result: 'success' })
+          clearPersistedAttribution()
           void navigateAfterLogin(navigate, redirect)
         } catch {
           // 回调换取与会话兜底都失败 = 登录确实没成：先提示再跳登录，不静默

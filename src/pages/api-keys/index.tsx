@@ -106,7 +106,7 @@ export default function ApiKeysPage() {
   }
   // 埋点顶层字段 is_space_owner：当前用户对本页作用域工作空间的 my_role 是否为 ws_owner
   // （不是 useTenantRole().isSpaceOwner —— 那个是「企业成员+自领至少一个空间」的 PRD 空间视图判定，口径更窄）
-  const { ownedWorkspaceIds } = useTenantRole()
+  const { ownedWorkspaceIds, canManage } = useTenantRole()
   const isActiveWorkspaceOwner = ownedWorkspaceIds.includes(workspaceId)
 
   // PRD 定稿：运行页无视图概念，作用域恒＝当前工作空间，行可见性纯由后端按角色裁剪
@@ -181,6 +181,10 @@ export default function ApiKeysPage() {
   const distinctOwnerCount = new Set(allKeys.map((k) => k.owner?.account_id).filter(Boolean)).size
   // 埋点 row_scope（PRD §11.1）：能看到他人 Key = workspace_all，否则 self
   const rowScope = showsOthers ? 'workspace_all' : 'self'
+  // #1193：页头作用域提示不能只看「当前拉到的数据里碰巧有没有他人的 Key」——
+  // tenant_owner/tenant_admin/空间负责人按角色本就能看到本空间全部成员的 Key，
+  // 哪怕当前工作空间恰好只有自己建过 Key，文案也该是「全部成员」口径，不是「仅展示由你负责」。
+  const canSeeAllKeysScope = canManage || isActiveWorkspaceOwner || showsOthers
   const commonEventProps = { prd_version: 'api_keys_v0_1', row_scope: rowScope }
 
   // 负责人筛选项（全量列表去重——分页后单页去重会漏掉其他页的负责人，#60）
@@ -470,7 +474,7 @@ export default function ApiKeysPage() {
 
       {!allKeysLoading && allKeys.length > 0 && (
         <p className="-mt-2 mg-text-caption text-mg-text-3">
-          {showsOthers
+          {canSeeAllKeysScope
             ? t('apiKeys.scope.workspaceAll', { count: distinctOwnerCount })
             : t('apiKeys.scope.selfOnly')}
         </p>

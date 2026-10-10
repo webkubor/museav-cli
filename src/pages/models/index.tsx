@@ -6,7 +6,6 @@ import { trackEvent } from '@/lib/track'
 import {
   attachmentKindFromMime,
   categoryEmptyCopy,
-  playgroundSamplePrompts,
 } from './model-experience-data'
 import { useModelsPlayground } from './use-models-playground'
 import { PlaygroundModelBar } from './playground-modelbar'
@@ -183,25 +182,6 @@ export default function ModelsPage() {
                 onFileChange={(file) => void handleFileSelect(file)}
                 onRemoveAttachment={() => clearAttachment()}
               />
-
-              {/* 空态示例 Prompt 卡片（PRD §7.2 文案不变；位置按 Figma 稿从空态区挪到输入框下方，
-                  仅对话类且尚无消息时展示，点击回填输入框） */}
-              {isDialogue && !isSelectedModelOffline && messages.length === 0 && (
-                <div className="models-experience-sample-cards">
-                  {playgroundSamplePrompts().map((sample) => (
-                    <button
-                      key={sample.label}
-                      type="button"
-                      onClick={() => {
-                        setInput(sample.prompt)
-                        window.setTimeout(() => inputRef.current?.focus(), 80)
-                      }}
-                    >
-                      {sample.prompt}
-                    </button>
-                  ))}
-                </div>
-              )}
             </section>
           </div>
         </div>

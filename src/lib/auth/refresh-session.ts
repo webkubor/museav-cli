@@ -13,17 +13,38 @@ import { useAuthStore } from '@/store/auth'
 import { storageKeys } from '@/lib/storage'
 import type { SessionResult } from '@/types'
 
-/** 把 /auth/session 结果落进 auth store（AuthProvider 首拉与热刷新共用） */
+/**
+ * 把 /auth/session 结果落进 auth store（AuthProvider 首拉与热刷新共用）。
+ *
+ * 空间以**接口下发值优先**（prd46#1207）：原写法是 `persistedWs || result.active_workspace_id`，
+ * 缓存压过接口，用户设的默认空间永远落不回来。
+ * 但方向只能反过来、不能把缓存整个丢掉：接口**没给**空间时（降级/异常响应里该字段为空），
+ * 直接传 undefined 会让 store 的 `activeWorkspaceId || null` 把活跃空间清空，侧栏空间直接丢。
+ * 所以是「接口有就用接口，接口没给才退回缓存」—— 浏览器实测发现，见 workspace-default-session.1207.test。
+ */
 export function applySessionToStore(result: SessionResult): void {
-  const persistedWs = localStorage.getItem(storageKeys.activeWorkspaceId(result.active_tenant_id))
+  const persistedWs = result.active_tenant_id
+    ? localStorage.getItem(storageKeys.activeWorkspaceId(result.active_tenant_id))
+    : null
   useAuthStore.getState().setAuth(
     result.account,
     result.active_tenant_id,
     result.tenants,
-    persistedWs || result.active_workspace_id,
+    result.active_workspace_id || persistedWs || undefined,
     result.permissions?.granted ?? null,
     result.permissions?.menus ?? [],
   )
+}
+
+/**
+ * 获取首拉或刷新会话时的空间参数：
+ * 若当前处于具体空间专属路由（/workspace/:workspaceId/*），以 URL 指定的空间优先；
+ * 否则不传显式参数，由后端 /auth/session 按当前账号在该租户的默认空间偏好返回（prd46#1207）。
+ */
+export function getSessionWorkspaceIdFromLocation(): string | undefined {
+  if (typeof window === 'undefined') return undefined
+  const match = window.location.pathname.match(/^\/workspace\/([^/]+)/)
+  return match?.[1] || undefined
 }
 
 /** 重拉会话刷新权限码/菜单。失败静默（下次整页刷新自然纠正），不打断业务操作的成功反馈。 */
@@ -35,11 +56,19 @@ function activeWorkspaceIdFromStorage(): string | undefined {
 }
 
 /**
- * 按「当前活跃空间」解析会话（带 workspace_id）。首拉与热刷新共用。
- * session 默认按租户默认空间解析权限——活跃的是非默认空间时不带 id 会拿错权限（少 tab/按钮，需求方#255）。
+ * 页面加载/刷新时的会话拉取：
+ * 非空间专属页面不传参，由后端 /auth/session 决定默认空间落点；专属路由按 URL 传参（prd46#1207）。
+ */
+export function getInitialSession(): Promise<SessionResult> {
+  return getSession(getSessionWorkspaceIdFromLocation())
+}
+
+/**
+ * 按「当前活跃空间」解析会话（带 workspace_id）。用于主动切换空间或明确按指定空间刷新权限。
  */
 export function getSessionForActiveWorkspace(): Promise<SessionResult> {
-  return getSession(activeWorkspaceIdFromStorage())
+  const explicitWs = getSessionWorkspaceIdFromLocation() || activeWorkspaceIdFromStorage()
+  return getSession(explicitWs)
 }
 
 export async function refreshSession(): Promise<void> {
@@ -56,5 +85,47 @@ export async function refreshSession(): Promise<void> {
  */
 export async function switchActiveWorkspace(workspaceId: string): Promise<void> {
   useAuthStore.getState().setActiveWorkspaceId(workspaceId)
-  await refreshSession()
+  // 必须显式按**刚选中的空间**重拉，不能走 refreshSession()：
+  // 在 /workspace/A/* 深链上切到 B 时，路由跳转还没发生、URL 仍是 A，
+  // getSessionForActiveWorkspace() 会按 URL 解析成 A，把活跃空间又写回 A —— 用户的切换当场失效。
+  try {
+    applySessionToStore(await getSession(workspaceId))
+  } catch {
+    /* 失败静默：已设的活跃空间保留，权限下次整页刷新自然纠正 */
+  }
+}
+
+/**
+ * 「只看不切」：按所看空间重解析权限码/菜单，**不改活跃空间、不写 localStorage**。
+ *
+ * 为什么要和 switchActiveWorkspace 分开（prd46#1207 ②）：
+ * 空间管理页是单页列表 + 详情（选卡片不跳路由），进页默认选中列表第一张卡。此前详情挂载时
+ * 调 switchActiveWorkspace，等于「看一眼别人的空间 = 把自己的当前空间改成它」，于是：
+ * 打开空间管理 → 当前空间被改写成列表第一个（Default）→ 刷新时这个值又被当成显式参数
+ * 发给 /auth/session，而显式参数优先于默认空间偏好 ⇒ 用户设的默认空间永远落不回去。
+ *
+ * 但权限码是「按 租户×工作区」解析的全局量（见 hooks/use-permissions），详情页的 4 个 tab
+ * 显隐依赖它。若只删掉挂载副作用而不补重解析，非默认空间的负责人进自有空间会重新看不到
+ * 设置/成员 tab —— 那正是需求方#255 修过的 bug。所以这里保留「重解析权限」，只去掉「改写活跃空间」。
+ */
+/**
+ * 「最新一次请求胜出」令牌：空间管理页点卡片不跳路由，连点 A→B 会并发两次重解析。
+ * 没有这道闸时，A 的慢响应可能后到并覆盖 B 的权限，页面显示的是 B、权限却是 A 的
+ * （tab 多了或少了，且不可复现）。只认最后一次发起的请求，旧响应直接丢弃。
+ */
+let latestPermissionsRequest = 0
+
+export async function resolvePermissionsForWorkspace(workspaceId: string): Promise<void> {
+  const token = ++latestPermissionsRequest
+  try {
+    const result = await getSession(workspaceId)
+    // 期间已有更新的请求发出 ⇒ 本次是过期响应，丢弃，不许回写
+    if (token !== latestPermissionsRequest) return
+    const store = useAuthStore.getState()
+    // 只落权限面；activeWorkspaceId / localStorage 一律不动
+    store.setPermissions(result.permissions?.granted ?? null)
+    store.setMenus(result.permissions?.menus ?? [])
+  } catch {
+    /* 失败静默：维持现有权限（fail-closed 由各 gate 兜底），不阻断查看详情 */
+  }
 }

@@ -18,13 +18,25 @@ function windowLabel(windowSeconds: number, t: (key: string, options?: Record<st
 /**
  * 免费模型限频提示（shared/modelgo_prd#914）。免费标记和全部数值均由目录接口提供。
  *
- * **规则缺失时降级为不含数值的提示，而不是整块不展示。**
- * 早先的做法是拿不到 rate_limit 就 `return null`，只防住了「展示错误数值」这一半
- * 风险；另一半更严重——限流是后端强制执行的，用户看不到任何提示就会毫无预警被拦。
- * 2026-09-02 实测：国内目录有 rate_limit、海外全是 null，导致该特性在海外站发布后
- * 页面上一个字都没有。没提示比提示得不够精确更糟。
+ * ## 展示条件：没配限流规则就整块不展示（prd46#1215，2026-10-09 需求方拍板）
  *
- * 分寸：**不编造数值**（缺什么就不说什么），但**保留提示以说明约束存在**。
+ * ⚠️ **这一条推翻了 2026-09-02 的相反决策，别再翻回去。** 当时的写法是「规则缺失时
+ * 降级为不含数值的提示，而不是整块不展示」，理由是：限流由后端强制执行，用户看不到
+ * 任何提示就会毫无预警被拦，「没提示比提示得不够精确更糟」。
+ *
+ * 需求方 2026-10-09 的新口径是反过来的，逻辑也站得住：**后端没配限流规则，就不会
+ * 执行限流**，这时候显示「有限流约束」本身就是错误信息，比不显示更糟。
+ *
+ * 改动前实测（生产国际站 `GET /catalog/models`，X-Market: international）：
+ * 73 个模型里免费模型只有 1 个 `minimax-m3:free`，它的 `rate_limit` 正是 `null`。
+ * 所以**这次改完，国际站这条提示会完全消失**——不是「部分模型不显示」。这是预期结果，
+ * 不是没生效。国内目录有 rate_limit 的模型不受影响，照常展示。
+ *
+ * 判定依据是目录接口的 `rate_limit` 对象（Swagger `catalog.ModelRateLimit`：
+ * `request_limit` / `token_limit` / `window_seconds`），对象本身为空即视为未配置。
+ *
+ * 分寸不变：**不编造数值**。规则对象在、但数值不全时，仍走不含数值的提示
+ * （`rateLimit.unknown`）——那种情况说明规则是配了的，约束真实存在。
  */
 export function FreeModelRateLimit({ model, className = '' }: { model: RateLimitModel; className?: string }) {
   const { t } = useTranslation()
@@ -35,8 +47,10 @@ export function FreeModelRateLimit({ model, className = '' }: { model: RateLimit
   // 目录接口的限时免费模型由 promotion.free 标记；兼容 catalog.free 的直接标记。
   const isFree = Boolean(model.free || model.promotion?.free)
 
-  // 只有「压根不是免费模型」才整块不渲染
+  // 压根不是免费模型 → 不渲染
   if (!isFree) return null
+  // 免费模型但后端没下发限流规则 → 不渲染（见上方「展示条件」）
+  if (!rateLimit) return null
 
   const hasFullRule = validLimit(windowSeconds) && (validLimit(requestLimit) || validLimit(tokenLimit))
   const limits = hasFullRule

@@ -1,7 +1,7 @@
 {
   "modelsDiscovery": {
     "page": {
-      "title": "模型发现",
+      "title": "模型排行",
       "subtitle": "聚合业界评测、专业分析与 ModelGo 平台数据，帮助团队完成模型选型",
       "snapshot": "数据快照 {{date}}",
       "snapshotLoading": "数据快照加载中",

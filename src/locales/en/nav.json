@@ -5,6 +5,7 @@
     "tenant": "Tenant",
     "dashboard": "Dashboard",
     "models": "Models",
+    "rankings": "Rankings",
     "playground": "Chat",
     "modelCatalog": "All Models",
     "modelExplore": "Playground",

@@ -10,7 +10,7 @@
 组件之外还有两类现成资产：CSS 工具类（`.mg-tile` 卡片 / `.mg-float` 浮层玻璃，见 `src/styles/components.css`）
 和设计 token（`modelgo-design-tokens` + `src/styles/tokens.css`）。
 
-共 40 个组件文件。
+共 42 个组件文件。
 
 ## Avatar
 
@@ -45,6 +45,15 @@
 - `size`: `icon` | `default` | `xs` | `sm` | `lg` | `xl` | `small` | `large`
 - `variant`: `default` | `destructive` | `outline` | `secondary` | `ghost` | `link` | `glass` | `brand`
 - `type`: `submit` | `button` | `reset` | `primary` | `secondary` | `danger` | `tertiary`
+
+## Calendar
+
+`src/components/ui/Calendar.tsx`
+
+值得知道的 props：
+- `defaultDate` — 初始展示的年月取这个日期（YYYY-MM-DD）；不传用今天
+- `dayState` — 每天的状态（选中 / 区间内 / 禁用），语义由调用方定
+- `onSelectDate` — 点击某天；disabled 的日期不会触发
 
 ## Card
 
@@ -102,6 +111,13 @@
 ## DateRangePicker
 
 `src/components/ui/DateRangePicker.tsx`
+
+## DateTimePicker
+
+`src/components/ui/DateTimePicker.tsx`
+
+值得知道的 props：
+- `value` — `YYYY-MM-DDTHH:mm`（本地时区）；空串表示未选
 
 ## Dialog
 
@@ -163,6 +179,8 @@
 字段说明 ⓘ 小图标 + hover/focus 气泡（对齐 PRD 原型：部分字段后带 Info 提示）
 
 值得知道的 props：
+- `children` — 自定义触发器（不传则为 ⓘ 图标）。触发器自己负责可聚焦与点击行为
+- `id` — 气泡元素 id，供自定义触发器 aria-describedby 关联
 - `side` — 气泡方位：默认 top
 
 ## Input
@@ -189,6 +207,7 @@
 - `children` — 原始 markdown 文本
 - `className` — 额外类名，叠加在 .cs-markdown 之上
 - `components` — 调用方可覆盖/追加节点渲染（如模型体验把 a 换成走 SPA 导航的 MessageLink）
+- `linkifyBareUrls` — 需要可点击裸 URL 的场景显式开启；默认仍按普通文本显示。
 
 ## Modal
 

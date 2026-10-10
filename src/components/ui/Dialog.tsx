@@ -23,7 +23,10 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-[var(--mg-z-overlay)] bg-[var(--mg-overlay-bg)] backdrop-blur-[var(--mg-overlay-blur)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 transition-all duration-300",
+      /* prd46#1215 bug：overlay 此前 duration-300、content duration-200——打开时内容 200ms
+         走完动画完全可见，遮罩还在半透明（视觉上"弹窗先出、背景后暗"两段式）；关闭时反向：
+         content 先卸载、蒙层残留 ~100ms（录屏 f_14"空中央+蒙层在"怪态）。两处必须同值，同进同退。 */
+      "fixed inset-0 z-[var(--mg-z-overlay)] bg-[var(--mg-overlay-bg)] backdrop-blur-[var(--mg-overlay-blur)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 transition-all duration-200",
       className
     )}
     {...props}

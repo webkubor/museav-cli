@@ -271,7 +271,6 @@
         "queueing": "In queue · {{position}} ahead",
         "queueingWithPosition": "In queue · {{count}} ahead of you",
         "connecting": "Connecting to an agent",
-        "connected": "{{name}} · #{{no}}",
         "cancelQueue": "Cancel queue",
         "cancelConnect": "Cancel transfer",
         "end": "End session",
@@ -387,7 +386,6 @@
       "handoffBusy": "A handoff or new chat is already in progress. Please wait and try again.",
       "handoffRetryLater": "The new chat failed, so the handoff was not started. Please try again later.",
       "handoffConnected": "An agent has joined. You can start chatting.",
-      "handoffEnded": "The session has ended. You're back with the assistant.",
       "handoffAsync": "The queue is taking longer than usual. Your request has moved to async processing — check service records for updates.",
       "handoffQueueCancelled": "Queue cancelled",
       "handoffConnectCancelled": "Handoff cancelled",
@@ -433,6 +431,12 @@
           "feedback": "Feedback",
           "handoff": "Agent service"
         },
+        "statuses": {
+          "pending": "Pending",
+          "processing": "Processing",
+          "resolved": "Resolved",
+          "cancelled": "Cancelled"
+        },
         "unread": "New",
         "detail": {
           "typeLabel": "Type",
@@ -445,6 +449,7 @@
           "replyPlaceholder": "Type a message — the agent will reply in this ticket",
           "replySend": "Send",
           "categoryLabel": "Issue type",
+          "descriptionLabel": "Issue description",
           "occurredLabel": "Occurred at",
           "requestIdLabel": "Request ID",
           "attachmentsLabel": "Attachments",

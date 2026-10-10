@@ -10,8 +10,7 @@
  */
 
 import { login, getSession } from '@/services/auth'
-import { useAuthStore } from '@/store/auth'
-import { storageKeys } from '@/lib/storage'
+import { applySessionToStore } from '@/lib/auth/refresh-session'
 
 export type MgLoginResult =
   | { ok: true; email: string; tenantId: string }
@@ -23,15 +22,7 @@ async function mgLogin(email: string, password: string): Promise<MgLoginResult> 
     await getSession().catch(() => {})
     await login({ email, password })
     const session = await getSession()
-    const persistedWs = localStorage.getItem(storageKeys.activeWorkspaceId(session.active_tenant_id))
-    useAuthStore.getState().setAuth(
-      session.account,
-      session.active_tenant_id,
-      session.tenants,
-      persistedWs || session.active_workspace_id,
-      session.permissions?.granted ?? null,
-      session.permissions?.menus ?? [],
-    )
+    applySessionToStore(session)
     return { ok: true, email: session.account.email, tenantId: session.active_tenant_id }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) }

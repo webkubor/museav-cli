@@ -242,6 +242,7 @@
         "emailAlreadyRegistered": "该邮箱已注册。免密登录接口尚未上线，暂时无法通过验证码进入。",
         "codeSentHint": "验证码 5 分钟内有效，请尽快输入",
         "codeCaptchaExpired": "安全验证已失效，请重新完成验证后再提交（验证码本身仍有效，无需重新获取）",
+        "secondFactorUnavailable": "该账号已开启二次验证，暂不支持邮箱验证码登录，请联系客服处理。",
         "resend": "重新发送验证码",
         "resendCountdown": "{{seconds}} 秒后可重新发送",
         "successTitle": "验证成功",
@@ -255,10 +256,7 @@
           "discount": "−{{discount}}%",
           "footer": "预览价格 · 始终低于官方定价",
           "browse": "浏览全部模型"
-        },
-        "totpLabel": "身份验证器验证码（已启用时填写）",
-        "totpHint": "如果已启用双重验证，请输入身份验证器中的 6 位验证码。",
-        "totpRetry": "请填写有效的身份验证器验证码。请重新获取邮箱验证码，并一同提交。"
+        }
       },
       "phoneLogin": {
         "title": "手机号登录",

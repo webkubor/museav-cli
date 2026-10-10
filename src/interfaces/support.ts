@@ -87,7 +87,7 @@ export interface SupportFeedbackResponse {
   ticket_id: string
   ticket_no?: string
   status: string
-  /** 后端给的中文状态（「等待客服受理」）；status 是机器码（pending），不能直接上屏。 */
+  /** 后端给的中文描述文案（「等待客服受理」）；上屏走 ticketStatusTextOf 取规范名，不要直接透传。 */
   status_label?: string
   /** SLA 文案实测在这里（「我们将在 1 个工作日内联系你。」）；PRD 叫 sla_text。 */
   next_step?: string
@@ -180,8 +180,9 @@ export interface SupportTicketSummary {
   /** 已本地化的类型名（「人工服务」「人工服务 · 转异步」「问题反馈」），直接上屏。 */
   display_type?: string
   status: string
-  /** 已本地化的状态文案（「排队中 · 前方 0 人」「待客服联系」「等待客服受理」）。
-   *  status 是机器码，**上屏一律用这个**，前端不再自己拼状态文案。 */
+  /** 上下文描述文案（「排队中 · 前方 0 人」「待客服联系」「等待客服受理」），**不是**规范状态名。
+   *  列表/详情/回执的状态徽标统一走 ticketStatusTextOf 按机器码 status 取 PRD 规范名；
+   *  只有人工服务面板的排队态需要这里面的描述文案，不要直接透传到状态徽标。 */
   status_label?: string
   service_mode?: SupportServiceMode
   title?: string
@@ -212,7 +213,11 @@ export interface SupportTicketDetail extends SupportTicketSummary {
   /** 后端实测用 assignee_display_name；agent_name/agent_no 从未下发，保留兼容。 */
   agent_name?: string
   agent_no?: string
+  /** 后端下发的人工服务评分字段是 human_rating；rating 是早期口径，兼容保留。读取一律走 ticketRatingOf。 */
+  human_rating?: number
   rating?: number
+  /** 客服解决工单时填写的解决结论（agent ticketView.resolution，已脱敏）。 */
+  resolution?: string
   sla_text?: string
   capabilities: SupportTicketCapabilities
   /** 只在详情接口下发（列表不带），按时间升序。 */
@@ -229,12 +234,46 @@ export function ticketNoOf(t: Pick<SupportTicketSummary, 'ticket_id' | 'ticket_n
   return t.ticket_id || t.ticket_no || t.id || ''
 }
 
-export function ticketStatusTextOf(t: Pick<SupportTicketSummary, 'status_label' | 'status'>): string {
+/**
+ * 工单机器码 → PRD §7.6.1 规范状态名的 i18n key 后缀。
+ * 后端 status_label 在 pending 态给的是描述文案（「等待客服受理」/「排队中 · 前方 N 人」），
+ * 服务记录列表/详情要的是规范名（待处理/处理中/已解决/已取消），故按机器码映射。
+ * 「已结束」只是筛选页签名，不是终态规范名（PRD §7.9 终态为已解决/已取消）。
+ */
+const SUPPORT_STATUS_KEY: Record<string, string> = {
+  pending: 'pending',
+  processing: 'processing',
+  resolved: 'resolved',
+  cancelled: 'cancelled',
+}
+
+/** 机器码是否有规范状态名；返回 i18n key 后缀，未识别返回 undefined。 */
+export function supportStatusKeyOf(status?: string): string | undefined {
+  return status ? SUPPORT_STATUS_KEY[status] : undefined
+}
+
+/**
+ * 状态徽标/回执的统一文案：按机器码 status 取 PRD 规范名（待处理/处理中/已解决/已取消）；
+ * status 未识别时才回退到后端 status_label。translate 传 react-i18next 的 t。
+ */
+export function ticketStatusTextOf(
+  t: Pick<SupportTicketSummary, 'status_label' | 'status'>,
+  translate: (key: string) => string,
+): string {
+  const key = supportStatusKeyOf(t.status)
+  if (key) return translate(`common.customerService.tickets.statuses.${key}`)
   return t.status_label || t.status || ''
 }
 
 export function ticketSlaTextOf(t: Pick<SupportTicketSummary, 'next_step'> & { sla_text?: string }): string | undefined {
   return t.next_step || t.sla_text || undefined
+}
+
+/** 人工服务评分：后端字段是 human_rating，旧代码读 rating 导致已评分的单在详情里不显示星级（prd46#1202 附带项）。 */
+export function ticketRatingOf(t: Pick<SupportTicketDetail, 'human_rating' | 'rating'>): number | undefined {
+  // 0 / 越界都当未评分：否则会显示 5 颗空星、还把评分入口藏掉
+  const v = t.human_rating ?? t.rating
+  return typeof v === 'number' && v >= 1 && v <= 5 ? v : undefined
 }
 
 export function ticketAgentNameOf(t: Pick<SupportTicketSummary, 'assignee_display_name'> & { agent_name?: string }): string | undefined {

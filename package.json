@@ -35,7 +35,7 @@
     "@hookform/resolvers": "^5.4.0",
     "@lobehub/icons": "^5.8.0",
     "@model-go/icons": "3.1.0",
-    "@model-go/track": "^0.3.0",
+    "@model-go/track": "^0.4.0",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
@@ -94,7 +94,7 @@
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.12",
-    "vite-plugin-agent-eyes": "^0.13.2",
+    "vite-plugin-agent-eyes": "^0.15.1",
     "vitest": "^4.1.8"
   }
 }

@@ -25,7 +25,9 @@
       "forwardUnknown": "Forward unknown",
       "metaMembers": "{{count}} members",
       "metaKeys": "{{count}} API Keys",
-      "metaGuardrails": "{{count}} guardrails"
+      "metaGuardrails": "{{count}} guardrails",
+      "setDefault": "Set as default",
+      "setDefaultTip": "Open this workspace by default after you sign in. Applies only to your account; other members’ defaults are unaffected."
     },
     "countSuffix": "{{count}} spaces",
     "searchPlaceholder": "Search by name, slug or workspace ID",
@@ -57,6 +59,7 @@
       "descPlaceholder": "Describe the purpose...",
       "ownerLabel": "Workspace owner",
       "initialMembersLabel": "Initial members",
+      "initialMembersHint": "The owner joins automatically and is locked at the top of the list. Add other regular members here (up to {{count}}).",
       "ownerBadge": "Owner",
       "initialMembersPlaceholder": "Search organization members and press Enter",
       "inviteLabel": "Initial members (Optional)",
@@ -188,8 +191,6 @@
         "deleteSuccess": "Workspace deleted",
         "deleteError": "Delete failed",
         "defaultCannotDelete": "Default workspace cannot be deleted",
-        "defaultWorkspace": "Default workspace",
-        "defaultWorkspaceHint": "Open this workspace by default when you sign in. This preference applies only to your account across devices.",
         "preferenceSaved": "Default workspace preference saved",
         "preferenceError": "Could not load or save your default workspace. Please try again."
       }

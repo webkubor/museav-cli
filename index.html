@@ -2,6 +2,31 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
+
+    <!-- Google Tag Manager（容器 GTM-PCHLTL6L）——市场侧 Google Ads 转化追踪用。
+         按 Google 要求放在 <head> 尽可能靠前；charset 必须保持首位，故紧随其后。
+
+         ⚠️ 与下方硬编码的 GA4（G-WCEKH5ZZEH）是两条独立加载路径，当前阶段**刻意并存**：
+         本次只装容器，GA4 标签仍由下方 gtag 直出。等市场侧在 GTM 里配好 GA4 标签后，
+         必须在同一个发版窗口内摘掉下方 gtag —— 两者同时存在会把同一个属性加载两次，
+         所有事件翻倍。切换时还要把 linker.domains 搬进 GTM 的 GA4 标签，
+         否则刚打通的跨域归因会再断一次。
+
+         本仓一份 index.html 同时发 console.modelgo.com 与 console.modelgo.ai，
+         两个域名共用这一个容器（Google 侧要求官网与 Console 装同一个容器）。 -->
+    <script>
+      (function (w, d, s, l, i) {
+        w[l] = w[l] || [];
+        w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+        var f = d.getElementsByTagName(s)[0],
+          j = d.createElement(s),
+          dl = l != 'dataLayer' ? '&l=' + l : '';
+        j.async = true;
+        j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+        f.parentNode.insertBefore(j, f);
+      })(window, document, 'script', 'dataLayer', 'GTM-PCHLTL6L');
+    </script>
+
     <link rel="icon" type="image/svg+xml" href="/brand/modelgo-app-icon-dark.svg" media="(prefers-color-scheme: light)" />
     <link rel="icon" type="image/svg+xml" href="/brand/modelgo-app-icon-light.svg" media="(prefers-color-scheme: dark)" />
     <!-- Apple 设备「添加到主屏幕」用 apple-touch-icon(不认 SVG favicon/manifest);缺失会退化成页面截图=白块(需求方#244) -->
@@ -18,13 +43,28 @@
          （owner 2026-09-17：只要对外的门户都需要加）。
 
          与站内 @model-go/track 是两条线：track 报自有后端，这条报 Google。
-         别用 track 去封装它，也别把两者的事件名混在一起。 -->
+         别用 track 去封装它，也别把两者的事件名混在一起。
+
+         linker.domains 是跨域衡量（cross-domain measurement）的握手名单，控制台这端
+         尤其不能少：官网是转化漏斗的入口、控制台是出口，不配的话用户从 modelgo.ai
+         点进 console.modelgo.ai 会被 GA4 算成两个访客的两次会话，而且控制台这一跳的
+         来源被改写成 "modelgo.ai / referral" —— 广告与自然搜索的原始来源在跨域那一刻
+         丢失，投放花的钱归因不到注册。
+         跨域衡量是**双向握手**：只有官网单边配、控制台不认，链路照样断，所以四端
+         （国内外官网 + 本控制台的 cn/intl 两个域名）必须写同一份名单。
+         本仓一份 index.html 同时发 console.modelgo.com 与 console.modelgo.ai，
+         名单里两个域名都要在。 -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-WCEKH5ZZEH"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'G-WCEKH5ZZEH');
+      gtag('config', 'G-WCEKH5ZZEH', {
+        linker: {
+          domains: ['modelgo.ai', 'console.modelgo.ai', 'modelgo.com', 'console.modelgo.com'],
+          accept_incoming: true
+        }
+      });
     </script>
     <script>
       // PWA 下线迁移：历史版本给用户浏览器装过 ServiceWorker，不清会一直由旧 SW
@@ -103,6 +143,15 @@
     </script>
   </head>
   <body>
+    <!-- Google Tag Manager (noscript)：禁用 JS 时的兜底，须紧跟 <body> 之后 -->
+    <noscript
+      ><iframe
+        src="https://www.googletagmanager.com/ns.html?id=GTM-PCHLTL6L"
+        height="0"
+        width="0"
+        style="display: none; visibility: hidden"
+      ></iframe
+    ></noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

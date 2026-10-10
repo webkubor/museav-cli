@@ -1,10 +1,11 @@
-import { get, getPage, post, apiV1Url, ModelGoApiError, SERVER_ERROR_MESSAGE, refreshCsrf } from '@/lib/request'
+import { get, getPage, post, apiV1Url, isSharedSessionExpired, ModelGoApiError, SERVER_ERROR_MESSAGE, refreshCsrf } from '@/lib/request'
 import { injectHeaders } from '@/lib/request-headers'
 import { handleSessionExpired } from '@/lib/auth/auth-controller'
 import type {
   SupportAskRequest,
   SupportAskResponse,
   SupportAttachmentUploadResponse,
+  SupportEventItem,
   SupportEventsResponse,
   SupportFeedbackRequest,
   SupportFeedbackResponse,
@@ -88,10 +89,9 @@ async function askSupportStreamOnce(
     } | null
     if (!envelope || envelope.code !== 0 || !envelope.data) {
       const code = envelope?.code ?? resp.status
-      // The raw fetch bypasses ky's afterResponse hook; mirror its session-expiry
-      // handling so a revoked session still prompts and returns to login.
+      // The raw fetch bypasses ky's afterResponse hook; mirror its shared-session check.
       if (code === 40101 && typeof window !== 'undefined') {
-        handleSessionExpired()
+        if (await isSharedSessionExpired()) handleSessionExpired()
       }
       throw new ModelGoApiError({
         code,
@@ -237,6 +237,12 @@ export function rateAnswer(answerId: string, rating: 'like' | 'dislike') {
   return post<void>(`support/answers/${answerId}/rating`, { rating: rating === 'like' ? 'up' : 'down' })
 }
 
+/** 工单处理记录（`GET /support/tickets/:id/events`）。后端只回 visible_to_user 的事件，按版本升序。 */
+export async function listTicketEvents(id: string): Promise<SupportEventItem[]> {
+  const data = await get<{ events?: SupportEventItem[] }>(`support/tickets/${id}/events`)
+  return data?.events ?? []
+}
+
 export function rateTicket(id: string, rating: number) {
   return post<void>(`support/tickets/${id}/rating`, { rating })
 }
@@ -278,8 +284,10 @@ export async function pollSupportEvents(
   } | null
   if (!resp.ok || !envelope || envelope.code !== 0) {
     const code = envelope?.code ?? resp.status
-    // 裸 fetch 绕过了 ky 的 afterResponse：会话过期照样要提示并回登录（同 askSupportStream）
-    if (code === 40101 && typeof window !== 'undefined') handleSessionExpired()
+    // 裸 fetch 绕过了 ky 的 afterResponse：先复核共享会话，与 askSupportStream 同口径。
+    if (code === 40101 && typeof window !== 'undefined' && await isSharedSessionExpired()) {
+      handleSessionExpired()
+    }
     throw new ModelGoApiError({
       code,
       msg: envelope?.msg ?? SERVER_ERROR_MESSAGE,

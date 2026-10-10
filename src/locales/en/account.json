@@ -242,6 +242,7 @@
         "emailAlreadyRegistered": "This email is already registered. Passwordless sign-in is not available yet.",
         "codeSentHint": "The code is valid for 5 minutes.",
         "codeCaptchaExpired": "Security verification expired. Please verify again before submitting — your code is still valid, no need to resend.",
+        "secondFactorUnavailable": "This account has two-factor authentication enabled, which email-code sign-in doesn't support yet. Please contact support.",
         "resend": "Resend code",
         "resendCountdown": "Resend code in {{seconds}}s",
         "successTitle": "Verification complete",
@@ -255,10 +256,7 @@
           "discount": "−{{discount}}%",
           "footer": "Preview prices · Always below list",
           "browse": "Browse all models"
-        },
-        "totpLabel": "Authenticator code (if enabled)",
-        "totpHint": "If you enabled two-factor authentication, enter the 6-digit code from your authenticator.",
-        "totpRetry": "A valid authenticator code is required. Request a new email code, then submit both codes."
+        }
       },
       "phoneLogin": {
         "title": "Phone Sign In",

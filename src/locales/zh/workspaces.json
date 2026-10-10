@@ -25,7 +25,9 @@
       "forwardUnknown": "转发未知",
       "metaMembers": "{{count}} 成员",
       "metaKeys": "{{count}} API Keys",
-      "metaGuardrails": "{{count}} 护栏"
+      "metaGuardrails": "{{count}} 护栏",
+      "setDefault": "设为默认空间",
+      "setDefaultTip": "登录后默认进入此工作空间，仅对当前账户生效，其他成员的默认空间不受影响。"
     },
     "countSuffix": "{{count}} 个空间",
     "searchPlaceholder": "搜索空间名称、Slug 或 Workspace ID",
@@ -57,6 +59,7 @@
       "descPlaceholder": "简述该工作空间的用途...",
       "ownerLabel": "空间负责人",
       "initialMembersLabel": "初始成员",
+      "initialMembersHint": "负责人会自动加入并锁定在列表首位，这里继续添加的是其他普通成员（最多 {{count}} 人）。",
       "ownerBadge": "负责人",
       "initialMembersPlaceholder": "搜索企业成员，回车添加",
       "inviteLabel": "初始成员 (选填)",
@@ -187,11 +190,9 @@
         "delete": "删除工作空间",
         "deleteSuccess": "工作空间已删除",
         "deleteError": "删除失败",
-        "defaultCannotDelete": "默认工作空间不可删除",
-        "defaultWorkspace": "默认工作空间",
-        "defaultWorkspaceHint": "登录后默认进入此工作空间，仅影响你自己的账号，并在不同设备间同步。",
-        "preferenceSaved": "默认工作空间偏好已保存",
-        "preferenceError": "无法读取或保存默认工作空间，请重试。"
+        "defaultCannotDelete": "默认空间不可删除",
+        "preferenceSaved": "默认空间已保存",
+        "preferenceError": "无法读取或保存默认空间，请重试。"
       }
     },
     "noMatchTitle": "没有匹配的工作空间",

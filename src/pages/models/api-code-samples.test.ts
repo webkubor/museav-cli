@@ -31,6 +31,12 @@ afterAll(async () => { await i18n.changeLanguage('zh') })
 const ALL_API_PROTOCOLS = Object.keys(PROTOCOL_LABEL) as ApiProtocol[]
 
 describe('mapApiProtocols — 后端协议 → 内部协议', () => {
+  it('dashscope_realtime 保留为 WebSocket 专用示例协议', () => {
+    expect(mapApiProtocols(['dashscope_realtime'])).toEqual(['dashscope_realtime'])
+    expect(languagesForProtocol('dashscope_realtime')).toEqual(['nodejs', 'python'])
+    expect(languageLabel('dashscope_realtime', 'nodejs')).toBe('Node.js')
+    expect(languageLabel('dashscope_realtime', 'python')).toBe('Python')
+  })
   it('content_generation 原样保留，不被丢掉也不折成 native（线上空 Tab 的直接成因）', () => {
     expect(mapApiProtocols(['content_generation'])).toEqual(['content_generation'])
   })
@@ -83,6 +89,20 @@ describe('协议文案 — 不允许出现空标签', () => {
 })
 
 describe('buildCodeSample — 端点与请求体', () => {
+  it('Realtime 使用 WebSocket endpoint 和 Authorization header，不生成 chat completions 示例', () => {
+    const node = buildCodeSample('dashscope_realtime', 'nodejs', 'qwen3.8-omni-flash-realtime')
+    expect(node).toContain('/api-ws/v1/realtime?model=qwen3.8-omni-flash-realtime')
+    expect(node).toMatch(/wss:\/\/api\.[^/]+\/api-ws\/v1\/realtime/)
+    expect(node).toContain('Authorization:')
+    expect(node).toContain('${process.env.MODELGO_API_KEY}')
+    expect(node).toContain('session.update')
+    expect(node).not.toContain('/v1/chat/completions')
+
+    const python = buildCodeSample('dashscope_realtime', 'python', 'qwen3.8-omni-flash-realtime')
+    expect(python).toContain('websockets.connect')
+    expect(python).toContain('MODELGO_API_KEY')
+    expect(python).not.toContain('/v1/chat/completions')
+  })
   it('content_generation 打平台托管异步任务入口，请求体是 model + prompt', () => {
     const curl = buildCodeSample('content_generation', 'curl', 'doubao-seedance-2.0-fast')
     expect(curl).toContain('/v1/content_generation/tasks')

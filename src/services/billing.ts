@@ -334,6 +334,8 @@ async function composeIncomeRecordsFallback(
     page_size: pageSize,
     has_more: hasMore,
     next_cursor: hasMore ? String(nextOffset) : null,
+    // #1192：分页摘要「共 N 条记录」需要总数；前端合成回落本就在内存里筛完了，直接给，不用等后端 #431 的 with_total。
+    total: filtered.length,
   }
 }
 

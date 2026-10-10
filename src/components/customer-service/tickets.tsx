@@ -1,20 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { ChangeEvent, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Badge } from '@/components/ui/Badge'
-import { LuArrowLeft, LuSearch, LuInbox } from 'react-icons/lu'
+import { LuArrowLeft, LuSearch, LuInbox, LuPaperclip, LuX } from 'react-icons/lu'
 import { ModelGoApiError } from '@/lib/request'
 import { appToast } from '@/lib/app-toast'
 import { isNotFoundError } from '@/lib/request-error-message'
 import { formatMonthDayTime } from '@/lib/format-date'
 import { useAuthStore } from '@/store/auth'
-import { getTicketAttachment, listSupportTickets, listTicketAttachments } from '@/services/support'
-import { ticketAgentNameOf, ticketNoOf, ticketSlaTextOf, ticketStatusTextOf, ticketUnreadOf } from '@/interfaces/support'
-import type { SupplementResult, SupportTicketAttachment, SupportTicketDetail, SupportTicketFilter, SupportTicketSummary } from '@/interfaces/support'
+import { attachSupportTicketAttachment, getTicketAttachment, listSupportTickets, listTicketAttachments, listTicketEvents, uploadSupportAttachment } from '@/services/support'
+import { ticketAgentNameOf, ticketNoOf, ticketRatingOf, ticketSlaTextOf, ticketStatusTextOf, ticketUnreadOf } from '@/interfaces/support'
+import type { SupplementResult, SupportEventItem, SupportTicketAttachment, SupportTicketDetail, SupportTicketFilter, SupportTicketSummary } from '@/interfaces/support'
+import { ATTACHMENT_ACCEPT, ATTACHMENT_ALLOWED_MIME, ATTACHMENT_MAX_BYTES } from './feedback-attachment'
 import type { ChatItem } from './use-support'
 
 const FILTERS: SupportTicketFilter[] = ['all', 'processing', 'ended']
@@ -141,7 +142,7 @@ export function TicketsList({ onSelect, onClose }: TicketsListProps) {
                   {item.display_type
                     || t(`common.customerService.tickets.types.${item.ticket_type ?? item.type}`, { defaultValue: item.ticket_type ?? item.type ?? '' })}
                 </span>
-                <Badge variant="outline" size="sm">{ticketStatusTextOf(item)}</Badge>
+                <Badge variant="outline" size="sm">{ticketStatusTextOf(item, t)}</Badge>
               </div>
               {item.title && <p className="m-0 mt-1 mg-text-caption font-medium text-mg-text-1 line-clamp-2" title={item.title}>{item.title}</p>}
               {(item.latest_visible_message || item.latest_message_preview) && (
@@ -242,6 +243,8 @@ export function TicketDetailView({
   const [replyText, setReplyText] = useState('')
   const [replying, setReplying] = useState(false)
   const isHuman = detail?.ticket_type === 'human_support' || detail?.type === 'handoff'
+  const isFeedback = detail?.ticket_type === 'feedback' || detail?.type === 'feedback'
+  const rating = detail ? ticketRatingOf(detail) : undefined
   // 只有转异步单在详情里继续沟通；实时人工单的详情是那场会话的归档回看（工单类型 PRD）
   const canReply = Boolean(detail && isHuman && detail.service_mode === 'async' && detail.capabilities.can_reply && onReply)
 
@@ -270,17 +273,65 @@ export function TicketDetailView({
   const [supplementOpen, setSupplementOpen] = useState(false)
   const [supplementText, setSupplementText] = useState('')
   const [supplementing, setSupplementing] = useState(false)
+  // 补充可只带附件（PRD §7.11「原地展开输入框与附件选择」，原型同：文字与附件有一即可提交）
+  const [supplementFile, setSupplementFile] = useState<File | null>(null)
+  const [supplementFileError, setSupplementFileError] = useState<string>()
+  const [fileInputKey, setFileInputKey] = useState(0)
+  // 附件挂到工单后要让「附件」行重新拉列表
+  const [attachmentsVersion, setAttachmentsVersion] = useState(0)
+
+  function clearSupplementFile() {
+    setSupplementFile(null)
+    setSupplementFileError(undefined)
+    setFileInputKey((k) => k + 1)
+  }
 
   function closeSupplement() {
     setSupplementText('')
+    clearSupplementFile()
     setSupplementOpen(false)
+  }
+
+  function pickSupplementFile(e: ChangeEvent<HTMLInputElement>) {
+    const picked = e.target.files?.[0] ?? null
+    if (!picked) return clearSupplementFile()
+    if (!ATTACHMENT_ALLOWED_MIME.includes(picked.type)) {
+      setSupplementFile(null)
+      setSupplementFileError(t('common.customerService.feedback.attachmentInvalid'))
+      return
+    }
+    if (picked.size > ATTACHMENT_MAX_BYTES) {
+      setSupplementFile(null)
+      setSupplementFileError(t('common.customerService.feedback.attachmentTooLarge'))
+      return
+    }
+    setSupplementFile(picked)
+    setSupplementFileError(undefined)
   }
 
   async function submitSupplement() {
     const content = supplementText.trim()
-    if (!content || supplementing) return
+    if ((!content && !supplementFile) || supplementing || !detail) return
     setSupplementing(true)
-    const result = await onSupplement(content)
+    // 先传附件：附件失败时文字还没提交，用户改完重试不会把同一段补充发两遍
+    if (supplementFile) {
+      try {
+        const uploaded = await uploadSupportAttachment(supplementFile)
+        await attachSupportTicketAttachment(ticketNoOf(detail), {
+          file_name: supplementFile.name,
+          mime_type: supplementFile.type,
+          object_ref: uploaded.object_ref,
+          size_bytes: supplementFile.size,
+        })
+        setAttachmentsVersion((v) => v + 1)
+        clearSupplementFile()
+      } catch (error) {
+        appToast.requestError(error)
+        setSupplementing(false)
+        return
+      }
+    }
+    const result = content ? await onSupplement(content) : 'ok'
     setSupplementing(false)
     // closed 也要收起：否则工单被重开、入口回来时，旧表单会连同旧文字自己弹出来
     if (result !== 'failed') closeSupplement()
@@ -292,8 +343,12 @@ export function TicketDetailView({
         <button type="button" onClick={onBack} aria-label={t('common.customerService.tickets.back')} className="text-mg-text-2 hover:text-mg-text-1">
           <LuArrowLeft size={16} />
         </button>
-        <p className="m-0 mg-text-body font-medium text-mg-text-1 flex-1">{detail ? ticketNoOf(detail) : ''}</p>
-        {detail && <Badge variant="outline" size="sm">{ticketStatusTextOf(detail)}</Badge>}
+        {/* 顶栏照原型：「工单详情」+ 编号 + 状态胶囊（prd46#1198 #4）；原先只有编号 */}
+        <p className="m-0 mg-text-body font-medium text-mg-text-1 shrink-0">{t('common.customerService.ticket.title')}</p>
+        <p className="m-0 min-w-0 flex-1 truncate mg-text-caption text-mg-text-3" title={detail ? ticketNoOf(detail) : undefined}>
+          {detail ? ticketNoOf(detail) : ''}
+        </p>
+        {detail && <Badge variant="outline" size="sm">{ticketStatusTextOf(detail, t)}</Badge>}
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3">
@@ -317,7 +372,8 @@ export function TicketDetailView({
         ))}
         {detail && (
           <div className="flex flex-col gap-3">
-            {detail.title && <p className="m-0 mg-text-body font-medium text-mg-text-1">{detail.title}</p>}
+            {/* 反馈单的 title 是后端写死的「问题反馈」，原型的反馈单没有标题行（prd46#1198 #3） */}
+            {detail.title && !isFeedback && <p className="m-0 mg-text-body font-medium text-mg-text-1">{detail.title}</p>}
             {/* 头部属性表照 PRD 原型 CustomerSupportTicketDetail.tsx：类型 / 编号 /
                 提交时间 / 最近更新（有客服再加一行）。原实现只渲染了描述和「客服名·工号」，
                 **编号、类型、时间三个字段全缺** —— 用户在详情里看不到自己的工单号，
@@ -351,29 +407,36 @@ export function TicketDetailView({
                 </div>
               )}
             </dl>
-            {/* 问题反馈按 PRD 问题单顺序：问题类型 → 问题描述 → 发生时间 / Request ID / 附件 */}
-            {detail.ticket_type === 'feedback' && <FeedbackCategoryRow category={detail.category} />}
-            {detail.description && <p className="m-0 mg-text-body text-mg-text-1 whitespace-pre-wrap">{detail.description}</p>}
-            {detail.ticket_type === 'feedback' && <FeedbackIssueFields detail={detail} />}
-            {/* 建单后的补充照 PRD 原型 CustomerSupportTicketDetail.tsx 挂在描述区块里、
-                按「补充 · MM-DD HH:mm」前缀逐条追加，不当作沟通消息（PRD §7.11）。 */}
-            {detail.supplements?.map((item) => (
-              <div key={item.id} className="flex flex-col gap-0.5">
-                <span className="mg-text-caption text-mg-text-3">
-                  {t('common.customerService.ticket.supplementAt', { time: formatMonthDayTime(item.created_at) })}
-                </span>
-                <p className="m-0 mg-text-body text-mg-text-1 whitespace-pre-wrap break-words">{item.content}</p>
-              </div>
-            ))}
+            {/* 问题反馈按 PRD 问题单顺序逐行带标签：问题类型 → 问题描述（补充续写其后）→
+                发生时间 / Request ID / 附件（prd46#1198 #2/#7）。其它工单仍是描述 + 补充平铺。 */}
+            {isFeedback ? (
+              <FeedbackIssueFields detail={detail} attachmentsVersion={attachmentsVersion} />
+            ) : (
+              <>
+                {detail.description && <p className="m-0 mg-text-body text-mg-text-1 whitespace-pre-wrap">{detail.description}</p>}
+                <TicketSupplements items={detail.supplements} />
+              </>
+            )}
             {isHuman && renderMessage && messages.length > 0 && (
               <div className="flex flex-col pt-2 border-t border-mg-fill-0" aria-label={t('common.customerService.tickets.detail.conversation')}>
                 {messages.map((m) => <div key={m.id}>{renderMessage(m)}</div>)}
               </div>
             )}
             {isHuman && <div ref={latestRef} aria-hidden className="h-px" />}
-            {ticketSlaTextOf(detail) && <p className="m-0 mg-text-caption text-mg-text-3">{ticketSlaTextOf(detail)}</p>}
-            {typeof detail.rating === 'number' && (
-              <p className="m-0 mg-text-caption text-mg-warning">{'★'.repeat(detail.rating)}{'☆'.repeat(5 - detail.rating)}</p>
+            {/* 后端对反馈单无条件下发「我们将在 1 个工作日内联系你。」，处理中 / 已解决还挂着
+                就成了错误承诺；只在待处理时展示（prd46#1198 #5） */}
+            {(!isFeedback || detail.status === 'pending') && ticketSlaTextOf(detail) && (
+              <p className="m-0 mg-text-caption text-mg-text-3">{ticketSlaTextOf(detail)}</p>
+            )}
+            {detail.status === 'resolved' && detail.resolution && (
+              <div className="flex flex-col gap-1 border-t border-mg-fill-0 pt-3">
+                <span className="mg-text-caption font-medium text-mg-text-1">{t('common.customerService.ticket.resolution')}</span>
+                <p className="m-0 mg-text-caption text-mg-text-2 whitespace-pre-wrap break-words">{detail.resolution}</p>
+              </div>
+            )}
+            <TicketHandlingLog ticketId={ticketNoOf(detail)} refreshKey={`${detail.version ?? ''}|${detail.updated_at}`} />
+            {typeof rating === 'number' && (
+              <p className="m-0 mg-text-caption text-mg-warning">{'★'.repeat(rating)}{'☆'.repeat(5 - rating)}</p>
             )}
 
             {detail.capabilities.can_supplement && supplementOpen && (
@@ -388,6 +451,35 @@ export function TicketDetailView({
                   // 提交中锁住：成功后会清空输入框，点提交之后再打的字不会被发出去，不能静默吞掉
                   disabled={supplementing}
                 />
+                {/* 附件只给反馈单：其它工单详情没有「附件」行，传了用户也看不到结果（原型同） */}
+                {isFeedback && (
+                <div className="flex items-center gap-2">
+                  <label className="mg-tile flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 px-3 py-1.5 mg-text-caption text-mg-text-3 hover:border-brand-mid/50">
+                    <LuPaperclip size={13} aria-hidden className="shrink-0" />
+                    <span className="truncate">{supplementFile ? supplementFile.name : t('common.customerService.feedback.attachmentPlaceholder')}</span>
+                    <input
+                      key={fileInputKey}
+                      type="file"
+                      className="hidden"
+                      accept={ATTACHMENT_ACCEPT}
+                      aria-label={t('common.customerService.feedback.attachment')}
+                      onChange={pickSupplementFile}
+                      disabled={supplementing}
+                    />
+                  </label>
+                  {supplementFile && !supplementing && (
+                    <button
+                      type="button"
+                      aria-label={t('common.customerService.feedback.attachmentClear')}
+                      onClick={clearSupplementFile}
+                      className="p-1 text-mg-text-2 hover:text-mg-text-1"
+                    >
+                      <LuX size={14} />
+                    </button>
+                  )}
+                </div>
+                )}
+                {supplementFileError && <span className="mg-text-caption text-mg-danger">{supplementFileError}</span>}
                 <div className="flex justify-end gap-2">
                   <Button size="small" variant="secondary" onClick={closeSupplement} disabled={supplementing}>
                     {t('common.cancel')}
@@ -396,7 +488,7 @@ export function TicketDetailView({
                     size="small"
                     variant="brand"
                     loading={supplementing}
-                    disabled={!supplementText.trim()}
+                    disabled={!supplementText.trim() && !supplementFile}
                     onClick={submitSupplement}
                   >
                     {t('common.customerService.ticket.supplementSubmit')}
@@ -415,7 +507,7 @@ export function TicketDetailView({
                 <Button size="small" variant="secondary" onClick={onReopen}>{t('common.customerService.tickets.reopen')}</Button>
               )}
               {/* 后端的人工单是 ticket_type:'human_support'（PRD 措辞是 handoff），两种都认 */}
-              {(detail.ticket_type === 'human_support' || detail.type === 'handoff') && typeof detail.rating !== 'number' && detail.status !== 'processing' && (
+              {(detail.ticket_type === 'human_support' || detail.type === 'handoff') && typeof rating !== 'number' && detail.status !== 'processing' && (
                 <RateInline onRate={onRate} />
               )}
             </div>
@@ -446,13 +538,13 @@ const fieldRow = 'flex gap-1.5'
 
 /**
  * 问题反馈的「问题单」区（工单类型 PRD：问题类型、问题描述、发生时间、Request ID（如有）、
- * 附件（如有，支持下载））。原先只渲染描述，其余字段接口给了也没读（#1164）。
- * 问题描述仍在上方正文位置，这里补其余四项；为空的整行不显示。
+ * 附件（如有，支持下载））。空字段整行隐藏，避免再把固定标题当问题描述。
  */
-function FeedbackIssueFields({ detail }: { detail: SupportTicketDetail }) {
+function FeedbackIssueFields({ detail, attachmentsVersion }: { detail: SupportTicketDetail; attachmentsVersion: number }) {
   const { t } = useTranslation()
   const [attachments, setAttachments] = useState<SupportTicketAttachment[]>([])
   const ticketId = detail.ticket_id
+  const hasSupplements = (detail.supplements?.length ?? 0) > 0
 
   useEffect(() => {
     let cancelled = false
@@ -461,7 +553,7 @@ function FeedbackIssueFields({ detail }: { detail: SupportTicketDetail }) {
       // 附件是「如有」的附属信息：拉失败不打断详情，只是不显示这一行
       .catch(() => { if (!cancelled) setAttachments([]) })
     return () => { cancelled = true }
-  }, [ticketId])
+  }, [ticketId, attachmentsVersion])
 
   async function download(item: SupportTicketAttachment) {
     if (item.download_url) {
@@ -484,9 +576,27 @@ function FeedbackIssueFields({ detail }: { detail: SupportTicketDetail }) {
     }
   }
 
-  if (!detail.occurred_at && !detail.request_id && attachments.length === 0) return null
+  if (!detail.category && !detail.description && !hasSupplements && !detail.occurred_at && !detail.request_id && attachments.length === 0) return null
   return (
     <dl className="m-0 flex flex-col gap-1 text-[11px]">
+      {detail.category && (
+        <div className={fieldRow}>
+          <dt className="shrink-0 text-mg-text-3">{t('common.customerService.tickets.detail.categoryLabel')}</dt>
+          <dd className="m-0 text-mg-text-2">
+            {t(`common.customerService.feedback.categoryOptions.${detail.category}`, { defaultValue: detail.category })}
+          </dd>
+        </div>
+      )}
+      {(detail.description || hasSupplements) && (
+        <div className={fieldRow}>
+          <dt className="shrink-0 text-mg-text-3">{t('common.customerService.tickets.detail.descriptionLabel')}</dt>
+          <dd className="m-0 flex min-w-0 flex-col gap-1.5">
+            {detail.description && <span className="whitespace-pre-wrap break-words text-mg-text-2">{detail.description}</span>}
+            {/* 补充续写在问题描述之后、用虚线隔开（PRD §7.11，prd46#1198 #7） */}
+            <TicketSupplements items={detail.supplements} dashed />
+          </dd>
+        </div>
+      )}
       {detail.occurred_at && (
         <div className={fieldRow}>
           <dt className="shrink-0 text-mg-text-3">{t('common.customerService.tickets.detail.occurredLabel')}</dt>
@@ -522,18 +632,59 @@ function FeedbackIssueFields({ detail }: { detail: SupportTicketDetail }) {
   )
 }
 
-function FeedbackCategoryRow({ category }: { category?: string }) {
+/** 建单后追加的补充：按「补充 · MM-DD HH:mm」前缀逐条追加，不当作沟通消息（PRD §7.11）。 */
+function TicketSupplements({ items, dashed = false }: { items?: SupportTicketDetail['supplements']; dashed?: boolean }) {
   const { t } = useTranslation()
-  if (!category) return null
+  if (!items?.length) return null
   return (
-    <dl className="m-0 text-[11px]">
-      <div className={fieldRow}>
-        <dt className="shrink-0 text-mg-text-3">{t('common.customerService.tickets.detail.categoryLabel')}</dt>
-        <dd className="m-0 text-mg-text-2">
-          {t(`common.customerService.feedback.categoryOptions.${category}`, { defaultValue: category })}
-        </dd>
-      </div>
-    </dl>
+    <>
+      {items.map((item) => (
+        <div key={item.id} className={`flex flex-col gap-0.5${dashed ? ' border-t border-dashed border-mg-fill-1 pt-1.5' : ''}`}>
+          <span className="mg-text-caption text-mg-text-3">
+            {t('common.customerService.ticket.supplementAt', { time: formatMonthDayTime(item.created_at) })}
+          </span>
+          <p className="m-0 whitespace-pre-wrap break-words text-mg-text-2">{item.content}</p>
+        </div>
+      ))}
+    </>
+  )
+}
+
+/**
+ * 处理记录（PRD §7.11：问题反馈与转异步展示后台处理记录，按时间正序，每条含描述 / 操作人 / 时间）。
+ * 原先前端完全没接 `GET /support/tickets/:id/events`（prd46#1198 #1）。后端只回 visible_to_user
+ * 的事件；拉取失败（如旧版后端没有该路由）只是不显示这一块，不打断详情。
+ * refreshKey 跟着工单 version/updated_at 走，状态流转后自动重拉。
+ */
+function TicketHandlingLog({ ticketId, refreshKey }: { ticketId: string; refreshKey: string }) {
+  const { t } = useTranslation()
+  const [events, setEvents] = useState<SupportEventItem[]>([])
+
+  useEffect(() => {
+    if (!ticketId) return
+    let cancelled = false
+    listTicketEvents(ticketId)
+      // 没有 summary 的事件不展示，避免把 ticket.claimed 这类机器码直接打到屏上
+      .then((items) => { if (!cancelled) setEvents(items.filter((e) => e.visible_to_user !== false && e.summary)) })
+      .catch(() => { if (!cancelled) setEvents([]) })
+    return () => { cancelled = true }
+  }, [ticketId, refreshKey])
+
+  if (events.length === 0) return null
+  return (
+    <section className="flex flex-col gap-2 border-t border-mg-fill-0 pt-3" aria-label={t('common.customerService.ticket.handlingTitle')}>
+      <h3 className="m-0 mg-text-caption font-medium text-mg-text-1">{t('common.customerService.ticket.handlingTitle')}</h3>
+      <ol className="m-0 flex list-none flex-col gap-2 p-0">
+        {events.map((event) => (
+          <li key={event.id} className="flex flex-col gap-0.5">
+            <p className="m-0 mg-text-caption text-mg-text-2 break-words">{event.summary}</p>
+            <p className="m-0 mg-text-caption text-mg-text-3">
+              {[event.created_at ? formatMonthDayTime(event.created_at) : '', event.actor_name].filter(Boolean).join(' · ')}
+            </p>
+          </li>
+        ))}
+      </ol>
+    </section>
   )
 }
 

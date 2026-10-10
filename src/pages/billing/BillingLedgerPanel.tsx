@@ -423,6 +423,10 @@ export function BillingLedgerPanel({
               </TableBody>
             </Table>
           </div>
+          {/* #1192：入账记录分页区补充「共 N 条记录」摘要（原型 App.tsx:15960），不改变现有游标分页交互 */}
+          <p className="text-xs text-mg-text-3">
+            {t('billing.income.pagerSummary', { count: data?.total ?? items.length })}
+          </p>
           <Pagination
             mode="cursor"
             page={pager.page}

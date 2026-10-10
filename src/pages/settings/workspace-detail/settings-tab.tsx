@@ -7,8 +7,7 @@ import { trackAction } from '@/lib/track'
 import { errorCodeOf } from '@/lib/request-error-message'
 import { updateWorkspace, deleteWorkspace } from '@/services/workspaces'
 import type { WorkspaceDetail } from '@/types'
-import { getProfile, setDefaultWorkspace } from '@/services/account'
-import { Switch } from '@/components/ui/Switch'
+import { getProfile } from '@/services/account'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
@@ -20,24 +19,20 @@ export function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted:
   const { t } = useTranslation()
   const qc = useQueryClient()
   const { hasPermission } = usePermissions()
+  // 默认空间入口已迁到空间管理列表的卡片上（prd46#1209，原型 a4c9a2b 删掉了设置页这一行），本页不再出现。
+  // 但「默认空间不可删除」要跟着默认走（原型危险区读同一个 isDefault）：账户偏好指向本空间时也禁删；
+  // 结构上的 is_default 后端本就不让删，两者任一即保护
   const profileQuery = useQuery({ queryKey: ['account-profile'], queryFn: getProfile })
-  const preferenceMutation = useMutation({
-    mutationFn: (enabled: boolean) => setDefaultWorkspace({ workspace_id: enabled ? ws.workspace_id : '' }),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['account-profile'] })
-      appToast.success(t('workspaces.detail.settings.preferenceSaved'))
-    },
-    onError: (err: unknown) => appToast.requestError(err, t('workspaces.detail.settings.preferenceError')),
-  })
+  const isProtectedDefault = ws.is_default || profileQuery.data?.default_workspace_id === ws.workspace_id
   const canRename = hasPermission(PERMS.WORKSPACE_RENAME)
   const canDelete = hasPermission(PERMS.WORKSPACE_DELETE)
   const canEditSettings = hasPermission(PERMS.WORKSPACE_SETTINGS_EDIT)
   const [name, setName] = useState(ws.name)
   const [description, setDescription] = useState(ws.description ?? '')
   const [deleteOpen, setDeleteOpen] = useState(false)
-  const dirty = name.trim() !== ws.name || description.trim() !== (ws.description ?? '')
-  const canSave = (canRename && name.trim() !== ws.name)
+  const fieldsChanged = (canRename && name.trim() !== ws.name)
     || (canEditSettings && description.trim() !== (ws.description ?? ''))
+  const canSave = !!name.trim() && fieldsChanged
 
   const renameMutation = useMutation({
     mutationFn: () => updateWorkspace(ws.workspace_id, { name: name.trim(), description: description.trim() }),
@@ -53,6 +48,7 @@ export function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted:
       appToast.requestError(err, t('workspaces.detail.settings.renameError'))
     },
   })
+  const saving = renameMutation.isPending
 
   const deleteMutation = useMutation({
     mutationFn: () => deleteWorkspace(ws.workspace_id, { confirm_name: ws.name }),
@@ -72,31 +68,6 @@ export function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted:
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <div className="mg-tile p-6 space-y-3">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <label htmlFor="default-workspace" className="text-sm font-semibold text-mg-text-1">{t('workspaces.detail.settings.defaultWorkspace')}</label>
-            <p className="mt-1 text-xs text-mg-text-3">{t('workspaces.detail.settings.defaultWorkspaceHint')}</p>
-          </div>
-          {profileQuery.data && !profileQuery.isError && (
-            <Switch
-              id="default-workspace"
-              checked={profileQuery.data.default_workspace_id === ws.workspace_id}
-              disabled={preferenceMutation.isPending || profileQuery.isFetching}
-              onCheckedChange={(enabled) => preferenceMutation.mutate(enabled)}
-              aria-busy={preferenceMutation.isPending}
-            />
-          )}
-        </div>
-        {profileQuery.isPending && <p role="status" className="text-xs text-mg-text-3">{t('common.loading')}</p>}
-        {profileQuery.isError && (
-          <div className="flex items-center justify-between gap-3">
-            <p role="alert" className="text-xs text-mg-danger">{t('workspaces.detail.settings.preferenceError')}</p>
-            <Button variant="secondary" size="small" onClick={() => { void profileQuery.refetch() }}>{t('common.retry')}</Button>
-          </div>
-        )}
-      </div>
-
       {/* 基本信息：名称 + Slug（只读）+ 描述 */}
       <div className="bg-mg-bg-0 border border-mg-border/50 rounded-lg p-6 shadow-xs space-y-4">
         <div className="space-y-1.5">
@@ -127,7 +98,8 @@ export function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted:
         {(canRename || canEditSettings) && (
           <Button
             variant="brand"
-            disabled={renameMutation.isPending || !name.trim() || !dirty || !canSave}
+            disabled={saving || !canSave}
+            loading={saving}
             onClick={() => renameMutation.mutate()}
             className="h-9 px-4 rounded-lg font-semibold text-xs"
           >
@@ -141,7 +113,7 @@ export function SettingsTab({ ws, onDeleted }: { ws: WorkspaceDetail; onDeleted:
         <div className="text-xs font-bold text-mg-danger uppercase tracking-wider">
           {t('workspaces.detail.settings.dangerTitle')}
         </div>
-        {ws.is_default ? (
+        {isProtectedDefault ? (
           <p className="text-xs text-mg-text-3">{t('workspaces.detail.settings.defaultCannotDelete')}</p>
         ) : canDelete ? (
           <>

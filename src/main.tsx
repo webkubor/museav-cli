@@ -42,6 +42,15 @@ initTrack({
     const tenantId = useAuthStore.getState().activeTenantId
     return tenantId ? { 'X-Tenant-Id': tenantId } : undefined
   },
+  // 公共属性：每条事件带上内部稳定 ID（account_id / workspace_id），不带邮箱手机号。
+  // 未登录或尚未选定工作空间时不附加，避免写入空值。
+  getCommonProps: () => {
+    const { account, activeWorkspaceId } = useAuthStore.getState()
+    const props: Record<string, string> = {}
+    if (account?.account_id) props.user_id = account.account_id
+    if (activeWorkspaceId) props.workspace_id = activeWorkspaceId
+    return props
+  },
 })
 
 // 全局兜底：未被 ErrorBoundary 兜住的异常（如事件回调里的报错）与未处理 rejection 也上报

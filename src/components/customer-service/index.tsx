@@ -226,14 +226,14 @@ function RatingCardBridge({ msg }: { msg: ChatItem }) {
   return (
     <RatingCard
       item={msg}
-      onSubmit={(stars) => support.endActiveHandoffForCard(msg, stars)}
-      onSkip={() => support.endActiveHandoffForCard(msg, undefined, true)}
+      onSubmit={(stars) => support.rateEndedHandoff(msg, stars)}
+      onSkip={() => support.rateEndedHandoff(msg, undefined, true)}
     />
   )
 }
 
 // 简易上下文：把 useSupport 的评价收尾方法透传给消息流里的 RatingCard，避免逐层传参
-const SupportCtx = createContext<{ endActiveHandoffForCard: (msg: ChatItem, stars?: number, skip?: boolean) => void } | null>(null)
+const SupportCtx = createContext<{ rateEndedHandoff: (msg: ChatItem, stars?: number, skip?: boolean) => void } | null>(null)
 function useSupportContext() {
   const ctx = useContext(SupportCtx)
   if (!ctx) throw new Error('SupportCtx missing')
@@ -252,7 +252,7 @@ export function CustomerService() {
     mode, go, messages, isAsking, ticketDetail, ticketDetailError, ticketMessages, ticketMessagesLoaded, markSelectedTicketSeen, replySelectedTicket, unreadVersion,
     // 三区行为由状态机推导，组件不再自己拼布尔组合（原先是 mode/serviceMode 交叉判断）
     showComposer, composerDisabled, showFeedbackEntry, isHumanChat,
-    ask, rateMessageAnswer, startHandoff, cancelActiveHandoff, isCancellingHandoff, endActiveHandoff,
+    ask, rateMessageAnswer, startHandoff, cancelActiveHandoff, isCancellingHandoff, endActiveHandoff, rateEndedHandoff,
     sendHumanReply, feedbackSubmitting, submitFeedback, startNewSession, startingNewSession, handoffInFlight, openTicketDetail, reopenSelectedTicket, rateSelectedTicket, supplementSelectedTicket,
   } = support
 
@@ -353,7 +353,9 @@ export function CustomerService() {
 
   return (
     <SupportCtx.Provider value={{
-      endActiveHandoffForCard: (_msg, stars, skip) => endActiveHandoff(stars, skip),
+      rateEndedHandoff: (msg, stars, skip) => {
+        if (msg.ratingCard?.ticketId) void rateEndedHandoff(msg.ratingCard.ticketId, stars, skip)
+      },
     }}>
       {/* Floating trigger button */}
       <div

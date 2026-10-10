@@ -20,9 +20,12 @@ import { amountBand } from './billing-tracking'
 import {
   findQuote,
   hasBonus,
+  isQuoteConflictError,
   isQuoteUnavailableError,
   quoteChanged,
+  quoteFromConflictError,
   quoteStatusOf,
+  replaceQuote,
   sameAmount,
   type QuoteStatus,
 } from './recharge-quote'
@@ -111,8 +114,10 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
 
   // ─── 首冲赠金报价（prd46#1240）：打开弹框即取预设档报价；自定义金额防抖后单独报价 ───
   const quoteEnabled = visible && canRecharge && !!tenantId
+  const presetQuotesKey = ['recharge-quotes', tenantId, currency, PRESETS.join(',')]
+  const customQuoteKey = (value: string) => ['recharge-quote', tenantId, currency, value]
   const presetQuotes = useQuery({
-    queryKey: ['recharge-quotes', tenantId, currency, PRESETS.join(',')],
+    queryKey: presetQuotesKey,
     queryFn: () => quoteRecharges(tenantId, { currency, amounts: PRESETS }),
     enabled: quoteEnabled,
     retry: false,
@@ -125,7 +130,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
   const debouncedCustom = useDebouncedValue(customInput, 400)
   const customValid = customMode && isAmountValid && debouncedCustom === customInput
   const customQuote = useQuery({
-    queryKey: ['recharge-quote', tenantId, currency, debouncedCustom],
+    queryKey: customQuoteKey(debouncedCustom),
     queryFn: () => quoteRecharges(tenantId, { currency, amounts: [debouncedCustom] }),
     enabled: quoteEnabled && !quoteUnavailable && customValid,
     retry: false,
@@ -190,14 +195,40 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
         return_url: window.location.href,
         ...(p.quoteId ? { quote_id: p.quoteId } : {}),
       }),
-    onError: (err: Error) => appToast.requestError(err, t('billing.rechargeModal.error')),
+    onError: (err: Error) => {
+      // 报价冲突不算失败：由提交处换上最新报价并提示用户重新确认
+      if (isQuoteConflictError(err)) return
+      appToast.requestError(err, t('billing.rechargeModal.error'))
+    },
   })
+
+  /**
+   * 下单返回 40912：用 data.quote 换掉展示中的同金额报价；拿不到或金额对不上就重新报价。
+   * 先取消进行中的报价请求，免得旧请求晚到把新报价覆盖回去；资格 / 活动状态变了，
+   * 其余预设档的赠金也已失效（自定义金额时摘要同样读预设档），一并重新报价。
+   */
+  const applyConflictQuote = async (err: unknown, submitAmount: string, custom: boolean, shown?: RechargeQuote) => {
+    const latest = quoteFromConflictError(err)
+    if (!latest || !sameAmount(latest.amount, submitAmount)) {
+      presetQuotes.refetch()
+      if (custom) customQuote.refetch()
+      return
+    }
+    const patch = (old?: { items: RechargeQuote[] }) => (old ? { items: replaceQuote(old.items, latest) } : old)
+    const targetKey = custom ? customQuoteKey(submitAmount) : presetQuotesKey
+    await queryClient.cancelQueries({ queryKey: targetKey, exact: true })
+    queryClient.setQueryData(targetKey, patch)
+    if (!shown || shown.eligible !== latest.eligible || shown.activity_active !== latest.activity_active) {
+      presetQuotes.refetch()
+    }
+  }
 
   const handleSubmit = async () => {
     if (!canRecharge || !isAmountValid || requoting) return
     // 点击这一刻锁定提交参数；复校验期间金额/渠道控件也会禁用
     const submit: SubmitParams = { amount, currency, channel: effectiveChannel }
     const shownQuote = currentQuote
+    const submitCustom = customMode
     // 先同步开窗（在点击手势内），避免下面的 await 让浏览器拦截弹窗
     const paymentWindow = window.open('about:blank', '_blank')
     if (paymentWindow) paymentWindow.opener = null
@@ -275,6 +306,12 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
       },
       onError: (err: Error) => {
         paymentWindow?.close()
+        if (isQuoteConflictError(err)) {
+          setQuoteChangedNotice(true)
+          void applyConflictQuote(err, submit.amount, submitCustom, shownQuote)
+          trackEvent('billing_recharge_result', { result: 'fail', failure_reason: 'quote_changed', pay_channel: submit.channel })
+          return
+        }
         // §11.2 billing_recharge_result：下单请求本身失败（跳支付渠道前），alipay/stripe 的渠道侧
         // 支付结果目前无回跳页可读取（现状缺口，非本单埋点范围），只有此处 + 微信收银台轮询能拿到结果
         trackEvent('billing_recharge_result', { result: 'fail', failure_reason: err.message || 'create_recharge_failed', pay_channel: submit.channel })

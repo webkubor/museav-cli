@@ -31,6 +31,11 @@ import {
 } from './recharge-quote'
 
 import { LuGift } from 'react-icons/lu'
+// 弹框自己的样式（.billing-recharge-* / .billing-recharge-result）在 billing.css 里；
+// 本组件是全局挂载的（DashboardLayout 常驻 + 账单页各入口），而 billing.css 原先只被
+// 账单页 `pages/billing/index.tsx` import —— 从仪表盘/低余额提醒打开的弹框拿不到这些规则
+// （手机宽度档位卡不折成两列、选中态描边丢失），这里显式 import 让组件自带样式，Vite 去重。
+import './billing.css'
 
 /**
  * 推荐档位（只是快捷入口，赠金以服务端报价为准）。
@@ -358,7 +363,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
           <div className="flex items-center justify-between gap-2 mb-2.5">
             <div id="billing-recharge-amount-label" className="text-xs text-mg-text-3 font-bold tracking-wider">{t('billing.rechargeModal.amount')}</div>
             {eligible && maxPresetBonus > 0 && (
-              <span className="inline-flex items-center gap-1 text-xs font-semibold text-brand-base">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-brand-base/25 bg-brand-selected-bg text-xs font-semibold text-brand-base">
                 <LuGift size={12} aria-hidden="true" />
                 {t('billing.rechargeModal.bonusSummary', { max: fmt(maxPresetBonus) })}
               </span>
@@ -374,8 +379,11 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
               return (
                 <button key={p} type="button" aria-pressed={active} disabled={controlsLocked} onClick={() => selectPreset(p)} className={cardClass(active)}>
                   {/* 需求方#433：面额加千分位（$1,000），符合海外金额阅读习惯 */}
-                  <strong className={cn('block text-base font-bold font-mono', active && 'text-brand-base')}>{fmt(p)}</strong>
-                  {line && <span className="block mt-0.5 text-xs text-mg-text-3 truncate" title={line}>{line}</span>}
+                  <strong className={cn('block text-base font-bold font-mono tabular-nums', active && 'text-brand-base')}>{fmt(p)}</strong>
+                  {/* 副行（赠金/到账）在选中态跟着品牌色：整张卡一起亮，选中焦点才明确 */}
+                  {line && (
+                    <span className={cn('block mt-0.5 text-xs truncate', active ? 'text-brand-base' : 'text-mg-text-3')} title={line}>{line}</span>
+                  )}
                 </button>
               )
             })}
@@ -420,41 +428,50 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
 
         {/* 明细（原型 billing-recharge-breakdown）：支付 / 获得 两张卡纵排。
             原型 CSS 是单列 grid（无 grid-template-columns），此前实现成 sm 以上两列，
-            与原型不符（需求方 2026-10-10：「支付和到账总额纵向展示」）。 */}
+            与原型不符（需求方 2026-10-10：「支付和到账总额纵向展示」）。
+
+            层次（需求方 2026-10-10「视觉上有点层次」，只动字重/色阶，不动文案与排列）：
+            行标签退到 text-3（12px）、行值升一档到 14px、总额再升到 16px 加粗 ——
+            12 / 14 / 16 三档各差 2px，扫读时先看见金额再看标签。「获得」卡是这次充值的
+            结果，整卡描边走 .billing-recharge-result（见 billing.css），总额认品牌色。 */}
         <div className="grid grid-cols-1 gap-2.5" aria-live="polite">
           <section className="mg-tile p-3 space-y-1.5" aria-labelledby="billing-recharge-pay-title">
-            <h3 id="billing-recharge-pay-title" className="text-xs font-bold text-mg-text-3">{t('billing.rechargeModal.payTitle')}</h3>
-            <div className="flex justify-between text-xs text-mg-text-2">
+            <h3 id="billing-recharge-pay-title" className="text-xs font-bold text-mg-text-3 tracking-wider">{t('billing.rechargeModal.payTitle')}</h3>
+            <div className="flex items-baseline justify-between gap-2 text-xs text-mg-text-3">
               <span>{t('billing.rechargeModal.amount')}</span>
-              <span className="font-mono">{isAmountValid ? fmt(amount) : '—'}</span>
+              <span className="font-mono tabular-nums text-sm font-semibold text-mg-text-2">{isAmountValid ? fmt(amount) : '—'}</span>
             </div>
-            <div className="flex justify-between text-sm text-mg-text-1">
-              <strong>{t('billing.rechargeModal.payTotal')}</strong>
-              <strong className="font-mono">{isAmountValid ? fmt(amount) : '—'}</strong>
+            <div className="flex items-baseline justify-between gap-2">
+              <strong className="text-xs font-bold text-mg-text-2">{t('billing.rechargeModal.payTotal')}</strong>
+              <strong className="font-mono tabular-nums text-base font-bold text-mg-text-1">{isAmountValid ? fmt(amount) : '—'}</strong>
             </div>
           </section>
-          <section className="mg-tile p-3 space-y-1.5" aria-labelledby="billing-recharge-get-title">
-            <h3 id="billing-recharge-get-title" className="text-xs font-bold text-mg-text-3">{t('billing.rechargeModal.getTitle')}</h3>
-            <div className="flex justify-between text-xs text-mg-text-2">
+          <section className="mg-tile billing-recharge-result p-3 space-y-1.5" aria-labelledby="billing-recharge-get-title">
+            <h3 id="billing-recharge-get-title" className="text-xs font-bold text-mg-text-3 tracking-wider">{t('billing.rechargeModal.getTitle')}</h3>
+            <div className="flex items-baseline justify-between gap-2 text-xs text-mg-text-3">
               <span>{t('billing.rechargeModal.getMain')}</span>
-              <span className="font-mono">{isAmountValid ? fmt(amount) : '—'}</span>
+              <span className="font-mono tabular-nums text-sm font-semibold text-mg-text-1">{isAmountValid ? fmt(amount) : '—'}</span>
             </div>
             {/* 赠金行：只在服务端确认有资格且活动生效时出现；加载中不展示旧值，失败可重试 */}
             {eligible && (
-              <div className="flex justify-between items-center text-xs text-mg-text-2">
+              <div className="flex items-baseline justify-between gap-2 text-xs text-mg-text-3">
                 <span>{t('billing.rechargeModal.getBonus')}</span>
                 {currentStatus === 'error' && isAmountValid ? (
                   <Button variant="link" size="sm" onClick={retryQuote}>{t('billing.rechargeModal.quoteRetry')}</Button>
+                ) : !isAmountValid ? (
+                  <span className="font-mono tabular-nums text-sm font-semibold text-mg-text-2">—</span>
+                ) : quotePending ? (
+                  <span>{t('billing.rechargeModal.quoteLoading')}</span>
                 ) : (
-                  <span className={cn('font-mono', Number(bonusShown) > 0 && 'text-brand-base font-semibold')}>
-                    {!isAmountValid ? '—' : quotePending ? t('billing.rechargeModal.quoteLoading') : `+${fmt(bonusShown)}`}
+                  <span className={cn('font-mono tabular-nums text-sm font-semibold', Number(bonusShown) > 0 ? 'text-brand-base' : 'text-mg-text-2')}>
+                    +{fmt(bonusShown)}
                   </span>
                 )}
               </div>
             )}
-            <div className="flex justify-between text-sm text-mg-text-1">
-              <strong>{t('billing.rechargeModal.getTotal')}</strong>
-              <strong className="font-mono text-brand-base">
+            <div className="flex items-baseline justify-between gap-2">
+              <strong className="text-xs font-bold text-mg-text-2">{t('billing.rechargeModal.getTotal')}</strong>
+              <strong className="font-mono tabular-nums text-base font-bold text-brand-base">
                 {!isAmountValid ? '—' : quotePending ? t('billing.rechargeModal.quoteLoading') : fmt(creditedShown)}
               </strong>
             </div>

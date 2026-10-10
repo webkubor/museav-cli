@@ -16,6 +16,22 @@ export function referralCodeFromSearchParams(searchParams: URLSearchParams) {
 }
 
 /**
+ * 本次链接是否显式带了推荐参数（aff / ref，含空值），外层 query 与 redirect 内嵌 query 都算。
+ * 带了就以本次链接为准：合法则用，不合法或为空则清掉旧缓存，不回退到上一个推荐人（prd46#1242）。
+ */
+function referralParamProvided(searchParams: URLSearchParams): boolean {
+  if (searchParams.has('aff') || searchParams.has('ref')) return true
+  const redirect = searchParams.get('redirect')
+  if (!redirect) return false
+  try {
+    const inner = new URL(redirect, 'https://placeholder.invalid').searchParams
+    return inner.has('aff') || inner.has('ref')
+  } catch {
+    return false
+  }
+}
+
+/**
  * 邀请码会话级持久化（需求方#714）：推荐链接 /signup?aff=X 在国内市场要经历
  * /signup → /login 的市场重定向，OAuth 登录还会离站回跳——只靠 URL query 撑不到
  * 注册请求发出的那一刻。首跳解析到码就落 sessionStorage，后续页面 URL 丢了也能取回；
@@ -36,8 +52,8 @@ export function resolveReferralCode(searchParams: URLSearchParams): string {
       sessionStorage.setItem(REFERRAL_CODE_SESSION_KEY, fromUrl)
       return fromUrl
     }
-    // URL 带了推荐参数（含空值 ?aff=）但不合法：以本次链接为准，清掉旧缓存，不回退到上一个推荐人
-    if (rawFromUrl || searchParams.has('aff') || searchParams.has('ref')) {
+    // URL（含 redirect 内嵌层）带了推荐参数但为空或不合法：以本次链接为准，清掉旧缓存
+    if (rawFromUrl || referralParamProvided(searchParams)) {
       sessionStorage.removeItem(REFERRAL_CODE_SESSION_KEY)
       return ''
     }

@@ -44,6 +44,11 @@ describe('oauthAuthorizeUrl attribution passthrough', () => {
     oauthAuthorizeUrl('google', '/')
     setSearch('?aff=')
     expect(new URL(oauthAuthorizeUrl('google', '/')).searchParams.has('referral_code')).toBe(false)
+    // 根路径重定向后内嵌在 redirect 里的空 aff 同样生效
+    setSearch('?aff=OLD-3')
+    oauthAuthorizeUrl('google', '/')
+    setSearch(`?redirect=${encodeURIComponent('/?aff=')}`)
+    expect(new URL(oauthAuthorizeUrl('google', '/')).searchParams.has('referral_code')).toBe(false)
     setSearch('')
     expect(new URL(oauthAuthorizeUrl('google', '/')).searchParams.has('referral_code')).toBe(false)
   })

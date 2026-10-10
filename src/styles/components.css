@@ -688,12 +688,14 @@
   transition: box-shadow 0.3s ease;
 }
 
-/* 顶栏不再使用底部细线，层次由 DashboardHeader 调用处的投影表达。
+/* 浅色顶栏由实底和调用处投影表达层次，不显示玻璃边线；深色顶栏保留设计 token
+   在 .mg-glass-bar / .mg-glass-bar-strong 上定义的 2px 主题亮边，避免内容穿过顶栏时
+   边界消失。
    放在全局样式文件（index.css → components.css）而不是 DashboardLayout 的 layout.css：
    当初 DashboardHeader 还挂在公开模型广场的外壳 PublicShell 上，只放 layout.css 那边覆盖不到
    （2026-08-08 踩过）。广场 prd#1272 已拆到官网、PublicShell 已删，现在只剩 DashboardLayout 一处。 */
-header.mg-glass-bar,
-header.mg-glass-bar-strong {
+body:not([theme-mode='dark']) header.mg-glass-bar,
+body:not([theme-mode='dark']) header.mg-glass-bar-strong {
   border-bottom: 0;
 }
 

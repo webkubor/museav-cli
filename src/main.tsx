@@ -18,6 +18,7 @@ import { getMarket } from './lib/market'
 import { installChunkReloadGuard } from './lib/chunk-reload'
 import { apiBaseUrl } from './lib/request'
 import { useAuthStore } from './store/auth'
+import { captureNewAccountFlag } from './lib/new-account'
 
 // 前端运行时错误上报（仅 DEV）：未捕获异常 / rejection / 全控制台 + DOM 快照，
 // 内置 5s 去重 + 去 HMR 戳防刷爆。统一由 vite-plugin-agent-eyes 提供，替代原 dev-error-reporter。
@@ -52,6 +53,11 @@ initTrack({
     return props
   },
 })
+
+// OAuth 回跳的新注册标记：必须在 React 挂载前摘掉并记下（prd#1242）。
+// 回跳目标页各自在挂载时读一次 URL，晚一步清理用户就会看到残留的 ?is_new_account=…；
+// 上报不在这里做 —— 要等 AuthProvider 首拉 session 成功，确认这次登录真的成立（见 lib/new-account.ts）。
+captureNewAccountFlag()
 
 // 全局兜底：未被 ErrorBoundary 兜住的异常（如事件回调里的报错）与未处理 rejection 也上报
 installGlobalClientErrorReporting()

@@ -254,6 +254,30 @@ describe('TopUpModal', () => {
     expect(paymentWindow.close).toHaveBeenCalled()
   })
 
+  it('re-checks on every submit: a quote that changes again during reconfirm still blocks ordering', async () => {
+    // 打开 50 → 复校验 30（变化，提示）→ 刷新展示 30 → 再点时又变 10（仍需再次确认，不得下单）
+    const bonuses = ['50', '30', '30', '10']
+    let i = 0
+    quoteRecharges.mockReset().mockImplementation(async (_t, body) => {
+      const b = bonuses[Math.min(i, bonuses.length - 1)]
+      i += 1
+      return { items: body.amounts.map((a) => quote(a, Number(a) === 500 ? b : '0')) }
+    })
+    const paymentWindow = { close: vi.fn(), closed: false, location: { href: '' } } as unknown as Window
+    vi.spyOn(window, 'open').mockReturnValue(paymentWindow)
+
+    renderModal()
+    await screen.findByText('送 ¥50 · 到账 ¥550')
+    await clickPay('前往支付 ¥500')
+    await screen.findByRole('alert')
+    await screen.findByText('送 ¥30 · 到账 ¥530')
+    await clickPay('前往支付 ¥500')
+    // 第二次复校验发现又变化 → 再次刷新展示（共 5 次报价），且绝不下单
+    await screen.findByText('送 ¥10 · 到账 ¥510')
+    expect(quoteRecharges.mock.calls.length).toBeGreaterThanOrEqual(4)
+    expect(createRecharge).not.toHaveBeenCalled()
+  })
+
   it('blocks ordering on a failed quote and lets the user retry', async () => {
     quoteRecharges.mockReset().mockRejectedValue(new Error('boom'))
     renderModal()

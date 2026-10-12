@@ -331,6 +331,13 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
   const controlsLocked = requoting || recharge.isPending
   const quoteBlocking = !quoteUnavailable && isAmountValid && (currentStatus === 'loading' || currentStatus === 'error')
   const fmt = (v: string | number) => formatMoney(v, currencySymbol)
+  // 档位副行：有小数时补足两位（$2.1 → $2.10），读起来像金额而不是数值
+  const fmtCents = (v: string | number) => {
+    const n = Number(v)
+    return Number.isFinite(n) && !Number.isInteger(n)
+      ? `${currencySymbol}${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      : fmt(v)
+  }
   const bonusShown = hasBonus(currentQuote) ? currentQuote.bonus_amount : '0'
   const creditedShown = currentQuote ? currentQuote.credited_total : amount
   const quotePending = eligible && isAmountValid && currentStatus === 'loading'
@@ -381,7 +388,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
               const active = !customMode && sameAmount(selected, p)
               const quote = findQuote(presetItems, p)
               const line = hasBonus(quote)
-                ? t('billing.rechargeModal.bonusPreset', { bonus: fmt(quote.bonus_amount), total: fmt(quote.credited_total) })
+                ? t('billing.rechargeModal.bonusPreset', { bonus: fmtCents(quote.bonus_amount), total: fmtCents(quote.credited_total) })
                 : ''
               return (
                 <button key={p} type="button" aria-pressed={active} disabled={controlsLocked} onClick={() => selectPreset(p)} className={cardClass(active)}>
@@ -389,7 +396,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
                   <strong className={cn('block text-base font-bold font-mono tabular-nums', active && 'text-brand-base')}>{fmt(p)}</strong>
                   {/* 副行（赠金/到账）在选中态跟着品牌色：整张卡一起亮，选中焦点才明确 */}
                   {line && (
-                    <span className={cn('block mt-0.5 text-xs truncate', active ? 'text-brand-base' : 'text-mg-text-2')} title={line}>{line}</span>
+                    <span className={cn('block mt-0.5 text-xs leading-snug truncate', active ? 'text-brand-base' : 'text-mg-text-2')} title={line}>{line}</span>
                   )}
                 </button>
               )

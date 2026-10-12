@@ -190,6 +190,18 @@ describe('TopUpModal', () => {
     expect(screen.queryByText('WX202606100002')).not.toBeInTheDocument()
   })
 
+  // prd46#1260：最低充值额由 0.1 提到 0.5，低于 0.5 的自定义金额判为无效
+  it('rejects custom amounts below the 0.5 minimum', async () => {
+    renderModal()
+    await waitFor(() => expect(quoteRecharges).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: /自定义额度/ }))
+    const input = screen.getByPlaceholderText('输入自定义金额')
+    fireEvent.change(input, { target: { value: '0.3' } })
+    expect(input).toHaveAttribute('aria-invalid', 'true')
+    fireEvent.change(input, { target: { value: '0.5' } })
+    expect(input).toHaveAttribute('aria-invalid', 'false')
+  })
+
   // PRD 原型 BillingRechargeModal：自定义输入框只在选中「自定义额度」卡后出现，预设不回填输入框
   it('shows the custom input only after picking the custom-amount card', async () => {
     renderModal()
@@ -207,14 +219,14 @@ describe('TopUpModal', () => {
   })
 
   it('caps server-returned CNY presets at five and keeps custom sixth (#1260)', async () => {
-    const configured = ['0.1', '5', '10', '100', '500', '1000', '10000']
+    const configured = ['0.5', '5', '10', '100', '500', '1000', '10000']
     quoteRecharges.mockReset().mockResolvedValue({
       items: configured.map((amount) => quote(amount, '0')),
     })
     renderModal()
     await waitFor(() => expect(quoteRecharges).toHaveBeenCalled())
-    expect(quoteRecharges).toHaveBeenCalledWith('tnt_1', { currency: 'CNY', amounts: ['0.1', '5', '10', '100', '500'] })
-    for (const label of ['¥0.1', '¥5', '¥10', '¥100', '¥500']) {
+    expect(quoteRecharges).toHaveBeenCalledWith('tnt_1', { currency: 'CNY', amounts: ['0.5', '5', '10', '100', '500'] })
+    for (const label of ['¥0.5', '¥5', '¥10', '¥100', '¥500']) {
       expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
     }
     expect(screen.queryByRole('button', { name: '¥1,000' })).not.toBeInTheDocument()
@@ -227,11 +239,11 @@ describe('TopUpModal', () => {
   it('keeps USD at five presets with custom amount sixth (#1260)', async () => {
     useCurrencyMock.mockReturnValue({ currency: 'USD', symbol: '$' })
     renderModal()
-    for (const label of ['$0.1', '$5', '$10', '$100', '$500']) {
+    for (const label of ['$0.5', '$5', '$10', '$100', '$500']) {
       expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
     }
     await waitFor(() => expect(quoteRecharges).toHaveBeenCalledWith('tnt_1', {
-      currency: 'USD', amounts: ['0.1', '5', '10', '100', '500'],
+      currency: 'USD', amounts: ['0.5', '5', '10', '100', '500'],
     }))
     const cards = document.querySelectorAll('.billing-recharge-presets > button')
     expect(cards).toHaveLength(6)
@@ -241,8 +253,8 @@ describe('TopUpModal', () => {
   // ─── prd46#1240 首冲赠金 ───
   it('limits CNY to five presets and places custom amount sixth (#1260)', async () => {
     renderModal()
-    // 两站面值统一（2026-10-12 与需求方确认）：0.1/5/10/100/500，只有单位符号不同
-    for (const label of ['¥0.1', '¥5', '¥10', '¥100', '¥500']) {
+    // 两站面值统一（2026-10-12 与需求方确认）：0.5/5/10/100/500，只有单位符号不同
+    for (const label of ['¥0.5', '¥5', '¥10', '¥100', '¥500']) {
       expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
     }
     expect(screen.queryByRole('button', { name: '¥50' })).not.toBeInTheDocument()
@@ -250,7 +262,7 @@ describe('TopUpModal', () => {
     expect(cards).toHaveLength(6)
     expect(cards[5]).toHaveTextContent('自定义额度')
     await waitFor(() => expect(screen.getByRole('button', { name: '前往支付 ¥500' })).toBeEnabled())
-    expect(quoteRecharges).toHaveBeenCalledWith('tnt_1', { currency: 'CNY', amounts: ['0.1', '5', '10', '100', '500'] })
+    expect(quoteRecharges).toHaveBeenCalledWith('tnt_1', { currency: 'CNY', amounts: ['0.5', '5', '10', '100', '500'] })
     expect(screen.queryByText(/首冲加赠/)).not.toBeInTheDocument()
     expect(screen.queryByText(/送 ¥/)).not.toBeInTheDocument()
     expect(screen.queryByText('首冲赠金 · 赠送余额')).not.toBeInTheDocument()
@@ -264,7 +276,7 @@ describe('TopUpModal', () => {
     vi.spyOn(window, 'open').mockReturnValue(paymentWindow)
 
     renderModal()
-    // 面值统一后档位为 0.1/5/10/100/500，mock 按 amount>=50 给 10%：
+    // 面值统一后档位为 0.5/5/10/100/500，mock 按 amount>=50 给 10%：
     // 最高赠金来自 ¥500 档 → 送 ¥50；¥10 及以下未命中梯度
     expect(await screen.findByText('首冲加赠，最高送 ¥50')).toBeInTheDocument()
     expect(screen.getByText('送 ¥50 · 到账 ¥550')).toBeInTheDocument()

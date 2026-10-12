@@ -48,11 +48,11 @@ import './billing.css'
  * #1260：两站最多 5 档，第 6 格固定为「自定义额度」。`.slice(0, 5)` 写在渲染与报价
  * 请求之前，两条路径共用同一个裁剪结果。
  */
-const PRESETS = ['0.1', '5', '10', '100', '500']
+const PRESETS = ['0.5', '5', '10', '100', '500']
 /** 默认选中档位（沿用改动前 CNY/USD 的默认行为，不因面值统一而改变） */
 const DEFAULT_AMOUNT = '500'
-/** 最低充值额：0.1（法币最小精度两位小数；原型 min=0.1 + prd46#1232） */
-const MIN_AMOUNT = 0.1
+/** 最低充值额：0.5（2026-10-12 需求方要求首档与下限由 0.1 提到 0.5，prd46#1260；法币最小精度两位小数） */
+const MIN_AMOUNT = 0.5
 const AMOUNT_PATTERN = /^\d+(?:\.\d{1,2})?$/
 
 function buildWechatCashierURL(params: {

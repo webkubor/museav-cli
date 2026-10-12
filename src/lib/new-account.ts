@@ -23,11 +23,13 @@
  *    要彻底堵住需后端给可校验的一次性凭据，或按 prd#1228 ④ 的做法由后端上报该事件。
  * 2. **时效窗口**：标记带 5 分钟 TTL，超时不发 —— 让「捕获到上报」只发生在回跳后的即时
  *    会话建立窗口内，而不是任意时刻的某次会话刷新，把边界 1 的影响面压到一个很窄的窗口。
- * 3. 只走站内自建埋点（`@model-go/track` → `/api/v1/events:batch`），**不写 GA4 / dataLayer**
- *    —— 控制台前台没有 dataLayer 转发（与官网首页埋点同一待定口径，见 prd#1246 C 项）。
- *    若市场侧要用 GA4 的 sign_up 做转化，需另立单加转发。
+ * 3. 两条线同时发：站内自建埋点（`@model-go/track` → `/api/v1/events:batch`）+ GTM dataLayer
+ *    （prd46#1271，带 user_id / workspace_id / 注册时的广告来源，见 lib/gtm-datalayer.ts）。
+ *    dataLayer 只是交给 GTM，GA4 能否收到取决于市场侧在 GTM 里配的 GA4 事件标签。
  */
 import { trackEvent } from '@/lib/track'
+import { currentIdentity, pushDataLayer } from '@/lib/gtm-datalayer'
+import { readPersistedAdAttribution, type AdAttributionFields } from '@/pages/signup/ad-source'
 
 /** OAuth 回跳 URL 上的新注册标记参数名（后端 web-api!90 / permissions!56 契约）。 */
 const NEW_ACCOUNT_PARAM = 'is_new_account'
@@ -39,7 +41,7 @@ const PENDING_TTL_MS = 5 * 60 * 1000
 export type AuthMethod = 'email_code' | 'phone' | 'oauth' | 'password'
 
 /** OAuth 回跳捕获到的标记；`null` = 本次没有回跳标记或已消费。 */
-let pendingOAuthLanding: { isNewAccount: boolean; capturedAt: number } | null = null
+let pendingOAuthLanding: { isNewAccount: boolean; capturedAt: number; adAttribution?: AdAttributionFields } | null = null
 
 /**
  * 启动时从当前 URL 捕获 OAuth 回跳的新注册标记，并把参数从地址栏摘掉。
@@ -61,7 +63,9 @@ export function captureNewAccountFlag(now: number = Date.now()): void {
   }
   const raw = url.searchParams.get(NEW_ACCOUNT_PARAM)
   if (raw === null) return
-  pendingOAuthLanding = { isNewAccount: raw === 'true', capturedAt: now }
+  // 广告来源在这里先拍一份：OAuth 回调页拿到会话后会清掉 sessionStorage 里的来源（防串号），
+  // 而 sign_up 的上报可能晚于清理（AuthProvider 路径），所以不能等上报时再读。
+  pendingOAuthLanding = { isNewAccount: raw === 'true', capturedAt: now, adAttribution: readPersistedAdAttribution(now) }
   url.searchParams.delete(NEW_ACCOUNT_PARAM)
   try {
     window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash)
@@ -74,9 +78,11 @@ export function captureNewAccountFlag(now: number = Date.now()): void {
  * 新注册事件（注册 CPA 的分子/分母口径）。仅 `isNewAccount === true` 时发，
  * 判定留在各触发点，避免这里再猜一次语义。
  */
-export function trackSignUp(method: AuthMethod, isNewAccount?: boolean): void {
+export function trackSignUp(method: AuthMethod, isNewAccount?: boolean, adAttribution?: AdAttributionFields): void {
   if (isNewAccount !== true) return
   trackEvent('sign_up', { method }, { result: 'success' })
+  // 身份取调用时的 store：各触发点都在 setAuth 之后调用，这里已是新账号。
+  pushDataLayer({ event: 'sign_up', method, ...currentIdentity(), ...adAttribution })
 }
 
 /**
@@ -95,7 +101,7 @@ export function flushNewAccountSignUp(now: number = Date.now()): void {
   pendingOAuthLanding = null
   if (!pending || !pending.isNewAccount) return
   if (now - pending.capturedAt > PENDING_TTL_MS) return
-  trackSignUp('oauth', true)
+  trackSignUp('oauth', true, pending.adAttribution)
 }
 
 /** 仅供测试：清掉模块级待上报标记，避免用例之间互相污染。 */

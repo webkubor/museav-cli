@@ -19,6 +19,7 @@ import { installChunkReloadGuard } from './lib/chunk-reload'
 import { apiBaseUrl } from './lib/request'
 import { useAuthStore } from './store/auth'
 import { captureNewAccountFlag } from './lib/new-account'
+import { installDataLayerIdentitySync } from './lib/gtm-datalayer'
 
 // 前端运行时错误上报（仅 DEV）：未捕获异常 / rejection / 全控制台 + DOM 快照，
 // 内置 5s 去重 + 去 HMR 戳防刷爆。统一由 vite-plugin-agent-eyes 提供，替代原 dev-error-reporter。
@@ -58,6 +59,10 @@ initTrack({
 // 回跳目标页各自在挂载时读一次 URL，晚一步清理用户就会看到残留的 ?is_new_account=…；
 // 上报不在这里做 —— 要等 AuthProvider 首拉 session 成功，确认这次登录真的成立（见 lib/new-account.ts）。
 captureNewAccountFlag()
+
+// GTM dataLayer 身份同步（prd46#1271）：登录态 / 工作空间变化时推 mg_identity（user_id / workspace_id），
+// 供市场侧在 GTM 里给 GA4 设置 user_id。必须早于 AuthProvider 首拉会话，否则漏掉第一次 setAuth。
+installDataLayerIdentitySync()
 
 // 全局兜底：未被 ErrorBoundary 兜住的异常（如事件回调里的报错）与未处理 rejection 也上报
 installGlobalClientErrorReporting()

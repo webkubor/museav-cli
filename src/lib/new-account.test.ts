@@ -6,6 +6,7 @@ import {
   trackSignUp,
 } from './new-account'
 import { trackEvent } from '@/lib/track'
+import { useAuthStore } from '@/store/auth'
 
 vi.mock('@/lib/track', () => ({ trackEvent: vi.fn() }))
 
@@ -114,5 +115,44 @@ describe('trackSignUp 判定', () => {
     trackSignUp('email_code', false)
     trackSignUp('email_code', undefined)
     expect(trackEvent).not.toHaveBeenCalled()
+  })
+})
+
+describe('sign_up 推 GTM dataLayer（prd46#1271）', () => {
+  const dl = () => (window as Window & { dataLayer?: Record<string, unknown>[] }).dataLayer ?? []
+  const signUps = () => dl().filter((e) => e.event === 'sign_up')
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    resetNewAccountStateForTest()
+    sessionStorage.clear()
+    ;(window as Window & { dataLayer?: unknown[] }).dataLayer = []
+    useAuthStore.setState({ account: { account_id: 'acc_1' } as never, activeWorkspaceId: 'ws_1' })
+    goto('/dashboard')
+  })
+
+  afterEach(() => {
+    useAuthStore.setState({ account: null, activeWorkspaceId: null })
+  })
+
+  it('邮箱腿：带身份与完整广告来源（含只进埋点的字段）', () => {
+    trackSignUp('email_code', true, { gclid: 'g1', campaign_id: 'c1', channel_id: 'google_ads', matchtype: 'e' })
+    expect(signUps()).toEqual([
+      { event: 'sign_up', method: 'email_code', user_id: 'acc_1', workspace_id: 'ws_1', gclid: 'g1', campaign_id: 'c1', channel_id: 'google_ads', matchtype: 'e' },
+    ])
+  })
+
+  it('老账号不推', () => {
+    trackSignUp('email_code', false, { gclid: 'g1' })
+    expect(signUps()).toEqual([])
+  })
+
+  it('OAuth 腿：来源在回跳捕获时拍快照，回调页清掉 sessionStorage 后上报仍带来源', () => {
+    sessionStorage.setItem('mg_ad_source', JSON.stringify({ captured_at: T0, fields: { gclid: 'g2', device: 'c' } }))
+    goto('/dashboard?is_new_account=true')
+    captureNewAccountFlag(T0)
+    sessionStorage.clear()
+    flushNewAccountSignUp(T0)
+    expect(signUps()).toEqual([{ event: 'sign_up', method: 'oauth', user_id: 'acc_1', workspace_id: 'ws_1', gclid: 'g2', device: 'c' }])
   })
 })

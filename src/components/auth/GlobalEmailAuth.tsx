@@ -34,8 +34,10 @@ import { getRequestErrorMessage, isApiErrorCode } from '@/lib/request-error-mess
 import { useAuthStore } from '@/store/auth'
 import { getRedirectTarget } from '@/lib/redirect'
 import { navigateAfterLogin } from '@/lib/login-intent'
-import { resolveReferralCode } from '@/pages/signup/referral-code'
+import { resolveReferralCode, clearPersistedReferralCode } from '@/pages/signup/referral-code'
+import { resolveAdSource, clearPersistedAdSource } from '@/pages/signup/ad-source'
 import { trackEvent } from '@/lib/track'
+import { trackSignUp } from '@/lib/new-account'
 
 /** 本页固定两个第三方入口（国际站允许集 = google / github，见 SocialLogin 的域名权威口径）。 */
 type GlobalOAuthProvider = Extract<OAuthProvider, 'google' | 'github'>
@@ -212,13 +214,16 @@ export function GlobalEmailAuth() {
     setLoading(true)
     setServerError('')
     try {
-      await emailCodeLoginRegister(
+      const result = await emailCodeLoginRegister(
         email,
         data.code,
         gateParam ?? (await getCaptchaParam()),
         resolveReferralCode(searchParams) || undefined,
         searchParams.get('invitation') ?? undefined,
+        resolveAdSource(searchParams),
       )
+      clearPersistedAdSource()
+      clearPersistedReferralCode()
       // 会话由服务端 cookie 下发，读回来填 store；导航交给上面 isAuthenticated 的 effect。
       const session = await getSession()
       setAuth(
@@ -229,6 +234,9 @@ export function GlobalEmailAuth() {
         session.permissions?.granted ?? null,
       )
       trackEvent('login_success', { method: 'email_code' }, { result: 'success' })
+      // 国际站「登录即注册」：同一次提交可能建了号。后端在响应里给 is_new_account（prd#1242），
+      // true 才补发 sign_up —— 注册 CPA 的分母就靠它，老账号只走上面的 login_success。
+      trackSignUp('email_code', result.is_new_account)
     } catch (error) {
       // 人机校验四元组一次性：本次提交已消费，任何失败都要重置，否则下一次提交必然先吃一次 40025。
       gateRef.current?.reset()

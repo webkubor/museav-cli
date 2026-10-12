@@ -12,6 +12,7 @@ import { getInitialSession, applySessionToStore } from '@/lib/auth/refresh-sessi
 import { toLoginWithRedirect } from '@/lib/redirect'
 import { getPreferences } from '@/services/preferences'
 import { saveTimeZone } from '@/lib/timezone'
+import { flushNewAccountSignUp } from '@/lib/new-account'
 import ForbiddenPage from '@/pages/forbidden'
 import type { SessionResult } from '@/types'
 
@@ -45,6 +46,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 工作区以**接口下发值**为准（localStorage 只是缓存，prd46#1207）、account 全字段直传（phone 等守卫依赖）。
       .then((result: SessionResult) => {
         applySessionToStore(result)
+        // 会话成立才认 OAuth 回跳的新注册标记（prd#1242）：落到目标页时 URL 上带的
+        // is_new_account 已由 main.tsx 捕获，这里补发 sign_up。放在 hydrateTimeZone
+        // 之前——它要先看到 store 里已有身份，多等一次偏好请求纯属白搭。
+        flushNewAccountSignUp()
         hydrateTimeZone(result.account.account_id)
       })
       .catch(() => setLoading(false))

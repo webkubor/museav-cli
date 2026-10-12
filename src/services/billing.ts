@@ -101,6 +101,27 @@ export function createRecharge(tenantId: string, body: CreateRechargeRequest) {
   return post<RechargeCreated>(`tenants/${tenantId}/recharges`, body)
 }
 
+// ─── 首冲赠金报价（prd46#1240 / #1237）─────────────────
+// 契约为前端提议版（#1237 note 23807），后端落地前接口 404 → 调用方退回普通充值、不展示赠金。
+
+/** 单个金额的服务端报价；无资格 / 未命中 / 未生效时 bonus_amount = "0" */
+export interface RechargeQuote {
+  amount: string
+  currency: string
+  eligible: boolean
+  activity_active: boolean
+  rule_id: string | null
+  bonus_amount: string
+  credited_total: string
+  quote_id: string
+  expires_at: string
+}
+
+/** POST /tenants/:tenantId/recharges/quotes — 批量报价（预设档位与自定义金额共用） */
+export function quoteRecharges(tenantId: string, body: { currency: string; amounts: string[] }) {
+  return post<{ items: RechargeQuote[] }>(`tenants/${tenantId}/recharges/quotes`, body)
+}
+
 /** 查询单个充值订单详情 */
 export function getRecharge(tenantId: string, orderNo: string) {
   return get<RechargeOrder>(`tenants/${tenantId}/recharges/${orderNo}`)

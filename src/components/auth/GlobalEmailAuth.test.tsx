@@ -7,6 +7,7 @@ import { getCaptchaOutcome, getCaptchaParam } from '@/lib/aliyun-captcha'
 import { emailCodeLoginRegister, getSession, sendEmailCode } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
 import { ModelGoApiError } from '@/lib/request'
+import { trackEvent } from '@/lib/track'
 
 vi.mock('react-i18next', async (importOriginal) => ({ ...await importOriginal<typeof import('react-i18next')>(), useTranslation: () => ({ t: (key: string) => key }) }))
 vi.mock('@/components/auth/AuthLayout', () => ({ AuthLayout: ({ children }: { children: ReactNode }) => <main>{children}</main> }))
@@ -73,7 +74,7 @@ describe('GlobalEmailAuth factors and recovery #1092', () => {
     await goToCode()
     expect(sendEmailCode).toHaveBeenCalledWith('fixture@example.invalid', 'send-captcha')
     submitCode()
-    await waitFor(() => expect(emailCodeLoginRegister).toHaveBeenCalledWith('fixture@example.invalid', '123456', 'login-captcha', 'ATTR', 'INV'))
+    await waitFor(() => expect(emailCodeLoginRegister).toHaveBeenCalledWith('fixture@example.invalid', '123456', 'login-captcha', 'ATTR', 'INV', undefined))
     await waitFor(() => expect(setAuth).toHaveBeenCalledWith({ account_id: 'a' }, 't', [], 'w', ['read']))
   })
   it('renders no authenticator/TOTP input on the verify step and never sends totp', async () => {
@@ -84,7 +85,7 @@ describe('GlobalEmailAuth factors and recovery #1092', () => {
     await waitFor(() => expect(emailCodeLoginRegister).toHaveBeenCalledTimes(1))
     const body = vi.mocked(emailCodeLoginRegister).mock.calls[0]
     expect(body).not.toContain('totp')
-    expect(body).toEqual(['fixture@example.invalid', '123456', 'login-captcha', 'ATTR', 'INV'])
+    expect(body).toEqual(['fixture@example.invalid', '123456', 'login-captcha', 'ATTR', 'INV', undefined])
   })
   it.each([40038, 40039])('second-factor code %s shows our own copy instead of the backend TOTP prompt, and clears the spent code', async (code) => {
     // 后端真实提示语非空（生产拿到的永远是它），以前用空 msg 只覆盖到 fallback 分支。
@@ -103,7 +104,7 @@ describe('GlobalEmailAuth factors and recovery #1092', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'account.auth.captcha.clickToVerify' }))
     await screen.findByText('account.auth.captcha.verified')
     submitCode()
-    await waitFor(() => expect(emailCodeLoginRegister).toHaveBeenCalledWith('fixture@example.invalid', '123456', 'gate-param', 'ATTR', 'INV'))
+    await waitFor(() => expect(emailCodeLoginRegister).toHaveBeenCalledWith('fixture@example.invalid', '123456', 'gate-param', 'ATTR', 'INV', undefined))
     await waitFor(() => expect(gate.session!.reset).toHaveBeenCalled())
     // 四元组已被消费：再提交必须先调起验证，不能拿旧的那组去撞 40025。
     submitCode()
@@ -117,5 +118,23 @@ describe('GlobalEmailAuth factors and recovery #1092', () => {
     fireEvent.click(button('humanVerification'));await waitFor(() => expect(button('continueEmail')).toBeEnabled())
     fireEvent.click(button('continueEmail'));await screen.findByPlaceholderText('account.auth.placeholders.emailCode6')
     expect(screen.queryByLabelText(key('totpLabel'))).toBeNull()
+  })
+  it('新注册补发 sign_up，老账号只发 login_success（prd#1242）', async () => {
+    vi.mocked(emailCodeLoginRegister).mockResolvedValue({ is_new_account: true } as never)
+    await goToCode();submitCode()
+    await waitFor(() => expect(trackEvent).toHaveBeenCalledWith('sign_up', { method: 'email_code' }, { result: 'success' }))
+    expect(trackEvent).toHaveBeenCalledWith('login_success', { method: 'email_code' }, { result: 'success' })
+  })
+  it('后端未给新注册标记时不发 sign_up（字段缺失）', async () => {
+    vi.mocked(emailCodeLoginRegister).mockResolvedValue({} as never)
+    await goToCode();submitCode()
+    await waitFor(() => expect(trackEvent).toHaveBeenCalledWith('login_success', { method: 'email_code' }, { result: 'success' }))
+    expect(vi.mocked(trackEvent).mock.calls.some(([event]) => event === 'sign_up')).toBe(false)
+  })
+  it('后端标记为 false 时不发 sign_up', async () => {
+    vi.mocked(emailCodeLoginRegister).mockResolvedValue({ is_new_account: false } as never)
+    await goToCode();submitCode()
+    await waitFor(() => expect(trackEvent).toHaveBeenCalledWith('login_success', { method: 'email_code' }, { result: 'success' }))
+    expect(vi.mocked(trackEvent).mock.calls.some(([event]) => event === 'sign_up')).toBe(false)
   })
 })

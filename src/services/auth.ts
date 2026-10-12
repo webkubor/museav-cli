@@ -5,6 +5,8 @@
  */
 import { apiBaseUrl, get, post } from '@/lib/request'
 import { setCsrfToken } from '@/lib/auth/csrf-token'
+import { resolveAdSource, type AdSourceFields } from '@/pages/signup/ad-source'
+import { resolveReferralCode } from '@/pages/signup/referral-code'
 import type { AuthMailTTLResponse } from '@/interfaces/auth'
 import type {
   CheckLoginEmailResult,
@@ -40,6 +42,7 @@ export function emailCodeLoginRegister(
   captchaVerifyParam?: string | null,
   referralCode?: string,
   invitationToken?: string,
+  adSource?: AdSourceFields,
 ) {
   return post<LoginResult>(
     'auth/email-code/login',
@@ -49,6 +52,8 @@ export function emailCodeLoginRegister(
         code,
         ...(referralCode ? { referral_code: referralCode } : {}),
         ...(invitationToken ? { invitation_token: invitationToken } : {}),
+        // 广告来源（投放归因）：无广告参数时不带字段，老流量请求体与改动前一致
+        ...(adSource && Object.keys(adSource).length > 0 ? adSource : {}),
       },
       captchaVerifyParam,
     ),
@@ -96,13 +101,22 @@ export function phoneLoginRegister(
   phone: string,
   code: string,
   captchaVerifyParam?: string | null,
-  referralCode?: string
+  referralCode?: string,
+  adSource?: AdSourceFields,
 ) {
   // referral_code 推荐归因（需求方#714）：后端 PhoneLoginCommand 目前缺该字段（registerPhoneOnce
   // 写死空串），前端先按邮箱注册腿同名契约上送，后端补齐前会被忽略、不影响注册。后端单见 qa 看板。
   return post<LoginResult>(
     'auth/sms-code/login',
-    withCaptcha({ phone, code, ...(referralCode ? { referral_code: referralCode } : {}) }, captchaVerifyParam)
+    withCaptcha(
+      {
+        phone,
+        code,
+        ...(referralCode ? { referral_code: referralCode } : {}),
+        ...(adSource && Object.keys(adSource).length > 0 ? adSource : {}),
+      },
+      captchaVerifyParam
+    )
   )
 }
 
@@ -148,10 +162,22 @@ export function oauthAuthorizeUrl(
   // captcha_verify_param 走 query 而不是请求体：这个端点是**浏览器导航**（GET + 302），没有请求体
   // 可用。后端在跳转到厂商之前先校验它；不带（或带一个校验不过的）就会被 302 回登录页并附上
   // error=captcha_required —— 表现就是"点一下立刻跳回来"，用户完全看不到发生了什么。
-  const base = `${apiBaseUrl()}/api/v1/auth/oauth/${provider}/authorize?redirect=${encodeURIComponent(redirect)}`
-  return captchaVerifyParam
-    ? `${base}&captcha_verify_param=${encodeURIComponent(captchaVerifyParam)}`
-    : base
+  const query = new URLSearchParams({ redirect })
+  if (captchaVerifyParam) query.set('captcha_verify_param', captchaVerifyParam)
+  // prd46#1242：OAuth 首次登录也会建号，按 web-api!90 契约把广告来源与推荐码挂在 authorize 上，
+  // 后端存进 OAuth state，回调建号时落库。统一在这里解析（URL 命中或会话缓存），
+  // 所有 OAuth 入口自动带上，新增入口也不会漏；没有来源时 URL 与改动前一致。
+  if (typeof window !== 'undefined') {
+    const current = new URLSearchParams(window.location.search)
+    const adSource = resolveAdSource(current)
+    for (const [key, value] of Object.entries(adSource ?? {})) {
+      if (value) query.set(key, value)
+    }
+    // 推荐码格式校验在 resolveReferralCode 内统一完成（邮箱 / 手机号 / OAuth 三个入口一致）
+    const referralCode = resolveReferralCode(current)
+    if (referralCode) query.set('referral_code', referralCode)
+  }
+  return `${apiBaseUrl()}/api/v1/auth/oauth/${provider}/authorize?${query.toString()}`
 }
 
 /** 切换活跃 Tenant（前端需同步更新 X-Tenant-Id 和 localStorage） */

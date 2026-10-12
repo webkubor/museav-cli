@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import i18n, { loadLocaleNamespaces } from '@/i18n'
 import { FreeModelRateLimit } from './FreeModelRateLimit'
 
@@ -63,6 +63,23 @@ describe('FreeModelRateLimit', () => {
     )
 
     expect(screen.getByRole('status')).toHaveTextContent('免费额度 每分钟最多 5 次调用')
+  })
+
+  it('collapses to the title row and expands back to the limits', () => {
+    render(<FreeModelRateLimit model={{ free: true, rate_limit: { request_limit: 10, window_seconds: 60 } }} />)
+
+    const collapse = screen.getByRole('button', { name: '收起免费额度说明' })
+    expect(collapse).toHaveAttribute('aria-expanded', 'true')
+    fireEvent.click(collapse)
+
+    const expand = screen.getByRole('button', { name: '展开免费额度说明' })
+    expect(expand).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByRole('status')).toHaveTextContent('免费额度')
+    expect(screen.getByRole('status')).not.toHaveTextContent('每分钟最多')
+
+    fireEvent.click(expand)
+    expect(screen.getByRole('button', { name: '收起免费额度说明' })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('status')).toHaveTextContent('每分钟最多 10 次调用')
   })
 })
 

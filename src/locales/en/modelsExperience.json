@@ -28,6 +28,8 @@
     "errorUpstreamAuth": "This model's service is temporarily unavailable. Please try again later.",
     "errorUpstreamGeneric": "The model call failed. Please try another model or retry later.",
     "freeQuota": "Free quota",
+    "collapseQuota": "Collapse free quota details",
+    "expandQuota": "Expand free quota details",
     "rateLimit": {
       "windowMinute": "minute",
       "windowHour": "hour",

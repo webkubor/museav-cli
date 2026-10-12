@@ -1,4 +1,5 @@
-import { LuInfo } from 'react-icons/lu'
+import { useId, useState } from 'react'
+import { LuChevronDown, LuInfo } from 'react-icons/lu'
 import { useTranslation } from 'react-i18next'
 import type { CatalogModelItem } from '@/types'
 
@@ -40,6 +41,9 @@ function windowLabel(windowSeconds: number, t: (key: string, options?: Record<st
  */
 export function FreeModelRateLimit({ model, className = '' }: { model: RateLimitModel; className?: string }) {
   const { t } = useTranslation()
+  // 默认展开，避免用户第一次看不到限额；收起后只留「免费额度」标题行。
+  const [expanded, setExpanded] = useState(true)
+  const contentId = useId()
   const rateLimit = model.rate_limit
   const requestLimit = rateLimit?.request_limit
   const tokenLimit = rateLimit?.token_limit
@@ -74,17 +78,31 @@ export function FreeModelRateLimit({ model, className = '' }: { model: RateLimit
     : t('modelsExperience.rateLimit.waitUnknown')
 
   return (
-    <p
+    <div
       role="status"
       className={`flex items-start gap-1.5 rounded-md border border-mg-info/20 bg-mg-info/5 px-3 py-2 mg-text-caption leading-5 text-mg-text-2 ${className}`}
     >
       <LuInfo size={14} className="mt-0.5 shrink-0 text-mg-info" />
-      <span>
+      <span className="min-w-0 flex-1">
         <strong className="font-semibold text-mg-info">{t('modelsExperience.freeQuota')}</strong>
-        {/* 分隔符跟着语言走：中文全角「；」、英文半角「; 」。硬编码全角分号会让
-            英文文案变成 "rate limits apply；Once a limit..." */}
-        {' '}{limits}{t('modelsExperience.rateLimit.separator')}{waitText}
+        {expanded && (
+          <span id={contentId}>
+            {/* 分隔符跟着语言走：中文全角「；」、英文半角「; 」。硬编码全角分号会让
+                英文文案变成 "rate limits apply；Once a limit..." */}
+            {' '}{limits}{t('modelsExperience.rateLimit.separator')}{waitText}
+          </span>
+        )}
       </span>
-    </p>
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-controls={contentId}
+        aria-label={t(expanded ? 'modelsExperience.collapseQuota' : 'modelsExperience.expandQuota')}
+        onClick={() => setExpanded((value) => !value)}
+        className="-mr-1 mt-px shrink-0 rounded-sm p-0.5 text-mg-text-3 transition-colors hover:text-mg-text-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mg-info/40"
+      >
+        <LuChevronDown size={14} aria-hidden="true" className={`transition-transform ${expanded ? 'rotate-180' : ''}`} />
+      </button>
+    </div>
   )
 }

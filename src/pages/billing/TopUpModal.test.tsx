@@ -196,8 +196,8 @@ describe('TopUpModal', () => {
     await waitFor(() => expect(quoteRecharges).toHaveBeenCalled())
     expect(screen.queryByPlaceholderText('输入自定义金额')).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: '¥1,000' }))
-    expect(screen.getByRole('button', { name: '前往支付 ¥1,000' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '¥500' }))
+    expect(screen.getByRole('button', { name: '前往支付 ¥500' })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /自定义额度/ }))
     const input = screen.getByPlaceholderText('输入自定义金额') as HTMLInputElement
@@ -207,17 +207,17 @@ describe('TopUpModal', () => {
   })
 
   it('caps server-returned CNY presets at five and keeps custom sixth (#1260)', async () => {
-    const configured = ['10', '50', '100', '500', '1000', '5000', '10000']
+    const configured = ['0.1', '5', '10', '100', '500', '1000', '10000']
     quoteRecharges.mockReset().mockResolvedValue({
       items: configured.map((amount) => quote(amount, '0')),
     })
     renderModal()
     await waitFor(() => expect(quoteRecharges).toHaveBeenCalled())
-    expect(quoteRecharges).toHaveBeenCalledWith('tnt_1', { currency: 'CNY', amounts: ['10', '50', '100', '500', '1000'] })
-    for (const label of ['¥10', '¥50', '¥100', '¥500', '¥1,000']) {
+    expect(quoteRecharges).toHaveBeenCalledWith('tnt_1', { currency: 'CNY', amounts: ['0.1', '5', '10', '100', '500'] })
+    for (const label of ['¥0.1', '¥5', '¥10', '¥100', '¥500']) {
       expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
     }
-    expect(screen.queryByRole('button', { name: '¥5,000' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '¥1,000' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '¥10,000' })).not.toBeInTheDocument()
     const cards = document.querySelectorAll('.billing-recharge-presets > button')
     expect(cards).toHaveLength(6)
@@ -241,15 +241,16 @@ describe('TopUpModal', () => {
   // ─── prd46#1240 首冲赠金 ───
   it('limits CNY to five presets and places custom amount sixth (#1260)', async () => {
     renderModal()
-    for (const label of ['¥10', '¥50', '¥100', '¥500', '¥1,000']) {
+    // 两站面值统一（2026-10-12 与需求方确认）：0.1/5/10/100/500，只有单位符号不同
+    for (const label of ['¥0.1', '¥5', '¥10', '¥100', '¥500']) {
       expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
     }
-    expect(screen.queryByRole('button', { name: '¥5,000' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '¥50' })).not.toBeInTheDocument()
     const cards = document.querySelectorAll('.billing-recharge-presets > button')
     expect(cards).toHaveLength(6)
     expect(cards[5]).toHaveTextContent('自定义额度')
     await waitFor(() => expect(screen.getByRole('button', { name: '前往支付 ¥500' })).toBeEnabled())
-    expect(quoteRecharges).toHaveBeenCalledWith('tnt_1', { currency: 'CNY', amounts: ['10', '50', '100', '500', '1000'] })
+    expect(quoteRecharges).toHaveBeenCalledWith('tnt_1', { currency: 'CNY', amounts: ['0.1', '5', '10', '100', '500'] })
     expect(screen.queryByText(/首冲加赠/)).not.toBeInTheDocument()
     expect(screen.queryByText(/送 ¥/)).not.toBeInTheDocument()
     expect(screen.queryByText('首冲赠金 · 赠送余额')).not.toBeInTheDocument()
@@ -263,7 +264,9 @@ describe('TopUpModal', () => {
     vi.spyOn(window, 'open').mockReturnValue(paymentWindow)
 
     renderModal()
-    expect(await screen.findByText('首冲加赠，最高送 ¥100')).toBeInTheDocument()
+    // 面值统一后档位为 0.1/5/10/100/500，mock 按 amount>=50 给 10%：
+    // 最高赠金来自 ¥500 档 → 送 ¥50；¥10 及以下未命中梯度
+    expect(await screen.findByText('首冲加赠，最高送 ¥50')).toBeInTheDocument()
     expect(screen.getByText('送 ¥50 · 到账 ¥550')).toBeInTheDocument()
     // ¥10 未命中梯度：不展示赠金
     expect(screen.queryByText(/送 ¥0/)).not.toBeInTheDocument()
@@ -335,7 +338,7 @@ describe('TopUpModal', () => {
     await screen.findByText('送 ¥50 · 到账 ¥550')
     await clickPay('前往支付 ¥500')
     // 复校验进行中：金额卡被禁用，点了也不生效
-    const other = screen.getByRole('button', { name: /¥1,000/ })
+    const other = screen.getByRole('button', { name: /¥100/ })
     expect(other).toBeDisabled()
     fireEvent.click(other)
     release()

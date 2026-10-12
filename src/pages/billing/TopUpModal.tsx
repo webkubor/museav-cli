@@ -39,21 +39,20 @@ import './billing.css'
 
 /**
  * 推荐档位（只是快捷入口，赠金以服务端报价为准）。
- * 两站统一 5 档 + 第 6 格「自定义额度」，对齐 PRD 原型 BillingRechargeModal
- * （modelgo_prd 954612b）与 #1260「最多展示 5 个档位，自定义在第六个位置」。
  *
- * ⚠️ CNY 曾是 6 档（10/50/100/500/1000/5000）：#1260 的裁剪只对「管理员配置多于 5 档」
- * 生效，硬编码的 6 档刚好等于 6 不触发裁剪，于是 6 档 + 自定义 = 7 格，
- * 3 列网格排成 3+3+1、末尾「自定义额度」成孤立项 —— 需求方 2026-10-10 截图标注的问题。
- * 这里直接把取值收敛到 5 档，让裁剪逻辑与硬编码两条路径给出同一个结果。
+ * 两站面值完全一致，只有单位符号不同（¥ / $）——2026-10-12 与需求方确认：
+ * PRD 原型 BillingRechargeModal（modelgo_prd）只给了一套面值且以 $ 渲染，
+ * 产品拍板国内站沿用同一组数值，「单位不一样」。因此这里收敛成一份常量，
+ * 币种符号由 formatMoney 的 currencySymbol 负责。
+ *
+ * #1260：两站最多 5 档，第 6 格固定为「自定义额度」。`.slice(0, 5)` 写在渲染与报价
+ * 请求之前，两条路径共用同一个裁剪结果。
  */
-const PRESETS_BY_CURRENCY: Record<string, string[]> = {
-  USD: ['0.1', '5', '10', '100', '500'],
-  CNY: ['10', '50', '100', '500', '1000'],
-}
-const DEFAULT_AMOUNT_BY_CURRENCY: Record<string, string> = { USD: '10', CNY: '500' }
-/** 最低充值额：国际站 $0.10（原型 + prd46#1232），国内站沿用 ≥ ¥0.01 */
-const MIN_AMOUNT_BY_CURRENCY: Record<string, number> = { USD: 0.1, CNY: 0.01 }
+const PRESETS = ['0.1', '5', '10', '100', '500']
+/** 默认选中档位（沿用改动前 CNY/USD 的默认行为，不因面值统一而改变） */
+const DEFAULT_AMOUNT = '500'
+/** 最低充值额：0.1（法币最小精度两位小数；原型 min=0.1 + prd46#1232） */
+const MIN_AMOUNT = 0.1
 const AMOUNT_PATTERN = /^\d+(?:\.\d{1,2})?$/
 
 function buildWechatCashierURL(params: {
@@ -96,11 +95,9 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
   const queryClient = useQueryClient()
 
   const { currency, symbol: currencySymbol } = useCurrency()
-  // #1260：两站最多五个快捷档位，下一格保留给自定义；报价与渲染共用裁剪后的列表。
-  const PRESETS = (PRESETS_BY_CURRENCY[currency] ?? PRESETS_BY_CURRENCY.CNY).slice(0, 5)
-  const minAmount = MIN_AMOUNT_BY_CURRENCY[currency] ?? 0.01
+  const minAmount = MIN_AMOUNT
   // 选中项：某个预设金额，或「自定义额度」卡（原型交互：选中自定义卡才出现输入框）
-  const [selected, setSelected] = useState<string>(() => DEFAULT_AMOUNT_BY_CURRENCY[currency] ?? '500')
+  const [selected, setSelected] = useState<string>(DEFAULT_AMOUNT)
   const [customInput, setCustomInput] = useState('')
   const customMode = selected === 'custom'
   const amount = customMode ? customInput : selected

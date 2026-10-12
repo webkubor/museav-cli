@@ -109,7 +109,7 @@
       "error": "Failed to create order",
       "submitting": "Submitting...",
       "bonusSummary": "First top-up bonus, up to {{max}}",
-      "bonusPreset": "+{{bonus}} bonus · {{total}} credited",
+      "bonusPreset": "+{{bonus}} bonus · get {{total}}",
       "customCard": "Custom amount",
       "customCardHint": "Enter another amount",
       "payTitle": "You pay",

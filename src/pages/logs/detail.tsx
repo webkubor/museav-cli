@@ -1,5 +1,5 @@
 /** 调用日志详情与响应诊断；路由：/logs。 */
-import { type ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
 import { MarkdownContent } from '@/components/ui/MarkdownContent'
 import {
   LuClock3,
@@ -48,6 +48,8 @@ import {
 } from './guardrail'
 import { isAsyncCall } from './async-call'
 import { cacheHitRateLabel, cacheTokenState, isCacheCardVisible } from './cache'
+import { extractRequestImages, type RequestImage } from './request-images'
+import { Modal } from '@/components/ui/Modal'
 import type { SSEReassembled } from './reassemble-sse'
 
 export type PayloadKind = 'request' | 'response'
@@ -517,7 +519,51 @@ function SSEMetaBadges({ sse }: { sse: SSEReassembled }) {
   )
 }
 
-function TranscriptCard({ pretty, text, title, sse }: { pretty: boolean; text: string; title: string; sse?: SSEReassembled | null }) {
+/** 请求体里的图片（#1266）：缩略图列表，点击放大。只在请求卡片出现，响应卡片不传。 */
+function RequestImages({ images }: { images: RequestImage[] }) {
+  const { t } = useTranslation()
+  const [active, setActive] = useState<RequestImage | null>(null)
+  if (images.length === 0) return null
+  return (
+    <>
+      <div className="mb-3 flex flex-wrap gap-2" data-testid="request-images">
+        {images.map((img, i) => (
+          <button
+            key={`${img.messageIndex}-${i}`}
+            type="button"
+            onClick={() => setActive(img)}
+            className="group flex flex-col items-start gap-1 rounded-md border border-transparent p-0.5 text-left transition-colors hover:border-mg-border focus-visible:border-mg-border"
+            aria-label={t('logs.detail.payload.imagePreviewOpen', { index: i + 1 })}
+          >
+            <img
+              src={img.src}
+              alt=""
+              loading="lazy"
+              className="h-20 w-20 rounded-sm object-cover"
+            />
+            <span className="mg-text-caption text-mg-text-3">
+              {t('logs.detail.payload.imageMeta', { role: img.role, index: img.messageIndex + 1 })}
+            </span>
+          </button>
+        ))}
+      </div>
+      <Modal
+        open={active !== null}
+        onClose={() => setActive(null)}
+        size="lg"
+        title={t('logs.detail.payload.imagePreviewTitle')}
+      >
+        {active && (
+          <div className="flex justify-center p-2">
+            <img src={active.src} alt="" className="max-h-[70vh] max-w-full rounded-sm object-contain" />
+          </div>
+        )}
+      </Modal>
+    </>
+  )
+}
+
+function TranscriptCard({ pretty, text, title, sse, images }: { pretty: boolean; text: string; title: string; sse?: SSEReassembled | null; images?: RequestImage[] }) {
   const { t } = useTranslation()
   const messages = pretty ? parseMessages(text) : null
   // 流式回答还原出的 Pretty 视图：内容多为 Markdown（标题/列表/代码），走小卡片 + Markdown 渲染，
@@ -537,6 +583,7 @@ function TranscriptCard({ pretty, text, title, sse }: { pretty: boolean; text: s
   return (
     <div className="rounded-md border border-mg-border bg-mg-bg-0 p-[var(--mg-panel-padding-md)]">
       <div className="mb-2 mg-text-caption font-bold text-mg-text-2">{title}</div>
+      {images && images.length > 0 && <RequestImages images={images} />}
       {messages && messages.length > 0 ? (
         // 限高 + 滚动：长对话（多条/长内容）不再把抽屉整体顶得无限长，与 JSON 原文的 max-h-80 一致
         <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
@@ -679,7 +726,13 @@ export function TranscriptSection({ onDownload, onPayloadViewChange, onRetryPayl
           {t('logs.guardrail.redactedHint')}
         </p>
       )}
-      <TranscriptCard title={t('logs.detail.payload.requestTitle', { count: formatNumber(row.usage.input_tokens) })} text={requestText} pretty={redacted ? false : pretty} />
+      {/* #1266：请求卡片内嵌图片预览；脱敏时请求文本已是占位符，图片也不露出。 */}
+      <TranscriptCard
+        title={t('logs.detail.payload.requestTitle', { count: formatNumber(row.usage.input_tokens) })}
+        text={requestText}
+        pretty={redacted ? false : pretty}
+        images={redacted ? undefined : extractRequestImages(requestText)}
+      />
       {/* 输出侧对齐 PRD：模型产出响应→展示 Response 转写；未产出（护栏拦截/调用失败）→「响应未生成 + 原因」，
           而不是像原先那样 responsePayloadText 为空就整段消失（只做了输入没做输出）。 */}
       {responseGenerated ? (

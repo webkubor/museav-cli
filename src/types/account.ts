@@ -51,6 +51,11 @@ export interface RegisterResult {
   account: AccountBrief
   default_tenant_id: string
   default_workspace_id: string
+  /**
+   * 本次调用是否建了号（prd#1228 / prd#1242）。注册端点恒为 true；`/auth/register`
+   * 之外的两个「登录即注册」端点在 `LoginResult` 上给同一字段。
+   */
+  is_new_account?: boolean
 }
 
 export interface LoginResult {
@@ -58,6 +63,11 @@ export interface LoginResult {
   active_tenant_id: string
   active_workspace_id: string
   tenants: TenantBrief[]
+  /**
+   * 本次登录是否顺带建了号（国际站「登录即注册」，prd#1242 后端已上线）。
+   * `true` 才补发 `sign_up`，其余（含字段缺失）一律按老账号处理。
+   */
+  is_new_account?: boolean
 }
 
 export interface CheckLoginEmailResult {

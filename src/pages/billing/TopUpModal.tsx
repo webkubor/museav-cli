@@ -20,27 +20,39 @@ import { amountBand } from './billing-tracking'
 import {
   findQuote,
   hasBonus,
+  isQuoteConflictError,
   isQuoteUnavailableError,
   quoteChanged,
+  quoteFromConflictError,
   quoteStatusOf,
+  replaceQuote,
   sameAmount,
   type QuoteStatus,
 } from './recharge-quote'
 
 import { LuGift } from 'react-icons/lu'
+// 弹框自己的样式（.billing-recharge-* / .billing-recharge-result）在 billing.css 里；
+// 本组件是全局挂载的（DashboardLayout 常驻 + 账单页各入口），而 billing.css 原先只被
+// 账单页 `pages/billing/index.tsx` import —— 从仪表盘/低余额提醒打开的弹框拿不到这些规则
+// （手机宽度档位卡不折成两列、选中态描边丢失），这里显式 import 让组件自带样式，Vite 去重。
+import './billing.css'
 
 /**
  * 推荐档位（只是快捷入口，赠金以服务端报价为准）。
- * 国际站 USD 对齐 PRD 原型 BillingRechargeModal（modelgo_prd 954612b）：5 档 + 「自定义额度」卡；
- * 国内站 CNY 沿用 PRD《首冲赠金活动与梯度配置》§4 的推荐档位。
+ *
+ * 两站面值完全一致，只有单位符号不同（¥ / $）——2026-10-12 与需求方确认：
+ * PRD 原型 BillingRechargeModal（modelgo_prd）只给了一套面值且以 $ 渲染，
+ * 产品拍板国内站沿用同一组数值，「单位不一样」。因此这里收敛成一份常量，
+ * 币种符号由 formatMoney 的 currencySymbol 负责。
+ *
+ * #1260：两站最多 5 档，第 6 格固定为「自定义额度」。`.slice(0, 5)` 写在渲染与报价
+ * 请求之前，两条路径共用同一个裁剪结果。
  */
-const PRESETS_BY_CURRENCY: Record<string, string[]> = {
-  USD: ['0.1', '5', '10', '100', '500'],
-  CNY: ['10', '50', '100', '500', '1000', '5000'],
-}
-const DEFAULT_AMOUNT_BY_CURRENCY: Record<string, string> = { USD: '10', CNY: '500' }
-/** 最低充值额：国际站 $0.10（原型 + prd46#1232），国内站沿用 ≥ ¥0.01 */
-const MIN_AMOUNT_BY_CURRENCY: Record<string, number> = { USD: 0.1, CNY: 0.01 }
+const PRESETS = ['0.1', '5', '10', '100', '500']
+/** 默认选中档位（沿用改动前 CNY/USD 的默认行为，不因面值统一而改变） */
+const DEFAULT_AMOUNT = '500'
+/** 最低充值额：0.1（法币最小精度两位小数；原型 min=0.1 + prd46#1232） */
+const MIN_AMOUNT = 0.1
 const AMOUNT_PATTERN = /^\d+(?:\.\d{1,2})?$/
 
 function buildWechatCashierURL(params: {
@@ -83,10 +95,9 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
   const queryClient = useQueryClient()
 
   const { currency, symbol: currencySymbol } = useCurrency()
-  const PRESETS = PRESETS_BY_CURRENCY[currency] ?? PRESETS_BY_CURRENCY.CNY
-  const minAmount = MIN_AMOUNT_BY_CURRENCY[currency] ?? 0.01
+  const minAmount = MIN_AMOUNT
   // 选中项：某个预设金额，或「自定义额度」卡（原型交互：选中自定义卡才出现输入框）
-  const [selected, setSelected] = useState<string>(() => DEFAULT_AMOUNT_BY_CURRENCY[currency] ?? '500')
+  const [selected, setSelected] = useState<string>(DEFAULT_AMOUNT)
   const [customInput, setCustomInput] = useState('')
   const customMode = selected === 'custom'
   const amount = customMode ? customInput : selected
@@ -111,8 +122,10 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
 
   // ─── 首冲赠金报价（prd46#1240）：打开弹框即取预设档报价；自定义金额防抖后单独报价 ───
   const quoteEnabled = visible && canRecharge && !!tenantId
+  const presetQuotesKey = ['recharge-quotes', tenantId, currency, PRESETS.join(',')]
+  const customQuoteKey = (value: string) => ['recharge-quote', tenantId, currency, value]
   const presetQuotes = useQuery({
-    queryKey: ['recharge-quotes', tenantId, currency, PRESETS.join(',')],
+    queryKey: presetQuotesKey,
     queryFn: () => quoteRecharges(tenantId, { currency, amounts: PRESETS }),
     enabled: quoteEnabled,
     retry: false,
@@ -125,7 +138,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
   const debouncedCustom = useDebouncedValue(customInput, 400)
   const customValid = customMode && isAmountValid && debouncedCustom === customInput
   const customQuote = useQuery({
-    queryKey: ['recharge-quote', tenantId, currency, debouncedCustom],
+    queryKey: customQuoteKey(debouncedCustom),
     queryFn: () => quoteRecharges(tenantId, { currency, amounts: [debouncedCustom] }),
     enabled: quoteEnabled && !quoteUnavailable && customValid,
     retry: false,
@@ -190,14 +203,40 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
         return_url: window.location.href,
         ...(p.quoteId ? { quote_id: p.quoteId } : {}),
       }),
-    onError: (err: Error) => appToast.requestError(err, t('billing.rechargeModal.error')),
+    onError: (err: Error) => {
+      // 报价冲突不算失败：由提交处换上最新报价并提示用户重新确认
+      if (isQuoteConflictError(err)) return
+      appToast.requestError(err, t('billing.rechargeModal.error'))
+    },
   })
+
+  /**
+   * 下单返回 40912：用 data.quote 换掉展示中的同金额报价；拿不到或金额对不上就重新报价。
+   * 先取消进行中的报价请求，免得旧请求晚到把新报价覆盖回去；资格 / 活动状态变了，
+   * 其余预设档的赠金也已失效（自定义金额时摘要同样读预设档），一并重新报价。
+   */
+  const applyConflictQuote = async (err: unknown, submitAmount: string, custom: boolean, shown?: RechargeQuote) => {
+    const latest = quoteFromConflictError(err)
+    if (!latest || !sameAmount(latest.amount, submitAmount)) {
+      presetQuotes.refetch()
+      if (custom) customQuote.refetch()
+      return
+    }
+    const patch = (old?: { items: RechargeQuote[] }) => (old ? { items: replaceQuote(old.items, latest) } : old)
+    const targetKey = custom ? customQuoteKey(submitAmount) : presetQuotesKey
+    await queryClient.cancelQueries({ queryKey: targetKey, exact: true })
+    queryClient.setQueryData(targetKey, patch)
+    if (!shown || shown.eligible !== latest.eligible || shown.activity_active !== latest.activity_active) {
+      presetQuotes.refetch()
+    }
+  }
 
   const handleSubmit = async () => {
     if (!canRecharge || !isAmountValid || requoting) return
     // 点击这一刻锁定提交参数；复校验期间金额/渠道控件也会禁用
     const submit: SubmitParams = { amount, currency, channel: effectiveChannel }
     const shownQuote = currentQuote
+    const submitCustom = customMode
     // 先同步开窗（在点击手势内），避免下面的 await 让浏览器拦截弹窗
     const paymentWindow = window.open('about:blank', '_blank')
     if (paymentWindow) paymentWindow.opener = null
@@ -275,6 +314,12 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
       },
       onError: (err: Error) => {
         paymentWindow?.close()
+        if (isQuoteConflictError(err)) {
+          setQuoteChangedNotice(true)
+          void applyConflictQuote(err, submit.amount, submitCustom, shownQuote)
+          trackEvent('billing_recharge_result', { result: 'fail', failure_reason: 'quote_changed', pay_channel: submit.channel })
+          return
+        }
         // §11.2 billing_recharge_result：下单请求本身失败（跳支付渠道前），alipay/stripe 的渠道侧
         // 支付结果目前无回跳页可读取（现状缺口，非本单埋点范围），只有此处 + 微信收银台轮询能拿到结果
         trackEvent('billing_recharge_result', { result: 'fail', failure_reason: err.message || 'create_recharge_failed', pay_channel: submit.channel })
@@ -298,27 +343,34 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
     trackEvent('recharge_amount_select', { amount: p, bonus_hit: hasBonus(findQuote(presetItems, p)), quote_status: presetStatus })
   }
 
+  // 档位卡尺寸对齐 PRD 原型（redesign.css `.billing-recharge-presets button`：min-height 53px、
+  // 纵向居中、金额 + 赠金副行两行结构）。高度走控件档 token：原型 53px 落在本控制台的
+  // xl 控件档（56px），有副行/无副行的卡片等高，不会因为没赠金就矮一截（需求方 2026-10-10 反馈）。
+  // 触觉（悬停抬升 / 按压回弹 / 焦点环 / 减弱动效）走 billing.css 的 .billing-choice 六态，
+  // 这里只留布局与状态配色 —— 两处都写 transition 会互相整条覆盖。
   const cardClass = (active: boolean) => cn(
-    'rounded-md border py-2.5 px-2 cursor-pointer text-center transition-colors disabled:cursor-not-allowed disabled:opacity-60',
+    'billing-choice flex min-h-[var(--mg-control-height-xl)] flex-col items-center justify-center rounded-md border py-2 px-2 cursor-pointer text-center disabled:cursor-not-allowed disabled:opacity-60',
     active
       ? 'border-brand-base bg-brand-glow text-brand-base'
-      : 'border-mg-border text-mg-text-2 hover:text-mg-text-1 hover:border-brand-base/40'
+      : 'border-mg-border text-mg-text-2 hover:text-mg-text-1'
   )
 
+  // 弹框宽度走 billing-recharge-dialog（billing.css）：DialogContent 按内容定宽，本弹框内容
+  // 固定，宽屏上会永远缩成一条 ~498px 的窄柱 —— 给它一条随视口走的宽度曲线（需求方 2026-10-10）。
   return (
     <Modal
       open={visible}
       onClose={handleClose}
       title={t('billing.rechargeModal.title')}
-      className="modal-glow-flow"
+      className="modal-glow-flow billing-recharge-dialog"
     >
       <div className="billing-recharge-body space-y-5">
         {/* 充值金额：标题 + 首冲加赠摘要（原型 billing-recharge-heading） */}
         <section aria-labelledby="billing-recharge-amount-label">
           <div className="flex items-center justify-between gap-2 mb-2.5">
-            <div id="billing-recharge-amount-label" className="text-xs text-mg-text-3 font-bold tracking-wider">{t('billing.rechargeModal.amount')}</div>
+            <div id="billing-recharge-amount-label" className="text-xs text-mg-text-2 font-bold tracking-wider">{t('billing.rechargeModal.amount')}</div>
             {eligible && maxPresetBonus > 0 && (
-              <span className="inline-flex items-center gap-1 text-xs font-semibold text-brand-base">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-brand-base/25 bg-brand-selected-bg text-xs font-semibold text-brand-base">
                 <LuGift size={12} aria-hidden="true" />
                 {t('billing.rechargeModal.bonusSummary', { max: fmt(maxPresetBonus) })}
               </span>
@@ -334,30 +386,42 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
               return (
                 <button key={p} type="button" aria-pressed={active} disabled={controlsLocked} onClick={() => selectPreset(p)} className={cardClass(active)}>
                   {/* 需求方#433：面额加千分位（$1,000），符合海外金额阅读习惯 */}
-                  <strong className={cn('block text-[15px] font-bold font-mono', active && 'text-brand-base')}>{fmt(p)}</strong>
-                  {line && <span className="block mt-0.5 text-[11px] text-mg-text-3 truncate" title={line}>{line}</span>}
+                  <strong className={cn('block text-base font-bold font-mono tabular-nums', active && 'text-brand-base')}>{fmt(p)}</strong>
+                  {/* 副行（赠金/到账）在选中态跟着品牌色：整张卡一起亮，选中焦点才明确 */}
+                  {line && (
+                    <span className={cn('block mt-0.5 text-xs truncate', active ? 'text-brand-base' : 'text-mg-text-2')} title={line}>{line}</span>
+                  )}
                 </button>
               )
             })}
             {/* 原型：第 6 张「自定义额度」卡，选中后才出现输入框 */}
             <button type="button" aria-pressed={customMode} disabled={controlsLocked} onClick={() => { setSelected('custom'); setQuoteChangedNotice(false) }} className={cardClass(customMode)}>
-              <strong className={cn('block text-[14px] font-bold', customMode && 'text-brand-base')}>{t('billing.rechargeModal.customCard')}</strong>
-              <span className="block mt-0.5 text-[11px] text-mg-text-3">{t('billing.rechargeModal.customCardHint')}</span>
+              <strong className={cn('block text-sm font-bold', customMode && 'text-brand-base')}>{t('billing.rechargeModal.customCard')}</strong>
+              <span className="block mt-0.5 text-xs text-mg-text-2">{t('billing.rechargeModal.customCardHint')}</span>
             </button>
           </div>
           {customMode && (
-            <div className="relative mt-2.5">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-mg-text-3 text-sm font-medium" aria-hidden="true">{currencySymbol}</span>
+            // group 给前缀符号用：聚焦输入框时货币符号一起转品牌色（group-focus-within），
+            // 视线从一个点进到「输入态」，而不是只有一个光标在闪
+            <div className="group relative mt-2.5">
+              <span
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-mg-text-2 text-sm font-medium transition-colors duration-200 group-focus-within:text-brand-base"
+                aria-hidden="true"
+              >
+                {currencySymbol}
+              </span>
               <input
                 aria-label={t('billing.rechargeModal.customAmount')}
                 aria-invalid={!isAmountValid}
                 autoComplete="off"
                 autoFocus
                 disabled={controlsLocked}
+                // type=text + inputMode=decimal 而不是 type=number：后者的原生上下箭头
+                // （Chrome 悬停才显形）和「滚轮划过就改金额」都是金额输入的事故源，
+                // 精度与字符本来就由下面的 qa#282 兜（只允许数字与两位小数），
+                // 移动端照样出数字键盘。
                 inputMode="decimal"
-                type="number"
-                min={minAmount}
-                step="0.01"
+                type="text"
                 value={customInput}
                 onChange={(e) => {
                   // qa#282：金额最多两位小数（法币最小单位是分），禁止 0.001 这类超精度输入
@@ -365,61 +429,75 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
                   setCustomInput(sanitized)
                   setQuoteChangedNotice(false)
                 }}
-                className="w-full h-10 pl-7 pr-3 rounded-md border border-mg-border bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-brand-base/40 focus:border-brand-base transition-all font-semibold font-mono text-mg-text-1"
+                className="w-full h-10 pl-7 pr-3 rounded-md border border-mg-border bg-transparent text-sm font-semibold font-mono tabular-nums text-mg-text-1 placeholder:font-normal placeholder:text-mg-text-4 hover:border-mg-text-3/40 focus:outline-none focus:ring-1 focus:ring-brand-base/40 focus:border-brand-base transition-[border-color,box-shadow] duration-200"
                 placeholder={t('billing.rechargeModal.customAmount')}
               />
             </div>
           )}
           {presetStatus === 'error' && (
-            <div className="mt-2 flex items-center gap-2 text-xs text-mg-text-3">
+            <div className="mt-2 flex items-center gap-2 text-xs text-mg-text-2">
               <span>{t('billing.rechargeModal.quoteFailed')}</span>
               <Button variant="link" size="sm" onClick={() => presetQuotes.refetch()}>{t('billing.rechargeModal.quoteRetry')}</Button>
             </div>
           )}
         </section>
 
-        {/* 明细（原型 billing-recharge-breakdown）：支付 / 获得 两张卡 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5" aria-live="polite">
+        {/* 明细（原型 billing-recharge-breakdown）：支付 / 获得 两张卡纵排。
+            原型 CSS 是单列 grid（无 grid-template-columns），此前实现成 sm 以上两列，
+            与原型不符（需求方 2026-10-10：「支付和到账总额纵向展示」）。
+
+            层次（需求方 2026-10-10「视觉上有点层次」，只动字重/色阶，不动文案与排列）：
+            行标签 12px 常规、行值 14px 半粗、总额 16px 加粗 —— 12 / 14 / 16 三档各差 2px，
+            扫读时先看见金额再看标签。「获得」卡是这次充值的结果，整卡描边走
+            .billing-recharge-result（见 billing.css），总额认品牌色。
+            ⚠️ 标签色一律 text-2 不下探到 text-3：浅色主体上 text-3 实测只有 3.43:1，
+            12px 属小字，WCAG AA 要 4.5:1（text-2 = 5.13:1）。层次靠字号+字重拉开，
+            不靠把字调灰。 */}
+        <div className="grid grid-cols-1 gap-2.5" aria-live="polite">
           <section className="mg-tile p-3 space-y-1.5" aria-labelledby="billing-recharge-pay-title">
-            <h3 id="billing-recharge-pay-title" className="text-xs font-bold text-mg-text-3">{t('billing.rechargeModal.payTitle')}</h3>
-            <div className="flex justify-between text-xs text-mg-text-2">
+            <h3 id="billing-recharge-pay-title" className="text-xs font-bold text-mg-text-2 tracking-wider">{t('billing.rechargeModal.payTitle')}</h3>
+            <div className="flex items-baseline justify-between gap-2 text-xs text-mg-text-2">
               <span>{t('billing.rechargeModal.amount')}</span>
-              <span className="font-mono">{isAmountValid ? fmt(amount) : '—'}</span>
+              <span className="font-mono tabular-nums text-sm font-semibold text-mg-text-2">{isAmountValid ? fmt(amount) : '—'}</span>
             </div>
-            <div className="flex justify-between text-sm text-mg-text-1">
-              <strong>{t('billing.rechargeModal.payTotal')}</strong>
-              <strong className="font-mono">{isAmountValid ? fmt(amount) : '—'}</strong>
+            <div className="flex items-baseline justify-between gap-2">
+              <strong className="text-xs font-bold text-mg-text-2">{t('billing.rechargeModal.payTotal')}</strong>
+              <strong className="font-mono tabular-nums text-base font-bold text-mg-text-1">{isAmountValid ? fmt(amount) : '—'}</strong>
             </div>
           </section>
-          <section className="mg-tile p-3 space-y-1.5" aria-labelledby="billing-recharge-get-title">
-            <h3 id="billing-recharge-get-title" className="text-xs font-bold text-mg-text-3">{t('billing.rechargeModal.getTitle')}</h3>
-            <div className="flex justify-between text-xs text-mg-text-2">
+          <section className="mg-tile billing-recharge-result p-3 space-y-1.5" aria-labelledby="billing-recharge-get-title">
+            <h3 id="billing-recharge-get-title" className="text-xs font-bold text-mg-text-2 tracking-wider">{t('billing.rechargeModal.getTitle')}</h3>
+            <div className="flex items-baseline justify-between gap-2 text-xs text-mg-text-2">
               <span>{t('billing.rechargeModal.getMain')}</span>
-              <span className="font-mono">{isAmountValid ? fmt(amount) : '—'}</span>
+              <span className="font-mono tabular-nums text-sm font-semibold text-mg-text-1">{isAmountValid ? fmt(amount) : '—'}</span>
             </div>
             {/* 赠金行：只在服务端确认有资格且活动生效时出现；加载中不展示旧值，失败可重试 */}
             {eligible && (
-              <div className="flex justify-between items-center text-xs text-mg-text-2">
+              <div className="flex items-baseline justify-between gap-2 text-xs text-mg-text-2">
                 <span>{t('billing.rechargeModal.getBonus')}</span>
                 {currentStatus === 'error' && isAmountValid ? (
                   <Button variant="link" size="sm" onClick={retryQuote}>{t('billing.rechargeModal.quoteRetry')}</Button>
+                ) : !isAmountValid ? (
+                  <span className="font-mono tabular-nums text-sm font-semibold text-mg-text-2">—</span>
+                ) : quotePending ? (
+                  <span>{t('billing.rechargeModal.quoteLoading')}</span>
                 ) : (
-                  <span className={cn('font-mono', Number(bonusShown) > 0 && 'text-brand-base font-semibold')}>
-                    {!isAmountValid ? '—' : quotePending ? t('billing.rechargeModal.quoteLoading') : `+${fmt(bonusShown)}`}
+                  <span className={cn('font-mono tabular-nums text-sm font-semibold', Number(bonusShown) > 0 ? 'text-brand-base' : 'text-mg-text-2')}>
+                    +{fmt(bonusShown)}
                   </span>
                 )}
               </div>
             )}
-            <div className="flex justify-between text-sm text-mg-text-1">
-              <strong>{t('billing.rechargeModal.getTotal')}</strong>
-              <strong className="font-mono text-brand-base">
+            <div className="flex items-baseline justify-between gap-2">
+              <strong className="text-xs font-bold text-mg-text-2">{t('billing.rechargeModal.getTotal')}</strong>
+              <strong className="font-mono tabular-nums text-base font-bold text-brand-base">
                 {!isAmountValid ? '—' : quotePending ? t('billing.rechargeModal.quoteLoading') : fmt(creditedShown)}
               </strong>
             </div>
           </section>
         </div>
         {!isAmountValid && (
-          <p className="text-xs text-mg-text-3" id="billing-recharge-input-hint">
+          <p className="text-xs text-mg-text-2" id="billing-recharge-input-hint">
             {t('billing.rechargeModal.amountHint', { min: fmt(minAmount) })}
           </p>
         )}
@@ -431,7 +509,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
 
         {/* 支付方式 */}
         <div>
-          <div className="text-xs text-mg-text-3 font-bold mb-2.5 tracking-wider">{t('billing.rechargeModal.method')}</div>
+          <div className="text-xs text-mg-text-2 font-bold mb-2.5 tracking-wider">{t('billing.rechargeModal.method')}</div>
           <div className="billing-recharge-channels grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             {CHANNELS.map((c) => {
               const active = effectiveChannel === c.value
@@ -443,15 +521,17 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
                 <button
                   key={c.value}
                   type="button"
+                  aria-pressed={active}
                   disabled={controlsLocked}
                   onClick={() => setChannel(c.value)}
                   className={cn(
-                    "rounded-md border py-2.5 px-3 cursor-pointer",
+                    // 悬停/按压/焦点同样走 .billing-channel（原先 hover 改边框却没有过渡，是跳变的）
+                    "billing-channel rounded-md border py-2.5 px-3 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60",
                     active
                       // token 兜底：万一品牌色缺失，选中态也仍是品牌绿边框 + 正文色，
                       // 不会因为 border/文字落到 currentColor 而在暗色主题下变黑
                       ? "shadow-sm border-brand-base text-mg-text-1"
-                      : "border-mg-border text-mg-text-3 hover:border-mg-text-3/30"
+                      : "border-mg-border text-mg-text-2 hover:text-mg-text-1"
                   )}
                   style={active && color ? {
                     borderColor: color,

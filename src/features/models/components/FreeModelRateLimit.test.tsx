@@ -1,7 +1,12 @@
-import { describe, expect, it } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
 import i18n, { loadLocaleNamespaces } from '@/i18n'
 import { FreeModelRateLimit } from './FreeModelRateLimit'
+
+// 关闭状态写在 localStorage，用例之间要清掉，否则前一条的关闭会串到后一条
+beforeEach(() => {
+  localStorage.clear()
+})
 
 i18n.changeLanguage('zh')
 await loadLocaleNamespaces(['modelsExperience'])
@@ -63,6 +68,24 @@ describe('FreeModelRateLimit', () => {
     )
 
     expect(screen.getByRole('status')).toHaveTextContent('免费额度 每分钟最多 5 次调用')
+  })
+
+  it('hides the notice when the user dismisses it with the close button', () => {
+    render(<FreeModelRateLimit model={{ free: true, rate_limit: { request_limit: 10, window_seconds: 60 } }} />)
+
+    fireEvent.click(screen.getByRole('button', { name: '关闭免费额度提示' }))
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('stays hidden after a reload once the user has dismissed it', () => {
+    const { unmount } = render(<FreeModelRateLimit model={{ free: true, rate_limit: { request_limit: 10, window_seconds: 60 } }} />)
+    fireEvent.click(screen.getByRole('button', { name: '关闭免费额度提示' }))
+    unmount()
+
+    // 模拟刷新页面：重新挂载组件，关闭状态应从 localStorage 读回
+    render(<FreeModelRateLimit model={{ free: true, rate_limit: { request_limit: 10, window_seconds: 60 } }} />)
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 })
 

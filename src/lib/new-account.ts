@@ -80,7 +80,14 @@ export function captureNewAccountFlag(now: number = Date.now()): void {
  */
 export function trackSignUp(method: AuthMethod, isNewAccount?: boolean, adAttribution?: AdAttributionFields): void {
   if (isNewAccount !== true) return
-  trackEvent('sign_up', { method }, { result: 'success' })
+  // 两条线带同一份来源快照。自建埋点这条腿此前只有 `{ method }`，投放侧拿 gclid 去 join
+  // 自建注册表永远对不上，国内 CPA 因此算不出来（国内站只有自建埋点这一条渠道）。
+  //
+  // 必须走参数传，不能靠 `getCommonProps` 那类全局公共属性兜：各触发点都是**先**
+  // `clearPersistedAdSource()`（防串号）**再** `trackSignUp`，公共属性到这里已被清空，
+  // 那样做等于把来源挂在转化点的另一侧，一件正事没办成。分析侧要按渠道看后续用量，
+  // 用 sign_up 上的 user_id join 即可，不必让每条事件都重复带一遍来源。
+  trackEvent('sign_up', { method, ...adAttribution }, { result: 'success' })
   // 身份取调用时的 store：各触发点都在 setAuth 之后调用，这里已是新账号。
   pushDataLayer({ event: 'sign_up', method, ...currentIdentity(), ...adAttribution })
 }

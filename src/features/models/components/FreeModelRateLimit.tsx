@@ -1,4 +1,5 @@
-import { LuInfo } from 'react-icons/lu'
+import { useState } from 'react'
+import { LuInfo, LuX } from 'react-icons/lu'
 import { useTranslation } from 'react-i18next'
 import type { CatalogModelItem } from '@/types'
 
@@ -40,6 +41,8 @@ function windowLabel(windowSeconds: number, t: (key: string, options?: Record<st
  */
 export function FreeModelRateLimit({ model, className = '' }: { model: RateLimitModel; className?: string }) {
   const { t } = useTranslation()
+  // 用户点 × 关闭后本次停留内不再显示；切换模型或刷新页面后重新出现。
+  const [dismissed, setDismissed] = useState(false)
   const rateLimit = model.rate_limit
   const requestLimit = rateLimit?.request_limit
   const tokenLimit = rateLimit?.token_limit
@@ -51,6 +54,7 @@ export function FreeModelRateLimit({ model, className = '' }: { model: RateLimit
   if (!isFree) return null
   // 免费模型但后端没下发限流规则 → 不渲染（见上方「展示条件」）
   if (!rateLimit) return null
+  if (dismissed) return null
 
   const hasFullRule = validLimit(windowSeconds) && (validLimit(requestLimit) || validLimit(tokenLimit))
   const limits = hasFullRule
@@ -85,6 +89,14 @@ export function FreeModelRateLimit({ model, className = '' }: { model: RateLimit
             英文文案变成 "rate limits apply；Once a limit..." */}
         {' '}{limits}{t('modelsExperience.rateLimit.separator')}{waitText}
       </span>
+      <button
+        type="button"
+        onClick={() => setDismissed(true)}
+        aria-label={t('modelsExperience.dismissQuota')}
+        className="-mr-1 -mt-0.5 shrink-0 rounded-sm p-0.5 text-mg-text-3 transition-colors hover:text-mg-text-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mg-info/40"
+      >
+        <LuX size={14} aria-hidden="true" />
+      </button>
     </p>
   )
 }

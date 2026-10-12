@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import i18n, { loadLocaleNamespaces } from '@/i18n'
 import { FreeModelRateLimit } from './FreeModelRateLimit'
 
@@ -63,6 +63,14 @@ describe('FreeModelRateLimit', () => {
     )
 
     expect(screen.getByRole('status')).toHaveTextContent('免费额度 每分钟最多 5 次调用')
+  })
+
+  it('hides the notice when the user dismisses it with the close button', () => {
+    render(<FreeModelRateLimit model={{ free: true, rate_limit: { request_limit: 10, window_seconds: 60 } }} />)
+
+    fireEvent.click(screen.getByRole('button', { name: '关闭免费额度提示' }))
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 })
 

@@ -28,6 +28,7 @@
     "errorUpstreamAuth": "该模型服务暂时不可用，请稍后重试",
     "errorUpstreamGeneric": "模型调用异常，请更换模型或稍后重试",
     "freeQuota": "免费额度",
+    "dismissQuota": "关闭免费额度提示",
     "rateLimit": {
       "windowMinute": "分钟",
       "windowHour": "小时",

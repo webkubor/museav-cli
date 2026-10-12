@@ -103,13 +103,115 @@
   min-width: 760px;
 }
 
+/* 宽度自适应（需求方 2026-10-10：「窗口尺寸有点奇怪，不能自适应？为啥感觉竖起来了」）。
+   DialogContent 是**按内容定宽**的 grid —— Dialog.tsx 特意去掉了 w-full，让确认框和大表单
+   各自按内容收敛（见该文件注释）。本弹框内容固定（6 档卡 + 两张明细卡 + 渠道），于是不管
+   窗口多宽，它永远是一条 ~498px 的窄柱，在 5K 屏上看着像个手机。
+   修法：让宽度只跟视口走，不跟数据走 —— clamp(md 520px, 30vw, lg 720px)。
+   · md 是下限：本弹框的档位本来就是 md（520），实测内容自己只撑到 ~441px，
+     等于静默掉到档位以下；下限设成 token 后，有没有赠金都是同一张面板。
+   · 30vw 是常态：≤1733px 视口（笔记本/普通显示器）解析出来就是 520 —— 即当前
+     已被认可的宽度的自然延伸；1906px 屏上 572，2440px 以上才顶到 720。
+     斜率故意保守：明细卡是 justify-between 的行，面板越宽，「标签 ……… 金额」的
+     跨度越松散（720 时跨度 ~680px 会显空）。
+   · 窄屏仍由 --mg-dialog-max-width 兜底。Modal 的 md 档 max-w 在 @layer utilities 里，
+     盖不过这份无层样式，所以 max-width 要照抄回 token，别把兜底弄丢。 */
 .billing-recharge-dialog {
   display: flex;
   flex-direction: column;
+  width: clamp(var(--mg-dialog-width-md), 30vw, var(--mg-dialog-width-lg));
+  max-width: var(--mg-dialog-max-width);
 }
 
 .billing-recharge-body {
   min-height: 0;
+}
+
+/* 充值弹框「获得」卡 = 这次充值的结果，用一层极轻的品牌描边和「支付」卡分开层次
+   （需求方 2026-10-10：视觉上有点层次和优化，不动文案与排列）。
+   写在 CSS 而不是用 border-brand-* 工具类：.mg-tile 的 border 在无层样式表里，
+   优先级高于 Tailwind 的 @layer utilities，工具类盖不动它（写了像没生效）；
+   compound 选择器压过 .mg-tile 的通用描边，和 catalog-grid-card.css 同一手法。
+   只换描边色，保留 .mg-tile 的玻璃表面与卡片阴影。 */
+.mg-tile.billing-recharge-result {
+  border-color: color-mix(in oklab, var(--brand-base) 16%, var(--mg-tile-border));
+}
+
+/* ── 充值弹框的交互触觉：六态闭环（需求方 2026-10-10「颜色和交互动效几乎没有，cursor / filter 呢」）──
+   档位卡与支付方式卡是本弹框里唯二「能点但只有 hover 变个色」的元素：没有按压回弹、
+   没有键盘焦点环，支付方式卡连 hover 都是瞬间跳变。按体系既有配方补齐，不新造：
+   缓动走 --mg-ease-emphasized（物理阻尼曲线）、时长走 --mg-duration-* token、按压幅度与
+   .magnetic-hover 同值（0.982）。没有直接挂 .magnetic-hover，是因为它的 transition
+   只列了 transform / box-shadow / border-color 且带 !important，而选中态还要过渡背景色
+   与文字色 —— 两条 transition 会互相整条覆盖，抬手就没有回弹。
+   键盘等价：:focus-visible 给与 hover 同强度的品牌色双环（无障碍门禁：禁鼠标特权）。
+   ui-guard-ignore: hover 过渡 —— transition 在下方 .billing-choice, .billing-channel 合并选择器里逐属性定义，:hover/:active 只改视觉值；门禁按单条规则文本匹配，看不到同文件其他选择器。 */
+.billing-choice,
+.billing-channel {
+  outline: none;
+  transition:
+    transform var(--mg-duration-slow) var(--mg-ease-emphasized),
+    box-shadow var(--mg-duration-slow) var(--mg-ease-emphasized),
+    border-color var(--mg-duration-fast) var(--mg-ease-emphasized),
+    background-color var(--mg-duration-fast) var(--mg-ease-emphasized),
+    color var(--mg-duration-fast) var(--mg-ease-emphasized);
+}
+
+/* 悬停意图态：轻微抬起 + 扩散阴影 + 品牌色描边 */
+.billing-choice:hover:not(:disabled),
+.billing-channel:hover:not(:disabled) {
+  transform: translateY(-2.5px);
+  box-shadow: var(--shadow-md);
+  border-color: color-mix(in srgb, var(--brand-base) 18%, var(--mg-border));
+}
+
+/* 选中项悬停时守住品牌描边：hover 的 18% 混色比选中态淡，会把选中信号冲掉 */
+.billing-choice[aria-pressed='true']:hover:not(:disabled),
+.billing-channel[aria-pressed='true']:hover:not(:disabled) {
+  border-color: var(--brand-base);
+}
+
+/* 物理下压态：按下去要有「按得动」的回弹，不是纸片
+   ⚠️ 这里只改 transform，**不再整条覆盖 transition**。上面那条合并选择器给 5 个属性
+   各配了时长与缓动，写 `transition: var(--mg-motion-press)` 会把它们全换成
+   `<duration> <easing>` 简写 —— 那个简写只对**它自己列出的第一个属性**生效，
+   其余属性退回浏览器默认（通常 none）。后果是：按下瞬间 transform 动了，
+   阴影 / 边框 / 背景 / 文字色却是瞬切，视觉上「闪」一下，与抬手的缓动不对称。
+   按压要更快（instant 档），正确的做法是逐属性覆盖，不是整条替换。 */
+.billing-choice:active:not(:disabled),
+.billing-channel:active:not(:disabled) {
+  transform: translateY(0) scale(0.982);
+  transition:
+    transform var(--mg-duration-instant) var(--mg-ease-standard),
+    box-shadow var(--mg-duration-instant) var(--mg-ease-standard),
+    border-color var(--mg-duration-instant) var(--mg-ease-standard),
+    background-color var(--mg-duration-instant) var(--mg-ease-standard),
+    color var(--mg-duration-instant) var(--mg-ease-standard);
+}
+
+/* 键盘焦点与悬停等价（全键盘可达：Tab 到哪一格，焦点环就在哪一格） */
+.billing-choice:focus-visible,
+.billing-channel:focus-visible {
+  border-color: var(--brand-base);
+  box-shadow: 0 0 0 3px var(--brand-glow);
+}
+
+/* 前庭安全门禁：系统开了「减弱动效」就关掉位移与按压，只保留颜色/描边过渡 */
+@media (prefers-reduced-motion: reduce) {
+  .billing-choice,
+  .billing-channel {
+    transition:
+      border-color var(--mg-duration-fast),
+      background-color var(--mg-duration-fast),
+      color var(--mg-duration-fast);
+  }
+
+  .billing-choice:hover:not(:disabled),
+  .billing-channel:hover:not(:disabled),
+  .billing-choice:active:not(:disabled),
+  .billing-channel:active:not(:disabled) {
+    transform: none;
+  }
 }
 
 @media (max-width: 639px) {

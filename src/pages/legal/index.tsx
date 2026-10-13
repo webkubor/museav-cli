@@ -5,7 +5,7 @@
  * API：无
  */
 
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { LuArrowLeft } from 'react-icons/lu'
 import { Button } from '@/components/ui/Button'
 
@@ -179,16 +179,22 @@ export default function LegalPage({ docType }: LegalPageProps) {
   const document = LEGAL_DOCS[docType]
   const switchTarget = docType === 'privacy' ? 'terms' : 'privacy'
   const switchLabel = docType === 'privacy' ? '查看服务条款' : '查看隐私政策'
+  const navigate = useNavigate()
+
+  // 回到进入本页前的页面（站内页或官网横幅跳转进来都适用）；
+  // 新开标签页没有历史时回落到注册页
+  const goBack = () => {
+    if (window.history.length > 1) navigate(-1)
+    else navigate('/signup')
+  }
 
   return (
     <main className="min-h-screen bg-mg-bg-1 px-4 py-8 text-mg-text-1 sm:px-6 lg:px-8">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Button asChild variant="ghost" size="sm" className="gap-2">
-            <Link to="/signup">
-              <LuArrowLeft size={15} />
-              返回注册
-            </Link>
+          <Button variant="ghost" size="sm" className="gap-2" onClick={goBack}>
+            <LuArrowLeft size={15} />
+            返回
           </Button>
           <Button asChild variant="outline" size="sm">
             <Link to={`/legal/${switchTarget}`}>{switchLabel}</Link>

@@ -71,7 +71,8 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # 发布后回调业务中台（2026-08-15）：POST /api/cli-release，package 字段区分是哪个包
-      # （2026-09-08 起 museav-mcp 也走这条链路，中台按包名给不同的安装指引与文档链接），
+      # （2026-09-08 起 museav-mcp 也走这条链路，中台按包名给不同的安装指引与文档链接；
+      #  那个包 2026-10-13 正名为 cs-mcp），
       # 由中台统一记录更新日志 + 用 App 发卡片通知到目标群（mzmeso/好易美等）。
       # 群配置在业务中台（CLI_RELEASE_CHAT_IDS），GitHub 只存一个回调 token。
       # 版本号由 /api/cli-guide 动态查 npm registry 同步，同样不用手动改。

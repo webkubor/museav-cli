@@ -157,13 +157,13 @@ export default function WechatCashierPage() {
           setState('paid')
           trackEvent('billing.wechat_cashier:paid', undefined, { result: 'success' })
           // §11.2 billing_recharge_result：支付结果同步到前端（微信收银台轮询拿到终态）
-          trackEvent('billing_recharge_result', { result: 'success', pay_channel: 'wechat' })
+          trackEvent('billing_recharge_result', { pay_channel: 'wechat' }, { result: 'success' })
           return
         }
         if (order.status === 'failed' || order.status === 'cancelled') {
           setState('closed')
           trackEvent('billing.wechat_cashier:closed', undefined, { result: 'fail', error_code: order.status })
-          trackEvent('billing_recharge_result', { result: 'fail', failure_reason: order.status, pay_channel: 'wechat' })
+          trackEvent('billing_recharge_result', { failure_reason: order.status, pay_channel: 'wechat' }, { result: 'fail' })
           return
         }
       } catch {

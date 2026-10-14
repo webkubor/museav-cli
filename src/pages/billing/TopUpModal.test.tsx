@@ -381,7 +381,11 @@ describe('TopUpModal', () => {
     expect(paymentWindow.close).toHaveBeenCalled()
     // 报价冲突不弹「创建失败」
     expect(toastError).not.toHaveBeenCalled()
-    expect(trackEvent).toHaveBeenCalledWith('billing_recharge_result', expect.objectContaining({ failure_reason: 'quote_changed' }))
+    expect(trackEvent).toHaveBeenCalledWith(
+      'billing_recharge_result',
+      expect.objectContaining({ failure_reason: 'quote_changed', pay_channel: 'wechat' }),
+      { result: 'fail' },
+    )
 
     // 用户确认后再点：复校验与展示一致，放行并带新 quote_id 下单
     await clickPay('前往支付 ¥500')

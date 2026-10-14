@@ -1,5 +1,7 @@
-import { LuInfo } from 'react-icons/lu'
+import { useState } from 'react'
+import { LuInfo, LuX } from 'react-icons/lu'
 import { useTranslation } from 'react-i18next'
+import { storageKeys } from '@/lib/storage'
 import type { CatalogModelItem } from '@/types'
 
 type RateLimitModel = Pick<CatalogModelItem, 'free' | 'promotion' | 'rate_limit'>
@@ -13,6 +15,15 @@ function windowLabel(windowSeconds: number, t: (key: string, options?: Record<st
   if (windowSeconds === 3600) return t('modelsExperience.rateLimit.windowHour')
   if (windowSeconds === 86_400) return t('modelsExperience.rateLimit.windowDay')
   return t('modelsExperience.rateLimit.windowSeconds', { count: windowSeconds })
+}
+
+// 隐私模式下 localStorage 读写会抛错：读失败按「未关闭」处理，写失败只影响下次刷新后的持久化。
+function readDismissed() {
+  try {
+    return localStorage.getItem(storageKeys.freeQuotaNoticeDismissed()) === '1'
+  } catch {
+    return false
+  }
 }
 
 /**
@@ -40,6 +51,16 @@ function windowLabel(windowSeconds: number, t: (key: string, options?: Record<st
  */
 export function FreeModelRateLimit({ model, className = '' }: { model: RateLimitModel; className?: string }) {
   const { t } = useTranslation()
+  // 用户点 × 后永久隐藏（写 localStorage，按市场隔离）；之后刷新、换模型都不再出现。
+  const [dismissed, setDismissed] = useState(readDismissed)
+  const dismiss = () => {
+    try {
+      localStorage.setItem(storageKeys.freeQuotaNoticeDismissed(), '1')
+    } catch {
+      // 写入失败时只在本次停留内隐藏
+    }
+    setDismissed(true)
+  }
   const rateLimit = model.rate_limit
   const requestLimit = rateLimit?.request_limit
   const tokenLimit = rateLimit?.token_limit
@@ -51,6 +72,7 @@ export function FreeModelRateLimit({ model, className = '' }: { model: RateLimit
   if (!isFree) return null
   // 免费模型但后端没下发限流规则 → 不渲染（见上方「展示条件」）
   if (!rateLimit) return null
+  if (dismissed) return null
 
   const hasFullRule = validLimit(windowSeconds) && (validLimit(requestLimit) || validLimit(tokenLimit))
   const limits = hasFullRule
@@ -85,6 +107,14 @@ export function FreeModelRateLimit({ model, className = '' }: { model: RateLimit
             英文文案变成 "rate limits apply；Once a limit..." */}
         {' '}{limits}{t('modelsExperience.rateLimit.separator')}{waitText}
       </span>
+      <button
+        type="button"
+        onClick={dismiss}
+        aria-label={t('modelsExperience.dismissQuota')}
+        className="-mr-1 -mt-0.5 shrink-0 rounded-sm p-0.5 text-mg-text-3 transition-colors hover:text-mg-text-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mg-info/40"
+      >
+        <LuX size={14} aria-hidden="true" />
+      </button>
     </p>
   )
 }

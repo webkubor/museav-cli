@@ -95,6 +95,9 @@ export const storageKeys = {
   // 任务进度按租户共享（企业 Owner/Admin 同看一份，规格 §6.2）；
   // 自动展开偏好按 user+tenant+guideVersion（规格 §5.4：Owner 关了不影响 Admin 首次自动展开）。
 
+  // ── 模型广场免费额度提示：用户点 × 关闭后永久隐藏（market 隔离：国内/海外免费目录不同） ──
+  freeQuotaNoticeDismissed: () => buildKey('free_quota_notice_dismissed', 'market'),
+
   // ── 设备指纹（app 全局，跨市场唯一标识） ─────────────────────────────────
   deviceId:         () => buildKey('device_id', 'app'),
 } as const

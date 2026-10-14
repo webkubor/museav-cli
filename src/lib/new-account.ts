@@ -29,6 +29,7 @@
  */
 import { trackEvent } from '@/lib/track'
 import { currentIdentity, pushDataLayer } from '@/lib/gtm-datalayer'
+import { readGaIdentifiers } from '@/lib/ga-ids'
 import { readPersistedAdAttribution, type AdAttributionFields } from '@/pages/signup/ad-source'
 
 /** OAuth 回跳 URL 上的新注册标记参数名（后端 web-api!90 / permissions!56 契约）。 */
@@ -80,9 +81,22 @@ export function captureNewAccountFlag(now: number = Date.now()): void {
  */
 export function trackSignUp(method: AuthMethod, isNewAccount?: boolean, adAttribution?: AdAttributionFields): void {
   if (isNewAccount !== true) return
-  trackEvent('sign_up', { method }, { result: 'success' })
+  // 两条线带同一份来源快照。自建埋点这条腿此前只有 `{ method }`，投放侧拿 gclid 去 join
+  // 自建注册表永远对不上，国内 CPA 因此算不出来（国内站只有自建埋点这一条渠道）。
+  //
+  // 必须走参数传，不能靠 `getCommonProps` 那类全局公共属性兜：各触发点都是**先**
+  // `clearPersistedAdSource()`（防串号）**再** `trackSignUp`，公共属性到这里已被清空，
+  // 那样做等于把来源挂在转化点的另一侧，一件正事没办成。分析侧要按渠道看后续用量，
+  // 用 sign_up 上的 user_id join 即可，不必让每条事件都重复带一遍来源。
+  // 两个时间戳用于闭环：reg_click_ts 是官网点击跳往控制台的时刻（经 URL 带过来，见 ad-source.ts），
+  // reg_success_ts 是注册成功的时刻。两条线都带上，便于算「点击→注册」耗时与来源是否仍有效。
+  const timing = { ...adAttribution, reg_success_ts: String(Date.now()) }
+  // GA4 client_id / session_id 与 Google Ads 的 gcl_aw（gclid）：让市场侧把这条注册 join 回 Google Ads 归因的那次 GA4 会话。
+  // 同步读一次 cookie，两条腿共用同一份快照；读不到的字段直接省略（见 lib/ga-ids.ts）。
+  const ga = readGaIdentifiers()
+  trackEvent('sign_up', { method, ...timing, ...ga }, { result: 'success' })
   // 身份取调用时的 store：各触发点都在 setAuth 之后调用，这里已是新账号。
-  pushDataLayer({ event: 'sign_up', method, ...currentIdentity(), ...adAttribution })
+  pushDataLayer({ event: 'sign_up', method, ...currentIdentity(), ...timing, ...ga })
 }
 
 /**

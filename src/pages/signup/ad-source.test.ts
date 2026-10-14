@@ -64,6 +64,11 @@ describe('只进埋点的来源字段（prd46#1271）', () => {
     expect(readPersistedAdAttribution()).toEqual(all)
   })
 
+  it('reg_click_ts 只进埋点，不进注册请求体', () => {
+    expect(resolveAdSource(new URLSearchParams('gclid=g1&reg_click_ts=1760000000000'))).toEqual({ gclid: 'g1' })
+    expect(resolveAdAttribution(new URLSearchParams(''))).toEqual({ gclid: 'g1', reg_click_ts: '1760000000000' })
+  })
+
   it('只有埋点字段时 resolveAdSource 返回 undefined（不往注册请求塞空对象）', () => {
     expect(resolveAdSource(new URLSearchParams('channel_id=google_ads'))).toBeUndefined()
     expect(resolveAdAttribution(new URLSearchParams(''))).toEqual({ channel_id: 'google_ads' })

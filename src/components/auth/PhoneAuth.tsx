@@ -26,8 +26,9 @@ import { getRequestErrorMessage, errorCodeOf, isApiErrorCode } from '@/lib/reque
 import { getCaptchaParam } from '@/lib/aliyun-captcha'
 import { CaptchaGate, type CaptchaGateHandle } from '@/components/auth/CaptchaGate'
 import { trackEvent } from '@/lib/track'
+import { trackSignUp } from '@/lib/new-account'
 import { resolveReferralCode, clearPersistedReferralCode } from '@/pages/signup/referral-code'
-import { resolveAdSource, clearPersistedAdSource } from '@/pages/signup/ad-source'
+import { resolveAdSource, resolveAdAttribution, clearPersistedAdSource } from '@/pages/signup/ad-source'
 
 function createPhoneAuthSchema(t: TFunction) {
   return z.object({
@@ -128,7 +129,9 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
     setLoading(true)
     setServerError('')
     try {
-      await phoneLoginRegister(
+      // 完整来源（含只进埋点的 channel_id 等）先留一份给 sign_up：下面注册成功就会清掉持久化记录。
+      const adAttribution = resolveAdAttribution(searchParams)
+      const result = await phoneLoginRegister(
         data.phone,
         data.code,
         gateParam ?? (await getCaptchaParam()),
@@ -146,6 +149,9 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
         session.permissions?.granted ?? null
       )
       trackEvent('login_success', { method: 'phone' }, { result: 'success' })
+      // 「登录即注册」：后端 sms-code/login 的响应带 is_new_account（LoginResult 同一字段，prd#1242），
+      // true 才补发 sign_up —— 与邮箱验证码腿同一口径。国内站投放优先自建埋点，这条腿此前一次没发过。
+      trackSignUp('phone', result.is_new_account, adAttribution)
       // 导航统一交给下面 isAuthenticated 的 effect，避免和它抢跑覆盖目的地
     } catch (error) {
       // 展示后端返回的细分中文文案（验证码错误/已失效、账户冻结、发送过频等），

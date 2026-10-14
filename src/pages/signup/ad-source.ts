@@ -43,6 +43,9 @@ const MAX_VALUE_LENGTH = 200
 const MAX_AGE_MS = 24 * 60 * 60 * 1000
 const PLACEHOLDER_ORIGIN = 'https://placeholder.invalid'
 
+/** Google 广告点击 ID：能把一次点击串回广告的三个键，任一存在即视为「本次 URL 带了点击」。 */
+const CLICK_ID_KEYS = ['gclid', 'gbraid', 'wbraid'] as const
+
 function pickFromSearchParams(searchParams: URLSearchParams, keys: readonly string[]): Record<string, string> {
   const picked: Record<string, string> = {}
   for (const key of keys) {
@@ -91,63 +94,82 @@ function attributionFromRedirect(searchParams: URLSearchParams): AdAttributionFi
   }
 }
 
-/** 只读持久化记录（未过期才用），不写入。 */
-export function readPersistedAdAttribution(now = Date.now()): AdAttributionFields | undefined {
+/** 读持久化记录（未过期才用），不写入；过期即清掉。返回字段与其原始捕获时间。 */
+function readPersistedRecord(now: number): { fields: AdAttributionFields; capturedAt: number } | undefined {
   try {
     const raw = sessionStorage.getItem(AD_SOURCE_SESSION_KEY)
     if (!raw) return undefined
     const record = JSON.parse(raw) as { fields?: unknown; captured_at?: unknown }
-    if (typeof record.captured_at !== 'number' || now - record.captured_at >= MAX_AGE_MS) {
+    const capturedAt = record.captured_at
+    if (typeof capturedAt !== 'number' || now - capturedAt >= MAX_AGE_MS) {
       sessionStorage.removeItem(AD_SOURCE_SESSION_KEY)
       return undefined
     }
-    return sanitizeAttribution(record.fields)
+    const fields = sanitizeAttribution(record.fields)
+    return fields ? { fields, capturedAt } : undefined
   } catch {
     return undefined
   }
 }
 
+/** 只读持久化记录的字段（未过期才用），不写入。 */
+export function readPersistedAdAttribution(now = Date.now()): AdAttributionFields | undefined {
+  return readPersistedRecord(now)?.fields
+}
+
 /**
  * 解析完整广告来源（含只进埋点的字段）：URL 命中即持久化并返回；否则回退 sessionStorage（未过期才用）；
  * 都没有返回 undefined。与推荐码一样解开站内 redirect 内嵌 query（未登录访问 / 时参数会被折进 /login?redirect=…）。
+ *
+ * 点击 ID 粘性：URL 只带 utm_* 等非点击参数时，沿用未过期记录里的 gclid / gbraid / wbraid。否则站内再进一次
+ * 带 utm 的链接就会把 Google 点击 ID 冲掉，注册时对不上广告。其余字段仍以本次 URL 为准（last-touch）；
+ * 本次只要带了任一点击 ID，就整体以新值为准。沿用时**不续期**：captured_at 保留原值，24h 窗口从真正点击那一刻起算，
+ * 否则每次带 utm 的访问都会把点击 ID 再续 24h，等于无限期保留。
  */
 export function resolveAdAttribution(searchParams: URLSearchParams, now = Date.now()): AdAttributionFields | undefined {
   let fromUrl: AdAttributionFields = pickFromSearchParams(searchParams, AD_ATTRIBUTION_KEYS)
   if (Object.keys(fromUrl).length === 0) fromUrl = attributionFromRedirect(searchParams)
   if (Object.keys(fromUrl).length === 0) return readPersistedAdAttribution(now)
+
+  let capturedAt = now
+  if (!CLICK_ID_KEYS.some((key) => fromUrl[key])) {
+    const stored = readPersistedRecord(now)
+    if (stored) {
+      for (const key of CLICK_ID_KEYS) {
+        const value = stored.fields[key]
+        if (value) {
+          fromUrl[key] = value
+          capturedAt = stored.capturedAt
+        }
+      }
+    }
+  }
   try {
-    sessionStorage.setItem(AD_SOURCE_SESSION_KEY, JSON.stringify({ fields: fromUrl, captured_at: now }))
+    sessionStorage.setItem(AD_SOURCE_SESSION_KEY, JSON.stringify({ fields: fromUrl, captured_at: capturedAt }))
   } catch {
     /* sessionStorage 不可用：本次仍以 URL 值为准 */
   }
   return fromUrl
 }
 
+/**
+ * 应用启动时捕获广告来源（`main.tsx` 调一次，必须早于 `captureNewAccountFlag`，后者的 OAuth 快照读的是这份记录）。
+ *
+ * 落地页（如 `/models?gclid=…`）不一定经过登录页；若只在登录页才持久化，用户浏览完再点头部「登录」进 `/login`
+ * （不带参数）时来源就丢了。这里只做 `resolveAdAttribution` 的持久化副作用，不返回值；异常一律吞掉，不阻断启动。
+ */
+export function captureAdAttributionAtBoot(now = Date.now()): void {
+  if (typeof window === 'undefined') return
+  try {
+    resolveAdAttribution(new URLSearchParams(window.location.search), now)
+  } catch {
+    /* 捕获失败就算了：埋点不能影响启动 */
+  }
+}
+
 /** 解析上送注册接口的广告来源（不含只进埋点的字段），规则同 `resolveAdAttribution`。 */
 export function resolveAdSource(searchParams: URLSearchParams, now = Date.now()): AdSourceFields | undefined {
   return toAdSource(resolveAdAttribution(searchParams, now))
-}
-
-/**
- * 启动时把当前落地页的广告来源落一次持久化（prd46#1271 补 OAuth 归因）。
- *
- * 背景：`resolveAdSource` / `resolveAdAttribution` 原本只在邮箱验证码提交那一刻才调，
- * 于是 sessionStorage 在「点 Google 登录之前」是空的 —— OAuth 要整页跳去厂商再 302 回来，
- * 回跳 URL 只带 `is_new_account`，不带任何来源参数，所以 OAuth 新注册的 `sign_up`
- * 既没有 `gclid` 也没有 `campaign_id`，后端那边同样存不到（OAuth 链路上送不了
- * ad_source，厂商授权请求里没有这些参数）。改成每次进控制台先落一次：邮箱/验证码提交
- * 仍按原逻辑解析当前 URL，OAuth 回跳则能从 sessionStorage 取回本 tab 早先落下的来源。
- *
- * 只在 URL / redirect 命中来源参数时才写（见 `resolveAdAttribution`），没命中就只读不写，
- * 所以既不会覆盖已有记录，也不会把无来源的访问写进去。
- */
-export function persistAdAttributionOnBoot(): void {
-  if (typeof window === 'undefined') return
-  try {
-    resolveAdAttribution(new URLSearchParams(window.location.search))
-  } catch {
-    /* 埋点不阻断启动 */
-  }
 }
 
 /** 注册成功后清除持久化的广告来源，防止串号归因。 */

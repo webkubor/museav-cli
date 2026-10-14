@@ -9,7 +9,8 @@
  * 推送的事件（市场侧按这个契约在 GTM 里配触发器与数据层变量）：
  * - `mg_identity`：登录态或当前工作空间变化时推一次，带 `user_id`（account_id）/ `workspace_id`；
  *   登出时两个字段推 undefined，清掉 GTM 数据模型里的旧值。
- * - `sign_up`：新注册成功，带 `method` / `user_id` / `workspace_id` 与注册时的广告来源（见 lib/new-account.ts）。
+ * - `sign_up`：新注册成功，带 `method` / `user_id` / `workspace_id`、注册时的广告来源，以及 GA4 / Google Ads 标识
+ *   `ga_client_id` / `ga_session_id` / `gcl_aw`（见 lib/new-account.ts、lib/ga-ids.ts）。
  *
  * 不推邮箱、手机号等明文，只推内部稳定 ID。推送失败静默，不阻断业务。
  */

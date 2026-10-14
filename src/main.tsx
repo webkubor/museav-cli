@@ -20,6 +20,7 @@ import { apiBaseUrl } from './lib/request'
 import { useAuthStore } from './store/auth'
 import { captureNewAccountFlag } from './lib/new-account'
 import { installDataLayerIdentitySync } from './lib/gtm-datalayer'
+import { persistAdAttributionOnBoot } from './pages/signup/ad-source'
 
 // 前端运行时错误上报（仅 DEV）：未捕获异常 / rejection / 全控制台 + DOM 快照，
 // 内置 5s 去重 + 去 HMR 戳防刷爆。统一由 vite-plugin-agent-eyes 提供，替代原 dev-error-reporter。
@@ -54,6 +55,11 @@ initTrack({
     return props
   },
 })
+
+// 广告来源先落一次持久化（prd46#1271）：OAuth 要整页跳出再 302 回来，回跳 URL 只带
+// is_new_account、不带来源参数，所以必须在「点登录之前」就把 gclid / utm / campaign_id
+// 存进 sessionStorage，sign_up 上报时才取得到。必须早于下面 captureNewAccountFlag()。
+persistAdAttributionOnBoot()
 
 // OAuth 回跳的新注册标记：必须在 React 挂载前摘掉并记下（prd#1242）。
 // 回跳目标页各自在挂载时读一次 URL，晚一步清理用户就会看到残留的 ?is_new_account=…；

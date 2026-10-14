@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { adSourceFromSearchParams, clearPersistedAdSource, readPersistedAdAttribution, resolveAdAttribution, resolveAdSource } from './ad-source'
+import { adSourceFromSearchParams, clearPersistedAdSource, persistAdAttributionOnBoot, readPersistedAdAttribution, resolveAdAttribution, resolveAdSource } from './ad-source'
 
 describe('ad-source', () => {
   beforeEach(() => {
     sessionStorage.clear()
+    window.history.pushState({}, '', '/')
   })
 
   it('picks only known ad keys and drops empty values', () => {
@@ -76,5 +77,25 @@ describe('只进埋点的来源字段（prd46#1271）', () => {
 
   it('redirect 内嵌的埋点字段也能解开', () => {
     expect(resolveAdAttribution(new URLSearchParams({ redirect: '/?device=m&gclid=g9' }))).toEqual({ gclid: 'g9', device: 'm' })
+  })
+
+  it('启动即落盘：OAuth 整页往返后回跳 URL 不带来源也能取回（prd46#1271）', () => {
+    window.history.pushState({}, '', '/login?gclid=g1&utm_source=google&channel_id=google_ads')
+    persistAdAttributionOnBoot()
+    // 回跳落地：只有新注册标记，来源参数已被厂商往返吃掉
+    window.history.pushState({}, '', '/auth-callback?is_new_account=true')
+    persistAdAttributionOnBoot()
+    expect(readPersistedAdAttribution()).toEqual({
+      gclid: 'g1',
+      utm_source: 'google',
+      channel_id: 'google_ads',
+    })
+  })
+
+  it('启动时无来源不写盘，也不清掉已有记录', () => {
+    resolveAdSource(new URLSearchParams('gclid=g1'))
+    window.history.pushState({}, '', '/dashboard')
+    persistAdAttributionOnBoot()
+    expect(readPersistedAdAttribution()).toEqual({ gclid: 'g1' })
   })
 })

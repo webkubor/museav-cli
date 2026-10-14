@@ -128,6 +128,28 @@ export function resolveAdSource(searchParams: URLSearchParams, now = Date.now())
   return toAdSource(resolveAdAttribution(searchParams, now))
 }
 
+/**
+ * 启动时把当前落地页的广告来源落一次持久化（prd46#1271 补 OAuth 归因）。
+ *
+ * 背景：`resolveAdSource` / `resolveAdAttribution` 原本只在邮箱验证码提交那一刻才调，
+ * 于是 sessionStorage 在「点 Google 登录之前」是空的 —— OAuth 要整页跳去厂商再 302 回来，
+ * 回跳 URL 只带 `is_new_account`，不带任何来源参数，所以 OAuth 新注册的 `sign_up`
+ * 既没有 `gclid` 也没有 `campaign_id`，后端那边同样存不到（OAuth 链路上送不了
+ * ad_source，厂商授权请求里没有这些参数）。改成每次进控制台先落一次：邮箱/验证码提交
+ * 仍按原逻辑解析当前 URL，OAuth 回跳则能从 sessionStorage 取回本 tab 早先落下的来源。
+ *
+ * 只在 URL / redirect 命中来源参数时才写（见 `resolveAdAttribution`），没命中就只读不写，
+ * 所以既不会覆盖已有记录，也不会把无来源的访问写进去。
+ */
+export function persistAdAttributionOnBoot(): void {
+  if (typeof window === 'undefined') return
+  try {
+    resolveAdAttribution(new URLSearchParams(window.location.search))
+  } catch {
+    /* 埋点不阻断启动 */
+  }
+}
+
 /** 注册成功后清除持久化的广告来源，防止串号归因。 */
 export function clearPersistedAdSource() {
   try {

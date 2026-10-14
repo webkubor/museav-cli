@@ -34,7 +34,7 @@ describe('新注册标记捕获与上报', () => {
     captureNewAccountFlag(T0)
     expect(window.location.search).toBe('?foo=1&bar=2')
     flushNewAccountSignUp(T0)
-    expect(trackEvent).toHaveBeenCalledWith('sign_up', { method: 'oauth' }, { result: 'success' })
+    expect(trackEvent).toHaveBeenCalledWith('sign_up', { method: 'oauth', reg_success_ts: expect.any(String) }, { result: 'success' })
   })
 
   it('false / 空值 / 拼错的值都按老账号处理，不发事件但仍摘掉参数', () => {
@@ -108,7 +108,15 @@ describe('trackSignUp 判定', () => {
 
   it('只有 true 才发 sign_up', () => {
     trackSignUp('email_code', true)
-    expect(trackEvent).toHaveBeenCalledWith('sign_up', { method: 'email_code' }, { result: 'success' })
+    expect(trackEvent).toHaveBeenCalledWith('sign_up', { method: 'email_code', reg_success_ts: expect.any(String) }, { result: 'success' })
+  })
+
+  it('reg_click_ts 与 reg_success_ts 成对进入埋点', () => {
+    const before = Date.now()
+    trackSignUp('email_code', true, { gclid: 'g1', ad_group_id: 'ag1', reg_click_ts: '1760000000000' })
+    const props = vi.mocked(trackEvent).mock.calls[0][1] as Record<string, string>
+    expect(props).toMatchObject({ gclid: 'g1', ad_group_id: 'ag1', reg_click_ts: '1760000000000' })
+    expect(Number(props.reg_success_ts)).toBeGreaterThanOrEqual(before)
   })
 
   it('false / undefined 一律不发', () => {
@@ -138,7 +146,7 @@ describe('sign_up 推 GTM dataLayer（prd46#1271）', () => {
   it('邮箱腿：带身份与完整广告来源（含只进埋点的字段）', () => {
     trackSignUp('email_code', true, { gclid: 'g1', campaign_id: 'c1', channel_id: 'google_ads', matchtype: 'e' })
     expect(signUps()).toEqual([
-      { event: 'sign_up', method: 'email_code', user_id: 'acc_1', workspace_id: 'ws_1', gclid: 'g1', campaign_id: 'c1', channel_id: 'google_ads', matchtype: 'e' },
+      { event: 'sign_up', method: 'email_code', user_id: 'acc_1', workspace_id: 'ws_1', gclid: 'g1', campaign_id: 'c1', channel_id: 'google_ads', matchtype: 'e', reg_success_ts: expect.any(String) },
     ])
   })
 
@@ -153,6 +161,6 @@ describe('sign_up 推 GTM dataLayer（prd46#1271）', () => {
     captureNewAccountFlag(T0)
     sessionStorage.clear()
     flushNewAccountSignUp(T0)
-    expect(signUps()).toEqual([{ event: 'sign_up', method: 'oauth', user_id: 'acc_1', workspace_id: 'ws_1', gclid: 'g2', device: 'c' }])
+    expect(signUps()).toEqual([{ event: 'sign_up', method: 'oauth', user_id: 'acc_1', workspace_id: 'ws_1', gclid: 'g2', device: 'c', reg_success_ts: expect.any(String) }])
   })
 })

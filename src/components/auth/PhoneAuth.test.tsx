@@ -70,7 +70,7 @@ describe('PhoneAuth 注册事件（prd46#1271 国内腿补 sign_up）', () => {
   it('新注册发 sign_up，自建埋点与 dataLayer 带同一份广告来源', async () => {
     vi.mocked(phoneLoginRegister).mockResolvedValue({ is_new_account: true } as never)
     await submit('?gclid=g1&utm_source=google&channel_id=google_ads')
-    const expected = { method: 'phone', gclid: 'g1', utm_source: 'google', channel_id: 'google_ads' }
+    const expected = { method: 'phone', gclid: 'g1', utm_source: 'google', channel_id: 'google_ads', reg_success_ts: expect.any(String) }
     await waitFor(() => expect(trackEvent).toHaveBeenCalledWith('sign_up', expected, { result: 'success' }))
     expect(pushDataLayer).toHaveBeenCalledWith(expect.objectContaining({ event: 'sign_up', ...expected }))
   })

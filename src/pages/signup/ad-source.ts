@@ -26,8 +26,12 @@ export const AD_SOURCE_KEYS = [
   'ad_group_id',
 ] as const
 
-/** 只进埋点、不上送注册接口的来源字段。 */
-export const AD_TRACKING_ONLY_KEYS = ['channel_id', 'matchtype', 'device', 'network'] as const
+/**
+ * 只进埋点、不上送注册接口的字段：
+ * - channel_id / matchtype / device / network：Google Ads 跟踪模板带的来源维度（prd46#1271）；
+ * - reg_click_ts：官网点击跳往控制台的时刻（ms 时间戳字符串），与注册成功时刻 reg_success_ts 配对，用于闭环验证。
+ */
+export const AD_TRACKING_ONLY_KEYS = ['channel_id', 'matchtype', 'device', 'network', 'reg_click_ts'] as const
 
 const AD_ATTRIBUTION_KEYS = [...AD_SOURCE_KEYS, ...AD_TRACKING_ONLY_KEYS] as const
 

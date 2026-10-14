@@ -122,7 +122,7 @@ describe('GlobalEmailAuth factors and recovery #1092', () => {
   it('新注册补发 sign_up，老账号只发 login_success（prd#1242）', async () => {
     vi.mocked(emailCodeLoginRegister).mockResolvedValue({ is_new_account: true } as never)
     await goToCode();submitCode()
-    await waitFor(() => expect(trackEvent).toHaveBeenCalledWith('sign_up', { method: 'email_code' }, { result: 'success' }))
+    await waitFor(() => expect(trackEvent).toHaveBeenCalledWith('sign_up', { method: 'email_code', reg_success_ts: expect.any(String) }, { result: 'success' }))
     expect(trackEvent).toHaveBeenCalledWith('login_success', { method: 'email_code' }, { result: 'success' })
   })
   it('后端未给新注册标记时不发 sign_up（字段缺失）', async () => {

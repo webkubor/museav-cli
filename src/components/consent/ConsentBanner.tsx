@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
 import { readConsentChoice, recordConsent, type ConsentChoice } from '@/lib/consent'
 
 /**
@@ -22,26 +23,24 @@ export function ConsentBanner() {
   }
 
   return (
-    <div
-      role="region"
-      aria-label={t('common.consent.region')}
-      className="mg-float fixed bottom-4 left-4 z-[var(--mg-z-modal)] w-[calc(100%-2rem)] max-w-sm rounded-md p-4"
-    >
-      <p className="text-sm leading-relaxed text-mg-text-2">
-        {t('common.consent.text')}
-        <a href="/legal/privacy" className="text-mg-info underline underline-offset-2 hover:opacity-80">
-          {t('common.consent.privacyLink')}
-        </a>
-        {t('common.consent.suffix')}
-      </p>
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Button variant="brand" size="sm" onClick={() => choose('accept')}>
-          {t('common.consent.accept')}
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => choose('reject')}>
-          {t('common.consent.reject')}
-        </Button>
-      </div>
+    <div className="fixed bottom-4 left-4 z-[var(--mg-z-modal)] w-[calc(100%-2rem)] max-w-sm">
+      <Card role="region" aria-label={t('common.consent.region')} glass level={2} className="p-4">
+        <p className="text-sm leading-relaxed text-mg-text-2">
+          {t('common.consent.text')}
+          <a href="/legal/privacy" className="text-mg-info underline underline-offset-2 hover:opacity-80">
+            {t('common.consent.privacyLink')}
+          </a>
+          {t('common.consent.suffix')}
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Button variant="brand" size="sm" onClick={() => choose('accept')}>
+            {t('common.consent.accept')}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => choose('reject')}>
+            {t('common.consent.reject')}
+          </Button>
+        </div>
+      </Card>
     </div>
   )
 }

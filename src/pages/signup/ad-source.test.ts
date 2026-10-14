@@ -1,5 +1,12 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import { adSourceFromSearchParams, clearPersistedAdSource, readPersistedAdAttribution, resolveAdAttribution, resolveAdSource } from './ad-source'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  adSourceFromSearchParams,
+  captureAdAttributionAtBoot,
+  clearPersistedAdSource,
+  readPersistedAdAttribution,
+  resolveAdAttribution,
+  resolveAdSource,
+} from './ad-source'
 
 describe('ad-source', () => {
   beforeEach(() => {
@@ -76,5 +83,79 @@ describe('只进埋点的来源字段（prd46#1271）', () => {
 
   it('redirect 内嵌的埋点字段也能解开', () => {
     expect(resolveAdAttribution(new URLSearchParams({ redirect: '/?device=m&gclid=g9' }))).toEqual({ gclid: 'g9', device: 'm' })
+  })
+})
+
+describe('点击 ID 粘性：utm 串访不冲掉 gclid', () => {
+  beforeEach(() => sessionStorage.clear())
+
+  const T0 = 1_760_000_000_000
+  const HOUR = 60 * 60 * 1000
+
+  it('utm-only 落地沿用之前的 gclid，其余字段以本次 URL 为准', () => {
+    resolveAdAttribution(new URLSearchParams('gclid=g1&utm_source=google'), T0)
+    const result = { gclid: 'g1', utm_source: 'bing', utm_campaign: 'c2' }
+    expect(resolveAdAttribution(new URLSearchParams('utm_source=bing&utm_campaign=c2'), T0 + HOUR)).toEqual(result)
+    expect(readPersistedAdAttribution(T0 + HOUR)).toEqual(result)
+  })
+
+  it('本次带了新的 gclid 则整体以新值为准', () => {
+    resolveAdAttribution(new URLSearchParams('gclid=g1&utm_source=google'), T0)
+    expect(resolveAdAttribution(new URLSearchParams('gclid=g2&utm_source=bing'), T0 + HOUR)).toEqual({ gclid: 'g2', utm_source: 'bing' })
+  })
+
+  it('本次带的是别的点击 ID（gbraid）时，不混入旧的 gclid', () => {
+    resolveAdAttribution(new URLSearchParams('gclid=g1'), T0)
+    expect(resolveAdAttribution(new URLSearchParams('gbraid=b1'), T0 + HOUR)).toEqual({ gbraid: 'b1' })
+  })
+
+  it('过期的记录不复用', () => {
+    resolveAdAttribution(new URLSearchParams('gclid=g1'), T0)
+    expect(resolveAdAttribution(new URLSearchParams('utm_source=bing'), T0 + 24 * HOUR)).toEqual({ utm_source: 'bing' })
+  })
+
+  it('沿用的点击 ID 不续期：24h 窗口从真正点击那一刻起算', () => {
+    resolveAdAttribution(new URLSearchParams('gclid=g1'), T0)
+    expect(resolveAdAttribution(new URLSearchParams('utm_source=a'), T0 + 23 * HOUR)).toEqual({ gclid: 'g1', utm_source: 'a' })
+    expect(resolveAdAttribution(new URLSearchParams('utm_source=b'), T0 + 25 * HOUR)).toEqual({ utm_source: 'b' })
+  })
+
+  it('上送注册接口的 resolveAdSource 也带上沿用的 gclid', () => {
+    resolveAdSource(new URLSearchParams('gclid=g1'), T0)
+    expect(resolveAdSource(new URLSearchParams('utm_source=bing'), T0 + HOUR)).toEqual({ gclid: 'g1', utm_source: 'bing' })
+  })
+})
+
+describe('captureAdAttributionAtBoot（启动即落盘，不等登录页）', () => {
+  beforeEach(() => {
+    sessionStorage.clear()
+    window.history.replaceState(null, '', '/')
+  })
+
+  const T0 = 1_760_000_000_000
+
+  it('落地页带的广告参数启动时即持久化，埋点字段也一起存', () => {
+    window.history.replaceState(null, '', '/models?gclid=g1&utm_source=google&channel_id=google_ads')
+    captureAdAttributionAtBoot(T0)
+    expect(readPersistedAdAttribution(T0)).toEqual({ gclid: 'g1', utm_source: 'google', channel_id: 'google_ads' })
+  })
+
+  it('没有广告参数时不写入，也不动地址栏', () => {
+    window.history.replaceState(null, '', '/models?tab=usage')
+    captureAdAttributionAtBoot(T0)
+    expect(readPersistedAdAttribution(T0)).toBeUndefined()
+    expect(window.location.search).toBe('?tab=usage')
+  })
+
+  it('sessionStorage 写入失败时不抛错，不阻断启动', () => {
+    window.history.replaceState(null, '', '/models?gclid=g1')
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError')
+    })
+    try {
+      expect(() => captureAdAttributionAtBoot(T0)).not.toThrow()
+    } finally {
+      vi.restoreAllMocks()
+    }
   })
 })

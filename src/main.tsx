@@ -19,6 +19,7 @@ import { installChunkReloadGuard } from './lib/chunk-reload'
 import { apiBaseUrl } from './lib/request'
 import { useAuthStore } from './store/auth'
 import { captureNewAccountFlag } from './lib/new-account'
+import { captureAdAttributionAtBoot } from './pages/signup/ad-source'
 import { installDataLayerIdentitySync } from './lib/gtm-datalayer'
 
 // 前端运行时错误上报（仅 DEV）：未捕获异常 / rejection / 全控制台 + DOM 快照，
@@ -54,6 +55,11 @@ initTrack({
     return props
   },
 })
+
+// 广告来源落地即捕获（投放归因）：任何落地页的 gclid / utm 先存进 sessionStorage，
+// 否则从 /models?gclid=… 直接点头部「登录」进 /login（不带参数）时来源就丢了。
+// 必须早于 captureNewAccountFlag —— 它拍的 OAuth 快照读的就是这份持久化记录。
+captureAdAttributionAtBoot()
 
 // OAuth 回跳的新注册标记：必须在 React 挂载前摘掉并记下（prd#1242）。
 // 回跳目标页各自在挂载时读一次 URL，晚一步清理用户就会看到残留的 ?is_new_account=…；

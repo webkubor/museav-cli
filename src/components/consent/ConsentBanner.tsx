@@ -3,17 +3,18 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { readConsentChoice, recordConsent, type ConsentChoice } from '@/lib/consent'
+import { currentVisitorNeedsConsent } from '@/lib/consent-scope'
 
 /**
  * Cookie 同意横幅（左下角浮层）。未决定或版本过期时展示；决定后不再出现。
  *
  * 控制台是纯 SPA（无 SSR），所以可以在初始化时直接读 cookie，不需要 effect 同步。
- * 控制台暂无国家信号，所有访客都展示（见 lib/consent.ts 头注释）。
+ * 只对名单内国家展示（见 lib/consent-scope.ts）；名单外不弹，已在 index.html 直接 granted 加载。
  * 接受 / 拒绝两个按钮同层同权重，文案取自 common.consent。
  */
 export function ConsentBanner() {
   const { t } = useTranslation()
-  const [visible, setVisible] = useState(() => readConsentChoice() === null)
+  const [visible, setVisible] = useState(() => currentVisitorNeedsConsent() && readConsentChoice() === null)
 
   if (!visible) return null
 

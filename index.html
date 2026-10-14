@@ -3,20 +3,29 @@
   <head>
     <meta charset="UTF-8" />
 
-    <!-- Google Consent Mode v2 + Cookie 同意门控（PRD #1264 · 欧洲合规）。
-         加载 GTM / GA4 之前必须先设默认值：未同意 → 四项 denied，不加载任何 Google 标签；
-         已接受（mg_consent=<version>:accept）→ granted 并直接加载。
-         控制台暂无国家信号，所有访客按「需要同意」处理（见 src/lib/consent.ts）。
-         版本号与 src/lib/consent.ts 的 CONSENT_VERSION 必须一致。 -->
+    <!-- Google Consent Mode v2 + Cookie 同意门控（PRD #1264 · 欧洲合规，地区范围与官网一致）。
+         加载 GTM / GA4 之前先设默认值，且必须在任何 Google 标签加载前完成：
+         - 访客国家不在名单内：不弹横幅，直接 granted 并加载；
+         - 名单内未同意：denied，不加载任何 Google 标签；已接受（mg_consent=<version>:accept）：granted 并加载。
+         国家码由 nginx 返回 index.html 时写入 <html data-country="..">（静态 SPA 没有服务端渲染，只能在 HTML 里带上；
+         不能靠 cookie，首访时 cookie 还没到）。读不到按需要同意（保守）。
+         名单与版本号必须与 src/lib/consent-scope.ts、src/lib/consent.ts 保持一致。 -->
     <script>
       (function (w, d) {
         var VERSION = '2026-10-v1';
+        var NEED_CONSENT = ['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH','TR','MK','RS','TH'];
+        var raw = (d.documentElement.getAttribute('data-country') || '').trim().toUpperCase();
+        if (raw === 'UK') raw = 'GB';
+        var country = /^[A-Z]{2}$/.test(raw) && raw !== 'XX' && raw !== 'T1' ? raw : null;
+        var required = country === null || NEED_CONSENT.indexOf(country) !== -1;
         var m = d.cookie.match(/(?:^|;\s*)mg_consent=([^;]*)/);
         var accepted = !!(m && m[1] === VERSION + ':accept');
-        var v = accepted ? 'granted' : 'denied';
+        var granted = !required || accepted;
+        var v = granted ? 'granted' : 'denied';
         w.dataLayer = w.dataLayer || [];
         w.gtag = w.gtag || function () { w.dataLayer.push(arguments); };
         w.gtag('consent', 'default', { ad_storage: v, analytics_storage: v, ad_user_data: v, ad_personalization: v });
+        w.mgConsentRequired = required;
 
         // 容器 GTM-PCHLTL6L（市场侧 Google Ads 转化追踪用）。与下方 GA4 是两条加载路径，当前阶段刻意并存：
         // 等市场侧在 GTM 里配好 GA4 标签后，必须在同一发版窗口内摘掉下方 gtag，否则同一属性加载两次、事件翻倍。
@@ -32,7 +41,7 @@
             f.parentNode.insertBefore(j, f);
           })('script', 'dataLayer', 'GTM-PCHLTL6L');
 
-          // GA4（G-WCEKH5ZZEH）：对外门户统一接入，与官网同一属性，便于跨站看完整漏斗。
+          // GA4（G-WCEKH5ZZEH）：对外门户统一接入，与官网同一属性。
           // linker.domains 是跨域衡量的双向握手名单，四端（国内外官网 + 控制台 cn/intl 两个域名）必须写同一份。
           var g = d.createElement('script');
           g.async = true;
@@ -47,7 +56,7 @@
           });
         };
 
-        if (accepted) w.mgLoadGoogleTags();
+        if (granted) w.mgLoadGoogleTags();
       })(window, document);
     </script>
     <script>

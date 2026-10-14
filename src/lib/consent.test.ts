@@ -60,3 +60,21 @@ describe('consent (console)', () => {
     expect(() => recordConsent('accept')).not.toThrow()
   })
 })
+
+describe('横幅显示条件（地区）', () => {
+  it('名单外（data-country=US）不需要同意', async () => {
+    const { currentVisitorNeedsConsent } = await import('./consent-scope')
+    document.documentElement.dataset.country = 'US'
+    expect(currentVisitorNeedsConsent()).toBe(false)
+  })
+  it('名单内（data-country=FR）需要同意', async () => {
+    const { currentVisitorNeedsConsent } = await import('./consent-scope')
+    document.documentElement.dataset.country = 'FR'
+    expect(currentVisitorNeedsConsent()).toBe(true)
+  })
+  it('无国家信息按需要同意', async () => {
+    const { currentVisitorNeedsConsent } = await import('./consent-scope')
+    delete document.documentElement.dataset.country
+    expect(currentVisitorNeedsConsent()).toBe(true)
+  })
+})

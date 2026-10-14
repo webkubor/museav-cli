@@ -1,5 +1,13 @@
 {
   "common": {
+    "consent": {
+      "text": "We use cookies to improve your experience and analyze website traffic. Learn more in our ",
+      "privacyLink": "Privacy Policy",
+      "suffix": ".",
+      "accept": "Accept",
+      "reject": "Reject",
+      "region": "Cookie consent"
+    },
     "sessionExpired": "Your session has expired. Please sign in again.",
     "copy": "Copy",
     "copied": "Copied",

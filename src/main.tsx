@@ -9,6 +9,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import './i18n'
 import App from './App.tsx'
+import { ConsentBanner } from './components/consent/ConsentBanner'
 import { installAgentErrorReporter } from 'vite-plugin-agent-eyes/client'
 import { initDeviceFingerprint } from './lib/device-fingerprint'
 import { installDevAuth } from './lib/dev-auth'
@@ -97,5 +98,6 @@ installChunkReloadGuard()
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
+    <ConsentBanner />
   </StrictMode>,
 )

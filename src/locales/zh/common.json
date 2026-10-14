@@ -1,5 +1,13 @@
 {
   "common": {
+    "consent": {
+      "text": "我们使用 Cookie 来改善您的体验并分析网站流量，详情请参阅我们的",
+      "privacyLink": "隐私政策",
+      "suffix": "。",
+      "accept": "接受",
+      "reject": "拒绝",
+      "region": "Cookie 同意"
+    },
     "sessionExpired": "登录已过期，请重新登录",
     "copy": "复制",
     "copied": "已复制",

@@ -3,68 +3,52 @@
   <head>
     <meta charset="UTF-8" />
 
-    <!-- Google Tag Manager（容器 GTM-PCHLTL6L）——市场侧 Google Ads 转化追踪用。
-         按 Google 要求放在 <head> 尽可能靠前；charset 必须保持首位，故紧随其后。
-
-         ⚠️ 与下方硬编码的 GA4（G-WCEKH5ZZEH）是两条独立加载路径，当前阶段**刻意并存**：
-         本次只装容器，GA4 标签仍由下方 gtag 直出。等市场侧在 GTM 里配好 GA4 标签后，
-         必须在同一个发版窗口内摘掉下方 gtag —— 两者同时存在会把同一个属性加载两次，
-         所有事件翻倍。切换时还要把 linker.domains 搬进 GTM 的 GA4 标签，
-         否则刚打通的跨域归因会再断一次。
-
-         本仓一份 index.html 同时发 console.modelgo.com 与 console.modelgo.ai，
-         两个域名共用这一个容器（Google 侧要求官网与 Console 装同一个容器）。 -->
+    <!-- Google Consent Mode v2 + Cookie 同意门控（PRD #1264 · 欧洲合规）。
+         加载 GTM / GA4 之前必须先设默认值：未同意 → 四项 denied，不加载任何 Google 标签；
+         已接受（mg_consent=<version>:accept）→ granted 并直接加载。
+         控制台暂无国家信号，所有访客按「需要同意」处理（见 src/lib/consent.ts）。
+         版本号与 src/lib/consent.ts 的 CONSENT_VERSION 必须一致。 -->
     <script>
-      (function (w, d, s, l, i) {
-        w[l] = w[l] || [];
-        w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
-        var f = d.getElementsByTagName(s)[0],
-          j = d.createElement(s),
-          dl = l != 'dataLayer' ? '&l=' + l : '';
-        j.async = true;
-        j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
-        f.parentNode.insertBefore(j, f);
-      })(window, document, 'script', 'dataLayer', 'GTM-PCHLTL6L');
-    </script>
+      (function (w, d) {
+        var VERSION = '2026-10-v1';
+        var m = d.cookie.match(/(?:^|;\s*)mg_consent=([^;]*)/);
+        var accepted = !!(m && m[1] === VERSION + ':accept');
+        var v = accepted ? 'granted' : 'denied';
+        w.dataLayer = w.dataLayer || [];
+        w.gtag = w.gtag || function () { w.dataLayer.push(arguments); };
+        w.gtag('consent', 'default', { ad_storage: v, analytics_storage: v, ad_user_data: v, ad_personalization: v });
 
-    <link rel="icon" type="image/svg+xml" href="/brand/modelgo-app-icon-dark.svg" media="(prefers-color-scheme: light)" />
-    <link rel="icon" type="image/svg+xml" href="/brand/modelgo-app-icon-light.svg" media="(prefers-color-scheme: dark)" />
-    <!-- Apple 设备「添加到主屏幕」用 apple-touch-icon(不认 SVG favicon/manifest);缺失会退化成页面截图=白块(需求方#244) -->
-    <link rel="apple-touch-icon" sizes="180x180" href="/brand/apple-touch-icon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#3b82f6" />
-    <title>ModelGo 控制台</title>
+        // 容器 GTM-PCHLTL6L（市场侧 Google Ads 转化追踪用）。与下方 GA4 是两条加载路径，当前阶段刻意并存：
+        // 等市场侧在 GTM 里配好 GA4 标签后，必须在同一发版窗口内摘掉下方 gtag，否则同一属性加载两次、事件翻倍。
+        // 本仓一份 index.html 同时发 console.modelgo.com 与 console.modelgo.ai，两个域名共用这一个容器。
+        w.mgLoadGoogleTags = function () {
+          if (w.mgGoogleTagsLoaded) return;
+          w.mgGoogleTagsLoaded = true;
+          (function (s, l, i) {
+            w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+            var f = d.getElementsByTagName(s)[0], j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
+            j.async = true;
+            j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+            f.parentNode.insertBefore(j, f);
+          })('script', 'dataLayer', 'GTM-PCHLTL6L');
 
-    <!-- Google tag (gtag.js)：对外门户统一接入 GA4 埋点上报（属性 G-WCEKH5ZZEH，
-         与国内官网 / 国外官网 / 说明文档同一个属性，便于跨站看完整漏斗）。
+          // GA4（G-WCEKH5ZZEH）：对外门户统一接入，与官网同一属性，便于跨站看完整漏斗。
+          // linker.domains 是跨域衡量的双向握手名单，四端（国内外官网 + 控制台 cn/intl 两个域名）必须写同一份。
+          var g = d.createElement('script');
+          g.async = true;
+          g.src = 'https://www.googletagmanager.com/gtag/js?id=G-WCEKH5ZZEH';
+          d.head.appendChild(g);
+          w.gtag('js', new Date());
+          w.gtag('config', 'G-WCEKH5ZZEH', {
+            linker: {
+              domains: ['modelgo.ai', 'console.modelgo.ai', 'modelgo.com', 'console.modelgo.com'],
+              accept_incoming: true
+            }
+          });
+        };
 
-         控制台虽是登录后的后台，但 /models（模型广场）与 /models/discovery（模型发现）
-         未登录可访问，根路径 / 对未登录访客也跳 /models —— 它们是对外页面
-         （owner 2026-09-17：只要对外的门户都需要加）。
-
-         与站内 @model-go/track 是两条线：track 报自有后端，这条报 Google。
-         别用 track 去封装它，也别把两者的事件名混在一起。
-
-         linker.domains 是跨域衡量（cross-domain measurement）的握手名单，控制台这端
-         尤其不能少：官网是转化漏斗的入口、控制台是出口，不配的话用户从 modelgo.ai
-         点进 console.modelgo.ai 会被 GA4 算成两个访客的两次会话，而且控制台这一跳的
-         来源被改写成 "modelgo.ai / referral" —— 广告与自然搜索的原始来源在跨域那一刻
-         丢失，投放花的钱归因不到注册。
-         跨域衡量是**双向握手**：只有官网单边配、控制台不认，链路照样断，所以四端
-         （国内外官网 + 本控制台的 cn/intl 两个域名）必须写同一份名单。
-         本仓一份 index.html 同时发 console.modelgo.com 与 console.modelgo.ai，
-         名单里两个域名都要在。 -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-WCEKH5ZZEH"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-WCEKH5ZZEH', {
-        linker: {
-          domains: ['modelgo.ai', 'console.modelgo.ai', 'modelgo.com', 'console.modelgo.com'],
-          accept_incoming: true
-        }
-      });
+        if (accepted) w.mgLoadGoogleTags();
+      })(window, document);
     </script>
     <script>
       // PWA 下线迁移：历史版本给用户浏览器装过 ServiceWorker，不清会一直由旧 SW

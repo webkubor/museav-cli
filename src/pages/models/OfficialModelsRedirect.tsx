@@ -107,6 +107,9 @@ export function OfficialModelsRedirect({ kind }: { kind: 'catalog' | 'rankings' 
   // 挂载时判一次就定：跳走之前本页不会重渲染出别的结论
   const [blocked] = useState(() => fullPageLoad && recentAutoRedirects(pathname) >= LOOP_GUARD_MAX_AUTO)
   const onboardingReportRef = useRef<Promise<void> | null>(null)
+  // replace 发出后到页面真正卸载之间 JS 还在跑：会话请求回来（isAuthenticated 翻成 true）、
+  // 语言就位都会让 effect 重跑，没有这个标记就会再跳一次、防环再记一次数
+  const firedRef = useRef(false)
 
   const modelId = params.modelId ?? params['*'] ?? ''
   const page = useMemo<OfficialModelsPage>(
@@ -120,7 +123,7 @@ export function OfficialModelsRedirect({ kind }: { kind: 'catalog' | 'rankings' 
   )
 
   useEffect(() => {
-    if (blocked) return
+    if (blocked || firedRef.current) return
     let cancelled = false
     // 没有引导数据（未登录、无权限角色、整页直开）时 reportOnboardingStep 立即返回，不耽误跳转。
     // 存进 ref：StrictMode 下 effect 会跑两遍，第二遍复用同一次上报，不再多报一次
@@ -133,7 +136,8 @@ export function OfficialModelsRedirect({ kind }: { kind: 'catalog' | 'rankings' 
     ])
     void Promise.all([settledMarket(queryClient), reported]).then(([resolvedMarket]) => {
       // 等待期间用户后退 / 点了别处：本页已卸载，别再把人拽去官网
-      if (cancelled) return
+      if (cancelled || firedRef.current) return
+      firedRef.current = true
       if (fullPageLoad) recordAutoRedirect(pathname)
       const target = withConsoleMarker(officialModelsUrl(resolvedMarket, i18n.language, page, { search, hash }))
       // replace：不在历史里留这一跳，官网上点「后退」直接回到来源页

@@ -45,8 +45,9 @@ function InAppLink({ to }: { to: string }) {
 }
 
 function renderAt(url: string, { inApp = false } = {}) {
-  return render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const tree = () => (
+    <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[inApp ? '/start' : url]}>
         <Routes>
           <Route path="/start" element={<InAppLink to={url} />} />
@@ -60,8 +61,11 @@ function renderAt(url: string, { inApp = false } = {}) {
         </Routes>
         {inApp && <InAppLink to="/elsewhere" />}
       </MemoryRouter>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   )
+  const view = render(tree())
+  /** 同一棵树原样重渲染：组件实例不换，只让它重新读一次 store（模拟会话请求回来） */
+  return { ...view, rerenderSame: () => view.rerender(tree()) }
 }
 
 function seedLoopRecord(path: string, count: number) {
@@ -147,6 +151,21 @@ describe('OfficialModelsRedirect', () => {
     await act(() => vi.advanceTimersByTimeAsync(2_000))
     expect(screen.getByText('elsewhere')).toBeTruthy()
     expect(replace).not.toHaveBeenCalled()
+  })
+
+  it('does not redirect or count again when the session resolves after the redirect was sent', async () => {
+    const view = renderAt('/models')
+    await act(() => vi.advanceTimersByTimeAsync(0))
+    expect(replace).toHaveBeenCalledTimes(1)
+
+    // 整页直开时会话请求比跳转慢：replace 已发出、页面还没卸载，登录态才翻成 true，effect 重跑
+    auth.isAuthenticated = true
+    view.rerenderSame()
+    await act(() => vi.advanceTimersByTimeAsync(2_000))
+
+    expect(replace).toHaveBeenCalledTimes(1)
+    expect(reportOnboardingStep).not.toHaveBeenCalled()
+    expect(JSON.parse(sessionStorage.getItem(LOOP_GUARD_KEY) ?? '{}')).toMatchObject({ count: 1 })
   })
 
   it('only reports the marketplace step from the catalog, not from detail', async () => {

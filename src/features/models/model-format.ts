@@ -343,9 +343,8 @@ const MOD_LABEL_EN: Record<string, string> = { text: 'text', image: 'image', aud
 
 /**
  * description/tagline 都为空时，用真实字段拼一句事实性简介（不杜撰能力）。
- * 卡片（CatalogModelItem）与详情页（CatalogModelDetail）共用同一份口径
- * （qa#286：部分模型卡片因为 tagline 为空，简介行直接不渲染，跟其他卡片比矮一截；
- * 详情页早就有这层兜底，卡片列表漏了，这里补齐让两边一致）。
+ * 原本卡片与详情页共用这份口径（qa#286：部分卡片因为 tagline 为空，简介行直接不渲染）；
+ * 详情页 prd#1272 已拆到官网，现在经 cardSummary 给体验选型等卡片位用。
  */
 export function autoSummary(
   model: { modalities?: string[]; context_length?: number; promotion?: { free?: boolean } },

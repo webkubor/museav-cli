@@ -1,10 +1,19 @@
 import type { Money } from './account'
 
+/**
+ * 余额（GET /tenants/:id/balance）。
+ *
+ * ⚠️ 四个字段全部可选：真源是生成类型 `CreditsBalance`（generated-api-types.ts:
+ * `available?: CreditsMoney` 等），后端对新租户/无余额场景会**整个字段不给**
+ * （2026-10-15 prd46#1342：账单页 `balance.available.amount` 因此抛
+ * `TypeError: Cannot read properties of undefined (reading 'amount')`，
+ * 被 ErrorBoundary 兜成渲染报错）。这里写成必填会让 TS 放过这类访问。
+ */
 export interface BalanceInfo {
-  balance: Money
-  reserved: Money
-  available: Money
-  low_balance_threshold: Money
+  balance?: Money
+  reserved?: Money
+  available?: Money
+  low_balance_threshold?: Money
 }
 
 export interface BillingMoneyStatsResponse {

@@ -15,8 +15,37 @@
  *        OpenAI Video 85；「+N」27
  * 容器实测区间：任务列 121~209px，卡片协议行 268~440px（都随网格列数跳变）。
  */
-import { describe, expect, it } from 'vitest'
-import { fitCount, splitByFit } from './tag-fit'
+import { describe, expect, it, vi } from 'vitest'
+import { fitCount, splitByFit, tagWidthMeasurer } from './tag-fit'
+
+/**
+ * prd46#1342：线上 client_error:uncaught「TypeError: i.measureText is not a function」
+ * 两天 100 条、全在 /models。成因是隐私类扩展/浏览器把 canvas 2d 上下文 stub 成空对象，
+ * getContext 有返回值但上面没有 measureText，而原实现只看 `!ctx` ⇒ 量宽时抛异常。
+ * 这里把这一形态钉住：必须回落到字宽估算且不抛。
+ */
+describe('tagWidthMeasurer — canvas API 被 stub 时的兜底', () => {
+  it('ctx 没有 measureText 时不抛，并按中西文字宽估算（视频生视频 = 5×11 + 14 = 69）', () => {
+    const spy = vi
+      .spyOn(HTMLCanvasElement.prototype, 'getContext')
+      .mockReturnValue({} as unknown as CanvasRenderingContext2D)
+    const sample = document.createElement('em')
+    sample.textContent = '视频生视频'
+
+    const measure = tagWidthMeasurer(sample)
+
+    expect(() => measure('视频生视频')).not.toThrow()
+    // 自洽断言：估算 = 每个字宽 × 字数 + 左右内距（值随运行环境的默认字号走，不写死）
+    const cs = getComputedStyle(sample)
+    const fontSize = parseFloat(cs.fontSize) || 11
+    const paddingX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0)
+    expect(measure('视频生视频')).toBeCloseTo(fontSize * 5 + paddingX, 5)
+    // 中文按 1em、拉丁按 0.55em：同样 5 个字符，中文必须明显更宽
+    expect(measure('abcde')).toBeCloseTo(fontSize * 0.55 * 5 + paddingX, 5)
+    expect(measure('视频生视频')).toBeGreaterThan(measure('abcde'))
+    spy.mockRestore()
+  })
+})
 
 describe('fitCount — 可体验任务（gap 4，无条数上限）', () => {
   const W: Record<string, number> = {

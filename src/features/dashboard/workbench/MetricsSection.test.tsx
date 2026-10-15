@@ -4,11 +4,14 @@ import type { ReactNode } from 'react'
 
 const openRecharge = vi.fn()
 
+/** 可变的后端返回，供「字段缺失」用例改写（prd46#1342：新租户接口会不给 spend / available） */
+const state = vi.hoisted(() => ({
+  summary: { total: { requests: 10, tokens: 1000, spend: { amount: '1.00' } } } as Record<string, unknown>,
+  balance: { available: { amount: '100.00' }, low_balance_threshold: { amount: '10.00' } } as Record<string, unknown>,
+}))
+
 vi.mock('@tanstack/react-query', () => ({
-  useQuery: () => ({
-    data: { total: { requests: 10, tokens: 1000, spend: { amount: '1.00' } } },
-    isLoading: false,
-  }),
+  useQuery: () => ({ data: state.summary, isLoading: false }),
 }))
 
 vi.mock('@/store/auth', () => ({
@@ -20,13 +23,7 @@ vi.mock('@/hooks/use-tenant-role', () => ({
 }))
 
 vi.mock('@/hooks/use-balance', () => ({
-  useBalance: () => ({
-    data: {
-      available: { amount: '100.00' },
-      low_balance_threshold: { amount: '10.00' },
-    },
-    isLoading: false,
-  }),
+  useBalance: () => ({ data: state.balance, isLoading: false }),
 }))
 
 vi.mock('@/hooks/use-track-context', () => ({ useTrackContext: () => ({}) }))
@@ -54,5 +51,18 @@ describe('MetricsSection', () => {
     fireEvent.click(screen.getByRole('button', { name: '充值' }))
 
     expect(openRecharge).toHaveBeenCalledOnce()
+  })
+
+  // prd46#1342：线上 client_error:render /dashboard = Cannot read properties of undefined (reading 'amount')
+  it('余额对象缺 available 时不抛渲染错误', () => {
+    state.balance = { low_balance_threshold: { amount: '10.00' } }
+
+    expect(() => render(<MetricsSection view="enterprise" granularity="day" />)).not.toThrow()
+  })
+
+  it('用量汇总缺 total.spend 时不抛渲染错误', () => {
+    state.summary = { total: { requests: 10, tokens: 1000 } }
+
+    expect(() => render(<MetricsSection view="enterprise" granularity="day" />)).not.toThrow()
   })
 })

@@ -29,7 +29,11 @@ export function tagWidthMeasurer(sample: HTMLElement): (text: string) => number 
   // 无 canvas（jsdom）时按字宽估算。必须分中西文：CJK 一字约 1em、拉丁约 0.55em，
   // 一律按 0.6em 会把中文标签算窄近一半（「视频生视频」估 47px、实测 69px），
   // 折叠就会算成放得下、照样溢出。分开算后与实测吻合：4 字 58px、5 字 69px。
-  if (!ctx) {
+  // 不只是「没有 ctx」：隐私类扩展/浏览器（CanvasBlocker、Brave、Firefox
+  // resistFingerprinting 等）会把 canvas 2d 上下文整块 stub 掉 —— getContext 返回对象，
+  // 但上面没有 measureText。这是线上真实情况：prd46#1342 的 client_error:uncaught
+  // 「TypeError: i.measureText is not a function」两天 100 条、全在 /models。
+  if (!ctx || typeof ctx.measureText !== 'function') {
     const cjk = /[⺀-鿿豈-﫿＀-￯]/
     return (text) => {
       let w = chromeX

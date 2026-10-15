@@ -1,6 +1,7 @@
 /**
  * 新手指南入口与任务气泡 —— 从 PRD 原型 1:1 移植。
- * 路由：全局（侧栏底部 variant="sidebar"；公开模型广场 variant="floating"）
+ * 路由：全局（侧栏底部 variant="sidebar"）。variant="floating" 原是公开模型广场的悬浮入口，
+ *       广场 prd#1272 已拆到官网、目前没有挂载点；本组件按原型 1:1 复刻，变体先保留
  * API：无（本轮全 Mock）
  *
  * 来源：modelgo_prd/src/OnboardingGuide.tsx（325 行）

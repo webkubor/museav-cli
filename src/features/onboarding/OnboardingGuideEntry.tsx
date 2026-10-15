@@ -1,9 +1,10 @@
 /**
- * 新手指南的三个挂载点 —— 都是薄壳，状态与回调全在 useOnboardingGuide。
- * 路由：侧栏（登录态全站）/ 公开模型广场 / 领取成功弹框（两个壳各挂一次）
+ * 新手指南的挂载点 —— 都是薄壳，状态与回调全在 useOnboardingGuide。
+ * 路由：侧栏（登录态全站）/ 领取成功弹框
+ * （原公开模型广场的左下角悬浮入口随广场拆到官网删除，prd#1272；官网没有登录态，挂不了）
  * API：无（本轮全 Mock）
  *
- * 规格：2026-08-06 §5.1（侧栏入口 + 广场悬浮入口）
+ * 规格：2026-08-06 §5.1（侧栏入口；广场悬浮入口已随广场下线）
  *      2026-08-13（领取成功弹框 → 账单入账记录定位）
  */
 
@@ -34,29 +35,6 @@ export function OnboardingGuideSidebarEntry({ collapsed }: { collapsed: boolean 
         open={open}
       />
     </div>
-  )
-}
-
-/**
- * 公开模型广场左下角悬浮入口（规格 §5.1）：默认金币圆形按钮，
- * hover/focus/展开时横向展开出「新手指南」，与侧栏入口共享同一份租户进度。
- */
-export function OnboardingGuideFloatingEntry() {
-  const { visible, guide, open, handleStepAction, handleClaim, handleOpenChange } =
-    useOnboardingGuide()
-
-  if (!visible || !guide) return null
-
-  return (
-    <OnboardingGuide
-      collapsed={false}
-      guide={guide}
-      onClaim={handleClaim}
-      onOpenChange={handleOpenChange}
-      onStepAction={handleStepAction}
-      open={open}
-      variant="floating"
-    />
   )
 }
 

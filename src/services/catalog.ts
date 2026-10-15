@@ -20,8 +20,6 @@ import type {
   CursorPage,
   PricingPlansResult,
   CatalogFacets,
-  CatalogFeaturedSlide,
-  CatalogRelatedResult,
   PublicProtocolLabelItem,
 } from '@/types'
 
@@ -48,16 +46,6 @@ export function listModelTags(enabled = true) {
  */
 export function listModelFacets(params?: CatalogModelListParams) {
   return get<CatalogFacets>('catalog/model-facets', params)
-}
-
-/** 精选轮播（内容由后台配置，前端不得写死 model_id） */
-export function listFeatured() {
-  return get<{ items: CatalogFeaturedSlide[]; total: number }>('catalog/featured')
-}
-
-/** 模型详情的相关模型（运营配置优先，未配置回退同厂商/相近价位算法） */
-export function listRelatedModels(modelId: string) {
-  return get<CatalogRelatedResult>(`catalog/models/${encodeURIComponent(modelId)}/related`)
 }
 
 /** 获取模型族（模型组）目录，用于「模型组」官方筛选 */

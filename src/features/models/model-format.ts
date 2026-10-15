@@ -13,7 +13,7 @@
 import i18n from '@/i18n'
 import { formatContextLength, trimPriceZeros } from '@/lib/utils'
 import type {
-  CatalogPriceTier, CatalogPricingRule, CatalogPromotion, ModelPricing, PublicProtocolLabelItem,
+  CatalogPriceTier, CatalogPricingRule, PublicProtocolLabelItem,
 } from '@/types'
 
 export type { CatalogPriceTier, CatalogPricingRule }
@@ -46,91 +46,6 @@ export function priceUnitSuffix(
   // 为空时仍回落中文单位——漏配一个单位不该把价格整格吞掉。
   const unit = (!isZhLang() && priceUnitEN?.trim()) || priceUnit
   return unit ? `/${unit}` : '/M'
-}
-
-/** 档位行的计价单位：与 priceUnitSuffix 同口径，英文站优先 unit_en。 */
-export function priceTierUnit(tier: Pick<CatalogPriceTier, 'unit' | 'unit_en'>): string {
-  return (!isZhLang() && tier.unit_en?.trim()) || tier.unit
-}
-
-const CARD_PRICE_TIER_LIMIT = 4
-
-/** 卡片最多展示 4 档；详情页用原数组。 */
-export function priceTiersForCard(tiers: CatalogPriceTier[] | undefined | null): CatalogPriceTier[] {
-  if (!tiers?.length) return []
-  return tiers.slice(0, CARD_PRICE_TIER_LIMIT)
-}
-
-/**
- * 媒体模型（图片/视频/音频产物）的「主价格」（需求方 2026-08-25 对齐原型
- * marketplacePrimaryPriceText，App.tsx:4199）：媒体卡片/详情条只摆一个主价，
- * 不再铺输入/输出/缓存四格或整张档位矩阵（完整档位进详情「价格梯度」表）。
- *
- * 取值顺序：per_call 的每张价 → price_tiers 选档（按张/image 计价的图片档取
- * **输出档里价格最低的一档**，产品 2026-09-15 prd#1010：qwen-image-3.0-pro 显示
- * 1K ¥0.25/张 而非最高档 2K ¥0.5；其余媒体档维持需求方 2026-08-25 的最高档口径，
- * prd#858 钉过 Seedance 必须取最高档 37。媒体模型的 price_tiers 才是媒体产物价，
- * pricing.* 是文本 token 侧分项价 —— gemini-3.1-flash-lite-image 图片产出
- * ¥204/M、文本 output 仅 ¥10.2/M，先读 pricing 会把主价格错标成便宜一个量级的文本价）→
- * pricing 的 output||input（Seedance 这类按 token 计价、无矩阵的视频模型，
- * ¥46/M）→ 未配价 undefined。
- * unit 是随金额来源配对的后缀（/张、/M、/秒），unitName 是给「计费单位」格的
- * 裸单位名（张、M、秒）。
- */
-export function mediaPrimaryPrice(
-  pricing: { mode?: string; per_call_price?: string; input_per_1m?: string; output_per_1m?: string } | undefined,
-  priceUnit: string | undefined,
-  tiers: CatalogPriceTier[] | undefined | null,
-  priceUnitEN?: string | null,
-): { amount: string | undefined; unit: string; unitName: string; originalAmount?: string } {
-  const suffix = priceUnitSuffix(priceUnit, pricing?.mode, priceUnitEN)
-  if (pricing?.mode === 'per_call') {
-    // per_call 的每张价镜像在 input_per_1m（#851 契约），unitName 从后缀剥出
-    // （zh 张 / en image，priceUnitSuffix 已本地化）。
-    // 促销期后端把折后现价写进 input_per_1m、per_call_price 维持折前原价
-    // （2026-08-25 生产实测：seedream-4.0 0.13/0.2、4.5 0.1875/0.25、
-    // 5.0-lite 0.165/0.22），故现价取两者中较低的正值；非促销期两者相等，不受影响。
-    const candidates = [pricing.per_call_price?.trim(), pricing.input_per_1m?.trim()]
-      .filter((v): v is string => !!v && parseFloat(v) > 0)
-    const amount = candidates.length
-      ? candidates.reduce((min, v) => (parseFloat(v) < parseFloat(min) ? v : min))
-      : undefined
-    return { amount, unit: suffix, unitName: suffix.slice(1) }
-  }
-  // prd#1010 产品口径（2026-09-15）：按张计价的图片档取输出档最低价（无 output
-  // 桶时在全部张档里取最低）；视频/秒与 token 矩阵仍取最高档（prd#858）。
-  const priced = (tiers ?? []).filter((tier) => parseFloat(tier.price) > 0)
-  const imageTiers = priced.filter((tier) => tier.unit === '张' || tier.unit_en === 'image')
-  const pick = (pool: CatalogPriceTier[], lowest: boolean) =>
-    pool.reduce<CatalogPriceTier | undefined>((best, tier) => {
-      if (!best) return tier
-      const cmp = parseFloat(tier.price) - parseFloat(best.price)
-      return (lowest ? cmp < 0 : cmp > 0) ? tier : best
-    }, undefined)
-  const imageOutputTiers = imageTiers.filter((tier) => tier.bucket?.includes('output'))
-  const top = imageTiers.length
-    ? pick(imageOutputTiers.length ? imageOutputTiers : imageTiers, true)
-    : pick(priced, false)
-  const unitName = (!isZhLang() && priceUnitEN?.trim()) || priceUnit || 'M'
-  if (top) {
-    // originalAmount 必须跟主价同源：doubao-seedance-2.0-mini 主价取最高档
-    // 20.24（折前 23），而 promotion.original_output_per_1m 是 token 侧的 14，
-    // 14 < 20.24 会被 strikeOriginalPrice 的守卫判成无效划线直接吞掉
-    // （shared/modelgo_prd#863 ④）。
-    return {
-      amount: top.price,
-      unit: `/${priceTierUnit(top)}`,
-      unitName: priceTierUnit(top),
-      originalAmount: top.original_price,
-    }
-  }
-  if (parseFloat(pricing?.output_per_1m ?? '') > 0) {
-    return { amount: pricing?.output_per_1m, unit: suffix, unitName }
-  }
-  if (parseFloat(pricing?.input_per_1m ?? '') > 0) {
-    return { amount: pricing?.input_per_1m, unit: suffix, unitName }
-  }
-  return { amount: undefined, unit: suffix, unitName }
 }
 
 /** 纯媒体模型（文本输入/输出都没有正价）才用 price_tiers 替换卡片四格；
@@ -180,156 +95,6 @@ export function pricingRuleGroups(rules: CatalogPricingRule[] | undefined | null
 /** 有可渲染的阶梯价 → 一口价挂「起」（原型 marketplacePriceText 的 hasConfirmedGradient）。 */
 export function hasPricingGradient(rules: CatalogPricingRule[] | undefined | null): boolean {
   return pricingRuleGroups(rules).length > 0
-}
-
-/**
- * 梯度区间/时段文案：label 优先（英文界面 label_en 回落 label），**不要前端自己拼**
- * （#800 契约原话）。label 全缺时才按维度兜底：context_length 用 min/max 拼
- * 「128K–256K / 256K 以上」，peak_time 用 start_time–end_time。
- */
-export function pricingRuleLabel(rule: CatalogPricingRule, isZh: boolean): string {
-  const label = isZh ? rule.label : (rule.label_en || rule.label)
-  if (label) return label
-  if (rule.dimension === 'peak_time') {
-    return rule.start_time && rule.end_time ? `${rule.start_time}–${rule.end_time}` : '—'
-  }
-  if (rule.min != null || rule.max != null) {
-    const min = formatContextLength(rule.min ?? 0)
-    if (rule.max == null) return isZh ? `${min} 以上` : `${min}+`
-    return `${min}–${formatContextLength(rule.max)}`
-  }
-  return '—'
-}
-
-/**
- * 次级分档条件文案（prd#864）：同一上下文区间被输出长度等条件拆成多行时，
- * 每行的区分文案（如「输出 <200」）。与主 label 同口径：后端 sub_label 优先、
- * 英文回落中文，**不要前端自己拼**；无次级条件返回 null（渲染成「—」由调用方定）。
- */
-export function pricingRuleSubLabel(rule: CatalogPricingRule, isZh: boolean): string | null {
-  const label = isZh ? rule.sub_label : (rule.sub_label_en || rule.sub_label)
-  return label || null
-}
-
-/** 组内任一行带次级条件 → 梯度表补「条件」列；否则不加列，维持原三列布局。 */
-export function pricingRulesHaveSub(rules: CatalogPricingRule[]): boolean {
-  return rules.some((r) => !!(r.sub_label || r.sub_label_en))
-}
-
-/** 梯度表价格列 → 档位/促销上的字段名（三处 kind 三元链收敛成一张表）。 */
-const RULE_PRICE_FIELDS = {
-  input: { current: 'input_per_1m', original: 'original_input_per_1m' },
-  output: { current: 'output_per_1m', original: 'original_output_per_1m' },
-  cache_read: { current: 'cache_read_per_1m', original: 'original_cache_read_per_1m' },
-} as const
-
-export type PricingRuleKind = keyof typeof RULE_PRICE_FIELDS
-
-const PRICING_RULE_KINDS = Object.keys(RULE_PRICE_FIELDS) as PricingRuleKind[]
-
-/**
- * 组内任一行有真实的缓存读取单价 → 梯度表才留「缓存读取」列（shared/modelgo_prd#1000）。
- *
- * peak_time 的倍率档不下发 `cache_read_per_1m`，空格子会被 pricingRulePriceText 的
- * 倍率兜底填成「×2」—— 那是整档的倍率、不是缓存读取价，读起来像「缓存读取收 2 倍」
- * （cn 生产 deepseek-v4-pro / deepseek-v4.1-flash 都是这个样子，需求方 2026-09-11
- * 要求整列去掉）。列都没有的时候也就没有空格子可填，比逐格改兜底更彻底；
- * context_length 档照常下发缓存读取价，列保持不变。
- */
-export function pricingRulesHaveCacheRead(rules: CatalogPricingRule[]): boolean {
-  return rules.some((r) => {
-    const raw = r.cache_read_per_1m
-    return raw != null && raw !== '' && !Number.isNaN(parseFloat(raw))
-  })
-}
-
-/**
- * 倍率档的促销折后价（shared/modelgo_prd#1000）。
- *
- * 后端对 `context_length` 档已按 #867 口径下发「折后价 + original_*」，`peak_time`
- * 的倍率档却没走这套：cn 生产 deepseek-v4-pro（限时 74 折，pricing.input 3.33 /
- * promotion.original_input 4.5）下发的档位价是 `input_per_1m: "9"` —— 折前价 4.5
- * 乘 rate 2。梯度表因此比上方规格条贵一截又没有划线，看着像促销没覆盖峰值时段。
- *
- * 这里只把倍率重新架在**后端算好的折后价**上（pricing.* × rate），原档位价降级成
- * 划线原价，下游 pricingRulePriceText / pricingRuleStrikeText 不用改就拿到与规格条
- * 同源的双价。折扣率仍然只来自后端（pricing 与 promotion.original_* 的差），前端
- * 不解析 `discount_label` 里的「74折」自行算价（口径见 strikeOriginalPrice）。
- *
- * 守卫（任一不满足就原样返回该档，宁可不折也不造价）：
- * - 只碰 mode=multiplier 且 rate 为正数的档；replace 档是后端给定的绝对价
- * - 档位已带 original_<kind> → 后端已处理过，不重复打折
- * - 档位本身没有该 kind 的绝对价 → 跳过，不给空格子凭空造一个价
- * - 促销要在该 kind 上真实成立（promotion.original_<kind> > pricing.<kind>）
- * - 折后价必须真的低于原档位价，否则不改（避免渲染「原价 ≤ 现价」的自相矛盾划线）
- * - promotion.free（限免）整体跳过：限免是另一套口径，不在本单范围
- */
-export function withPromotedRulePrices(
-  rules: CatalogPricingRule[] | undefined | null,
-  pricing: ModelPricing | undefined | null,
-  promotion: CatalogPromotion | undefined | null,
-): CatalogPricingRule[] {
-  if (!rules?.length) return []
-  if (!pricing || !promotion || promotion.free) return rules
-  return rules.map((rule) => {
-    if (rule.mode !== 'multiplier') return rule
-    const rate = parseFloat(rule.rate ?? '')
-    if (!Number.isFinite(rate) || rate <= 0) return rule
-
-    let promoted: CatalogPricingRule | null = null
-    for (const kind of PRICING_RULE_KINDS) {
-      const field = RULE_PRICE_FIELDS[kind]
-      if (rule[field.original] != null && rule[field.original] !== '') continue
-      const listed = parseFloat(rule[field.current] ?? '')
-      if (!Number.isFinite(listed) || listed <= 0) continue
-      // 折扣只认后端两个价的差；缺一边或原价不高于现价都算促销没落在这个 kind 上
-      if (strikeOriginalPrice(promotion[field.original], pricing[field.current]) == null) continue
-      const base = parseFloat(pricing[field.current])
-      if (!Number.isFinite(base) || base <= 0) continue
-      // 展示精度封顶 4 位（trimPriceZeros），这里按 6 位收掉浮点尾巴：3.33 × 2 = 6.66
-      const discounted = Number((base * rate).toFixed(6))
-      if (strikeOriginalPrice(rule[field.current], discounted) == null) continue
-      promoted = promoted ?? { ...rule }
-      promoted[field.original] = rule[field.current]
-      promoted[field.current] = String(discounted)
-    }
-    return promoted ?? rule
-  })
-}
-
-/**
- * 梯度表单元格价格。金额格式与规格条同口径（货币符号 + trimPriceZeros + /unit）；
- * mode=multiplier（倍率）没有绝对价时展示 ×倍率；两者都缺回落「—」（未配价 ≠ 免费，
- * 限免口径只认 promotion.free，不从阶梯价推断）。
- */
-export function pricingRulePriceText(
-  rule: CatalogPricingRule,
-  kind: PricingRuleKind,
-  symbol: string,
-): string {
-  const raw = rule[RULE_PRICE_FIELDS[kind].current]
-  if (raw != null && raw !== '' && !Number.isNaN(parseFloat(raw))) {
-    return `${symbol}${trimPriceZeros(raw)}/${rule.unit || 'M'}`
-  }
-  if (rule.mode === 'multiplier' && rule.rate) return `×${trimPriceZeros(rule.rate)}`
-  return '—'
-}
-
-/**
- * 梯度表单元格的划线折前价（prd#860 方案 2：每档折后为主、折前划线并列）。
- * 与摘要行同一守卫（strikeOriginalPrice / #747 口径）：原价缺失或 ≤ 现价
- * 不划线 —— 数据不对时宁可不划，不渲染「原价 ≤ 现价」的自相矛盾划线。
- * 返回格式化好的价格文本（¥2/M），「原价/was」前缀由渲染层的 i18n 模板加。
- */
-export function pricingRuleStrikeText(
-  rule: CatalogPricingRule,
-  kind: PricingRuleKind,
-  symbol: string,
-): string | null {
-  const field = RULE_PRICE_FIELDS[kind]
-  const original = rule[field.original]
-  if (strikeOriginalPrice(original, rule[field.current]) == null) return null
-  return `${symbol}${trimPriceZeros(original!)}/${rule.unit || 'M'}`
 }
 
 /**
@@ -404,22 +169,6 @@ export function strikeOriginalPrice(
   const current = toNum(currentPrice)
   if (current == null || original <= current) return null
   return original
-}
-
-/**
- * 从若干候选价里取第一个正数（媒体主价格的划线原价选值用）。
- * 后端零值下发字符串 "0" 而非省略键：per_call（按张）模型的 original_output_per_1m
- * 恒为 "0"，折前价镜像在 original_input_per_1m —— 用 `??` 链会被 "0" 截住，
- * 折前价永远取不到（doubao-seedream-5.0-pro「限时71折」复查时发现）。
- */
-export function firstPositivePrice(
-  ...values: Array<string | number | null | undefined>
-): string | number | undefined {
-  for (const v of values) {
-    const n = typeof v === 'string' ? parseFloat(v) : v
-    if (n != null && Number.isFinite(n) && n > 0) return v ?? undefined
-  }
-  return undefined
 }
 
 /**
@@ -589,29 +338,6 @@ export function sortProtocols<T extends string>(protocols: readonly T[]): T[] {
 
 export const MODALITY_CODES = ['text', 'image', 'audio', 'video']
 
-/**
- * 内部标签黑名单。**目标是删掉它** —— 能力标签应由后端 model_tags 的 capability
- * 分组决定（facets 已按该分组下发）。等各环境能力字典 seed 完成、tags 里不再混入
- * 这些值之后即可移除。
- */
-const TAG_DENYLIST = new Set(['modelgo_tool', 'test', 'free', 'internal', 'tool'])
-
-/**
- * 能力标签：从 tags 里剔掉模态码、内部标记与厂商同名项。
- * limit 默认不截断（详情页有横向空间；卡片自己传 3）。
- */
-export function pickCapabilities(
-  tags: string[] | undefined,
-  vendorish: (string | undefined)[],
-  limit?: number,
-): string[] {
-  const deny = new Set(vendorish.filter(Boolean).map((s) => String(s).toLowerCase()))
-  const list = (tags ?? [])
-    .filter((tg) => !MODALITY_CODES.includes(tg))
-    .filter((tg) => !TAG_DENYLIST.has(tg.toLowerCase()) && !deny.has(tg.toLowerCase()))
-  return limit ? list.slice(0, limit) : list
-}
-
 const MOD_LABEL: Record<string, string> = { text: '文本', image: '图像', audio: '音频', video: '视频' }
 const MOD_LABEL_EN: Record<string, string> = { text: 'text', image: 'image', audio: 'audio', video: 'video' }
 
@@ -636,11 +362,11 @@ export function autoSummary(
   return `${vendor ? vendor + ' ' : ''}${modText} model${ctx ? `, ${ctx} context window` : ''}${free ? ', currently free' : ''}. Full description coming soon.`
 }
 
-/** cardSummary / detailSummary 的入参：autoSummary 那几个字段 + 两个文案字段。 */
+/** cardSummary 的入参：autoSummary 那几个字段 + 两个文案字段。 */
 type SummarySource = Parameters<typeof autoSummary>[0] & { tagline?: string; description?: string }
 
 /**
- * 卡片位（模型广场网格、体验选型弹窗）的简介取值：
+ * 卡片位（体验选型弹窗等；原模型广场网格 prd#1272 已拆到官网）的简介取值：
  * **tagline → description → autoSummary**。
  *
  * tagline 是 PRD §9.1 的「卡片短描述」，所以卡片仍然优先它；但 tagline 缺失时必须回落
@@ -660,17 +386,6 @@ export function cardSummary(model: SummarySource, vendor: string, isZh: boolean)
 }
 
 /**
- * 详情页（Hero 简介）的取值：**description → tagline → autoSummary**。
- *
- * 与 cardSummary 只差前两项的优先级 —— 详情位要的是长描述，卡片位要的是短描述，
- * 这是 PRD §9.1 对两个字段的定义（「卡片短描述与详情简介」），不是漂移。两处口径放在
- * 一起是为了改一处时能立刻看见另一处的约定。
- */
-export function detailSummary(model: SummarySource, vendor: string, isZh: boolean): string {
-  return model.description?.trim() || model.tagline?.trim() || autoSummary(model, vendor, isZh)
-}
-
-/**
  * 模型副标题（原厂名）的唯一取值规则：provider（对外厂商名，见 types/catalog.ts 注释
  * 「替代暴露上游的 vendor」）优先，退 vendor，都缺再退 fallback（默认平台名 ModelGo）。
  *
@@ -685,15 +400,4 @@ export function modelVendorLabel(
   fallback = 'ModelGo',
 ): string {
   return (model.provider ?? '').trim() || (model.vendor ?? '').trim() || fallback
-}
-
-/**
- * 厂商名兜底。详情接口（GET /catalog/models/:id）**不下发 vendor/provider**，只有
- * 列表接口有 —— 详情页 Hero 因此长期缺厂商名（原型 App.tsx:5051 有）。后端补字段
- * 前，用 model_id 的 `vendor/model` 前缀兜底；已开后端单见 detail/index.tsx 注释。
- */
-export function vendorFromModelId(modelId: string | undefined): string {
-  if (!modelId || !modelId.includes('/')) return ''
-  const head = modelId.split('/')[0].trim()
-  return head.length > 0 ? head : ''
 }

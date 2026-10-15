@@ -28,13 +28,13 @@ export function matchConsoleRoute(pathname: string): ConsoleRouteMeta | undefine
 }
 
 /** 顶栏导航收敛（#360）：对齐 PRD 原型 console 顶栏，顺序固定。
- *  「首页 / 说明文档」跨端外链，「模型广场 / 模型排行 / 模型体验 / 控制台」为站内页。
+ *  「首页 / 说明文档」跨端外链，「模型体验 / 控制台」为站内页；「模型广场 / 模型排行」仍走站内
+ *  /models、/models/discovery，到中转路由再按市场跳官网（prd#1272，保住 console_nav_click 埋点与新手引导上报）。
  *  企业治理 / 推荐计划 / 更新日志 已从顶栏移除（前两者在侧栏可达，更新日志归站点导航）。
  *
  *  2026-10-09 prd46#1215：新增「模型排行」（原「模型发现」，英文 Rankings），
  *  按需求方要求紧跟「模型广场」之后。⚠️ 它的路由是 /models/discovery —— **路由没改名**，
- *  只改了对外文案。改路由要连带动 301、埋点 page key、面包屑与已发出去的链接，
- *  收益为零；本次只做对外可见的更名。 */
+ *  只改了对外文案；页面拆到官网后官网路径是 /models/rankings，控制台这条旧路由由中转页映射过去。 */
 export function buildSyncedNav(
   t: TFunction,
   marketConfig: MarketConfig,

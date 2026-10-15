@@ -1,6 +1,6 @@
 /**
  * 新手指南领域层 —— 从 PRD 原型 1:1 移植。
- * 路由：全局（侧栏入口 + 公开模型广场悬浮入口）
+ * 路由：全局（侧栏入口；原公开模型广场悬浮入口已随广场拆到官网，prd#1272）
  * API：见 services/onboarding.ts（prd#943 三接口）
  *
  * 来源：modelgo_prd/src/onboardingGuideDomain.ts（163 行，整文件移植）

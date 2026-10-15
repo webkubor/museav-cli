@@ -3,11 +3,11 @@
  *
  * 锚点：2026-08-28 线上（console.modelgo.com / console.modelgo.ai 双站实测）详情页
  * 「API 接入」的协议 Tab 出现空块——后端 public_protocols 扩到 42 值时本模块没跟上，
- * `content_generation` 既没文案也没端点。本文件钉住三类回归：
- *  1. 后端下发的每个协议都能映射出「有文案 + 有端点」的内部值，不再产生空 Tab；
- *  2. 生成的示例里任何位置都不出现 `undefined`（`https://api.modelgo.aiundefined`
- *     就是端点表漏键拼出来的）；
- *  3. 端点路径与网关探活结果一致（Anthropic 家族是 /v1/messages，不是 /messages）。
+ * `content_generation` 既没文案也没端点。详情页 prd#1272 已拆到官网，后端协议 → 内部协议
+ * 的映射随之删除；本文件仍钉住两类回归：
+ *  1. 生成的示例里任何位置都不出现 `undefined`（`https://api.modelgo.aiundefined`
+ *     就是端点表漏键拼出来的），每个内部协议都有文案与语言 Tab；
+ *  2. 端点路径与网关探活结果一致（Anthropic 家族是 /v1/messages，不是 /messages）。
  */
 
 import { afterAll, describe, expect, it } from 'vitest'
@@ -16,13 +16,9 @@ import {
   PROTOCOL_LABEL,
   PROTOCOL_LABEL_EN,
   buildCodeSample,
-  languageLabel,
   languagesForProtocol,
-  mapApiProtocols,
-  type ApiCodeLanguage,
   type ApiProtocol,
 } from './api-code-samples'
-import type { PublicProtocol } from '@/types'
 
 // 语言是全局单例，改完还回去，免得污染同文件/同 worker 的其他断言
 afterAll(async () => { await i18n.changeLanguage('zh') })
@@ -30,43 +26,17 @@ afterAll(async () => { await i18n.changeLanguage('zh') })
 /** ApiProtocol 的运行时全集：PROTOCOL_LABEL 是 Record<ApiProtocol, string>，由类型保证穷尽。 */
 const ALL_API_PROTOCOLS = Object.keys(PROTOCOL_LABEL) as ApiProtocol[]
 
-describe('mapApiProtocols — 后端协议 → 内部协议', () => {
-  it('dashscope_realtime 保留为 WebSocket 专用示例协议', () => {
-    expect(mapApiProtocols(['dashscope_realtime'])).toEqual(['dashscope_realtime'])
+describe('languagesForProtocol — 语言 Tab', () => {
+  it('dashscope_realtime 只给 WebSocket 能用的 Node.js / Python', () => {
     expect(languagesForProtocol('dashscope_realtime')).toEqual(['nodejs', 'python'])
-    expect(languageLabel('dashscope_realtime', 'nodejs')).toBe('Node.js')
-    expect(languageLabel('dashscope_realtime', 'python')).toBe('Python')
-  })
-  it('content_generation 原样保留，不被丢掉也不折成 native（线上空 Tab 的直接成因）', () => {
-    expect(mapApiProtocols(['content_generation'])).toEqual(['content_generation'])
   })
 
-  it('线上视频模型的真实组合按 sortProtocols 排序：openai_video 在 content_generation 前', () => {
-    // doubao-seedance-2.0-fast / kling-3.0 等 17（国外）/ 8（国内）个模型的真实下发值
-    expect(mapApiProtocols(['content_generation', 'openai_video'])).toEqual([
-      'openai_video',
-      'content_generation',
-    ])
-  })
-
-  it('各家原生透传与旧 other 折成 native，并且去重（不产生两个一样的 Tab）', () => {
-    expect(mapApiProtocols(['kling_text2video', 'kling_image2video', 'other'])).toEqual(['native'])
-    expect(mapApiProtocols(['gemini_predict', 'ark_tokenization', 'vidu_img2video'])).toEqual(['native'])
-  })
-
-  it('过渡期旧值原样保留', () => {
-    expect(mapApiProtocols(['openai', 'anthropic'])).toEqual(['openai', 'anthropic'])
-  })
-
-  it('运行时收到比 PublicProtocol 更新的值 → 折成 native，绝不原样透传', () => {
-    // 后端先发、前端还没跟的情形。透传的下场就是没文案的空 Tab + undefined 拼进 URL。
-    const fromFuture = ['some_vendor_brand_new_thing'] as unknown as PublicProtocol[]
-    expect(mapApiProtocols(fromFuture)).toEqual(['native'])
-  })
-
-  it('空/缺省输入返回空数组（由调用方决定兜底协议）', () => {
-    expect(mapApiProtocols(undefined)).toEqual([])
-    expect(mapApiProtocols([])).toEqual([])
+  it('语言 Tab 集合非空且互不重复', () => {
+    for (const p of ALL_API_PROTOCOLS) {
+      const langs = languagesForProtocol(p)
+      expect(langs.length, `${p} 没有语言 Tab`).toBeGreaterThan(0)
+      expect(new Set(langs).size).toBe(langs.length)
+    }
   })
 })
 
@@ -140,30 +110,6 @@ describe('buildCodeSample — 端点与请求体', () => {
         expect(code, `${p}/${lang} 生成了空示例`).toBeTruthy()
         expect(code, `${p}/${lang} 示例里有 undefined`).not.toContain('undefined')
       }
-    }
-  })
-})
-
-describe('languageLabel — SDK 后缀只挂在真用 SDK 的协议上', () => {
-  it('平台托管链路（content_generation / native）不挂 (OpenAI) 后缀', () => {
-    for (const p of ['content_generation', 'native'] as ApiProtocol[]) {
-      expect(languageLabel(p, 'python')).toBe('Python')
-      expect(languageLabel(p, 'nodejs')).toBe('Node.js')
-    }
-  })
-
-  it('OpenAI / Anthropic 家族保持原有后缀', () => {
-    expect(languageLabel('openai_chat_completions', 'python')).toBe('Python (OpenAI)')
-    expect(languageLabel('openai_chat_completions', 'nodejs')).toBe('Node.js (OpenAI)')
-    expect(languageLabel('anthropic_messages', 'python')).toBe('Python (Anthropic)')
-  })
-
-  it('语言 Tab 集合非空且互不重复', () => {
-    for (const p of ALL_API_PROTOCOLS) {
-      const langs = languagesForProtocol(p)
-      expect(langs.length, `${p} 没有语言 Tab`).toBeGreaterThan(0)
-      expect(new Set(langs).size).toBe(langs.length)
-      langs.forEach((l: ApiCodeLanguage) => expect(languageLabel(p, l)).toBeTruthy())
     }
   })
 })

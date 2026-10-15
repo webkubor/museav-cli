@@ -604,12 +604,6 @@ export function modelEntryTask(model: CatalogModelItem, category: ExperienceCate
   return currentTask && tasks.includes(currentTask) ? currentTask : modelDefaultTask(model, category)
 }
 
-/** 模型是否有任何可体验任务（PRD 模型广场 §AC-13「暂未开放」判定依据，
- *  原型 App.tsx:4619 `getPlaygroundTasks(model).length === 0` 同语义的模态推导版） */
-export function hasPlaygroundExperience(model: CatalogModelItem): boolean {
-  return modelExperienceTasks(model).length > 0
-}
-
 /**
  * 会话里引用的模型已不在当前目录（下线/删除）时的占位展示（PRD §AC-18 下线模型）。
  * 单模型页/对比页共用——只用于渲染模型条（名称/头像/状态），不可用于真实发送，

@@ -3,18 +3,17 @@
  * 「API 示例复用：详情与模型体验 API 弹窗复用固定示例生成器，仅接收模型 ID、协议和语言，
  * 不接收 Prompt、附件、参数或推理供应商」）。
  *
- * 单一真源：`ApiQuickCallModal`（模型体验弹窗）与公开详情页 API 接入区共用本模块，
- * 禁止各自维护一份代码模板。
+ * 单一真源：`ApiQuickCallModal`（模型体验弹窗）用本模块生成示例，禁止另写一份代码模板。
+ * （原公开详情页的 API 接入区也用它，详情页 prd#1272 已拆到官网。）
  *
  * 协议单一来源：代码 Tab 从 protocols 派生，无对应协议时不显示空 Tab（§11「协议单一来源」）。
  */
 import { getGatewayDomain } from '@/config/gateway'
-import { isZhLang, sortProtocols } from '@/features/models/model-format'
-import type { PublicProtocol } from '@/types'
+import { isZhLang } from '@/features/models/model-format'
 
 /**
  * 本模块内部协议标识 —— 「本模块能生成可复制示例」的那些协议，是 PublicProtocol
- * 的真子集，两者的对应关系由 PROTOCOL_TO_API 穷尽声明。
+ * 的真子集。
  *
  * 收录标准：平台自有、路径固定、请求体形状确定的端点。
  * - OpenAI/Anthropic 兼容端点（openai_chat_completions 起的 13 个）；
@@ -105,23 +104,6 @@ function isAnthropicProtocol(protocol: ApiProtocol): boolean {
 }
 
 /**
- * 平台通用链路（异步内容生成任务 / 各家原生透传 / Realtime WebSocket）：示例是
- * 通用 HTTP/WebSocket 客户端，不经过 OpenAI/Anthropic SDK。语言 Tab 因此不能挂
- * 「(OpenAI)」后缀，避免误导用户。
- */
-function isPlatformLane(protocol: ApiProtocol): boolean {
-  return protocol === 'content_generation' || protocol === 'native' || protocol === 'dashscope_realtime'
-}
-
-const LANGUAGE_LABEL: Record<ApiCodeLanguage, string> = {
-  curl: 'cURL',
-  nodejs: 'Node.js',
-  python: 'Python',
-  typescript: 'TypeScript',
-  claudeCode: 'Claude Code',
-}
-
-/**
  * 每个协议展示的代码 Tab（PRD §7.6 原文，2026-08 端点粒度升级后 openai 家族 5 个
  * 端点值——chat/responses/images/embeddings/audio——语言集与旧 openai 值一致，
  * anthropic_messages 与旧 anthropic 值一致）：
@@ -151,91 +133,6 @@ export function languagesForProtocol(protocol: ApiProtocol): ApiCodeLanguage[] {
     default:
       return ['curl', 'nodejs', 'python']
   }
-}
-
-/** Tab 展示文案：Python/Node.js 在 openai/anthropic 家族协议下要带协议后缀区分 SDK 风格 */
-export function languageLabel(protocol: ApiProtocol, language: ApiCodeLanguage): string {
-  if (language === 'python') {
-    if (isAnthropicProtocol(protocol)) return 'Python (Anthropic)'
-    return isPlatformLane(protocol) ? 'Python' : 'Python (OpenAI)'
-  }
-  if (language === 'nodejs') return isPlatformLane(protocol) ? 'Node.js' : 'Node.js (OpenAI)'
-  if (language === 'typescript') return 'TypeScript (fetch)'
-  return LANGUAGE_LABEL[language]
-}
-
-/**
- * 后端 public_protocols → 本模块协议标识的**穷尽映射**。
- *
- * ⚠️ 为什么必须是一张全量表，而不是「原生透传类走正则、其余原样透传」：原样透传
- * 在后端枚举扩容时**不报错**。2026-08-26 网关把 public_protocols 扩到 42 值时，
- * model-format.ts 的两张标签表跟上了、本模块没跟上，`content_generation` 于是既
- * 拿不到文案也拿不到端点——线上表现是详情页「API 接入」的协议 Tab 塌成一个只剩
- * padding 的纯色块（国内 8 个 / 国外 17 个视频模型全中，2026-08-28 两站实测）。
- * 改成 Record<PublicProtocol, ApiProtocol> 之后，PublicProtocol 每新增一个值，
- * `tsc -b` 会当场顶出这里缺的那条，逼着新值表态，不再靠人记得。
- *
- * 表态只有两种：映射到同名值（在 ENDPOINT_PATH 里有实测过的真实路径），或者折成
- * native（请求体形状各家互不相同，不伪造 OpenAI 风格示例，PRD §4.2「非目标」）。
- */
-const PROTOCOL_TO_API: Record<PublicProtocol, ApiProtocol> = {
-  // ── 平台自有端点：路径固定、请求体形状确定，示例可复制即用 ──
-  openai_chat_completions: 'openai_chat_completions',
-  openai_responses: 'openai_responses',
-  openai_completions: 'openai_completions',
-  openai_embeddings: 'openai_embeddings',
-  openai_embeddings_multimodal: 'openai_embeddings_multimodal',
-  openai_rerank: 'openai_rerank',
-  openai_images: 'openai_images',
-  openai_images_edits: 'openai_images_edits',
-  openai_speech: 'openai_speech',
-  openai_transcriptions: 'openai_transcriptions',
-  openai_translations: 'openai_translations',
-  anthropic_messages: 'anthropic_messages',
-  openai_video: 'openai_video',
-  content_generation: 'content_generation',
-  dashscope_realtime: 'dashscope_realtime',
-  // ── 过渡期旧值：语义等于各自的端点粒度同名值 ──
-  openai: 'openai',
-  anthropic: 'anthropic',
-  // ── 各家原生透传 + 旧 'other'：折成 native ──
-  gemini_generate_content: 'native',
-  gemini_predict: 'native',
-  gemini_predict_long_running: 'native',
-  gemini_files: 'native',
-  ark_batch_chat_completions: 'native',
-  ark_context_create: 'native',
-  ark_context_chat_completions: 'native',
-  ark_tokenization: 'native',
-  kling_text2video: 'native',
-  kling_image2video: 'native',
-  kling_multi_image2video: 'native',
-  kling_omni_video: 'native',
-  kling_video_extend: 'native',
-  kling_motion_control: 'native',
-  kling_avatar_image2video: 'native',
-  kling_multi_elements: 'native',
-  kling_advanced_lip_sync: 'native',
-  kling_text_to_audio: 'native',
-  kling_video_to_audio: 'native',
-  kling_tts: 'native',
-  hailuo_video_generation: 'native',
-  vidu_text2video: 'native',
-  vidu_img2video: 'native',
-  vidu_start_end2video: 'native',
-  vidu_reference2video: 'native',
-  other: 'native',
-}
-
-export function mapApiProtocols(protocols: PublicProtocol[] | undefined): ApiProtocol[] {
-  // `?? 'native'` 兜的是**运行时**比 PublicProtocol 新的值（后端先发、前端还没跟）。
-  // 绝不原样透传未知值：透传的下场就是 ENDPOINT_PATH[未知] 的 undefined 拼进 URL，
-  // 加上没有文案的空 Tab。折成 native 至少给出平台托管入口这条能用的路。
-  const mapped = (protocols ?? []).map((p): ApiProtocol => PROTOCOL_TO_API[p] ?? 'native')
-  // 去重：多个原生透传值（如 kling_text2video + kling_image2video）会折到同一个
-  // native，不去重就是两个一模一样的 Tab + React 重复 key 告警。
-  // 顺序统一 sortProtocols（QA：端点兼容顺序不一致），协议 Tab 顺序不跟后端数组走。
-  return sortProtocols([...new Set(mapped)])
 }
 
 /**

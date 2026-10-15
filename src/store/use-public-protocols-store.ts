@@ -6,9 +6,8 @@ import type { PublicProtocolLabelItem } from '@/types'
  * 协议标签目录（GET /catalog/public-protocols）的运行时缓存。
  *
  * 真源已迁移到 modelgo-model-gateway `pkg/publicprotocols` 静态注册表，经
- * controller/web-api 透传；前端不再手写协议 label 映射（CatalogSidebar 筛选项、
- * model-format.ts 的卡片/详情/对比标签、api-code-samples.ts 的代码 Tab 标签统一
- * 从这里取，取不到时各自回落本地兜底常量）。
+ * controller/web-api 透传；前端不再手写协议 label 映射（model-format.ts 的体验 / 对比
+ * 标签、api-code-samples.ts 的代码 Tab 标签统一从这里取，取不到时各自回落本地兜底常量）。
  *
  * 用普通 Zustand store 而非 React Query：这份数据要被 model-format.ts /
  * api-code-samples.ts 里的纯函数（protocolLabel 等，非 Hook、在渲染期被直接调用）

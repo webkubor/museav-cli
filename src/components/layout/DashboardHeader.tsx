@@ -133,7 +133,7 @@ export const DashboardHeader: React.FC<{ onMenuClick?: () => void }> = ({ onMenu
     queryKey: ['tenants'],
     queryFn: listTenants,
     staleTime: 60_000,
-    enabled: isAuthenticated, // 匿名（公开广场）不拉租户，避免 401
+    enabled: isAuthenticated, // 匿名不拉租户，避免 401（原公开广场外壳会匿名渲染顶栏，prd#1272 已拆到官网）
 
     // session 的 tenants 不含 role，仅作即时占位；placeholderData 不写缓存、仍会拉取带 role 的真实列表
     // 占位数据是 TenantBrief（缺 role 等字段），断言为完整类型；role 由真实请求补全

@@ -1,5 +1,5 @@
 /**
- * 带行号的 API 示例代码块（详情页 ApiAccessPanel 与 ApiQuickCallModal 共用）。
+ * 带行号的 API 示例代码块（ApiQuickCallModal 用；原详情页 ApiAccessPanel 已随详情页拆到官网，prd#1272）。
  *
  * 行号走 CSS counter 的 ::before（见 api-quick-call-modal.css）——伪元素
  * 不进选区，手动框选或复制按钮拿到的都是纯代码，不会混入行号。

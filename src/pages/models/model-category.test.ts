@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveModelCategory, modelExperienceTasks, hasPlaygroundExperience, modelPreferredTask, modelDefaultTask, modelEntryTask } from './model-experience-data'
+import { resolveModelCategory, modelExperienceTasks, modelPreferredTask, modelDefaultTask, modelEntryTask } from './model-experience-data'
 import type { CatalogModelItem } from '@/types'
 
 function model(partial: Partial<CatalogModelItem>): CatalogModelItem {
@@ -100,7 +100,6 @@ describe('modelExperienceTasks（任务推导）', () => {
   it('rerank 类推导为空 = 暂未开放', () => {
     const m = model({ input_modalities: ['text'], output_modalities: ['rerank'] })
     expect(modelExperienceTasks(m)).toEqual([])
-    expect(hasPlaygroundExperience(m)).toBe(false)
   })
 
   it('专职 TTS（纯音频输出）推导出文本转语音', () => {
@@ -120,13 +119,11 @@ describe('modelExperienceTasks（任务推导）', () => {
   it('embedding 类（输出非文本非媒体）推导为空 = 暂未开放（§AC-13）', () => {
     const m = model({ input_modalities: ['text', 'image'], output_modalities: ['embedding'] })
     expect(modelExperienceTasks(m)).toEqual([])
-    expect(hasPlaygroundExperience(m)).toBe(false)
   })
 
   it('老数据模态缺失时按文本对话兜底，不误伤存量 LLM', () => {
     const m = model({})
     expect(modelExperienceTasks(m)).toEqual(['text_to_text'])
-    expect(hasPlaygroundExperience(m)).toBe(true)
   })
 })
 

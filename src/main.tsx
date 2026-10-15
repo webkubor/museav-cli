@@ -13,7 +13,7 @@ import { ConsentBanner } from './components/consent/ConsentBanner'
 import { installAgentErrorReporter } from 'vite-plugin-agent-eyes/client'
 import { initDeviceFingerprint } from './lib/device-fingerprint'
 import { installDevAuth } from './lib/dev-auth'
-import { destroy as destroyTrack, init as initTrack, TrackApp, TrackRegion } from '@model-go/track'
+import { init as initTrack, TrackApp, TrackRegion } from '@model-go/track'
 import { installGlobalClientErrorReporting } from './lib/client-error-report'
 import { getMarket } from './lib/market'
 import { installChunkReloadGuard } from './lib/chunk-reload'
@@ -43,47 +43,45 @@ const consentRequired = getBrowserConsentRegion() !== 'not-required'
 document.documentElement.dataset.country = consentCountry ?? ''
 document.documentElement.dataset.consentRequired = consentRequired ? '1' : '0'
 
-// 自建埋点与 GTM 身份同步只在允许统计时启动：名单外始终启动（照常统计，附 consent_required=0）；
-// 名单内等横幅「接受」后启动，「拒绝」时停止（SDK destroy 会丢弃缓冲并移除监听）。
-let trackStarted = false
+// 自建埋点：与 Cookie 同意无关 —— 任何国家、任何横幅状态都上报。
+// 本段不读 mg_consent、条件不与 Google 那条线共享。
+// 依据：飞书《Cookie 同意与埋点口径（控制台 / 国际官网 / 国内官网）》。
+initTrack({
+  app: TrackApp.ConsoleWeb,
+  region: getMarket() === 'global' ? TrackRegion.Global : TrackRegion.CN,
+  prdVersion: PRD_VERSION,
+  baseURL: apiBaseUrl(),
+  getAuthHeaders: () => {
+    const tenantId = useAuthStore.getState().activeTenantId
+    return tenantId ? { 'X-Tenant-Id': tenantId } : undefined
+  },
+  getCommonProps: () => {
+    const { account, activeWorkspaceId } = useAuthStore.getState()
+    const props: Record<string, string> = {
+      country: consentCountry ?? '',
+      consent_required: consentRequired ? '1' : '0',
+    }
+    if (account?.account_id) props.user_id = account.account_id
+    if (activeWorkspaceId) props.workspace_id = activeWorkspaceId
+    return props
+  },
+})
+
+// GTM dataLayer 身份同步（prd46#1271，属 Google 那条线）：仍受同意门控（名单外视为已同意）。
 let stopIdentitySync: (() => void) | undefined
 
-function startTrack() {
-  if (trackStarted) return
-  trackStarted = true
-  initTrack({
-    app: TrackApp.ConsoleWeb,
-    region: getMarket() === 'global' ? TrackRegion.Global : TrackRegion.CN,
-    prdVersion: PRD_VERSION,
-    baseURL: apiBaseUrl(),
-    getAuthHeaders: () => {
-      const tenantId = useAuthStore.getState().activeTenantId
-      return tenantId ? { 'X-Tenant-Id': tenantId } : undefined
-    },
-    getCommonProps: () => {
-      const { account, activeWorkspaceId } = useAuthStore.getState()
-      const props: Record<string, string> = {
-        country: consentCountry ?? '',
-        consent_required: consentRequired ? '1' : '0',
-      }
-      if (account?.account_id) props.user_id = account.account_id
-      if (activeWorkspaceId) props.workspace_id = activeWorkspaceId
-      return props
-    },
-  })
+function startGoogleIdentitySync() {
+  if (stopIdentitySync) return
   stopIdentitySync = installDataLayerIdentitySync()
 }
 
-function stopTrack() {
-  if (!trackStarted) return
-  trackStarted = false
-  destroyTrack()
+function stopGoogleIdentitySync() {
   stopIdentitySync?.()
   stopIdentitySync = undefined
 }
 
-if (!consentRequired || hasAnalyticsConsent()) startTrack()
-onConsentChange((choice) => (choice === 'accept' ? startTrack() : stopTrack()))
+if (!consentRequired || hasAnalyticsConsent()) startGoogleIdentitySync()
+onConsentChange((choice) => (choice === 'accept' ? startGoogleIdentitySync() : stopGoogleIdentitySync()))
 
 // 广告来源落地即捕获（投放归因，prd46#1271）：任何落地页的 gclid / utm 先存进 sessionStorage，
 // 否则从 /models?gclid=… 直接点头部「登录」进 /login（不带参数）时来源就丢了；OAuth 要整页跳出

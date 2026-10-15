@@ -82,4 +82,33 @@ describe('同意与地区', () => {
     expect(resolveConsentRegion('America/New_York', TIMEZONE_COUNTRY)).toBe('not-required')
     expect(resolveConsentRegion('UTC', TIMEZONE_COUNTRY)).toBe('unknown')
   })
+
+  it('?showcookie=1 强制判定为需要同意与出横幅', async () => {
+    const { isConsentPreviewRequested, isConsentBannerRequired, getBrowserConsentRegion } = await import('./consent-region')
+    const originalSearch = window.location.search
+    try {
+      Object.defineProperty(window, 'location', {
+        value: { ...window.location, search: '?showcookie=1' },
+        writable: true,
+        configurable: true,
+      })
+
+      expect(isConsentPreviewRequested()).toBe(true)
+      expect(isConsentBannerRequired()).toBe(true)
+      expect(getBrowserConsentRegion()).toBe('required')
+
+      Object.defineProperty(window, 'location', {
+        value: { ...window.location, search: '?foo=bar' },
+        writable: true,
+        configurable: true,
+      })
+      expect(isConsentPreviewRequested()).toBe(false)
+    } finally {
+      Object.defineProperty(window, 'location', {
+        value: { ...window.location, search: originalSearch },
+        writable: true,
+        configurable: true,
+      })
+    }
+  })
 })

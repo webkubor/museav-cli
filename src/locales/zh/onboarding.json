@@ -1,6 +1,7 @@
 {
   "onboarding": {
     "title": "新手指南",
+    "entryLabel": "新手指南，领 {{reward}}",
     "quickStartTag": "快速开始",
     "subtitle": "完成 {{count}} 个任务，领取 {{reward}} 赠送余额",
     "close": "关闭",

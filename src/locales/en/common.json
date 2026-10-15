@@ -491,6 +491,12 @@
       "rulesLinkLabel": "View rules",
       "copyInviteLinkAria": "Copy referral link",
       "copyInviteCodeAria": "Copy {{label}}"
+    },
+    "officialModels": {
+      "title": "Models have moved to our website",
+      "redirecting": "The model catalog, rankings and model details now live on the ModelGo website. Redirecting you…",
+      "manual": "We couldn't redirect you automatically. Use the button below to open the website.",
+      "go": "Go to website"
     }
   }
 }

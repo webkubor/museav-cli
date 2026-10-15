@@ -5,7 +5,7 @@ import { Providers } from '@/components/providers'
 import { VersionUpdateNotice } from '@/components/VersionUpdateNotice'
 import { useActiveTheme } from '@/hooks/use-active-theme'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
-import { PublicShell } from '@/components/layout/PublicShell'
+import { OfficialModelsRedirect } from '@/pages/models/OfficialModelsRedirect'
 import { AuthProvider, RequireAuth } from '@/components/auth/AuthProvider'
 import { RequirePermission } from '@/components/auth/RequirePermission'
 import { RequireEnterpriseTenant } from '@/components/auth/RequireEnterpriseTenant'
@@ -26,7 +26,8 @@ function RedirectPreservingSearch({ to }: { to: string }) {
 /**
  * 根路径落点：登录了进控制台，没登录去公开的模型广场——不再把访客弹到登录页。
  * 1.0.6 起模型广场是对外挂出去的公开页，访客访问站点根地址应该直接看到模型，
- * 登录留给顶栏按钮，而不是进门先拦一道。
+ * 登录留给顶栏按钮，而不是进门先拦一道。广场拆到官网后（prd#1272）落点不变，
+ * 仍走 /models，由那条路由按市场转去官网广场（query 一路带着）。
  *
  * 推荐码在这里先落一次 session：原先 /?aff=X 会被 RequireAuth 折成
  * /login?redirect=%2F%3Faff%3DX，由登录页从 redirect 内嵌 query 里解出来；现在不经过
@@ -68,9 +69,6 @@ const AccountSettingsPage = lazy(() => import('@/pages/settings/account'))
 const OrganizationPage = lazy(() => import('@/pages/settings/organization'))
 const GuardrailsPage = lazy(() => import('@/pages/guardrails'))
 const ModelsPage = lazy(() => import('@/pages/models'))
-const ModelsCatalogPage = lazy(() => import('@/pages/models/catalog'))
-const ModelDetailPage = lazy(() => import('@/pages/models/detail'))
-const ModelDiscoveryPage = lazy(() => import('@/pages/models/discovery'))
 const ModelsComparePage = lazy(() => import('@/pages/models-compare'))
 // DEV 专属页面/工具必须放在可静态消除的条件分支内，确保生产构建既不生成对应 chunk，
 // 也不注册路由——否则 /dev-config 在生产环境仍可被直接访问到。
@@ -84,8 +82,6 @@ const NotFoundPage = lazy(() => import('@/pages/not-found'))
 
 const DASHBOARD_NAMESPACES = ['dashboard', 'dashboardTop', 'billing', 'logs'] satisfies LocaleNamespace[]
 const MODEL_NAMESPACES = ['models', 'modelsCatalog', 'modelsCompare', 'modelsExperience', 'modelsChat', 'modelsHistory', 'apiKeys'] satisfies LocaleNamespace[]
-// 模型发现页文案量大且只此一页用，单独一个 ns，不让其它模型页跟着下载
-const DISCOVERY_NAMESPACES = [...MODEL_NAMESPACES, 'modelsDiscovery'] satisfies LocaleNamespace[]
 
 const CONSOLE_NAMESPACES: Record<string, readonly LocaleNamespace[]> = {
   dashboard: DASHBOARD_NAMESPACES,
@@ -329,13 +325,14 @@ export default function App() {
               且那一组不再留 index 子路由，否则 "/" 会先被它吃掉、访客又被弹回登录页。 */}
           <Route path="/" element={<RootEntry />} />
 
-          {/* 模型广场（公开，免登录，双主题）— 与官网同路径 /models，官网「模型」直接跳此 */}
-          <Route path="/models" element={<PublicShell />}>
-            <Route index element={withLocaleNamespaces(<ModelsCatalogPage />, MODEL_NAMESPACES)} />
-            {/* discovery 必须声明在 :modelId **之前** —— 否则会被参数路由吃掉，
-                当成一个叫 "discovery" 的模型 ID 去请求详情。 */}
-            <Route path="discovery" element={withLocaleNamespaces(<ModelDiscoveryPage />, DISCOVERY_NAMESPACES)} />
-            <Route path=":modelId" element={withLocaleNamespaces(<ModelDetailPage />, MODEL_NAMESPACES)} />
+          {/* 模型广场 / 排行 / 详情已拆到两站官网（prd#1269/#1270/#1272），旧路径不删、按市场转去官网
+              对应页（父单硬约束 3「旧链接不能 404」）。登录态的 /models/playground、/models/compare
+              在下面受保护的那组里，静态段优先于 :modelId，不会被这里吃掉。 */}
+          <Route path="/models">
+            <Route index element={<OfficialModelsRedirect kind="catalog" />} />
+            {/* discovery 必须声明在 :modelId **之前** —— 否则会被参数路由吃掉，当成一个叫 "discovery" 的模型 */}
+            <Route path="discovery" element={<OfficialModelsRedirect kind="rankings" />} />
+            <Route path=":modelId" element={<OfficialModelsRedirect kind="detail" />} />
           </Route>
 
           {/* 控制台路由（需登录） */}

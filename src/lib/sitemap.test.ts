@@ -9,9 +9,11 @@ describe('renderSitemap', () => {
     const sitemap = renderSitemap(market, { [envName]: origin })
     const locations = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((entry) => entry[1])
 
-    expect(locations).toHaveLength(5)
+    expect(locations).toHaveLength(3)
     expect(locations.every((location) => new URL(location).host === new URL(origin).host)).toBe(true)
-    expect(sitemap).toContain(`${origin}/models`)
+    expect(sitemap).toContain(`${origin}/legal/terms`)
+    // 模型广场/排行已拆到官网，控制台旧路径只是重定向，提交给搜索引擎只会被判成重复/跳转页
+    expect(locations.some((location) => new URL(location).pathname.startsWith('/models'))).toBe(false)
     expect(sitemap).not.toContain(market === 'china' ? 'modelgo.ai' : 'modelgo.com')
   })
 

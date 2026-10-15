@@ -3,9 +3,8 @@ const MARKET_CONSOLE_ENV = {
   global: 'VITE_GLOBAL_CONSOLE',
 }
 
+// /models、/models/discovery 已拆到两站官网（prd#1272），控制台旧路径只剩重定向，不再作为本站页面提交
 const PUBLIC_PAGES = [
-  '/models',
-  '/models/discovery',
   '/legal/terms',
   '/legal/privacy',
   '/legal/cookies',

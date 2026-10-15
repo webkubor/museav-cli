@@ -6,8 +6,6 @@ ModelGo 主要面向企业(toB)客户。本文件帮助 AI 助手、AI 搜索与
 
 ## 公开页面（无需登录）
 
-- [模型广场]({site}/models): 浏览全部可接入模型,按厂商、能力、价格筛选
-- [模型发现]({site}/models/discovery): 跨厂商模型对比页,质量 × 成本 × 时延 × 用量多维分析
 - [服务条款]({site}/legal/terms): 平台使用条款
 - [隐私政策]({site}/legal/privacy): 隐私与数据处理
 - [Cookie 偏好]({site}/legal/cookies): Cookie 与追踪偏好
@@ -26,6 +24,8 @@ ModelGo 主要面向企业(toB)客户。本文件帮助 AI 助手、AI 搜索与
 ## 主站（marketing 子站）
 
 - [产品总览]({site_web}): ModelGo 完整产品介绍
+- [模型广场]({site_web}/models): 浏览全部可接入模型,按厂商、能力、价格筛选
+- [模型排行]({site_web}/models/rankings): 跨厂商排行,质量 × 成本 × 时延 × 用量
 - [定价]({site_web}/pricing): 按量计费、企业套餐、定制方案
 - [客户案例]({site_web}/customers): 已接入企业案例
 - [产品更新]({site_web}/changelog): 版本日志、新功能、修复

@@ -110,7 +110,11 @@ interface OnboardingActions {
     evidenceType: string
     evidenceId: string
     completedBy: string
-  }) => void
+    /**
+     * 返回上报请求的结束（成功或已回滚都算结束，永不 reject）。绝大多数调用方不等它；
+     * 只有上报后紧跟整页跳走的调用方需要等（控制台 /models 转官网前报「浏览广场」，prd#1272）。
+     */
+  }) => Promise<void>
   /** 领取奖励。三态由「领取前的本地状态 + 请求结果」共同决定，见 OnboardingClaimOutcome */
   claimReward: (tenantId: string) => Promise<OnboardingClaimOutcome>
   setOpen: (open: boolean) => void
@@ -199,7 +203,7 @@ export const useOnboardingStore = create<OnboardingState & OnboardingActions>()(
 
   completeStep: ({ tenantId, stepKey, evidenceType, evidenceId, completedBy }) => {
     const current = get().guides[tenantId]
-    if (!current) return
+    if (!current) return Promise.resolve()
     const optimistic = completeOnboardingStep(current, {
       stepKey,
       completedAt: new Date().toISOString(),
@@ -208,10 +212,10 @@ export const useOnboardingStore = create<OnboardingState & OnboardingActions>()(
       evidenceId,
     })
     // 领域层重复事件返回原引用 → 这一步早就完成过，连请求都不用发（服务端也是幂等的）
-    if (optimistic === current) return
+    if (optimistic === current) return Promise.resolve()
     set((s) => ({ guides: { ...s.guides, [tenantId]: optimistic } }))
 
-    void completeOnboardingStepApi(guideContext(current), stepKey, { evidenceType, evidenceId })
+    return completeOnboardingStepApi(guideContext(current), stepKey, { evidenceType, evidenceId })
       .then((authoritative) => {
         if (authoritative) {
           set((s) => {
@@ -392,13 +396,13 @@ export function reportOnboardingStep(
   stepKey: OnboardingStepKey,
   evidenceType: string,
   evidenceId: string,
-) {
+): Promise<void> {
   const { activeTenantId, account } = useAuthStore.getState()
-  if (!activeTenantId) return
+  if (!activeTenantId) return Promise.resolve()
   const store = useOnboardingStore.getState()
-  if (!store.guides[activeTenantId]) return
+  if (!store.guides[activeTenantId]) return Promise.resolve()
   // 重复上报的静默忽略、以及 onboarding_step_completed 埋点，都在 completeStep 里
-  store.completeStep({
+  return store.completeStep({
     tenantId: activeTenantId,
     stepKey,
     evidenceType,

@@ -144,9 +144,10 @@ async function checkSite(market, base) {
     if (missing.length) {
       findings.push({ level: 'P1', kind: 'AI 训练爬虫未屏蔽', detail: `robots.txt 没屏蔽这些 AI 训练型爬虫: ${missing.join(', ')}`, sample: '' })
     }
-    // 2) 至少放行 /models（控制台对外公开的入口）
+    // 2) 至少放行 /models：模型广场已拆到官网（prd#1272），控制台旧路径是跳回官网的中转页，
+    //    爬虫进得来才能顺着跳转把旧收录挪到官网
     if (!isAllowed(groups, '/models')) {
-      findings.push({ level: 'P1', kind: '缺 /models 白名单', detail: `robots.txt 没显式 Allow: /models——模型广场是公开页，应放行`, sample: '' })
+      findings.push({ level: 'P1', kind: '缺 /models 白名单', detail: `robots.txt 没显式 Allow: /models——旧收录要靠它跳到官网，应放行`, sample: '' })
     }
     // 3) /api/ 应被抓不到。两种写法都算数：
     //    ① 白名单式（Disallow: / 打底 + Allow 例外）—— 默认全禁，/api/ 自然在内；

@@ -491,6 +491,12 @@
       "rulesLinkLabel": "查看分润规则",
       "copyInviteLinkAria": "复制邀请链接",
       "copyInviteCodeAria": "复制{{label}}"
+    },
+    "officialModels": {
+      "title": "模型广场已迁至官网",
+      "redirecting": "模型广场、模型排行与模型详情已迁到 ModelGo 官网，正在为你跳转…",
+      "manual": "自动跳转没有成功，请点击下方按钮前往官网查看。",
+      "go": "前往官网"
     }
   }
 }

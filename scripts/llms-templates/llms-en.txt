@@ -6,8 +6,6 @@ ModelGo serves enterprise (B2B) customers. This file helps AI assistants, AI sea
 
 ## Public pages (no login required)
 
-- [Model Catalog]({site}/models): Browse every available model, filter by provider, capability, and price
-- [Model Discovery]({site}/models/discovery): Cross-vendor model comparison page with multi-dimensional quality × cost × latency × usage analysis
 - [Terms of Service]({site}/legal/terms): Platform usage terms
 - [Privacy Policy]({site}/legal/privacy): Privacy and data handling
 - [Cookie Preferences]({site}/legal/cookies): Cookie and tracking preferences
@@ -26,6 +24,8 @@ ModelGo serves enterprise (B2B) customers. This file helps AI assistants, AI sea
 ## Main site (marketing subdomain)
 
 - [Product Overview]({site_web}): Full ModelGo product introduction
+- [Model Catalog]({site_web}/models): Browse every available model, filter by provider, capability, and price
+- [Model Rankings]({site_web}/models/rankings): Cross-vendor rankings across quality × cost × latency × usage
 - [Pricing]({site_web}/pricing): Usage-based billing, enterprise plans, custom solutions
 - [Customer Stories]({site_web}/customers): Customer case studies
 - [Changelog]({site_web}/changelog): Release notes, new features, and fixes

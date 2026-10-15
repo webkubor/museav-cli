@@ -143,7 +143,9 @@
 .onboarding-guide-anchor.floating .onboarding-guide-entry:focus-visible,
 .onboarding-guide-anchor.floating .onboarding-guide-entry[aria-expanded='true'] {
   box-shadow: var(--shadow-lg);
-  width: 132px;
+  /* 156px：13px/650 字重下「Started · Get $5」实测 102px + 图标 18 + 间距 8 +
+     左右 padding 24，刚好放得下不省略；旧值 132px 会把新文案截成「Started · Ge…」 */
+  width: 156px;
 }
 
 .onboarding-guide-anchor.floating .onboarding-guide-entry-icon {
@@ -167,7 +169,8 @@
 .onboarding-guide-anchor.floating .onboarding-guide-entry:focus-visible .onboarding-guide-entry-label,
 .onboarding-guide-anchor.floating .onboarding-guide-entry[aria-expanded='true'] .onboarding-guide-entry-label {
   margin-left: 8px;
-  max-width: 76px;
+  /* 108px：与上面 156px 的展开宽度配套（102px 文案 + 余量），超过才省略 */
+  max-width: 108px;
   opacity: 1;
   transform: translateX(0);
 }

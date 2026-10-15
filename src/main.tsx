@@ -13,7 +13,7 @@ import { ConsentBanner } from './components/consent/ConsentBanner'
 import { installAgentErrorReporter } from 'vite-plugin-agent-eyes/client'
 import { initDeviceFingerprint } from './lib/device-fingerprint'
 import { installDevAuth } from './lib/dev-auth'
-import { destroy as destroyTrack, init as initTrack, TrackApp, TrackRegion } from '@model-go/track'
+import { init as initTrack, TrackApp, TrackRegion } from '@model-go/track'
 import { installGlobalClientErrorReporting } from './lib/client-error-report'
 import { getMarket } from './lib/market'
 import { installChunkReloadGuard } from './lib/chunk-reload'
@@ -24,6 +24,9 @@ import { captureAdAttributionAtBoot } from './pages/signup/ad-source'
 import { installDataLayerIdentitySync } from './lib/gtm-datalayer'
 import { getBrowserConsentRegion, getBrowserCountry } from './lib/consent-region'
 import { hasAnalyticsConsent, onConsentChange } from './lib/consent'
+import { adoptVisitorIdFromUrl, getOrCreateVisitorId, readVisitorId } from './lib/visitor-id'
+import { getDeviceId } from './lib/device-fingerprint'
+import { urlParamsProp } from './lib/url-params'
 
 // 前端运行时错误上报（仅 DEV）：未捕获异常 / rejection / 全控制台 + DOM 快照，
 // 内置 5s 去重 + 去 HMR 戳防刷爆。统一由 vite-plugin-agent-eyes 提供，替代原 dev-error-reporter。
@@ -43,10 +46,13 @@ const consentRequired = getBrowserConsentRegion() !== 'not-required'
 document.documentElement.dataset.country = consentCountry ?? ''
 document.documentElement.dataset.consentRequired = consentRequired ? '1' : '0'
 
-// 自建埋点与 GTM 身份同步只在允许统计时启动：名单外始终启动（照常统计，附 consent_required=0）；
-// 名单内等横幅「接受」后启动，「拒绝」时停止（SDK destroy 会丢弃缓冲并移除监听）。
+// 统一访客 ID：官网跳转带来的 mg_vid 优先采纳（本域无 cookie 时）；名单内外一律写入，不走同意门控（口径见 lib/visitor-id.ts）。
+// URL 参数保留在地址栏上，埋点的 url_params 公共属性随事件读取当前 URL。
+adoptVisitorIdFromUrl(window.location.search)
+getOrCreateVisitorId()
+
+// 自建埋点不做同意门控：启动即 init（名单内外一致，统计照常，附 country / consent_required）。
 let trackStarted = false
-let stopIdentitySync: (() => void) | undefined
 
 function startTrack() {
   if (trackStarted) return
@@ -65,25 +71,39 @@ function startTrack() {
       const props: Record<string, string> = {
         country: consentCountry ?? '',
         consent_required: consentRequired ? '1' : '0',
+        visitor_id: readVisitorId() ?? '',
+        identity_number: getDeviceId() ?? '',
+        url_params: urlParamsProp(),
       }
       if (account?.account_id) props.user_id = account.account_id
       if (activeWorkspaceId) props.workspace_id = activeWorkspaceId
       return props
     },
   })
+}
+
+startTrack()
+
+// GTM dataLayer 身份同步（mg_identity）属于 Google 标签体系，只在允许 Google 统计时启动：
+// 名单外视为已同意；名单内须接受，拒绝时停止推送。
+let identitySyncStarted = false
+let stopIdentitySync: (() => void) | undefined
+
+function startIdentitySync() {
+  if (identitySyncStarted) return
+  identitySyncStarted = true
   stopIdentitySync = installDataLayerIdentitySync()
 }
 
-function stopTrack() {
-  if (!trackStarted) return
-  trackStarted = false
-  destroyTrack()
+function stopIdentitySyncNow() {
+  if (!identitySyncStarted) return
+  identitySyncStarted = false
   stopIdentitySync?.()
   stopIdentitySync = undefined
 }
 
-if (!consentRequired || hasAnalyticsConsent()) startTrack()
-onConsentChange((choice) => (choice === 'accept' ? startTrack() : stopTrack()))
+if (!consentRequired || hasAnalyticsConsent()) startIdentitySync()
+onConsentChange((choice) => (choice === 'accept' ? startIdentitySync() : stopIdentitySyncNow()))
 
 // 广告来源落地即捕获（投放归因，prd46#1271）：任何落地页的 gclid / utm 先存进 sessionStorage，
 // 否则从 /models?gclid=… 直接点头部「登录」进 /login（不带参数）时来源就丢了；OAuth 要整页跳出

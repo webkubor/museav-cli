@@ -24,14 +24,14 @@ function RedirectPreservingSearch({ to }: { to: string }) {
 }
 
 /**
- * 根路径落点：登录了进控制台，没登录去公开的模型广场——不再把访客弹到登录页。
- * 1.0.6 起模型广场是对外挂出去的公开页，访客访问站点根地址应该直接看到模型，
- * 登录留给顶栏按钮，而不是进门先拦一道。广场拆到官网后（prd#1272）落点不变，
- * 仍走 /models，由那条路由按市场转去官网广场（query 一路带着）。
+ * 根路径落点：登录了进控制台，没登录去登录页（query 原样带着）。
+ * 1.0.6 起访客落到的是公开的模型广场（09-03）。广场拆到官网后（prd#1272）不能再这么走：
+ * 两站官网的「进入控制台」都指向控制台根路径，访客落到 /models 会被转回官网广场，
+ * 永远进不了登录页。所以改回登录页，登录后默认进 /dashboard。
  *
  * 推荐码在这里先落一次 session：原先 /?aff=X 会被 RequireAuth 折成
- * /login?redirect=%2F%3Faff%3DX，由登录页从 redirect 内嵌 query 里解出来；现在不经过
- * 登录页了，广场页也不解析推荐码，不在这一跳存住就 100% 丢码（qa#675 同源）。
+ * /login?redirect=%2F%3Faff%3DX，由登录页从 redirect 内嵌 query 里解出来；现在直接带着
+ * query 去登录页、不经 redirect 包一层，不在这一跳存住就会丢码（qa#675 同源）。
  */
 function RootEntry() {
   const [searchParams] = useSearchParams()
@@ -41,10 +41,10 @@ function RootEntry() {
 
   resolveReferralCode(searchParams)
 
-  // 会话还在拉：先不跳，否则已登录用户会闪一下广场再弹回控制台
+  // 会话还在拉：先不跳，否则已登录用户会闪一下登录页再弹回控制台
   if (isLoading) return null
   if (isAuthenticated) return <Navigate to="/dashboard" replace />
-  return <Navigate to={{ pathname: '/models', search: location.search }} replace />
+  return <Navigate to={{ pathname: '/login', search: location.search }} replace />
 }
 
 const DashboardPage = lazy(() => import('@/pages/dashboard'))
@@ -224,7 +224,7 @@ export default function App() {
   const activeTheme = useActiveTheme()
 
   // 协议标签目录：fetch-once-on-app-load，非阻塞——不接 onReady/platformReady，
-  // 拿不到就让消费方（CatalogSidebar/model-format/api-code-samples）一直用本地
+  // 拿不到就让消费方（model-format/api-code-samples）一直用本地
   // 兜底文案，不影响首屏（该接口依赖的三个后端仓库尚未合并到 test 前必然如此）。
   useEffect(() => {
     usePublicProtocolsStore.getState().fetchPublicProtocols()
@@ -321,8 +321,8 @@ export default function App() {
           <Route path="/device" element={withLocaleNamespaces(<DevicePage />, ['device'])} />
           <Route path="/billing/wechat-cashier" element={withLocaleNamespaces(<WechatCashierPage />, ['billing'])} />
 
-          {/* 根路径：登录进控制台、未登录进模型广场。必须声明在下面受保护的 path="/" 之前，
-              且那一组不再留 index 子路由，否则 "/" 会先被它吃掉、访客又被弹回登录页。 */}
+          {/* 根路径：登录进控制台、未登录进登录页（带着 query）。必须声明在下面受保护的 path="/" 之前，
+              且那一组不再留 index 子路由，否则 "/" 会先被 RequireAuth 吃掉、推荐码被折进 redirect 里。 */}
           <Route path="/" element={<RootEntry />} />
 
           {/* 模型广场 / 排行 / 详情已拆到两站官网（prd#1269/#1270/#1272），旧路径不删、按市场转去官网
@@ -333,16 +333,18 @@ export default function App() {
             {/* discovery 必须声明在 :modelId **之前** —— 否则会被参数路由吃掉，当成一个叫 "discovery" 的模型 */}
             <Route path="discovery" element={<OfficialModelsRedirect kind="rankings" />} />
             <Route path=":modelId" element={<OfficialModelsRedirect kind="detail" />} />
+            {/* prd#983 修编码之前发出去的 /models/vendor/model 旧链接：多段路径整体当 model_id */}
+            <Route path="*" element={<OfficialModelsRedirect kind="detail" />} />
           </Route>
 
           {/* 控制台路由（需登录） */}
           <Route path="/" element={<RequireAuth><DashboardLayout /></RequireAuth>}>
-            {/* 无 index 子路由：根路径由上面的 RootEntry 接管（登录→/dashboard，访客→/models） */}
+            {/* 无 index 子路由：根路径由上面的 RootEntry 接管（登录→/dashboard，访客→/login） */}
 
             {/* 租户级菜单页：由 config/console-routes 单一真源驱动 + 逐路由权限守卫 */}
             {CONSOLE_ROUTES.filter((r) => r.scope === 'tenant').map(consoleRoute)}
 
-            {/* /models 公开广场已在登录组外；此处仅登录态子页 */}
+            {/* /models、/models/discovery、/models/:modelId 是登录组外的官网中转；此处仅登录态子页 */}
             <Route path="models">
               <Route path="playground" element={withLocaleNamespaces(<ModelsPage />, MODEL_NAMESPACES)} />
               <Route path="compare" element={withLocaleNamespaces(<ModelsComparePage />, MODEL_NAMESPACES)} />

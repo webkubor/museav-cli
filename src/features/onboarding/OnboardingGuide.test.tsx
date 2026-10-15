@@ -131,6 +131,70 @@ describe('任务气泡', () => {
   })
 })
 
+/**
+ * 入口文案（shared/modelgo_prd#1341）：需求方两轮改口径 —— 先是「中文带后台金额」，
+ * 实测后又指出**英文显示不全**（侧栏展开态 w-56=224px，扣掉入口 padding 与进度
+ * 位后 label 只剩约 118px，而「Get started · Earn $5」在 13px/650 下实测 133px，
+ * 必然打省略号），定稿改成更短的「Started · Get $5」（实测 102px）。
+ *
+ * 钉在这里是因为它只在**英文 + 真实字体度量**下暴露：中文「新手指南，领 ¥10」
+ * 实测 105px 从没溢出过，所以只看中文轨的断言永远发现不了英文被截断。
+ */
+describe('侧栏入口文案（#1341）', () => {
+  /**
+   * ⚠️ rewardLabel 不是 prop —— 组件内部 `formatOnboardingReward(guide.reward)`
+   * 现算（OnboardingGuide.tsx:176），传进去的 prop 会被忽略。所以要验英文带 `$`
+   * 必须把 guide 的 reward 换成 USD，不能只传 rewardLabel="$5"。
+   */
+  function guideWithReward(reward: { currency: 'CNY' | 'USD'; amount: string }) {
+    return toOnboardingGuideState(
+      {
+        status: 'eligible',
+        guide_version: 'v1',
+        eligible_at: '2026-08-06T00:00:00.000Z',
+        completed_steps: [],
+        reward: { ...reward, config_version: 'v1' },
+      },
+      { tenantId: 't-1', tenantKind: 'personal', site: 'domestic' },
+    ) as OnboardingGuideState
+  }
+
+  /** 只取 label 那段文字：入口按钮的 textContent 还含进度「N/5」，会污染断言。 */
+  async function entryLabelIn(
+    language: 'zh' | 'en',
+    reward: { currency: 'CNY' | 'USD'; amount: string },
+  ): Promise<string> {
+    await loadLocaleNamespaces(['onboarding'], language)
+    await i18n.changeLanguage(language)
+    const { container, unmount } = render(
+      <OnboardingGuide
+        collapsed={false}
+        guide={guideWithReward(reward)}
+        onClaim={vi.fn()}
+        onOpenChange={vi.fn()}
+        onStepAction={vi.fn()}
+        open={false}
+      />,
+    )
+    const label = container.querySelector('.onboarding-guide-entry-label')?.textContent ?? ''
+    unmount()
+    await loadLocaleNamespaces(['onboarding'], 'zh')
+    await i18n.changeLanguage('zh')
+    return label
+  }
+
+  it('中文入口是「新手指南，领 ¥10」', async () => {
+    expect(await entryLabelIn('zh', { currency: 'CNY', amount: '10.00' })).toBe('新手指南，领 ¥10')
+  })
+
+  it('英文入口是需求方定稿的「Started · Get $5」，不是被截断的长文案', async () => {
+    const label = await entryLabelIn('en', { currency: 'USD', amount: '5.00' })
+    expect(label).toBe('Started · Get $5')
+    expect(label).not.toContain('Get started')
+    expect(label).not.toContain('Earn')
+  })
+})
+
 describe('领取成功弹框（2026-08-13 规格）', () => {
   function renderDialog(props: Partial<Parameters<typeof OnboardingRewardSuccessDialog>[0]> = {}) {
     const onDismiss = vi.fn()

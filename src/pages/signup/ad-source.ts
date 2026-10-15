@@ -8,10 +8,14 @@
  * 与推荐码一样做会话级持久化：URL 命中即落 sessionStorage，之后页面 URL 丢了也能取回；
  * 注册成功后清掉。持久化记录 24 小时后失效，限制失败残留被同一浏览器的后续注册复用的时间窗口。
  *
- * channel_id / matchtype / device / network（Google Ads 跟踪模板带的，prd46#1271）一并持久化，
- * 但**只给埋点用**（GTM dataLayer 的 sign_up）：后端 #1228 契约没有这 4 个字段，
- * `resolveAdSource` 不返回它们，注册请求体与改动前一致；埋点侧用 `resolveAdAttribution`。
+ * channel_id / matchtype / device / network（Google Ads 跟踪模板带的来源维度）**也随注册请求上送**：
+ * prd46#1354 已推翻 #1271 的「注册体不带这 4 字段」决定 —— 当时的依据是「#1228 契约里没有它们」，
+ * 后端补齐并上线（permissions/web-api，2026-10-15）后该依据消失，前端这半是 #1354 的 R6。
+ * 只有 reg_click_ts 仍属埋点专用。埋点侧（GTM dataLayer 的 sign_up）取全量，见 `resolveAdAttribution`。
  */
+
+/** Google Ads 跟踪模板带的来源维度（prd46#1354）：既上送注册接口，也进埋点。 */
+export const AD_CHANNEL_KEYS = ['channel_id', 'matchtype', 'device', 'network'] as const
 
 export const AD_SOURCE_KEYS = [
   'gclid',
@@ -24,14 +28,14 @@ export const AD_SOURCE_KEYS = [
   'utm_content',
   'campaign_id',
   'ad_group_id',
+  ...AD_CHANNEL_KEYS,
 ] as const
 
 /**
  * 只进埋点、不上送注册接口的字段：
- * - channel_id / matchtype / device / network：Google Ads 跟踪模板带的来源维度（prd46#1271）；
- * - reg_click_ts：官网点击跳往控制台的时刻（ms 时间戳字符串），与注册成功时刻 reg_success_ts 配对，用于闭环验证。
+ * reg_click_ts：官网点击跳往控制台的时刻（ms 时间戳字符串），与注册成功时刻 reg_success_ts 配对，用于闭环验证。
  */
-export const AD_TRACKING_ONLY_KEYS = ['channel_id', 'matchtype', 'device', 'network', 'reg_click_ts'] as const
+export const AD_TRACKING_ONLY_KEYS = ['reg_click_ts'] as const
 
 const AD_ATTRIBUTION_KEYS = [...AD_SOURCE_KEYS, ...AD_TRACKING_ONLY_KEYS] as const
 
@@ -40,6 +44,24 @@ export type AdAttributionFields = Partial<Record<(typeof AD_ATTRIBUTION_KEYS)[nu
 
 const AD_SOURCE_SESSION_KEY = 'mg_ad_source'
 const MAX_VALUE_LENGTH = 200
+
+/**
+ * 后端对 channel_id / matchtype / device / network 的 maxLength 是 **128**
+ * （auth.RegisterRequest / auth.EmailCodeLoginRequest / auth.SMSLoginRequest 三处契约一致），
+ * 超长会被判 400 且**不建号** —— 所以这几个键不能跟着统一 200 截断：129~200 字符的值
+ * 会让整次注册失败，是「上送归因字段反而挡住注册」的自伤。
+ */
+const MAX_LENGTH_BY_KEY: Readonly<Record<string, number>> = {
+  channel_id: 128,
+  matchtype: 128,
+  device: 128,
+  network: 128,
+}
+
+/** 按后端契约截断；没有单独约束的键沿用 MAX_VALUE_LENGTH。 */
+function clampValue(key: string, value: string): string {
+  return value.slice(0, MAX_LENGTH_BY_KEY[key] ?? MAX_VALUE_LENGTH)
+}
 const MAX_AGE_MS = 24 * 60 * 60 * 1000
 const PLACEHOLDER_ORIGIN = 'https://placeholder.invalid'
 
@@ -50,12 +72,12 @@ function pickFromSearchParams(searchParams: URLSearchParams, keys: readonly stri
   const picked: Record<string, string> = {}
   for (const key of keys) {
     const value = searchParams.get(key)
-    if (value) picked[key] = value.slice(0, MAX_VALUE_LENGTH)
+    if (value) picked[key] = clampValue(key, value)
   }
   return picked
 }
 
-/** 从 query 里挑出上送注册接口的广告来源字段，空值与未知键丢弃，值截断到 200 字符。 */
+/** 从 query 里挑出上送注册接口的广告来源字段，空值与未知键丢弃，值按各键的后端契约截断。 */
 export function adSourceFromSearchParams(searchParams: URLSearchParams): AdSourceFields {
   return pickFromSearchParams(searchParams, AD_SOURCE_KEYS)
 }
@@ -66,7 +88,7 @@ function sanitizeAttribution(raw: unknown): AdAttributionFields | undefined {
   const clean: AdAttributionFields = {}
   for (const key of AD_ATTRIBUTION_KEYS) {
     const value = (raw as Record<string, unknown>)[key]
-    if (typeof value === 'string' && value) clean[key] = value.slice(0, MAX_VALUE_LENGTH)
+    if (typeof value === 'string' && value) clean[key] = clampValue(key, value)
   }
   return Object.keys(clean).length > 0 ? clean : undefined
 }

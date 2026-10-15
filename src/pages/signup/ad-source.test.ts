@@ -56,13 +56,20 @@ describe('ad-source', () => {
   })
 })
 
-describe('只进埋点的来源字段（prd46#1271）', () => {
+describe('渠道维度字段进注册请求体（prd46#1354 推翻 #1271）', () => {
   beforeEach(() => sessionStorage.clear())
 
   const q = 'gclid=g1&campaign_id=c1&channel_id=google_ads&matchtype=e&device=c&network=g'
 
-  it('resolveAdSource 不返回 channel_id / matchtype / device / network，注册请求体与改动前一致', () => {
-    expect(resolveAdSource(new URLSearchParams(q))).toEqual({ gclid: 'g1', campaign_id: 'c1' })
+  it('resolveAdSource 带上 channel_id / matchtype / device / network（后端已上线落库）', () => {
+    expect(resolveAdSource(new URLSearchParams(q))).toEqual({
+      gclid: 'g1',
+      campaign_id: 'c1',
+      channel_id: 'google_ads',
+      matchtype: 'e',
+      device: 'c',
+      network: 'g',
+    })
   })
 
   it('resolveAdAttribution 返回全部字段，并从持久化记录取回', () => {
@@ -77,9 +84,19 @@ describe('只进埋点的来源字段（prd46#1271）', () => {
     expect(resolveAdAttribution(new URLSearchParams(''))).toEqual({ gclid: 'g1', reg_click_ts: '1760000000000' })
   })
 
-  it('只有埋点字段时 resolveAdSource 返回 undefined（不往注册请求塞空对象）', () => {
-    expect(resolveAdSource(new URLSearchParams('channel_id=google_ads'))).toBeUndefined()
-    expect(resolveAdAttribution(new URLSearchParams(''))).toEqual({ channel_id: 'google_ads' })
+  it('只有埋点专用字段时 resolveAdSource 返回 undefined（不往注册请求塞空对象）', () => {
+    expect(resolveAdSource(new URLSearchParams('reg_click_ts=1760000000000'))).toBeUndefined()
+    expect(resolveAdAttribution(new URLSearchParams(''))).toEqual({ reg_click_ts: '1760000000000' })
+  })
+
+  it('渠道字段按后端 maxLength=128 截断，其余键仍按 200（超长会让注册 400 不建号）', () => {
+    const long = 'x'.repeat(200)
+    const src = resolveAdSource(new URLSearchParams(`channel_id=${long}&utm_source=${long}`))
+    expect(src?.channel_id).toHaveLength(128)
+    expect(src?.utm_source).toHaveLength(200)
+    // 持久化回读同样按 128 收口，不能只在 URL 那一层截
+    expect(readPersistedAdAttribution()?.channel_id).toHaveLength(128)
+    expect(resolveAdAttribution(new URLSearchParams(`device=${long}`))?.device).toHaveLength(128)
   })
 
   it('redirect 内嵌的埋点字段也能解开', () => {

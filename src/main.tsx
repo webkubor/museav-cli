@@ -24,6 +24,9 @@ import { captureAdAttributionAtBoot } from './pages/signup/ad-source'
 import { installDataLayerIdentitySync } from './lib/gtm-datalayer'
 import { getBrowserConsentRegion, getBrowserCountry } from './lib/consent-region'
 import { hasAnalyticsConsent, onConsentChange } from './lib/consent'
+import { adoptVisitorIdFromUrl, getOrCreateVisitorId, readVisitorId } from './lib/visitor-id'
+import { getDeviceId } from './lib/device-fingerprint'
+import { urlParamsProp } from './lib/url-params'
 
 // 前端运行时错误上报（仅 DEV）：未捕获异常 / rejection / 全控制台 + DOM 快照，
 // 内置 5s 去重 + 去 HMR 戳防刷爆。统一由 vite-plugin-agent-eyes 提供，替代原 dev-error-reporter。
@@ -42,6 +45,11 @@ const consentCountry = getBrowserCountry()
 const consentRequired = getBrowserConsentRegion() !== 'not-required'
 document.documentElement.dataset.country = consentCountry ?? ''
 document.documentElement.dataset.consentRequired = consentRequired ? '1' : '0'
+
+// 统一访客 ID：官网跳转带来的 mg_vid 优先采纳（本域无 cookie 时）；名单内外一律写入，不走同意门控（口径见 lib/visitor-id.ts）。
+// URL 参数保留在地址栏上，埋点的 url_params 公共属性随事件读取当前 URL。
+adoptVisitorIdFromUrl(window.location.search)
+getOrCreateVisitorId()
 
 // 自建埋点与 GTM 身份同步只在允许统计时启动：名单外始终启动（照常统计，附 consent_required=0）；
 // 名单内等横幅「接受」后启动，「拒绝」时停止（SDK destroy 会丢弃缓冲并移除监听）。
@@ -65,6 +73,9 @@ function startTrack() {
       const props: Record<string, string> = {
         country: consentCountry ?? '',
         consent_required: consentRequired ? '1' : '0',
+        visitor_id: readVisitorId() ?? '',
+        identity_number: getDeviceId() ?? '',
+        url_params: urlParamsProp(),
       }
       if (account?.account_id) props.user_id = account.account_id
       if (activeWorkspaceId) props.workspace_id = activeWorkspaceId

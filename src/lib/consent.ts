@@ -55,6 +55,18 @@ export function readConsentChoice(): ConsentChoice | null {
   return choice === 'accept' || choice === 'reject' ? choice : null
 }
 
+/** 只有明确接受才允许加载分析脚本、埋点和广告归因。 */
+export function hasAnalyticsConsent(): boolean {
+  return readConsentChoice() === 'accept'
+}
+
+/** 订阅决定变化（页面生命周期内注册一次，不需要取消）：接受时启动埋点，拒绝时停止。 */
+export function onConsentChange(handler: (choice: ConsentChoice) => void) {
+  window.addEventListener(CONSENT_CHANGE_EVENT, (event) => {
+    handler((event as CustomEvent<ConsentChoice>).detail)
+  })
+}
+
 /**
  * 记录用户决定：更新 Consent Mode 信号；接受才加载 GTM / GA4（同意前不加载任何 Google 标签）。
  */

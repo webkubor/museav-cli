@@ -13,7 +13,7 @@ import { ConsentBanner } from './components/consent/ConsentBanner'
 import { installAgentErrorReporter } from 'vite-plugin-agent-eyes/client'
 import { initDeviceFingerprint } from './lib/device-fingerprint'
 import { installDevAuth } from './lib/dev-auth'
-import { init as initTrack, TrackApp, TrackRegion } from '@model-go/track'
+import { destroy as destroyTrack, init as initTrack, TrackApp, TrackRegion } from '@model-go/track'
 import { installGlobalClientErrorReporting } from './lib/client-error-report'
 import { getMarket } from './lib/market'
 import { installChunkReloadGuard } from './lib/chunk-reload'
@@ -22,6 +22,8 @@ import { useAuthStore } from './store/auth'
 import { captureNewAccountFlag } from './lib/new-account'
 import { captureAdAttributionAtBoot } from './pages/signup/ad-source'
 import { installDataLayerIdentitySync } from './lib/gtm-datalayer'
+import { getBrowserConsentRegion, getBrowserCountry } from './lib/consent-region'
+import { hasAnalyticsConsent, onConsentChange } from './lib/consent'
 
 // 前端运行时错误上报（仅 DEV）：未捕获异常 / rejection / 全控制台 + DOM 快照，
 // 内置 5s 去重 + 去 HMR 戳防刷爆。统一由 vite-plugin-agent-eyes 提供，替代原 dev-error-reporter。
@@ -34,28 +36,54 @@ if (import.meta.env.DEV) installDevAuth()
 // 全部归因到 1.0.3，A/B 对比失去意义。改这里时同步 PROJECT-BRIEF.md §6 的基线说明。
 const PRD_VERSION = 'v1.0.6'
 
-// 埋点 SDK 初始化（@model-go/track，替代 Umami）：app=console_web，区域按域名判定；
-// baseURL 与普通接口统一走 apiBaseUrl()（web-api 域名，SDK 自己拼 /api/v1/events:batch），
-// 与 doc-web 一致；不传会退化成相对路径打到控制台自身域名，测试环境无 /api 代理 → 上报打不到 web-api。
-initTrack({
-  app: TrackApp.ConsoleWeb,
-  region: getMarket() === 'global' ? TrackRegion.Global : TrackRegion.CN,
-  prdVersion: PRD_VERSION,
-  baseURL: apiBaseUrl(),
-  getAuthHeaders: () => {
-    const tenantId = useAuthStore.getState().activeTenantId
-    return tenantId ? { 'X-Tenant-Id': tenantId } : undefined
-  },
-  // 公共属性：每条事件带上内部稳定 ID（account_id / workspace_id），不带邮箱手机号。
-  // 未登录或尚未选定工作空间时不附加，避免写入空值。
-  getCommonProps: () => {
-    const { account, activeWorkspaceId } = useAuthStore.getState()
-    const props: Record<string, string> = {}
-    if (account?.account_id) props.user_id = account.account_id
-    if (activeWorkspaceId) props.workspace_id = activeWorkspaceId
-    return props
-  },
-})
+// 浏览器时区映射国家，与官网共用名单和 IANA timezone-country 映射。
+// 时区是国家推断（非 IP 定位）；未知时区 fail-closed，要求同意。
+const consentCountry = getBrowserCountry()
+const consentRequired = getBrowserConsentRegion() !== 'not-required'
+document.documentElement.dataset.country = consentCountry ?? ''
+document.documentElement.dataset.consentRequired = consentRequired ? '1' : '0'
+
+// 自建埋点与 GTM 身份同步只在允许统计时启动：名单外始终启动（照常统计，附 consent_required=0）；
+// 名单内等横幅「接受」后启动，「拒绝」时停止（SDK destroy 会丢弃缓冲并移除监听）。
+let trackStarted = false
+let stopIdentitySync: (() => void) | undefined
+
+function startTrack() {
+  if (trackStarted) return
+  trackStarted = true
+  initTrack({
+    app: TrackApp.ConsoleWeb,
+    region: getMarket() === 'global' ? TrackRegion.Global : TrackRegion.CN,
+    prdVersion: PRD_VERSION,
+    baseURL: apiBaseUrl(),
+    getAuthHeaders: () => {
+      const tenantId = useAuthStore.getState().activeTenantId
+      return tenantId ? { 'X-Tenant-Id': tenantId } : undefined
+    },
+    getCommonProps: () => {
+      const { account, activeWorkspaceId } = useAuthStore.getState()
+      const props: Record<string, string> = {
+        country: consentCountry ?? '',
+        consent_required: consentRequired ? '1' : '0',
+      }
+      if (account?.account_id) props.user_id = account.account_id
+      if (activeWorkspaceId) props.workspace_id = activeWorkspaceId
+      return props
+    },
+  })
+  stopIdentitySync = installDataLayerIdentitySync()
+}
+
+function stopTrack() {
+  if (!trackStarted) return
+  trackStarted = false
+  destroyTrack()
+  stopIdentitySync?.()
+  stopIdentitySync = undefined
+}
+
+if (!consentRequired || hasAnalyticsConsent()) startTrack()
+onConsentChange((choice) => (choice === 'accept' ? startTrack() : stopTrack()))
 
 // 广告来源落地即捕获（投放归因，prd46#1271）：任何落地页的 gclid / utm 先存进 sessionStorage，
 // 否则从 /models?gclid=… 直接点头部「登录」进 /login（不带参数）时来源就丢了；OAuth 要整页跳出
@@ -70,7 +98,6 @@ captureNewAccountFlag()
 
 // GTM dataLayer 身份同步（prd46#1271）：登录态 / 工作空间变化时推 mg_identity（user_id / workspace_id），
 // 供市场侧在 GTM 里给 GA4 设置 user_id。必须早于 AuthProvider 首拉会话，否则漏掉第一次 setAuth。
-installDataLayerIdentitySync()
 
 // 全局兜底：未被 ErrorBoundary 兜住的异常（如事件回调里的报错）与未处理 rejection 也上报
 installGlobalClientErrorReporting()

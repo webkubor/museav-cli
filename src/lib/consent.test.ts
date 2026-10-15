@@ -61,20 +61,25 @@ describe('consent (console)', () => {
   })
 })
 
-describe('横幅显示条件（地区）', () => {
-  it('名单外（data-country=US）不需要同意', async () => {
-    const { currentVisitorNeedsConsent } = await import('./consent-scope')
-    document.documentElement.dataset.country = 'US'
-    expect(currentVisitorNeedsConsent()).toBe(false)
+describe('同意与地区', () => {
+  it('hasAnalyticsConsent 只在明确接受时为 true', async () => {
+    const { hasAnalyticsConsent, recordConsent, readConsentChoice } = await import('./consent')
+    expect(hasAnalyticsConsent()).toBe(false)
+    recordConsent('reject')
+    expect(hasAnalyticsConsent()).toBe(false)
+    recordConsent('accept')
+    expect(hasAnalyticsConsent()).toBe(true)
+    expect(readConsentChoice()).toBe('accept')
   })
-  it('名单内（data-country=FR）需要同意', async () => {
-    const { currentVisitorNeedsConsent } = await import('./consent-scope')
-    document.documentElement.dataset.country = 'FR'
-    expect(currentVisitorNeedsConsent()).toBe(true)
-  })
-  it('无国家信息按需要同意', async () => {
-    const { currentVisitorNeedsConsent } = await import('./consent-scope')
-    delete document.documentElement.dataset.country
-    expect(currentVisitorNeedsConsent()).toBe(true)
+
+  it('浏览器时区映射到国家：欧洲 → 名单内，其他 → 名单外', async () => {
+    const { resolveConsentRegion } = await import('@/config/consent-region')
+    const { TIMEZONE_COUNTRY } = await import('@/config/timezone-countries')
+    expect(resolveConsentRegion('Europe/Berlin', TIMEZONE_COUNTRY)).toBe('required')
+    expect(resolveConsentRegion('Europe/London', TIMEZONE_COUNTRY)).toBe('required')
+    expect(resolveConsentRegion('Asia/Bangkok', TIMEZONE_COUNTRY)).toBe('required')
+    expect(resolveConsentRegion('Asia/Shanghai', TIMEZONE_COUNTRY)).toBe('not-required')
+    expect(resolveConsentRegion('America/New_York', TIMEZONE_COUNTRY)).toBe('not-required')
+    expect(resolveConsentRegion('UTC', TIMEZONE_COUNTRY)).toBe('unknown')
   })
 })

@@ -198,8 +198,8 @@ export function OnboardingGuide({
      * （桌面常驻 + 移动抽屉：抽屉一直在 DOM 里，只是 translate 出屏），两份都会注册
      * 这个监听。只比自己的 ref 时，抽屉那份会把「点在桌面那份气泡里」判成外部点击，
      * 抢在 pointerdown 阶段把气泡卸载掉 —— 按钮在 pointerdown 与 click 之间消失，
-     * click 永远派发不到 CTA 上，于是控制台内五步与「领取」全点不动（模型广场走
-     * PublicShell，只有一份悬浮入口，所以那里是好的）。
+     * click 永远派发不到 CTA 上，于是控制台内五步与「领取」全点不动（当时公开模型广场的
+     * 外壳只挂一份悬浮入口，所以那里是好的；广场 prd#1272 已拆到官网）。
      */
     const closeOnOutsidePointer = (event: PointerEvent) => {
       const target = event.target

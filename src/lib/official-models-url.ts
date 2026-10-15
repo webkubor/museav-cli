@@ -1,6 +1,6 @@
 /**
  * 模型广场 / 模型排行 / 模型详情的官网地址
- * 路由：控制台旧路径 /models、/models/discovery、/models/:modelId 的重定向，与顶栏、新手引导等入口
+ * 路由：控制台旧路径 /models、/models/discovery、/models/:modelId 的重定向（OfficialModelsRedirect）
  * API：无
  *
  * 三页已从控制台拆到两站官网（shared/modelgo_prd#1269；国内线 #1272 → modelgo.com，

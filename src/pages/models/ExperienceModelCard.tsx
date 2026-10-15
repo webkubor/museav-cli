@@ -131,7 +131,7 @@ export function ExperienceModelCard({ model, task }: { model: CatalogModelItem; 
   return (
     <article className="mg-tile models-experience-model-card" aria-label={t('modelsExperience.modelCard.aria', { name })}>
       <header className="models-experience-model-card-head">
-        {/* 档位与圆角照控制台同类模块「模型详情 hero」（ModelDetailPanel:215），
+        {/* 档位与圆角沿用原控制台「模型详情 hero」（详情页 prd#1272 已拆到官网），
             48px 也正好是原型 .playground-model-avatar 的尺寸 */}
         <ModelIcon model={model} variant="hero" rounded="rounded-sm" className="models-experience-model-card-avatar" />
         <div className="models-experience-model-card-id">

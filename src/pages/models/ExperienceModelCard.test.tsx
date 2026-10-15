@@ -18,7 +18,7 @@ import type { ExperienceTaskType } from './model-experience-data'
 import type { CatalogModelItem } from '@/types'
 
 // ModelIcon → @lobehub/icons，其 es/ 目录式导入在 vitest 的 node 解析下会炸，
-// 且与本用例断言的字段无关（与 ModelDetailPanel.test 同法）。
+// 且与本用例断言的字段无关。
 vi.mock('@/features/models/components/ModelIcon', () => ({
   ModelIcon: () => null,
 }))

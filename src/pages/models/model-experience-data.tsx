@@ -650,8 +650,8 @@ export function isOfflineModel(model: CatalogModelItem): boolean {
  *
  * 限免真源是 promotion.free 显式标记（原型首行 `if (model.free) return "限时免费"`），
  * 不从「价格为 0」推断——后端零价下发的是字符串 "0"（truthy），按 §9.1 未标 free 的
- * 零价模型仍按付费处理，显示「—」而不是「免费」（qa#624；与 ModelDetailPanel /
- * CatalogCard 的未配价口径一致）。
+ * 零价模型仍按付费处理，显示「—」而不是「免费」（qa#624；与原模型广场卡片 / 详情页的
+ * 未配价口径一致，二者 prd#1272 已拆到官网）。
  *
  * 三种计价模式各走一条分支，别让它们互相兜底（需求方#674）：
  *   · price_tiers 有值 → 按档展示（视频按秒、图片矩阵价）

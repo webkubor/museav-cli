@@ -41,7 +41,6 @@ export const localeNamespaces = [
   'modelsCatalog',
   'modelsChat',
   'modelsCompare',
-  'modelsDiscovery',
   'modelsExperience',
   'modelsHistory',
   'nav',

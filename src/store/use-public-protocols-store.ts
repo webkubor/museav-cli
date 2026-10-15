@@ -12,7 +12,7 @@ import type { PublicProtocolLabelItem } from '@/types'
  *
  * 用普通 Zustand store 而非 React Query：这份数据要被 model-format.ts /
  * api-code-samples.ts 里的纯函数（protocolLabel 等，非 Hook、在渲染期被直接调用）
- * 读取，而不少调用它们的组件（如 ModelDetailPanel）在单测里是脱离
+ * 读取，而不少调用它们的组件（如 ExperienceModelCard）在单测里是脱离
  * QueryClientProvider 直接渲染的——用 React Query 会在这些用例里炸掉。Zustand
  * 的 selector Hook 不需要 Provider，未挂载 fetch 时 items 保持 null，各消费方直接
  * 回落兜底文案，不影响既有用例。

@@ -321,7 +321,7 @@ pnpm build:prod
 
 | 看板 | 用途 | 优先级 |
 | :--- | :--- | :--- |
-| `shared/modelgo_prd` | **需求方**报的 BUG/需求（PD 提单） | 最高，优先处理 |
+| `modelgo/shared/modelgo_prd` | **需求方**报的 BUG/需求（PD 提单） | 最高，优先处理 |
 | `qa/ai-quality-platform` | QA 板：`[前端]`/`[后端]` 前缀分流 + owner 指派 | 次之 |
 | `frontend/modelgo-console-web` | 前端内部任务跟踪 | 内部 |
 
@@ -392,7 +392,7 @@ git fetch origin --prune
 
 | 真源 | 位置 | 用途 |
 | :--- | :--- | :--- |
-| PRD 原型源码 | [`shared/modelgo_prd`](https://gitlab.ops.modelgo.com/shared/modelgo_prd) → `src/App.tsx`（clone 到本地后直接读源码，勿开浏览器扒） | 功能/交互/字段文案/弹层形态 |
+| PRD 原型源码 | [`modelgo/shared/modelgo_prd`](https://gitlab.ops.modelgo.com/modelgo/shared/modelgo_prd) → `src/App.tsx`（clone 到本地后直接读源码，勿开浏览器扒） | 功能/交互/字段文案/弹层形态 |
 | 飞书 PRD | 《ModelGo PRD by Release》知识库（V1.0.x 累积基线，8 篇子 PRD） | 规格细节、验收标准（AC） |
 | 现状控制台 | 本仓代码 + `DESIGN.md` + `docs/ui-reference/` | 布局排版与视觉的唯一真源 |
 

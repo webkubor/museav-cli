@@ -41,7 +41,7 @@ git worktree remove ../wt-my-branch      # 详见 §4「手动合并」
 | 看板 | Project ID | GitLab 地址 | 用途 |
 |:---|:---|:---|:---|
 | QA 任务看板 | 1 | `qa/ai-quality-platform` | 开发单 / BUG 单 |
-| PRD 派单 | 46 | `shared/modelgo_prd` | PM 需求单 |
+| PRD 派单 | 46 | `modelgo/shared/modelgo_prd` | PM 需求单 |
 
 ### 标签流转
 
@@ -133,7 +133,7 @@ node $S claim 100 --project 46  # PRD 看板
 |:---|:---|:---|
 | PM 需求 | 飞书 PRD 文档（space `7636726268473543858`）| 产品需求描述 |
 | PRD 原型 | `@modelgo-prd/src/App.tsx`（`cs path` 查路径）| 功能 + 交互原型代码 |
-| GitLab 看板 | `shared/modelgo_prd`（project 46）| PM 派发的需求单 |
+| GitLab 看板 | `modelgo/shared/modelgo_prd`（project 46）| PM 派发的需求单 |
 | BUG | `qa/ai-quality-platform`（project 1）| 测试/线上反馈的缺陷 |
 
 **agent 不自行创建需求**。需求从 PRD 原型或飞书文档翻译成开发单，落到 GitLab 看板后 agent 认领执行。
@@ -205,7 +205,7 @@ node $S claim 100 --project 46  # PRD 看板
 ```
 
 **任务单边界（看板分工先判对地方，2026-08 教训：单建错仓两次）：**
-- **PM 需求单**（PRD 派下来的功能需求）→ `shared/modelgo_prd`(46)，生产验收回归证据也回这张单。
+- **PM 需求单**（PRD 派下来的功能需求）→ `modelgo/shared/modelgo_prd`(46)，生产验收回归证据也回这张单。
 - **开发内部任务单**（跨仓前端要求 / 技术债 / BUG 单 / 内部协作）→ `qa/ai-quality-platform`(1)，**这是用户指定的建单处**，别建在目标仓或 46。
 - 生产验收 Loop 中：已有需求方任务单时不再新增 QA 单，已有 QA 单只做验证、状态同步或关闭；**没有需求单的开发内部事项**（如对管理后台前端的校验要求）才在 QA 看板新建。
 
@@ -255,7 +255,7 @@ HTTP 200 不等于业务成功：必须同时记录 HTTP 状态和响应体 `cod
 
 #### 3. 需求方任务单的 SCQA 模板
 
-生产验收场景：先在 `shared/modelgo_prd` 找到需求方任务单；此时不要在 `qa/ai-quality-platform` 新建替代单（回归证据回需求方任务单）。一张任务单只对应一个可验证根因。开发内部任务（无对应 PM 需求单）按上方「任务单边界」建在 `qa/ai-quality-platform`，格式同样用 SCQA + 验收 checkbox。
+生产验收场景：先在 `modelgo/shared/modelgo_prd` 找到需求方任务单；此时不要在 `qa/ai-quality-platform` 新建替代单（回归证据回需求方任务单）。一张任务单只对应一个可验证根因。开发内部任务（无对应 PM 需求单）按上方「任务单边界」建在 `qa/ai-quality-platform`，格式同样用 SCQA + 验收 checkbox。
 
 ````md
 ## SCQA
@@ -339,7 +339,7 @@ HTTP 200 不等于业务成功：必须同时记录 HTTP 状态和响应体 `cod
 ```bash
 REPO=gitlab.ops.modelgo.com/qa/ai-quality-platform
 
-REQ_REPO=gitlab.ops.modelgo.com/shared/modelgo_prd
+REQ_REPO=gitlab.ops.modelgo.com/modelgo/shared/modelgo_prd
 
 # 回评需求方任务单（主记录）
 glab issue note <需求方任务单 IID> -R "$REQ_REPO" -m "<按上方回归结论模板填写>"
@@ -627,8 +627,8 @@ cs check test                        # 类型 + lint + 构建
 cs search <关键词>                    # 查项目文档和规则
 
 # 收工：只有目标环境回归证据齐全才可把需求方任务单移为待验证
-glab issue note <需求方 IID> -R gitlab.ops.modelgo.com/shared/modelgo_prd -m "<回归结论 + 截图 + 接口证据>"
-glab issue update <需求方 IID> -R gitlab.ops.modelgo.com/shared/modelgo_prd -l 待验证 -u 进行中
+glab issue note <需求方 IID> -R gitlab.ops.modelgo.com/modelgo/shared/modelgo_prd -m "<回归结论 + 截图 + 接口证据>"
+glab issue update <需求方 IID> -R gitlab.ops.modelgo.com/modelgo/shared/modelgo_prd -l 待验证 -u 进行中
 ```
 
 ## 8. 前端需求还原固定 Flow（先 UI，后接口）

@@ -13,7 +13,7 @@ import { ConsentBanner } from './components/consent/ConsentBanner'
 import { installAgentErrorReporter } from 'vite-plugin-agent-eyes/client'
 import { initDeviceFingerprint } from './lib/device-fingerprint'
 import { installDevAuth } from './lib/dev-auth'
-import { destroy as destroyTrack, init as initTrack, TrackApp, TrackRegion } from '@model-go/track'
+import { init as initTrack, TrackApp, TrackRegion } from '@model-go/track'
 import { installGlobalClientErrorReporting } from './lib/client-error-report'
 import { getMarket } from './lib/market'
 import { installChunkReloadGuard } from './lib/chunk-reload'
@@ -51,10 +51,8 @@ document.documentElement.dataset.consentRequired = consentRequired ? '1' : '0'
 adoptVisitorIdFromUrl(window.location.search)
 getOrCreateVisitorId()
 
-// 自建埋点与 GTM 身份同步只在允许统计时启动：名单外始终启动（照常统计，附 consent_required=0）；
-// 名单内等横幅「接受」后启动，「拒绝」时停止（SDK destroy 会丢弃缓冲并移除监听）。
+// 自建埋点不做同意门控：启动即 init（名单内外一致，统计照常，附 country / consent_required）。
 let trackStarted = false
-let stopIdentitySync: (() => void) | undefined
 
 function startTrack() {
   if (trackStarted) return
@@ -82,19 +80,30 @@ function startTrack() {
       return props
     },
   })
+}
+
+startTrack()
+
+// GTM dataLayer 身份同步（mg_identity）属于 Google 标签体系，只在允许 Google 统计时启动：
+// 名单外视为已同意；名单内须接受，拒绝时停止推送。
+let identitySyncStarted = false
+let stopIdentitySync: (() => void) | undefined
+
+function startIdentitySync() {
+  if (identitySyncStarted) return
+  identitySyncStarted = true
   stopIdentitySync = installDataLayerIdentitySync()
 }
 
-function stopTrack() {
-  if (!trackStarted) return
-  trackStarted = false
-  destroyTrack()
+function stopIdentitySyncNow() {
+  if (!identitySyncStarted) return
+  identitySyncStarted = false
   stopIdentitySync?.()
   stopIdentitySync = undefined
 }
 
-if (!consentRequired || hasAnalyticsConsent()) startTrack()
-onConsentChange((choice) => (choice === 'accept' ? startTrack() : stopTrack()))
+if (!consentRequired || hasAnalyticsConsent()) startIdentitySync()
+onConsentChange((choice) => (choice === 'accept' ? startIdentitySync() : stopIdentitySyncNow()))
 
 // 广告来源落地即捕获（投放归因，prd46#1271）：任何落地页的 gclid / utm 先存进 sessionStorage，
 // 否则从 /models?gclid=… 直接点头部「登录」进 /login（不带参数）时来源就丢了；OAuth 要整页跳出

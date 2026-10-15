@@ -132,6 +132,16 @@ pnpm check:api-contract
 
 ---
 
+## Cookie 同意与埋点
+
+权威口径（owner 2026-10-15 生效）：https://ocny5azjudjs.feishu.cn/wiki/QqpEw1YnIixWajkArOOcdzLXnIc
+
+- 横幅：仅名单内 36 国弹出（`src/config/consent-region.ts` + `src/lib/consent-region.ts`，`index.html` 内联一份，由 `scripts/check-consent-country-sync.mjs` 校验一致）。
+- **自建埋点不做同意门控**，启动即 init（`src/main.tsx`）。同意只约束 GTM 身份同步（`mg_identity` 推送 dataLayer）与 Google 标签。
+- 自建埋点公共属性：`country`、`consent_required`、`visitor_id`（第一方 cookie `mg_vid`，1 年，`src/lib/visitor-id.ts`；官网跳转带来的 `mg_vid` 本域无 cookie 时采纳）、`identity_number`（复用既有 `device_id`，即 FingerprintJS visitorId，同时以 `X-Device-Id` 请求头上送）、`url_params`（当前 URL 全部查询参数的 JSON，`src/lib/url-params.ts`）。
+
+⚠️ 待 owner 确认：飞书口径写"自建埋点……不写持久性标识、不跨站"，与 `visitor_id` 的 1 年期 cookie 冲突，以代码为准，口径需修订。
+
 ## ⚠️ 菜单 / 功能 / 版本更新 → 必须同步「权限 + 埋点」
 
 > **单一真源 = 权限目录** `src/config/permission-catalog.ts`（菜单 `menu_key` + `Permission ID`）。

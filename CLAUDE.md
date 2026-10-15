@@ -80,8 +80,11 @@ use_count: 0
 >
 >    **纯合并/回流动作（sync、backflow）一律不开 worktree** —— 那本来就是几条 git 命令。
 >
->    **收尾是 MR 参数，不是记忆力**：建 MR 一律带 `--remove-source-branch`，
->    合并后远端分支自动消失，本地 `git branch -d`。开了 worktree 的先 `worktree remove`。
+>    **收尾是 MR 参数，不是记忆力**：删源分支用 MR 的 `--remove-source-branch`，
+>    但**只加在合 `main` 那一次**。hotfix 分支要合**两次**（先 `test` 验证、后 `main` 上线），
+>    合 `test` 那次若带 `--remove-source-branch`，分支当场消失，合 `main` 时已无分支可用
+>    （2026-10-15 owner 纠正，当天实际踩到：只能重新 push 恢复分支再合 main）。
+>    上产后再 `git branch -d` 本地分支；开了 worktree 的先 `worktree remove`。
 >    定期体检：`bash scripts/branch-hygiene.sh`（列出已合并未删的分支与零改动的僵尸 worktree）。
 
 > ## 🚦 UI 改动开工前置（硬性 · 先做再动手）

@@ -12,50 +12,36 @@
          名单与版本号必须与 src/lib/consent-scope.ts、src/lib/consent.ts 保持一致。 -->
     <script>
       (function (w, d) {
+        // 与 src/config/consent-region.ts、src/lib/consent-region.ts 保持一致。
+        // 静态 SPA 不能 import 模块到 parser-blocking head；此处用浏览器 IANA 时区同步映射国家。
         var VERSION = '2026-10-v1';
-        var NEED_CONSENT = ['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH','TR','MK','RS','TH'];
-        var raw = (d.documentElement.getAttribute('data-country') || '').trim().toUpperCase();
-        if (raw === 'UK') raw = 'GB';
-        var country = /^[A-Z]{2}$/.test(raw) && raw !== 'XX' && raw !== 'T1' ? raw : null;
-        var required = country === null || NEED_CONSENT.indexOf(country) !== -1;
+        var REQUIRED = ['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH','TR','MK','RS','TH'];
+        var TZ_COUNTRY = {'Africa/Abidjan':'CI','Africa/Accra':'GH','Africa/Addis_Ababa':'ET','Africa/Algiers':'DZ','Africa/Asmara':'ER','Africa/Asmera':'ER','Africa/Bamako':'ML','Africa/Bangui':'CF','Africa/Banjul':'GM','Africa/Bissau':'GW','Africa/Blantyre':'MW','Africa/Brazzaville':'CG','Africa/Bujumbura':'BI','Africa/Cairo':'EG','Africa/Casablanca':'MA','Africa/Ceuta':'ES','Africa/Conakry':'GN','Africa/Dakar':'SN','Africa/Dar_es_Salaam':'TZ','Africa/Djibouti':'DJ','Africa/Douala':'CM','Africa/El_Aaiun':'EH','Africa/Freetown':'SL','Africa/Gaborone':'BW','Africa/Harare':'ZW','Africa/Johannesburg':'ZA','Africa/Juba':'SS','Africa/Kampala':'UG','Africa/Khartoum':'SD','Africa/Kigali':'RW','Africa/Kinshasa':'CD','Africa/Lagos':'NG','Africa/Libreville':'GA','Africa/Lome':'TG','Africa/Luanda':'AO','Africa/Lubumbashi':'CD','Africa/Lusaka':'ZM','Africa/Malabo':'GQ','Africa/Maputo':'MZ','Africa/Maseru':'LS','Africa/Mbabane':'SZ','Africa/Mogadishu':'SO','Africa/Monrovia':'LR','Africa/Nairobi':'KE','Africa/Ndjamena':'TD','Africa/Niamey':'NE','Africa/Nouakchott':'MR','Africa/Ouagadougou':'BF','Africa/Porto-Novo':'BJ','Africa/Sao_Tome':'ST','Africa/Timbuktu':'ML','Africa/Tripoli':'LY','Africa/Tunis':'TN','Africa/Windhoek':'NA','America/Adak':'US','America/Anchorage':'US','America/Anguilla':'AI','America/Antigua':'AG','America/Araguaina':'BR','America/Argentina/Buenos_Aires':'AR','America/Argentina/Catamarca':'AR','America/Argentina/ComodRivadavia':'AR','America/Argentina/Cordoba':'AR','America/Argentina/Jujuy':'AR','America/Argentina/La_Rioja':'AR','America/Argentina/Mendoza':'AR','America/Argentina/Rio_Gallegos':'AR','America/Argentina/Salta':'AR','America/Argentina/San_Juan':'AR','America/Argentina/San_Luis':'AR','America/Argentina/Tucuman':'AR','America/Argentina/Ushuaia':'AR','America/Aruba':'AW','America/Asuncion':'PY','America/Atikokan':'CA','America/Atka':'US','America/Bahia':'BR','America/Bahia_Banderas':'MX','America/Barbados':'BB','America/Belem':'BR','America/Belize':'BZ','America/Blanc-Sablon':'CA','America/Boa_Vista':'BR','America/Bogota':'CO','America/Boise':'US','America/Buenos_Aires':'AR','America/Cambridge_Bay':'CA','America/Campo_Grande':'BR','America/Cancun':'MX','America/Caracas':'VE','America/Catamarca':'AR','America/Cayenne':'GF','America/Cayman':'KY','America/Chicago':'US','America/Chihuahua':'MX','America/Ciudad_Juarez':'MX','America/Coral_Harbour':'CA','America/Cordoba':'AR','America/Costa_Rica':'CR','America/Coyhaique':'CL','America/Creston':'CA','America/Cuiaba':'BR','America/Curacao':'CW','America/Danmarkshavn':'GL','America/Dawson':'CA','America/Dawson_Creek':'CA','America/Denver':'US','America/Detroit':'US','America/Dominica':'DM','America/Edmonton':'CA','America/Eirunepe':'BR','America/El_Salvador':'SV','America/Ensenada':'MX','America/Fort_Nelson':'CA','America/Fort_Wayne':'US','America/Fortaleza':'BR','America/Glace_Bay':'CA','America/Godthab':'GL','America/Goose_Bay':'CA','America/Grand_Turk':'TC','America/Grenada':'GD','America/Guadeloupe':'GP','America/Guatemala':'GT','America/Guayaquil':'EC','America/Guyana':'GY','America/Halifax':'CA','America/Havana':'CU','America/Hermosillo':'MX','America/Indiana/Indianapolis':'US','America/Indiana/Knox':'US','America/Indiana/Marengo':'US','America/Indiana/Petersburg':'US','America/Indiana/Tell_City':'US','America/Indiana/Vevay':'US','America/Indiana/Vincennes':'US','America/Indiana/Winamac':'US','America/Indianapolis':'US','America/Inuvik':'CA','America/Iqaluit':'CA','America/Jamaica':'JM','America/Jujuy':'AR','America/Juneau':'US','America/Kentucky/Louisville':'US','America/Kentucky/Monticello':'US','America/Knox_IN':'US','America/Kralendijk':'BQ','America/La_Paz':'BO','America/Lima':'PE','America/Los_Angeles':'US','America/Louisville':'US','America/Lower_Princes':'SX','America/Maceio':'BR','America/Managua':'NI','America/Manaus':'BR','America/Marigot':'MF','America/Martinique':'MQ','America/Matamoros':'MX','America/Mazatlan':'MX','America/Mendoza':'AR','America/Menominee':'US','America/Merida':'MX','America/Metlakatla':'US','America/Mexico_City':'MX','America/Miquelon':'PM','America/Moncton':'CA','America/Monterrey':'MX','America/Montevideo':'UY','America/Montreal':'CA','America/Montserrat':'MS','America/Nassau':'BS','America/New_York':'US','America/Nipigon':'CA','America/Nome':'US','America/Noronha':'BR','America/North_Dakota/Beulah':'US','America/North_Dakota/Center':'US','America/North_Dakota/New_Salem':'US','America/Nuuk':'GL','America/Ojinaga':'MX','America/Panama':'PA','America/Pangnirtung':'CA','America/Paramaribo':'SR','America/Phoenix':'US','America/Port-au-Prince':'HT','America/Port_of_Spain':'TT','America/Porto_Acre':'BR','America/Porto_Velho':'BR','America/Puerto_Rico':'PR','America/Punta_Arenas':'CL','America/Rainy_River':'CA','America/Rankin_Inlet':'CA','America/Recife':'BR','America/Regina':'CA','America/Resolute':'CA','America/Rio_Branco':'BR','America/Rosario':'AR','America/Santa_Isabel':'MX','America/Santarem':'BR','America/Santiago':'CL','America/Santo_Domingo':'DO','America/Sao_Paulo':'BR','America/Scoresbysund':'GL','America/Shiprock':'US','America/Sitka':'US','America/St_Barthelemy':'BL','America/St_Johns':'CA','America/St_Kitts':'KN','America/St_Lucia':'LC','America/St_Thomas':'VI','America/St_Vincent':'VC','America/Swift_Current':'CA','America/Tegucigalpa':'HN','America/Thule':'GL','America/Thunder_Bay':'CA','America/Tijuana':'MX','America/Toronto':'CA','America/Tortola':'VG','America/Vancouver':'CA','America/Virgin':'VI','America/Whitehorse':'CA','America/Winnipeg':'CA','America/Yakutat':'US','America/Yellowknife':'CA','Antarctica/Casey':'AQ','Antarctica/Davis':'AQ','Antarctica/DumontDUrville':'AQ','Antarctica/Macquarie':'AU','Antarctica/Mawson':'AQ','Antarctica/McMurdo':'AQ','Antarctica/Palmer':'AQ','Antarctica/Rothera':'AQ','Antarctica/South_Pole':'AQ','Antarctica/Syowa':'AQ','Antarctica/Troll':'AQ','Antarctica/Vostok':'AQ','Arctic/Longyearbyen':'SJ','Asia/Aden':'YE','Asia/Almaty':'KZ','Asia/Amman':'JO','Asia/Anadyr':'RU','Asia/Aqtau':'KZ','Asia/Aqtobe':'KZ','Asia/Ashgabat':'TM','Asia/Ashkhabad':'TM','Asia/Atyrau':'KZ','Asia/Baghdad':'IQ','Asia/Bahrain':'BH','Asia/Baku':'AZ','Asia/Bangkok':'TH','Asia/Barnaul':'RU','Asia/Beirut':'LB','Asia/Bishkek':'KG','Asia/Brunei':'BN','Asia/Calcutta':'IN','Asia/Chita':'RU','Asia/Choibalsan':'MN','Asia/Chongqing':'CN','Asia/Chungking':'CN','Asia/Colombo':'LK','Asia/Dacca':'BD','Asia/Damascus':'SY','Asia/Dhaka':'BD','Asia/Dili':'TL','Asia/Dubai':'AE','Asia/Dushanbe':'TJ','Asia/Famagusta':'CY','Asia/Gaza':'PS','Asia/Harbin':'CN','Asia/Hebron':'PS','Asia/Ho_Chi_Minh':'VN','Asia/Hong_Kong':'HK','Asia/Hovd':'MN','Asia/Irkutsk':'RU','Asia/Istanbul':'TR','Asia/Jakarta':'ID','Asia/Jayapura':'ID','Asia/Jerusalem':'IL','Asia/Kabul':'AF','Asia/Kamchatka':'RU','Asia/Karachi':'PK','Asia/Kashgar':'CN','Asia/Kathmandu':'NP','Asia/Katmandu':'NP','Asia/Khandyga':'RU','Asia/Kolkata':'IN','Asia/Krasnoyarsk':'RU','Asia/Kuala_Lumpur':'MY','Asia/Kuching':'MY','Asia/Kuwait':'KW','Asia/Macao':'MO','Asia/Macau':'MO','Asia/Magadan':'RU','Asia/Makassar':'ID','Asia/Manila':'PH','Asia/Muscat':'OM','Asia/Nicosia':'CY','Asia/Novokuznetsk':'RU','Asia/Novosibirsk':'RU','Asia/Omsk':'RU','Asia/Oral':'KZ','Asia/Phnom_Penh':'KH','Asia/Pontianak':'ID','Asia/Pyongyang':'KP','Asia/Qatar':'QA','Asia/Qostanay':'KZ','Asia/Qyzylorda':'KZ','Asia/Rangoon':'MM','Asia/Riyadh':'SA','Asia/Saigon':'VN','Asia/Sakhalin':'RU','Asia/Samarkand':'UZ','Asia/Seoul':'KR','Asia/Shanghai':'CN','Asia/Singapore':'SG','Asia/Srednekolymsk':'RU','Asia/Taipei':'TW','Asia/Tashkent':'UZ','Asia/Tbilisi':'GE','Asia/Tehran':'IR','Asia/Tel_Aviv':'IL','Asia/Thimbu':'BT','Asia/Thimphu':'BT','Asia/Tokyo':'JP','Asia/Tomsk':'RU','Asia/Ujung_Pandang':'ID','Asia/Ulaanbaatar':'MN','Asia/Ulan_Bator':'MN','Asia/Urumqi':'CN','Asia/Ust-Nera':'RU','Asia/Vientiane':'LA','Asia/Vladivostok':'RU','Asia/Yakutsk':'RU','Asia/Yangon':'MM','Asia/Yekaterinburg':'RU','Asia/Yerevan':'AM','Atlantic/Azores':'PT','Atlantic/Bermuda':'BM','Atlantic/Canary':'ES','Atlantic/Cape_Verde':'CV','Atlantic/Faeroe':'FO','Atlantic/Faroe':'FO','Atlantic/Jan_Mayen':'SJ','Atlantic/Madeira':'PT','Atlantic/Reykjavik':'IS','Atlantic/South_Georgia':'GS','Atlantic/St_Helena':'SH','Atlantic/Stanley':'FK','Australia/ACT':'AU','Australia/Adelaide':'AU','Australia/Brisbane':'AU','Australia/Broken_Hill':'AU','Australia/Canberra':'AU','Australia/Currie':'AU','Australia/Darwin':'AU','Australia/Eucla':'AU','Australia/Hobart':'AU','Australia/LHI':'AU','Australia/Lindeman':'AU','Australia/Lord_Howe':'AU','Australia/Melbourne':'AU','Australia/NSW':'AU','Australia/North':'AU','Australia/Perth':'AU','Australia/Queensland':'AU','Australia/South':'AU','Australia/Sydney':'AU','Australia/Tasmania':'AU','Australia/Victoria':'AU','Australia/West':'AU','Australia/Yancowinna':'AU','Brazil/Acre':'BR','Brazil/DeNoronha':'BR','Brazil/East':'BR','Brazil/West':'BR','Canada/Atlantic':'CA','Canada/Central':'CA','Canada/Eastern':'CA','Canada/Mountain':'CA','Canada/Newfoundland':'CA','Canada/Pacific':'CA','Canada/Saskatchewan':'CA','Canada/Yukon':'CA','Chile/Continental':'CL','Chile/EasterIsland':'CL','Cuba':'CU','Egypt':'EG','Eire':'IE','Europe/Amsterdam':'NL','Europe/Andorra':'AD','Europe/Astrakhan':'RU','Europe/Athens':'GR','Europe/Belfast':'GB','Europe/Belgrade':'RS','Europe/Berlin':'DE','Europe/Bratislava':'SK','Europe/Brussels':'BE','Europe/Bucharest':'RO','Europe/Budapest':'HU','Europe/Busingen':'DE','Europe/Chisinau':'MD','Europe/Copenhagen':'DK','Europe/Dublin':'IE','Europe/Gibraltar':'GI','Europe/Guernsey':'GG','Europe/Helsinki':'FI','Europe/Isle_of_Man':'IM','Europe/Istanbul':'TR','Europe/Jersey':'JE','Europe/Kaliningrad':'RU','Europe/Kiev':'UA','Europe/Kirov':'RU','Europe/Kyiv':'UA','Europe/Lisbon':'PT','Europe/Ljubljana':'SI','Europe/London':'GB','Europe/Luxembourg':'LU','Europe/Madrid':'ES','Europe/Malta':'MT','Europe/Mariehamn':'AX','Europe/Minsk':'BY','Europe/Monaco':'MC','Europe/Moscow':'RU','Europe/Nicosia':'CY','Europe/Oslo':'NO','Europe/Paris':'FR','Europe/Podgorica':'ME','Europe/Prague':'CZ','Europe/Riga':'LV','Europe/Rome':'IT','Europe/Samara':'RU','Europe/San_Marino':'SM','Europe/Sarajevo':'BA','Europe/Saratov':'RU','Europe/Simferopol':'UA','Europe/Skopje':'MK','Europe/Sofia':'BG','Europe/Stockholm':'SE','Europe/Tallinn':'EE','Europe/Tirane':'AL','Europe/Tiraspol':'MD','Europe/Ulyanovsk':'RU','Europe/Uzhgorod':'UA','Europe/Vaduz':'LI','Europe/Vatican':'VA','Europe/Vienna':'AT','Europe/Vilnius':'LT','Europe/Volgograd':'RU','Europe/Warsaw':'PL','Europe/Zagreb':'HR','Europe/Zaporozhye':'UA','Europe/Zurich':'CH','GB':'GB','GB-Eire':'GB','Hongkong':'HK','Iceland':'IS','Indian/Antananarivo':'MG','Indian/Chagos':'IO','Indian/Christmas':'CX','Indian/Cocos':'CC','Indian/Comoro':'KM','Indian/Kerguelen':'TF','Indian/Mahe':'SC','Indian/Maldives':'MV','Indian/Mauritius':'MU','Indian/Mayotte':'YT','Indian/Reunion':'RE','Iran':'IR','Israel':'IL','Jamaica':'JM','Japan':'JP','Kwajalein':'MH','Libya':'LY','Mexico/BajaNorte':'MX','Mexico/BajaSur':'MX','Mexico/General':'MX','NZ':'NZ','NZ-CHAT':'NZ','Navajo':'US','PRC':'CN','Pacific/Apia':'WS','Pacific/Auckland':'NZ','Pacific/Bougainville':'PG','Pacific/Chatham':'NZ','Pacific/Chuuk':'FM','Pacific/Easter':'CL','Pacific/Efate':'VU','Pacific/Enderbury':'KI','Pacific/Fakaofo':'TK','Pacific/Fiji':'FJ','Pacific/Funafuti':'TV','Pacific/Galapagos':'EC','Pacific/Gambier':'PF','Pacific/Guadalcanal':'SB','Pacific/Guam':'GU','Pacific/Honolulu':'US','Pacific/Johnston':'UM','Pacific/Kanton':'KI','Pacific/Kiritimati':'KI','Pacific/Kosrae':'FM','Pacific/Kwajalein':'MH','Pacific/Majuro':'MH','Pacific/Marquesas':'PF','Pacific/Midway':'UM','Pacific/Nauru':'NR','Pacific/Niue':'NU','Pacific/Norfolk':'NF','Pacific/Noumea':'NC','Pacific/Pago_Pago':'AS','Pacific/Palau':'PW','Pacific/Pitcairn':'PN','Pacific/Pohnpei':'FM','Pacific/Ponape':'FM','Pacific/Port_Moresby':'PG','Pacific/Rarotonga':'CK','Pacific/Saipan':'MP','Pacific/Samoa':'AS','Pacific/Tahiti':'PF','Pacific/Tarawa':'KI','Pacific/Tongatapu':'TO','Pacific/Truk':'FM','Pacific/Wake':'UM','Pacific/Wallis':'WF','Pacific/Yap':'FM','Poland':'PL','Portugal':'PT','ROC':'TW','ROK':'KR','Singapore':'SG','Turkey':'TR','US/Alaska':'US','US/Aleutian':'US','US/Arizona':'US','US/Central':'US','US/East-Indiana':'US','US/Eastern':'US','US/Hawaii':'US','US/Indiana-Starke':'US','US/Michigan':'US','US/Mountain':'US','US/Pacific':'US','US/Samoa':'AS','W-SU':'RU'};
+        var tz = '';
+        try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (_) {}
+        var country = TZ_COUNTRY[tz] || null;
+        var required = country === null || REQUIRED.indexOf(country) !== -1;
         var m = d.cookie.match(/(?:^|;\s*)mg_consent=([^;]*)/);
         var accepted = !!(m && m[1] === VERSION + ':accept');
         var granted = !required || accepted;
         var v = granted ? 'granted' : 'denied';
+        d.documentElement.dataset.country = country || '';
+        d.documentElement.dataset.consentRequired = required ? '1' : '0';
         w.dataLayer = w.dataLayer || [];
         w.gtag = w.gtag || function () { w.dataLayer.push(arguments); };
         w.gtag('consent', 'default', { ad_storage: v, analytics_storage: v, ad_user_data: v, ad_personalization: v });
-        w.mgConsentRequired = required;
-
-        // 容器 GTM-PCHLTL6L（市场侧 Google Ads 转化追踪用）。与下方 GA4 是两条加载路径，当前阶段刻意并存：
-        // 等市场侧在 GTM 里配好 GA4 标签后，必须在同一发版窗口内摘掉下方 gtag，否则同一属性加载两次、事件翻倍。
-        // 本仓一份 index.html 同时发 console.modelgo.com 与 console.modelgo.ai，两个域名共用这一个容器。
         w.mgLoadGoogleTags = function () {
           if (w.mgGoogleTagsLoaded) return;
           w.mgGoogleTagsLoaded = true;
-          (function (s, l, i) {
-            w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
-            var f = d.getElementsByTagName(s)[0], j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
-            j.async = true;
-            j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
-            f.parentNode.insertBefore(j, f);
-          })('script', 'dataLayer', 'GTM-PCHLTL6L');
-
-          // GA4（G-WCEKH5ZZEH）：对外门户统一接入，与官网同一属性。
-          // linker.domains 是跨域衡量的双向握手名单，四端（国内外官网 + 控制台 cn/intl 两个域名）必须写同一份。
+          w.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+          var f = d.getElementsByTagName('script')[0], j = d.createElement('script');
+          j.async = true; j.src = 'https://www.googletagmanager.com/gtm.js?id=GTM-PCHLTL6L';
+          f.parentNode.insertBefore(j, f);
           var g = d.createElement('script');
-          g.async = true;
-          g.src = 'https://www.googletagmanager.com/gtag/js?id=G-WCEKH5ZZEH';
-          d.head.appendChild(g);
+          g.async = true; g.src = 'https://www.googletagmanager.com/gtag/js?id=G-WCEKH5ZZEH'; d.head.appendChild(g);
           w.gtag('js', new Date());
-          w.gtag('config', 'G-WCEKH5ZZEH', {
-            linker: {
-              domains: ['modelgo.ai', 'console.modelgo.ai', 'modelgo.com', 'console.modelgo.com'],
-              accept_incoming: true
-            }
-          });
+          w.gtag('config', 'G-WCEKH5ZZEH', { linker: { domains: ['modelgo.ai','console.modelgo.ai','modelgo.com','console.modelgo.com'], accept_incoming: true } });
         };
-
         if (granted) w.mgLoadGoogleTags();
       })(window, document);
     </script>
@@ -136,16 +122,7 @@
     </script>
   </head>
   <body>
-    <!-- Google Tag Manager (noscript)：禁用 JS 时的兜底，须紧跟 <body> 之后 -->
-    <noscript
-      ><iframe
-        src="https://www.googletagmanager.com/ns.html?id=GTM-PCHLTL6L"
-        height="0"
-        width="0"
-        style="display: none; visibility: hidden"
-      ></iframe
-    ></noscript>
-    <div id="root"></div>
+<div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

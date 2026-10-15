@@ -38,17 +38,20 @@ export function currentIdentity(): { user_id?: string; workspace_id?: string } {
 let lastIdentityKey = '|'
 
 /**
- * 身份变化时推 `mg_identity`。只在 `main.tsx` 调一次；setAuth 同步触发订阅，
- * 所以新注册时 `mg_identity` 一定先于 `sign_up` 进 dataLayer。
+ * 身份变化时推 `mg_identity`。由 `main.tsx` 在允许统计时启动（名单内为接受之后），
+ * 启动时先补推一次当前身份，避免接受横幅前已登录的访客漏掉 user_id；
+ * 返回的函数用于撤销同意时停止订阅。setAuth 同步触发订阅，所以新注册时 `mg_identity` 一定先于 `sign_up`。
  */
 export function installDataLayerIdentitySync(): () => void {
-  return useAuthStore.subscribe(() => {
+  const sync = () => {
     const identity = currentIdentity()
     const key = `${identity.user_id ?? ''}|${identity.workspace_id ?? ''}`
     if (key === lastIdentityKey) return
     lastIdentityKey = key
     pushDataLayer({ event: 'mg_identity', ...identity })
-  })
+  }
+  sync()
+  return useAuthStore.subscribe(sync)
 }
 
 /** 仅供测试：重置去重状态。 */

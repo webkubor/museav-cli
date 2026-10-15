@@ -92,7 +92,7 @@ export function MetricsSection({
     },
     {
       title: t('dashboard.workbench.metrics.spend'),
-      value: summary ? formatMoney(summary.total.spend.amount, symbol) : undefined,
+      value: summary?.total?.spend ? formatMoney(summary.total.spend.amount, symbol) : undefined,
       loading: summaryLoading,
       sub: spendSub,
       color: 'var(--mg-warning)',
@@ -118,7 +118,7 @@ export function MetricsSection({
     },
     ...(showBalance ? [{
       title: t('dashboard.workbench.metrics.balance'),
-      value: balance ? formatMoney(balance.available.amount, symbol) : undefined,
+      value: balance?.available ? formatMoney(balance.available.amount, symbol) : undefined,
       loading: balanceLoading,
       color: lowBalance ? 'var(--mg-warning)' : 'var(--mg-primary)',
       glowColor: lowBalance ? 'var(--mg-warning-bg-hover)' : 'var(--brand-glow)',

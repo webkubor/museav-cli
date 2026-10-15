@@ -35,9 +35,9 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
   const { data: balance, isLoading: balanceLoading, isError: balanceError, refetch: refetchBalance } = useBalance(tenantId)
   const { data: breakdown, isLoading: breakdownLoading, isError: breakdownError, refetch: refetchBreakdown } = useBalanceBreakdown(tenantId)
   const spendableBalance = calculateSpendableBalance(
-    balance?.available.amount,
-    breakdown?.gift.amount,
-    breakdown?.reward.amount,
+    balance?.available?.amount,
+    breakdown?.gift?.amount,
+    breakdown?.reward?.amount,
   )
   const { main: spendableTotal } = formatBalance(
     spendableBalance === undefined ? undefined : String(spendableBalance),
@@ -147,7 +147,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
             <div className="flex items-baseline gap-0.5 mt-1 select-none">
               <span className="text-xs font-semibold text-mg-text-3">{currencySymbol}</span>
               <span className={cn('text-lg font-bold text-mg-text-1 tabular-nums balance-amount', activeTab === 'main' ? 'amount-main-active' : '')}>
-                {formatBalance(breakdown?.main.amount).main}
+                {formatBalance(breakdown?.main?.amount).main}
               </span>
             </div>
           </button>
@@ -164,7 +164,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
             <div className="flex items-baseline gap-0.5 mt-1 select-none">
               <span className="text-xs font-semibold text-mg-text-3">{currencySymbol}</span>
               <span className={cn('text-lg font-bold text-mg-text-1 tabular-nums balance-amount', activeTab === 'gift' ? 'amount-gift-active' : '')}>
-                {formatBalance(breakdown?.gift.amount).main}
+                {formatBalance(breakdown?.gift?.amount).main}
               </span>
             </div>
           </button>
@@ -181,7 +181,7 @@ export function BalanceCard({ tenantId, currencySymbol, activeTab, onTabChange }
             <div className="flex items-baseline gap-0.5 mt-1 select-none">
               <span className="text-xs font-semibold text-mg-text-3">{currencySymbol}</span>
               <span className={cn('text-lg font-bold text-mg-text-1 tabular-nums balance-amount', activeTab === 'reward' ? 'amount-reward-active' : '')}>
-                {formatBalance(breakdown?.reward.amount).main}
+                {formatBalance(breakdown?.reward?.amount).main}
               </span>
             </div>
           </button>

@@ -34,9 +34,10 @@ export function getBalance(tenantId: string) {
 
 /** 余额细分：主余额 / 赠送余额 / 奖励余额（账单页三卡 + 模型体验免费额度复用） */
 export interface BalanceBreakdown {
-  main: Money
-  gift: Money
-  reward: Money
+  // 三桶同样可选，真源为生成类型 CreditsBalanceBreakdown（gift?/main?/reward?）——见 prd46#1342
+  main?: Money
+  gift?: Money
+  reward?: Money
 }
 
 /** GET /tenants/:tenantId/balance/breakdown — 余额细分（cash/grant/rebate 三桶，#93） */

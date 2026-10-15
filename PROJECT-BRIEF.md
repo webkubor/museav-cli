@@ -55,7 +55,7 @@
 | 看板 | 地址 | 用途 |
 |:---|:---|:---|
 | QA 任务看板 | `qa/ai-quality-platform` (project 1) | 开发/BUG 单 |
-| PRD 派单 | `shared/modelgo_prd` (project 46) | PM 需求单 |
+| PRD 派单 | `modelgo/shared/modelgo_prd` (project 46) | PM 需求单 |
 
 **看板操作**：加载 `gitlab-board` skill，使用 `glab issue` 原生命令；生产验收失败必须走 `docs/COLLABORATION.md` 的「生产验收 → QA → 回归 Loop」，附 SCQA、脱敏接口证据与截图。
 

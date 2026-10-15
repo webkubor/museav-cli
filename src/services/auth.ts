@@ -5,6 +5,7 @@
  */
 import { apiBaseUrl, get, post } from '@/lib/request'
 import { setCsrfToken } from '@/lib/auth/csrf-token'
+import { readVisitorId } from '@/lib/visitor-id'
 import { resolveAdSource, type AdSourceFields } from '@/pages/signup/ad-source'
 import { resolveReferralCode } from '@/pages/signup/referral-code'
 import type { AuthMailTTLResponse } from '@/interfaces/auth'
@@ -21,6 +22,21 @@ import type {
 // 仅携带非空人机校验结果；是否允许缺失由各端点决定，邮箱验证码登录失败关闭。
 function withCaptcha<T extends object>(body: T, captchaVerifyParam?: string | null): T {
   return captchaVerifyParam ? { ...body, captcha_verify_param: captchaVerifyParam } : body
+}
+
+/**
+ * 统一访客 ID（prd46#1355）：随**建号**请求上送，后端据此把游客行为、账号与订单串成一条线，
+ * 广告带来的游客在注册/付费后仍能回指到同一访客（订单关联 visitor_id）。
+ * 没有 cookie（或格式不合法）时整条字段不带，请求体与改动前一致。
+ *
+ * 取的是第一方 cookie `mg_vid`（lib/visitor-id.ts），启动时 main.tsx 的 getOrCreateVisitorId 已保证
+ * 生成，这里只读不创建。后端契约（test Swagger 实测）覆盖三个请求体
+ * auth.RegisterRequest / auth.EmailCodeLoginRequest / auth.SMSLoginRequest，
+ * 以及浏览器导航的 GET /auth/oauth/{provider}/authorize 查询参数。
+ */
+function visitorIdField(): { visitor_id?: string } {
+  const visitorId = readVisitorId()
+  return visitorId ? { visitor_id: visitorId } : {}
 }
 
 /** 发送登录/注册邮箱验证码（#1092）；已注册与新邮箱均返回相同有效期契约。 */
@@ -54,6 +70,8 @@ export function emailCodeLoginRegister(
         ...(invitationToken ? { invitation_token: invitationToken } : {}),
         // 广告来源（投放归因）：无广告参数时不带字段，老流量请求体与改动前一致
         ...(adSource && Object.keys(adSource).length > 0 ? adSource : {}),
+        // 统一访客 ID（prd46#1355）
+        ...visitorIdField(),
       },
       captchaVerifyParam,
     ),
@@ -114,6 +132,8 @@ export function phoneLoginRegister(
         code,
         ...(referralCode ? { referral_code: referralCode } : {}),
         ...(adSource && Object.keys(adSource).length > 0 ? adSource : {}),
+        // 统一访客 ID（prd46#1355）
+        ...visitorIdField(),
       },
       captchaVerifyParam
     )
@@ -173,6 +193,9 @@ export function oauthAuthorizeUrl(
     for (const [key, value] of Object.entries(adSource ?? {})) {
       if (value) query.set(key, value)
     }
+    // prd46#1355：OAuth 首次授权同样会建号，访客 ID 走查询参数，后端存进 OAuth state、回调建号时落库
+    const visitorId = readVisitorId()
+    if (visitorId) query.set('visitor_id', visitorId)
     // 推荐码格式校验在 resolveReferralCode 内统一完成（邮箱 / 手机号 / OAuth 三个入口一致）
     const referralCode = resolveReferralCode(current)
     if (referralCode) query.set('referral_code', referralCode)

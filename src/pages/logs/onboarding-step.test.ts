@@ -68,17 +68,18 @@ describe('canCompleteRequestLogStep', () => {
   it.each([
     { call_kind: 'async_task' } as const,
     { call_mode: 'async' } as const,
-  ])('异步任务不算证据（规格 §7.2 明写）：%o', (marker) => {
-    expect(canCompleteRequestLogStep(makeRow(marker))).toBe(false)
+  ])('异步任务的日志详情同样算证据（#1341 起不再排除）：%o', (marker) => {
+    expect(canCompleteRequestLogStep(makeRow(marker))).toBe(true)
   })
 
-  it('未成功的调用不算证据（规格 §7.2 要成功调用）', () => {
-    expect(canCompleteRequestLogStep(makeRow({ status: 'failed' }))).toBe(false)
-    expect(canCompleteRequestLogStep(makeRow({ status: 'rejected' }))).toBe(false)
-    expect(canCompleteRequestLogStep(makeRow({ status: 'accepted' }))).toBe(false)
-  })
+  it.each(['failed', 'rejected', 'accepted'] as const)(
+    '未成功（%s）的调用同样算证据（#1341：非模型体验来源即可）',
+    (status) => {
+      expect(canCompleteRequestLogStep(makeRow({ status }))).toBe(true)
+    },
+  )
 
-  it('模型体验 + 未成功：两条否决同时命中也只是不算', () => {
+  it('模型体验 + 未成功：仍不算 —— 模型体验这条否决与调用状态无关', () => {
     expect(canCompleteRequestLogStep(makeRow({ api_key_type: 'trial', status: 'failed' }))).toBe(
       false,
     )

@@ -326,7 +326,7 @@ export function OnboardingGuide({
       <button
         aria-expanded={open}
         aria-haspopup="dialog"
-        aria-label={t('onboarding.title')}
+        aria-label={t('onboarding.entryLabel', { reward: rewardLabel })}
         className="onboarding-guide-entry"
         onClick={() => onOpenChange(!open)}
         ref={entryRef}
@@ -341,7 +341,7 @@ export function OnboardingGuide({
         <span className="onboarding-guide-entry-icon" aria-hidden="true">
           <LuCoins size={18} />
         </span>
-        <strong className="onboarding-guide-entry-label">{t('onboarding.title')}</strong>
+        <strong className="onboarding-guide-entry-label">{t('onboarding.entryLabel', { reward: rewardLabel })}</strong>
         {!floating ? (
           <span className="onboarding-guide-entry-progress">
             {completedCount}/{totalSteps}

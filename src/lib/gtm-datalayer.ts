@@ -9,7 +9,8 @@
  * 推送的事件（市场侧按这个契约在 GTM 里配触发器与数据层变量）：
  * - `mg_identity`：登录态或当前工作空间变化时推一次，带 `user_id`（account_id）/ `workspace_id`；
  *   登出时两个字段推 undefined，清掉 GTM 数据模型里的旧值。
- * - `sign_up`：新注册成功，带 `method` / `user_id` / `workspace_id` 与注册时的广告来源（见 lib/new-account.ts）。
+ * - `sign_up`：新注册成功，带 `method` / `user_id` / `workspace_id`、注册时的广告来源，以及 GA4 / Google Ads 标识
+ *   `ga_client_id` / `ga_session_id` / `gcl_aw`（见 lib/new-account.ts、lib/ga-ids.ts）。
  *
  * 不推邮箱、手机号等明文，只推内部稳定 ID。推送失败静默，不阻断业务。
  */
@@ -37,17 +38,20 @@ export function currentIdentity(): { user_id?: string; workspace_id?: string } {
 let lastIdentityKey = '|'
 
 /**
- * 身份变化时推 `mg_identity`。只在 `main.tsx` 调一次；setAuth 同步触发订阅，
- * 所以新注册时 `mg_identity` 一定先于 `sign_up` 进 dataLayer。
+ * 身份变化时推 `mg_identity`。由 `main.tsx` 在允许统计时启动（名单内为接受之后），
+ * 启动时先补推一次当前身份，避免接受横幅前已登录的访客漏掉 user_id；
+ * 返回的函数用于撤销同意时停止订阅。setAuth 同步触发订阅，所以新注册时 `mg_identity` 一定先于 `sign_up`。
  */
 export function installDataLayerIdentitySync(): () => void {
-  return useAuthStore.subscribe(() => {
+  const sync = () => {
     const identity = currentIdentity()
     const key = `${identity.user_id ?? ''}|${identity.workspace_id ?? ''}`
     if (key === lastIdentityKey) return
     lastIdentityKey = key
     pushDataLayer({ event: 'mg_identity', ...identity })
-  })
+  }
+  sync()
+  return useAuthStore.subscribe(sync)
 }
 
 /** 仅供测试：重置去重状态。 */

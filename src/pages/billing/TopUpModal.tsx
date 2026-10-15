@@ -300,7 +300,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
         if (!redirectURL) {
           paymentWindow?.close()
           // 下单成功但拿不到支付跳转地址：视为提交侧失败，结果尚未同步到支付渠道
-          trackEvent('billing_recharge_result', { result: 'fail', failure_reason: 'missing_redirect_url', pay_channel: submit.channel })
+          trackEvent('billing_recharge_result', { failure_reason: 'missing_redirect_url', pay_channel: submit.channel }, { result: 'fail' })
           appToast.error(t('billing.rechargeModal.error'))
           return
         }
@@ -317,12 +317,12 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
         if (isQuoteConflictError(err)) {
           setQuoteChangedNotice(true)
           void applyConflictQuote(err, submit.amount, submitCustom, shownQuote)
-          trackEvent('billing_recharge_result', { result: 'fail', failure_reason: 'quote_changed', pay_channel: submit.channel })
+          trackEvent('billing_recharge_result', { failure_reason: 'quote_changed', pay_channel: submit.channel }, { result: 'fail' })
           return
         }
         // §11.2 billing_recharge_result：下单请求本身失败（跳支付渠道前），alipay/stripe 的渠道侧
         // 支付结果目前无回跳页可读取（现状缺口，非本单埋点范围），只有此处 + 微信收银台轮询能拿到结果
-        trackEvent('billing_recharge_result', { result: 'fail', failure_reason: err.message || 'create_recharge_failed', pay_channel: submit.channel })
+        trackEvent('billing_recharge_result', { failure_reason: err.message || 'create_recharge_failed', pay_channel: submit.channel }, { result: 'fail' })
       },
     })
   }

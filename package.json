@@ -31,7 +31,7 @@
     "audit:crawl": "node scripts/check-crawl-files.mjs"
   },
   "dependencies": {
-    "@fingerprintjs/fingerprintjs": "^5.2.0",
+    "@fingerprintjs/fingerprintjs": "^4.6.2",
     "@hookform/resolvers": "^5.4.0",
     "@lobehub/icons": "^5.8.0",
     "@model-go/icons": "3.1.0",

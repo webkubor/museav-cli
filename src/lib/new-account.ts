@@ -29,6 +29,7 @@
  */
 import { trackEvent } from '@/lib/track'
 import { currentIdentity, pushDataLayer } from '@/lib/gtm-datalayer'
+import { readGaIdentifiers } from '@/lib/ga-ids'
 import { readPersistedAdAttribution, type AdAttributionFields } from '@/pages/signup/ad-source'
 
 /** OAuth 回跳 URL 上的新注册标记参数名（后端 web-api!90 / permissions!56 契约）。 */
@@ -90,9 +91,12 @@ export function trackSignUp(method: AuthMethod, isNewAccount?: boolean, adAttrib
   // 两个时间戳用于闭环：reg_click_ts 是官网点击跳往控制台的时刻（经 URL 带过来，见 ad-source.ts），
   // reg_success_ts 是注册成功的时刻。两条线都带上，便于算「点击→注册」耗时与来源是否仍有效。
   const timing = { ...adAttribution, reg_success_ts: String(Date.now()) }
-  trackEvent('sign_up', { method, ...timing }, { result: 'success' })
+  // GA4 client_id / session_id 与 Google Ads 的 gcl_aw（gclid）：让市场侧把这条注册 join 回 Google Ads 归因的那次 GA4 会话。
+  // 同步读一次 cookie，两条腿共用同一份快照；读不到的字段直接省略（见 lib/ga-ids.ts）。
+  const ga = readGaIdentifiers()
+  trackEvent('sign_up', { method, ...timing, ...ga }, { result: 'success' })
   // 身份取调用时的 store：各触发点都在 setAuth 之后调用，这里已是新账号。
-  pushDataLayer({ event: 'sign_up', method, ...currentIdentity(), ...timing })
+  pushDataLayer({ event: 'sign_up', method, ...currentIdentity(), ...timing, ...ga })
 }
 
 /**

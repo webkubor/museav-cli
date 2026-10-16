@@ -21,8 +21,8 @@ importers:
         specifier: 3.1.0
         version: 3.1.0
       '@model-go/track':
-        specifier: ^0.4.0
-        version: 0.4.0(react@19.2.6)
+        specifier: ^0.4.1
+        version: 0.4.1(react@19.2.6)
       '@radix-ui/react-avatar':
         specifier: ^1.1.11
         version: 1.1.11(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -726,8 +726,8 @@ packages:
     resolution: {integrity: sha512-NwCNGcVkRsNcsXdst7uvMbRy1rjV+CnJslH6r11vcqjQUe0+zRYlCkKlhw7O9sod0N/gPXVssA20OBBZT9FSgA==}
     engines: {bun: '>=1.2', node: '>=20'}
 
-  '@model-go/track@0.4.0':
-    resolution: {integrity: sha512-j8zzsH1lGtMjxepRyKGhhzYlBGx87HUvC/LkIBMxhUFq90eZe89O6e14OiNYGxe8EWkjUITAsILhTVR5IFljqg==}
+  '@model-go/track@0.4.1':
+    resolution: {integrity: sha512-7jSuP3ntKa5gpLYr1+uemQy7v3ICkWLTI4KS3lubQiggYnj/xzPaSwVFQL2sYf5EfVXq/DhAKbYV9znDWtcvMA==}
     engines: {node: '>=18'}
     peerDependencies:
       react: '>=18'
@@ -5677,7 +5677,7 @@ snapshots:
 
   '@model-go/icons@3.1.0': {}
 
-  '@model-go/track@0.4.0(react@19.2.6)':
+  '@model-go/track@0.4.1(react@19.2.6)':
     optionalDependencies:
       react: 19.2.6
 

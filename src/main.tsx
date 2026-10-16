@@ -62,6 +62,7 @@ function startTrack() {
     region: getMarket() === 'global' ? TrackRegion.Global : TrackRegion.CN,
     prdVersion: PRD_VERSION,
     baseURL: apiBaseUrl(),
+    geo: true,
     getAuthHeaders: () => {
       const tenantId = useAuthStore.getState().activeTenantId
       return tenantId ? { 'X-Tenant-Id': tenantId } : undefined

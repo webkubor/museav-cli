@@ -147,7 +147,7 @@ export function DevToolbar() {
      宽 378px，在 lg~1230px 区间把「快速接入」挤到只剩 39px、文字全没（2026-09-03 实测）。
      开发工具不该跟产品内容抢横向空间，收成图标后无论多窄都只占一枚按钮。 */
   return (
-    <div className="hidden lg:block w-9 shrink-0 select-none">
+    <div className="block w-9 shrink-0 select-none">
       <Popover
         position="bottom"
         content={panel}

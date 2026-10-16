@@ -8,6 +8,21 @@
  */
 import type { RechargeQuote } from '@/services/billing'
 
+/**
+ * 推荐档位（只是快捷入口，赠金以服务端报价为准）。
+ *
+ * 两站面值完全一致，只有单位符号不同（¥ / $）——2026-10-12 与需求方确认：
+ * PRD 原型 BillingRechargeModal（modelgo_prd）只给了一套面值且以 $ 渲染，
+ * 产品拍板国内站沿用同一组数值，「单位不一样」。因此这里收敛成一份常量，
+ * 币种符号由 formatMoney 的 currencySymbol 负责。
+ *
+ * #1260：两站最多 5 档，第 6 格固定为「自定义额度」。`.slice(0, 5)` 写在渲染与报价
+ * 请求之前，两条路径共用同一个裁剪结果。
+ *
+ * 1380：导航角标也用这组档位取报价，queryKey 与弹框一致，命中同一份缓存。
+ */
+export const RECHARGE_PRESETS = ['0.5', '5', '10', '100', '500']
+
 export type QuoteStatus = 'unavailable' | 'loading' | 'error' | 'ok'
 
 /** 后端还没有报价接口：HTTP 404 或业务码 40401 */

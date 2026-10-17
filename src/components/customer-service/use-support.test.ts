@@ -169,6 +169,31 @@ describe('useSupport · agent-detected human handoff', () => {
     expect(result.current.messages.at(-1)?.content).toBe('common.customerService.loginRequired.handoff')
   })
 
+  it('retries a failed handoff with the same client_submission_id', async () => {
+    requestHandoffMock.mockRejectedValueOnce(new Error('network'))
+    const { result } = renderHook(() => useSupport())
+
+    await act(async () => result.current.startHandoff())
+    await act(async () => result.current.startHandoff())
+
+    expect(requestHandoffMock).toHaveBeenCalledTimes(2)
+    const ids = requestHandoffMock.mock.calls.map(([body]) => (body as { client_submission_id?: string }).client_submission_id)
+    expect(ids[0]).toBeTruthy()
+    expect(ids[1]).toBe(ids[0])
+  })
+
+  it('uses a fresh client_submission_id after cancelling and starting again', async () => {
+    const { result } = renderHook(() => useSupport())
+
+    await act(async () => result.current.startHandoff())
+    await act(async () => result.current.cancelActiveHandoff())
+    await act(async () => result.current.startHandoff())
+
+    const ids = requestHandoffMock.mock.calls.map(([body]) => (body as { client_submission_id?: string }).client_submission_id)
+    expect(ids).toHaveLength(2)
+    expect(ids[1]).not.toBe(ids[0])
+  })
+
   it('does not start a second handoff while the first request is pending', async () => {
     askSupportMock.mockResolvedValue({ answer: '马上转接', answer_status: 'intent', intent: 'human_handoff' })
     let release: (value: unknown) => void = () => {}

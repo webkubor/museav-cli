@@ -162,6 +162,10 @@ export function useSupport() {
   // 每次转人工一个令牌：在途标记只由发起它的那次复位，不再依赖 accountEpoch ——
   // 「新会话」会推进代次，旧写法下 finally 判代次不等就永远不复位，之后再也发不起转人工
   const handoffToken = useRef(0)
+  // 同一次转人工意图的幂等键：请求失败后用户重试时必须复用，否则后端会把
+  // 每次重试都当成新工单（PRD 12.5 重复提交返回已有结果）。成功 / 取消 /
+  // 结束 / 新建会话 / 切账号后才清空，下一次转人工才是新的意图。
+  const handoffSubmissionId = useRef<string | null>(null)
   // 新会话请求在途：此时不许发起转人工，否则会话先回、代次一推，转人工回包被当过期丢掉，后端排队单成孤儿
   const newSessionPending = useRef(false)
   const newSessionToken = useRef(0)
@@ -285,6 +289,7 @@ export function useSupport() {
       suppressedHandoffTicketIds.current = new Set()
       cancellingHandoffTicketId.current = null
       handoffPending.current = false
+      handoffSubmissionId.current = null
       setHandoffInFlight(false)
       deferredHandoff.current = false
       newSessionToken.current += 1
@@ -357,11 +362,14 @@ export function useSupport() {
     const accountId = account?.account_id ?? null
     const token = ++handoffToken.current
     handoffPending.current = true
+    const submissionId = handoffSubmissionId.current ?? crypto.randomUUID()
+    handoffSubmissionId.current = submissionId
     setHandoffInFlight(true)
     trackEvent('support_handoff_start')
     try {
       const resp = await requestHandoff({
         page_path: currentPagePath(),
+        client_submission_id: submissionId,
         // PRD §8.6：转人工要自动交接当前页面与最近对话摘要，客服不用从头问一遍。
         // §10/§12 要求摘要先过敏感检测：这里只取**用户自己的提问**和回答状态标签，
         // 不带回答正文、不带 API Key/Token（后端 sensitive.Hit 命中的那条也不会进来）。
@@ -370,6 +378,7 @@ export function useSupport() {
           : messages, currentPagePath() ?? ''),
       })
       if (epoch !== accountEpoch.current || accountId !== activeAccountId.current) return
+      handoffSubmissionId.current = null
       appendMessage({
         id: crypto.randomUUID(),
         role: 'system',
@@ -511,6 +520,7 @@ export function useSupport() {
     })
     // 回 chat 一步到位：ticketId / 排队人数 / 客服信息随模式一起丢弃。
     // 旧实现这里漏清 agentInfo，导致取消排队后评价卡会带上一位客服的姓名/工号。
+    handoffSubmissionId.current = null
     go({ kind: 'chat' })
   }, [ticketId, mode, go, appendMessage, t])
 
@@ -538,6 +548,7 @@ export function useSupport() {
     trackEvent('support_handoff_end')
     // 请求在途时切了账号 / 已被长轮询收尾：不往新上下文里追加旧单的结束提示和评价卡
     if (!isCurrentSupportTicket(endingId, expectedAccountId)) return
+    handoffSubmissionId.current = null
     enterHumanEnded(endingId, null, { agentName, agentNo })
   }, [enterHumanEnded, isCurrentSupportTicket])
 
@@ -693,6 +704,7 @@ export function useSupport() {
     // handoffPending 也因代次对不上永远复位不了，之后再也发不起转人工（2026-09-28 补审发现）
     // 用 ref 判重入：state 在重渲染前还是旧值，快速双击会连发两次
     if (newSessionPending.current || handoffPending.current || !canStartHandoff(mode)) return
+    handoffSubmissionId.current = null
     const epoch = accountEpoch.current
     const accountId = account?.account_id ?? null
     // 每次新会话一个令牌：在途标记只由发起它的那次复位（同 handoffToken）。否则 A 切到 B 后，

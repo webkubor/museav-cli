@@ -123,6 +123,8 @@ export interface SupportAttachmentContent extends SupportTicketAttachment {
 export interface SupportHandoffRequest {
   page_path?: string
   summary?: string
+  /** 幂等键：同一次转人工意图的失败重试必须复用，避免后端重复建单（PRD 12.5）。 */
+  client_submission_id: string
 }
 
 export interface SupportHandoffResponse {

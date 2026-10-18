@@ -37,6 +37,7 @@ launchd 那 20 个任务更糟：日志在 `/tmp` 或各任务自己的路径，
 """
 import json
 import os
+import re
 import sys
 import time
 from datetime import datetime, timedelta, timezone
@@ -159,6 +160,51 @@ def cmd_daily(argv):
     return 0
 
 
+def _effective(r):
+    """这次跑出了真实动作吗？全绿且有 meta.all_healthy 的一律算空跑。"""
+    meta = r.get("meta") or {}
+    text = f"{r.get('action', '')}{r.get('found', '')}"
+    fixed = re.search(r"已修|修复|已开|开单|推进|已清|删除|升级|已合|已推|已处理|✅", text)
+    return bool(fixed) and meta.get("all_healthy") is not True
+
+
+def cmd_audit(argv):
+    """按「跑了几次 / 真解决几件」审计巡检任务：无效的降频或删，有效的留。"""
+    days = 14
+    if argv and argv[0].isdigit():
+        days = int(argv[0])
+    since = (datetime.now(TZ) - timedelta(days=days)).isoformat(timespec="seconds")
+    rows = [r for r in read_all() if r.get("ts", "") >= since]
+    if not rows:
+        print(f"过去 {days} 天没有记账，先确认任务还在跑。")
+        return 0
+    by_task = {}
+    for r in rows:
+        by_task.setdefault(r["task"], []).append(r)
+    print(f"🔎 巡检有效性审计 · 最近 {days} 天 · {len(rows)} 条 / {len(by_task)} 个任务\n")
+    print(f"{'runs':>5} {'有效':>4} {'待办':>4} {'命中率':>7}  判定 / 任务")
+    verdicts = {"无效": [], "有效": [], "样本不足": []}
+    for task, items in sorted(by_task.items(), key=lambda kv: -len(kv[1])):
+        eff = sum(1 for r in items if _effective(r))
+        left = sum(1 for r in items if str(r.get("remaining") or "").strip())
+        rate = eff / len(items)
+        if len(items) >= 20 and eff == 0:
+            verdict = "无效：纯空跑，降频/删/改判据"
+            verdicts["无效"].append(task)
+        elif eff == 0:
+            verdict = "无产出（样本不足，先观察）"
+            verdicts["样本不足"].append(task)
+        else:
+            verdict = "有效：有修复/推进"
+            verdicts["有效"].append(task)
+        print(f"{len(items):5} {eff:4} {left:4} {rate:6.0%}  {verdict} · {task}")
+    print("\n—— 结论 ——")
+    print(f"有效 {len(verdicts['有效'])} / 无效 {len(verdicts['无效'])} / 样本不足 {len(verdicts['样本不足'])}")
+    if verdicts["无效"]:
+        print("建议处理：" + "、".join(verdicts["无效"]))
+    return 0
+
+
 def cmd_doctor(argv):
     ok = True
     print(f"台账真源: {LEDGER}")
@@ -197,9 +243,10 @@ def main():
         print(__doc__)
         return 0
     cmd, rest = sys.argv[1], sys.argv[2:]
-    fn = {"run": cmd_run, "recent": cmd_recent, "daily": cmd_daily, "doctor": cmd_doctor}.get(cmd)
+    fn = {"run": cmd_run, "recent": cmd_recent, "daily": cmd_daily,
+          "audit": cmd_audit, "doctor": cmd_doctor}.get(cmd)
     if not fn:
-        print(f"未知子命令 {cmd}；可用: run / recent / daily / doctor")
+        print(f"未知子命令 {cmd}；可用: run / recent / daily / audit / doctor")
         return 1
     return fn(rest)
 

@@ -78,6 +78,7 @@ describe('PhoneAuth 注册事件（prd46#1271 国内腿补 sign_up）', () => {
   it('老账号只发 login_success，不发 sign_up', async () => {
     vi.mocked(phoneLoginRegister).mockResolvedValue({ is_new_account: false } as never)
     await submit('?gclid=g1')
+    expect(trackEvent).toHaveBeenCalledWith('login_submit', { method: 'phone' })
     await waitFor(() => expect(trackEvent).toHaveBeenCalledWith('login_success', { method: 'phone' }, { result: 'success' }))
     expect(vi.mocked(trackEvent).mock.calls.some(([e]) => e === 'sign_up')).toBe(false)
   })
@@ -85,6 +86,7 @@ describe('PhoneAuth 注册事件（prd46#1271 国内腿补 sign_up）', () => {
   it('后端未给 is_new_account 标记时不发 sign_up（宁少不误报）', async () => {
     vi.mocked(phoneLoginRegister).mockResolvedValue({} as never)
     await submit('?gclid=g1')
+    expect(trackEvent).toHaveBeenCalledWith('login_submit', { method: 'phone' })
     await waitFor(() => expect(trackEvent).toHaveBeenCalledWith('login_success', { method: 'phone' }, { result: 'success' }))
     expect(vi.mocked(trackEvent).mock.calls.some(([e]) => e === 'sign_up')).toBe(false)
   })

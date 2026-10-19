@@ -32,6 +32,7 @@ import { Breadcrumb } from '@/components/ui/Breadcrumb'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { PhoneBindingGuard } from '@/components/auth/PhoneBindingGuard'
 import { TopUpModal } from '@/pages/billing/TopUpModal'
+import { useFirstChargeBonus } from '@/pages/billing/use-first-charge-bonus'
 import { useRechargeStore } from '@/store/use-recharge-store'
 import { navConfig } from '@/config/nav'
 import type { NavItem } from '@/config/nav'
@@ -146,6 +147,8 @@ export function DashboardLayout() {
   })
   const ownsWorkspace = workspaceItems.some((workspace) => workspace.my_role === 'ws_owner')
 
+  // 首充赠金角标（prd46#1380）：金额读报价接口的真实 bonus_amount，首充后自动消失
+  const firstChargeBonus = useFirstChargeBonus(activeTenantId)
   const navCtx = {
     isNonPersonal: activeTenant?.type !== 'personal',
     isDomestic: site === 'china',
@@ -153,6 +156,7 @@ export function DashboardLayout() {
     // 企业管理：仅企业租户 Owner/Admin。空间管理：Owner/Admin、个人租户或任一空间负责人。
     isOrgManager: isEnterprise && canManage,
     isSpaceManager: canManage || isPersonal || ownsWorkspace,
+    billingBonusBadge: firstChargeBonus ? t('nav.billingBonusBadge', { max: firstChargeBonus }) : undefined,
   }
 
   // fail-closed（需求方#101 收尾）：叶子菜单项**必须声明 permission 且持有**才显示——

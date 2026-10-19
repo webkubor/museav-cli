@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { SidebarPromoCarousel } from './SidebarPromoCarousel'
 import { OnboardingGuideSidebarEntry } from '@/features/onboarding/OnboardingGuideEntry'
 import { WorkspaceSwitcher } from './WorkspaceSwitcher'
+import { Badge } from '@/components/ui/Badge'
 import type { NavItem, NavGroup } from '@/config/nav'
 
 interface DashboardSidebarProps {
@@ -69,6 +70,11 @@ const SidebarNavItem: React.FC<{
         )}>
           {item.text}
         </span>
+      )}
+      {!collapsed && item.badge && (
+        <Badge variant="brand" size="sm" className="ml-auto shrink-0 whitespace-nowrap">
+          {item.badge}
+        </Badge>
       )}
     </div>
   )

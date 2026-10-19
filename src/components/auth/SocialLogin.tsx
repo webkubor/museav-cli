@@ -6,6 +6,7 @@ import { oauthAuthorizeUrl, type OAuthProvider } from '@/services/auth'
 import { useOAuthMethods } from '@/hooks/use-platform-config'
 import { OAUTH_ICONS, OAUTH_LABELS } from '@/constants/oauth'
 import { getCaptchaOutcome } from '@/lib/aliyun-captcha'
+import { trackEvent } from '@/lib/track'
 
 interface Props {
   redirectTo: string
@@ -39,6 +40,7 @@ export function SocialLogin({ redirectTo }: Props) {
   // 正确顺序是**先解题拿到 token，再带着它导航**。
   const startOAuth = async (method: OAuthProvider) => {
     if (pending) return // 防抖：滑块弹出期间重复点击会开出第二个实例
+    trackEvent('login_submit', { method: 'oauth' })
     setPending(method)
     try {
       const { param, presented } = await getCaptchaOutcome()

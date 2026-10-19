@@ -49,6 +49,8 @@
   --exp-f0ffec-a72: rgba(240,255,236,0.72);
   --exp-f4ffff-a84: rgba(244,255,255,0.84);
   --exp-f5ffff-a88: rgba(245,255,255,0.88);
+  /* #1391 暗色卡片折扣划线原价纯白 */
+  --exp-w: #ffffff;
   --exp-w-a12: rgba(255,255,255,0.12);
   --exp-w-a18: rgba(255,255,255,0.18);
   --exp-w-a20: rgba(255,255,255,0.2);
@@ -634,6 +636,11 @@ body[theme-mode='dark'] .models-experience-empty-orb::after {
   color: var(--mg-text-4);
   font-size: 11px;
   font-weight: 400;
+}
+
+/* #1391：暗色卡片的折扣原价改为白色；浅色卡片保留深色字以免白底不可读。 */
+body[theme-mode='dark'] .models-experience-model-card-spec dd s {
+  color: var(--exp-w);
 }
 
 /* 输入/输出类型格：每个模态是「图标 + 标签」一对，多模态可折行、整体右对齐

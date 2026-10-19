@@ -29,7 +29,6 @@ function renderBubbleText(role: ChatItem['role'], content: string): string {
     <MessageBubble
       msg={{ id: 'msg', role, content, createdAt: 0 }}
       onRate={vi.fn()}
-      onStartHandoff={vi.fn()}
     />,
   )
   return container.textContent ?? ''

@@ -8,27 +8,28 @@ type AnswerStatusHintKey =
   | 'common.customerService.answerStatus.outOfScope'
   | 'common.customerService.answerStatus.suggestHandoff'
 
+/**
+ * 回答状态 → 气泡下方的引导文案。
+ * 气泡里不再放「转人工」按钮（modelgo_prd#1388）：转人工只能在对话里表达，由后端判定放行。
+ */
 export function answerStatusPresentation(
   status: SupportAnswerStatus | undefined,
-  suggestHandoff = false,
-): { hintKey: AnswerStatusHintKey | null; showHandoffCta: boolean } {
-  const showHandoffCta = suggestHandoff || status === 'human_handoff' || status === 'suggest_handoff'
-
+): { hintKey: AnswerStatusHintKey | null } {
   switch (status) {
     case 'intent':
-      return { hintKey: 'common.customerService.answerStatus.intent', showHandoffCta }
+      return { hintKey: 'common.customerService.answerStatus.intent' }
     case 'needs_login':
-      return { hintKey: 'common.customerService.answerStatus.needsLogin', showHandoffCta }
+      return { hintKey: 'common.customerService.answerStatus.needsLogin' }
     case 'insufficient_evidence':
-      return { hintKey: 'common.customerService.answerStatus.insufficientEvidence', showHandoffCta }
+      return { hintKey: 'common.customerService.answerStatus.insufficientEvidence' }
     case 'degraded':
-      return { hintKey: 'common.customerService.answerStatus.degraded', showHandoffCta }
+      return { hintKey: 'common.customerService.answerStatus.degraded' }
     case 'out_of_scope':
-      return { hintKey: 'common.customerService.answerStatus.outOfScope', showHandoffCta }
+      return { hintKey: 'common.customerService.answerStatus.outOfScope' }
     case 'human_handoff':
     case 'suggest_handoff':
-      return { hintKey: 'common.customerService.answerStatus.suggestHandoff', showHandoffCta }
+      return { hintKey: 'common.customerService.answerStatus.suggestHandoff' }
     default:
-      return { hintKey: null, showHandoffCta }
+      return { hintKey: null }
   }
 }

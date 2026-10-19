@@ -4,7 +4,7 @@ import { useAuthStore } from '@/store/auth'
 import { appToast } from '@/lib/app-toast'
 import { trackEvent } from '@/lib/track'
 import { storageKeys } from '@/lib/storage'
-import { isServerErrorCode, ModelGoApiError, SENSITIVE_KEY_RE } from '@/lib/request'
+import { isServerErrorCode, ModelGoApiError } from '@/lib/request'
 import {
   askSupportStream,
   attachSupportTicketAttachment,
@@ -65,7 +65,6 @@ export interface ChatItem {
   createdAt: number
   answerId?: string
   answerStatus?: SupportAnswerStatus
-  suggestHandoff?: boolean
   /** 后端 sensitive.Hit：这条提问/回答命中了疑似密钥，界面要提示且不进交接摘要 */
   sensitiveHit?: boolean
   rating?: SupportAnswerRating | null
@@ -125,8 +124,6 @@ function pickAnswerId(resp: SupportAskResponse): string | undefined {
   const id = resp.message_id ?? resp.answer_id
   return !id || id === EPHEMERAL_ANSWER_ID ? undefined : id
 }
-
-const HANDOFF_TRIGGER_RE = /转\s*人工|找\s*客服|人工\s*处理|human\s*(agent|support)/i
 
 /**
  * 取客服接口的 support.* 业务码。agent 的 4001 经 web-api 转成 40001 参数校验失败后，
@@ -308,7 +305,7 @@ export function useSupport() {
 
   const startHandoffWithTrigger = useCallback(async (
     trigger?: { question: string; sensitiveHit: boolean },
-    // 只有「后端判定的自动转人工」才记账（prd46#1171-2）。用户手动输入「转人工」被挡下时
+    // 只有「后端判定的自动转人工」才记账（prd46#1171-2）。手动发起（startHandoff）被挡下时
     // 已经拿到下面那条 handoffBusy 提示，若新会话随后失败又补一条 handoffRetryLater，
     // 同一次被挡会收到两条反馈。两者都要「有反馈」，但只有自动那条会无声消失、必须补。
     deferOnBlocked = false,
@@ -411,14 +408,8 @@ export function useSupport() {
     const generation = accountEpoch.current
     const accountId = account?.account_id ?? null
 
-    if (HANDOFF_TRIGGER_RE.test(trimmed) && canStartHandoff(mode)) {
-      appendMessage({ id: crypto.randomUUID(), role: 'user', content: trimmed, createdAt: Date.now() })
-      // Direct triggers bypass /support/ask's sensitive.Hit; omit the entire question
-      // when the shared request redaction matcher spots a credential label.
-      await startHandoffWithTrigger({ question: trimmed, sensitiveHit: SENSITIVE_KEY_RE.test(trimmed) })
-      return
-    }
-
+    // 「转人工」不再在前端本地直通（modelgo_prd#1388）：一律交给 /support/ask，
+    // 由后端判定是否放行——没说具体问题先引导描述，第一次先由 AI 作答，再次要求才转人工。
     appendMessage({ id: crypto.randomUUID(), role: 'user', content: trimmed, createdAt: Date.now() })
     setIsAsking(true)
     trackEvent('support_question_submit')
@@ -450,13 +441,15 @@ export function useSupport() {
         // ans_ephemeral 占位，没落库、评分接口用不了，故不给评分控件。
         answerId: pickAnswerId(answer),
         answerStatus: answer.answer_status,
-        suggestHandoff: answer.suggest_handoff,
         // 后端在响应里回 sensitive:{Hit,Kind}，PRD §10 要求命中后给用户明确提示
         // （命中内容不进模型/检索/埋点/人工摘要）。此前前端完全没读这个字段。
         sensitiveHit: answer.sensitive?.Hit === true,
         rating: null,
       })
-      if (answer.intent === 'human_handoff' && canStartHandoff(modeRef.current)) {
+      // 只有后端放行的转人工（intent=human_handoff 且 suggest_handoff=true）才发起；
+      // 被拦下的请求（handoff_needs_question / handoff_pending）同样是 human_handoff 意图，
+      // 但 suggest_handoff=false，只展示回答（modelgo_prd#1388）。
+      if (answer.intent === 'human_handoff' && answer.suggest_handoff === true && canStartHandoff(modeRef.current)) {
         // 第二个参数 true：这是后端判定的自动转人工，被新会话在途挡下后需要记账
         await startHandoffWithTrigger({ question: trimmed, sensitiveHit: answer.sensitive?.Hit === true }, true)
       }
@@ -472,7 +465,7 @@ export function useSupport() {
     } finally {
       if (generation === accountEpoch.current) setIsAsking(false)
     }
-  }, [isAsking, mode, account?.account_id, appendMessage, startHandoffWithTrigger, t])
+  }, [isAsking, account?.account_id, appendMessage, startHandoffWithTrigger, t])
 
   const rateMessageAnswer = useCallback(async (messageId: string, rating: SupportAnswerRating) => {
     const target = messages.find((m) => m.id === messageId)

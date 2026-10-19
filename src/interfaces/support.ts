@@ -17,6 +17,9 @@ export type SupportAnswerStatus =
   | 'out_of_scope'
   | 'human_handoff'
   | 'suggest_handoff'
+  /** 转人工被拦下：还没说明具体问题 / 第一次要求，再次输入「转人工」才转接（modelgo_prd#1388） */
+  | 'handoff_needs_question'
+  | 'handoff_pending'
 
 export type SupportAnswerRating = 'like' | 'dislike'
 

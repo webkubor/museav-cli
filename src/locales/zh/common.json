@@ -411,8 +411,7 @@
         "insufficientEvidence": "暂时无法确认，建议提交反馈",
         "degraded": "当前证据不足，以上仅供参考",
         "outOfScope": "我目前仅支持 ModelGo 相关问题",
-        "suggestHandoff": "如需人工协助，可转接客服",
-        "handoffCta": "转人工"
+        "suggestHandoff": "如需人工协助，可转接客服"
       },
       "tickets": {
         "title": "服务记录",

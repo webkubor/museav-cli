@@ -19,8 +19,8 @@ import { MessageBubble } from './index'
 
 afterEach(cleanup)
 
-function bubble(status: ChatItem['answerStatus'], suggestHandoff = false) {
-  render(<MessageBubble msg={{ id: 'answer', role: 'assistant', content: '回答', createdAt: 0, answerStatus: status, suggestHandoff }} onRate={vi.fn()} onStartHandoff={vi.fn()} />)
+function bubble(status: ChatItem['answerStatus']) {
+  render(<MessageBubble msg={{ id: 'answer', role: 'assistant', content: '回答', createdAt: 0, answerStatus: status }} onRate={vi.fn()} />)
   return screen.getByText('回答').parentElement!.parentElement!
 }
 
@@ -34,8 +34,12 @@ it.each([['zh', /转人工/], ['en', /human agent/i]] as const)(
   },
 )
 
-it.each(['zh', 'en'] as const)('%s explicit human handoff keeps its CTA', (language) => {
+// modelgo_prd#1388：气泡里不再有「转人工」按钮，转人工只能在对话里表达、由后端放行。
+it.each(['zh', 'en'] as const)('%s bubbles never render a handoff button', (language) => {
   locale.current = language
-  bubble('human_handoff')
-  expect(screen.getByRole('button', { name: language === 'zh' ? zh.common.customerService.answerStatus.handoffCta : en.common.customerService.answerStatus.handoffCta })).toBeTruthy()
+  for (const status of ['human_handoff', 'suggest_handoff', 'intent', 'handoff_needs_question', 'handoff_pending'] as const) {
+    cleanup()
+    const answer = bubble(status)
+    expect(answer.querySelector('button')).toBeNull()
+  }
 })

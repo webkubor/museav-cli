@@ -411,8 +411,7 @@
         "insufficientEvidence": "Not confirmed yet — you can submit feedback",
         "degraded": "Evidence is limited; treat this as a rough guide",
         "outOfScope": "I can currently help only with ModelGo-related questions.",
-        "suggestHandoff": "You can connect with a human agent if this doesn't help",
-        "handoffCta": "Connect to an agent"
+        "suggestHandoff": "You can connect with a human agent if this doesn't help"
       },
       "tickets": {
         "title": "Service records",

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 
 import { MarkdownContent } from '@/components/ui/MarkdownContent'
-import { LuX, LuSendHorizontal, LuHistory, LuMessageSquareWarning, LuCheck, LuThumbsUp, LuThumbsDown, LuKeyRound, LuTerminal, LuSparkles, LuReceipt, LuUserRound, LuMessageSquarePlus } from 'react-icons/lu'
+import { LuX, LuSendHorizontal, LuHistory, LuMessageSquareWarning, LuCheck, LuThumbsUp, LuThumbsDown, LuKeyRound, LuTerminal, LuSparkles, LuReceipt, LuMessageSquarePlus } from 'react-icons/lu'
 import { useSiteLogo } from '@/config/brand-assets'
 import { storageKeys } from '@/lib/storage'
 import { useCustomerServiceStore } from '@/store/use-customer-service-store'
@@ -45,7 +45,7 @@ const FAQ_ITEMS = [
   { icon: LuReceipt, key: 'billing' },
 ] as const
 
-export function MessageBubble({ msg, onRate, onStartHandoff }: { msg: ChatItem; onRate: (id: string, rating: 'like' | 'dislike') => void; onStartHandoff: () => void }) {
+export function MessageBubble({ msg, onRate }: { msg: ChatItem; onRate: (id: string, rating: 'like' | 'dislike') => void }) {
   const { t } = useTranslation()
 
   if (msg.kind === 'rating_card') {
@@ -140,8 +140,8 @@ export function MessageBubble({ msg, onRate, onStartHandoff }: { msg: ChatItem; 
 
   const isUser = msg.role === 'user'
   const presentation = msg.role === 'assistant'
-    ? answerStatusPresentation(msg.answerStatus, msg.suggestHandoff)
-    : { hintKey: null, showHandoffCta: false }
+    ? answerStatusPresentation(msg.answerStatus)
+    : { hintKey: null }
   // 显示侧防线（#1124）：助手回答渲染前做结构化 <think> 抽取，标签与推理绝不上屏。
   // 只作用于 assistant —— 用户消息与人工客服消息原样保留（人工客服的正文是真人写的，
   // 不是模型输出，不该被这套模型输出清理规则改写）。语义与后端 ExtractFinalAnswer 一致。
@@ -161,15 +161,6 @@ export function MessageBubble({ msg, onRate, onStartHandoff }: { msg: ChatItem; 
       >
         {isUser ? msg.content : <MarkdownContent linkifyBareUrls>{renderedContent}</MarkdownContent>}
         {presentation.hintKey && <p className="m-0 mt-1.5 text-[11px] text-mg-text-3">{t(presentation.hintKey)}</p>}
-        {presentation.showHandoffCta && (
-          <button
-            type="button"
-            onClick={onStartHandoff}
-            className="mt-2 text-[11px] font-medium text-brand-base hover:underline"
-          >
-            {t('common.customerService.answerStatus.handoffCta')}
-          </button>
-        )}
       </div>
       {/* PRD §10：敏感信息命中后要给用户明确提示（内容不进模型/检索/埋点/人工摘要）。
           后端回 sensitive.Hit，此前前端一个字段都没读。 */}
@@ -252,7 +243,7 @@ export function CustomerService() {
     mode, go, messages, isAsking, ticketDetail, ticketDetailError, ticketMessages, ticketMessagesLoaded, markSelectedTicketSeen, replySelectedTicket, unreadVersion,
     // 三区行为由状态机推导，组件不再自己拼布尔组合（原先是 mode/serviceMode 交叉判断）
     showComposer, composerDisabled, showFeedbackEntry, isHumanChat,
-    ask, rateMessageAnswer, startHandoff, cancelActiveHandoff, isCancellingHandoff, endActiveHandoff, rateEndedHandoff,
+    ask, rateMessageAnswer, cancelActiveHandoff, isCancellingHandoff, endActiveHandoff, rateEndedHandoff,
     sendHumanReply, feedbackSubmitting, submitFeedback, startNewSession, startingNewSession, handoffInFlight, openTicketDetail, reopenSelectedTicket, rateSelectedTicket, supplementSelectedTicket,
   } = support
 
@@ -450,7 +441,7 @@ export function CustomerService() {
               error={ticketDetailError}
               messages={ticketMessages}
               messagesLoaded={ticketMessagesLoaded}
-              renderMessage={(msg) => <MessageBubble msg={msg} onRate={rateMessageAnswer} onStartHandoff={startHandoff} />}
+              renderMessage={(msg) => <MessageBubble msg={msg} onRate={rateMessageAnswer} />}
               onLatestVisible={markSelectedTicketSeen}
               onReply={replySelectedTicket}
               onRetry={() => openTicketDetail(mode.ticketId)}
@@ -486,7 +477,7 @@ export function CustomerService() {
                   </div>
                 </div>
               )}
-              {messages.map((msg) => <MessageBubble key={msg.id} msg={msg} onRate={rateMessageAnswer} onStartHandoff={startHandoff} />)}
+              {messages.map((msg) => <MessageBubble key={msg.id} msg={msg} onRate={rateMessageAnswer} />)}
               {isAsking && (
                 <div className="flex items-center gap-1 px-1 mb-4">
                   <span className="mg-text-caption text-mg-text-3 italic">{t('common.customerService.thinking')}</span>
@@ -498,26 +489,13 @@ export function CustomerService() {
           {/* Footer */}
           {showComposer && (
             <div className="flex flex-col gap-2 px-4 py-3 border-t border-mg-fill-0">
-              {/* 服务条（PRD 原型 customer-support-service-bar）：并排两个入口——
-                  「问题反馈」+「人工客服」。原实现只搬了问题反馈，把常驻的「人工客服」
-                  入口整个漏了：用户想转人工只能等 AI 建议时点气泡里的文字链接，
-                  或自己恰好输入「转人工」关键词——PRD 里这是个显式按钮。
+              {/* 服务条（PRD 原型 customer-support-service-bar）：问题反馈 · 新会话。
+                  「人工客服」按钮已按 modelgo_prd#1388 隐藏：转人工成本过低，改为只能在对话里
+                  表达，由后端判定——没说具体问题先引导描述，第一次先由 AI 作答，再次要求才转人工。
                   canStartHandoff(mode) 与原型 humanSupportStatus === 'idle' 同义
                   （排队中/接通中不允许重复发起）。 */}
               {(showFeedbackEntry || canStartHandoff(mode)) && (
                 <div className="flex items-center gap-2">
-                  {/* 顺序：人工客服 · 问题反馈 · 新会话（2026-09-28 前端负责人口径）。 */}
-                  {canStartHandoff(mode) && (
-                    <button
-                      type="button"
-                      onClick={startHandoff}
-                      disabled={startingNewSession || handoffInFlight}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-mg-border bg-mg-fill-0/40 px-2.5 py-1.5 mg-text-caption font-medium text-mg-text-2 transition-colors hover:border-brand-mid/50 hover:text-brand-base disabled:opacity-50"
-                    >
-                      <LuUserRound size={13} />
-                      {t('common.customerService.handoff.entry')}
-                    </button>
-                  )}
                   {showFeedbackEntry && (
                     <button
                       type="button"

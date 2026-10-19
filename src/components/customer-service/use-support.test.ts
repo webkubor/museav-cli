@@ -162,7 +162,7 @@ describe('useSupport · agent-detected human handoff', () => {
 
   it('gates anonymous explicit handoff without creating a ticket', async () => {
     authState.account = null
-    askSupportMock.mockResolvedValue({ answer: '请登录', answer_status: 'needs_login', intent: 'human_handoff' })
+    askSupportMock.mockResolvedValue({ answer: '请登录', answer_status: 'needs_login', intent: 'human_handoff', suggest_handoff: true })
     const { result } = renderHook(() => useSupport())
     await act(async () => result.current.ask('我想联系真人'))
     expect(requestHandoffMock).not.toHaveBeenCalled()
@@ -195,7 +195,7 @@ describe('useSupport · agent-detected human handoff', () => {
   })
 
   it('does not start a second handoff while the first request is pending', async () => {
-    askSupportMock.mockResolvedValue({ answer: '马上转接', answer_status: 'intent', intent: 'human_handoff' })
+    askSupportMock.mockResolvedValue({ answer: '马上转接', answer_status: 'intent', intent: 'human_handoff', suggest_handoff: true })
     let release: (value: unknown) => void = () => {}
     requestHandoffMock.mockImplementation(() => new Promise((resolve) => { release = resolve }))
     const { result } = renderHook(() => useSupport())
@@ -211,7 +211,7 @@ describe('useSupport · agent-detected human handoff', () => {
   })
 
   it('uses the existing failure path and allows retry', async () => {
-    askSupportMock.mockResolvedValue({ answer: '正在转接', answer_status: 'intent', intent: 'human_handoff' })
+    askSupportMock.mockResolvedValue({ answer: '正在转接', answer_status: 'intent', intent: 'human_handoff', suggest_handoff: true })
     requestHandoffMock.mockRejectedValueOnce(new Error('handoff failed'))
     const { result } = renderHook(() => useSupport())
     await act(async () => result.current.ask('真人帮忙'))
@@ -222,7 +222,7 @@ describe('useSupport · agent-detected human handoff', () => {
   })
 
   it('uses the existing async-ticket mode mapping', async () => {
-    askSupportMock.mockResolvedValue({ answer: '转接中', answer_status: 'intent', intent: 'human_handoff' })
+    askSupportMock.mockResolvedValue({ answer: '转接中', answer_status: 'intent', intent: 'human_handoff', suggest_handoff: true })
     requestHandoffMock.mockResolvedValue({ service_mode: 'async', ticket_id: 'ticket-2' })
     const { result } = renderHook(() => useSupport())
     await act(async () => result.current.ask('需要真人帮忙'))
@@ -241,7 +241,7 @@ describe('useSupport · agent-detected human handoff', () => {
       rerender()
     })
     await act(async () => {
-      resolveAsk({ answer: '正在转接旧账号', answer_status: 'intent', intent: 'human_handoff' })
+      resolveAsk({ answer: '正在转接旧账号', answer_status: 'intent', intent: 'human_handoff', suggest_handoff: true })
       await pending
     })
     expect(requestHandoffMock).not.toHaveBeenCalled()
@@ -250,7 +250,7 @@ describe('useSupport · agent-detected human handoff', () => {
   })
 
   it('includes the triggering question once in the handoff summary', async () => {
-    askSupportMock.mockResolvedValue({ answer: '正在转接', answer_status: 'intent', intent: 'human_handoff' })
+    askSupportMock.mockResolvedValue({ answer: '正在转接', answer_status: 'intent', intent: 'human_handoff', suggest_handoff: true })
     const { result } = renderHook(() => useSupport())
     await act(async () => result.current.ask('请帮我联系值班同事'))
     const summary = requestHandoffMock.mock.calls[0][0].summary as string
@@ -259,7 +259,7 @@ describe('useSupport · agent-detected human handoff', () => {
   })
 
   it('does not include a sensitive triggering question in the handoff summary', async () => {
-    askSupportMock.mockResolvedValue({ answer: '转接中', answer_status: 'intent', intent: 'human_handoff', sensitive: { Hit: true, Kind: 'secret' } })
+    askSupportMock.mockResolvedValue({ answer: '转接中', answer_status: 'intent', intent: 'human_handoff', suggest_handoff: true, sensitive: { Hit: true, Kind: 'secret' } })
     const { result } = renderHook(() => useSupport())
     await act(async () => result.current.ask('请处理我的 token: secret-value'))
     expect(requestHandoffMock).toHaveBeenCalledOnce()
@@ -298,20 +298,37 @@ describe('useSupport · agent-detected human handoff', () => {
     expect(requestErrorMock).not.toHaveBeenCalled()
   })
 
-  it('includes a direct regex handoff question once in the summary', async () => {
+  // modelgo_prd#1388：「转人工」不再在前端本地直通，一律交给后端判定。
+  it('sends a typed 转人工 to /support/ask instead of handing off locally', async () => {
+    askSupportMock.mockResolvedValue({ answer: '请先描述具体问题', answer_status: 'handoff_needs_question', intent: 'human_handoff', suggest_handoff: false })
     const { result } = renderHook(() => useSupport())
-    await act(async () => result.current.ask('转人工处理我的账单'))
-    expect(askSupportMock).not.toHaveBeenCalled()
-    const summary = requestHandoffMock.mock.calls[0][0].summary as string
-    expect(summary.match(/转人工处理我的账单/g)).toHaveLength(1)
-    expect(result.current.messages.filter((message) => message.role === 'user')).toHaveLength(1)
+    await act(async () => result.current.ask('转人工'))
+    expect(askSupportMock).toHaveBeenCalledOnce()
+    expect(requestHandoffMock).not.toHaveBeenCalled()
+    expect(result.current.mode.kind).toBe('chat')
+    expect(result.current.messages.map((m) => m.role)).toEqual(['user', 'assistant'])
   })
 
-  it('excludes a direct handoff question containing a token from the summary', async () => {
+  it.each(['handoff_needs_question', 'handoff_pending'] as const)('does not hand off a held-back request (%s)', async (status) => {
+    askSupportMock.mockResolvedValue({ answer: '再次输入「转人工」即可转接', answer_status: status, intent: 'human_handoff', suggest_handoff: false })
     const { result } = renderHook(() => useSupport())
-    await act(async () => result.current.ask('转人工处理我的 token: secret-value'))
+    await act(async () => result.current.ask('转人工处理我的账单'))
+    expect(requestHandoffMock).not.toHaveBeenCalled()
+    expect(result.current.mode.kind).toBe('chat')
+  })
+
+  it('hands off on the second request once the backend authorizes it', async () => {
+    askSupportMock
+      .mockResolvedValueOnce({ answer: '账单说明……如果仍未解决，再次输入「转人工」', answer_status: 'answered', intent: 'platform_knowledge', suggest_handoff: false })
+      .mockResolvedValueOnce({ answer: '正在为你转接人工客服', answer_status: 'intent', intent: 'human_handoff', suggest_handoff: true })
+    const { result } = renderHook(() => useSupport())
+    await act(async () => result.current.ask('转人工，我的账单金额不对'))
+    expect(requestHandoffMock).not.toHaveBeenCalled()
+    await act(async () => result.current.ask('转人工'))
     expect(requestHandoffMock).toHaveBeenCalledOnce()
-    expect(requestHandoffMock.mock.calls[0][0].summary).not.toContain('secret-value')
+    expect(result.current.mode.kind).toBe('queuing')
+    const summary = requestHandoffMock.mock.calls[0][0].summary as string
+    expect(summary).toContain('我的账单金额不对')
   })
 
   it('does not create another handoff when a pending ask returns after manual handoff succeeds', async () => {
@@ -323,7 +340,7 @@ describe('useSupport · agent-detected human handoff', () => {
     await act(async () => result.current.startHandoff())
     expect(result.current.mode.kind).toBe('queuing')
     await act(async () => {
-      resolveAsk({ answer: '正在转接', answer_status: 'intent', intent: 'human_handoff' })
+      resolveAsk({ answer: '正在转接', answer_status: 'intent', intent: 'human_handoff', suggest_handoff: true })
       await pending
     })
     expect(requestHandoffMock).toHaveBeenCalledOnce()
@@ -1047,18 +1064,17 @@ describe('prd46#1171 · 在途与切号不吞用户操作', () => {
     requestHandoffMock.mockReset().mockResolvedValue({ service_mode: 'live', ticket_id: 'CS-7', status: 'pending' })
   })
 
-  // #1171-1：在途时输入「转人工」原本静默 return —— 用户消息已上屏，入口却毫无反应
-  it('在途时输入「转人工」给出系统提示，而不是静默丢弃', async () => {
+  // #1171-1：在途时手动发起转人工原本静默 return —— 入口毫无反应。
+  // modelgo_prd#1388 后手输「转人工」改走后端判定，手动发起只剩 startHandoff()。
+  it('在途时手动发起转人工给出系统提示，而不是静默丢弃', async () => {
     let finishSession: (v: unknown) => void = () => {}
     createSessionMock.mockReset().mockImplementationOnce(() => new Promise((r) => { finishSession = r }))
     const { result } = renderHook(() => useSupport())
 
     act(() => { void result.current.startNewSession() })
-    await act(async () => { await result.current.ask('转人工') })
+    await act(async () => { await result.current.startHandoff() })
 
     expect(requestHandoffMock).not.toHaveBeenCalled()
-    const roles = result.current.messages.map((m) => m.role)
-    expect(roles).toContain('user')
     expect(result.current.messages.some((m) => m.content === 'common.customerService.handoffBusy')).toBe(true)
     await act(async () => { finishSession({ session_id: 'cs-new' }) })
   })
@@ -1102,32 +1118,32 @@ describe('prd46#1171 · 在途与切号不吞用户操作', () => {
     expect(result.current.messages.some((m) => m.content === 'common.customerService.handoffRetryLater')).toBe(false)
   })
 
-  // 评审 P2：用户手输「转人工」被挡下时已经拿到 handoffBusy，不该再补一条重试提示
-  it('用户手输「转人工」被挡下后，新会话失败也不补重试提示（不重复反馈）', async () => {
+  // 评审 P2：手动发起转人工被挡下时已经拿到 handoffBusy，不该再补一条重试提示
+  it('手动发起转人工被挡下后，新会话失败也不补重试提示（不重复反馈）', async () => {
     let rejectSession: (r: unknown) => void = () => {}
     createSessionMock.mockReset().mockImplementationOnce(() => new Promise((_r, rej) => { rejectSession = rej }))
     const { result } = renderHook(() => useSupport())
 
     act(() => { void result.current.startNewSession() })
-    await act(async () => { await result.current.ask('转人工') })
+    await act(async () => { await result.current.startHandoff() })
     expect(result.current.messages.some((m) => m.content === 'common.customerService.handoffBusy')).toBe(true)
 
     await act(async () => { rejectSession(Object.assign(new Error('down'), { response: { status: 503 } })) })
-    // 只该有 handoffBusy 一条；handoffRetryLater 是给「后端自动转人工」的补偿，手输路径没有
+    // 只该有 handoffBusy 一条；handoffRetryLater 是给「后端自动转人工」的补偿，手动路径没有
     expect(result.current.messages.filter((m) => m.content === 'common.customerService.handoffBusy')).toHaveLength(1)
     expect(result.current.messages.some((m) => m.content === 'common.customerService.handoffRetryLater')).toBe(false)
   })
 
   // 评审 P2：在途窗口可能很长（接口挂起），连点不应刷出多条同款提示
-  it('在途期间连点「转人工」不刷屏（同一条系统提示只出现一次）', async () => {
+  it('在途期间连续发起转人工不刷屏（同一条系统提示只出现一次）', async () => {
     let rejectSession: (r: unknown) => void = () => {}
     createSessionMock.mockReset().mockImplementationOnce(() => new Promise((_r, rej) => { rejectSession = rej }))
     const { result } = renderHook(() => useSupport())
 
     act(() => { void result.current.startNewSession() })
-    await act(async () => { await result.current.ask('转人工') })
-    await act(async () => { await result.current.ask('转人工') })
-    await act(async () => { await result.current.ask('转人工') })
+    await act(async () => { await result.current.startHandoff() })
+    await act(async () => { await result.current.startHandoff() })
+    await act(async () => { await result.current.startHandoff() })
 
     expect(result.current.messages.filter((m) => m.content === 'common.customerService.handoffBusy')).toHaveLength(1)
     await act(async () => { rejectSession(Object.assign(new Error('down'), { response: { status: 503 } })) })

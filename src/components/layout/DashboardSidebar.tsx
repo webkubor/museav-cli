@@ -64,17 +64,19 @@ const SidebarNavItem: React.FC<{
         {item.icon}
       </span>
       {!collapsed && (
-        <span className={cn(
-          "text-[15px] truncate tracking-tight font-medium leading-none transition-transform duration-300 ease-out",
-          isSelected ? "translate-x-0.5" : "group-hover:translate-x-0.5"
-        )}>
-          {item.text}
+        <span className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
+          <span className={cn(
+            "text-[15px] break-words tracking-tight font-medium leading-tight transition-transform duration-300 ease-out",
+            isSelected ? "translate-x-0.5" : "group-hover:translate-x-0.5"
+          )}>
+            {item.text}
+          </span>
+          {item.badge && (
+            <Badge variant="brand" size="sm" className="max-w-full whitespace-normal text-left leading-tight">
+              {item.badge}
+            </Badge>
+          )}
         </span>
-      )}
-      {!collapsed && item.badge && (
-        <Badge variant="brand" size="sm" className="ml-auto shrink-0 whitespace-nowrap">
-          {item.badge}
-        </Badge>
       )}
     </div>
   )

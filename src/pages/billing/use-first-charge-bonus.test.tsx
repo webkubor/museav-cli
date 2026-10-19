@@ -7,13 +7,14 @@ import { useFirstChargeBonus } from './use-first-charge-bonus'
 
 const quoteRecharges = vi.fn<(tenantId: string, body: { currency: string; amounts: string[] }) => Promise<{ items: RechargeQuote[] }>>()
 const hasPermissionMock = vi.fn<(perm: string) => boolean>(() => true)
+const currencyMock = vi.hoisted(() => ({ currency: 'USD', symbol: '$' }))
 
 vi.mock('@/services/billing', () => ({
   quoteRecharges: (tenantId: string, body: { currency: string; amounts: string[] }) => quoteRecharges(tenantId, body),
 }))
 
 vi.mock('@/hooks/use-platform-config', () => ({
-  useCurrency: () => ({ currency: 'USD', symbol: '$' }),
+  useCurrency: () => currencyMock,
 }))
 
 vi.mock('@/hooks/use-permissions', () => ({
@@ -54,9 +55,20 @@ describe('useFirstChargeBonus（#1380 导航首充角标）', () => {
   beforeEach(() => {
     quoteRecharges.mockReset()
     hasPermissionMock.mockReset().mockReturnValue(true)
+    currencyMock.currency = 'USD'
+    currencyMock.symbol = '$'
   })
 
-  it('取报价里命中梯度的最大 bonus_amount，并按账户币种格式化', async () => {
+  it('国内站报价使用 CNY 时角标仍遵循需求展示美元符号', async () => {
+    currencyMock.currency = 'CNY'
+    currencyMock.symbol = '¥'
+    quoteRecharges.mockResolvedValue({ items: [quote('10', { currency: 'CNY', bonus_amount: '10' })] })
+    const { result } = renderBonus()
+    await waitFor(() => expect(result.current).toBe('$10'))
+    expect(quoteRecharges).toHaveBeenCalledWith('tnt_1', { currency: 'CNY', amounts: ['0.5', '5', '10', '100', '500'] })
+  })
+
+  it('取报价里命中梯度的最大 bonus_amount，并按需求展示美元符号', async () => {
     quoteRecharges.mockResolvedValue({
       items: [
         quote('0.5', { bonus_amount: '0.05' }),

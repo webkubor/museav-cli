@@ -15,7 +15,7 @@ import { RECHARGE_PRESETS, hasBonus } from './recharge-quote'
  * queryKey 与 TopUpModal 的预设报价一致，打开弹框时直接命中缓存，不会多一次报价请求。
  */
 export function useFirstChargeBonus(tenantId: string | null | undefined): string | undefined {
-  const { currency, symbol } = useCurrency()
+  const { currency } = useCurrency()
   const { hasPermission } = usePermissions()
   const canRecharge = hasPermission(PERMS.BILLING_RECHARGE_CREATE)
 
@@ -33,5 +33,9 @@ export function useFirstChargeBonus(tenantId: string | null | undefined): string
     .filter((q) => hasBonus(q))
     .reduce((max, q) => Math.max(max, Number(q.bonus_amount)), 0)
 
-  return maxBonus > 0 ? formatMoney(maxBonus, symbol) : undefined
+  // 需求文档（v1.0.9 投放 #1389）把文案口径定死为美元：
+  //   英文 `Up to $10 bonus` / 中文 `最高送 $10`。
+  // 这里不能跟随站点币种 symbol —— 国内站 symbol 是 ¥，会把文案渲染成 `最高送 ¥10`，
+  // 与需求不符。金额仍取服务端报价的 bonus_amount，只固定货币符号。
+  return maxBonus > 0 ? formatMoney(maxBonus, '$') : undefined
 }

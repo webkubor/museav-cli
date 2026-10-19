@@ -24,7 +24,9 @@ export function useFirstChargeBonus(tenantId: string | null | undefined): string
     queryFn: () => quoteRecharges(tenantId as string, { currency, amounts: RECHARGE_PRESETS }),
     enabled: !!tenantId && canRecharge,
     retry: false,
-    staleTime: 5 * 60_000,
+    // 支付回跳/切回控制台时重新询价，以服务端 eligible=false 收起角标。
+    staleTime: 0,
+    refetchOnWindowFocus: 'always',
   })
 
   const maxBonus = (data?.items ?? [])

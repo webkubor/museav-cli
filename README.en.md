@@ -27,7 +27,7 @@
 | **Post-processing** (bg removal, upscale, compress) | ✅ built in | ❌ install more tools | — | ✅ web editor |
 | **Browser automation workloads** | ❌ can't spawn in edge runtimes | — | ✅ | ✅ |
 
-**In one line**: this CLI solves exactly one problem — **letting humans and agents generate images from a terminal**. For product integration, call the HTTP API or `import { StudioClient }` instead; don't use the CLI.
+Create images and videos and manage your own digital-product shop from the terminal, directly or through an agent. For product integration, call the HTTP API or `import { StudioClient }`.
 
 ---
 
@@ -83,6 +83,23 @@ museav gen "a Chinese ink-wash mountain at dawn" --ratio 3:4
 | `museav compress <file>` | Compress a local image |
 | `museav skillhub tags` | List the live content tags accepted by Xiaohongshu SkillHub |
 | `museav skillhub publish ./my-skill --tag <tag>` | Publish a local Agent Skill to Xiaohongshu SkillHub. Dry-run by default — `--yes` is required to actually submit |
+
+### Personal seller shop
+
+`museav shop` manages your own credits, wallpaper collections and bundles of installation guidance and owned content. Use the existing personal `museav login` session; creation API keys and tenant identities cannot manage a seller shop. Clear `MUSEAV_API_KEY` / `STUDIO_API_KEY` if they override your login.
+
+```bash
+museav shop show
+museav shop products list
+museav shop products create --file product.json
+museav shop collections list
+museav shop codes issue --product <product-uuid> --channel xianyu \
+  --external-order XY20261019001 --request-id seller-20261019-001
+```
+
+Issuing a code reserves the seller's real credits and snapshots delivery. Reuse the same request ID when retrying; revoke an unused code with `shop codes revoke <code>` to refund its reserved credits. Commands return JSON on stdout and errors on stderr. The CLI produces channel materials and claim codes; sellers manually list products and send delivery messages on Xianyu or Xiaohongshu.
+
+Bundles contain installation guidance, owned templates/assets and optional credits, without shared private keys or claims of an exclusive license to the open-source CLI. See the [Chinese shop guide](./README.md#个人店铺积分壁纸系列cli-组合包) for exact product JSON and the full wallpaper draft → private-original upload → publish workflow. Run `museav shop --help` and each subcommand's `--help` for all actions. Existing `museav products` continues to list tenant reference products.
 
 ### Subjects: "these five images are the same character"
 

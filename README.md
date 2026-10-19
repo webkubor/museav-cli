@@ -28,7 +28,7 @@
 | **抠像素/水印/超分等后期** | ✅ `remove-bg` `upscale` `compress` | ❌ 另装一堆工具 | — | ✅ 网页编辑器 |
 | **浏览器自动化场景** | ❌ 边缘运行时起不了子进程 | — | ✅ | ✅ |
 
-**一句话**：这个 CLI 只解决一件事 —— **让人和 Agent 在终端里把图出了**。做产品集成请直接调 HTTP API 或 `import { StudioClient }`，别用 CLI。
+**一句话**：让人和 Agent 在终端里创作图片、视频，并经营自己的数字商品店铺。产品集成可直接调 HTTP API 或 `import { StudioClient }`。
 
 ---
 
@@ -71,6 +71,74 @@ npm install -g museav-cli           # 装新包，命令名是 museav
 **这不是随便选的**：Cloudflare Pages Functions/Workers 这类边缘运行时压根不能起子进程，`museav` 这个 CLI 二进制在那种环境里根本跑不起来。做产品集成，永远是调 HTTP API 或者拿 `StudioClient` 当库导入；CLI 是给"人在终端里"或"agent 跑 shell 命令"这两个场景用的，别的地方用不上也不该用。
 
 ---
+
+## 个人店铺：积分、壁纸系列、CLI 组合包
+
+`museav shop` 使用 `museav login` 已有的个人登录。环境变量 `MUSEAV_API_KEY` / `STUDIO_API_KEY` 会覆盖登录态，经营店铺前需清除它们；创作 API Key 和租户身份不能经营个人店铺。旧 `museav products` 继续查询租户参考商品。
+
+全部店铺命令将 JSON 写入 stdout，报错写 stderr 并返回非零退出码。商品与发码列表各为本人最近 200 条。CLI 输出闲鱼/小红书的文案、图片物料和领取码；外部平台上架、成交和发送买家由卖家手工完成。
+
+```bash
+museav login
+museav shop show
+museav shop products list
+museav shop products create --file credits.json
+museav shop products update <商品UUID> --file patch.json
+museav shop products archive <商品UUID>
+museav shop codes list
+museav shop codes issue --product <商品UUID> --channel xianyu \
+  --external-order XY20261019001 --request-id seller-20261019-001
+museav shop codes revoke <发货码>
+```
+
+积分商品文件 `credits.json`：
+
+```json
+{"title":"100积分创作包","kind":"credits","credits":100,"channel":"xianyu","benefits":["100积分"],"status":"active"}
+```
+
+商品类型字段为 `kind: credits|wallpaper|bundle`。发码时服务端从卖家真实余额预留积分并冻结交付快照；撤销未领码才退回积分，已核销的码不能撤销。同一次请求重试保持 `--request-id` 不变，同渠道同 `--external-order` 也会去重；每个新订单使用新的请求号。发码返回的 `code`、`claim_url`、`reply_text`、`product_copy`、`product_images` 可存为订单物料 JSON，返回成功不代表外部平台已上架或发货。
+
+壁纸完整流程在 CLI 内完成：先创建草稿商品，建对应合集与公开预览，逐张上传私有原图，再发布合集并激活商品。公开预览应为降采样或带水印版本，不能与付费原图相同。现有项目命令可管理预览：
+
+```bash
+museav projects
+museav projects assets add ./preview.png --project <项目UUID>
+museav projects assets --project <项目UUID>
+museav shop products create --file wallpaper-draft.json
+museav shop collections list
+museav shop collections save --file collection-draft.json
+museav shop collections show <合集UUID>
+museav shop collections upload <合集UUID> <条目UUID> ./original.png
+museav shop collections save --file collection-published.json
+museav shop products update <商品UUID> --file wallpaper-active.json
+```
+
+`wallpaper-draft.json`：
+
+```json
+{"title":"十月壁纸一期","kind":"wallpaper","credits":0,"status":"draft"}
+```
+
+`collection-draft.json` 的 UUID 来自前面命令的 JSON；封面可为 null，预览素材需属于自己：
+
+```json
+{"title":"十月一期","issue_key":"2026-10-01","description":"自制壁纸原图","access_mode":"product","status":"draft","product_id":"<商品UUID>","workspace_id":"<项目UUID>","cover_asset_id":null,"asset_ids":["<预览素材UUID>"]}
+```
+
+保存返回 `collection.id` 和 `items[].id`。按每个条目 UUID 上传对应原图（单张 ≤32 MiB）。`collection-published.json` 使用相同完整规格，增加返回的 `id` 并将 `status` 改成 `published`；**save 是全量保存**，更新时也保留 `asset_ids`、描述、封面及其它字段，省略字段会重置。发布会检查原图齐备、归属和预览隔离，已发布本期不能替换原图，新内容另建下一期。最后用 `wallpaper-active.json` 启售：
+
+```json
+{"collection_ids":["<已发布合集UUID>"],"status":"active"}
+```
+
+CLI 组合包售卖的是安装指导、自有模板/资产和可选积分。下面可作为 `bundle.json` 的最小实际交付文件；`content` 是核销后下载的 UTF-8 正文（≤200KB），不是本地路径。只放自己有权交付的内容，不放共享私钥，也不把开源 CLI 宣称为独占许可；下载后由买家自行阅读和安装，不自动执行。
+
+```json
+{"title":"自有壁纸工作流入门包","kind":"bundle","credits":0,"bundle_content":{"filename":"README.md","content":"# 安装指导\n运行 npm install -g museav-cli，再用 museav login 登录自己的账户。\n本包提供卖家的安装说明；模板和资产请关联自己拥有的 template_ids/collection_ids。"},"status":"active"}
+```
+
+程序调用复用同一个认证客户端：`new StudioClient({baseUrl, token}).shop`，提供 `show/products/create/update/archive/codes/issue/revoke`，以及 `collections.list/show/save/upload`；类型从 `museav-cli` 根导出。关联自有模板用 `template_ids`，关联壁纸合集用 `collection_ids`，均为 UUID 数组，最终归属与可交付状态由服务端验证。
 
 ## 兼容的 Agent
 

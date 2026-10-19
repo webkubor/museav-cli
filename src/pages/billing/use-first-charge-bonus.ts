@@ -15,7 +15,7 @@ import { RECHARGE_PRESETS, hasBonus } from './recharge-quote'
  * queryKey 与 TopUpModal 的预设报价一致，打开弹框时直接命中缓存，不会多一次报价请求。
  */
 export function useFirstChargeBonus(tenantId: string | null | undefined): string | undefined {
-  const { currency, symbol } = useCurrency()
+  const { currency } = useCurrency()
   const { hasPermission } = usePermissions()
   const canRecharge = hasPermission(PERMS.BILLING_RECHARGE_CREATE)
 
@@ -29,9 +29,10 @@ export function useFirstChargeBonus(tenantId: string | null | undefined): string
     refetchOnWindowFocus: 'always',
   })
 
-  const maxBonus = (data?.items ?? [])
-    .filter((q) => hasBonus(q))
-    .reduce((max, q) => Math.max(max, Number(q.bonus_amount)), 0)
+  const maxBonus = currency === 'USD' ? (data?.items ?? [])
+    .filter((q) => q.currency === 'USD' && hasBonus(q))
+    .reduce((max, q) => Math.max(max, Number(q.bonus_amount)), 0) : 0
 
-  return maxBonus > 0 ? formatMoney(maxBonus, symbol) : undefined
+  // 仅真实 USD 报价可用于美元活动角标。CNY 报价不允许仅替换符号伪装成美元。
+  return maxBonus > 0 ? formatMoney(maxBonus, '$') : undefined
 }

@@ -20,7 +20,10 @@ import {
 } from '@/services/auth'
 import { getCaptchaOutcome } from '@/lib/aliyun-captcha'
 import { useAuthStore } from '@/store/auth'
+import { trackEvent } from '@/lib/track'
 import LoginPage from './index'
+
+vi.mock('@/lib/track', () => ({ trackEvent: vi.fn() }))
 
 const marketState = vi.hoisted(() => ({ value: 'global' as 'china' | 'global' }))
 
@@ -151,6 +154,14 @@ async function completeGlobalCaptcha() {
 }
 
 describe('LoginPage', () => {
+  it('tracks one login exposure and OAuth submit with enum-only properties', async () => {
+    renderLogin()
+    expect(vi.mocked(trackEvent)).toHaveBeenCalledWith('login_view')
+    fireEvent.click(screen.getByRole('button', { name: /Google/i }))
+    await waitFor(() => expect(vi.mocked(trackEvent)).toHaveBeenCalledWith('login_submit', { method: 'oauth' }))
+    expect(vi.mocked(trackEvent).mock.calls.filter(([event]) => event === 'login_view')).toHaveLength(1)
+  })
+
   // 生产环境靠 App.tsx 的 <LocaleNamespaces> 在路由挂载前异步加载 'account' 语言包；
   // 这里直接渲染 <LoginPage> 没经过那层包裹，t() 找不到资源只会回落成原始 key
   // （如 "account.auth.login.continue"），断言真实中文文案会一直找不到元素。

@@ -84,7 +84,12 @@ function clearRememberedLogin() {
  */
 export default function LoginPage() {
   const market = useMarket()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const [searchParams, setSearchParams] = useSearchParams()
+
+  useEffect(() => {
+    if (!isAuthenticated) trackEvent('login_view')
+  }, [isAuthenticated])
 
   // qa#675：推荐码的解析与持久化必须放在 market 分流**之前**。
   // 根路径 /?aff=X 命中 RequireAuth 会被折成 /login?redirect=%2F%3Faff%3DX，码只藏在
@@ -231,6 +236,7 @@ function EmailLoginPage({ market, onUsePhone }: { market: Market; onUsePhone?: (
   }
 
   const onPasswordSubmit = async (data: PasswordFields) => {
+    trackEvent('login_submit', { method: 'password' })
     // 验证条生效但未完成 → 调起挑战，等验证通过后自动提交
     if (gateActive && !gateParam) {
       autoSubmitRef.current = true

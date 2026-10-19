@@ -203,6 +203,7 @@ export function GlobalEmailAuth() {
   }
 
   const handleCodeSubmit = async (data: CodeFields) => {
+    trackEvent('login_submit', { method: 'email_code' })
     // 同上：确认验证码这步也要求人机校验（后端 email-code/login 强制要求，跟手机号
     // 登录一致），门禁未通过时先调起可见挑战，不在函数里静默弹窗把用户吓一跳。
     if (gateActive && !gateParam) {
@@ -256,6 +257,7 @@ export function GlobalEmailAuth() {
 
   const handleOAuth = async (provider: GlobalOAuthProvider) => {
     if (pendingProvider) return
+    trackEvent('login_submit', { method: 'oauth' })
     setPendingProvider(provider)
     setServerError('')
     try {

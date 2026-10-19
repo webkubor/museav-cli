@@ -8,6 +8,8 @@ export type NavItem = {
   icon: React.ReactNode
   items?: NavItem[]
   permission?: Permission
+  /** 行尾角标文案（展开态显示，收起态不显示）。未传则不渲染 */
+  badge?: string
 }
 
 /**
@@ -37,6 +39,8 @@ export interface NavVisibilityContext {
   isDevTools: boolean
   isOrgManager: boolean
   isSpaceManager: boolean
+  /** 首充赠金角标文案（已翻译好的完整句，如「最高送 $10」）；无则不显示 */
+  billingBonusBadge?: string
 }
 
 export type NavIcons = Record<string, React.ReactNode>
@@ -71,7 +75,7 @@ export const navConfig: NavConfig = {
       label: t('nav.groupBilling'),
       scope: 'tenant',
       items: [
-        { itemKey: 'billing', text: t('nav.billing'), icon: icons.creditCard, permission: routePermission('billing') },
+        { itemKey: 'billing', text: t('nav.billing'), icon: icons.creditCard, permission: routePermission('billing'), badge: ctx.billingBonusBadge },
         { itemKey: 'usage', text: t('nav.usage'), icon: icons.histogram, permission: routePermission('usage') },
         { itemKey: 'logs', text: t('nav.logs'), icon: icons.list, permission: routePermission('logs') },
       ],

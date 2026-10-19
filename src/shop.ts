@@ -70,6 +70,8 @@ const CHANNELS = ['xiaohongshu', 'xianyu']
 const TEXT_FIELDS = ['category', 'cover_url', 'reply_text', 'product_copy', 'hook_text', 'tutorial_pdf_url', 'tutorial_pdf_title']
 const FIELDS = ['title', 'kind', 'credits', 'channel', 'template_ids', 'collection_ids', 'bundle_content', 'benefits', 'status', ...TEXT_FIELDS]
 const MAX_BUNDLE_BYTES = 200 * 1024
+// 与后端积分存储的 int32 上限一致，避免通过本地校验后数据库溢出。
+const MAX_CREDITS = 2 ** 31 - 1
 
 /** 在发请求前校验商品或部分更新，拒绝拼错或服务端会忽略的字段。 */
 export function validateShopProduct(value: unknown, partial = false): asserts value is ShopProductInput {
@@ -81,7 +83,7 @@ export function validateShopProduct(value: unknown, partial = false): asserts va
     if (typeof p.title !== 'string' || !p.title.trim() || p.title.length > 120) throw new Error('title 需为 1–120 字符的标题')
   }
   if ((!partial || 'kind' in p) && !KINDS.includes(p.kind as string)) throw new Error('kind 只支持 credits/wallpaper/bundle')
-  if ((!partial || 'credits' in p) && (!Number.isSafeInteger(p.credits) || (p.credits as number) < 0)) throw new Error('credits 需为非负安全整数')
+  if ((!partial || 'credits' in p) && (!Number.isInteger(p.credits) || (p.credits as number) < 0 || (p.credits as number) > MAX_CREDITS)) throw new Error(`credits 需为 0–${MAX_CREDITS} 的整数`)
   if ('channel' in p) validateShopChannel(p.channel)
   if ('status' in p && !['draft', 'active', 'archived'].includes(p.status as string)) throw new Error('status 只支持 draft/active/archived')
   for (const key of TEXT_FIELDS) if (p[key] != null && typeof p[key] !== 'string') throw new Error(`${key} 需为字符串或 null`)

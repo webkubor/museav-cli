@@ -57,6 +57,18 @@ test('无效JSON规格和发码参数在HTTP前拒绝，草稿允许壁纸绑定
   assert.equal(calls.length, 2)
 }))
 
+test('商品创建和更新积分限制与后端int32一致', async () => network(async (client, calls) => {
+  for (const credits of [2147483648, Number.MAX_SAFE_INTEGER, Infinity, NaN]) {
+    await assert.rejects(client.shop.create({ ...product, credits }), /0–2147483647/)
+    await assert.rejects(client.shop.update(ID, { credits }), /0–2147483647/)
+  }
+  assert.equal(calls.length, 0)
+  await client.shop.create({ ...product, credits: 2147483647 })
+  await client.shop.update(ID, { credits: 2147483647 })
+  await client.shop.update(ID, { credits: 0 })
+  assert.deepEqual(calls.map(call => JSON.parse(call.body).credits), [2147483647, 2147483647, 0])
+}))
+
 test('创作API Key禁止经营店铺且不会请求网络', async () => network(async (_, calls) => {
   const keyed = new StudioClient({ baseUrl: 'https://example.test', apiKey: 'fake-key' })
   await assert.rejects(keyed.shop.products(), /museav login.*MUSEAV_API_KEY/)

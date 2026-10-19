@@ -5,7 +5,7 @@
  * API：POST /auth/email/check、POST /auth/login、GET /auth/session
  */
 
-import type { ReactNode } from 'react'
+import { StrictMode, type ReactNode } from 'react'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -159,6 +159,20 @@ describe('LoginPage', () => {
     expect(vi.mocked(trackEvent)).toHaveBeenCalledWith('login_view')
     fireEvent.click(screen.getByRole('button', { name: /Google/i }))
     await waitFor(() => expect(vi.mocked(trackEvent)).toHaveBeenCalledWith('login_submit', { method: 'oauth' }))
+    expect(vi.mocked(trackEvent).mock.calls.filter(([event]) => event === 'login_view')).toHaveLength(1)
+  })
+
+  it('counts one login exposure when StrictMode replays effects', () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <StrictMode>
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={['/login']}>
+            <LoginPage />
+          </MemoryRouter>
+        </QueryClientProvider>
+      </StrictMode>,
+    )
     expect(vi.mocked(trackEvent).mock.calls.filter(([event]) => event === 'login_view')).toHaveLength(1)
   })
 

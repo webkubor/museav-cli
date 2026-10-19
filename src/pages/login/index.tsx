@@ -86,9 +86,14 @@ export default function LoginPage() {
   const market = useMarket()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const [searchParams, setSearchParams] = useSearchParams()
+  const loginViewTracked = useRef(false)
 
   useEffect(() => {
-    if (!isAuthenticated) trackEvent('login_view')
+    // StrictMode 开发/测试环境会重放 effect；同一次挂载只记一次曝光。
+    if (!isAuthenticated && !loginViewTracked.current) {
+      loginViewTracked.current = true
+      trackEvent('login_view')
+    }
   }, [isAuthenticated])
 
   // qa#675：推荐码的解析与持久化必须放在 market 分流**之前**。

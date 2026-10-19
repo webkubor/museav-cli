@@ -31,6 +31,7 @@ import { trackEvent } from '@/lib/track'
 import { currentIdentity, pushDataLayer } from '@/lib/gtm-datalayer'
 import { readGaIdentifiers } from '@/lib/ga-ids'
 import { readPersistedAdAttribution, type AdAttributionFields } from '@/pages/signup/ad-source'
+import { trackAdAttributionStage } from '@/lib/ad-attribution-diagnostics'
 
 /** OAuth 回跳 URL 上的新注册标记参数名（后端 web-api!90 / permissions!56 契约）。 */
 const NEW_ACCOUNT_PARAM = 'is_new_account'
@@ -81,6 +82,7 @@ export function captureNewAccountFlag(now: number = Date.now()): void {
  */
 export function trackSignUp(method: AuthMethod, isNewAccount?: boolean, adAttribution?: AdAttributionFields): void {
   if (isNewAccount !== true) return
+  trackAdAttributionStage('signup_confirmed', adAttribution, method === 'oauth' ? 'oauth' : method === 'phone' ? 'phone' : 'email')
   // 两条线带同一份来源快照。自建埋点这条腿此前只有 `{ method }`，投放侧拿 gclid 去 join
   // 自建注册表永远对不上，国内 CPA 因此算不出来（国内站只有自建埋点这一条渠道）。
   //

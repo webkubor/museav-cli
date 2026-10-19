@@ -11,6 +11,8 @@
 import { readFileSync } from 'node:fs'
 import { basename } from 'node:path'
 import { compressForVision } from './compress.js'
+import { createShopApi, type ShopApi } from './shop.js'
+export * from './shop.js'
 
 /**
  * 客户端自报身份 —— 中台靠它把 gen_jobs.channel 记成 'cli'，报错告警也靠它定位调用方。
@@ -432,6 +434,11 @@ export interface MeInfo {
 export class StudioClient {
   private baseUrl: string
   private authHeader: Record<string, string>
+  /** 个人店铺：商品、渠道物料和发货码，复用当前身份。 */
+  readonly shop: ShopApi = createShopApi((path, init) => {
+    if (!this.authHeader.Authorization) throw new Error('店铺使用个人登录，请 museav login；如已登录，请清理 MUSEAV_API_KEY/STUDIO_API_KEY 环境变量后重试')
+    return this.request(path, init)
+  })
 
   constructor(opts: { baseUrl: string; apiKey?: string; token?: string }) {
     this.baseUrl = opts.baseUrl.replace(/\/+$/, '')

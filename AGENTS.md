@@ -167,6 +167,20 @@ museav whoami
 
 Full flag reference: `museav <command> --help`. Full command table and auth details: see [README.md](./README.md).
 
+## Personal seller shop
+
+Use `museav shop` for the current person's own shop. **Requires existing personal `museav login` JWT**; creation API Keys and tenant identities cannot transfer seller credits. Clear `MUSEAV_API_KEY` / `STUDIO_API_KEY` if they override the login. Reuse `StudioClient.shop`, never introduce a second auth store. Existing top-level `products` remains the TenantClient reference catalog.
+
+- Discover actions with `shop --help`, `shop products <action> --help`, `shop collections <action> --help`, `shop codes <action> --help`.
+- `shop show`; `shop products list/create --file/update <id> --file/archive <id>`; product JSON uses `kind: credits|wallpaper|bundle`, `credits`, and owned `template_ids`/`collection_ids` UUID arrays. Reject unknown fields locally.
+- `shop codes list/issue --product <uuid> --channel xiaohongshu|xianyu --external-order <order> --request-id <stable-id>/revoke <code>`. Always persist and reuse the request id when retrying the same issue operation. Issuing reserves the seller's real credits; revoking an unused code refunds them. The server snapshots delivery at issue time and handles ownership and balance atomically.
+- Wallpaper setup: create product with `kind:wallpaper,status:draft,credits:0`; use existing `projects assets` for public previews; `shop collections save --file` to bind the draft product and preview asset IDs; upload each private original with `shop collections upload <collection> <item> <file>`; full-save the collection as `published`; update product with `collection_ids` and `status:active`. `shop collections list/show` returns IDs. **save replaces metadata and asset selection**, so updates need the complete spec. See README for exact JSON.
+- Private originals go only to the collection multipart upload, never the public upload-ref endpoint. Published originals cannot be replaced; create a new issue. Public preview must differ from paid original.
+- CLI bundles deliver an actual `bundle_content:{filename,content}` UTF-8 file ≤200KB, with a safe ASCII filename. Sell installation guidance and owned templates/assets/credits. Never include shared private keys or claim an exclusive license to the open-source CLI. Downloaded bundle content is never executed automatically.
+- Outputs are JSON on stdout; errors/progress on stderr. Product/code lists are bounded to the latest 200. Generated channel material and claim codes require **manual** listing and buyer delivery on external platforms. Do not claim automatic Xianyu/Xiaohongshu publishing.
+- API contract: `sales-products` GET/POST/DELETE; `sales-listing` GET/POST(issue or action:disable); public `shop?owner`; `creator-collections` GET/POST JSON or private multipart. The SDK reuses StudioClient request/auth. Never invent sales/order endpoints.
+
+
 ## Failure modes worth knowing
 
 - **Cross-platform contract**: the CLI targets macOS AND Windows. No Unix-only assumptions anywhere — paths go through `node:path`/`os.homedir()`, no shell expansions, no brew/which calls in code (OS-specific text adapts via `process.platform`). Keep it that way in new code.

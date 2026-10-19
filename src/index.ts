@@ -34,6 +34,7 @@ import { products } from './commands/products.js'
 import { assets } from './commands/assets.js'
 import { stickers, createSticker } from './commands/stickers.js'
 import { posterTemplates, createPosterTemplate, updatePosterTemplate, removePosterTemplate } from './commands/poster-templates.js'
+import { registerShop } from './commands/shop.js'
 
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8')) as { name: string; version: string }
 // 每 12 小时最多查一次 npm registry，过期才提示，不拖慢日常调用
@@ -557,6 +558,8 @@ program
   .command('products')
   .description('查所属租户自己的产品目录（数据在租户自己的后台，不在 Studio 中台；只支持已开通该接口的租户，仅租户 apiKey 身份可用）')
   .action(withTenantClient((client: TenantClient) => products(client)))
+
+registerShop(program, withClient)
 
 program
   .command('assets')

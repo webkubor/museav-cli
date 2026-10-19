@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### 在终端经营自己的数字店铺
+
+以前 `museav products` 只能查租户参考商品，个人卖家管理商品、整理渠道文案和发货需要回到网页。现在 `museav shop` 可以查看自己的公开店铺、用 JSON 文件创建或修改积分/壁纸/组合包商品，并归档旧商品；原来的租户商品命令用法不变。
+
+壁纸可以从草稿商品一路做到已发布合集：`shop collections save --file` 绑定公开预览，`shop collections upload` 上传独立私有原图，发布后再启售。组合包实际交付安装说明和自有内容文件，不自动执行，也不包含共享凭证或开源 CLI 的独占许可。
+
+`shop codes issue --product <UUID> --channel xianyu --external-order <订单号> --request-id <请求号>` 返回渠道物料和领取码。签发时预留卖家积分，未领码可撤销退款；同一操作重试保持请求号不变。使用现有 `museav login` 个人登录，创作 Key 不能经营店铺。闲鱼/小红书仍由卖家手工上架和发送物料，CLI 不自动发布。
+
 ## 3.12.0 (2026-10-04)
 
 ### IP 人设能上传进中台了（`museav ip` / `museav subjects`）

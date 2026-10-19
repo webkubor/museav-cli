@@ -21,6 +21,7 @@ import { apiBaseUrl } from './lib/request'
 import { useAuthStore } from './store/auth'
 import { captureNewAccountFlag } from './lib/new-account'
 import { captureAdAttributionAtBoot } from './pages/signup/ad-source'
+import { trackAdArrival } from './lib/ad-attribution-diagnostics'
 import { installDataLayerIdentitySync } from './lib/gtm-datalayer'
 import { getBrowserConsentRegion, getBrowserCountry } from './lib/consent-region'
 import { hasAnalyticsConsent, onConsentChange } from './lib/consent'
@@ -111,6 +112,7 @@ onConsentChange((choice) => (choice === 'accept' ? startIdentitySync() : stopIde
 // 再 302 回来，回跳 URL 只带 is_new_account、不带来源参数，也靠这份记录取回。
 // 必须早于 captureNewAccountFlag —— 它拍的 OAuth 快照读的就是这份持久化记录。
 captureAdAttributionAtBoot()
+trackAdArrival(window.location.search)
 
 // OAuth 回跳的新注册标记：必须在 React 挂载前摘掉并记下（prd#1242）。
 // 回跳目标页各自在挂载时读一次 URL，晚一步清理用户就会看到残留的 ?is_new_account=…；

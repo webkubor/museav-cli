@@ -7,6 +7,7 @@ import { apiBaseUrl, get, post } from '@/lib/request'
 import { setCsrfToken } from '@/lib/auth/csrf-token'
 import { readVisitorId } from '@/lib/visitor-id'
 import { resolveAdSource, type AdSourceFields } from '@/pages/signup/ad-source'
+import { trackAdAttributionStage } from '@/lib/ad-attribution-diagnostics'
 import { resolveReferralCode } from '@/pages/signup/referral-code'
 import type { AuthMailTTLResponse } from '@/interfaces/auth'
 import type {
@@ -60,6 +61,7 @@ export function emailCodeLoginRegister(
   invitationToken?: string,
   adSource?: AdSourceFields,
 ) {
+  trackAdAttributionStage('auth_request', adSource, 'email')
   return post<LoginResult>(
     'auth/email-code/login',
     withCaptcha(
@@ -124,6 +126,7 @@ export function phoneLoginRegister(
 ) {
   // referral_code 推荐归因（需求方#714）：后端 PhoneLoginCommand 目前缺该字段（registerPhoneOnce
   // 写死空串），前端先按邮箱注册腿同名契约上送，后端补齐前会被忽略、不影响注册。后端单见 qa 看板。
+  trackAdAttributionStage('auth_request', adSource, 'phone')
   return post<LoginResult>(
     'auth/sms-code/login',
     withCaptcha(
@@ -190,6 +193,7 @@ export function oauthAuthorizeUrl(
   if (typeof window !== 'undefined') {
     const current = new URLSearchParams(window.location.search)
     const adSource = resolveAdSource(current)
+    trackAdAttributionStage('auth_request', adSource, 'oauth')
     for (const [key, value] of Object.entries(adSource ?? {})) {
       if (value) query.set(key, value)
     }

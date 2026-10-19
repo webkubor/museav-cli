@@ -5,7 +5,8 @@ describe('answerStatusPresentation', () => {
   it.each([
     ['answered', null],
     ['answered_tool', null],
-    ['intent', 'common.customerService.answerStatus.intent'],
+    // intent = 已识别转人工/反馈，正文已说明下一步，不再叠提示（modelgo_prd#1388）
+    ['intent', null],
     ['needs_login', 'common.customerService.answerStatus.needsLogin'],
     ['insufficient_evidence', 'common.customerService.answerStatus.insufficientEvidence'],
     ['degraded', 'common.customerService.answerStatus.degraded'],

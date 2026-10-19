@@ -249,21 +249,23 @@ describe('useSupport · agent-detected human handoff', () => {
     expect(result.current.isAsking).toBe(false)
   })
 
-  it('includes the triggering question once in the handoff summary', async () => {
+  it('includes the triggering question once in the handoff context', async () => {
     askSupportMock.mockResolvedValue({ answer: '正在转接', answer_status: 'intent', intent: 'human_handoff', suggest_handoff: true })
     const { result } = renderHook(() => useSupport())
     await act(async () => result.current.ask('请帮我联系值班同事'))
-    const summary = requestHandoffMock.mock.calls[0][0].summary as string
-    expect(summary.match(/请帮我联系值班同事/g)).toHaveLength(1)
+    const body = requestHandoffMock.mock.calls[0][0]
+    expect(body.last_user_text).toBe('请帮我联系值班同事')
+    expect(JSON.stringify(body.transcript).match(/请帮我联系值班同事/g)).toHaveLength(1)
+    expect(body).not.toHaveProperty('summary')
     expect(result.current.messages.filter((message) => message.role === 'user')).toHaveLength(1)
   })
 
-  it('does not include a sensitive triggering question in the handoff summary', async () => {
+  it('does not include a sensitive triggering question in the handoff context', async () => {
     askSupportMock.mockResolvedValue({ answer: '转接中', answer_status: 'intent', intent: 'human_handoff', suggest_handoff: true, sensitive: { Hit: true, Kind: 'secret' } })
     const { result } = renderHook(() => useSupport())
     await act(async () => result.current.ask('请处理我的 token: secret-value'))
     expect(requestHandoffMock).toHaveBeenCalledOnce()
-    expect(requestHandoffMock.mock.calls[0][0].summary).not.toContain('secret-value')
+    expect(JSON.stringify(requestHandoffMock.mock.calls[0][0])).not.toContain('secret-value')
   })
 
   it.each(['success', 'failure'])('ignores an old handoff %s after switching accounts without changing the new conversation', async (outcome) => {
@@ -327,8 +329,8 @@ describe('useSupport · agent-detected human handoff', () => {
     await act(async () => result.current.ask('转人工'))
     expect(requestHandoffMock).toHaveBeenCalledOnce()
     expect(result.current.mode.kind).toBe('queuing')
-    const summary = requestHandoffMock.mock.calls[0][0].summary as string
-    expect(summary).toContain('我的账单金额不对')
+    // 最后一句是裸「转人工」：工单描述要用此前的具体问题（modelgo_prd#1388 测试环境验收发现）
+    expect(requestHandoffMock.mock.calls[0][0].last_user_text).toBe('转人工，我的账单金额不对')
   })
 
   it('does not create another handoff when a pending ask returns after manual handoff succeeds', async () => {

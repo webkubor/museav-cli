@@ -123,9 +123,16 @@ export interface SupportAttachmentContent extends SupportTicketAttachment {
   content_base64?: string
 }
 
+/** 交接快照里的一条上文：用户提问原文，或助手回答的状态标签（不含回答正文）。 */
+export type SupportHandoffTranscriptEntry =
+  | { role: 'user'; content: string }
+  | { role: 'assistant'; answer_status: SupportAnswerStatus }
+
 export interface SupportHandoffRequest {
   page_path?: string
-  summary?: string
+  /** 最近一条具体问题；agent 用它生成工单描述 */
+  last_user_text?: string
+  transcript?: SupportHandoffTranscriptEntry[]
   /** 幂等键：同一次转人工意图的失败重试必须复用，避免后端重复建单（PRD 12.5）。 */
   client_submission_id: string
 }

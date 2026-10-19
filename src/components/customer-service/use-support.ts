@@ -51,6 +51,7 @@ import type {
   SupportAnswerStatus,
   SupportAskResponse,
   SupportFeedbackRequest,
+  SupportHandoffTranscriptEntry,
   SupportMessage,
   SupportTicketDetail,
   SupplementResult,
@@ -102,21 +103,34 @@ export function mergeFreshAgentMessages(prev: ChatItem[], items: SupportMessage[
   return fresh.length === 0 ? prev : [...prev, ...fresh]
 }
 
+/** 一条消息里的转人工话术与客套词；剥掉之后剩下的才是用户描述的问题。 */
+const HANDOFF_PHRASE_RE = /转\s*人工|人工\s*客服|找\s*客服|联系\s*客服|人工\s*处理|接个人工/g
+const HANDOFF_FILLER_RE = /你好|您好|在吗|有人吗|谢谢|麻烦|请问|请|帮我|给我|我要|我想|我需要|需要|直接|马上|立刻|赶紧|快点|还是|一下|吧|啊|呀|呢|吗|嘛|了|的/g
+
+/** 只是在要人工、没说具体问题（「转人工」「还是转人工吧」）。与后端 support.HandoffQuestion 同口径。 */
+export function isBareHandoffRequest(text: string): boolean {
+  const rest = text.replace(HANDOFF_PHRASE_RE, '').replace(HANDOFF_FILLER_RE, '')
+  return (rest.match(/[\p{L}\p{N}]/gu)?.length ?? 0) < 3
+}
+
 /**
- * 人工交接摘要（PRD §8.6）。只拼**用户提问**与回答状态，绝不带回答正文与任何凭据：
- * §10 明确 API Key / Token / 密码不得进入交接摘要。取最近 6 条，整体截到 800 字。
+ * 人工交接上文（PRD §8.6）。按 agent `/support/handoff` 的字段给：
+ * - `last_user_text`：最近一条**具体问题**——工单描述由它生成（「用户反馈：…」）。跳过裸「转人工」
+ *   （闸门下最后一句往往就是它，modelgo_prd#1388）和 sensitive.Hit 命中的消息。
+ * - `transcript`：最近 6 条用户提问 + 各次回答的状态标签，进交接快照。
+ * 绝不带回答正文与任何凭据：§10 明确 API Key / Token / 密码不得进入交接上文。
+ * 此前这里拼成一段 `summary` 发出，但 agent 不认这个字段，整段被丢弃，工单只剩通用描述。
  */
-export function buildHandoffSummary(items: ChatItem[], pagePath: string): string {
-  const lines = items
-    .filter((m) => m.role === 'user' && !m.sensitiveHit)
-    .slice(-6)
-    .map((m) => `- ${m.content.slice(0, 120)}`)
-  const tried = items.filter((m) => m.role === 'assistant').length
-  return [
-    `页面：${pagePath}`,
-    tried > 0 ? `已尝试智能回答 ${tried} 次` : '未获得智能回答',
-    lines.length ? `最近提问：\n${lines.join('\n')}` : '',
-  ].filter(Boolean).join('\n').slice(0, 800)
+export function buildHandoffContext(items: ChatItem[]): { last_user_text?: string; transcript: SupportHandoffTranscriptEntry[] } {
+  const questions = items.filter((m) => m.role === 'user' && !m.sensitiveHit)
+  const lastQuestion = [...questions].reverse().find((m) => !isBareHandoffRequest(m.content))
+  const recent = new Set(questions.slice(-6))
+  const transcript: SupportHandoffTranscriptEntry[] = items.flatMap((m): SupportHandoffTranscriptEntry[] => {
+    if (recent.has(m)) return [{ role: 'user', content: m.content.slice(0, 200) }]
+    if (m.role === 'assistant' && m.answerStatus) return [{ role: 'assistant', answer_status: m.answerStatus }]
+    return []
+  })
+  return { last_user_text: lastQuestion?.content.slice(0, 200), transcript }
 }
 
 /** 取后端实测的回答 id；匿名占位不算，评分控件据此隐藏。 */
@@ -370,9 +384,9 @@ export function useSupport() {
         // PRD §8.6：转人工要自动交接当前页面与最近对话摘要，客服不用从头问一遍。
         // §10/§12 要求摘要先过敏感检测：这里只取**用户自己的提问**和回答状态标签，
         // 不带回答正文、不带 API Key/Token（后端 sensitive.Hit 命中的那条也不会进来）。
-        summary: buildHandoffSummary(trigger
+        ...buildHandoffContext(trigger
           ? [...messages, { id: '', role: 'user', content: trigger.question, createdAt: Date.now(), sensitiveHit: trigger.sensitiveHit }]
-          : messages, currentPagePath() ?? ''),
+          : messages),
       })
       if (epoch !== accountEpoch.current || accountId !== activeAccountId.current) return
       handoffSubmissionId.current = null

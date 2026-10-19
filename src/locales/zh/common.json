@@ -406,7 +406,6 @@
         "billing": "如何查看用量与账单"
       },
       "answerStatus": {
-        "intent": "请补充工作空间、时间范围或 Request ID，方便我继续处理",
         "needsLogin": "登录后可查询你的账户数据",
         "insufficientEvidence": "暂时无法确认，建议提交反馈",
         "degraded": "当前证据不足，以上仅供参考",

@@ -406,7 +406,6 @@
         "billing": "How to check usage and billing"
       },
       "answerStatus": {
-        "intent": "Please add a workspace, time range, or Request ID so I can continue.",
         "needsLogin": "Sign in to query your account data",
         "insufficientEvidence": "Not confirmed yet — you can submit feedback",
         "degraded": "Evidence is limited; treat this as a rough guide",

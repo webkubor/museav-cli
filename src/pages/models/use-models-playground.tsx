@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useCurrency } from '@/hooks/use-platform-config'
+import { resolvePlaygroundLinkModel } from './playground-link-model'
 import {
   createExperienceSession,
   streamExperienceMessage,
@@ -226,7 +227,16 @@ export function useModelsPlayground() {
     // 同理兜底选中也要等列表就绪，否则会先选错再被纠正，闪一下。
     if (!modelsQuery.isSuccess) return
 
-    if (state?.selectedModelId) {
+    const hasLinkModel = new URLSearchParams(location.search).has('model_id')
+    const linkModel = hasLinkModel ? resolvePlaygroundLinkModel(location.search, allModels) : undefined
+    if (hasLinkModel) {
+      if (linkModel) {
+        setSingle({ selectedId: linkModel.id, offlineModel: null, task: null })
+        startNewSession()
+      }
+      // 参数不可信：不存在的 ID 不改变已有模型，也不向后端发送；消费后清除避免返回时重复选择。
+      navigate('/models/playground', { replace: true, state: {} })
+    } else if (state?.selectedModelId) {
       const targetModel = allModels.find((m) => m.model_id === state.selectedModelId || m.id === state.selectedModelId)
       if (targetModel) {
         setSingle({ selectedId: targetModel.id, offlineModel: null, task: null })
@@ -248,7 +258,7 @@ export function useModelsPlayground() {
       setSelectedId(allModels[0].id)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allModels, selectedId, setSelectedId, location.state, navigate, modelsQuery.isSuccess])
+  }, [allModels, selectedId, setSelectedId, location.state, location.search, navigate, modelsQuery.isSuccess])
 
   // 会话按租户隔离，切换租户后旧 conversationId 在新租户下已不存在，继续发消息会打到
   // POST .../experience/conversations/{旧id}/messages 上被后端 404「资源不存在」拒绝

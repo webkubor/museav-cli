@@ -74,6 +74,7 @@ describe('GlobalEmailAuth factors and recovery #1092', () => {
     await goToCode()
     expect(sendEmailCode).toHaveBeenCalledWith('fixture@example.invalid', 'send-captcha')
     submitCode()
+    await waitFor(() => expect(trackEvent).toHaveBeenCalledWith('login_submit', { method: 'email_code' }))
     await waitFor(() => expect(emailCodeLoginRegister).toHaveBeenCalledWith('fixture@example.invalid', '123456', 'login-captcha', 'ATTR', 'INV', undefined))
     await waitFor(() => expect(setAuth).toHaveBeenCalledWith({ account_id: 'a' }, 't', [], 'w', ['read']))
   })

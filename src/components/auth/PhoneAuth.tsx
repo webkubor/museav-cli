@@ -118,6 +118,7 @@ export function PhoneAuth({ onUseEmail }: { onUseEmail?: () => void }) {
   }
 
   const onSubmit = async (data: Fields) => {
+    trackEvent('login_submit', { method: 'phone' })
     // 登录侧也要带四元组：后端 sms-code/login 实测缺失即拒 40025。发码那次的四元组
     // 已在发码时消费（一次性），所以这里必须是一次新的验证——验证条生效但未通过时
     // 调起挑战并中止本次提交，用户完成后再点登录（短信码仍在 5 分钟有效期内，不用重发）。

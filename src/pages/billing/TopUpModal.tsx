@@ -18,6 +18,7 @@ import {
 import { BRAND_COLORS } from '@/constants/brand-colors'
 import { amountBand } from './billing-tracking'
 import {
+  RECHARGE_PRESETS,
   findQuote,
   hasBonus,
   isQuoteConflictError,
@@ -37,18 +38,6 @@ import { LuGift } from 'react-icons/lu'
 // （手机宽度档位卡不折成两列、选中态描边丢失），这里显式 import 让组件自带样式，Vite 去重。
 import './billing.css'
 
-/**
- * 推荐档位（只是快捷入口，赠金以服务端报价为准）。
- *
- * 两站面值完全一致，只有单位符号不同（¥ / $）——2026-10-12 与需求方确认：
- * PRD 原型 BillingRechargeModal（modelgo_prd）只给了一套面值且以 $ 渲染，
- * 产品拍板国内站沿用同一组数值，「单位不一样」。因此这里收敛成一份常量，
- * 币种符号由 formatMoney 的 currencySymbol 负责。
- *
- * #1260：两站最多 5 档，第 6 格固定为「自定义额度」。`.slice(0, 5)` 写在渲染与报价
- * 请求之前，两条路径共用同一个裁剪结果。
- */
-const PRESETS = ['0.5', '5', '10', '100', '500']
 /** 默认选中档位（沿用改动前 CNY/USD 的默认行为，不因面值统一而改变） */
 const DEFAULT_AMOUNT = '500'
 /** 最低充值额：0.5（2026-10-12 需求方要求首档与下限由 0.1 提到 0.5，prd46#1260；法币最小精度两位小数） */
@@ -122,11 +111,11 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
 
   // ─── 首冲赠金报价（prd46#1240）：打开弹框即取预设档报价；自定义金额防抖后单独报价 ───
   const quoteEnabled = visible && canRecharge && !!tenantId
-  const presetQuotesKey = ['recharge-quotes', tenantId, currency, PRESETS.join(',')]
+  const presetQuotesKey = ['recharge-quotes', tenantId, currency, RECHARGE_PRESETS.join(',')]
   const customQuoteKey = (value: string) => ['recharge-quote', tenantId, currency, value]
   const presetQuotes = useQuery({
     queryKey: presetQuotesKey,
-    queryFn: () => quoteRecharges(tenantId, { currency, amounts: PRESETS }),
+    queryFn: () => quoteRecharges(tenantId, { currency, amounts: RECHARGE_PRESETS }),
     enabled: quoteEnabled,
     retry: false,
     staleTime: 0,
@@ -384,7 +373,7 @@ export function TopUpModal({ visible, onClose, tenantId }: TopUpModalProps) {
             )}
           </div>
           <div className="billing-recharge-presets grid grid-cols-3 gap-2">
-            {PRESETS.map((p) => {
+            {RECHARGE_PRESETS.map((p) => {
               const active = !customMode && sameAmount(selected, p)
               const quote = findQuote(presetItems, p)
               const line = hasBonus(quote)

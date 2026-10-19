@@ -16,6 +16,7 @@
     "usage": "Usage",
     "logs": "Logs",
     "billing": "Billing",
+    "billingBonusBadge": "Up to {{max}} bonus",
     "payAsYouGo": "Pay-as-you-go",
     "orders": "Orders",
     "invoices": "Invoices",

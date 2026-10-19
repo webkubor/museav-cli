@@ -29,13 +29,10 @@ export function useFirstChargeBonus(tenantId: string | null | undefined): string
     refetchOnWindowFocus: 'always',
   })
 
-  const maxBonus = (data?.items ?? [])
-    .filter((q) => hasBonus(q))
-    .reduce((max, q) => Math.max(max, Number(q.bonus_amount)), 0)
+  const maxBonus = currency === 'USD' ? (data?.items ?? [])
+    .filter((q) => q.currency === 'USD' && hasBonus(q))
+    .reduce((max, q) => Math.max(max, Number(q.bonus_amount)), 0) : 0
 
-  // 需求文档（v1.0.9 投放 #1389）把文案口径定死为美元：
-  //   英文 `Up to $10 bonus` / 中文 `最高送 $10`。
-  // 这里不能跟随站点币种 symbol —— 国内站 symbol 是 ¥，会把文案渲染成 `最高送 ¥10`，
-  // 与需求不符。金额仍取服务端报价的 bonus_amount，只固定货币符号。
+  // 仅真实 USD 报价可用于美元活动角标。CNY 报价不允许仅替换符号伪装成美元。
   return maxBonus > 0 ? formatMoney(maxBonus, '$') : undefined
 }

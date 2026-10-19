@@ -3,23 +3,20 @@ import { answerStatusPresentation } from './answer-status'
 
 describe('answerStatusPresentation', () => {
   it.each([
-    ['answered', null, false],
-    ['answered_tool', null, false],
-    ['intent', 'common.customerService.answerStatus.intent', false],
-    ['needs_login', 'common.customerService.answerStatus.needsLogin', false],
-    ['insufficient_evidence', 'common.customerService.answerStatus.insufficientEvidence', false],
-    ['degraded', 'common.customerService.answerStatus.degraded', false],
-    ['out_of_scope', 'common.customerService.answerStatus.outOfScope', false],
-    ['human_handoff', 'common.customerService.answerStatus.suggestHandoff', true],
-    ['suggest_handoff', 'common.customerService.answerStatus.suggestHandoff', true],
-  ] as const)('maps %s to its product guidance', (status, hintKey, showHandoffCta) => {
-    expect(answerStatusPresentation(status)).toEqual({ hintKey, showHandoffCta })
-  })
-
-  it('honors the API suggest_handoff flag independently of the answer status', () => {
-    expect(answerStatusPresentation('insufficient_evidence', true)).toEqual({
-      hintKey: 'common.customerService.answerStatus.insufficientEvidence',
-      showHandoffCta: true,
-    })
+    ['answered', null],
+    ['answered_tool', null],
+    // intent = 已识别转人工/反馈，正文已说明下一步，不再叠提示（modelgo_prd#1388）
+    ['intent', null],
+    ['needs_login', 'common.customerService.answerStatus.needsLogin'],
+    ['insufficient_evidence', 'common.customerService.answerStatus.insufficientEvidence'],
+    ['degraded', 'common.customerService.answerStatus.degraded'],
+    ['out_of_scope', 'common.customerService.answerStatus.outOfScope'],
+    ['human_handoff', 'common.customerService.answerStatus.suggestHandoff'],
+    ['suggest_handoff', 'common.customerService.answerStatus.suggestHandoff'],
+    // 被拦下的转人工：回答正文自己说明怎么做，不再叠加提示（modelgo_prd#1388）
+    ['handoff_needs_question', null],
+    ['handoff_pending', null],
+  ] as const)('maps %s to its product guidance', (status, hintKey) => {
+    expect(answerStatusPresentation(status)).toEqual({ hintKey })
   })
 })

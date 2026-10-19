@@ -28,7 +28,7 @@
 | **抠像素/水印/超分等后期** | ✅ `remove-bg` `upscale` `compress` | ❌ 另装一堆工具 | — | ✅ 网页编辑器 |
 | **浏览器自动化场景** | ❌ 边缘运行时起不了子进程 | — | ✅ | ✅ |
 
-**一句话**：这个 CLI 只解决一件事 —— **让人和 Agent 在终端里把图出了**。做产品集成请直接调 HTTP API 或 `import { StudioClient }`，别用 CLI。
+**一句话**：让人和 Agent 在终端里创作图片、视频，并经营自己的数字商品店铺。产品集成可直接调 HTTP API 或 `import { StudioClient }`。
 
 ---
 

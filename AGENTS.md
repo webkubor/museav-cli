@@ -9,7 +9,7 @@ This CLI is designed to be used directly by coding agents (Claude Code, Codex, e
 > （`reverse --local` → `vlm`/mlx-vlm-kit）；② 不寄生第三方工具 ——
 > 跟 MUSE AV 中台无关的能力不进这个 CLI。
 > 本地图像那套（抠图/超分/去水印/压缩）是例外且**应当留下**：它不重复任何其它仓库，
-> museav-mcp 正是把本 CLI 当能力层在用。
+> cs-mcp（原名 museav-mcp，2026-10-13 正名）正是把本 CLI 当能力层在用。
 >
 > **红线 ② 的例外（2026-09-28 owner 定）**：`skillhub` 回来了。
 > 它确实不走在中台 API 上，但它是**出站分发**通道——让本地写好的 Agent Skill

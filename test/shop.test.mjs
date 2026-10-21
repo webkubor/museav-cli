@@ -76,6 +76,34 @@ test('创作API Key禁止经营店铺且不会请求网络', async () => network
   assert.equal(calls.length, 0)
 }))
 
+test('匿名公开合集列表与详情不携凭据，管理读取仍使用JWT', async () => {
+  const calls = []
+  const oldFetch = globalThis.fetch
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url, ...init })
+    return new Response(JSON.stringify({ collections: [] }), { status: 200 })
+  }
+  try {
+    const publicClient = new StudioClient({ baseUrl: 'https://example.test', publicOnly: true })
+    await publicClient.shop.collections.listPublic(ID)
+    await publicClient.shop.collections.showPublic(ITEM)
+    await assert.rejects(publicClient.shop.collections.list(), /个人登录/)
+    await assert.rejects(publicClient.shop.collections.show(ID), /个人登录/)
+    assert.equal(calls.length, 2)
+    assert.equal(new URL(calls[0].url).pathname + new URL(calls[0].url).search, `/api/collections?owner=${ID}`)
+    assert.equal(new URL(calls[1].url).pathname + new URL(calls[1].url).search, `/api/collections?id=${ITEM}`)
+    assert.ok(calls.every(call => !call.headers.Authorization && !call.headers['X-API-Key']))
+    await assert.rejects(publicClient.shop.collections.listPublic('bad'), /UUID/)
+  } finally { globalThis.fetch = oldFetch }
+  await network(async (client, managementCalls) => {
+    await client.shop.collections.list()
+    await client.shop.collections.show(ID)
+    assert.equal(managementCalls.length, 2)
+    assert.ok(managementCalls.every(call => call.headers.Authorization === 'Bearer test-token'))
+    assert.ok(managementCalls.every(call => new URL(call.url).pathname === '/api/creator-collections'))
+  })
+})
+
 test('合集完整保存、条目查询与私有multipart上传契约', async () => network(async (client, calls) => {
   const input = { title: '一期', issue_key: '2026-10', description: '', access_mode: 'product', status: 'draft', product_id: ID, workspace_id: null, cover_asset_id: null, asset_ids: [ITEM] }
   await client.shop.collections.list()
@@ -128,4 +156,8 @@ test('CLI help覆盖所有入口且不需要凭证', () => {
     const result = execFileSync(process.execPath, ['dist/index.js', ...args, '--help'], { encoding: 'utf8', env: { ...process.env, MUSEAV_NO_WELCOME: '1', NO_UPDATE_NOTIFIER: '1' } })
     assert.match(result, /Usage:/)
   }
+  const listHelp = execFileSync(process.execPath, ['dist/index.js', 'shop', 'collections', 'list', '--help'], { encoding: 'utf8', env: { ...process.env, MUSEAV_NO_WELCOME: '1' } })
+  const showHelp = execFileSync(process.execPath, ['dist/index.js', 'shop', 'collections', 'show', '--help'], { encoding: 'utf8', env: { ...process.env, MUSEAV_NO_WELCOME: '1' } })
+  assert.match(listHelp, /--owner <uuid>/)
+  assert.match(showHelp, /--public/)
 })

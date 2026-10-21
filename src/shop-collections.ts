@@ -46,12 +46,31 @@ function validate(value: ShopCollectionInput): void {
   value.asset_ids.forEach(v => id(v, 'asset_ids'))
 }
 
-/** 复用 StudioClient 已认证请求，封装合集全量保存和私有原图上传。 */
-export function createShopCollections(request: (path: string, init?: RequestInit) => Promise<any>) {
+/** 公开列表只含已发布合集，不包含管理端的商品和项目。 */
+/** 公开合集列表响应，不包含管理端商品或项目。 */
+export interface PublicCollectionList { collections: ShopCollection[] }
+/** 公开详情响应，包含作者和访问说明，不含私有原图存储位置。 */
+export interface PublicCollectionDetail extends ShopCollectionDetail {
+  author: { id: string; nickname: string; avatar_url: string | null; bio: string } | null
+  access: { can_download: boolean; reason: string; product_id: string | null }
+}
+
+/** 复用 StudioClient 请求；公开读取显式走匿名通道，管理请求保持 JWT 限制。 */
+export function createShopCollections(request: (path: string, init?: RequestInit) => Promise<any>, publicRequest: (path: string) => Promise<any>) {
   return {
     /** 列出自己可管理的合集、商品和项目。 */
     async list(): Promise<ShopCollectionList> { return request('creator-collections') },
-    /** 查询单份合集和条目 id。 */
+    /** 按作者 UUID 匿名列出已发布合集。 */
+    async listPublic(owner: string): Promise<PublicCollectionList> {
+      id(owner, 'owner')
+      return publicRequest(`collections?owner=${encodeURIComponent(owner)}`)
+    },
+    /** 匿名查看公开合集及其预览条目。 */
+    async showPublic(collectionId: string): Promise<PublicCollectionDetail> {
+      id(collectionId, 'collection_id')
+      return publicRequest(`collections?id=${encodeURIComponent(collectionId)}`)
+    },
+    /** 查询单份自有合集和条目 id。 */
     async show(collectionId: string): Promise<ShopCollectionDetail> {
       id(collectionId, 'collection_id')
       return request(`creator-collections?id=${encodeURIComponent(collectionId)}`)

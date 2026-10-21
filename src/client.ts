@@ -438,15 +438,17 @@ export class StudioClient {
   readonly shop: ShopApi = createShopApi((path, init) => {
     if (!this.authHeader.Authorization) throw new Error('店铺使用个人登录，请 museav login；如已登录，请清理 MUSEAV_API_KEY/STUDIO_API_KEY 环境变量后重试')
     return this.request(path, init)
-  })
+  }, path => this.request(path, {}, true))
 
-  constructor(opts: { baseUrl: string; apiKey?: string; token?: string }) {
+  constructor(opts: { baseUrl: string; apiKey?: string; token?: string; publicOnly?: boolean }) {
     this.baseUrl = opts.baseUrl.replace(/\/+$/, '')
     // 个人用户 JWT 走 Bearer；租户 apikey 走 X-API-Key
     if (opts.token) {
       this.authHeader = { Authorization: `Bearer ${opts.token}` }
     } else if (opts.apiKey) {
       this.authHeader = { 'X-API-Key': opts.apiKey }
+    } else if (opts.publicOnly) {
+      this.authHeader = {}
     } else {
       throw new Error('需要 token 或 apiKey')
     }
@@ -456,11 +458,11 @@ export class StudioClient {
     return { ...CLIENT_HEADERS, ...this.authHeader, ...extra }
   }
 
-  private async request(path: string, init: RequestInit = {}): Promise<any> {
+  private async request(path: string, init: RequestInit = {}, anonymous = false): Promise<any> {
     const url = `${this.baseUrl}/api/${path}`
     const resp = await fetch(url, {
       ...init,
-      headers: { ...this.headers(), ...(init.headers as Record<string, string>) },
+      headers: anonymous ? { ...CLIENT_HEADERS, ...(init.headers as Record<string, string>) } : { ...this.headers(), ...(init.headers as Record<string, string>) },
     })
     const text = await resp.text()
     let body: any

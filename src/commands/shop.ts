@@ -5,6 +5,7 @@ import type { StudioClient } from '../client.js'
 import type { ShopIssueInput, ShopProductInput, ShopCollectionInput } from '../shop.js'
 
 type Run = (fn: (client: StudioClient, ...args: any[]) => Promise<void>) => (...args: any[]) => Promise<void>
+type PublicRun = (fn: (client: StudioClient, ...args: any[]) => Promise<void>) => (...args: any[]) => Promise<void>
 const output = (value: unknown) => { process.stdout.write(JSON.stringify(value, null, 2) + '\n') }
 
 function spec(file: string): unknown {
@@ -13,7 +14,7 @@ function spec(file: string): unknown {
 }
 
 /** 注册单根 shop；复用 index 的配置、认证和错误处理。 */
-export function registerShop(program: Command, run: Run): void {
+export function registerShop(program: Command, run: Run, publicRun: PublicRun = run): void {
   const shop = program.command('shop').description('经营自己的个人店铺：商品、渠道物料、发货码（JSON 输出）')
     .addHelpText('after', '\n使用现有 museav login 个人会话。闲鱼/小红书需手工上架；CLI 只输出物料和发货码。\n运行 museav shop products <命令> --help 或 museav shop codes <命令> --help 查看参数。')
   shop.command('show').description('查看自己对外公开的店铺资料与商品').action(run(async client => output(await client.shop.show())))
@@ -28,9 +29,18 @@ export function registerShop(program: Command, run: Run): void {
     .action(run(async (client, id, opts) => output(await client.shop.update(id, spec(opts.file) as Partial<ShopProductInput>))))
   products.command('archive <id>').description('归档商品（保留历史发货码及交付快照）')
     .action(run(async (client, id) => output(await client.shop.archive(id))))
-  const collections = shop.command('collections').description('管理自有壁纸合集、私有原图和发布')
-  collections.command('list').description('列出本人合集和可选商品、项目').action(run(async client => output(await client.shop.collections.list())))
-  collections.command('show <id>').description('读取合集和条目 UUID，供上传原图和完整保存使用').action(run(async (client, id) => output(await client.shop.collections.show(id))))
+  const collections = shop.command('collections').description('查询公开合集，或管理自有壁纸合集')
+    .addHelpText('after', '\n匿名示例：museav shop collections list --owner <作者UUID>\n          museav shop collections show <合集UUID> --public')
+  collections.command('list').description('列出本人合集，或按作者查询公开合集').option('--owner <uuid>', '匿名列出指定作者的已发布合集').action((...args: any[]) => {
+    const opts = args.at(-2)
+    const execute = opts.owner ? publicRun : run
+    return execute(async (client, options) => output(opts.owner ? await client.shop.collections.listPublic(opts.owner) : await client.shop.collections.list()))(...args)
+  })
+  collections.command('show <id>').description('查看自有合集，或用 --public 匿名查看公开合集').option('--public', '匿名读取已发布的公开合集').action((...args: any[]) => {
+    const opts = args.at(-2)
+    const execute = opts.public ? publicRun : run
+    return execute(async (client, id) => output(opts.public ? await client.shop.collections.showPublic(id) : await client.shop.collections.show(id)))(...args)
+  })
   collections.command('save').description('完整保存合集，status=published 时发布（非部分更新）')
     .requiredOption('--file <json>', '完整合集 JSON，更新带 id；保留全部元数据及 asset_ids，省略会重置')
     .addHelpText('after', '\n付费合集先保存 draft，按返回的 items[].id 上传私有原图，再保存 published。原图必须与公开预览不同。\n完整字段和壁纸经营流程见 README「个人店铺」。')

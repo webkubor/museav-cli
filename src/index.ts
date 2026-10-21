@@ -9,7 +9,7 @@ import { Command } from 'commander'
 import updateNotifier from 'update-notifier'
 import { StudioClient, SUBJECT_KINDS, PERSONA_SOURCES, ASSET_ROLES } from './client.js'
 import { TenantClient } from './tenant-client.js'
-import { loadConfig, saveConfig, clearToken } from './config.js'
+import { loadConfig, saveConfig, clearToken, DEFAULT_BASE_URL } from './config.js'
 import { login } from './commands/login.js'
 import { bindFeishu } from './commands/bind-feishu.js'
 import { printWelcome } from './commands/welcome.js'
@@ -104,6 +104,19 @@ function withClient<T extends (...args: any[]) => Promise<any>>(fn: T) {
 
 // reverse 的本地路（委托 mlx-vlm-kit 的 vlm）不需要中台凭证，client 懒构造：只有真回落 API 才建，
 // 未登录的报错也只在那时候出现
+function withPublicClient<T extends (...args: any[]) => Promise<any>>(fn: T) {
+  return async (...args: any[]) => {
+    try {
+      const opts = args[args.length - 2]
+      const positional = args.slice(0, -2)
+      await fn(new StudioClient({ baseUrl: process.env.MUSEAV_BASE_URL || process.env.STUDIO_BASE_URL || DEFAULT_BASE_URL, publicOnly: true }), ...positional, opts)
+    } catch (e) {
+      process.stderr.write(`❌ ${(e as Error).message}\n`)
+      process.exit(1)
+    }
+  }
+}
+
 function withLazyClient(fn: (getClient: () => StudioClient, ...args: any[]) => Promise<any>) {
   return async (...args: any[]) => {
     try {
@@ -559,7 +572,7 @@ program
   .description('查所属租户自己的产品目录（数据在租户自己的后台，不在 Studio 中台；只支持已开通该接口的租户，仅租户 apiKey 身份可用）')
   .action(withTenantClient((client: TenantClient) => products(client)))
 
-registerShop(program, withClient)
+registerShop(program, withClient, withPublicClient)
 
 program
   .command('assets')

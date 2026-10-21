@@ -74,11 +74,16 @@ npm install -g museav-cli           # 装新包，命令名是 museav
 
 ## 个人店铺：积分、壁纸系列、CLI 组合包
 
-`museav shop` 使用 `museav login` 已有的个人登录。环境变量 `MUSEAV_API_KEY` / `STUDIO_API_KEY` 会覆盖登录态，经营店铺前需清除它们；创作 API Key 和租户身份不能经营个人店铺。旧 `museav products` 继续查询租户参考商品。
+`museav shop` 的管理操作使用 `museav login` 已有的个人登录。环境变量 `MUSEAV_API_KEY` / `STUDIO_API_KEY` 会覆盖登录态，管理店铺前需清除它们；创作 API Key 和租户身份不能经营个人店铺。公开合集查看只读且匿名，不读取或发送任何本机凭据。旧 `museav products` 继续查询租户参考商品。
 
 全部店铺命令将 JSON 写入 stdout，报错写 stderr 并返回非零退出码。商品与发码列表各为本人最近 200 条。CLI 输出闲鱼/小红书的文案、图片物料和领取码；外部平台上架、成交和发送买家由卖家手工完成。
 
 ```bash
+# 无需登录：公开作者合集与指定合集
+museav shop collections list --owner <作者UUID>
+museav shop collections show <合集UUID> --public
+
+# 以下店铺管理命令需要个人登录
 museav login
 museav shop show
 museav shop products list
@@ -138,7 +143,7 @@ CLI 组合包售卖的是安装指导、自有模板/资产和可选积分。下
 {"title":"自有壁纸工作流入门包","kind":"bundle","credits":0,"bundle_content":{"filename":"README.md","content":"# 安装指导\n运行 npm install -g museav-cli，再用 museav login 登录自己的账户。\n本包提供卖家的安装说明；模板和资产请关联自己拥有的 template_ids/collection_ids。"},"status":"active"}
 ```
 
-程序调用复用同一个认证客户端：`new StudioClient({baseUrl, token}).shop`，提供 `show/products/create/update/archive/codes/issue/revoke`，以及 `collections.list/show/save/upload`；类型从 `museav-cli` 根导出。关联自有模板用 `template_ids`，关联壁纸合集用 `collection_ids`，均为 UUID 数组，最终归属与可交付状态由服务端验证。
+程序调用复用同一个认证客户端：`new StudioClient({baseUrl, token}).shop`，提供 `show/products/create/update/archive/codes/issue/revoke`，以及 `collections.list/show/save/upload/listPublic/showPublic`；类型从 `museav-cli` 根导出。公开接口为 `collections.listPublic(owner)` 与 `collections.showPublic(id)`，仅使用 Studio base URL 并匿名发 GET。关联自有模板用 `template_ids`，关联壁纸合集用 `collection_ids`，均为 UUID 数组，最终归属与可交付状态由服务端验证。
 
 ## 兼容的 Agent
 

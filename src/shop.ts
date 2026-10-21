@@ -129,11 +129,11 @@ export function validateShopIssue(input: ShopIssueInput): void {
 }
 
 /** 通过已认证的 StudioClient 请求函数创建店铺模块，不储存第二份凭证。 */
-export function createShopApi(request: (path: string, init?: RequestInit) => Promise<any>) {
+export function createShopApi(request: (path: string, init?: RequestInit) => Promise<any>, publicRequest: (path: string) => Promise<any>) {
   const json = (method: string, body: unknown) => ({ method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
   return {
     /** 合集草稿、私有原图和发布。 */
-    collections: createShopCollections(request),
+    collections: createShopCollections(request, publicRequest),
     /** 查看本人公开店铺；owner 来自鉴权后的商品列表。 */
     async show(): Promise<ShopView> {
       const own: ShopProducts = await request('sales-products')

@@ -1,5 +1,761 @@
 # Changelog
 
+## 3.14.0 (2026-10-25)
+
+### 素材库分成个人与项目两条线
+
+以前 `museav projects assets` 必须带 `--project`，发一期壁纸得先建一个团队项目放图，还占着「每账户最多 5 个项目」的名额。现在省略 `--project` 即写入**个人素材库**——属于你自己的账户，壁纸专栏、出图参考图都放这里，不占项目配额；带 `--project` 仍然是项目素材，团队协作照旧。
+
+需要 `--project` 必须指向真实项目的命令（`gen`、`subjects`、`jobs`）保持严格校验，不会把空值或个人素材误当项目。
+
+另外：免费合集不需要 `shop collections upload` —— 服务端直接把你选中的素材母版当公开可下载原图。所以**素材库里要放全尺寸原图**，放降采样预览等于把糊图发出去。付费合集才逐张上传私有原图。
+
+## 3.13.2 (2026-10-21)
+
+### 不登录也能查看公开壁纸合集
+
+以前查看壁纸合集必须先登录个人账户，即使这期壁纸在网页上已经免费公开，终端也会被登录检查挡住。现在可用 `museav shop collections list --owner <作者UUID>` 查看作者已发布的合集，用 `museav shop collections show <合集UUID> --public` 查看一期的图片条目、预览和分享链接，无需登录或配置 Key。
+
+原有不带上述选项的管理查询，以及保存、上传、发货等操作，仍使用个人登录；公开查看不会携带已有凭据。
+
+## 3.13.1 (2026-10-19)
+
+### 组合包该怎么说才不含糊
+
+3.13.0 的说明把组合包写成了「交付安装说明和自有内容文件」，容易读成卖的是一份软件。实际是：**这个 CLI 公开开源、谁都能装，但手上没有积分它什么也干不了**。所以组合包卖的是**能立刻开工的整套装配**——买家拿到自己的积分（真正被消费的东西）、自己的壁纸原图，加上安装说明和自有内容；CLI 只是把这些积分变成产出的那个入口。
+
+所以组合包里积分是主商品，CLI 是入口，两者缺一都不成立：只有 CLI 没有积分等于给了一个空壳，只有积分没有指引等于让人自己摸索。商品 JSON 里 `kind: bundle` 配 `credits` 就是这个意思——积分是随包走的正文项，不是附赠。
+
+## 3.13.0 (2026-10-19)
+
+### 在终端经营自己的数字店铺
+
+以前 `museav products` 只能查租户参考商品，个人卖家管理商品、整理渠道文案和发货需要回到网页。现在 `museav shop` 可以查看自己的公开店铺、用 JSON 文件创建或修改积分/壁纸/组合包商品，并归档旧商品；原来的租户商品命令用法不变。
+
+壁纸可以从草稿商品一路做到已发布合集：`shop collections save --file` 绑定公开预览，`shop collections upload` 上传独立私有原图，发布后再启售。组合包实际交付安装说明和自有内容文件，不自动执行，也不包含共享凭证或开源 CLI 的独占许可。
+
+`shop codes issue --product <UUID> --channel xianyu --external-order <订单号> --request-id <请求号>` 返回渠道物料和领取码。签发时预留卖家积分，未领码可撤销退款；同一操作重试保持请求号不变。使用现有 `museav login` 个人登录，创作 Key 不能经营店铺。闲鱼/小红书仍由卖家手工上架和发送物料，CLI 不自动发布。
+
+## 3.12.0 (2026-10-04)
+
+### IP 人设能上传进中台了（`museav ip` / `museav subjects`）
+
+角色资产以前只在你本地的 IP 工作台里，开源平台一发布就跟着走了。新增一组命令，把
+「人设 + 三视图」按中台的主体（subject）模型存进去 —— 那是平台侧的私有资产，不进任何开源仓。
+
+```bash
+# 建一个 IP 人物（必填：项目 / 类型 / 名字；选填：特征、真人还是虚拟人）
+museav subjects create --project "IP账户运营" --name "顾栖月" --kind person --persona virtual \
+  --traits '{"发型":"长直发","脸型":"鹅蛋脸"}'
+
+# 挂三视图（角色自带 view_front / view_side / view_back，别名 museav ip）
+museav subjects add-asset <主体id> 正面.png --role view_front
+museav subjects add-asset <主体id> --url <中台直链> --role view_side   # 已是直链就不重复上传
+
+# 看这个角色的图按角色分组，三视图一眼看到齐没齐
+museav subjects show <主体id>
+```
+
+- 主体必填：项目、类型（`product` / `person` / `scene` / `brand`）、名字（同项目同类不能重名）
+- 选填：`traits`（特征，jsonb）、`persona`（**仅 person**：真人 / 虚拟人）
+- 枚举与限制都照抄服务端真源，本地先中文拦（类型、role、名字长度、外链格式），不发无谓请求
+- `add-asset` 会带主体自己的 `workspace_id`（个人主体是 `null`）—— 少传就会被判「主体不属于这个项目」
+
+## 3.11.0 (2026-10-04)
+
+### 出视频能点名 H3，还能给首尾帧和参考素材
+
+`gen --video` 补齐高级输入 —— 以前只有 `--image`（首帧）一个：
+
+```bash
+# 点名 H3（不点名时中台智能路由仍走便宜的 Seedance）
+museav gen --video --model "MiniMax H3" --duration 5 -p "雪夜孤灯，镜头缓推"
+
+# 首尾帧：给首帧 + 尾帧，模型补中间过程
+museav gen --video --model "MiniMax H3" --image 首帧.png --last-frame 尾帧.png -p "…"
+
+# 参考素材：外观/主体参考，最多 9 张图 + 3 段视频 + 3 段音频
+museav gen --video --model "MiniMax H3" --reference-image 角色.png --reference-image 兵器.png -p "…"
+
+# 先增强提示词再生成（走中台转 MiniMax H3-Context-IR）
+museav gen --video --model "MiniMax H3" --enhance -p "一个人站在雪地里"
+```
+
+另新增独立命令 `museav enhance`：只输出增强后的提示词（stdout），其余信息走 stderr，
+方便管道与复制。
+
+```bash
+museav enhance -p "一只猫在窗台上伸懒腰" --duration 5 --ratio 9:16
+```
+
+**本地就拦，不浪费上游调用**：首尾帧与参考素材**互斥**（MiniMax 官方限制）、
+参考图 ≤9 / 参考视频 ≤3 / 参考音频 ≤3、这些参数只在 `--video` 下有意义 —— 误用直接报错。
+
+## 3.10.0 (2026-10-02)
+
+### 版式模板终于能改、能删了
+
+以前 `museav poster-templates` 只有 `add`。上传错了底图、写歪了描述，在命令行里没有任何办法纠正，
+只能让租户管理员去后台处理，agent 自动化流程更是只进不出。
+
+现在补齐了两条：
+
+```bash
+museav poster-templates update <id> --name "徐良版式2" --prompt "{明星} 在 {城市} 的演唱会海报"
+museav poster-templates update <id> --file ./新底图.png     # 换底图，旧底图同步清掉
+museav poster-templates rm <id>
+```
+
+`update` 的 `--name` / `--prompt` / `--file` 至少传一个，没传的字段保持原样。
+
+**谁能改谁能删**：用租户 Key 可以管本租户的全部版式；用账户 Key 只能改、删自己上传的那几条。
+别人传的，或者更早之前没记上传人的存量版式，账户 Key 会收到明确的「只能修改/删除自己上传的版式」，
+需要租户 Key 来处理。这条同时收紧了 `rm` 的旧行为——之前账户 Key 理论上能删掉同租户任何人的版式。
+
+需要先升级到 3.10.0：旧版本的 CLI 没有这两个子命令。
+
+## 3.9.3 (2026-10-02)
+
+### 发版链路修好：npm 12 换了 `npm pack --json` 的返回形状，门禁当场炸
+
+3.9.2 的 publish 在 CI 里挂了 —— 挂的不是代码，是发版门禁自己：`publish.yml` 会先
+`npm i -g npm@latest`（现在是 12.x），而 npm 12 把 `npm pack --json` 的返回从数组
+`[{ files }]` 改成了以包名为键的对象 `{ "museav-cli": { files } }`。门禁里写的是
+`JSON.parse(out)[0].files`，于是 `[0]` 是 undefined，报
+`Cannot read properties of undefined (reading 'files')` —— 而它前面所有校验都是绿的，
+看起来像代码问题，其实是解析形状。
+
+现在两种形状都收，认不出形状时给一句能看懂的话。本地用 npm 11 与 npm 12 各跑一遍都过。
+（3.9.2 因此没发出去，版本从 3.9.1 直接到 3.9.3。）
+
+## 3.9.2 (2026-10-02)
+
+### `gen` 补上 `--model`：图片和视频终于能点名模型了
+
+`museav gen` 从来没有 `--model`，而下游（museav-mcp 的 `gen_background`）早就按 `--model`
+传值 —— commander 直接 `error: unknown option '--model'`。也就是说「点名模型 / 视频档次」
+这条路从来没通过，只是没人从命令行试过。
+
+现在 `--model` 图片与视频都收，取值一律用**对外名**（`museav models` /
+`museav models --video` 下发的那套）。内部渠道代号（`artsdance-*` / `doubao-*` /
+`minimax-h3`）是上游身份，不该由调用方持有；中台负责把对外名归一回内部代号。
+不传＝中台智能路由，按这次的时长 / 分辨率挑一个能满足的档次。
+
+```bash
+museav gen --video --model "MiniMax H3" -p "雨夜，少年拔剑，镜头缓慢推进"
+museav models --video      # 看当前可选的档次（清单来自中台，CLI 不硬编码）
+```
+
+## 3.9.1 (2026-09-29)
+
+### 模板发布被拒时，终于会告诉你**差哪几项**
+
+3.8.0 给 `publish` 加了发布门槛，但被拒时的报错只有一句「模板未达到发布门槛」——
+参考图 1–5 张、`ratio`/`category`/`description` 齐全、`prompt_template` 的占位符
+都要在 `fields` 里声明，少了哪条都不说。用户只能一份份试，改一次发一次。
+
+现在服务端返回的 422 会带一句 hint 说明具体差哪几项，CLI 原样带出来。
+一次就能改对，不用靠试。
+
+### 建模板时太像已有的，会先提醒你一句
+
+新增的同质度检测落在 80%–95% 区间时中台不拦，但会返回警告。CLI 之前把它吞了，
+建完就没下文。现在会打到 stderr，告诉你像的是哪一张：
+
+```
+⚠️ 与已有模板「小红书电商主图」相似度 87%，确认是否只是想建个系列变体
+```
+
+≥95% 会被直接拒绝（判定为纯重复）；`publish` 时的门槛是 ≥80% 就拒
+（公共池是所有租户共享面，不接受同质模板）。这两条规则都写进 `templates`
+的帮助文案了，不用再靠撞墙才知道。
+
+## 3.9.0 (2026-09-28)
+
+### `skillhub` 回来了，但这次带着出站护栏一起回来
+
+3.6.0 移除 `skillhub` 的理由是「一次都没用过」——当时实测 `whoami` 返回
+`loggedIn: false`，本地无凭证。那是**没被使用的功能，不是错的定位**。
+
+它确实不走在中台 API 上，但它承载的是「出图能力 → 分发能力」这条唯一的出站链路：
+用户装一个 `museav`，就同时拿到出图和「把做好的 Skill 发到小红书」两件事，
+不用再装第二个工具、学第二套命令、单独配一遍登录。这是目前别人拿不走的一环。
+
+AGENTS.md 的红线 ② 拦的是**寄生**（把跟中台无关的第三方能力塞进来），不是**出站**。
+红线不动，例外写进 AGENTS.md：`skillhub` 是明写的例外，不是偷偷开口子。
+
+恢复的同时补上它当年缺的那一半——**出站纪律**（`src/skillhub-guard.ts`）：
+
+| 情况 | 处理 |
+| --- | --- |
+| Skill 正文含平台公共模板的提示词正文 | ❌ 拒绝，指出是哪张模板 |
+| Skill 只引用平台模板的 `slug` | ✅ 放行 |
+| 发布路径落在 `~/.museav-models` / `~/.museav-bin` | ❌ 拒绝 |
+
+线是**搬运正文 = 重新分发资产，拦；引用 slug = 正常集成，放行**。把引用也拦掉会挡死
+museav 自己的集成类 Skill——护栏挡死合法用例比放行一次搬运更伤。
+
+实现上用的是**内容指纹**而不是关键词：取平台公共模板 `prompt_template` 归一化后
+的前 60 个非空白字符做指纹。归一化**删掉所有空白**而不是折叠成单个空格——折叠版挡得住
+换行改缩进，挡不住「句中多敲一个空格」，而后者恰恰是最省事的改写。
+
+拉不到模板清单时（没 login / 接口不通）不放行也不拦死，而是照发 + 明确提示
+「本次未做校验」。知情比假装有护栏重要。
+
+`museav skillhub publish` 的 `client` 改成必传：护栏要中台凭证才拉得到模板清单。
+没配凭证的人依然能发自己写的 Skill，只是会看到那条降级提示。
+
+### 模板列表补上「版本号 + 创建人」
+
+配合 museav-manager 迁移 `20260928190000_template_version_and_creator.sql`：
+三张模板表（`templates` / `video_templates` / `poster_templates`）统一加
+`version`，存量一律 `v1.0.0`；平台公共模板的 `created_by` 归一到「山鬼映画」。
+
+存量不用「今天」当版本号——那会让所有老模板看起来都和新建的一样新，等于抹掉真实先后顺序。
+
+`museav templates` 列表新增「版本 / 创建人」两列。版本号 2026-09-28 才有，
+早于那天的服务端响应不带这个字段，CLI 显示 `—` 而不是假装有版本。
+
+## 3.8.0 (2026-09-28)
+
+### 模板管理从「只能去网页后台点」变成命令行能做
+
+服务端早就实现了删除、可见性切换、克隆（`templates.js` 的 `onRequestDelete`
+与 `share`/`unshare`），但 CLI 侧一个都没接。想删一个自己建的模板，或者把私有
+模板开放出去，以前只能开浏览器进后台点。
+
+```
+museav templates delete <id>        删自己的模板
+museav templates publish <id>       私有 → 共享（会过发布门槛）
+museav templates unshare <id>       撤回为私有
+museav templates create --ref <url> 建模板时带参考图（1–5 张）
+```
+
+**删除权限的口径变了**（2026-09-28 owner）：以前只有平台管理员能删，现在
+**自己的模板自己说了算**。判据是 `owner_account_id`（CLI/MCP 建的模板只有这个键，
+`created_by` 为空，两套都认）。
+
+⚠️ **有出图历史的模板不会被物理删除**，只停用 `active=false` —— `gen_jobs.template_id`
+是外键，硬删会撞约束，也会让历史记录查不到当年用的哪个模板。命令会如实告诉你
+这次是「已删除」还是「只停用」，不会让删除按钮的文案骗人。
+
+### `publish` 会过发布门槛
+
+以前 `share` 无条件放行，现在会校验（2026-09-28 owner：创建可以粗放，发布必须成熟）：
+
+- 参考图 1–5 张必填
+- `ratio` / `category` / `description` 齐全（别人在公共池里搜不到就等于没放）
+- `prompt_template` 里的占位符必须都已在 `fields` 里声明
+
+不达标返回 422，并**一次列全**所有缺项。公共池是所有租户的共享面，一个模板进去
+就是别人的起点 —— 宁可少而成熟，不要多而凑数。
+
+`unshare` 不校验：撤回是收紧不是放宽。
+
+### `--ref` 的三种语义
+
+参考图在三类模板里作用不同（2026-09-28 owner 明确）：
+
+| 类型 | 参考图的作用 |
+|---|---|
+| 文生图模板 | 只作风格/构图参考，**不进垫图** |
+| 图生图模板 | 参考图**就是垫图本身**，生图基于它衍生 |
+| 支持垫图的 | 由中台按 `ref_slots` 决定喂哪些 |
+
+建模板**不做参考图硬校验**（可以先建空壳迭代），但没传时会提示
+「后续 publish 会被门槛挡下」，把坑提前说在前面。
+
+---
+
+## 3.7.0 (2026-09-16)
+
+### 超分引擎换成 BSD 许可的 realesrgan-ncnn-vulkan，顺带少下一个包
+
+原来用 upscayl-ncnn（**AGPL-3.0**）。先把话说清楚：**原做法并不违规** ——
+二进制是运行时从 upscayl 官方 release 下到用户机器的，我们既不打包、不链接、
+也不修改，用户是直接从上游取得的。
+
+换掉的真实理由是另外两条：
+
+1. **少一个下载**。模型本来就从 xinntao/Real-ESRGAN 的 zip 里取，而**引擎就在同一个
+   zip 里** —— 原来等于为了一个 15MB 的引擎额外下一次。现在一次下载两样都有。
+2. **免掉一个要靠纪律维持的论证**。哪天有人图省事把二进制打进 npm 包，AGPL 的分发
+   义务立刻附上来，而那种改动看起来毫无风险。换成 BSD-3-Clause 之后结构上就没这回事。
+
+- 引擎：`upscayl/upscayl-ncnn`（AGPL-3.0）→ `xinntao/Real-ESRGAN`（**BSD-3-Clause**）。
+  两者 CLI 完全一致（前者是后者的 fork），`-i -o -s -n -m` 一个没变。
+- 三平台都在同一个 release：macos（universal，Apple Silicon 原生）/ ubuntu / windows。
+  Windows 额外解出 `vcomp140.dll` / `vcomp140d.dll`（OpenMP 运行时，漏了 exe 起不来）。
+- 只解压需要的成员：包里还带着 demo 视频和示例图，全解白占 100MB。
+- 缓存目录 `~/.museav-bin/upscayl` → `~/.museav-bin/realesrgan`（旧目录可手工删）。
+
+实测（清空缓存从零跑）：下载 49MB → 解压 → 1024×1024 放大到 4096×4096，48.0s，
+缓存里只有引擎与 4 个模型文件，没有多余内容。
+
+**代价要知道**：这个构建停在 2022-04-24，上游不再更新；upscayl 那边仍在活跃维护。
+对「4x 放大」这个固定用途够用，将来若要新模型或新特性，得重新评估。
+
+## 3.6.0 (2026-09-16)
+
+### 移除 `skillhub`：一次都没用过的出站功能，不该占着这个 CLI
+
+`museav skillhub` 是把本地 Agent Skill 发到**小红书 SkillHub**。它既不走 MUSE AV 中台，
+也不属于图像能力，实现全靠小红书官方的 `redskillhub-upload`（本包唯一的第三方工具依赖）。
+
+实测 `skillhub whoami` → `loggedIn: false`，本地无任何凭证 —— 加进来之后一次都没发布过。
+
+- 删除 `skillhub` 命令及其 5 个子命令（tags / publish / whoami / login / logout），
+  共 214 行 + 42 行测试。
+- 移除依赖 `redskillhub-upload`。**至此本包 dependencies 只剩 `commander` 与
+  `update-notifier` 两个纯工具库**，没有任何第三方工具寄生。
+- 真要发小红书 Skill，那个包自己就能跑：`npx redskillhub-upload`，不需要经过本 CLI。
+
+顺带把定位写准了（AGENTS.md）：本 CLI = **中台 API 客户端 + 一套本地图像后期工具**。
+本地图像那套（抠图 / 超分 / 去水印 / 压缩）继续留在这里 —— 它们不重复任何其它仓库，
+且 museav-mcp 正是把本 CLI 当能力层在用。
+
+⚠️ museav-mcp 同版本移除了 `skillhub_tags` / `skillhub_whoami` / `skillhub_publish`
+三个 MCP 工具，两边必须一起升，否则 agent 会拿到报 unknown command 的坏工具。
+
+## 3.5.0 (2026-09-16)
+
+### `reverse --local` 的引擎换成 mlx-vlm-kit，CLI 不再自带模型运行时
+
+分工定死：**CLI 只调中台 API；要本地推理就委托专门的工具。**
+
+原来 `--local` 走的是内置的 Ollama 调用（qwen3-vl:8b）。问题不在 Ollama 好不好用，
+在于同一台 Mac 上会为同一件事养两个模型运行时 —— Ollama 和 MLX 各拉一份几 GB 的
+Qwen3-VL。而 [mlx-vlm-kit](https://github.com/webkubor/mlx-vlm-kit) 本来就是干这个的。
+
+- `--local` 现在 shell 调 `vlm`（mlx-vlm-kit），没装就照旧回落中台 API。
+  装： `pipx install git+https://github.com/webkubor/mlx-vlm-kit.git`
+- **本仓真正的资产没动**：SCULPT 提示词与 `normalizeSculpt()` 归一化仍从中台
+  `_reverse-core.js` / `reverse-template.js` 移植而来，本地路与 API 路产出严格同构。
+  换的只是底下那台引擎。
+- 删掉内置的 Ollama 探活与 `/api/chat` 调用（连同 `ollamaHost()` 死代码）。
+- 实测：一张 1080×1920 登录背景图，端到端 16.0s，SCULPT 六要素齐全、比例判定正确。
+
+文档同时修了一处长期漂移：AGENTS.md 写着 reverse「PRIMARY path is LOCAL」，
+而代码里 `--local` 一直是显式开关、默认走 API。以代码为准改正。
+
+注：`--local` 依赖的 MLX 是 Apple Silicon 专属，但这不破坏 CLI 的跨平台契约 ——
+它是 opt-in，缺失时回落 API，CLI 自身仍不含任何 Unix-only 假设。
+
+## 3.4.1 (2026-09-15)
+
+### 修复：3.4.0 拆掉了 `--model`，但三处文案还在教人传它
+
+照着 help 做会直接吃一个 `unknown option`，比没有提示更糟。
+
+- `museav models --video` 跑完会打一行「出视频: … `--model <档次名>`」—— 这是**运行时输出**，
+  不是注释，用户一眼就会照抄。改成只说怎么出视频，档次交给中台挑。
+- `gen --video` 与 `models --video` 两处 help 里的 `--model` 指引（3.4.0 发版后才修，
+  没跟着发版，所以 npm 上的 3.4.0 仍是旧文案）。
+- `models` 命令的定位随之写清楚：从「查完拿去传参」改成**只读查询**——看中台当前在用什么。
+
+本地工具的 `--model`（`remove-bg` / `upscale` 选本地 ONNX 模型）不在此列，那是本地跑的。
+
+## 3.4.0 (2026-09-14)
+
+### 移除：`--model` —— 用哪个模型由中台决定，不由调用方选
+
+中台做的事就是智能路由：调用方给 prompt + 尺寸（`--ratio`）+ 清晰度（`--quality`）
+就够了。这几个 `--model` 服务端**已一律忽略**（仅管理员保留点名能力用于排障），
+CLI 再摆着入口只会让人以为能选 —— 界面在说谎。
+
+去掉 `gen --model`、`templates create --model`、`video-templates create --model`
+三处；新建模板的配置恒为 `auto`。`museav models` 保留，但语义改为**只读查询**。
+
+这么做还堵掉了一类真实故障：下游把模型名写死在自己代码里，平台换代它毫无感知，
+出图直接 500。让调用方钉不了，这类事故就不可能再发生。
+
+本地工具的 `--model`（`remove-bg` / `upscale` 选本地 ONNX 模型）不受影响 —— 那是本地跑的。
+
+## 3.3.0 (2026-09-14)
+
+### 移除：语音命令 `speak` / `transcribe`
+
+小米 MiMo Token Plan 已退订，中台同步下线了该上游。这两个命令**直连上游、不走中台身份**，
+只认 `MIMO_API_KEY`——套餐作废后那把 key 一并失效，留着也只会拿到 401/403。
+命令注册、实现与文档一并移除；中台出音链路日后若改成走中台身份，再重新引入。
+
+### 新增：`museav models --video`，不再硬编码模型名
+
+视频档次改从中台查（`museav models --video`），给出的是**对外档次名**（如 `Seedance 2.5`），
+可直接喂给 `gen --video --model`。原先写死的档次代号已移除——那是上游渠道的内部命名，
+不该出现在客户端。模型清单从此跟着中台走，**上游换档次不用等 CLI 发版**。
+
+## 3.2.0 (2026-09-12)
+
+### ⚠️ 必须升级：出图请求体字段改为 `template_slug`
+
+中台把 `skill_slug` 彻底统一成了 `template_slug`（「技能」和「模板」在系统里
+从来是同一件东西，产品词汇 2026-08-30 就统一叫「模板」，字段名一直拖着没清）。
+`/api/generate` 现在收到 `skill_slug` 会直接返回 400，**不再静默兼容**。
+
+所以 **3.1.0 及更早版本的 `museav gen --skill <slug>` 会当场报错**，必须升级：
+
+```bash
+npm i -g museav-cli@latest
+```
+
+**你手上的命令不用改** —— 变的只是请求体字段名，`--skill` 这个命令行参数保持原样。
+
+## 3.1.0 (2026-09-08)
+
+### 发布 Skill 到小红书 SkillHub：`museav skillhub`
+
+本地写好的 Agent Skill 现在可以一条命令发到小红书 SkillHub，不用再单独记一套官方 CLI：
+
+```bash
+museav skillhub tags                                          # 查可选内容标签
+museav skillhub publish ./my-skill --tag 效率工具,编程开发       # 预演，不外发
+museav skillhub publish ./my-skill --tag 效率工具 --yes         # 真提交（扫码授权）
+```
+
+- 打包、设备码授权、上传、提交全部委托小红书官方 `redskillhub-upload`（已作为依赖内置），
+  **不重写平台协议**，平台改版跟着升依赖即可
+- **不带 `--yes` 一定不外发**：默认只跑 dry-run，把名称 / Skill ID / 版本 / 简介 / 来源 / 标签
+  摊出来给人核对。提交不可逆——Skill ID 是平台主键，跨版本不可改名
+- `--tag` 强制必填（平台要求且无合理默认），`--source` 默认 `original`；转载必须带
+  `--repost-source`，原创带了会被拒
+- 跟 `museav skills` 是两件事：那个查中台出图技能，这个发 Agent Skill
+
+> 注意平台只收文本类扩展名（`.md` / `.js` / `.py` / `.json` / `.sh` 等），`.mjs`、`.ts`、
+> `.yaml` 一律被拒；单文件 10MB、整包 30MB。
+
+## 3.0.3 (2026-08-29)
+
+### 批量出图：`gen --batch`，一次提交一批，不用再写循环
+
+电商套图、海报批量这种「一口气 N 张」的场景，原来要自己逐张提交、自己处理限流退避。
+现在把每条写进一个文件，一行一条，中台排队消化：
+
+```bash
+museav gen --batch prompts.txt --skill xhs-cover
+```
+
+- 每行一条（配合 `--skill` / `--template` 时是业务描述，否则是完整提示词）；
+  `#` 注释行和空行跳过，`--batch -` 读 stdin
+- `--ratio` / `--ref` / `--transparent` / `--project` 等选项作为公共参数作用于每一行
+- 撞限流自动等冷却后补交剩余项，**已提交的不会重复扣费**
+- 完成后按行序把图片 URL 逐行输出，方便接管道
+
+> 3.0.2 的发布卡片误带了 3.0.1 的旧介绍（发版时 CHANGELOG 未更新），本版一并修正。
+> 功能本体在 3.0.2 已可用，3.0.3 无代码变更。
+
+## 3.0.1 (2026-08-28)
+
+### 把 reel-kit 的推荐位做实
+
+3.0.0 只是下线了 slideshow，但没告诉人「那该用什么」——README 里只有一句藏在引用块里的
+说明，agent 读的 AGENTS.md 里一个字都没提。补三处：
+
+- **README** 加独立小节「🎬 要出成品视频？用 reel-kit」，带命令示例与分工对照表
+- **AGENTS.md** 加 "Scope: this tool makes *assets*, not finished videos" ——
+  agent 被要求「做个视频」时，第一眼就能看到该去哪
+- **`gen --video` 出片后提示一行**：模型出的是无声无字幕素材，不是成品。
+  这不是广告，是防止两种误解——以为「出完了」，或以为 museav 该管配音烧字幕
+
+典型链路写清楚了：`museav gen` 出图 → `museav remove-bg` 抠图 → `reel make` 出片。
+
+## 3.0.0 (2026-08-28)
+
+### 破坏性变更：`slideshow` / `slideshow-layouts` 下线，出片改用 reel-kit
+
+2.9.0 在这里做了「图集转竖版短视频」。**当天就发现
+[reel-kit](https://github.com/webkubor/reel-kit) 早已做了同一件事，而且更好**：
+
+| | reel-kit | museav slideshow（已下线） |
+|---|---|---|
+| 排版 | HTML/CSS —— 文字换行、阴影、渐变都免费 | SVG，**不支持文字换行** |
+| 加版式 | 往 `templates/` 丢一个 HTML | 手写图层 DSL |
+| 配音 | 有，且**镜头时长由念白长度决定** | 无 |
+| TTS 成本 | 本地 voxcraft，一次性模型、之后免费 | — |
+
+所以能力收敛到 reel-kit 一处：
+
+```bash
+reel make --template sticker-promo \
+  --assets ./图片目录 --caps 文案.txt \
+  --title "标题" --bgm 儿童轻快 --out 成片.mp4
+```
+
+装：`cd <reel-kit 检出> && pnpm install && npm link`（需 ffmpeg + Chrome）。
+找不到检出位置就 `cs repo reel-kit`。
+
+**命令留了存根**而不是直接删：已发布过 2.9~2.10，脚本里可能写着 `museav slideshow`，
+直接删只会得到一句 `unknown command`。现在跑它会打印迁移说明并以退出码 1 结束，
+老参数（`--title` / `--layout` 等）也不会导致解析报错。下个大版本移除存根。
+
+一并移除：`src/local-slideshow.ts`、`src/slideshow-presets.ts`、`src/commands/slideshow.ts`，
+以及 `StudioClient` 上的 `slideshowLayouts` / `slideshowLayout` / `createSlideshowLayout`
+（`client.ts` 是包的公开导出，留没人调的方法会让人以为还能用）。
+
+中台的 `/api/slideshow-layouts` 与 `slideshow_layouts` 表**没有删**（删表不可逆），
+但当前没有消费者。若将来要给 reel-kit 做「模板跨机器共享」，那张表可以改存 HTML 模板复用。
+
+### museav 的边界因此更清楚了
+
+**museav 管素材**：`remove-bg` 抠图、`upscale` 超分、`remove-watermark` 去水印、
+`compress` 压缩、`gen` 生成图/视频素材。
+**reel-kit 管成品合成**：套版式、配文案、配乐、配音、烧字幕。
+
+reel-kit 那边早就明写了这条边界（「本工具不做抠图 —— 那是 museav remove-bg 的职责，
+在这里重做一遍只会变成第二套实现」），是这边越了界。教训：动手前先 `cs repo <关键词>` 搜一遍。
+
+## 2.10.2 (2026-08-28)
+
+### 修复：排版模板的图层顺序失效，图片会盖住它下面该有的文字
+
+`slot` / `image` 图层被统一提到最后合成，导致**所有图片永远压在所有矢量层之上**，
+DSL 里 `layers` 的先后顺序当场失效。「图片铺满画面 + 文字压在上面」这类版式
+渲染出来是文字被图片盖掉。
+
+内置的粉青版式没受影响（那里图与文字不重叠），所以 2.10.1 发出去时没被发现 ——
+是拿一个结构完全不同的版式（满屏叠字）实测才暴露的。
+
+改成按 `layers` 顺序分段渲染：连续的矢量层攒成一段 SVG，遇到图片层就断开，
+按原顺序逐段叠加。
+
+## 2.10.1 (2026-08-28)
+
+> 这一版同时发布了另一条线的 `feedback` 命令（命令行提 bug/需求），
+> 下面记的是 slideshow 这条线的改动。
+
+### `slideshow` 的版面改由**排版模板**描述，模板库在中台
+
+2.9.0 的版面写死在代码里，改一个颜色都得发新版本。现在版面是一份**图层 DSL**：
+
+```bash
+museav slideshow-layouts                      # 看有哪些版式（内置 + 中台）
+museav slideshow ./图 --layout <slug>          # 用中台的模板
+museav slideshow ./图 --layout-file my.json    # 用本地 JSON（调模板时免登录）
+museav slideshow-layouts create my.json --name 我的版式 --slug my-style
+```
+
+DSL 支持 `rect` / `ellipse` / `text` / `slot` / `image` 五种图层，`text` 和 `slot` 用
+`bind` 绑定内容（title / subtitle / caption / footer / image），所以同一个模板能套任意素材。
+`image` 层可以写 `sticker://<id>` 直接引用中台贴图库里的透明装饰图。
+
+**免登录这条路原样保留**：不给 `--layout` 就用内置版式，全程不碰网络。这是 slideshow
+秒级出片、零成本的立身之本，接了模板库也不能丢。
+
+模板结构的真源在中台 `shared/slideshow-layout.js`，**校验也只在中台写入时做**。
+CLI 是消费方：遇到不认识的图层类型跳过该层并提示升级，不报错中断 ——
+两侧都校验的话，老 CLI 会把新写的合法模板判为非法，那才是真坏掉。
+
+### 行为变化：主图会比 2.9.0 略大（约 5%）
+
+`slot` 的 `box` 语义是**矩形框 + contain**（同 CSS `object-fit`），而 2.9.0 是把主图区
+当成正方形边长。差别在高瘦的图上：一张 219×229 的贴纸放进 518×701 的框，
+旧算法出 495×518（受高度限制），新算法出 518×542。
+
+换成框语义是刻意的 —— 框多大图就能占多大才符合直觉，也是「主图偏小」那个老问题的根治。
+实测两版逐像素比对：主图区差异 12%（就是这 5% 的尺寸差），其余区域 0.1~2.4%
+（亚像素位移的抗锯齿噪声）。版面结构完全一致。
+
+### 已知缺口
+
+CLI 内置的 `sticker-pink-mint` 与中台平台预置的同名模板是同一份 DSL，靠人工同步 ——
+本仓库还没有测试框架，这条一致性目前没有机器检查。
+
+## 2.9.0 (2026-08-28)
+
+### 新增：`slideshow` —— 一组图 + 文案 + 配乐 → 竖版短视频（免登录）
+
+```bash
+museav slideshow ./表情图 --title "莓啾日常" --caption "催外卖 / 催开饭" --music bgm.mp3
+```
+
+默认 1080×1920 / 30fps / H.264+AAC。排版走 sharp + SVG（中文用系统字体，不引入需要编译的
+canvas），合成走 ffmpeg（**要求本机装了 ffmpeg**，这是唯一的外部依赖）。
+
+这个能力原本长在微信表情包的 skill 里（一个 Python 脚本），做推广视频用。但「图集 + 文案 +
+配乐 → 竖版视频」跟表情包没关系，产品图、作品集、日报一样要用，所以下沉到 CLI，
+skill 那边退化成读配置拼参数的薄封装。
+
+移植时保留了三个已经踩过的坑的修法，它们的共同点还是**不报错、只是结果不对**：
+
+1. **小图不会被自动放大。** PIL 的 `thumbnail` 和 sharp 的 `withoutEnlargement` 都只缩不放，
+   240×240 的贴纸贴到 1080 宽的画布上会原样贴，在竖屏里只占两成宽。要显式 `resize` 到目标尺寸。
+   贴纸类图片还得先 `trim` 掉四周透明留白再放大——否则放大的是留白，主体照样小。
+2. **配乐直接 `-shortest` 会中途硬切断。** 配乐通常比视频长几倍，切在句子中间很难听。
+   要 `atrim` 裁到视频时长 + 首尾 `afade`。
+3. **ffmpeg 的 concat demuxer 会忽略最后一项的 `duration`。** 末页一闪而过，
+   只能把末页在列表里多写一次。
+
+## 2.8.0 (2026-08-27)
+
+### 新增：贴图素材 + 版式模板命令（租户级资产，给封面/海报工具用）
+
+两个新命令，底层调中台 `/api/stickers` 和 `/api/poster-templates`，账户 Key / 租户 Key 均可（落到本租户）。
+
+- `museav stickers`：列出本租户贴图素材（PNG 透明装饰图）
+- `museav stickers add <file> --name <名称>`：上传贴图（不压缩，保留透明通道）
+- `museav poster-templates`：列出版式模板（封面底图 + 固定描述）
+- `museav poster-templates add <file> --name <名称> --prompt <描述>`：保存版式（`{城市}` `{明星}` 占位符会被替换）
+
+背景：好易美（hym）的闲鱼封面工具此前版式存学员本机桌面、贴图只在后台本地，无法共享。
+现在贴图素材 + 版式模板收归中台，CLI 一条命令加载/保存，学员间共享。
+
+## 2.7.0 (2026-08-27)
+
+### 修复：`remove-bg` 抠不出主体（三个静默 bug）
+
+抠图一直输出条纹残影、主体几乎全被抠掉。排查出三个独立 bug，共同点是**全都不报错**，
+只是安静地输出一张糊掉的 mask —— 这类 bug 只能靠拿基准实现（rembg）逐项对齐才查得出来。
+
+1. **主因：`sharp` 对单通道 raw 做 `resize` 后会返回 3 通道**（灰度被展开成 RGB）。
+   代码仍按 `maskFull[i]` 索引，等于以 1/3 的步长错位采样，于是每隔几行错位一次 ——
+   这就是条纹残影的来源。现改为 `toColourspace('b-w')` + 按实际 `channels` 步长索引，两道保险。
+2. **输入尺寸与归一化参数被硬编码成一套**（1024 + `(x/255-0.5)/0.5`），而每个模型都不同：
+   `isnet` 是 1024 / mean .5 / **std 1.0**，`u2net` 是 **320** / ImageNet 参数。
+   于是 u2net 直接崩（`Got: 1024 Expected: 320`），isnet 因 std 用 0.5 而非 1.0
+   把输入值域放大一倍。参数已改为随模型定义。
+3. **归一化分母用固定 255**，而 rembg 用的是该图的最大像素值（`im_ary / max(im_ary)`）。
+   偏暗的图用 255 归一化会让输入分布整体偏小。
+
+### 新增：BiRefNet-Lite 模型，并设为 `remove-bg` 默认
+
+`--model birefnet`（214MB，首次自动下载）。实测同一张白猫照片，主体召回：
+**birefnet 57% / u2net 25% / isnet 10%** —— 毛发、白色主体、低对比度背景全面更好。
+
+注意 BiRefNet 输出的是 **logits，要先过 sigmoid** 才是概率（ISNet/U2Net 的输出已在 0-1 区间）。
+漏掉这步同样不报错，只会得到一张几乎全是半透明的 mask，所以 `sigmoid` 做成了模型属性。
+
+修完三个模型的输出与 rembg 基准逐一对齐（57.0/57.1、10.5/10.9、25.1/25.1）。
+
+
+## 2.6.0 (2026-08-21)
+
+### 新增：语音能力（`speak` / `transcribe`）
+
+接入小米 MiMo 的语音档，**直连上游、不走中台身份**，只认 `MIMO_API_KEY` 环境变量。
+中台的出音链路（`media_type=audio` 的路由与落盘）还没接完，而这批能力目前内部用——
+没有那把 key 的人（包括租户）用不了，所以不需要额外做权限控制。
+
+- `speak <text>`：文字转语音，输出 24kHz / 16bit 单声道 WAV，stdout 只打印文件路径。
+  三种音色来源，给哪个参数走哪条：默认预置音色（`--voice`，默认 Chloe）、
+  `--design` 一句话描述当场造一个、`--clone <file>` 拿一段音频克隆它的音色。
+  `--instruction` 可叠加语气/风格指令。
+- `transcribe <audio>`：语音转文字，stdout 只打印识别结果。
+
+协议上有四个反直觉的点，都写进了 `src/mimo-speech.ts` 的文件头（实测踩出来的，写错不报错、
+只是拿不到音频）：合成不走 `/v1/audio/speech`（OpenAI 那套音频端点全 404，四种能力共用
+`/v1/chat/completions`）；**待合成文本要放 assistant 角色**，放 user 会得到一段「回答」而不是朗读；
+音频是 base64 回在 `message.audio.data`；识别的输入音频在 user 的 content 数组里且要裸 base64。
+
+### 已知限制
+
+**识别结果的同音字会飘。** 同一段合成音频，一次识别成「声影成诗，一念成相」，另一次成
+「上庸城失，一面呈象」。CLI 会在 stderr 提醒，但不要把它的输出直接用在计费、入库或需要
+精确匹配的判断上。
+
+## 2.5.0 (2026-08-17)
+
+### 修复
+- **`whoami` 不再拒绝 apiKey 模式**：之前会直接抛错「只支持个人 login 身份」。实际上 `/api/me` 对两种 apiKey 都返回真实数据——
+  - 平台账户 apiKey（`STUDIO_API_KEY` 指向 `accounts.sk-*`）→ 账户身份：邮箱 + nickname + 累计出图次数 + credits
+  - 租户 apiKey（指向 `api_tenants.tenant_key`）→ 业务身份：tenant_id + name + nickname + logo
+  修复后三种身份都能 `museav whoami` 查清楚当前是谁、关联到哪个租户。
+
+### 文档
+- AGENTS.md `whoami` 说明：去掉「apiKey 不可用」的旧断言。
+
+## 2.4.0 · 2026-08-17
+
+**本地图像工具箱补全（免登录、零成本、macOS/Windows 通用）。** 均为轻量级工具，无大模型常驻内存。
+
+- `upscale <file>`：Real-ESRGAN 超分（Vulkan GPU 加速），`--scale 2/3/4`、`--model`（通用照片 / 插画动漫）。首次自动下载引擎+模型（~65MB）；M3 实测 4x 约 30 秒。
+- `remove-watermark <file>`：本地去水印。**纯像素启发式自动定位**（零模型依赖，角标式水印实测零误检）→ LaMa 掩码修复；复杂画面用 `--mask` 手工指定。修复模型 ~200MB 按需下载、用完即释放。
+- 依赖红线：本地绝不自动拉起开源大模型（reverse 已翻回 API 默认，`--local` 显式可选；Ollama 与 qwen3-vl 已从本机卸载）。
+
+**中台与前端联动。**
+
+- 上游目录移除 gemini 死条目（路由/密钥早已清除，目录残留会误判读图有冗余），相关测试 mock 统一改用 volcengine-plan-vision。
+- museav-web 参考图选择器接入工作区素材库：上传同步入库、素材库面板点选直接垫图、工作区切换自动刷新。
+- 发布卡片样式重排：标题/升级命令/仓库链接全部对齐 `museav-cli` 新名（旧包名已停更，照旧卡片敲命令装不到新版），剥掉 changelog 标题噪声，双列字段 + 三按钮。
+
+## 2.3.0 · 2026-08-17
+
+**项目（工作区）与项目素材库。** 层级：平台 → 账户 → 工作区，素材挂工作区——人像库的项目出模特图、产品库的项目出电商图，业务隔离互不污染。`--project` 收 id 或名称。
+
+- `projects` 列表 / `projects create --name` 新建（每账户最多 5 个）
+- `projects assets --project` 素材库 ls / add / rm：素材按**母版不压缩**上传，类型按字节判定（图片/音频/视频），stdout 出 `id<TAB>url` 可直接喂 `--ref`
+- `gen --project` 出图/出视频归档进项目；`jobs --project` 按项目查任务
+- `--ref` / `--image` 现在也收 http(s) 直链（素材库 URL 直接垫图，不再只认本地文件）
+- 需中台 `workspace-assets` 接口（2026-08-17 已上线）；账户 Key 白名单已放行
+
+**本地图像工具箱（免登录、零成本、macOS/Windows 通用）。** 依赖全走 npm 预编译，代码零平台假设。
+
+- `compress <file>`：sharp 压缩，`--max-edge / --quality / --format`，默认输出 `<名>-min.<格式>` 不覆写原文件，实测 597KB → 18KB
+- `remove-bg <file>`：本地抠图去背景（ISNet + onnxruntime，刻意没用 AGPL 的现成包），输出带 alpha 的 PNG，热跑秒级；模型首次自动下载 ~170MB 缓存 `~/.museav-models`
+- Ollama 未运行时的启动指引按操作系统区分（Windows 不再提示 brew）
+
+## 2.2.0 · 2026-08-17
+
+**`reverse` 主路改本地：Ollama + qwen3-vl。** 中台 API 读图要上传、排队、等云端推理；本地 8b 量化模型在自己机器上跑，免登录、零成本、离线可用。本地不可用（服务没起 / 模型没拉 / 推理出错）自动回落中台 API，回落时明确提示较慢，缺什么会告诉你补什么命令。
+
+- 一次性配置：`brew install ollama && brew services start ollama && ollama pull qwen3-vl:8b`（Intel Mac / Linux 用官方安装脚本同理）。换模型档位设 `MUSEAV_LOCAL_VLM`（如 `qwen3-vl:4b`，更快、识图质量略降），自定服务地址走标准 `OLLAMA_HOST`。
+- SCULPT 提示词从中台移植，砍掉本地不消费的 genre / body_md；返回归一化后与 API 路完全同构，`$(museav reverse x.png)` 管线用法不变，stdout 仍只出英文 prompt。
+- 读图前复用上传同款压缩（压到视觉模型够用的尺寸），本地推理也跟着快。
+- URL 输入固定走中台 API（本地路只收文件路径）；`--api` 强制走中台。
+- 本地路完全不需要中台凭证——未登录也能用，只有真回落 API 时才提示登录。
+
+**修复 `video-templates create` 必被 400 拒**：中台视频模板契约硬性要求 `slug`（required=['zh_name','slug']），且 toapis 2026-08-14 下线后 CLI 默认的 `seedance-2` 成了悬空引用——不带参数建视频模板必挂。现在 `--slug` 缺省自动生成 `vt-` 短标识并在 stderr 回显，默认模型改 `auto`（交给中台路由），`--duration` 放宽到 4-30（Seedance 2.5 支持到 30 秒）。
+
+- `templates` / `video-templates` 列表兼容读 config 顶层的 `fields`（现行契约存法——CLI 自己 create 写的就是顶层，之前自己建的模板自己都列不出字段）。
+- `gen` / `video-templates` 帮助文案与 README / AGENTS.md 示例里已下线的 `seedance-2-*` 代号全部清掉，照旧文案传参会 400。
+
+## 2.0.0 · 2026-08-16
+
+**改名：npm 包 `museav-cli`，命令 `museav`。** 产品叫 MUSE AV，命令却叫另一个名字，同一个东西两个叫法——这次统一到产品名。
+
+不用 `@museav/cli` 是因为 npm 的 scope 规则：`@<用户名>` 自动可用（旧包 `@kubor/studio-cli` 就是这么来的），而 `@museav` 属于组织 scope，得先在 npmjs.com 建一个同名组织。发布账号是个人的，为一个 CLI 去建公司组织不值当，无 scope 的 `museav-cli` 跟命令名也更一致。
+
+- 迁移：`npm uninstall -g` 旧包后 `npm install -g museav-cli`，脚本里的旧命令换成 `museav`，参数和行为完全不变。
+- 配置文件改到 `~/.museav.json`，**旧路径仍会自动读取**（apiKey 明文中台只在创建时给一次，很多人唯一的一份就在那个文件里，直接不读等于逼人重置密钥）。
+- 环境变量新增 `MUSEAV_API_KEY` / `MUSEAV_BASE_URL` / `MUSEAV_NO_WELCOME`；旧的 `STUDIO_*` 继续有效（中台对外文档和已经跑起来的 CI 写的都是旧名，不能说停就停），两个都设时新名优先。
+- 自报身份头新增 `X-Museav-Client`，旧的 `X-Studio-Client` **过渡期继续发**，值统一改成 `museav-cli/<version>`。中台靠这个头把渠道记成 `cli`，两个头一起发是为了让中台能在不中断渠道统计的前提下切过去；等所有客户端升上来、中台停读旧头之后，这里再把旧头删掉。同时显式带上 `User-Agent: museav-cli/<version>`（中台有 UA 兜底匹配，Node 默认的 `node` 什么信息都没有）。
+
+**新增 `image-to-template <file|url>`**：一张图 → 一个可复用的图片模板。读图（SCULPT）+ 文字层逆向 + 变量化 + 建模板，原图自动转存并焊进模板当参考图，所以换了文字还能出同款。支持 `--no-create`（只看草稿）、`--name` / `--slug` / `--category`、`--variables` 收窄变量白名单、`--labels` 把通用变量映射成你的业务叫法、`--async`。异步时按「接收图片 → 解析图片 → 抽取文字层 → 创建模板」逐阶段打进度，不是干转圈。
+
+- `reverse` 保持**纯读图**不变。中台 2026-08-16 把读图和做模板拆成了两个接口，`/api/reverse` 现在收到任何模板类参数都会 400——本 CLI 的 `reverse` 一直只发图片，不受影响。
+- `upload` 明确成通用素材上传：图片 / 音频 / 视频都收，类型按字节内容判定，上限分别是 8MB / 20MB / 50MB，输出里会标出识别到的类型。上传的 multipart 现在带上原文件名，出问题时日志里认得出是哪个文件。
+
+## 1.3.0
+
+- 新增 `templates create`：命令行直接建图片模板，不用再依赖网页后台。归属不是自己传的参数——服务端根据调用身份自动决定：租户 apiKey 建的自动归该租户（其他租户看不到），平台管理员账号建的是 `tenant_id` 为空的平台共享模板，个人登录会被拒绝。不传 `--fields` 时会自动从 `--prompt` 里的 `{key}` 占位符提取字段。
+- 修复：`templates create --category <x>` 的值被静默吞掉——父命令 `templates` 也声明了同名的 `--category`（列表过滤用），commander 会在分发到 `create` 子命令之前把这个参数值算到父命令头上。用 `program.enablePositionalOptions()` 修复。
+- 新增 `products` / `assets`：查所属租户自己的产品目录 / 素材库，数据在租户自己的后台（不在 studio 中台），仅租户 apiKey 身份可用。新增 `TenantClient`，从内置的小映射表（`hym`、`mzmeso`）或 `config --tenantBaseUrl` 解析租户后台域名。
+
+## 1.2.0
+
+- `gen --template <id> --fields '{"key":"值"}'`: generate from an image template. Same black-box philosophy as `--skill` — the prompt template is expanded server-side and never sent back — but deterministic placeholder substitution instead of a chat-model expansion, so no chat cost. Template list comes from your own tenant's templates plus platform-shared ones.
+- `templates` command: list available image templates (`--category` to filter), mirrors `skills`.
+- Fixed: `-r, --ratio` had a hardcoded `3:4` default that silently overrode a skill's or template's own aspect ratio even when you didn't ask for one. It's now unset unless you pass it explicitly.
+
+## 0.4.0
+
+- `whoami`: show the logged-in account and its tenant affiliation (if the account was registered via a tenant's invite code), using the existing `/api/me` endpoint. `login` now prints this automatically right after signing in.
+- Update check: `update-notifier` checks npm for a newer version at most once per 12h and prints a notice — no more silently running stale versions.
+- `--version` now reads from `package.json` at runtime instead of a hardcoded string in `index.ts` (the two had already drifted out of sync once before 0.3.0).
+
+## 0.3.0
+
+- `jobs`: query your own (or your tenant's) recent image-generation history. `--limit`/`--status` are filtered client-side — the server always returns the 50 most recent jobs, no pagination.
+- Fixed a bug where `gen` (and the new `jobs`) would crash before ever calling the API: the `withClient` wrapper dropped the `options` object for any command with flags but no positional argument.
+
+## 0.2.0
+
+- `login`/`logout`: device-authorization flow for individual platform users — no need to request a tenant apiKey just to generate images from your own account.
+- Config file (`~/.studio-image.json`) now stored with `0600` permissions (it can hold a personal login token, not just a tenant apiKey).
+
+## 0.1.0
+
+- Initial release: `gen`, `reverse`, `upload`, `models`, `balance`, `config` — a CLI client for the studio image-generation platform, authenticated via tenant apiKey.
+
 ## 3.13.3 (2026-10-24)
 
 ### 已领取的订单也能撤销后续访问权益

@@ -23,7 +23,7 @@
  */
 import type { StudioClient, Subject, SubjectKind, PersonaSource, AssetRole, DomainAsset } from '../client.js'
 import { SUBJECT_KINDS, PERSONA_SOURCES, ASSET_ROLES, SUBJECT_MAX_NAME } from '../client.js'
-import { resolveWorkspace } from './projects.js'
+import { resolveWorkspaceStrict as resolveWorkspace } from './projects.js'
 
 /**
  * 中台图库直链的域名（= 服务端 assets.js 的 REF_CDN_BASE，真源 museav-manager/shared/cdn-url.js）。

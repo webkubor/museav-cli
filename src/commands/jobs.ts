@@ -5,7 +5,7 @@
  * 不需要额外传租户/用户 id——你拿的是谁的凭证，就是谁的数据。
  */
 import type { StudioClient, Job } from '../client.js'
-import { resolveWorkspace } from './projects.js'
+import { resolveWorkspaceStrict as resolveWorkspace } from './projects.js'
 
 const STATUS_MARK: Record<Job['status'], string> = {
   pending: '⏳',

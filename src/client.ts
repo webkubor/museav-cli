@@ -694,22 +694,23 @@ export class StudioClient {
     return this.request('workspaces', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) })
   }
 
-  /** 列某工作区的素材库 */
-  async workspaceAssets(workspaceId: string): Promise<WorkspaceAsset[]> {
-    return this.request(`workspace-assets?workspace_id=${encodeURIComponent(workspaceId)}`)
+  /** 列素材库；workspaceId 为空 = 个人素材库（不属于任何项目） */
+  async workspaceAssets(workspaceId?: string | null): Promise<WorkspaceAsset[]> {
+    return this.request(workspaceId ? `workspace-assets?workspace_id=${encodeURIComponent(workspaceId)}` : 'workspace-assets')
   }
 
-  /** 上传素材进工作区素材库。素材是母版，**不做视觉压缩**（fileForm 那套压缩是给模型看的） */
+  /** 上传素材进素材库。素材是母版，**不做视觉压缩**（fileForm 那套压缩是给模型看的）。
+   *  workspaceId 省略 = 个人素材库：个人分享（壁纸合集等）不依赖团队项目体系。 */
   async addWorkspaceAsset(input: {
     file: string
-    workspaceId: string
+    workspaceId?: string | null
     name?: string
     tags?: string[]
   }): Promise<WorkspaceAsset> {
     const blob = new Blob([new Uint8Array(readFileSync(input.file))])
     const fd = new FormData()
     fd.append('file', blob, basename(input.file))
-    fd.append('workspace_id', input.workspaceId)
+    if (input.workspaceId) fd.append('workspace_id', input.workspaceId)
     if (input.name) fd.append('name', input.name)
     for (const t of input.tags || []) fd.append('tags', t)
     return this.request('workspace-assets', { method: 'POST', body: fd })

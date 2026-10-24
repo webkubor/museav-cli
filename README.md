@@ -104,11 +104,15 @@ museav shop codes revoke <发货码>
 
 商品类型字段为 `kind: credits|wallpaper|bundle`。发码时服务端从卖家真实余额预留积分并冻结交付快照；撤销未领码才退回积分，已核销的码不能撤销。同一次请求重试保持 `--request-id` 不变，同渠道同 `--external-order` 也会去重；每个新订单使用新的请求号。发码返回的 `code`、`claim_url`、`reply_text`、`product_copy`、`product_images` 可存为订单物料 JSON，返回成功不代表外部平台已上架或发货。
 
-壁纸完整流程在 CLI 内完成：先创建草稿商品，建对应合集与公开预览，逐张上传私有原图，再发布合集并激活商品。公开预览应为降采样或带水印版本，不能与付费原图相同。现有项目命令可管理预览：
+壁纸完整流程在 CLI 内完成：先创建草稿商品，建对应合集与公开预览，逐张上传私有原图，再发布合集并激活商品。公开预览应为降采样或带水印版本，不能与付费原图相同。
+
+**素材来源分两条线**（2026-10-25 起）：个人分享（壁纸专栏等）用**个人素材库**，团队协作用**项目素材库**。个人素材库属于账户本身，不占项目配额（每账户最多 5 个项目，那是团队维度才该关心的限制）。`--project` 省略即个人素材库：
 
 ```bash
 museav projects
-museav projects assets add ./preview.png --project <项目UUID>
+museav projects assets                      # 列个人素材库
+museav projects assets add ./preview.png    # 传个人素材（不传 --project）
+museav projects assets add ./preview.png --project <项目UUID>   # 传项目素材
 museav projects assets --project <项目UUID>
 museav shop products create --file wallpaper-draft.json
 museav shop collections list
@@ -119,16 +123,18 @@ museav shop collections save --file collection-published.json
 museav shop products update <商品UUID> --file wallpaper-active.json
 ```
 
+免费合集（`access_mode: public`）不需要 `shop collections upload`：服务端直接把所选素材的母版当公开可下载原图，所以**必须把全尺寸原图传进素材库**（传降采样预览等于把糊图发出去）。付费合集才逐张上传私有原图。
+
 `wallpaper-draft.json`：
 
 ```json
 {"title":"十月壁纸一期","kind":"wallpaper","credits":0,"status":"draft"}
 ```
 
-`collection-draft.json` 的 UUID 来自前面命令的 JSON；封面可为 null，预览素材需属于自己：
+`collection-draft.json` 的 UUID 来自前面命令的 JSON；封面可为 null，预览素材需属于自己。`workspace_id` 用 `null` 表示素材来自**个人素材库**（个人分享走这条），填项目 UUID 表示素材来自该项目：
 
 ```json
-{"title":"十月一期","issue_key":"2026-10-01","description":"自制壁纸原图","access_mode":"product","status":"draft","product_id":"<商品UUID>","workspace_id":"<项目UUID>","cover_asset_id":null,"asset_ids":["<预览素材UUID>"]}
+{"title":"十月一期","issue_key":"2026-10-01","description":"自制壁纸原图","access_mode":"product","status":"draft","product_id":"<商品UUID>","workspace_id":null,"cover_asset_id":null,"asset_ids":["<预览素材UUID>"]}
 ```
 
 保存返回 `collection.id` 和 `items[].id`。按每个条目 UUID 上传对应原图（单张 ≤32 MiB）。`collection-published.json` 使用相同完整规格，增加返回的 `id` 并将 `status` 改成 `published`；**save 是全量保存**，更新时也保留 `asset_ids`、描述、封面及其它字段，省略字段会重置。发布会检查原图齐备、归属和预览隔离，已发布本期不能替换原图，新内容另建下一期。最后用 `wallpaper-active.json` 启售：

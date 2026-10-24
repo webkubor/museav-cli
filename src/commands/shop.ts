@@ -62,4 +62,7 @@ export function registerShop(program: Command, run: Run, publicRun: PublicRun = 
     }))
   codes.command('revoke <code>').description('撤销自己的未领取码并退回预留积分；已领取码不可撤销')
     .action(run(async (client, code) => output(await client.shop.revoke(code))))
+  codes.command('revoke-access <code>').description('撤销已领取订单的后续访问权益（壁纸下载/模板使用），不退积分')
+    .addHelpText('after', '\n适用于买家已在外部平台退款场景：仅停止其后续合集下载与模板权限，不退回积分、不改写领取事实。')
+    .action(run(async (client, code) => output(await client.shop.revokeAccess(code))))
 }

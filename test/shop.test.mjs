@@ -33,7 +33,8 @@ test('SDK使用同一JWT，准确映射CRUD、自己公开店铺和发码幂等�
   await client.shop.issue(issue)
   await client.shop.issue(issue)
   await client.shop.revoke('CODE')
-  assert.deepEqual(calls.map(c => new URL(c.url).pathname), ['/api/sales-products', '/api/shop', '/api/sales-products', '/api/sales-products', '/api/sales-products', '/api/sales-listing', '/api/sales-listing', '/api/sales-listing', '/api/sales-listing'])
+  await client.shop.revokeAccess('CODE2')
+  assert.deepEqual(calls.map(c => new URL(c.url).pathname), ['/api/sales-products', '/api/shop', '/api/sales-products', '/api/sales-products', '/api/sales-products', '/api/sales-listing', '/api/sales-listing', '/api/sales-listing', '/api/sales-listing', '/api/sales-listing'])
   assert.equal(new URL(calls[1].url).searchParams.get('owner'), ID)
   assert.ok(calls.every(c => c.headers.Authorization === 'Bearer test-token'))
   assert.deepEqual(JSON.parse(calls[2].body), product)
@@ -42,6 +43,7 @@ test('SDK使用同一JWT，准确映射CRUD、自己公开店铺和发码幂等�
   assert.deepEqual(JSON.parse(calls[6].body), issue)
   assert.equal(calls[6].body, calls[7].body)
   assert.deepEqual(JSON.parse(calls[8].body), { action: 'disable', code: 'CODE' })
+  assert.deepEqual(JSON.parse(calls[9].body), { action: 'revoke', code: 'CODE2' })
 }))
 
 test('无效JSON规格和发码参数在HTTP前拒绝，草稿允许壁纸绑定循环', async () => network(async (client, calls) => {

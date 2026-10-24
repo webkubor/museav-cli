@@ -60,7 +60,22 @@ export interface ShopIssueResult {
   replayed: boolean
 }
 /** 本人的发码记录；交付快照留在服务端。 */
-export interface ShopCode { code: string; product_id: string | null; channel: ShopChannel; order_ref: string | null; request_id: string | null; credits: number; status: string; created_at: string }
+export interface ShopCode {
+  code: string
+  product_id: string | null
+  channel: ShopChannel
+  order_ref: string | null
+  request_id: string | null
+  credits: number
+  status: string
+  created_at: string
+  can_revoke_access?: boolean
+  revoked_at?: string | null
+  material?: Record<string, unknown>
+  claimed_nickname?: string | null
+  claimed_email?: string | null
+  claimed_at?: string | null
+}
 /** 本人最近 200 个发码记录和可选商品。 */
 export interface ShopCodes { claims: ShopCode[]; products: { id: string; title: string }[]; templates: { id: string; zh_name: string }[] }
 
@@ -168,6 +183,11 @@ export function createShopApi(request: (path: string, init?: RequestInit) => Pro
     async revoke(code: string): Promise<{ ok: boolean }> {
       if (typeof code !== 'string' || !code.trim()) throw new Error('发货码不能为空')
       return request('sales-listing', json('POST', { action: 'disable', code }))
+    },
+    /** 撤销已领取订单的后续访问权益（买家退款等售后场景）；不退积分、不改写领取事实。 */
+    async revokeAccess(code: string): Promise<{ ok: boolean; revoked_at: string }> {
+      if (typeof code !== 'string' || !code.trim()) throw new Error('发货码不能为空')
+      return request('sales-listing', json('POST', { action: 'revoke', code }))
     },
   }
 }

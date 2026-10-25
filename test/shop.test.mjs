@@ -160,6 +160,8 @@ test('fromCollection：从合集一键上架，自动返回店铺图片切图、
     const pack = await client.shop.fromCollection(ID, { channel: 'xiaohongshu', price: '1.00' })
     assert.equal(pack.price_cny, '1.00')
     assert.equal(pack.item_count, 2)
+    assert.equal(pack.delivery_type, '无物流发货')
+    assert.equal(pack.stock, 9999)
     assert.deepEqual(pack.product_images, ['https://img.test/cover.png', 'https://img.test/pic1.png', 'https://img.test/pic2.png'])
     assert.match(pack.claim_url, /https:\/\/museav\.top\/claim\/order\?product=33333333-3333-4333-8333-333333333333/)
     assert.match(pack.reply_text, /【山鬼映画】古风武侠壁纸/)

@@ -60,12 +60,14 @@ export interface ShopIssueResult {
   replayed: boolean
 }
 
-/** 壁纸合集一键上架小红书返回的完整物料包。 */
+/** 壁纸合集一键上架小红书返回的完整物料包（对齐小红书官方快捷售卖字段）。 */
 export interface ShopWallpaperPack {
   product: ShopProduct
   claim_url: string
   price_cny: string
   item_count: number
+  delivery_type: string
+  stock: number
   product_images: string[]
   reply_text: string
   product_copy: string
@@ -262,6 +264,8 @@ export function createShopApi(request: (path: string, init?: RequestInit) => Pro
         claim_url,
         price_cny: price,
         item_count: itemCount,
+        delivery_type: '无物流发货',
+        stock: 9999,
         product_images,
         reply_text,
         product_copy,

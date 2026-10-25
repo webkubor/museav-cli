@@ -231,7 +231,7 @@ export function createShopApi(request: (path: string, init?: RequestInit) => Pro
 
       // 4. 生成带货文案与自动回复话术
       const channelLabel = channel === 'xianyu' ? '闲鱼' : '小红书'
-      const product_copy = `【${c.title}】4K 高清无水印壁纸原图\n\n💰 现货拍下自动交付：${price} 元（拍下即得）\n\n${c.description ? `${c.description}\n\n` : ''}📦 交付内容：\n1. 包含 ${itemCount} 张 4K 高清无水印原图（全高清画质，适配各端屏幕）；\n2. 拍下后私信自动秒发提货通道，输入订单号即得专属账号密码；\n3. 支持随时登录回访下载，永久有效，不限下载次数。\n\n🔒 一单一码独立鉴权，原图无压缩传输，请放心拍下！`
+      const product_copy = `【${c.title}】4K 高清无水印壁纸原图\n\n💰 现货拍下自动交付：${price} 元（拍下即得）\n\n${c.description ? `${c.description}\n\n` : ''}📦 交付内容：\n1. 包含 ${itemCount} 张 4K 高清无水印原图（全高清画质，适配各端屏幕）；\n2. 拍下后私信自动秒发提货通道，填写邮箱即得专属账号密码；\n3. 支持随时登录回访下载，永久有效，不限下载次数。\n\n🔒 一个邮箱限领一次，独立鉴权，原图无压缩传输，请放心拍下！`
 
       // 5. 调用后端创建商品
       const productPayload: ShopProductInput = {
@@ -251,7 +251,7 @@ export function createShopApi(request: (path: string, init?: RequestInit) => Pro
 
       // 6. 生成专属提货通道与防重复盗刷私信
       const claim_url = `https://museav.top/claim/order?product=${product.id}`
-      const reply_text = `🎉 感谢支持【${shopName}】${c.title}！\n您的 ${itemCount} 张全套 4K 高清无水印壁纸原图已打包就绪。\n\n💰 单期特惠：${price} 元（永久有效·高清原图下载）\n🔗 专属提货通道：${claim_url}\n🔑 提货方式：进入链接，输入您的${channelLabel}订单号（或拍下手机号），系统将自动核验并为您签发独占下载密码。\n\n⚠️ 说明：一单仅限核销一次，自动绑定您的账户永久保存，请勿将订单号外泄。`
+      const reply_text = `🎉 感谢支持【${shopName}】${c.title}！\n您的 ${itemCount} 张全套 4K 高清无水印壁纸原图已打包就绪。\n\n💰 单期特惠：${price} 元（永久有效·高清原图下载）\n🔗 专属提货通道：${claim_url}\n🔑 提货方式：进入链接，填写您的接收邮箱即可秒级开通永久下载；填上${channelLabel}订单号可额外核验订单、一单一密更放心。\n\n⚠️ 说明：一个邮箱限领一次，自动绑定您的账户永久保存，请勿将提货链接外泄。`
 
       // 7. 更新商品带上完整回复话术
       await this.update(product.id, { reply_text })

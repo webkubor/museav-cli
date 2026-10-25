@@ -60,15 +60,20 @@ jobs:
           node dist/index.js --version
           node dist/index.js --help | head -3
 
-      # 认证走哪条由仓库配置决定，二选一，不用改这个文件：
-      #   ① Trusted Publishing（推荐，无 token）——在 npmjs.com 的包设置里
-      #      绑定本仓库 + 本 workflow 文件名(publish.yml)，然后别设 NPM_TOKEN secret。
-      #   ② NPM_TOKEN 兜底——建 Granular token（Read and write，范围勾 @museav scope
-      #      或 All packages，别只勾单个包），存进仓库 Secrets 的 NPM_TOKEN。
+      # 认证走 Trusted Publishing（OIDC）：workflow 顶层的 `id-token: write` 就是为它准备的，
+      # runner 用 GitHub OIDC token 换 npm 的短期发布凭证 —— **不需要 NPM_TOKEN，也不需要 OTP**。
+      #
+      # 2026-10-25：原先这里 env 挂着 `NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}`，
+      # 于是发布走的是「bypass-2FA 的 Granular token + 一次性验证码」那条老路。
+      # npm 正在收紧这类 token 的直接发布权限（发布时会有
+      # "npm tokens that bypass 2FA are being restricted for account changes and direct publishing" 警告），
+      # 而 Trusted Publishing 正是 npm 给这条路准备的替代：只需在 npmjs.com 的包设置里
+      # 绑定本仓库 + 本 workflow 文件名(publish.yml)，仓库里**不要**留 NPM_TOKEN secret。
+      #
+      # 本地 `npm publish` 一律不算正式发布（不触发 Actions，租户群收不到通知，
+      # /api/cli-guide 的版本号也不会同步）——正式发布一律打 `v*` tag。
       - name: 发布
         run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # 发布后回调业务中台（2026-08-15）：POST /api/cli-release，package 字段区分是哪个包
       # （2026-09-08 起 museav-mcp 也走这条链路，中台按包名给不同的安装指引与文档链接；

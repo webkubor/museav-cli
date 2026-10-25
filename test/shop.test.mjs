@@ -128,6 +128,48 @@ test('合集完整保存、条目查询与私有multipart上传契约', async ()
   assert.deepEqual(JSON.parse(calls[2].body), input)
 }))
 
+test('fromCollection：从合集一键上架，自动返回店铺图片切图、自动回复与带货文案', async () => network(async (client, calls) => {
+  const old = globalThis.fetch
+  globalThis.fetch = async (url, init = {}) => {
+    const u = String(url)
+    if (u.includes('creator-collections') && u.includes(`id=${ID}`)) {
+      return new Response(JSON.stringify({
+        collection: { id: ID, title: '古风武侠壁纸', cover_url: 'https://img.test/cover.png', item_count: 3 },
+        items: [
+          { id: 'it-1', preview_url: 'https://img.test/pic1.png' },
+          { id: 'it-2', preview_url: 'https://img.test/pic2.png' },
+        ],
+      }))
+    }
+    if (u.includes('sales-products') && init.method === 'POST') {
+      return new Response(JSON.stringify({
+        ok: true,
+        product: { id: '33333333-3333-4333-8333-333333333333', title: '古风武侠壁纸', kind: 'wallpaper', collection_ids: [ID] },
+      }))
+    }
+    if (u.includes('sales-products') && !init.method) {
+      return new Response(JSON.stringify({ owner_id: ID, products: [] }))
+    }
+    if (u.includes('shop?owner=')) {
+      return new Response(JSON.stringify({ seller: { nickname: '山鬼映画' } }))
+    }
+    return new Response(JSON.stringify({ ok: true }))
+  }
+
+  try {
+    const pack = await client.shop.fromCollection(ID, { channel: 'xiaohongshu', price: '1.00' })
+    assert.equal(pack.price_cny, '1.00')
+    assert.equal(pack.item_count, 2)
+    assert.deepEqual(pack.product_images, ['https://img.test/cover.png', 'https://img.test/pic1.png', 'https://img.test/pic2.png'])
+    assert.match(pack.claim_url, /https:\/\/museav\.top\/claim\/order\?product=33333333-3333-4333-8333-333333333333/)
+    assert.match(pack.reply_text, /【山鬼映画】古风武侠壁纸/)
+    assert.match(pack.reply_text, /1\.00 元/)
+    assert.match(pack.product_copy, /💰 现货拍下自动交付：1\.00 元/)
+  } finally {
+    globalThis.fetch = old
+  }
+}))
+
 test('CLI issue参数映射、JSON stdout和stderr错误出口', async () => {
   const original = process.stdout.write
   const chunks = []

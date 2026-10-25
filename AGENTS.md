@@ -248,3 +248,23 @@ C 端一条都不行。
 
 **本地 `npm publish` 不算正式发布**：不触发 Actions，租户群收不到通知、
 `/api/cli-guide` 的版本号也不会同步。正式发布一律打 `v*` tag。
+
+### 发布认证走 Trusted Publishing(OIDC)，不要 OTP
+
+本仓库的 npm 发布走 **Trusted Publishing**：workflow 顶层的 `id-token: write`
+让 runner 用 GitHub OIDC token 换 npm 的短期发布凭证，**既不需要仓库里的
+NPM_TOKEN secret，也不需要一次性验证码(OTP)**。2026-10-25 起
+publish.yml 已去掉 `NODE_AUTH_TOKEN`，仓库里的 NPM_TOKEN secret 也已删除。
+
+在 npmjs.com 的包设置里，trusted publisher 绑的是：仓库 `webkubor/museav-cli`
++ workflow 文件 `publish.yml`（改了文件名要重新绑）。
+
+因此：
+
+- 想在本地发版 —— **不要**。本地 `npm publish` 既过不了 OIDC（本地没有 OIDC
+  token），也会撞 EOTP（一次性验证码），最后是「tag 打好了、npm 没发成」的半吊子状态。
+  正解只有一条：改版本号 → 写 CHANGELOG → 打 `v*` tag → `git push origin v*`。
+- **绝对不要**把恢复码当 `--otp` 用 —— npm 会判定账户可能失守，触发 72 小时预防性冻结
+  （2026-09-17 出过一次）。需要验证码的场景只有网页端操作，而那走浏览器，不走 CLI。
+- 推 tag 后 CI 会自动：校验版本一致 → 探测该版本是否已发过（已发则跳过 publish，
+  不让流水线为「不能覆盖已发布版本」标红）→ publish → 回调业务中台记录更新日志并发群卡片。

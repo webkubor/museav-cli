@@ -29,7 +29,8 @@ jobs:
       - run: npx tsc --noEmit
       - run: npm run build
 
-      # 防手滑：tag 触发时校验 tag 与 package.json 的 version 一致
+      # tag 名必须与 package.json version 一致，防止「tag 是 v3.14.0 发的却是 3.13.9」；
+      # 同时探测该版本是否已发过 npm（重推同一 tag 时不报错、不重复发）
       - name: 校验版本号与 tag 一致
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
@@ -40,6 +41,20 @@ jobs:
             exit 1
           fi
           echo "版本一致：$PKG"
+
+      # 这个版本已经在 npm 上就跳过 publish：npm 不允许覆盖已发布版本，
+      # 让它撞一次 E403 只会把整条流水线标红，而其实该发的东西早就发出去了
+      # （2026-10-25 实测：OIDC 认证通过后报的就是 "cannot publish over the previously published versions"）。
+      - name: 探测该版本是否已发过 npm
+        id: ver
+        run: |
+          VER="$(node -p "require('./package.json').version")"
+          if npm view "museav-cli@$VER" version >/dev/null 2>&1; then
+            echo "published=true"  >> "$GITHUB_OUTPUT"
+            echo "museav-cli@$VER 已在 npm 上，跳过 publish"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
 
       # 防空介绍（2026-08-29 教训）：发布卡片的内容取 CHANGELOG.md 顶部一节，
       # npm version patch 不会写 CHANGELOG——不校验的话，卡片会带着上一个版本的旧介绍
@@ -73,6 +88,7 @@ jobs:
       # 本地 `npm publish` 一律不算正式发布（不触发 Actions，租户群收不到通知，
       # /api/cli-guide 的版本号也不会同步）——正式发布一律打 `v*` tag。
       - name: 发布
+        if: steps.ver.outputs.published == 'false'
         run: npm publish --access public --provenance
 
       # 发布后回调业务中台（2026-08-15）：POST /api/cli-release，package 字段区分是哪个包

@@ -3,17 +3,26 @@
  *  「人像库的工作区出模特图、产品库的工作区出电商图」的载体就是这里。 */
 import type { StudioClient, Workspace } from '../client.js'
 
-/** --project <id|名> 的解析：id 精确命中，否则按名称匹配；找不到/歧义时把可选项列出来 */
-export async function resolveWorkspace(client: StudioClient, idOrName: string): Promise<Workspace> {
-  const list = await client.workspaces()
+/** --project <id|名> 的解析：id 精确命中，否则按名称匹配；找不到/歧义时把可选项列出来。
+ *  传空 = 个人素材库（不属于任何项目）：个人分享（壁纸合集等）不依赖团队项目体系，
+ *  也不占 5 个项目的配额。 */
+export async function resolveWorkspace(client: StudioClient, idOrName: string): Promise<Workspace | null> {
   const key = String(idOrName || '').trim()
-  if (!key) throw new Error('缺少 --project（工作区 id 或名称）')
+  if (!key) return null
+  const list = await client.workspaces()
   const byId = list.find((w) => w.id === key)
   if (byId) return byId
   const byName = list.filter((w) => w.name === key)
   if (byName.length === 1) return byName[0]
   if (byName.length > 1) throw new Error(`重名工作区「${key}」，请用 id 指定：\n${list.map((w) => `  ${w.id}  ${w.name}`).join('\n')}`)
   throw new Error(`没有工作区「${key}」。现有：\n${list.map((w) => `  ${w.id}  ${w.name}`).join('\n')}\n（museav projects create --name 可新建）`)
+}
+
+/** key 必须指向真实项目的场景（gen/subjects/jobs 的 --project）：不接受个人库，空值报错。 */
+export async function resolveWorkspaceStrict(client: StudioClient, idOrName: string): Promise<Workspace> {
+  const ws = await resolveWorkspace(client, idOrName)
+  if (!ws) throw new Error('缺少 --project（工作区 id 或名称）')
+  return ws
 }
 
 export async function projects(client: StudioClient): Promise<void> {
@@ -49,14 +58,15 @@ export async function createProject(client: StudioClient, opts: { name: string }
 
 export async function listAssets(client: StudioClient, opts: { project?: string }): Promise<void> {
   const ws = await resolveWorkspace(client, opts.project || '')
-  const assets = await client.workspaceAssets(ws.id)
-  process.stderr.write(`「${ws.name}」素材库（${assets.length} 条）:\n`)
+  const assets = await client.workspaceAssets(ws?.id)
+  const label = ws ? `「${ws.name}」` : '「个人素材库」'
+  process.stderr.write(`${label}素材库（${assets.length} 条）:\n`)
   for (const a of assets) {
     const tag = a.tags?.length ? `[${a.tags.join(',')}]` : ''
     process.stderr.write(`  ${a.id}  ${(a.name || '(未命名)').padEnd(16)} ${a.media_type.padEnd(5)} ${tag}\n`)
     process.stderr.write(`    ${a.cdn_url}\n`)
   }
-  process.stderr.write(`\n垫图出图: museav gen --project ${ws.id} --ref <素材URL> --prompt '...'\n`)
+  process.stderr.write(`\n垫图出图: museav gen --project ${ws?.id || '<id>'} --ref <素材URL> --prompt '...'\n`)
   // stdout：id<TAB>url 每行一条，agent 拿去直接当 --ref 用
   console.log(assets.map((a) => `${a.id}\t${a.cdn_url}`).join('\n'))
 }
@@ -69,11 +79,11 @@ export async function addAsset(
   const ws = await resolveWorkspace(client, opts.project || '')
   const row = await client.addWorkspaceAsset({
     file,
-    workspaceId: ws.id,
+    workspaceId: ws?.id,
     name: opts.name,
     tags: opts.tag || [],
   })
-  process.stderr.write(`✅ 已入「${ws.name}」素材库：${row.name || '(未命名)'}  ${row.media_type}\n`)
+  process.stderr.write(`✅ 已入${ws ? `「${ws.name}」` : '「个人素材库」'}：${row.name || '(未命名)'}  ${row.media_type}\n`)
   process.stderr.write(`${row.cdn_url}\n`)
   console.log(row.cdn_url)
 }

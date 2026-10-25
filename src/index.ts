@@ -310,17 +310,17 @@ projectsCmd
 
 const assetsCmd = projectsCmd
   .command('assets')
-  .description('项目素材库：列出 / 上传 / 删除该工作区的素材（垫图母版，不压缩）')
+  .description('素材库：列出 / 上传 / 删除素材（垫图母版，不压缩）。不传 --project = 个人素材库')
 
 assetsCmd
-  .description('列工作区素材库')
-  .option('--project <id|名>', '工作区 id 或名称（必填，不传会明确报错）')
+  .description('列素材库（默认个人素材库，--project 选项目）')
+  .option('--project <id|名>', '工作区 id 或名称；省略 = 个人素材库')
   .action(withClient((client: StudioClient, opts: any) => listAssets(client, opts)))
 
 assetsCmd
   .command('add <file>')
-  .description('上传素材进工作区素材库（图片/音频/视频，按字节判型；母版不压缩）')
-  .requiredOption('--project <id|名>', '工作区 id 或名称')
+  .description('上传素材进素材库（图片/音频/视频，按字节判型；母版不压缩；不传 --project = 个人素材库）')
+  .option('--project <id|名>', '工作区 id 或名称；省略 = 个人素材库')
   .option('--name <name>', '素材名，如「白T正面」')
   .option('--tag <tag>', '标签，可重复（产品 / 人像 / 场景…）', (v: string, acc: string[]) => [...acc, v], [] as string[])
   .action(withClient((client: StudioClient, file: string, opts: any) => addAsset(client, file, opts)))

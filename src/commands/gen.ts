@@ -1,7 +1,7 @@
 /** museav gen —— 出图 / 出视频（核心命令） */
 import { readFileSync } from 'node:fs'
 import type { StudioClient } from '../client.js'
-import { resolveWorkspace } from './projects.js'
+import { resolveWorkspaceStrict as resolveWorkspace } from './projects.js'
 
 /** 与中台/各租户后台口径一致：一次最多 5 张参考图 */
 const MAX_REFS = 5

@@ -29,6 +29,11 @@ export function registerShop(program: Command, run: Run, publicRun: PublicRun = 
     .action(run(async (client, id, opts) => output(await client.shop.update(id, spec(opts.file) as Partial<ShopProductInput>))))
   products.command('archive <id>').description('归档商品（保留历史发货码及交付快照）')
     .action(run(async (client, id) => output(await client.shop.archive(id))))
+  products.command('from-collection <collectionId>').description('从壁纸合集一键上架为商品，直接返回店铺配套图片与自动回复物料')
+    .option('--channel <channel>', '销售渠道：xiaohongshu|xianyu', 'xiaohongshu')
+    .option('--price <price>', '在售价格（默认 1.00 元）', '1.00')
+    .addHelpText('after', '\n自动完成：1.读取合集与全部高清预览切图；2.创建在售壁纸商品；3.生成包含专属单号提货通道的私信话术与带货文案。\n输出的 product_images 包含封面与全部壁纸切图，可直接作为小红书九宫格与店铺主图使用。')
+    .action(run(async (client, collectionId, opts) => output(await client.shop.fromCollection(collectionId, { channel: opts.channel, price: opts.price }))))
   const collections = shop.command('collections').description('查询公开合集，或管理自有壁纸合集')
     .addHelpText('after', '\n匿名示例：museav shop collections list --owner <作者UUID>\n          museav shop collections show <合集UUID> --public')
   collections.command('list').description('列出本人合集，或按作者查询公开合集').option('--owner <uuid>', '匿名列出指定作者的已发布合集').action((...args: any[]) => {

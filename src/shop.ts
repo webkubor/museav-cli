@@ -59,6 +59,17 @@ export interface ShopIssueResult {
   kind: ShopProductKind
   replayed: boolean
 }
+
+/** 壁纸合集一键上架小红书返回的完整物料包。 */
+export interface ShopWallpaperPack {
+  product: ShopProduct
+  claim_url: string
+  price_cny: string
+  item_count: number
+  product_images: string[]
+  reply_text: string
+  product_copy: string
+}
 /** 本人的发码记录；交付快照留在服务端。 */
 export interface ShopCode {
   code: string
@@ -188,6 +199,73 @@ export function createShopApi(request: (path: string, init?: RequestInit) => Pro
     async revokeAccess(code: string): Promise<{ ok: boolean; revoked_at: string }> {
       if (typeof code !== 'string' || !code.trim()) throw new Error('发货码不能为空')
       return request('sales-listing', json('POST', { action: 'revoke', code }))
+    },
+    /** 从壁纸合集一键上架为小红书/闲鱼在售商品，自动配齐店铺九宫格图片与自动回复物料。 */
+    async fromCollection(collectionId: string, options: { channel?: ShopChannel; price?: string } = {}): Promise<ShopWallpaperPack> {
+      validateShopId(collectionId)
+      const channel = options.channel || 'xiaohongshu'
+      validateShopChannel(channel)
+      const price = options.price || '1.00'
+
+      // 1. 读取合集与条目详情
+      const coll = await this.collections.show(collectionId)
+      if (!coll?.collection) throw new Error(`找不到合集 ${collectionId}`)
+
+      const c = coll.collection
+      const items = Array.isArray(coll.items) ? coll.items : []
+      const itemCount = items.length || c.item_count || 0
+
+      // 2. 收集配套店铺展示图（封面图 + 每一张高清壁纸的预览图切图）
+      const rawImgs = [c.cover_url, ...items.map((it: any) => it.preview_url)].filter((url): url is string => typeof url === 'string' && !!url.trim())
+      const product_images = [...new Set(rawImgs)]
+
+      // 3. 读取创作者店铺资料
+      let shopName = '山鬼映画'
+      try {
+        const own: ShopProducts = await request('sales-products')
+        if (own?.owner_id) {
+          const view = await request(`shop?owner=${encodeURIComponent(own.owner_id)}`)
+          if (view?.seller?.nickname) shopName = view.seller.nickname
+        }
+      } catch { /* 降级默认名 */ }
+
+      // 4. 生成带货文案与自动回复话术
+      const channelLabel = channel === 'xianyu' ? '闲鱼' : '小红书'
+      const product_copy = `【${c.title}】4K 高清无水印壁纸原图\n\n💰 现货拍下自动交付：${price} 元（拍下即得）\n\n${c.description ? `${c.description}\n\n` : ''}📦 交付内容：\n1. 包含 ${itemCount} 张 4K 高清无水印原图（全高清画质，适配各端屏幕）；\n2. 拍下后私信自动秒发提货通道，输入订单号即得专属账号密码；\n3. 支持随时登录回访下载，永久有效，不限下载次数。\n\n🔒 一单一码独立鉴权，原图无压缩传输，请放心拍下！`
+
+      // 5. 调用后端创建商品
+      const productPayload: ShopProductInput = {
+        title: c.title,
+        kind: 'wallpaper',
+        status: 'active',
+        category: '壁纸',
+        credits: 0,
+        cover_url: c.cover_url || product_images[0] || null,
+        collection_ids: [collectionId],
+        channel,
+        product_copy,
+        reply_text: '',
+      }
+
+      const { product } = await this.create(productPayload)
+
+      // 6. 生成专属提货通道与防重复盗刷私信
+      const claim_url = `https://museav.top/claim/order?product=${product.id}`
+      const reply_text = `🎉 感谢支持【${shopName}】${c.title}！\n您的 ${itemCount} 张全套 4K 高清无水印壁纸原图已打包就绪。\n\n💰 单期特惠：${price} 元（永久有效·高清原图下载）\n🔗 专属提货通道：${claim_url}\n🔑 提货方式：进入链接，输入您的${channelLabel}订单号（或拍下手机号），系统将自动核验并为您签发独占下载密码。\n\n⚠️ 说明：一单仅限核销一次，自动绑定您的账户永久保存，请勿将订单号外泄。`
+
+      // 7. 更新商品带上完整回复话术
+      await this.update(product.id, { reply_text })
+      product.reply_text = reply_text
+
+      return {
+        product,
+        claim_url,
+        price_cny: price,
+        item_count: itemCount,
+        product_images,
+        reply_text,
+        product_copy,
+      }
     },
   }
 }

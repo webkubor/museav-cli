@@ -16,6 +16,8 @@ export interface ShopCollectionInput {
   asset_ids: string[]
   xhs_note_url?: string | null
   xhs_product_url?: string | null
+  /** 小红书选题笔记的发布时间：专栏内「说说」排序锚点（可空=按建档时间兜底）。 */
+  xhs_note_published_at?: string | null
 }
 /** 服务端合集元数据。 */
 export interface ShopCollection extends Omit<ShopCollectionInput, 'asset_ids'> { id: string; owner_account_id: string; cover_url: string | null; item_count: number; share_url: string; created_at: string }
@@ -91,6 +93,27 @@ export function createShopCollections(request: (path: string, init?: RequestInit
       form.append('item_id', itemId)
       form.append('file', new Blob([new Uint8Array(bytes)]), basename(file))
       return request('creator-collections', { method: 'POST', body: form })
+    },
+    /**
+     * 追加专题壁纸（owner 2026-10-28「CLI 需支持补充壁纸」）。
+     *
+     * 与 save 的区别：save 是**替换**（全量回传 asset_ids，少传即删），
+     * 这里是**追加**（只在末尾加，已有条目不动；已购买本专题的买家也能下载新追加的图）。
+     * 每个 original 对应一个 sourceAssetId（该图在素材库里的预览素材 id）。
+     */
+    async append(collectionId: string, files: { sourceAssetId: string; file: string }[]): Promise<ShopCollectionDetail> {
+      id(collectionId, 'collection_id')
+      if (!files.length) throw new Error('追加至少要一张图')
+      const form = new FormData()
+      form.append('collection_id', collectionId)
+      for (const item of files) {
+        id(item.sourceAssetId, 'source_asset_id')
+        const bytes = readFileSync(item.file)
+        if (!bytes.length || bytes.length > 32 * 1024 * 1024) throw new Error('私有原图需为 1 字节至 32 MiB 的图片')
+        form.append('source_asset_id', item.sourceAssetId)
+        form.append('file', new Blob([new Uint8Array(bytes)]), basename(item.file))
+      }
+      return request('creator-collections?action=append', { method: 'POST', body: form })
     },
   }
 }

@@ -13,6 +13,11 @@ function spec(file: string): unknown {
   catch (e) { throw new Error(`读取配置 JSON 失败：${(e as Error).message}`) }
 }
 
+/** 重复选项收集器：--preview 可以给多次（commander 默认只保留最后一个）。 */
+function collect(value: string, previous: string[] = []): string[] {
+  return previous.concat([value])
+}
+
 /** 注册单根 shop；复用 index 的配置、认证和错误处理。 */
 export function registerShop(program: Command, run: Run, publicRun: PublicRun = run): void {
   const shop = program.command('shop').description('经营自己的个人店铺：商品、渠道物料、发货码（JSON 输出）')
@@ -31,7 +36,7 @@ export function registerShop(program: Command, run: Run, publicRun: PublicRun = 
     .action(run(async (client, id) => output(await client.shop.archive(id))))
   products.command('from-collection <collectionId>').description('从壁纸合集一键上架为商品，直接返回店铺配套图片与自动回复物料')
     .option('--channel <channel>', '销售渠道：xiaohongshu|xianyu', 'xiaohongshu')
-    .option('--price <price>', '在售价格（默认 1.00 元）', '1.00')
+    .option('--price <price>', '在售价格（可选；以小红书官方号实际售价为准）')
     .addHelpText('after', '\n自动完成：1.读取合集与全部高清预览切图；2.创建在售壁纸商品；3.生成包含专属单号提货通道的私信话术与带货文案。\n输出的 product_images 包含封面与全部壁纸切图，可直接作为小红书九宫格与店铺主图使用。')
     .action(run(async (client, collectionId, opts) => output(await client.shop.fromCollection(collectionId, { channel: opts.channel, price: opts.price }))))
   const collections = shop.command('collections').description('查询公开合集，或管理自有壁纸合集')
@@ -52,6 +57,17 @@ export function registerShop(program: Command, run: Run, publicRun: PublicRun = 
     .action(run(async (client, opts) => output(await client.shop.collections.save(spec(opts.file) as ShopCollectionInput))))
   collections.command('upload <collection> <item> <file>').description('给草稿现有条目上传私有原图（≤32 MiB，不走公开图床）')
     .action(run(async (client, collection, item, file) => output(await client.shop.collections.upload(collection, item, file))))
+  collections.command('append <collection> <file...>')
+    .description('往已发布专题末尾追加壁纸（原图 + 预览素材，已有条目不动）')
+    .requiredOption('--preview <id>', '对应图片在素材库里的预览素材 id；与原图文件按顺序一一对应（可重复多次）', collect, [])
+    .addHelpText('after', '\n追加语义：只在末尾加，不改已有条目；已购买本专题的买家也能下载新追加的图。\n同一素材不能重复追加；付费原图不能与公开预览是同一张。\n每张图两个来源：--preview 是该图在个人素材库里的预览素材 id（原图文件按顺序与 --preview 一一对应）。\n例：museav shop collections append <合集UUID> ./01.jpg ./02.jpg --preview <素材id1> --preview <素材id2>')
+    .action(run(async (client, collection, files: string[], opts) => {
+      const previews = (opts.preview || []) as string[]
+      if (!files.length) throw new Error('至少要给一张原图文件')
+      if (files.length !== previews.length) throw new Error(`原图文件 ${files.length} 个与 --preview ${previews.length} 个必须一一对应`)
+      const appended = await client.shop.collections.append(collection, files.map((file, index) => ({ sourceAssetId: previews[index], file })))
+      output({ collection: appended.collection, appended: appended.items.length, items: appended.items })
+    }))
   const codes = shop.command('codes').description('管理本人发货码；发码时服务端预留积分')
   codes.command('list').description('列出本人最近 200 个发货码（服务端不支持翻页）')
     .action(run(async client => output(await client.shop.codes())))

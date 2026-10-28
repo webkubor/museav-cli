@@ -119,11 +119,18 @@ museav shop collections list
 museav shop collections save --file collection-draft.json
 museav shop collections show <合集UUID>
 museav shop collections upload <合集UUID> <条目UUID> ./original.png
+museav shop collections append <合集UUID> ./01.jpg ./02.jpg --preview <素材UUID1> --preview <素材UUID2>
 museav shop collections save --file collection-published.json
 museav shop products update <商品UUID> --file wallpaper-active.json
 ```
 
 免费合集（`access_mode: public`）不需要 `shop collections upload`：服务端直接把所选素材的母版当公开可下载原图，所以**必须把全尺寸原图传进素材库**（传降采样预览等于把糊图发出去）。付费合集才逐张上传私有原图。
+
+`shop collections append` 用于**给已发布专题补图**：只在末尾追加，已有条目（位置、原图、预览）一个都不动；已购买本专题的买家也能下载新追加的图（权益按专题算）。同一素材不能重复追加，付费原图不能与公开预览是同一张 —— 与 `save` 的全量替换语义不同（`save` 少传一个 `asset_ids` 就是删掉一张已售壁纸，服务端会直接拒）。每个原图文件要配一个 `--preview`（该图在个人素材库里的预览素材 id），两者按顺序一一对应。
+
+**专栏与专题**（对应小红书的「专栏 / 说说」）：一个 `wallpaper` 商品就是一个**专栏**，它 `collection_ids` 里的每个合集是一期**专题**。专栏内专题的展示顺序按**小红书选题笔记的发布时间**（合集 JSON 里的 `xhs_note_published_at`）排，没有填就回落到建档时间；排序在读取侧做，不改 `collection_ids` 数组（那是交付清单，顺序对交付没有语义）。
+
+**价格口径**：付费商品的价格配在商品上的 `price_cny`（可空，`shop products create/update --file` 里写数字或 `null`；`from-collection` 不传 `--price` 就不写价格）。**没配时平台不显示任何价格数字**，只说「以小红书商品页公布的价格为准」—— 平台写死一个 ¥1.00 出去，和官方号的真实出手价对不上就是失真。
 
 `wallpaper-draft.json`：
 

@@ -25,6 +25,27 @@ export interface ShopCollection extends Omit<ShopCollectionInput, 'asset_ids'> {
 export interface ShopCollectionItem { id: string; source_asset_id: string | null; preview_url: string | null; name: string; mime: string | null; size_bytes: number | null; position: number; has_original: boolean }
 /** 单份合集及其条目。 */
 export interface ShopCollectionDetail { collection: ShopCollection; items: ShopCollectionItem[] }
+
+/** 关联条目：小红书笔记 / 同专栏其它期 / 素材。只允许 HTTPS。 */
+export interface ShopCollectionRelated { kind: 'xhs_note' | 'issue' | 'material'; label: string; url: string }
+
+/**
+ * 只改文案的补丁（owner 2026-10-28「每一期都有标题和关联还有主题文化啥的故事」）。
+ * 字段缺省 = 不改；传 null/空串 = 清空。
+ */
+export interface ShopCollectionEditorial {
+  title?: string
+  description?: string | null
+  /** 本期主题（一句话） */
+  theme?: string | null
+  /** 文化注解：这一期借了什么传统/出处 */
+  culture?: string | null
+  /** 本期故事（第一人称叙事）；为空时页面回退 description */
+  story?: string | null
+  related?: ShopCollectionRelated[]
+  xhs_note_url?: string | null
+  xhs_note_published_at?: string | null
+}
 /** 本人合集与可选商品、项目。 */
 export interface ShopCollectionList { collections: ShopCollection[]; products: { id: string; title: string; status: string; credits: number }[]; workspaces: { id: string; name: string }[] }
 
@@ -81,6 +102,19 @@ export function createShopCollections(request: (path: string, init?: RequestInit
     async save(input: ShopCollectionInput): Promise<ShopCollectionDetail> {
       validate(input)
       return request('creator-collections', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) })
+    },
+    /**
+     * 只改文案：标题/正文/主题/文化/故事/关联/小红书链接（owner 2026-10-28）。
+     *
+     * 与 save 的区别：save 是**替换**语义（asset_ids 少传一个就是删掉一张已售壁纸），
+     * 这里只碰白名单里的文字字段，交付内容、状态、商品绑定一个都不动。
+     * 用于从 Social Hub 回填每期的「标题/关联/主题/文化/故事」。
+     */
+    async editorial(collectionId: string, patch: ShopCollectionEditorial): Promise<ShopCollectionDetail> {
+      id(collectionId, 'collection_id')
+      if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new Error('文案补丁必须是对象')
+      if (!Object.keys(patch).length) throw new Error('文案补丁不能为空')
+      return request('creator-collections?action=editorial', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...patch, id: collectionId }) })
     },
     /** 给草稿中的现有条目上传私有原图；不走公开 upload-ref。 */
     async upload(collectionId: string, itemId: string, file: string): Promise<{ collection: ShopCollection; item: ShopCollectionItem }> {

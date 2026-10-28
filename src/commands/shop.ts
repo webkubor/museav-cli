@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs'
 import type { Command } from 'commander'
 import type { StudioClient } from '../client.js'
-import type { ShopIssueInput, ShopProductInput, ShopCollectionInput } from '../shop.js'
+import type { ShopIssueInput, ShopProductInput, ShopCollectionInput, ShopCollectionEditorial } from '../shop.js'
 
 type Run = (fn: (client: StudioClient, ...args: any[]) => Promise<void>) => (...args: any[]) => Promise<void>
 type PublicRun = (fn: (client: StudioClient, ...args: any[]) => Promise<void>) => (...args: any[]) => Promise<void>
@@ -68,6 +68,11 @@ export function registerShop(program: Command, run: Run, publicRun: PublicRun = 
       const appended = await client.shop.collections.append(collection, files.map((file, index) => ({ sourceAssetId: previews[index], file })))
       output({ collection: appended.collection, appended: appended.items.length, items: appended.items })
     }))
+  collections.command('editorial <collection>')
+    .description('只改文案：标题/主题/文化/故事/关联/小红书链接（不动交付内容与状态）')
+    .requiredOption('--file <json>', '文案补丁 JSON；只写要改的字段，传 null 表示清空')
+    .addHelpText('after', '\n字段：title / description / theme（主题）/ culture（文化注解）/ story（故事）/ related（[{kind,label,url}]，kind=xhs_note|issue|material）/ xhs_note_url / xhs_note_published_at。\n与 save 的区别：save 是替换（asset_ids 少传即删图），editorial 只碰文字，交付内容与商品绑定一个都不动。\n例：museav shop collections editorial <合集UUID> --file editorial.json')
+    .action(run(async (client, collection, opts) => output(await client.shop.collections.editorial(collection, spec(opts.file) as ShopCollectionEditorial))))
   const codes = shop.command('codes').description('管理本人发货码；发码时服务端预留积分')
   codes.command('list').description('列出本人最近 200 个发货码（服务端不支持翻页）')
     .action(run(async client => output(await client.shop.codes())))

@@ -19,6 +19,8 @@ export interface ShopProductInput {
   credits: number
   /** 可选；为空时售价以小红书官方号为准。 */
   price_cny?: number | null
+  /** 权益模式：snapshot=买当时清单里的期（默认）；series=买断该专栏现在与以后所有专题。 */
+  entitlement_mode?: 'snapshot' | 'series'
   channel?: ShopChannel
   category?: string | null
   cover_url?: string | null
@@ -97,7 +99,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const KINDS = ['credits', 'wallpaper', 'bundle']
 const CHANNELS = ['xiaohongshu', 'xianyu']
 const TEXT_FIELDS = ['category', 'cover_url', 'reply_text', 'product_copy', 'hook_text', 'tutorial_pdf_url', 'tutorial_pdf_title']
-const FIELDS = ['title', 'kind', 'credits', 'price_cny', 'channel', 'template_ids', 'collection_ids', 'bundle_content', 'benefits', 'status', ...TEXT_FIELDS]
+const FIELDS = ['title', 'kind', 'credits', 'price_cny', 'entitlement_mode', 'channel', 'template_ids', 'collection_ids', 'bundle_content', 'benefits', 'status', ...TEXT_FIELDS]
 const MAX_BUNDLE_BYTES = 200 * 1024
 // 与后端积分存储的 int32 上限一致，避免通过本地校验后数据库溢出。
 const MAX_CREDITS = 2 ** 31 - 1
@@ -114,6 +116,7 @@ export function validateShopProduct(value: unknown, partial = false): asserts va
   if ((!partial || 'kind' in p) && !KINDS.includes(p.kind as string)) throw new Error('kind 只支持 credits/wallpaper/bundle')
   if ((!partial || 'credits' in p) && (!Number.isInteger(p.credits) || (p.credits as number) < 0 || (p.credits as number) > MAX_CREDITS)) throw new Error(`credits 需为 0–${MAX_CREDITS} 的整数`)
   if ('price_cny' in p && p.price_cny !== null && (typeof p.price_cny !== 'number' || !Number.isFinite(p.price_cny) || p.price_cny < 0 || p.price_cny > 99999)) throw new Error('price_cny 需为 0–99999 的数字或 null')
+  if ('entitlement_mode' in p && !['snapshot', 'series'].includes(String(p.entitlement_mode))) throw new Error('entitlement_mode 只支持 snapshot/series')
   if ('channel' in p) validateShopChannel(p.channel)
   if ('status' in p && !['draft', 'active', 'archived'].includes(p.status as string)) throw new Error('status 只支持 draft/active/archived')
   for (const key of TEXT_FIELDS) if (p[key] != null && typeof p[key] !== 'string') throw new Error(`${key} 需为字符串或 null`)

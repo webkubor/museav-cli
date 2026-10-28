@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.16.0 (2026-10-28)
+
+### 每期都能有主题、文化注解、故事和关联
+
+新增 `museav shop collections editorial <合集UUID> --file patch.json`，只改文字：`title` / `description` / `theme`（主题）/ `culture`（文化注解）/ `story`（故事）/ `related`（关联数组，`kind` 取 `xhs_note`/`issue`/`material`）/ `xhs_note_url` / `xhs_note_published_at`。字段缺省即不改，传 `null` 清空。
+
+和 `collections save` 的区别：`save` 是替换语义（`asset_ids` 少传一个就是删掉一张已售壁纸），`editorial` 只碰文字，交付内容、状态、商品绑定一个都不动。买家在合集页看到的就是这些内容。
+
+商品 JSON 新增 `entitlement_mode`：`snapshot`（默认，买当时清单里的那几期）/ `series`（买断该专栏现在与以后所有专题）。
+
 ## 3.15.0 (2026-10-28)
 
 ### 壁纸专栏：给已发布专题补图，价格不再写死

@@ -1,175 +1,153 @@
-[English](./README.en.md) | [中文](./README.md)
+[中文](./README.md) | English
 
-<h1 align="center">🎨 museav · CLI for AI Image Generation</h1>
+<h1 align="center">
+  <img src="https://cdn.jsdelivr.net/gh/webkubor/free-imgbed@main/museav-cli/mark-v3.svg" width="96" alt="MUSE AV"><br>
+  museav · image generation from your terminal
+</h1>
+
+<p align="center"><strong>One command to generate. Models, keys, routing and billing are not your problem.</strong></p>
 
 <p align="center">
-  <b>Agent-ready</b> — designed to be shelled out to directly, not just used by humans
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License">
-  <img src="https://img.shields.io/badge/Node-%3E%3D18-green?style=for-the-badge" alt="Node">
-  <img src="https://img.shields.io/npm/v/%40museav%2Fcli?style=for-the-badge" alt="npm version">
-  <img src="https://img.shields.io/badge/build-passing-brightgreen?style=for-the-badge" alt="Build">
+  <a href="https://www.museav.top"><img src="https://img.shields.io/badge/MUSE%20AV-museav.top-ff6b35?style=for-the-badge" alt="MUSE AV"></a>
+  <a href="https://www.npmjs.com/package/museav-cli"><img src="https://img.shields.io/npm/v/museav-cli?style=for-the-badge&color=%23cb3837" alt="npm version"></a>
+  <a href="https://docs.museav.top/cli/"><img src="https://img.shields.io/badge/docs-docs.museav.top-4c9a6b?style=for-the-badge" alt="Docs"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge" alt="License"></a>
+  <a href="./package.json"><img src="https://img.shields.io/badge/node-%E2%89%A520.19-339933?style=for-the-badge" alt="Node"></a>
 </p>
 
 ---
+
+## What it produces
+
+Generated with one `museav gen` command — **no English prompt written by hand**:
+
+<a href="https://www.museav.top/discover"><img src="https://cdn.jsdelivr.net/gh/webkubor/free-imgbed@main/museav-cli/gallery.webp" alt="Discover gallery: work made with museav gen"></a>
+
+<p align="center"><sub>All of these live in the <a href="https://www.museav.top/discover">Discover gallery</a>. Open any of them to see the template and prompt behind it — whatever you like, the CLI can call too.</sub></p>
+
+<img src="https://cdn.jsdelivr.net/gh/webkubor/free-imgbed@main/museav-cli/terminal.webp" alt="Terminal: real output">
 
 ## Why this instead of something else
 
-| | **museav-cli** | Calling OpenAI/Doubao APIs raw | Playwright/Puppeteer automation | MUSE AV web app |
+| | **museav** | Raw OpenAI / Doubao APIs | Playwright on the web app | Web UI only |
 |---|---|---|---|---|
-| **One command from terminal** | ✅ `museav gen "prompt"` | ⚠️ bring your own SDK, signing, retries | ❌ maintain selectors | ❌ open a browser |
-| **For agents** | ✅ built to be shelled out to | ⚠️ agent assembles the request itself | ❌ brittle against UI changes | ❌ agents can't use it |
-| **Multi-model routing** | ✅ `auto` picks the model | ❌ integrate each provider | — | ✅ |
-| **Key management** | ✅ one login command, no secrets in code | ❌ plaintext in your script | — | ✅ browser session |
-| **Quota & billing** | ✅ tracked centrally | ❌ your own meter | — | ✅ |
-| **Post-processing** (bg removal, upscale, compress) | ✅ built in | ❌ install more tools | — | ✅ web editor |
-| **Browser automation workloads** | ❌ can't spawn in edge runtimes | — | ✅ | ✅ |
+| **One command from a terminal** | ✅ `museav gen "prompt"` | ⚠️ manage SDK, signing, retries | ❌ maintain selectors, breaks on redesign | ❌ open a browser |
+| **Automatic multi-model routing** | ✅ you just write the prompt | ❌ integrate each provider, fail over by hand | — | ✅ |
+| **104 curated Chinese skills** | ✅ expanded server-side, prompts never sent down | ❌ none | — | ✅ |
+| **No secrets in your code** | ✅ one login, valid 7 days | ❌ plaintext in your script | — | ✅ browser session |
+| **Quota and billing** | ✅ tracked centrally | ❌ your own meter | — | ✅ |
+| **Background removal / upscale / de-watermark** | ✅ local, free, no quota | ❌ install more tools | — | ✅ web editor |
+| **Callable by an agent** | ✅ stdout is the result only, progress on stderr | ⚠️ agent assembles requests itself | ❌ brittle against UI changes | ❌ agents can't use it |
 
-Create images and videos and manage your own digital-product shop from the terminal, directly or through an agent. For product integration, call the HTTP API or `import { StudioClient }`.
-
----
-
-> One line to generate an image. The [MUSE AV platform](https://museav.top) behind it handles models, keys, routing and accounting — you only write the prompt.
-
-`museav` is the command-line client for [MUSE AV](https://museav.top) (formerly "studio"; the API lives at [manager.museav.top](https://manager.museav.top)). Install it, log in (or set an API key), and you can generate, reverse-engineer and image-to-image from your terminal. See [AGENTS.md](./AGENTS.md) for agent-facing usage.
-
-## Is this for you?
-
-**Yes, if** you want to generate an image from a terminal without opening a browser, or you're writing automation, or you're an agent (Claude Code / Codex / Hermes …) asked to produce an image.
-
-**No, if you're building an actual product.** This CLI is for terminals — it is not an SDK or a backend-integration solution. For a real service (e.g. `hym-admin` running on Cloudflare Pages Functions), do one of these instead:
-
-1. Humans need a full UI → embed the [MUSE AV web app](https://museav.top) via SSO (iframe, session syncs automatically)
-2. Backend needs programmatic access → `fetch('https://manager.museav.top/api/generate', { headers: { 'X-API-Key': ... } })`, or `import { StudioClient } from 'museav-cli'` as a library
-
-This distinction isn't arbitrary: edge runtimes like Cloudflare Pages Functions/Workers can't spawn subprocesses, so the `museav` binary simply won't run there.
-
-## Install
+## 🚀 Quickstart
 
 ```bash
 npm install -g museav-cli
-museav login
-museav gen "a Chinese ink-wash mountain at dawn" --ratio 3:4
+museav login                                          # approve in the browser
+museav gen --skill ecom-main --input "a cream knit sweater"   # stdout: one image URL
 ```
 
-> **Renamed**: package → `museav-cli`, command → `museav`.
-> If you had the old package, uninstall it first or you'll have two commands with different names.
-> `npm uninstall -g @kubor/studio-cli && npm install -g museav-cli`
-> Legacy `~/.museav.json` config and `STUDIO_API_KEY` / `STUDIO_BASE_URL` still work; the new names (`MUSEAV_API_KEY` / `MUSEAV_BASE_URL`) take precedence.
+No account? Sign in with Google / GitHub at [www.museav.top](https://www.museav.top) — open registration.
 
-## Commands
+> Curious what it can do first? Browse the [Discover gallery](https://www.museav.top/discover) — no signup needed.
 
-| Command | What it does |
-|---|---|
-| `museav gen "<prompt>"` | Generate an image (text-to-image or image-to-image with `--ref`) |
-| `museav gen --video --image a.png --last-frame b.png` | Video from first/last frames (mutually exclusive with the `--reference-*` inputs) |
-| `museav gen --video --reference-image a.png --reference-video b.mp4` | Multimodal reference-to-video (images ≤9, videos ≤3, audios ≤3) |
-| `museav enhance -p "<rough idea>"` | Enhance a rough idea into a structured video prompt (H3-Context-IR). Enhances only — no video, no generation credits; stdout is the prompt alone |
-| `museav gen --video --enhance --prompt "<rough idea>"` | Enhance the prompt first, then submit the video in one go |
-| `museav reverse <image>` | Read an image → output an English prompt |
-| `museav image-to-template <image>` | Turn an image into a reusable template |
-| `museav templates` | List available templates |
-| `museav templates create --ref <url>` | Create a template with reference images (1–5) |
-| `museav templates publish <id>` | Open a private template to the shared pool (passes a quality gate) |
-| `museav templates delete <id>` | Delete your own template |
-| `museav subjects create --project <ws> --name "Gu Qiyue" --kind person --persona virtual --traits '{"hair":"long"}'` | Create a **subject** (an IP character / product / scene / brand) with its traits |
-| `museav subjects add-asset <subject-id> ./front.png --role view_front` | Upload a local image and register it on that subject (`view_front` / `view_side` / `view_back` / `raw` / `standard` / `output`) |
-| `museav subjects add-asset <subject-id> --url <platform-url> --role view_side` | Register an existing platform URL without re-uploading |
-| `museav subjects list --project <ws>` / `museav subjects show <subject-id>` | List subjects / show one subject with its images grouped by role (three views at a glance) |
-| `museav remove-bg <file>` | Remove background locally (no login) |
-| `museav upscale <file>` | 4x upscale locally (Real-ESRGAN) |
-| `museav compress <file>` | Compress a local image |
-| `museav skillhub tags` | List the live content tags accepted by Xiaohongshu SkillHub |
-| `museav skillhub publish ./my-skill --tag <tag>` | Publish a local Agent Skill to Xiaohongshu SkillHub. Dry-run by default — `--yes` is required to actually submit |
+## 🎯 Three ways to generate, pick one
 
-### Personal seller shop
-
-`museav shop` manages your own credits, wallpaper collections and bundles of installation guidance and owned content. Use the existing personal `museav login` session; creation API keys and tenant identities cannot manage a seller shop. Clear `MUSEAV_API_KEY` / `STUDIO_API_KEY` if they override your login.
+| Form | When to use it |
+| --- | --- |
+| `--skill <name> --input "one line"` | **Recommended.** 104 tuned skills; the prompt expands server-side, you write the business description only |
+| `--template <id> --fields '{"key":"value"}'` | Deterministic and cheapest. Placeholder substitution, no model call |
+| `--prompt "english prompt"` | You write prompts yourself |
 
 ```bash
-museav shop show
-museav shop products list
-museav shop products create --file product.json
-museav shop collections list
-museav shop codes issue --product <product-uuid> --channel xianyu \
-  --external-order XY20261019001 --request-id seller-20261019-001
+museav skills --genre 电商                      # see what's in a category
+museav gen --skill product-on-model --input "a cream knit sweater" --ref ./model.jpg
 ```
 
-Issuing a code reserves the seller's real credits and snapshots delivery. Reuse the same request ID when retrying; revoke an unused code with `shop codes revoke <code>` to refund its reserved credits. Commands return JSON on stdout and errors on stderr. The CLI produces channel materials and claim codes; sellers manually list products and send delivery messages on Xianyu or Xiaohongshu.
+Skills marked "needs a reference image" require `--ref`; local files are uploaded for you.
 
-Bundles contain installation guidance, owned templates/assets and optional credits, without shared private keys or claims of an exclusive license to the open-source CLI. See the [Chinese shop guide](./README.md#个人店铺积分壁纸系列cli-组合包) for exact product JSON and the full wallpaper draft → private-original upload → publish workflow. Run `museav shop --help` and each subcommand's `--help` for all actions. Existing `museav products` continues to list tenant reference products.
+## 🔥 What else it does
 
-### Subjects: "these five images are the same character"
+- **🎬 Video** — `museav gen --video`: text-to-video, image-to-video, first/last frame, multimodal references
+- **🖼 Reverse-engineer** — `museav reverse ./photo.jpg` reads SCULPT elements back out; chain it into generation
+- **🧩 Image to template** — `museav image-to-template ./poster.jpg` reads text layers, variabilizes them, saves a reusable template
+- **✂️ Local post-processing, free** — `remove-bg` / `upscale` / `remove-watermark` / `compress`: no login, no quota, works on Windows
+- **🏪 Sell your own work** — `museav shop` for products, wallpaper issues and claim codes
+- **🤖 Built for agents** — stdout carries only the final result (URL / JSON), progress goes to stderr
 
-`museav projects assets` answers *which project does this file live in*. `museav subjects` answers
-*which of these files are the same thing*. Five images of one character are unrelated rows in an
-asset library — the platform has no idea they belong together. A **subject** is the entity you can
-reference, so you generate against the character rather than against one arbitrary photo.
+## 📚 Documentation
 
-It is the intended path for keeping a private IP bible (names, three-view sheets, traits) on your
-own machine and pushing it into the platform's private asset library.
+**This page covers "why" and "how to start". Every command and flag lives on the docs site, which tracks the published version and doesn't go stale.**
 
-```bash
-museav subjects create --project jianghu --name 'Gu Qiyue' --kind person --persona virtual \
-  --traits '{"hair":"long straight","face":"oval"}'
-museav subjects add-asset <subject-id> ./front.png --role view_front    # local file: uploaded for you
-museav subjects add-asset <subject-id> --url https://img.webkubor.online/refs/... --role view_side
-museav subjects show <subject-id>     # subject + its images grouped by role; three views at a glance
+| What you want | Where |
+| --- | --- |
+| Install, three identities, where credentials live | [Install and log in](https://docs.museav.top/cli/) |
+| Every command in one table | [Command reference](https://docs.museav.top/cli/commands) |
+| Recipes: reference images, batches, aspect ratios | [Recipes](https://docs.museav.top/cli/recipes) |
+| First/last frame, references, IP subjects, local tools | [Video and local tools](https://docs.museav.top/cli/advanced) |
+| Products, wallpaper issues, claim codes | [Running your shop](https://docs.museav.top/cli/shop) |
+| Let Claude Code / Codex drive it | [For agents](https://docs.museav.top/cli/agent) · [AGENTS.md](./AGENTS.md) |
+| Wire generation, video and SkillHub into one service | [MCP](https://docs.museav.top/cli/mcp) |
+| HTTP API, backend integration | [API overview](https://docs.museav.top/api/) |
+
+<a href="https://docs.museav.top/cli/"><img src="https://cdn.jsdelivr.net/gh/webkubor/free-imgbed@main/museav-cli/docs.webp" alt="Documentation site"></a>
+
+## 🧭 Where not to use it
+
+**This CLI is for "a human in a terminal" and "an agent shelling out".**
+
+Don't build a product on it: edge runtimes like Cloudflare Workers / Pages Functions **cannot spawn subprocesses**,
+so the `museav` binary simply won't run there. Two alternatives:
+
+- Programmatic backend calls → `fetch('https://manager.museav.top/api/generate', { headers: { 'X-API-Key': ... } })`
+- Use it as a library → `import { StudioClient } from 'museav-cli'`
+
+```ts
+import { StudioClient } from 'museav-cli'
+
+const studio = new StudioClient({ baseUrl: 'https://manager.museav.top', apiKey: process.env.MUSEAV_API_KEY! })
+const job = await studio.generateAndWait({ prompt: 'a cat on the moon', ratio: '3:4' })
+console.log(job.cdn_url)
 ```
 
-Enums come from the platform, not from the CLI: `--kind` is `product|person|scene|brand`,
-`--persona` is `real|virtual` (**only** valid with `--kind person`), `--role` is
-`raw|standard|view_front|view_side|view_back|output`. `--url` accepts **platform URLs only**
-(anything else is refused server-side — run `museav upload <file>` first to bring an external image in).
+**Nor does it produce finished vertical videos.** `gen --video` gives you silent, caption-less raw footage;
+assembling that into something publishable is [reel-kit](https://github.com/webkubor/reel-kit)'s job.
 
-### Publishing Skills to Xiaohongshu SkillHub
+Typical chain: `museav gen` → `museav remove-bg` → `reel make`.
 
-`skillhub` is the only outbound channel MUSE AV ships: one CLI gives you both image
-generation and a way to distribute the Skills you build. Packing, QR-code authorization,
-upload and submission are delegated to the official
-[`redskillhub-upload`](https://www.npmjs.com/package/redskillhub-upload) CLI (bundled as a
-dependency), so a platform change only ever means bumping a dependency.
-
-```bash
-museav skillhub tags                                    # required: there is no default tag
-museav skillhub publish ./my-skill --tag 效率工具,编程开发   # dry-run — packs and validates locally
-museav skillhub publish ./my-skill --tag 效率工具 --yes    # real submit (QR code via the Xiaohongshu app)
-```
-
-**Without `--yes` nothing leaves your machine.** Submission is irreversible — the Skill ID
-is the platform's primary key and cannot be renamed across versions.
-
-#### Platform asset guardrail
-
-`skillhub` publishes to *someone else's* platform, and MUSE AV owns a set of public
-templates. Every publish is therefore scanned first:
-
-| Situation | Result |
-|---|---|
-| The Skill embeds a public template's **prompt body** | ❌ Rejected, and it names the offending template |
-| The Skill only **references** a template by `slug` | ✅ Allowed — that's normal integration, not redistribution |
-| The publish path sits in a platform-managed dir (`~/.museav-models`, `~/.museav-bin`) | ❌ Rejected |
-
-The line is deliberate: copying the body redistributes an asset; citing the slug does not.
-Blocking citations too would break museav's own integration Skills.
-
-If the template list can't be fetched (no `museav login`, or the API is unreachable), the CLI
-does not silently pretend the guardrail ran — it publishes anyway but says plainly that no
-check happened. Log in and re-run to get the full guardrail.
-
-See the [Chinese README](./README.md#把本地-agent-skill-发到小红书-skillhub-skillhub) for the full command surface.
-
-Run `museav <command> --help` for the full surface. For agent integration, read [AGENTS.md](./AGENTS.md).
-
-## Compatible agents
+## 🤝 Compatible agents
 
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-compatible-6366f1?style=for-the-badge)](./AGENTS.md)
 [![Codex](https://img.shields.io/badge/Codex-compatible-10a37f?style=for-the-badge)](./AGENTS.md)
 [![Hermes](https://img.shields.io/badge/Hermes-compatible-f2a65a?style=for-the-badge)](./AGENTS.md)
 [![Antigravity](https://img.shields.io/badge/Antigravity-compatible-8b5cf6?style=for-the-badge)](./AGENTS.md)
 
+No wizard menus, no `y/N` prompts, only parseable output on stdout, credentials via environment variables.
+See [AGENTS.md](./AGENTS.md).
+
+## 📦 Migrating from the old package
+
+```bash
+npm uninstall -g @kubor/studio-cli   # otherwise both commands coexist
+npm install -g museav-cli            # new package, command is `museav`
+```
+
+- Replace the old command with `museav xxx` in scripts — flags and behaviour are identical
+- The legacy `~/.studio-cli.json` config **is still read**, so no re-login needed
+- `STUDIO_API_KEY` / `STUDIO_BASE_URL` still work; `MUSEAV_API_KEY` / `MUSEAV_BASE_URL` take precedence
+- As a library: `import { StudioClient } from 'museav-cli'` (class name unchanged)
+
+## 🔧 Releasing (maintainers)
+
+CI owns releases — never `npm publish` locally. Push a `v*` tag to trigger
+`.github/workflows/publish.yml` (Trusted Publishing via OIDC; no NPM_TOKEN, no OTP).
+
+These four must match: `CHANGELOG` top version == `package.json` `version` == `git tag` == `museav --version`.
+
 ## License
 
-MIT — see [LICENSE](./LICENSE).
+[MIT](./LICENSE)
+
+---
+
+<p align="center"><sub>Platform <a href="https://www.museav.top">MUSE AV</a> · API <a href="https://manager.museav.top">manager.museav.top</a> · Docs <a href="https://docs.museav.top">docs.museav.top</a></sub></p>

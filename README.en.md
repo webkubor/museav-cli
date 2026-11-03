@@ -140,7 +140,7 @@ npm install -g museav-cli            # new package, command is `museav`
 ## 🔧 Releasing (maintainers)
 
 CI owns releases — never `npm publish` locally. Push a `v*` tag to trigger
-`.github/workflows/publish.yml` (Trusted Publishing via OIDC; no NPM_TOKEN, no OTP).
+`.gitlab-ci.yml` (Trusted Publishing via OIDC; no NPM_TOKEN, no OTP).
 
 These four must match: `CHANGELOG` top version == `package.json` `version` == `git tag` == `museav --version`.
 

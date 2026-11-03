@@ -90,7 +90,7 @@ export async function printWelcome(baseUrl: string, cred: WelcomeCred): Promise<
   ]) + '\n')
 
   process.stderr.write('\n🔗 找我 / 支持我：\n')
-  process.stderr.write('   · GitHub 给项目点个 ⭐ → https://github.com/webkubor/museav-cli\n')
+  process.stderr.write('   · GitLab 给项目点个 ⭐ → https://gitlab.com/museav/museav-cli\n')
   process.stderr.write('   · 小红书「山鬼映画」（东方电影美学）→ https://www.xiaohongshu.com/user/profile/5c3c1581000000000501835d\n')
 
   process.stderr.write('\n🎁 我的其他作品（GitHub 上给它们点个 ⭐ 就是最大的支持）：\n')

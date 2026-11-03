@@ -241,23 +241,26 @@ C 端一条都不行。
 - 修 bug 必须先写「以前会怎样」，否则读者判断不了跟自己有没有关系。
 - 一个改动一条，不要把五个功能挤成一段。
 
-### 发版守卫（`.github/workflows/publish.yml` 会拦）
+### 发版守卫（`.gitlab-ci.yml` 会拦）
 
 四者必须一致，差一个就红：`CHANGELOG` 顶部版本 == `package.json` 的 `version`
 == `git tag` == 冒烟跑出来的 `museav --version`。
 
-**本地 `npm publish` 不算正式发布**：不触发 Actions，租户群收不到通知、
+**本地 `npm publish` 不算正式发布**：不触发流水线，租户群收不到通知、
 `/api/cli-guide` 的版本号也不会同步。正式发布一律打 `v*` tag。
 
 ### 发布认证走 Trusted Publishing(OIDC)，不要 OTP
 
-本仓库的 npm 发布走 **Trusted Publishing**：workflow 顶层的 `id-token: write`
-让 runner 用 GitHub OIDC token 换 npm 的短期发布凭证，**既不需要仓库里的
-NPM_TOKEN secret，也不需要一次性验证码(OTP)**。2026-10-25 起
-publish.yml 已去掉 `NODE_AUTH_TOKEN`，仓库里的 NPM_TOKEN secret 也已删除。
+本仓库的 npm 发布走 **Trusted Publishing**：CI 的 `id_tokens` 让 runner 用
+GitLab OIDC token 换 npm 的短期发布凭证，**既不需要仓库里的
+NPM_TOKEN 变量，也不需要一次性验证码(OTP)**。仓库里没有、也不该有 NPM_TOKEN。
 
-在 npmjs.com 的包设置里，trusted publisher 绑的是：仓库 `webkubor/museav-cli`
-+ workflow 文件 `publish.yml`（改了文件名要重新绑）。
+在 npmjs.com 的包设置里，trusted publisher 绑的是：namespace `museav`
++ project `museav-cli` + CI 文件 `.gitlab-ci.yml`（改了文件名要重新绑）。
+
+> 2026-11-03 主仓从 GitHub 迁到 gitlab.com/museav/museav-cli，发布链路同步换成
+> GitLab CI。npm 的 Trusted Publishing 两个 provider 都支持，所以认证方式没变，
+> 变的只是「谁来发那条 tag」。
 
 因此：
 

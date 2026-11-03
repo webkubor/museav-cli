@@ -146,7 +146,7 @@ npm install -g museav-cli            # 新包，命令名是 museav
 ## 🔧 发布（维护者）
 
 CI 接管发布，本机不要 `npm publish`：推 `v*` tag 触发
-`.github/workflows/publish.yml`，走 Trusted Publishing(OIDC)，不需要 NPM_TOKEN 也不需要 OTP。
+`.gitlab-ci.yml`，走 Trusted Publishing(OIDC)，不需要 NPM_TOKEN 也不需要 OTP。
 
 四者必须一致，差一个就红：`CHANGELOG` 顶部版本 == `package.json` 的 `version` == `git tag` == `museav --version`。
 

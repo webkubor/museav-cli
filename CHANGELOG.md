@@ -1,5 +1,21 @@
 # Changelog
 
+## 3.16.1 (2026-11-14)
+
+### 主仓迁到 GitLab，发版链路跟着换
+
+仓库从 GitHub 迁到 `gitlab.com/museav/museav-cli`，npm 的 Trusted Publishing 绑定随之改到
+GitLab CI/CD（`.gitlab-ci.yml`）。**这一版的实际改动很小，主要是把发布通道搬完、验证它通。**
+
+对使用者没有影响：
+
+- 安装照旧 `npm install -g museav-cli`，包名、命令、行为都不变
+- npm 页面上的 Repository / Issues 链接现在指向 GitLab（`gitlab.com/museav/museav-cli`）
+- GitHub 上保留一份公开镜像，代码、tag、README 都同步，照常能看能 star
+- 3.16.0 及更早的版本不受影响，已装的用户不用做任何事
+
+发版方式的唯一变化在维护者侧：以后打 `v*` tag 触发的是 GitLab CI，不是 GitHub Actions。
+
 ## 3.16.0 (2026-10-28)
 
 ### 每期都能有主题、文化注解、故事和关联

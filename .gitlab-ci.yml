@@ -1,46 +1,43 @@
-# MUSE AV CLI —— GitLab CI
+# MUSE AV CLI —— GitLab CI（只做检查，不发版）
 #
-# 🔴 这份文件是从 GitHub Actions 迁过来的（.github/workflows/publish.yml + ci.yml）。
-# 迁移背景 2026-11-03：主仓搬到 gitlab.com/museav/museav-cli，GitHub 仓库随后归档。
-# npm 的 Trusted Publishing 同时支持 GitHub Actions 和 GitLab CI/CD，
-# 所以发版链路换了个 provider 就够了 —— 认证逻辑一模一样。
+# 🔴 发版链路不在这里，在 GitHub Actions（.github/workflows/publish.yml）。
 #
-# 认证走 Trusted Publishing（OIDC）：runner 用 GitLab 的 OIDC token 换 npm 的
-# 短期发布凭证 —— **不需要 NPM_TOKEN，也不需要 OTP**。
-# npm 后台要先把本仓库登记成 trusted publisher，字段是：
-#   Namespace: museav
-#   Project name: museav-cli
-#   Top-level CI file path: .gitlab-ci.yml
-#   Allowed actions: npm stage publish（+ npm publish）
+# 2026-11-14 迁过一次、两天后又迁回来了，根因值得记下来：
 #
-# ⚠️ 只在 GitLab.com 共享 runner 上可用 —— 自建 runner 不支持（npm 官方限制）。
-#   下面用的就是 gitlab.com 共享 runner（image: node:22）。
+#   迁移理由：主仓搬到 gitlab.com/museav/museav-cli，想让「仓库 + 发版」在一处。
+#   失败原因：npm 的 Trusted Publishing 带 provenance 发布时，会校验 runner 环境，
+#             只认 GitLab 官方托管的 runner（runner_environment = gitlab-hosted）。
+#             而本组当前唯一能用的 runner 是自建的 `nanzhu-shanghai-docker`
+#             —— 被 npm 判成 "self-hosted"，发布被拒：
+#               Error verifying sigstore provenance bundle: Unsupported GitLab CI
+#               runner environment: "self-hosted". Only "gitlab-hosted" runners
+#               are supported when publishing with provenance.
+#             退一步用 GitLab 官方共享 runner（gitlab-org / saas-linux-*）也不行：
+#             museav 命名空间的共享 runner 分钟配额已用尽，job 直接起不来
+#             （ci_quota_exceeded）。OIDC 换凭证和 provenance 签名本身都是通的，
+#             卡的就是「跑在哪种 runner 上」这一条。
 #
-# 本地 `npm publish` 一律不算正式发布（不触发流水线，租户群收不到通知，
-# /api/cli-guide 的版本号也不会同步）—— 正式发布一律打 `v*` tag。
+#   GitHub 这边没有这个问题：Actions 的 ubuntu-latest 是托管 runner，
+#   公开仓库分钟额度不限，npm 上那条 trusted publisher 也一直绑着它。
+#
+# 所以定成：**主仓在 GitLab（开发、MR、代码都在这），发版走 GitHub Actions。**
+# 两边推同一个 commit，main 保持一致。
+#
+# 本文件只跑检查（typecheck / build / test），与 GitHub 的 ci.yml 职责相同。
+# 真正发版的只有 .github/workflows/publish.yml 一条路，避免两套都能发版、迟早发错地方。
 
 stages:
   - build
-  - publish
 
 variables:
-  # 用 npm 官方镜像拉包，别用 npmjs.org 的慢端点
   NPM_CONFIG_REGISTRY: "https://registry.npmjs.org"
-  # 让 npm 知道自己在 CI 里，会自动优先走 OIDC
-  CI: "true"
 
-# ── 构建与检查 ─────────────────────────────────────────────────────────────
-# 跟 GitHub 的 ci.yml 对齐：typecheck → build → 测试
 build:
   stage: build
   image: node:22
-  # 同样钉在官方共享 runner 上：组里自建的 Docker runner 会在日志里带
-  # 自建环境标记，且与 publish 跑在不同机器上容易踩到环境差异
-  tags:
-    - gitlab-org
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
-    - if: $CI_COMMIT_TAG =~ /^v/
+    - if: $CI_MERGE_REQUEST_ID
   cache:
     key:
       files: [package-lock.json]
@@ -51,105 +48,3 @@ build:
     - npx tsc --noEmit
     - npm run build
     - npm test
-
-# ── 发 npm ────────────────────────────────────────────────────────────────
-publish:
-  stage: publish
-  # ⚠️ 必须落在 GitLab 官方共享 runner 上（tag: gitlab-org），不能落在组里自建的
-  #   Docker runner 上。npm 端校验 provenance 时会看 runner 环境，
-  #   自建 runner 会被判成 "self-hosted" 而拒绝：
-  #     Error verifying sigstore provenance bundle: Unsupported GitLab CI runner
-  #     environment: "self-hosted". Only "gitlab-hosted" runners are supported.
-  #   （2026-11-14 实测：OIDC 换凭证已经通了、provenance 也签好了，就卡在这一条。）
-  #   gitlab-org 是 GitLab.com 官方共享 runner（k8s executor，支持 image:）。
-  tags:
-    - gitlab-org
-  image: node:22
-  rules:
-    - if: $CI_COMMIT_TAG =~ /^v/
-  # Trusted Publishing 的 OIDC token。aud 必须精确写 "npm:registry.npmjs.org"，
-  # 写错 npm 换不到发布凭证。
-  # SIGSTORE_ID_TOKEN 是 provenance（来源可验证标记）用的 —— npm 端只有在
-  # 仓库是 public 且这个变量存在时才自动开 provenance。两个都要，缺一个就少一半能力。
-  id_tokens:
-    NPM_ID_TOKEN:
-      aud: "npm:registry.npmjs.org"
-    SIGSTORE_ID_TOKEN:
-      aud: "sigstore"
-  cache:
-    key:
-      files: [package-lock.json]
-    paths: [.npm/]
-  # npm 的 Trusted Publishing 需要 npm >= 11.5.1，镜像自带的通常更旧
-  before_script:
-    - npm install -g npm@latest
-    - npm ci --cache .npm --prefer-offline
-  script:
-    - npx tsc --noEmit
-    - npm run build
-
-    # tag 名必须与 package.json version 一致，防止「tag 是 v3.14.0 发的却是 3.13.9」；
-    # 同时探测该版本是否已发过 npm（重推同一 tag 时不报错、不重复发）
-    - |
-      TAG="${CI_COMMIT_TAG#v}"
-      PKG=$(node -p "require('./package.json').version")
-      if [ "$TAG" != "$PKG" ]; then
-        echo "tag $CI_COMMIT_TAG 与 package.json 的 $PKG 不一致，先对齐再发"
-        exit 1
-      fi
-      echo "版本一致：$PKG"
-
-    # 这个版本已经在 npm 上就跳过 publish：npm 不允许覆盖已发布版本，
-    # 让它撞一次 E403 只会把整条流水线标红，而其实该发的东西早就发出去了。
-    - |
-      VER="$(node -p "require('./package.json').version")"
-      if npm view "museav-cli@$VER" version >/dev/null 2>&1; then
-        echo "PUBLISHED=true" >> .publish-state
-        echo "museav-cli@$VER 已在 npm 上，跳过 publish"
-      else
-        echo "PUBLISHED=false" >> .publish-state
-      fi
-
-    # 防空介绍（2026-08-29 教训）：发布卡片的内容取 CHANGELOG.md 顶部一节，
-    # npm version patch 不会写 CHANGELOG —— 不校验的话，卡片会带着上一个版本的旧介绍
-    # 发给所有租户群（3.0.2 就是这么把 3.0.1 的 reel-kit 内容发出去的）。
-    - |
-      TOP=$(awk '/^## /{print $2; exit}' CHANGELOG.md)
-      PKG=$(node -p "require('./package.json').version")
-      if [ "$TOP" != "$PKG" ]; then
-        echo "CHANGELOG.md 顶部是 $TOP，与要发的 $PKG 不一致。发版前先写好本版本的更新说明（npm version 不会自动写）。"
-        exit 1
-      fi
-      echo "CHANGELOG 顶部版本一致：$TOP"
-
-    # 冒烟测试（命令能起、版本对得上）
-    - node dist/index.js --version
-    - node dist/index.js --help | head -3
-
-    # 发布：OIDC 由 runner 自动注入，仓库里**不要**留 NPM_TOKEN
-    - |
-      if grep -q "PUBLISHED=true" .publish-state; then
-        echo "跳过 npm publish"
-        exit 0
-      fi
-      # 仓库是 public + SIGSTORE_ID_TOKEN 存在时，npm 会自动开 provenance；
-      # 这里显式带上 --provenance 只是为了让「没开成」时能报错，而不是悄悄少一个标记。
-      npm publish --access public --provenance
-
-  # ── 回调业务中台（记录发布 + 群通知）────────────────────────────────────
-  # 发布后 POST /api/cli-release，由中台统一记录更新日志 + 用 App 发卡片通知到目标群。
-  # 群配置在业务中台（CLI_RELEASE_CHAT_IDS），CI 只存一个回调 token。
-  # 版本号由 /api/cli-guide 动态查 npm registry 同步，同样不用手动改。
-  after_script:
-    - |
-      if [ -z "$CLI_RELEASE_TOKEN" ]; then
-        echo "未配置 CLI_RELEASE_TOKEN，跳过发布通知（不影响 npm 发布）"
-        exit 0
-      fi
-      VERSION=$(node -p "require('./package.json').version")
-      BODY=$(awk '/^## /{if(n++) exit} {print}' CHANGELOG.md | head -15)
-      curl -s -X POST "https://manager.museav.top/api/cli-release" \
-        -H "Authorization: Bearer $CLI_RELEASE_TOKEN" \
-        -H "Content-Type: application/json" \
-        -d "$(jq -n --arg p museav-cli --arg v "$VERSION" --arg c "$BODY" '{package: $p, version: $v, changes: $c}')" \
-        || echo "回调业务中台失败(忽略，不影响发布)"

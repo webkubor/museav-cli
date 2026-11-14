@@ -139,10 +139,15 @@ npm install -g museav-cli            # new package, command is `museav`
 
 ## 🔧 Releasing (maintainers)
 
-CI owns releases — never `npm publish` locally. Push a `v*` tag to trigger
-`.gitlab-ci.yml` (Trusted Publishing via OIDC; no NPM_TOKEN, no OTP).
+CI owns releases — never `npm publish` locally. Push a `v*` tag to GitHub to trigger
+`.github/workflows/publish.yml` (Trusted Publishing via OIDC; no NPM_TOKEN, no OTP).
 
 These four must match: `CHANGELOG` top version == `package.json` `version` == `git tag` == `museav --version`.
+
+> The main repo lives at `gitlab.com/museav/museav-cli`; GitHub is the public mirror (code and tags in sync).
+> **Push tags to GitHub only** — npm only accepts provenance publishes from hosted runners,
+> and the only runner available on the GitLab side is self-hosted, which npm rejects.
+> See [AGENTS.md](./AGENTS.md).
 
 ## License
 

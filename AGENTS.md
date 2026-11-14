@@ -241,7 +241,7 @@ C 端一条都不行。
 - 修 bug 必须先写「以前会怎样」，否则读者判断不了跟自己有没有关系。
 - 一个改动一条，不要把五个功能挤成一段。
 
-### 发版守卫（`.gitlab-ci.yml` 会拦）
+### 发版守卫（`.github/workflows/publish.yml` 会拦）
 
 四者必须一致，差一个就红：`CHANGELOG` 顶部版本 == `package.json` 的 `version`
 == `git tag` == 冒烟跑出来的 `museav --version`。
@@ -249,24 +249,45 @@ C 端一条都不行。
 **本地 `npm publish` 不算正式发布**：不触发流水线，租户群收不到通知、
 `/api/cli-guide` 的版本号也不会同步。正式发布一律打 `v*` tag。
 
+### 发版走 GitHub Actions，代码在 GitLab（2026-11-14 定）
+
+**主仓是 `gitlab.com/museav/museav-cli`（开发、MR 都在这），但打 tag 的发布动作走
+GitHub Actions** —— GitHub 那份是公开镜像，两个远端推同一个 commit，main 始终一致。
+
+发版命令（两条远端都要推，tag 尤其）：
+
+```bash
+git push origin main        # origin = GitLab
+git push github main        # github = 公开镜像
+git push github vX.Y.Z      # ← tag 只推 GitHub，发布由它的 Actions 触发
+```
+
+> **为什么 tag 只推 GitHub**：npm 的 Trusted Publishing 带 provenance 发布时会校验
+> runner 环境，只认托管 runner（GitHub 的 `ubuntu-latest` 天然满足）。GitLab 侧唯一
+> 能用的 runner 是自建的 `nanzhu-shanghai-docker`，被 npm 判成 `self-hosted` 而拒绝
+> 发布；改用 GitLab 官方共享 runner（`gitlab-org`）则撞 `museav` 命名空间的共享
+> runner 分钟配额（`ci_quota_exceeded`），job 根本起不来。OIDC 换凭证和 provenance
+> 签名本身都是通的，卡的就是「跑在哪种 runner 上」。GitHub 侧没这个问题。
+>
+> 结论：**一条发布路**。GitLab CI 只跑检查（typecheck/build/test），不发版。
+> 以后若要彻底切到 GitLab 发版，先解决 runner 配额（或买 minutes / 换托管 runner），
+> 再改 npm 后台的 trusted publisher 绑定，然后把 tag 推法换回去。
+
 ### 发布认证走 Trusted Publishing(OIDC)，不要 OTP
 
-本仓库的 npm 发布走 **Trusted Publishing**：CI 的 `id_tokens` 让 runner 用
-GitLab OIDC token 换 npm 的短期发布凭证，**既不需要仓库里的
-NPM_TOKEN 变量，也不需要一次性验证码(OTP)**。仓库里没有、也不该有 NPM_TOKEN。
+本仓库的 npm 发布走 **Trusted Publishing**：workflow 顶层的 `id-token: write`
+让 runner 用 GitHub OIDC token 换 npm 的短期发布凭证，**既不需要仓库里的
+NPM_TOKEN secret，也不需要一次性验证码(OTP)**。仓库里没有、也不该有 NPM_TOKEN。
 
-在 npmjs.com 的包设置里，trusted publisher 绑的是：namespace `museav`
-+ project `museav-cli` + CI 文件 `.gitlab-ci.yml`（改了文件名要重新绑）。
-
-> 2026-11-03 主仓从 GitHub 迁到 gitlab.com/museav/museav-cli，发布链路同步换成
-> GitLab CI。npm 的 Trusted Publishing 两个 provider 都支持，所以认证方式没变，
-> 变的只是「谁来发那条 tag」。
+在 npmjs.com 的包设置里，trusted publisher 绑的是：GitHub 上的
+`webkubor/museav-cli`（GitHub 组织名，**不是个人账号**）+ workflow 文件名
+`publish.yml`（只写文件名，不写路径）。改了这个文件名要去 npm 后台重新绑。
 
 因此：
 
 - 想在本地发版 —— **不要**。本地 `npm publish` 既过不了 OIDC（本地没有 OIDC
   token），也会撞 EOTP（一次性验证码），最后是「tag 打好了、npm 没发成」的半吊子状态。
-  正解只有一条：改版本号 → 写 CHANGELOG → 打 `v*` tag → `git push origin v*`。
+  正解只有一条：改版本号 → 写 CHANGELOG → 打 `v*` tag → `git push github v*`。
 - **绝对不要**把恢复码当 `--otp` 用 —— npm 会判定账户可能失守，触发 72 小时预防性冻结
   （2026-09-17 出过一次）。需要验证码的场景只有网页端操作，而那走浏览器，不走 CLI。
 - 推 tag 后 CI 会自动：校验版本一致 → 探测该版本是否已发过（已发则跳过 publish，

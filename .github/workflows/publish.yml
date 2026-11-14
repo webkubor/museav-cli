@@ -1,0 +1,118 @@
+name: Publish to npm
+
+# 触发：推 v* tag（推荐），或手动跑一次
+#   git tag v1.0.1 && git push origin v1.0.1
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  publish:
+    # ⚠️ 必须用 GitHub 托管 runner（ubuntu-latest），不要用自建 runner。
+    #   npm 校验 provenance 时会看 runner 环境：自建 runner 会被判成
+    #   "self-hosted" 而拒绝发布（E422）。GitHub 托管 runner 天然满足要求。
+    #   同样的坑在 GitLab CI 上也踩过：GitLab 侧只有官方共享 runner 才算
+    #   "gitlab-hosted"，而共享 runner 有分钟配额，用完了就起不了 job。
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write      # Trusted Publishing(OIDC) 与 --provenance 都依赖它
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      # Trusted Publishing 需要 npm >= 11.5.1，runner 自带的通常更旧
+      - name: 升级 npm
+        run: npm install -g npm@latest
+
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run build
+
+      # tag 名必须与 package.json version 一致，防止「tag 是 v3.14.0 发的却是 3.13.9」；
+      # 同时探测该版本是否已发过 npm（重推同一 tag 时不报错、不重复发）
+      - name: 校验版本号与 tag 一致
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          PKG=$(node -p "require('./package.json').version")
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::tag v$TAG 与 package.json 的 $PKG 不一致，先对齐再发"
+            exit 1
+          fi
+          echo "版本一致：$PKG"
+
+      # 这个版本已经在 npm 上就跳过 publish：npm 不允许覆盖已发布版本，
+      # 让它撞一次 E403 只会把整条流水线标红，而其实该发的东西早就发出去了
+      # （2026-10-25 实测：OIDC 认证通过后报的就是 "cannot publish over the previously published versions"）。
+      - name: 探测该版本是否已发过 npm
+        id: ver
+        run: |
+          VER="$(node -p "require('./package.json').version")"
+          if npm view "museav-cli@$VER" version >/dev/null 2>&1; then
+            echo "published=true"  >> "$GITHUB_OUTPUT"
+            echo "museav-cli@$VER 已在 npm 上，跳过 publish"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # 防空介绍（2026-08-29 教训）：发布卡片的内容取 CHANGELOG.md 顶部一节，
+      # npm version patch 不会写 CHANGELOG——不校验的话，卡片会带着上一个版本的旧介绍
+      # 发给所有租户群（3.0.2 就是这么把 3.0.1 的 reel-kit 内容发出去的）。
+      - name: 校验 CHANGELOG 顶部版本与发版一致
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          TOP=$(awk '/^## /{print $2; exit}' CHANGELOG.md)
+          PKG=$(node -p "require('./package.json').version")
+          if [ "$TOP" != "$PKG" ]; then
+            echo "::error::CHANGELOG.md 顶部是 $TOP，与要发的 $PKG 不一致。发版前先写好本版本的更新说明（npm version 不会自动写）。"
+            exit 1
+          fi
+          echo "CHANGELOG 顶部版本一致：$TOP"
+
+      - name: 冒烟测试（命令能起、版本对得上）
+        run: |
+          node dist/index.js --version
+          node dist/index.js --help | head -3
+
+      # 认证走 Trusted Publishing（OIDC)：workflow 顶层的 `id-token: write` 就是为它准备的，
+      # runner 用 GitHub OIDC token 换 npm 的短期发布凭证 —— **不需要 NPM_TOKEN，也不需要 OTP**。
+      #
+      # npm 后台绑的是：organization/owner `webkubor`（GitHub 上的组织名）+ repository
+      # `museav-cli` + workflow 文件名 `publish.yml`（只写文件名，不写路径）。
+      # 改了这个文件名就要去 npm 后台重新绑。
+      #
+      # 本地 `npm publish` 一律不算正式发布（不触发 Actions，租户群收不到通知，
+      # /api/cli-guide 的版本号也不会同步）——正式发布一律打 `v*` tag。
+      - name: 发布
+        if: steps.ver.outputs.published == 'false'
+        run: npm publish --access public --provenance
+
+      # 发布后回调业务中台（2026-08-15）：POST /api/cli-release，package 字段区分是哪个包
+      # （2026-09-08 起 museav-mcp 也走这条链路，中台按包名给不同的安装指引与文档链接；
+      #  那个包 2026-10-13 正名为 cs-mcp），
+      # 由中台统一记录更新日志 + 用 App 发卡片通知到目标群（mzmeso/好易美等）。
+      # 群配置在业务中台（CLI_RELEASE_CHAT_IDS），GitHub 只存一个回调 token。
+      # 版本号由 /api/cli-guide 动态查 npm registry 同步，同样不用手动改。
+      - name: 回调业务中台（记录发布 + 群通知）
+        env:
+          CLI_RELEASE_TOKEN: ${{ secrets.CLI_RELEASE_TOKEN }}
+        run: |
+          # GitHub Actions 的 if: 表达式不能直接用 secrets（Unrecognized named-value），
+          # 只能把 secret 放进 env，再在 run 里判断是否配置。
+          if [ -z "$CLI_RELEASE_TOKEN" ]; then
+            echo "未配置 CLI_RELEASE_TOKEN，跳过发布通知（不影响 npm 发布）"
+            exit 0
+          fi
+          VERSION=$(node -p "require('./package.json').version")
+          BODY=$(awk '/^## /{if(n++) exit} {print}' CHANGELOG.md | head -15)
+          curl -s -X POST "https://manager.museav.top/api/cli-release" \
+            -H "Authorization: Bearer $CLI_RELEASE_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg p museav-cli --arg v "$VERSION" --arg c "$BODY" '{package: $p, version: $v, changes: $c}')" \
+            || echo "回调业务中台失败(忽略，不影响发布)"

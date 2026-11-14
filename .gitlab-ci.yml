@@ -34,6 +34,10 @@ variables:
 build:
   stage: build
   image: node:22
+  # 同样钉在官方共享 runner 上：组里自建的 Docker runner 会在日志里带
+  # 自建环境标记，且与 publish 跑在不同机器上容易踩到环境差异
+  tags:
+    - gitlab-org
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
     - if: $CI_COMMIT_TAG =~ /^v/
@@ -51,6 +55,15 @@ build:
 # ── 发 npm ────────────────────────────────────────────────────────────────
 publish:
   stage: publish
+  # ⚠️ 必须落在 GitLab 官方共享 runner 上（tag: gitlab-org），不能落在组里自建的
+  #   Docker runner 上。npm 端校验 provenance 时会看 runner 环境，
+  #   自建 runner 会被判成 "self-hosted" 而拒绝：
+  #     Error verifying sigstore provenance bundle: Unsupported GitLab CI runner
+  #     environment: "self-hosted". Only "gitlab-hosted" runners are supported.
+  #   （2026-11-14 实测：OIDC 换凭证已经通了、provenance 也签好了，就卡在这一条。）
+  #   gitlab-org 是 GitLab.com 官方共享 runner（k8s executor，支持 image:）。
+  tags:
+    - gitlab-org
   image: node:22
   rules:
     - if: $CI_COMMIT_TAG =~ /^v/

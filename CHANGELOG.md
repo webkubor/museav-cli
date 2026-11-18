@@ -1,5 +1,24 @@
 # Changelog
 
+## 3.16.2 (2026-11-18)
+
+### 主仓搬回 GitHub，欢迎语里的仓库链接跟着修
+
+3.16.1 把主仓迁到 GitLab，那个 GitLab 项目随后于 2026-11-18 被标记删除
+（`marked_for_deletion_on: 2026-11-18`，项目名已变为 `museav-cli-deletion_scheduled-88444486`）。
+主仓定回 `github.com/museav-ai/museav-cli`。
+
+**用户能感知的只有一处**：`museav` 欢迎语里那行「给项目点个 ⭐」，原来指向 GitLab，现在指向 GitHub。
+命令、参数、输出格式、退出码一律不变。**不升级也不影响任何功能**，只是那行链接还是旧的。
+
+维护者侧：
+- 删除 `.gitlab-ci.yml` —— 与 `.github/workflows/ci.yml` 完全重复（`npm ci → tsc → build → test`），
+  主仓迁走后是死配置。
+- `ci.yml` 的 Node 20 → 22，与 `publish.yml` 对齐。此前是「测试用 20、发布用 22」，
+  等于测的不是发的那个版本。
+- `README` / `README.en` / `AGENTS` 主仓口径改 GitHub，去掉「两个远端推同一 commit」的说法，
+  发版命令 `git push github v*` → `git push origin v*`。
+
 ## 3.16.1 (2026-11-14)
 
 ### 主仓迁到 GitLab，发版链路跟着换

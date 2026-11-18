@@ -16,6 +16,14 @@ GitLab CI/CD（`.gitlab-ci.yml`）。**这一版的实际改动很小，主要�
 
 发版方式的唯一变化在维护者侧：以后打 `v*` tag 触发的是 GitLab CI，不是 GitHub Actions。
 
+> **勘误（2026-11-18 补记，不改原文）**：本节发布后有两处已被推翻，以本节为准会走错路：
+> - **Repository / Issues 仍指向 GitHub**。`4e20ed6f` 把 `package.json#repository` 改回了
+>   `github.com/webkubor/museav-cli`，npm 页面上的链接也随之回到 GitHub。原文说的「指向 GitLab」不再成立。
+> - **发版仍在 GitHub Actions**。`0b4a0c33` 把发版链路移回 GitHub Actions，`v*` tag 由
+>   `.github/workflows/publish.yml` 触发；GitLab CI 只跑检查、不发版（原因见 `.gitlab-ci.yml` 顶部：
+>   npm 的 Trusted Publishing 会校验 runner 环境，自建/共享 runner 可能被判成 self-hosted 而发布被拒）。
+> 当前唯一发版通道：打 `v*` tag → GitHub Actions。维护者别照本节原文去 GitLab 找发布任务。
+
 ## 3.16.0 (2026-10-28)
 
 ### 每期都能有主题、文化注解、故事和关联

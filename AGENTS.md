@@ -249,27 +249,26 @@ C 端一条都不行。
 **本地 `npm publish` 不算正式发布**：不触发流水线，租户群收不到通知、
 `/api/cli-guide` 的版本号也不会同步。正式发布一律打 `v*` tag。
 
-### 发版走 GitHub Actions，代码在 GitLab（2026-11-14 定）
+### 代码与发版都在 GitHub（2026-11-18 定）
 
-**主仓是 `gitlab.com/museav/museav-cli`（开发、MR 都在这），但打 tag 的发布动作走
-GitHub Actions** —— GitHub 那份是公开镜像，两个远端推同一个 commit，main 始终一致。
-
-发版命令（两条远端都要推，tag 尤其）：
+**主仓是 `github.com/museav-ai/museav-cli`** —— 开发、PR、issue、发版全在这里，只有一个远端。
 
 ```bash
-git push origin main        # origin = GitLab
-git push github main        # github = 公开镜像
-git push github vX.Y.Z      # ← tag 只推 GitHub，发布由它的 Actions 触发
+git push origin main
+git push origin vX.Y.Z      # ← tag 触发 .github/workflows/publish.yml
 ```
 
-> **为什么 tag 只推 GitHub**：npm 的 Trusted Publishing 带 provenance 发布时会校验
-> runner 环境，只认托管 runner（GitHub 的 `ubuntu-latest` 天然满足）。GitLab 侧唯一
-> 能用的 runner 是自建的 `nanzhu-shanghai-docker`，被 npm 判成 `self-hosted` 而拒绝
-> 发布；改用 GitLab 官方共享 runner（`gitlab-org`）则撞 `museav` 命名空间的共享
-> runner 分钟配额（`ci_quota_exceeded`），job 根本起不来。OIDC 换凭证和 provenance
-> 签名本身都是通的，卡的就是「跑在哪种 runner 上」。GitHub 侧没这个问题。
+> **GitLab 侧已迁走**：`gitlab.com/museav/museav-cli` 于 2026-11-18 被标记删除
+> （项目名已变为 `museav-cli-deletion_scheduled-88444486`），不再是主仓，也不再是镜像。
+> 别往那里开 MR、别再配置双远端推送。
 >
-> 结论：**一条发布路**。GitLab CI 只跑检查（typecheck/build/test），不发版。
+> **为什么发版只能在 GitHub**（这条结论仍有效，也是不能搬回 GitLab CI 的原因）：
+> npm 的 Trusted Publishing 带 provenance 发布时会校验 runner 环境，只认托管 runner
+>（GitHub 的 `ubuntu-latest` 天然满足）。GitLab 侧唯一能用的 runner 是自建的
+> `nanzhu-shanghai-docker`，被 npm 判成 `self-hosted` 而拒绝发布；改用 GitLab 官方共享
+> runner（`gitlab-org`）则撞 `museav` 命名空间的共享 runner 分钟配额
+>（`ci_quota_exceeded`），job 根本起不来。OIDC 换凭证和 provenance 签名本身都是通的，
+> 卡的就是「跑在哪种 runner 上」。
 > 以后若要彻底切到 GitLab 发版，先解决 runner 配额（或买 minutes / 换托管 runner），
 > 再改 npm 后台的 trusted publisher 绑定，然后把 tag 推法换回去。
 
@@ -287,7 +286,7 @@ NPM_TOKEN secret，也不需要一次性验证码(OTP)**。仓库里没有、也
 
 - 想在本地发版 —— **不要**。本地 `npm publish` 既过不了 OIDC（本地没有 OIDC
   token），也会撞 EOTP（一次性验证码），最后是「tag 打好了、npm 没发成」的半吊子状态。
-  正解只有一条：改版本号 → 写 CHANGELOG → 打 `v*` tag → `git push github v*`。
+  正解只有一条：改版本号 → 写 CHANGELOG → 打 `v*` tag → `git push origin v*`。
 - **绝对不要**把恢复码当 `--otp` 用 —— npm 会判定账户可能失守，触发 72 小时预防性冻结
   （2026-09-17 出过一次）。需要验证码的场景只有网页端操作，而那走浏览器，不走 CLI。
 - 推 tag 后 CI 会自动：校验版本一致 → 探测该版本是否已发过（已发则跳过 publish，

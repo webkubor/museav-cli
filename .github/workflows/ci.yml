@@ -7,13 +7,15 @@ on:
     branches: [main]
 
 jobs:
-  typecheck:
+  # 与 publish.yml 使用同一个 Node 版本：测的必须是发的那个版本。
+  # engines 要求 >=20.19，22 在范围内；此前 CI 用 20 而发布用 22，属于测发不一致。
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - run: npm ci
       - run: npx tsc --noEmit
       - run: npm run build

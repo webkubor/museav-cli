@@ -16,7 +16,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/webkubor/museav-cli.git"
+    "url": "https://github.com/museav-ai/museav-cli.git"
   },
   "homepage": "https://museav.top",
   "scripts": {
@@ -56,7 +56,7 @@
     "typescript": "^7.0.2"
   },
   "bugs": {
-    "url": "https://github.com/webkubor/museav-cli/issues"
+    "url": "https://github.com/museav-ai/museav-cli/issues"
   },
   "publishConfig": {
     "access": "public"

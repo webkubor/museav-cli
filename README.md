@@ -150,9 +150,9 @@ CI 接管发布，本机不要 `npm publish`：推 `v*` tag 到 GitHub 触发
 
 四者必须一致，差一个就红：`CHANGELOG` 顶部版本 == `package.json` 的 `version` == `git tag` == `museav --version`。
 
-> 主仓在 `gitlab.com/museav/museav-cli`，GitHub 那份是公开镜像（代码、tag 同步）。
-> **tag 只推 GitHub** —— npm 带 provenance 发布只认托管 runner，GitLab 侧唯一能用的
-> runner 是自建的，会被拒。详见 [AGENTS.md](./AGENTS.md)。
+> **主仓是 `github.com/museav-ai/museav-cli`**（2026-11-18 起）：开发、PR、issue、发版全在这。
+> 原 `gitlab.com/museav/museav-cli` 已迁走并标记删除，不要再往那里开 MR 或 push。
+> 发版必须在 GitHub：npm 带 provenance 发布只认托管 runner。详见 [AGENTS.md](./AGENTS.md)。
 
 ## License
 

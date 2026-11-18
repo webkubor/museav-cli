@@ -144,9 +144,10 @@ CI owns releases — never `npm publish` locally. Push a `v*` tag to GitHub to t
 
 These four must match: `CHANGELOG` top version == `package.json` `version` == `git tag` == `museav --version`.
 
-> The main repo lives at `gitlab.com/museav/museav-cli`; GitHub is the public mirror (code and tags in sync).
-> **Push tags to GitHub only** — npm only accepts provenance publishes from hosted runners,
-> and the only runner available on the GitLab side is self-hosted, which npm rejects.
+> **The main repo is `github.com/museav-ai/museav-cli`** (since 2026-11-18): development, PRs,
+> issues and releases all live there. The former `gitlab.com/museav/museav-cli` was migrated away
+> and is marked for deletion — do not open MRs or push there.
+> Releases must run on GitHub: npm only accepts provenance publishes from hosted runners.
 > See [AGENTS.md](./AGENTS.md).
 
 ## License

@@ -1,5 +1,7 @@
 # AGENTS.md
 
+通用表达规范见 writing-standard-skills，此处只写本项目特有细则。
+
 This CLI is designed to be used directly by coding agents (Claude Code, Codex, etc.), not just humans. Read this before shelling out to `museav`.
 
 ## What this is

@@ -124,6 +124,16 @@ export function hasFfmpeg(): boolean {
 }
 
 /**
+ * 这段字节是不是已经是 wav（RIFF/WAVE 头）。
+ *
+ * 要 wav 却拿到 mp3 是很现实的事：中台的音频格式由服务端说了算，调用方说了
+ * format=wav 也不保证回的是 wav。所以先看字节本身，别只看"我请求了什么"。
+ */
+export function isWavBuffer(data: Buffer): boolean {
+  return data.length >= 12 && data.subarray(0, 4).toString('ascii') === 'RIFF' && data.subarray(8, 12).toString('ascii') === 'WAVE'
+}
+
+/**
  * mp3 → wav（24kHz 单声道 16bit）。
  * muse·tv 的配音链路后面统一按 wav 处理（拼接、混音），所以直连上游拿到 mp3 后要转一道。
  * 没有 ffmpeg 就明确报错，不给出一个「看起来成功」的假 wav。

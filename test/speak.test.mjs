@@ -191,3 +191,45 @@ test('speak：--provider minimax 直连上游（mock MiniMax），不需要中�
     await rm(dir, { recursive: true, force: true })
   }
 })
+
+test('speak：要 wav 但中台回的是 mp3 字节，CLI 自己转成真 wav', async (t) => {
+  const hasFfmpeg = await new Promise((r) => {
+    execFile('which', ['ffmpeg'], (err) => r(!err))
+  })
+  if (!hasFfmpeg) return t.skip('本机没有 ffmpeg，跳过转码用例')
+
+  // 一段真的 mp3：ID3 头 + 一小段帧（用 ffmpeg 从 wav 转出来当素材）
+  const dir = await mkdtemp(join(tmpdir(), 'museav-speak-'))
+  try {
+    const srcWav = join(dir, 'src.wav')
+    const mp3 = join(dir, 'src.mp3')
+    await new Promise((resolve, reject) => {
+      execFile('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=0.2',
+        '-ar', '44100', '-ac', '1', srcWav], (e) => (e ? reject(e) : resolve()))
+    })
+    await new Promise((resolve, reject) => {
+      execFile('ffmpeg', ['-y', '-loglevel', 'error', '-i', srcWav, mp3], (e) => (e ? reject(e) : resolve()))
+    })
+    const mp3Bytes = await readFile(mp3)
+
+    await withServer(async (req, res) => {
+      req.on('data', () => {})
+      req.on('end', () => {
+        res.writeHead(200, { 'Content-Type': 'application/octet-stream' })
+        res.end(mp3Bytes)
+      })
+    }, async (baseUrl) => {
+      const out = join(dir, 'out.wav')
+      const r = await runCli(['speak', '要 wav', '--format', 'wav', '--out', out], {
+        MUSEAV_BASE_URL: baseUrl,
+        MUSEAV_API_KEY: 'sk-studio-mock',
+      })
+      assert.equal(r.code, 0, `stderr: ${r.stderr}`)
+      const written = await readFile(out)
+      assert.equal(written.subarray(0, 4).toString('ascii'), 'RIFF', '落盘的应该是 wav，不是 mp3 改个后缀')
+      assert.equal(written.subarray(8, 12).toString('ascii'), 'WAVE')
+    })
+  } finally {
+    await rm(dir, { recursive: true, force: true })
+  }
+})

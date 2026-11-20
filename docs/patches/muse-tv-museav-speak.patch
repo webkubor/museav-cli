@@ -1,16 +1,6 @@
-# muse·tv（reel-kit）接线方案 —— 让 --voice-engine museav 真的走 museav speak
-
-**这是方案，不是已应用的改动。** reel-kit 不是 museav-cli 的仓，本仓只出方案不越界改代码。
-落点：`reel-kit/src/voice.mjs`（`synthesizeCaptions` 里 `engine === 'museav'` 那一档，原来直接抛错）。
-
-前置条件：museav-cli 3.17.0+ 已装（`npm i -g museav-cli`），并且中台语音端点已开放。
-直连上游（绕过中台）的情况：把 CLI 换成 `museav speak ... --provider minimax --voice <id>`，
-并把 `MINIMAX_API_KEY` 注入到桌面版进程环境。
-
-```diff
---- a/src/voice.mjs	2026-11-20 12:30:11
-+++ b/src/voice.mjs	2026-11-20 12:30:21
-@@ -237,10 +237,24 @@
+--- a/src/voice.mjs
++++ b/src/voice.mjs
+@@ -237,10 +237,27 @@
    const results = []
  
    if (engine === 'museav') {
@@ -18,19 +8,22 @@
 -      'museav 配音已下线：中台的 CLI 里没有 speak 命令，这条路径从来没能跑通。\n' +
 -      '  改用 --voice-engine edge（微软 Edge 在线免费高保真）、--voice-engine mimo（小米 MiMo，限时免费）、--voice-engine minimax（云端 TTS），或在 Reel Studio 里选相应通道。',
 -    )
-+    // museav speak（museav-cli 3.17.0+）：走中台的语音通道。
-+    // 逐句合成 —— 出错时要能报到具体是第几句。
++    // museav speak（museav-cli 3.17.0+）：中台语音通道，逐句合成 wav。
++    // 桌面版从 Finder 启动时 PATH 很干净，命令路径用 MUSEA_BIN 覆盖；
++    // 中台语音端点还没开放时，REEL_MUSEA_PROVIDER=minimax 走直连上游（不扣中台 credits）。
++    const bin = process.env.MUSEA_BIN || 'museav'
++    const provider = process.env.REEL_MUSEA_PROVIDER || 'studio'
 +    for (let i = 0; i < captions.length; i++) {
-+      const text = captions[i]
++      const text = String(captions[i])
 +      const out = join(outDir, `voice_${String(i).padStart(4, '0')}.wav`)
++      const args = ['speak', text, '--format', 'wav', '--overwrite', '--out', out, '--provider', provider]
++      if (voice) args.push('--voice', voice)
 +      try {
-+        const args = ['speak', text, '--format', 'wav', '--out', out, '--overwrite']
-+        if (voice) args.push('--voice', voice)
-+        // stdout 就是落盘音频的路径
-+        await run('museav', args)
++        await run(bin, args)
 +      } catch (e) {
-+        throw new Error(`第 ${i + 1} 句配音失败（"${text.slice(0, 20)}"）: ${e.stderr || e.message}`)
++        throw new Error(`第 ${i + 1} 句配音失败（"${text.slice(0, 20)}"）：${e.stderr || e.message}`)
 +      }
++      if (!existsSync(out)) throw new Error(`第 ${i + 1} 句配音失败：museav speak 没有产出 ${out}`)
 +      const duration = await probeDuration(out)
 +      results.push({ file: out, duration })
 +      onProgress?.(i + 1, captions.length, duration)
@@ -39,12 +32,3 @@
    }
    if (!['voxcraft', 'minimax', 'edge', 'mimo'].includes(engine)) {
      throw new Error(`未知的配音后端 "${engine}"；可用：edge（微软在线高保真·免费）、mimo（小米 MiMo·限时免费）、voxcraft（本地）、minimax（云端 TTS·按量计费）`)
-```
-
-验法（改完之后）：
-
-```bash
-cd ~/dev/video/reel-kit
-node -e "import('./src/voice.mjs').then(m=>m.synthesizeCaptions({captions:['第一句','第二句'],outDir:'/tmp/vtest',engine:'museav'}))"
-# 期望：/tmp/vtest 下有 voice_0000.wav、voice_0001.wav，且每句时长 > 0
-```

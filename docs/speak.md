@@ -60,7 +60,33 @@ museav speak "$TEXT" --voice "$VOICE" --format wav --out "$OUT" --overwrite
 ```
 
 接线方案见 [`docs/patches/muse-tv-museav-speak.patch`](./patches/muse-tv-museav-speak.patch)
-（该改动在 reel-kit 仓，本仓只给方案，不越界改别人的代码）。
+（纯 unified diff，`git apply -p1` 就能落到 reel-kit 仓根目录；该改动在 reel-kit 仓，
+本仓只给方案，不越界改别人的代码）。补丁里认两个环境变量：
+
+| 变量 | 作用 | 默认 |
+| --- | --- | --- |
+| `MUSEA_BIN` | `museav` 可执行文件的绝对路径（桌面版从 Finder 启动时 PATH 很干净） | `museav`（走 PATH） |
+| `REEL_MUSEA_PROVIDER` | `studio`（走中台）/ `minimax`（直连上游） | `studio` |
+
+## 要 wav，就一定拿到 wav
+
+`--format wav` 说的是「我要 wav」，但服务端回什么是服务端的事。所以 CLI 拿到字节后
+先看它自己是不是 wav（`RIFF`/`WAVE` 头），不是就转一道，而不是改个后缀糊弄你：
+
+- 直连上游（MiniMax）只给 mp3 → 本机 ffmpeg 转成 24kHz 单声道 16bit；
+- 中台回了 mp3 字节（`Content-Type` 不是 `audio/*` 也认）→ 同样转一道；
+- 本机没有 ffmpeg → **在调用上游之前**就报错退出，不会先把可能计费的调用跑掉再失败。
+
+## 验证
+
+```bash
+npm test          # 74 个用例，含 speak 的 7 个
+```
+
+speak 的用例是真跑：起一个本地假中台 → 真的 CLI 子进程 → 真的 HTTP 往返 → 真的文件落盘，
+再核对 stdout 是不是路径、落盘的是不是那段字节。muse·tv 那条接线（打上上面那个补丁）
+同样跑通：`--voice-engine museav` 逐句调 `museav speak`，产出 `voice_0000.wav`、
+`voice_0001.wav`，`ffprobe` 量到的时长都大于 0。
 
 ## 失败时会看到什么
 

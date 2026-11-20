@@ -972,15 +972,23 @@ export class StudioClient {
       throw new Error(`中台 API /api/speak 失败: ${msg}`)
     }
 
+    // 字节先收下来：既是音频直出、又是 JSON 包着、还是 JSON 都不像，都靠这份字节判断
+    const raw = Buffer.from(await resp.arrayBuffer())
     if (contentType.startsWith('audio/')) {
-      return { data: Buffer.from(await resp.arrayBuffer()), mime: contentType }
+      return { data: raw, mime: contentType }
     }
 
     let body: any
     try {
-      body = await resp.json()
+      body = JSON.parse(raw.toString('utf-8'))
     } catch {
-      throw new Error('中台 /api/speak 返回的不是音频也不是 JSON')
+      // 不是 JSON：那多半就是音频直出，只是服务端没写 audio/*（例如 application/octet-stream）。
+      // 与其报一句"看不懂"，不如把字节交给调用方，由它按字节头判断格式。
+      if (!raw.length) throw new Error('中台 /api/speak 返回了空响应')
+      return { data: raw, mime: contentType || 'application/octet-stream' }
+    }
+    if (!body || typeof body !== 'object') {
+      return { data: raw, mime: contentType || 'application/octet-stream' }
     }
 
     const url: string | undefined = body.audio_url || body.url || body.cdn_url

@@ -18,7 +18,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 import type { StudioClient } from '../client.js'
 import { loadConfigOptional } from '../config.js'
-import { hasFfmpeg, mp3ToWav, resolveSpeakText, speakViaMinimax } from '../speech.js'
+import { hasFfmpeg, isWavBuffer, mp3ToWav, resolveSpeakText, speakViaMinimax } from '../speech.js'
 
 export interface SpeakOptions {
   text?: string
@@ -56,9 +56,9 @@ export async function speak(client: StudioClient | null, positional: string | un
   const cfg = provider === 'minimax' ? loadConfigOptional() : null
 
   // 要 wav 就得有 ffmpeg —— 这事得在调用上游（可能计费）之前问清楚
-  if (provider === 'minimax' && format === 'wav' && !hasFfmpeg()) {
+  if (format === 'wav' && !hasFfmpeg()) {
     throw new Error(
-      '要 wav 需要本机装 ffmpeg（本机没找到）。\n' +
+      '要 wav 需要本机装 ffmpeg（本机没找到）：上游不一定回 wav，回了 mp3 就得本机转一道。\n' +
       '先合成 mp3 再自行转码，或改用 --format mp3。',
     )
   }
@@ -104,8 +104,9 @@ export async function speak(client: StudioClient | null, positional: string | un
   }
   await mkdir(dirname(outPath), { recursive: true })
 
-  if (provider === 'minimax' && format === 'wav') {
-    // 直连只有 mp3，wav 由本机 ffmpeg 转（24k 单声道，跟视频链路后面的处理对齐）
+  if (format === 'wav' && !isWavBuffer(data)) {
+    // 回来的不是 wav（直连上游一定给 mp3；中台给什么由服务端说了算），
+    // 由本机 ffmpeg 转成 24k 单声道，跟视频链路后面的处理对齐
     await mp3ToWav(data, outPath)
   } else {
     await writeFile(outPath, data)

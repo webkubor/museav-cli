@@ -34,6 +34,10 @@ museav speak "今天天气不错" --provider minimax --voice male-qn-qingse --ou
 不会给出一个看起来成功的假 wav）。等中台把语音端点重新开放，默认通道自然接管，
 不用改你的调用方式。
 
+要 wav 就一定拿到 wav：不管上游回的是 mp3 还是标着 `application/octet-stream` 的音频字节，
+CLI 都先看字节本身再决定要不要转一道，不会给你一个改后缀的假 wav；本机缺 ffmpeg 时，
+它是在调用上游（可能计费）**之前**就报错退出。
+
 用法与失败时的报错对照表见 [docs/speak.md](./docs/speak.md)；给 muse·tv 的接线方案见
 [docs/patches/muse-tv-museav-speak.patch](./docs/patches/muse-tv-museav-speak.patch)。
 

@@ -431,41 +431,6 @@ export interface MeInfo {
   feishu_open_id?: string | null
 }
 
-/**
- * 语音合成入参（POST /api/speak）。
- *
- * 字段跟中台说，不跟想象说：中台没开的字段就传不了，
- * 中台有但这里没暴露的字段，本命令就调不到（改这里要跟中台一起改）。
- */
-export interface SpeakOptions {
-  /** 要合成的文本 */
-  text: string
-  /** 音色 id（各家命名不同：MiniMax 是 voice_id，中台透传） */
-  voice?: string
-  /** 语言，如 zh / en */
-  language?: string
-  /** 音频格式 */
-  format?: 'mp3' | 'wav'
-  /** 语速，1.0 为常速 */
-  speed?: number
-  /** 模型 / 音色档位（不传=中台默认） */
-  model?: string
-}
-
-/** 语音合成结果：音频字节 + 服务端回传的元信息 */
-export interface SpeakResult {
-  /** 音频内容（已解码，不是 base64 文本） */
-  data: Buffer
-  /** 音频 MIME */
-  mime: string
-  /** 中台给的直链（有就带回，方便调用方归档/二次取用） */
-  url?: string
-  /** 服务端实际用的音色 */
-  voice?: string
-  /** 中台回传的计费信息（若有；第一版中台可能不返回） */
-  cost?: { credits?: number; unit?: string; characters?: number }
-}
-
 export class StudioClient {
   private baseUrl: string
   private authHeader: Record<string, string>
@@ -931,88 +896,6 @@ export class StudioClient {
        enhancedLength: r.enhanced_length ?? (r.prompt || '').length,
      }
    }
-
-  /**
-   * 语音合成（POST /api/speak）——中台代理的 TTS。
-   *
-   * 响应形态服务端说了算，三种都收：
-   *   1. 直接是音频字节（Content-Type: audio/*）
-   *   2. JSON 里给直链（audio_url / url / cdn_url）→ 这里下载成字节
-   *   3. JSON 里给 base64（audio / audio_base64 / data）→ 这里解码成字节
-   *
-   * 统一收敛成字节返回：调用方（命令、muse·tv 的配音链路）只关心"拿到一段可播放的音频"。
-   */
-  async speak(opts: SpeakOptions): Promise<SpeakResult> {
-    const resp = await fetch(`${this.baseUrl}/api/speak`, {
-      method: 'POST',
-      headers: this.headers({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({
-        text: opts.text,
-        voice: opts.voice,
-        language: opts.language,
-        format: opts.format,
-        speed: opts.speed,
-        model: opts.model,
-      }),
-    })
-    const contentType = resp.headers.get('content-type') || ''
-    if (!resp.ok) {
-      const raw = await resp.text()
-      let msg = raw
-      try {
-        const parsed = JSON.parse(raw)
-        msg = parsed.error || parsed.message || raw
-      } catch { /* 非 JSON，原样带出去 */ }
-      if (resp.status === 404) {
-        throw new Error(
-          `中台还没有开放语音合成端点（POST /api/speak → HTTP 404）\n` +
-          `（中台的 speak / transcribe 随 MiMo Token Plan 退订下线过；若已重新开放，请确认路径与字段）`,
-        )
-      }
-      throw new Error(`中台 API /api/speak 失败: ${msg}`)
-    }
-
-    // 字节先收下来：既是音频直出、又是 JSON 包着、还是 JSON 都不像，都靠这份字节判断
-    const raw = Buffer.from(await resp.arrayBuffer())
-    if (contentType.startsWith('audio/')) {
-      return { data: raw, mime: contentType }
-    }
-
-    let body: any
-    try {
-      body = JSON.parse(raw.toString('utf-8'))
-    } catch {
-      // 不是 JSON：那多半就是音频直出，只是服务端没写 audio/*（例如 application/octet-stream）。
-      // 与其报一句"看不懂"，不如把字节交给调用方，由它按字节头判断格式。
-      if (!raw.length) throw new Error('中台 /api/speak 返回了空响应')
-      return { data: raw, mime: contentType || 'application/octet-stream' }
-    }
-    if (!body || typeof body !== 'object') {
-      return { data: raw, mime: contentType || 'application/octet-stream' }
-    }
-
-    const url: string | undefined = body.audio_url || body.url || body.cdn_url
-    if (url) {
-      const audioResp = await fetch(url)
-      if (!audioResp.ok) throw new Error(`下载音频直链失败: HTTP ${audioResp.status}`)
-      return {
-        data: Buffer.from(await audioResp.arrayBuffer()),
-        mime: audioResp.headers.get('content-type') || 'audio/mpeg',
-        url,
-        voice: body.voice,
-        cost: body.cost,
-      }
-    }
-
-    const b64: string | undefined = body.audio || body.audio_base64 || body.data
-    if (!b64) throw new Error('中台 /api/speak 没有返回音频（既没有直链也没有 base64）')
-    return {
-      data: Buffer.from(b64, 'base64'),
-      mime: body.mime || 'audio/mpeg',
-      voice: body.voice,
-      cost: body.cost,
-    }
-  }
 
   /** 提交视频任务（POST /api/videos）——video 走独立链路，不走图片 queue */
    async generateVideo(opts: {

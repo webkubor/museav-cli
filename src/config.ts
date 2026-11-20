@@ -45,9 +45,9 @@ export interface StudioConfig {
    */
   tenantBaseUrl?: string
   /**
-   * MiniMax API Key（直连 TTS 用，见 `museav speak --provider minimax`）。
+   * MiniMax API Key（`museav speak` 直连上游时用）。
    *
-   * 只在"绕过中台直连上游"这一条路上用得到：走中台的 speak 不需要它。
+   * 目前只有直连上游这一条通道用得到它（中台未开放语音端点）。
    * 存在 ~/.museav.json（0600）里，是因为桌面版从 Finder 启动时没有终端环境变量，
    * 用户没法自己 export——跟 reel-kit 存 ~/.reel-kit/config.json 是同一个理由。
    */
@@ -127,7 +127,7 @@ export function loadConfig(): StudioConfig {
 /**
  * 同 loadConfig，但不因为缺凭证就抛错——返回该有的字段，凭证缺了就是缺了。
  *
- * 给"不一定需要中台身份"的命令用：`speak --provider minimax` 走的是直连上游，
+ * 给"不一定需要中台身份"的命令用：`speak` 走的是直连上游，
  * 压根不认中台 token/apiKey，为此逼用户先 museav login 属于强人所难。
  */
 export function loadConfigOptional(): StudioConfig {

@@ -21,4 +21,4 @@ npm install museav-cli
 
 ## 关键约束
 - 官方 CLI：接口契约跟中台走，破坏性变更要跟中台版本对齐说明。
-- 语音合成命令 `museav speak`：默认走中台 `POST /api/speak`；`--provider minimax` 是绕过中台的直连通道（不扣中台 credits）。用法见 `docs/speak.md`。
+- 语音合成命令 `museav speak`：直连上游 TTS（不需要中台登录，不扣中台 credits，费用走用户自己的上游账户）。中台目前没有语音端点，所以没有中台侧的语音契约。用法见 `docs/speak.md`。

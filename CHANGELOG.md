@@ -12,6 +12,7 @@
 现在这条命令有了：
 
 ```bash
+export MINIMAX_API_KEY=...        # 或 museav config --minimaxApiKey ...
 museav speak "第三集开始，雨水顺着屋檐落下来" --voice male-qn-qingse --out ./line1.mp3
 ```
 
@@ -19,24 +20,16 @@ museav speak "第三集开始，雨水顺着屋檐落下来" --voice male-qn-qin
 `OUT=$(museav speak "...")` 就拿到文件位置。文本可以给在位置参数、`--text` 或者 `--file`
 （`-` 读 stdin）里，三者只能选一处，给多处会直接报错而不是猜你什么意思。
 
-**要留意的一处现状**：默认通道走中台 `POST /api/speak`，但中台的语音端点曾经随小米 MiMo
-Token Plan 的退订一起下线（`speak` / `transcribe` 一并清掉），至今没有重新开放。所以现在
-直接 `museav speak` 会拿到中台的 404，CLI 会把这件事原样讲清楚，不是一句天书。要立刻出声，
-用直连上游那条：
+**一条通道，直连上游**：这条命令直连 MiniMax 的 TTS，**不认中台身份、不扣中台 credits**，
+费用直接走你自己的 MiniMax 账单（按量计费）。
 
-```bash
-export MINIMAX_API_KEY=...        # 或 museav config --minimaxApiKey ...
-museav speak "今天天气不错" --provider minimax --voice male-qn-qingse --out ./a.mp3
-```
+为什么不是走中台：中台的语音端点随小米 MiMo Token Plan 的退订一起下线了（`speak` /
+`transcribe` 一并清掉），至今没有重新开放——现网请求那些路径一律 405，路由根本不存在。
+与其把猜出来的路径和字段写进文档、让人当成正式契约来读，不如直说：现在只有直连上游
+这一条通道。中台若重新接入语音，会以正式契约为准补进来。
 
-直连这条路**绕过中台**：不认中台身份、不扣中台 credits，费用直接走 MiniMax 的账单；
-它只出 mp3，要 wav 会用本机 ffmpeg 转成 24kHz 单声道（本机没装 ffmpeg 会明确报错，
-不会给出一个看起来成功的假 wav）。等中台把语音端点重新开放，默认通道自然接管，
-不用改你的调用方式。
-
-要 wav 就一定拿到 wav：不管上游回的是 mp3 还是标着 `application/octet-stream` 的音频字节，
-CLI 都先看字节本身再决定要不要转一道，不会给你一个改后缀的假 wav；本机缺 ffmpeg 时，
-它是在调用上游（可能计费）**之前**就报错退出。
+要 wav 就一定拿到 wav：上游只出 mp3，CLI 先看字节本身再决定要不要用本机 ffmpeg 转一道，
+不会给你一个改后缀的假 wav；本机缺 ffmpeg 时，它是在调用上游（可能计费）**之前**就报错退出。
 
 用法与失败时的报错对照表见 [docs/speak.md](./docs/speak.md)；给 muse·tv 的接线方案见
 [docs/patches/muse-tv-museav-speak.patch](./docs/patches/muse-tv-museav-speak.patch)。

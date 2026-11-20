@@ -1,25 +1,36 @@
 /**
- * 语音合成的两条通道 —— `museav speak` 的底层实现。
+ * 语音合成的底层实现 —— `museav speak` 只走一条通道：直连 MiniMax 官方 TTS。
  *
- * 1) studio（默认）：走中台 POST /api/speak。中台是唯一的 API 入口与计费口径，
- *    个人 login / 租户 apiKey 都用这一条。
- * 2) minimax：直连 MiniMax 官方 TTS（api.minimaxi.com/v1/t2a_v2）。
- *    这是**绕过中台**的一条：它不认中台身份、不扣中台 credits、按上游账单走。
- *    中台的语音端点还没开放时（speak/transcribe 曾随 MiMo Token Plan 退订下线），
- *    只有这条路能立刻出声——所以它必须显式选（--provider minimax），不能默认走它。
+ * 为什么不走中台：截至 2026-11-20，中台**没有**语音合成端点，中台的语音协议层
+ * 随 MiMo Token Plan 退订时就删掉了，现网请求 /api/speak 等路径一律 405（路由不存在）。
+ * 中台是否重新接入语音要 owner 拍板，所以这里不写任何"中台契约"——
+ * 猜出来的路径和字段会被后人当成正式契约读，那比没有更糟。
  *
- * 通道契约不臆造：studio 的字段以中台实现为准；minimax 的字段与 reel-kit
- * （muse·tv）里那条实测能出声的调用逐字对齐，不是照着文档猜的。
+ * 直连意味着：这条命令**不需要中台身份**，也**不扣中台 credits**，费用直接记在
+ * 用户自己的 MiniMax 账户上。
+ *
+ * 字段不是照着文档猜的：与 reel-kit（muse·tv）里那条实测能出声的调用逐字对齐，
+ * 并且 2026-11-20 由中台侧实测复核（200 + base_resp.status_code=0，音频在 data.audio，
+ * 是 hex 字符串不是 base64 也不是直链）。
  */
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { readFile, rm, writeFile } from 'node:fs/promises'
-import type { SpeakResult } from './client.js'
 
 /** 直连上游用的音频格式：MiniMax 只出 mp3 */
 const MINIMAX_FORMAT = 'mp3'
 /** MiniMax 的默认模型档位（与 reel-kit 一致） */
 const MINIMAX_DEFAULT_MODEL = 'speech-02-hd'
+
+/** 语音合成结果：音频字节 + 用到的音色 */
+export interface SpeakResult {
+  /** 音频内容（已解码，不是 base64/hex 文本） */
+  data: Buffer
+  /** 音频 MIME */
+  mime: string
+  /** 实际用的音色 */
+  voice?: string
+}
 
 export interface SpeakInput {
   text: string
@@ -86,6 +97,9 @@ export async function speakViaMinimax(input: SpeakInput, apiKey: string): Promis
     throw new Error('MiniMax 直连必须指定 --voice <音色 ID>（例如 male-qn-qingse）')
   }
   const baseUrl = process.env.MINIMAX_TTS_BASE_URL || 'https://api.minimaxi.com'
+  // language_boost 是上游的顶层字段（不是 voice_setting 里的），只在上游文档列过的值里选；
+  // 不给 --language 就不发这个字段——上游自己会按文本判断语言
+  const languageBoost = languageBoostOf(input.language)
   const resp = await fetch(`${baseUrl}/v1/t2a_v2`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
@@ -93,6 +107,7 @@ export async function speakViaMinimax(input: SpeakInput, apiKey: string): Promis
       model: input.model || MINIMAX_DEFAULT_MODEL,
       text: input.text,
       stream: false,
+      ...(languageBoost ? { language_boost: languageBoost } : {}),
       voice_setting: { voice_id: input.voice, speed: input.speed ?? 1, vol: 1, pitch: 0 },
       audio_setting: { sample_rate: 32000, bitrate: 128000, format: MINIMAX_FORMAT, channel: 1 },
     }),
@@ -116,6 +131,18 @@ export async function speakViaMinimax(input: SpeakInput, apiKey: string): Promis
     mime: 'audio/mpeg',
     voice: input.voice,
   }
+}
+
+/**
+ * --language 的取值映射到上游 language_boost。
+ * 上游只认这几个值，写别的上游会拒；没给就返回 undefined（不发这个字段）。
+ */
+function languageBoostOf(language: string | undefined): 'Chinese' | 'English' | undefined {
+  if (!language) return undefined
+  const v = language.trim().toLowerCase()
+  if (v === 'zh' || v === 'zh-cn' || v === 'chinese' || v === '中文') return 'Chinese'
+  if (v === 'en' || v === 'en-us' || v === 'english' || v === '英文') return 'English'
+  throw new Error(`--language 只支持 zh / en（上游只认 Chinese / English），收到 "${language}"`)
 }
 
 /** 本机有没有 ffmpeg（有才能把 mp3 转成 wav） */

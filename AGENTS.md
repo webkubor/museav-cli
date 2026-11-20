@@ -114,15 +114,14 @@ museav image-to-template ./poster.jpg --name '暗金演唱会主视觉' --variab
 museav image-to-template ./poster.jpg --no-create      # dry run: draft JSON on stdout, nothing created
 
 # Text-to-speech: synthesize audio and write it to disk (stdout: the audio path, progress on stderr).
-# DEFAULT channel is the platform API (POST /api/speak), same auth as everything else.
-# ⚠️ The platform's speech endpoint was retired together with the MiMo Token Plan subscription
-#   and has not been reopened — right now `museav speak` against the platform returns 404.
-#   Until it reopens, use --provider minimax (calls MiniMax's TTS directly, BYPASSES the
-#   platform: no platform credits are charged, MiniMax bills you). Key comes from
-#   MINIMAX_API_KEY or `museav config --minimaxApiKey`.
+# The only channel is DIRECT to MiniMax's TTS (POST api.minimaxi.com/v1/t2a_v2) — it does
+#   NOT go through the platform: no platform login needed, no platform credits charged,
+#   MiniMax bills you directly. Key comes from MINIMAX_API_KEY or
+#   `museav config --minimaxApiKey`.
+# ⚠️ The platform has NO speech endpoint (retired with the MiMo Token Plan, not reopened),
+#   so there is no platform-side contract to call — `--provider studio` says so and exits.
 museav speak "the line to read" --voice male-qn-qingse --out ./line1.mp3
 museav speak --file script.txt --format wav --out ./line1.wav
-museav speak "hi" --provider minimax --voice male-qn-qingse --out ./hi.mp3
 
 # Upload a file (image/audio/video; type is detected from the bytes, not the extension)
 museav upload ./face.png

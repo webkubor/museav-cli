@@ -69,7 +69,7 @@ Skills marked "needs a reference image" require `--ref`; local files are uploade
 ## 🔥 What else it does
 
 - **🎬 Video** — `museav gen --video`: text-to-video, image-to-video, first/last frame, multimodal references
-- **🎙 Voiceover** — `museav speak "text to read"`: text-to-speech written to a local file, stdout is the audio path ([usage](./docs/speak.md))
+- **🎙 Voiceover** — `museav speak "text to read"`: text-to-speech written to a local file (direct to the upstream TTS, no platform credits), stdout is the audio path ([usage](./docs/speak.md))
 - **🖼 Reverse-engineer** — `museav reverse ./photo.jpg` reads SCULPT elements back out; chain it into generation
 - **🧩 Image to template** — `museav image-to-template ./poster.jpg` reads text layers, variabilizes them, saves a reusable template
 - **✂️ Local post-processing, free** — `remove-bg` / `upscale` / `remove-watermark` / `compress`: no login, no quota, works on Windows

@@ -5,10 +5,12 @@
  * 文本先写好，念白后合成，最后跟画面拼成片子。把它做成一条能单独跑的命令，
  * 意味着"这段话听着对不对"可以脱离整条片子先验收，而不是等片子渲完才发现念错字。
  *
- * 两条通道：
- *   studio（默认）—— 走中台 POST /api/speak。中台是唯一的 API 入口与计费口径。
- *   minimax       —— 直连 MiniMax 官方 TTS，**绕过中台**：不扣中台 credits，
- *                    按上游账单走。直连拿到的音频是 mp3；要 wav 会用本机 ffmpeg 转一道。
+ * 通道只有一条：**直连 MiniMax 官方 TTS**。
+ *
+ * 为什么不是走中台：截至 2026-11-20 中台**没有**语音合成端点——中台的语音协议层
+ * 随 MiMo Token Plan 退订时删掉了，现网请求一律 405（路由不存在）。所以这条命令
+ * **不需要中台身份**，也**不扣中台 credits**，费用直接记在用户自己的 MiniMax 账户上。
+ * 中台若重新接入语音，以届时给出的正式契约为准。
  *
  * stdout 契约：**只有落盘音频的绝对路径**（其余信息一律走 stderr），
  * 方便 shell 直接接：`OUT=$(museav speak "你好" --voice male-qn-qingse)`。
@@ -16,7 +18,6 @@
 import { existsSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
-import type { StudioClient } from '../client.js'
 import { loadConfigOptional } from '../config.js'
 import { hasFfmpeg, isWavBuffer, mp3ToWav, resolveSpeakText, speakViaMinimax } from '../speech.js'
 
@@ -39,12 +40,19 @@ function timestamp(): string {
   return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`
 }
 
-export async function speak(client: StudioClient | null, positional: string | undefined, opts: SpeakOptions): Promise<void> {
+export async function speak(positional: string | undefined, opts: SpeakOptions): Promise<void> {
   const text = await resolveSpeakText({ positional, text: opts.text, file: opts.file })
 
-  const provider = opts.provider || 'studio'
-  if (provider !== 'studio' && provider !== 'minimax') {
-    throw new Error(`未知的通道 "${provider}"。可用：studio（走中台，默认）、minimax（直连上游，绕过中台计费）`)
+  const provider = opts.provider || 'minimax'
+  if (provider === 'studio') {
+    throw new Error(
+      '中台没有语音合成端点：中台的语音通道已随 MiMo Token Plan 退订下线，现网未开放（路由不存在）。\n' +
+      '目前只有直连上游这一条通道：museav speak "文本" --voice <音色ID>（默认就是 --provider minimax）\n' +
+      '（自带 MiniMax API Key，不扣中台 credits；中台若重新接入语音，会先给出正式契约）',
+    )
+  }
+  if (provider !== 'minimax') {
+    throw new Error(`未知的通道 "${provider}"。目前只有 minimax（直连上游）一条通道`)
   }
 
   const format = (opts.format || 'mp3').toLowerCase()
@@ -52,8 +60,8 @@ export async function speak(client: StudioClient | null, positional: string | un
     throw new Error(`--format 只支持 mp3 / wav，收到 "${opts.format}"`)
   }
 
-  // 直连上游时中台身份用不上，所以凭证在需要时才要
-  const cfg = provider === 'minimax' ? loadConfigOptional() : null
+  // 直连上游用不到中台身份，所以凭证在需要时才要
+  const cfg = loadConfigOptional()
 
   // 要 wav 就得有 ffmpeg —— 这事得在调用上游（可能计费）之前问清楚
   if (format === 'wav' && !hasFfmpeg()) {
@@ -73,30 +81,17 @@ export async function speak(client: StudioClient | null, positional: string | un
   }
 
   process.stderr.write(
-    `合成中（通道 ${provider}${opts.voice ? ` · 音色 ${opts.voice}` : ''} · ${text.length} 字）...\n`,
+    `合成中（直连上游${opts.voice ? ` · 音色 ${opts.voice}` : ''} · ${text.length} 字）...\n`,
   )
 
   let data: Buffer
   let mime: string
-  let url: string | undefined
   let voiceUsed: string | undefined
 
-  if (provider === 'studio') {
-    if (!client) throw new Error('走中台的 speak 需要中台身份：museav login 或 museav config --apiKey')
-    const r = await client.speak(requested)
-    data = r.data
-    mime = r.mime
-    url = r.url
-    voiceUsed = r.voice
-    if (r.cost?.credits != null) {
-      process.stderr.write(`   中台计费：${r.cost.credits} ${r.cost.unit || 'credits'}\n`)
-    }
-  } else {
-    const r = await speakViaMinimax(requested, cfg?.minimaxApiKey || '')
-    data = r.data
-    mime = r.mime
-    voiceUsed = r.voice
-  }
+  const r = await speakViaMinimax(requested, cfg.minimaxApiKey || '')
+  data = r.data
+  mime = r.mime
+  voiceUsed = r.voice
 
   const outPath = resolveOutputPath(opts.out, format)
   if (existsSync(outPath) && !opts.overwrite) {
@@ -105,19 +100,17 @@ export async function speak(client: StudioClient | null, positional: string | un
   await mkdir(dirname(outPath), { recursive: true })
 
   if (format === 'wav' && !isWavBuffer(data)) {
-    // 回来的不是 wav（直连上游一定给 mp3；中台给什么由服务端说了算），
-    // 由本机 ffmpeg 转成 24k 单声道，跟视频链路后面的处理对齐
+    // 回来的不是 wav（上游默认给 mp3），由本机 ffmpeg 转成 24k 单声道，
+    // 跟视频链路后面的处理对齐
     await mp3ToWav(data, outPath)
   } else {
     await writeFile(outPath, data)
   }
+  if (format === 'wav') mime = 'audio/wav'
 
   const size = existsSync(outPath) ? (await import('node:fs')).statSync(outPath).size : data.length
   process.stderr.write(`✅ 已落盘：${outPath}（${(size / 1024).toFixed(1)} KB · ${mime}${voiceUsed ? ` · 音色 ${voiceUsed}` : ''}）\n`)
-  if (provider === 'minimax') {
-    process.stderr.write('   注意：直连上游不扣中台 credits，费用走 MiniMax 账单\n')
-  }
-  if (url) process.stderr.write(`   中台直链：${url}\n`)
+  process.stderr.write('   注意：直连上游，不扣中台 credits，费用走 MiniMax 账单\n')
 
   // stdout 只出路径：调用方要的是"音频在哪"，不是一段说明
   console.log(outPath)

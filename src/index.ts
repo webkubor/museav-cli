@@ -9,7 +9,7 @@ import { Command } from 'commander'
 import updateNotifier from 'update-notifier'
 import { StudioClient, SUBJECT_KINDS, PERSONA_SOURCES, ASSET_ROLES } from './client.js'
 import { TenantClient } from './tenant-client.js'
-import { loadConfig, loadConfigOptional, saveConfig, clearToken, DEFAULT_BASE_URL } from './config.js'
+import { loadConfig, saveConfig, clearToken, DEFAULT_BASE_URL } from './config.js'
 import { login } from './commands/login.js'
 import { bindFeishu } from './commands/bind-feishu.js'
 import { printWelcome } from './commands/welcome.js'
@@ -224,32 +224,20 @@ program
 
 program
   .command('speak [text]')
-  .description('文字转语音：合成音频并落盘，stdout 输出音频路径。默认走中台（POST /api/speak）')
+  .description('文字转语音：合成音频并落盘，stdout 输出音频路径。直连上游 TTS（不需要中台登录，不扣中台 credits）')
   .option('-t, --text <text>', '要合成的文本（也可直接作为位置参数）')
   .option('-f, --file <path>', '从文件读文本（"-" 读 stdin）')
-  .option('-v, --voice <id>', '音色 ID（如 male-qn-qingse）')
-  .option('-l, --language <lang>', '语言，如 zh / en')
-  .option('--format <fmt>', '音频格式 mp3（默认）/ wav')
+  .option('-v, --voice <id>', '音色 ID（如 male-qn-qingse）。必填')
+  .option('-l, --language <lang>', '语言：zh / en（不给就让上游自己判断）')
+  .option('--format <fmt>', '音频格式 mp3（默认）/ wav（wav 需要本机 ffmpeg 转一道）')
   .option('--speed <n>', '语速，1.0 为常速', (v) => Number(v))
   .option('-o, --out <path>', '输出文件（默认 ./speech-<时间戳>.<格式>）')
-  .option('--provider <name>', '通道：studio（走中台，默认）/ minimax（直连上游，绕过中台计费）')
-  .option('--model <name>', '模型 / 音色档位（studio=中台档位；minimax 默认 speech-02-hd）')
+  .option('--provider <name>', '通道：目前只有 minimax（直连上游）。中台未开放语音端点')
+  .option('--model <name>', '上游模型档位（默认 speech-02-hd）')
   .option('--overwrite', '允许覆盖已存在的输出文件')
   .action(async (text: string | undefined, opts: any) => {
     try {
-      const provider = opts.provider || 'studio'
-      const cfg = loadConfigOptional()
-      let client: StudioClient | null = null
-      if (provider === 'studio') {
-        if (!cfg.token && !cfg.apiKey) {
-          throw new Error(
-            '走中台的 speak 需要中台身份：museav login（个人）或 museav config --apiKey sk-studio-xxx（租户）\n' +
-            '（不想登录可以直连上游：museav speak --provider minimax --voice <音色ID>）',
-          )
-        }
-        client = new StudioClient(cfg)
-      }
-      await speak(client, text, opts)
+      await speak(text, opts)
     } catch (e) {
       process.stderr.write(`❌ ${(e as Error).message}\n`)
       process.exit(1)
@@ -645,7 +633,7 @@ program
   .option('--baseUrl <url>', '中台地址，默认 https://manager.museav.top')
   .option('--apiKey <key>', 'apiKey（sk-studio-xxx）')
   .option('--tenantBaseUrl <url>', '租户自己后台的域名，供 products/assets 命令用；已知租户（hym/mzmeso）不配也能跑')
-  .option('--minimaxApiKey <key>', 'MiniMax API Key（只有直连 TTS 用得到：museav speak --provider minimax）')
+  .option('--minimaxApiKey <key>', 'MiniMax API Key（`museav speak` 直连上游时需要）')
   .action(async (opts) => {
     if (!opts.baseUrl && !opts.apiKey && !opts.tenantBaseUrl && !opts.minimaxApiKey) {
       try {

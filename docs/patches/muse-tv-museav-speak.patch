@@ -1,6 +1,6 @@
 --- a/src/voice.mjs
 +++ b/src/voice.mjs
-@@ -237,10 +237,27 @@
+@@ -237,10 +237,25 @@
    const results = []
  
    if (engine === 'museav') {
@@ -8,15 +8,13 @@
 -      'museav 配音已下线：中台的 CLI 里没有 speak 命令，这条路径从来没能跑通。\n' +
 -      '  改用 --voice-engine edge（微软 Edge 在线免费高保真）、--voice-engine mimo（小米 MiMo，限时免费）、--voice-engine minimax（云端 TTS），或在 Reel Studio 里选相应通道。',
 -    )
-+    // museav speak（museav-cli 3.17.0+）：中台语音通道，逐句合成 wav。
-+    // 桌面版从 Finder 启动时 PATH 很干净，命令路径用 MUSEA_BIN 覆盖；
-+    // 中台语音端点还没开放时，REEL_MUSEA_PROVIDER=minimax 走直连上游（不扣中台 credits）。
++    // museav speak（museav-cli 3.17.0+）：直连上游 TTS，逐句合成 wav。
++    // 桌面版从 Finder 启动时 PATH 很干净，命令路径用 MUSEA_BIN 覆盖。
 +    const bin = process.env.MUSEA_BIN || 'museav'
-+    const provider = process.env.REEL_MUSEA_PROVIDER || 'studio'
 +    for (let i = 0; i < captions.length; i++) {
 +      const text = String(captions[i])
 +      const out = join(outDir, `voice_${String(i).padStart(4, '0')}.wav`)
-+      const args = ['speak', text, '--format', 'wav', '--overwrite', '--out', out, '--provider', provider]
++      const args = ['speak', text, '--format', 'wav', '--overwrite', '--out', out]
 +      if (voice) args.push('--voice', voice)
 +      try {
 +        await run(bin, args)

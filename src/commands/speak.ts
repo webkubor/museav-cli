@@ -18,7 +18,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 import type { StudioClient } from '../client.js'
 import { loadConfigOptional } from '../config.js'
-import { mp3ToWav, resolveSpeakText, speakViaMinimax } from '../speech.js'
+import { hasFfmpeg, mp3ToWav, resolveSpeakText, speakViaMinimax } from '../speech.js'
 
 export interface SpeakOptions {
   text?: string
@@ -54,6 +54,14 @@ export async function speak(client: StudioClient | null, positional: string | un
 
   // 直连上游时中台身份用不上，所以凭证在需要时才要
   const cfg = provider === 'minimax' ? loadConfigOptional() : null
+
+  // 要 wav 就得有 ffmpeg —— 这事得在调用上游（可能计费）之前问清楚
+  if (provider === 'minimax' && format === 'wav' && !hasFfmpeg()) {
+    throw new Error(
+      '要 wav 需要本机装 ffmpeg（本机没找到）。\n' +
+      '先合成 mp3 再自行转码，或改用 --format mp3。',
+    )
+  }
 
   const requested = {
     text,

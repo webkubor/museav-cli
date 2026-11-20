@@ -13,7 +13,7 @@
  */
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { readFile, writeFile } from 'node:fs/promises'
+import { readFile, rm, writeFile } from 'node:fs/promises'
 import type { SpeakResult } from './client.js'
 
 /** 直连上游用的音频格式：MiniMax 只出 mp3 */
@@ -140,9 +140,14 @@ export async function mp3ToWav(mp3: Buffer, outPath: string): Promise<void> {
       : '/usr/bin/ffmpeg'
   const tmp = `${outPath}.tmp.mp3`
   await writeFile(tmp, mp3)
-  await new Promise<void>((resolve, reject) => {
-    const child = spawn(bin, ['-y', '-loglevel', 'error', '-i', tmp, '-ar', '24000', '-ac', '1', outPath])
-    child.on('error', reject)
-    child.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`ffmpeg 转换失败（退出码 ${code}）`))))
-  })
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const child = spawn(bin, ['-y', '-loglevel', 'error', '-i', tmp, '-ar', '24000', '-ac', '1', outPath])
+      child.on('error', reject)
+      child.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`ffmpeg 转换失败（退出码 ${code}）`))))
+    })
+  } finally {
+    // 中间文件用完就删：留个 .tmp.mp3 在输出目录里，下一次同名的合成会以为文件已存在
+    await rm(tmp, { force: true })
+  }
 }

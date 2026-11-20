@@ -9,7 +9,7 @@ import { Command } from 'commander'
 import updateNotifier from 'update-notifier'
 import { StudioClient, SUBJECT_KINDS, PERSONA_SOURCES, ASSET_ROLES } from './client.js'
 import { TenantClient } from './tenant-client.js'
-import { loadConfig, saveConfig, clearToken, DEFAULT_BASE_URL } from './config.js'
+import { loadConfig, loadConfigOptional, saveConfig, clearToken, DEFAULT_BASE_URL } from './config.js'
 import { login } from './commands/login.js'
 import { bindFeishu } from './commands/bind-feishu.js'
 import { printWelcome } from './commands/welcome.js'
@@ -35,6 +35,7 @@ import { assets } from './commands/assets.js'
 import { stickers, createSticker } from './commands/stickers.js'
 import { posterTemplates, createPosterTemplate, updatePosterTemplate, removePosterTemplate } from './commands/poster-templates.js'
 import { registerShop } from './commands/shop.js'
+import { speak } from './commands/speak.js'
 
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8')) as { name: string; version: string }
 // 每 12 小时最多查一次 npm registry，过期才提示，不拖慢日常调用
@@ -220,6 +221,40 @@ program
   .option('--duration <sec>', '目标时长（秒）：只作上下文告诉增强器这段片子多长，不创建视频任务', (v) => Number(v))
   .option('-r, --ratio <ratio>', '目标宽高比: 3:4 / 9:16 / 1:1 / 4:3 / 16:9（同样只作上下文）')
   .action(withClient((client: StudioClient, opts: any) => enhance(client, opts)))
+
+program
+  .command('speak [text]')
+  .description('文字转语音：合成音频并落盘，stdout 输出音频路径。默认走中台（POST /api/speak）')
+  .option('-t, --text <text>', '要合成的文本（也可直接作为位置参数）')
+  .option('-f, --file <path>', '从文件读文本（"-" 读 stdin）')
+  .option('-v, --voice <id>', '音色 ID（如 male-qn-qingse）')
+  .option('-l, --language <lang>', '语言，如 zh / en')
+  .option('--format <fmt>', '音频格式 mp3（默认）/ wav')
+  .option('--speed <n>', '语速，1.0 为常速', (v) => Number(v))
+  .option('-o, --out <path>', '输出文件（默认 ./speech-<时间戳>.<格式>）')
+  .option('--provider <name>', '通道：studio（走中台，默认）/ minimax（直连上游，绕过中台计费）')
+  .option('--model <name>', '模型 / 音色档位（studio=中台档位；minimax 默认 speech-02-hd）')
+  .option('--overwrite', '允许覆盖已存在的输出文件')
+  .action(async (text: string | undefined, opts: any) => {
+    try {
+      const provider = opts.provider || 'studio'
+      const cfg = loadConfigOptional()
+      let client: StudioClient | null = null
+      if (provider === 'studio') {
+        if (!cfg.token && !cfg.apiKey) {
+          throw new Error(
+            '走中台的 speak 需要中台身份：museav login（个人）或 museav config --apiKey sk-studio-xxx（租户）\n' +
+            '（不想登录可以直连上游：museav speak --provider minimax --voice <音色ID>）',
+          )
+        }
+        client = new StudioClient(cfg)
+      }
+      await speak(client, text, opts)
+    } catch (e) {
+      process.stderr.write(`❌ ${(e as Error).message}\n`)
+      process.exit(1)
+    }
+  })
 
 program
   .command('compress <file>')
@@ -610,15 +645,17 @@ program
   .option('--baseUrl <url>', '中台地址，默认 https://manager.museav.top')
   .option('--apiKey <key>', 'apiKey（sk-studio-xxx）')
   .option('--tenantBaseUrl <url>', '租户自己后台的域名，供 products/assets 命令用；已知租户（hym/mzmeso）不配也能跑')
+  .option('--minimaxApiKey <key>', 'MiniMax API Key（只有直连 TTS 用得到：museav speak --provider minimax）')
   .action(async (opts) => {
-    if (!opts.baseUrl && !opts.apiKey && !opts.tenantBaseUrl) {
+    if (!opts.baseUrl && !opts.apiKey && !opts.tenantBaseUrl && !opts.minimaxApiKey) {
       try {
         const cfg = loadConfig()
         process.stderr.write(
           `当前配置 (~/.museav.json):\n` +
           `  baseUrl: ${cfg.baseUrl}\n` +
           `  apiKey: ${cfg.apiKey ? cfg.apiKey.slice(0, 16) + '...' : '(未设置)'}\n` +
-          `  tenantBaseUrl: ${cfg.tenantBaseUrl || '(未设置，products/assets 对已知租户用内置默认值)'}\n`,
+          `  tenantBaseUrl: ${cfg.tenantBaseUrl || '(未设置，products/assets 对已知租户用内置默认值)'}\n` +
+          `  minimaxApiKey: ${cfg.minimaxApiKey ? cfg.minimaxApiKey.slice(0, 12) + '...' : '(未设置，仅直连 TTS 需要)'}\n`,
 
         )
       } catch (e) {
@@ -632,7 +669,8 @@ program
       `✅ 已保存到 ~/.museav.json\n` +
       `  baseUrl: ${cfg.baseUrl}\n` +
       `  apiKey: ${cfg.apiKey ? cfg.apiKey.slice(0, 16) + '...' : '(未设置)'}\n` +
-      `  tenantBaseUrl: ${cfg.tenantBaseUrl || '(未设置)'}\n`,
+      `  tenantBaseUrl: ${cfg.tenantBaseUrl || '(未设置)'}\n` +
+      `  minimaxApiKey: ${cfg.minimaxApiKey ? cfg.minimaxApiKey.slice(0, 12) + '...' : '(未设置)'}\n`,
     )
     // 配置了 apiKey 就识别身份打招呼（租户欢迎；个人 token 场景欢迎在 login 后打）
     if (opts.apiKey) {

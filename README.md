@@ -69,6 +69,7 @@ museav gen --skill product-on-model --input "米白色针织衫" --ref ./模特�
 ## 🔥 还能干什么
 
 - **🎬 出视频** —— `museav gen --video`，文生视频/图生视频，首尾帧与多模态参考素材都支持
+- **🎙 配音** —— `museav speak "要念的句子"`，文字转语音并落盘，stdout 只给音频路径（[用法](./docs/speak.md)）
 - **🖼 读图反推** —— `museav reverse ./图.jpg` 反推 SCULPT 六要素和提示词，跟出图串成一条龙
 - **🧩 一张图变模板** —— `museav image-to-template ./海报.jpg`，读文字层 + 变量化 + 建成可复用模板
 - **✂️ 本地后期，不花钱** —— `remove-bg` / `upscale` / `remove-watermark` / `compress`，免登录、不耗额度、Windows 也能跑

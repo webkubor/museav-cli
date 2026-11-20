@@ -1,5 +1,43 @@
 # Changelog
 
+## 3.17.0 (2026-11-20)
+
+### 有了 `museav speak`：文字转语音，音频直接落到本地
+
+以前想给一段文字配音，只能自己找 TTS 服务、自己管 key、自己处理返回的是直链还是 base64，
+再把文件搬到该在的地方。muse·tv（reel-kit）的配音链路更是卡得更死：它的 `--voice-engine museav`
+这一档从来就没跑通过——它调的那个 `museav speak` 命令，CLI 里根本不存在，调下去必然
+`unknown command`。
+
+现在这条命令有了：
+
+```bash
+museav speak "第三集开始，雨水顺着屋檐落下来" --voice male-qn-qingse --out ./line1.mp3
+```
+
+**stdout 只有落盘音频的绝对路径**，其余信息一律走 stderr。要接进别的流程，直接
+`OUT=$(museav speak "...")` 就拿到文件位置。文本可以给在位置参数、`--text` 或者 `--file`
+（`-` 读 stdin）里，三者只能选一处，给多处会直接报错而不是猜你什么意思。
+
+**要留意的一处现状**：默认通道走中台 `POST /api/speak`，但中台的语音端点曾经随小米 MiMo
+Token Plan 的退订一起下线（`speak` / `transcribe` 一并清掉），至今没有重新开放。所以现在
+直接 `museav speak` 会拿到中台的 404，CLI 会把这件事原样讲清楚，不是一句天书。要立刻出声，
+用直连上游那条：
+
+```bash
+export MINIMAX_API_KEY=...        # 或 museav config --minimaxApiKey ...
+museav speak "今天天气不错" --provider minimax --voice male-qn-qingse --out ./a.mp3
+```
+
+直连这条路**绕过中台**：不认中台身份、不扣中台 credits，费用直接走 MiniMax 的账单；
+它只出 mp3，要 wav 会用本机 ffmpeg 转成 24kHz 单声道（本机没装 ffmpeg 会明确报错，
+不会给出一个看起来成功的假 wav）。等中台把语音端点重新开放，默认通道自然接管，
+不用改你的调用方式。
+
+用法与失败时的报错对照表见 [docs/speak.md](./docs/speak.md)；给 muse·tv 的接线方案见
+[docs/patches/muse-tv-museav-speak.patch](./docs/patches/muse-tv-museav-speak.patch)。
+
+
 ## 3.16.2 (2026-11-18)
 
 ### 主仓搬回 GitHub，欢迎语里的仓库链接跟着修

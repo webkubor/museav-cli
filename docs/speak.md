@@ -74,3 +74,39 @@ museav speak "$TEXT" --voice "$VOICE" --format wav --out "$OUT" --overwrite
 | 直连没给音色 | `MiniMax 直连必须指定 --voice <音色 ID>` |
 | 输出文件已存在 | `输出文件已存在：…（要覆盖加 --overwrite）` |
 | 文本给了多处 | `文本只能给一处：位置参数 / --text / --file 三选一` |
+
+## 真实调用：命令、权限与消耗（等 owner 点头再跑）
+
+下面两条都是**真花钱**的调用。跑之前需要 owner 明确点头。
+
+### A. 直连 MiniMax（今天就能跑，不需要中台配合）
+
+```bash
+# key 来源二选一：环境变量（CI / agent 注入）或 ~/.museav.json（权限 0600）
+export MINIMAX_API_KEY=sk-xxx
+# 或： museav config --minimaxApiKey sk-xxx
+
+museav speak "第三集开始，雨水顺着屋檐落下来" \
+  --provider minimax --voice male-qn-qingse --out ./line1.mp3
+```
+
+- **所需权限**：一把 MiniMax 账号 key，只需要 TTS 合成能力。不碰中台身份，不扣中台
+  credits，也不需要中台管理员权限——这条通道**绕过中台**，账单直接落在 MiniMax。
+- **预计消耗**：按 MiniMax 官方按量价，`speech-02-hd` 约 **$1.00 / 1 万字符**
+  （`speech-02-turbo` 约 $0.60 / 1 万字符）。一句话 30 字大约 $0.003。
+  来源：[MiniMax 按量价页](https://platform.minimax.io/docs/guides/pricing-payg)（2026-11-20 检索，
+  未在官方页面上二次复核，下单前请以官网为准）。本 CLI 默认档位是 `speech-02-hd`，
+  要更省可以 `--model speech-02-turbo`。
+
+### B. 走中台（等中台开放 `/api/speak` 之后）
+
+```bash
+museav login                                     # 个人身份
+# 或： museav config --apiKey sk-studio-xxx      # 租户身份
+museav speak "第三集开始，雨水顺着屋檐落下来" --voice male-qn-qingse --out ./line1.mp3
+```
+
+- **所需权限**：中台身份即可（个人 JWT 或租户 `sk-studio-xxx`），**不需要管理员权限**。
+- **预计消耗**：按中台的计费口径扣 credits —— **具体扣多少由中台决定，当前尚未定义**
+  （中台的语音端点还下线着，计费口径没跟上来）。中台把这条定下来之前，不要按现在的
+  直连价格去预估中台通道的成本。

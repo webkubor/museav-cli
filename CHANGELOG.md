@@ -32,7 +32,8 @@ museav speak "第三集开始，雨水顺着屋檐落下来" --voice male-qn-qin
 不会给你一个改后缀的假 wav；本机缺 ffmpeg 时，它是在调用上游（可能计费）**之前**就报错退出。
 
 用法与失败时的报错对照表见 [docs/speak.md](./docs/speak.md)；给 muse·tv 的接线方案见
-[docs/patches/muse-tv-museav-speak.patch](./docs/patches/muse-tv-museav-speak.patch)。
+[docs/patches/muse-tv-museav-speak.patch](./docs/patches/muse-tv-museav-speak.patch)
+（该接线已在 reel-kit 的 `feat/museav-speak-voice` 分支落地，尚未合并 main）。
 
 
 ## 3.16.2 (2026-11-18)

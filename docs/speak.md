@@ -73,13 +73,34 @@ museav speak "$TEXT" --voice "$VOICE" --format wav --out "$OUT" --overwrite
 # stdout 就是 $OUT 的路径
 ```
 
-接线方案见 [`docs/patches/muse-tv-museav-speak.patch`](./patches/muse-tv-museav-speak.patch)
-（纯 unified diff，`git apply -p1` 就能落到 reel-kit 仓根目录；该改动在 reel-kit 仓，
-本仓只给方案，不越界改别人的代码）。补丁里认一个环境变量：
+### 已经落地了
+
+接线在 reel-kit 仓（远端 `museav-ai/muse-tv`）落到了分支 `feat/museav-speak-voice`、
+commit `ace4666`，**尚未合并 main**，等评审。落地版比本仓原先给的方案多补了三点，
+都是跑起来才暴露的坑：
+
+- 音色给默认值 `male-qn-qingse`（`speak` 必填 `--voice`，不给会让整条链路因为一个
+  可省参数挂掉；可用 `REEL_MUSEA_VOICE` 覆盖）；
+- 显式透传 `MINIMAX_API_KEY`——CLI 只认自己的 `~/.museav.json`，而 reel-kit 的密钥在
+  `~/.reel-kit/config.json`，不透传就是「配了却不认」；
+- 失败时报到具体第几句，并提示需要 museav-cli 3.17.0+。
+
+接线方案（纯 unified diff，`git apply -p1` 落到 reel-kit 仓根目录）同步在
+[`docs/patches/muse-tv-museav-speak.patch`](./patches/muse-tv-museav-speak.patch)，
+内容与实际落地的 `ace4666` 一致。该改动在 reel-kit 仓，本仓只给方案、不越界改别人的代码。
+落地版认三个环境变量：
 
 | 变量 | 作用 | 默认 |
 | --- | --- | --- |
 | `MUSEA_BIN` | `museav` 可执行文件的绝对路径（桌面版从 Finder 启动时 PATH 很干净） | `museav`（走 PATH） |
+| `REEL_MUSEA_VOICE` | 音色 ID | `male-qn-qingse` |
+| `MINIMAX_API_KEY` | MiniMax key；不设则回落到 `~/.reel-kit/config.json` 的 `minimaxApiKey` | — |
+
+### 还没打通的两处
+
+- **CLI 要先发版**：3.17.0 还没发 npm，`museav speak` 目前只有本地构建可用。
+- **桌面版打包资源要刷新**：桌面版内置的 museav-cli 还是 3.16.0，CLI 发版后要跑
+  reel-kit 的 `scripts/prepare-resources.sh` 重新打包，Reel Studio 里才能直接用这个后端。
 
 ## 要 wav，就一定拿到 wav
 

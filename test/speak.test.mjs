@@ -14,10 +14,11 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import { execFile } from 'node:child_process'
-import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { chmod, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { assertAudioBytes, decodeAudioHex, findFfmpeg, sniffAudioFormat, validateSpeed } from '../dist/speech.js'
 
 const CLI = fileURLToPath(new URL('../dist/index.js', import.meta.url))
 
@@ -191,11 +192,147 @@ test('speak：输出文件已存在时不覆盖（--overwrite 才覆盖）', asy
   }
 })
 
-test('speak：--format wav 时落盘的是真 wav（不是改后缀的 mp3）', async (t) => {
-  const hasFfmpeg = await new Promise((r) => {
-    execFile('which', ['ffmpeg'], (err) => r(!err))
+test('speak：上游回空音频时退出码 1 且不落盘', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'museav-speak-'))
+  try {
+    await withUpstream(() => {}, async (baseUrl) => {
+      const out = join(dir, 'empty.mp3')
+      const r = await runCli(['speak', '你好', '--voice', 'male-qn-qingse', '--out', out], {
+        MINIMAX_TTS_BASE_URL: baseUrl,
+        MINIMAX_API_KEY: 'mock-key',
+      })
+      assert.equal(r.code, 1)
+      assert.match(r.stderr, /音频/)
+      assert.deepEqual(await readdir(dir), [], '空音频不该落任何文件')
+    }, { audioHex: '   ' })
+  } finally {
+    await rm(dir, { recursive: true, force: true })
+  }
+})
+
+test('speak：上游回非法 hex 时退出码 1 且不落盘', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'museav-speak-'))
+  try {
+    await withUpstream(() => {}, async (baseUrl) => {
+      const out = join(dir, 'badhex.mp3')
+      const r = await runCli(['speak', '你好', '--voice', 'male-qn-qingse', '--out', out], {
+        MINIMAX_TTS_BASE_URL: baseUrl,
+        MINIMAX_API_KEY: 'mock-key',
+      })
+      assert.equal(r.code, 1)
+      assert.match(r.stderr, /hex/)
+      assert.deepEqual(await readdir(dir), [], '非法 hex 不该落任何文件')
+    }, { audioHex: 'zzzz' })
+  } finally {
+    await rm(dir, { recursive: true, force: true })
+  }
+})
+
+test('speak：上游回的不是音频时退出码 1 且不落盘', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'museav-speak-'))
+  try {
+    await withUpstream(() => {}, async (baseUrl) => {
+      const out = join(dir, 'notaudio.mp3')
+      const r = await runCli(['speak', '你好', '--voice', 'male-qn-qingse', '--out', out], {
+        MINIMAX_TTS_BASE_URL: baseUrl,
+        MINIMAX_API_KEY: 'mock-key',
+      })
+      assert.equal(r.code, 1)
+      assert.match(r.stderr, /不是音频/)
+      assert.deepEqual(await readdir(dir), [], '非音频内容不该落任何文件')
+    }, { audioHex: Buffer.from('{"error":"boom"}').toString('hex') })
+  } finally {
+    await rm(dir, { recursive: true, force: true })
+  }
+})
+
+test('speak：--speed 不是数字时在调用上游之前就报错', async () => {
+  let called = false
+  await withUpstream(() => { called = true }, async (baseUrl) => {
+    const r = await runCli(['speak', '你好', '--voice', 'male-qn-qingse', '--speed', 'abc'], {
+      MINIMAX_TTS_BASE_URL: baseUrl,
+      MINIMAX_API_KEY: 'mock-key',
+    })
+    assert.equal(r.code, 1)
+    assert.match(r.stderr, /--speed/)
+    assert.match(r.stderr, /abc/)
   })
-  if (!hasFfmpeg) return t.skip('本机没有 ffmpeg，跳过转码用例')
+  assert.equal(called, false, '语速不合法时不该打到上游（那会计费）')
+})
+
+test('speak：--speed 超出范围时在调用上游之前就报错', async () => {
+  let called = false
+  await withUpstream(() => { called = true }, async (baseUrl) => {
+    const r = await runCli(['speak', '你好', '--voice', 'male-qn-qingse', '--speed', '9'], {
+      MINIMAX_TTS_BASE_URL: baseUrl,
+      MINIMAX_API_KEY: 'mock-key',
+    })
+    assert.equal(r.code, 1)
+    assert.match(r.stderr, /--speed/)
+  })
+  assert.equal(called, false, '语速越界时不该打到上游（那会计费）')
+})
+
+test('speak：--speed 合法值照常发给上游', async () => {
+  await withUpstream((parsed) => {
+    assert.equal(parsed.voice_setting.speed, 1.25)
+  }, async (baseUrl) => {
+    const dir = await mkdtemp(join(tmpdir(), 'museav-speak-'))
+    const r = await runCli(['speak', '你好', '--voice', 'male-qn-qingse', '--speed', '1.25', '--out', join(dir, 'sp.mp3')], {
+      MINIMAX_TTS_BASE_URL: baseUrl,
+      MINIMAX_API_KEY: 'mock-key',
+    })
+    assert.equal(r.code, 0, `stderr: ${r.stderr}`)
+    await rm(dir, { recursive: true, force: true })
+  })
+})
+
+test('音频字节校验：空值与非法 hex 都被拦下', () => {
+  assert.throws(() => decodeAudioHex(''), /空的（0 字节）/)
+  assert.throws(() => decodeAudioHex('   '), /空的（0 字节）/)
+  assert.throws(() => decodeAudioHex('abc'), /不是合法的 hex/)
+  assert.throws(() => decodeAudioHex('zz'), /不是合法的 hex/)
+  assert.equal(decodeAudioHex('494433').toString('ascii'), 'ID3')
+})
+
+test('音频魔数嗅探：真 mp3 / wav 通过，别的字节被拒', () => {
+  assert.equal(sniffAudioFormat(Buffer.from('ID3\x03\x00', 'binary')), 'mp3')
+  assert.equal(sniffAudioFormat(Buffer.from('fffb9064', 'hex')), 'mp3')
+  assert.equal(sniffAudioFormat(Buffer.from('524946462000000057415645', 'hex')), 'wav')
+  assert.equal(sniffAudioFormat(Buffer.from('{"error":1}', 'utf-8')), null)
+  assert.throws(() => assertAudioBytes(Buffer.from('{"error":1}', 'utf-8')), /不是音频/)
+  assert.doesNotThrow(() => assertAudioBytes(fakeMp3()))
+})
+
+test('语速校验：只收 0.5–2.0 的数字', () => {
+  assert.equal(validateSpeed(undefined), undefined)
+  assert.equal(validateSpeed(1), 1)
+  assert.equal(validateSpeed('1.5'), 1.5)
+  assert.throws(() => validateSpeed('abc'), /--speed/)
+  assert.throws(() => validateSpeed(''), /--speed/)
+  assert.throws(() => validateSpeed('0.1'), /范围/)
+  assert.throws(() => validateSpeed('3'), /范围/)
+})
+
+test('ffmpeg 探测：PATH 里有就能找到（哪怕不在那三条硬编码路径里）', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'museav-ffmpeg-'))
+  const oldPath = process.env.PATH
+  try {
+    // 造一个只在 PATH 里、绝不在 /usr/bin、/opt/homebrew/bin、/usr/local/bin 的 ffmpeg
+    const fake = join(dir, 'ffmpeg')
+    await writeFile(fake, '#!/bin/sh\necho "ffmpeg version 0.0-test"\n')
+    await chmod(fake, 0o755)
+    process.env.PATH = dir
+    assert.equal(findFfmpeg(), 'ffmpeg', 'PATH 里的 ffmpeg 应该被找到')
+  } finally {
+    process.env.PATH = oldPath
+    await rm(dir, { recursive: true, force: true })
+  }
+})
+
+test('speak：--format wav 时落盘的是真 wav（不是改后缀的 mp3）', async (t) => {
+  // 用实现自己的探测口径（本仓怎么找 ffmpeg，测试就怎么找），不再拿 which 另开一套
+  if (!findFfmpeg()) return t.skip('本机没有 ffmpeg，跳过转码用例')
 
   const dir = await mkdtemp(join(tmpdir(), 'museav-speak-'))
   try {

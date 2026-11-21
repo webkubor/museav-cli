@@ -1,7 +1,7 @@
 /**
  * museav speak —— 文字转语音，把音频落到本地文件
  *
- * 为什么要单独一条命令：配音是视频链路（muse·tv / reel-kit）里独立的一步——
+ * 为什么要单独一条命令：配音是视频链路（muse·tv）里独立的一步——
  * 文本先写好，念白后合成，最后跟画面拼成片子。把它做成一条能单独跑的命令，
  * 意味着"这段话听着对不对"可以脱离整条片子先验收，而不是等片子渲完才发现念错字。
  *
@@ -19,7 +19,7 @@ import { existsSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 import { loadConfigOptional } from '../config.js'
-import { hasFfmpeg, isWavBuffer, mp3ToWav, resolveSpeakText, speakViaMinimax } from '../speech.js'
+import { hasFfmpeg, assertAudioBytes, isWavBuffer, mp3ToWav, resolveSpeakText, speakViaMinimax, validateSpeed } from '../speech.js'
 
 export interface SpeakOptions {
   text?: string
@@ -27,7 +27,7 @@ export interface SpeakOptions {
   voice?: string
   language?: string
   format?: string
-  speed?: number
+  speed?: number | string
   out?: string
   provider?: string
   model?: string
@@ -60,6 +60,9 @@ export async function speak(positional: string | undefined, opts: SpeakOptions):
     throw new Error(`--format 只支持 mp3 / wav，收到 "${opts.format}"`)
   }
 
+  // 语速要在调用上游（可能计费）之前就拦下来：非法值不发给上游
+  const speed = validateSpeed(opts.speed)
+
   // 直连上游用不到中台身份，所以凭证在需要时才要
   const cfg = loadConfigOptional()
 
@@ -76,7 +79,7 @@ export async function speak(positional: string | undefined, opts: SpeakOptions):
     voice: opts.voice,
     language: opts.language,
     format: format as 'mp3' | 'wav',
-    speed: opts.speed,
+    speed,
     model: opts.model,
   }
 
@@ -92,6 +95,9 @@ export async function speak(positional: string | undefined, opts: SpeakOptions):
   data = r.data
   mime = r.mime
   voiceUsed = r.voice
+
+  // 落盘之前先看一眼这段字节：不是音频就别写（写了就是 0 字节或一段垃圾，还报"成功"）
+  assertAudioBytes(data)
 
   const outPath = resolveOutputPath(opts.out, format)
   if (existsSync(outPath) && !opts.overwrite) {

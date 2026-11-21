@@ -230,7 +230,7 @@ program
   .option('-v, --voice <id>', '音色 ID（如 male-qn-qingse）。必填')
   .option('-l, --language <lang>', '语言：zh / en（不给就让上游自己判断）')
   .option('--format <fmt>', '音频格式 mp3（默认）/ wav（wav 需要本机 ffmpeg 转一道）')
-  .option('--speed <n>', '语速，1.0 为常速', (v) => Number(v))
+  .option('--speed <n>', '语速，1.0 为常速（0.5–2.0）', (v) => v)
   .option('-o, --out <path>', '输出文件（默认 ./speech-<时间戳>.<格式>）')
   .option('--provider <name>', '通道：目前只有 minimax（直连上游）。中台未开放语音端点')
   .option('--model <name>', '上游模型档位（默认 speech-02-hd）')

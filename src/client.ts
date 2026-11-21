@@ -897,7 +897,7 @@ export class StudioClient {
      }
    }
 
-   /** 提交视频任务（POST /api/videos）——video 走独立链路，不走图片 queue */
+  /** 提交视频任务（POST /api/videos）——video 走独立链路，不走图片 queue */
    async generateVideo(opts: {
      prompt?: string
      model?: string

@@ -1,5 +1,51 @@
 # Changelog
 
+## 3.17.0 (2026-11-20)
+
+### 有了 `museav speak`：文字转语音，音频直接落到本地
+
+以前想给一段文字配音，只能自己找 TTS 服务、自己管 key、自己处理返回的是直链还是 base64，
+再把文件搬到该在的地方。muse·tv 的配音链路更是卡得更死：它的 `--voice-engine museav`
+这一档从来就没跑通过——它调的那个 `museav speak` 命令，CLI 里根本不存在，调下去必然
+`unknown command`。
+
+现在这条命令有了：
+
+```bash
+export MINIMAX_API_KEY=...        # 或 museav config --minimaxApiKey ...
+museav speak "第三集开始，雨水顺着屋檐落下来" --voice male-qn-qingse --out ./line1.mp3
+```
+
+**stdout 只有落盘音频的绝对路径**，其余信息一律走 stderr。要接进别的流程，直接
+`OUT=$(museav speak "...")` 就拿到文件位置。文本可以给在位置参数、`--text` 或者 `--file`
+（`-` 读 stdin）里，三者只能选一处，给多处会直接报错而不是猜你什么意思。
+
+**一条通道，直连上游**：这条命令直连 MiniMax 的 TTS，**不认中台身份、不扣中台 credits**，
+费用直接走你自己的 MiniMax 账单（按量计费）。
+
+为什么不是走中台：中台的语音端点随小米 MiMo Token Plan 的退订一起下线了（`speak` /
+`transcribe` 一并清掉），至今没有重新开放——现网请求那些路径一律 405，路由根本不存在。
+与其把猜出来的路径和字段写进文档、让人当成正式契约来读，不如直说：现在只有直连上游
+这一条通道。中台若重新接入语音，会以正式契约为准补进来。
+
+要 wav 就一定拿到 wav：上游只出 mp3，CLI 先看字节本身再决定要不要用本机 ffmpeg 转一道，
+不会给你一个改后缀的假 wav；本机缺 ffmpeg 时，它是在调用上游（可能计费）**之前**就报错退出。
+
+用法与失败时的报错对照表见 [docs/speak.md](./docs/speak.md)；muse·tv 那边已经接上这条链路，
+改动落在 muse-tv 仓的 commit `ace4666`，并已随 PR #4 合入 main（merge commit `0916407`）。
+[docs/patches/muse-tv-museav-speak.patch](./docs/patches/muse-tv-museav-speak.patch) 里那份
+接线方案现在只当历史记录留着——对应的改动已经在 muse-tv 的 main 里，对当前代码再
+`git apply` 是打不上的。
+
+音频落地这头也补了校验：上游回空内容、回了不是 hex 的字符串、或者回了一段根本不是音频的
+字节，CLI 都会在写文件之前就报错退出（退出码 1），不再写出一个 0 字节文件然后告诉你
+"成功"。真 mp3 和真 wav 不受影响，照常放行。
+
+另外 `--speed` 现在只收 0.5–2.0 之间的数字，非法值（比如 `abc`）会在调用上游（可能计费）
+之前就报错，而不是变成 NaN 发给上游；找 ffmpeg 也改成先看 PATH，Windows 和 MacPorts 这类
+装法不再被误判成"没装"。
+
+
 ## 3.16.2 (2026-11-18)
 
 ### 主仓搬回 GitHub，欢迎语里的仓库链接跟着修

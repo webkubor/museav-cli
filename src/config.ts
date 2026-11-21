@@ -44,6 +44,14 @@ export interface StudioConfig {
    * 其他租户或本地联调时才需要显式配置。
    */
   tenantBaseUrl?: string
+  /**
+   * MiniMax API Key（`museav speak` 直连上游时用）。
+   *
+   * 目前只有直连上游这一条通道用得到它（中台未开放语音端点）。
+   * 存在 ~/.museav.json（0600）里，是因为桌面版从 Finder 启动时没有终端环境变量，
+   * 用户没法自己 export——跟 reel-kit 存 ~/.reel-kit/config.json 是同一个理由。
+   */
+  minimaxApiKey?: string
 }
 
 /**
@@ -71,6 +79,7 @@ export function saveConfig(patch: Partial<StudioConfig>): StudioConfig {
     token: 'token' in patch ? patch.token : current.token,
     apiKey: 'apiKey' in patch ? patch.apiKey : current.apiKey,
     tenantBaseUrl: 'tenantBaseUrl' in patch ? patch.tenantBaseUrl : current.tenantBaseUrl,
+    minimaxApiKey: 'minimaxApiKey' in patch ? patch.minimaxApiKey : current.minimaxApiKey,
   }
   writeFileSync(CONFIG_PATH, JSON.stringify(next, null, 2) + '\n', { mode: 0o600 })
   // mode 只在文件新建时生效；已存在的旧配置文件（可能是更早版本用默认权限创建的）显式收紧一次
@@ -98,17 +107,39 @@ export function loadConfig(): StudioConfig {
   // tenantBaseUrl 只来自配置文件（没有对应的环境变量），跟 token/apiKey 的取舍无关，
   // 统一透出去，用不用由调用方（目前只有 products/assets 两个命令）决定
   const tenantBaseUrl = file.tenantBaseUrl
+  // MiniMax key 只跟直连 TTS 有关，跟 token/apiKey 的取舍互不影响
+  const minimaxApiKey = process.env.MINIMAX_API_KEY || file.minimaxApiKey
 
   // 环境变量 apiKey 优先（CI/agent 场景）
   const envApiKey = process.env.MUSEAV_API_KEY || process.env.STUDIO_API_KEY
-  if (envApiKey) return { baseUrl, apiKey: envApiKey, tenantBaseUrl }
+  if (envApiKey) return { baseUrl, apiKey: envApiKey, tenantBaseUrl, minimaxApiKey }
 
   // 文件里的 token（个人用户 login）优先于 apiKey
-  if (file.token) return { baseUrl, token: file.token, tenantBaseUrl }
-  if (file.apiKey) return { baseUrl, apiKey: file.apiKey, tenantBaseUrl }
+  if (file.token) return { baseUrl, token: file.token, tenantBaseUrl, minimaxApiKey }
+  if (file.apiKey) return { baseUrl, apiKey: file.apiKey, tenantBaseUrl, minimaxApiKey }
 
   throw new Error(
     `未登录。请运行：museav login\n` +
     `（或租户/B端配置：museav config --apiKey sk-studio-xxx）`
   )
+}
+
+/**
+ * 同 loadConfig，但不因为缺凭证就抛错——返回该有的字段，凭证缺了就是缺了。
+ *
+ * 给"不一定需要中台身份"的命令用：`speak` 走的是直连上游，
+ * 压根不认中台 token/apiKey，为此逼用户先 museav login 属于强人所难。
+ */
+export function loadConfigOptional(): StudioConfig {
+  try {
+    return loadConfig()
+  } catch {
+    const file = readFileConfig()
+    const baseUrl = process.env.MUSEAV_BASE_URL || process.env.STUDIO_BASE_URL || file.baseUrl || DEFAULT_BASE_URL
+    return {
+      baseUrl,
+      tenantBaseUrl: file.tenantBaseUrl,
+      minimaxApiKey: process.env.MINIMAX_API_KEY || file.minimaxApiKey,
+    }
+  }
 }

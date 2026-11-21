@@ -35,6 +35,7 @@ import { assets } from './commands/assets.js'
 import { stickers, createSticker } from './commands/stickers.js'
 import { posterTemplates, createPosterTemplate, updatePosterTemplate, removePosterTemplate } from './commands/poster-templates.js'
 import { registerShop } from './commands/shop.js'
+import { speak } from './commands/speak.js'
 
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8')) as { name: string; version: string }
 // 每 12 小时最多查一次 npm registry，过期才提示，不拖慢日常调用
@@ -220,6 +221,28 @@ program
   .option('--duration <sec>', '目标时长（秒）：只作上下文告诉增强器这段片子多长，不创建视频任务', (v) => Number(v))
   .option('-r, --ratio <ratio>', '目标宽高比: 3:4 / 9:16 / 1:1 / 4:3 / 16:9（同样只作上下文）')
   .action(withClient((client: StudioClient, opts: any) => enhance(client, opts)))
+
+program
+  .command('speak [text]')
+  .description('文字转语音：合成音频并落盘，stdout 输出音频路径。直连上游 TTS（不需要中台登录，不扣中台 credits）')
+  .option('-t, --text <text>', '要合成的文本（也可直接作为位置参数）')
+  .option('-f, --file <path>', '从文件读文本（"-" 读 stdin）')
+  .option('-v, --voice <id>', '音色 ID（如 male-qn-qingse）。必填')
+  .option('-l, --language <lang>', '语言：zh / en（不给就让上游自己判断）')
+  .option('--format <fmt>', '音频格式 mp3（默认）/ wav（wav 需要本机 ffmpeg 转一道）')
+  .option('--speed <n>', '语速，1.0 为常速（0.5–2.0）', (v) => v)
+  .option('-o, --out <path>', '输出文件（默认 ./speech-<时间戳>.<格式>）')
+  .option('--provider <name>', '通道：目前只有 minimax（直连上游）。中台未开放语音端点')
+  .option('--model <name>', '上游模型档位（默认 speech-02-hd）')
+  .option('--overwrite', '允许覆盖已存在的输出文件')
+  .action(async (text: string | undefined, opts: any) => {
+    try {
+      await speak(text, opts)
+    } catch (e) {
+      process.stderr.write(`❌ ${(e as Error).message}\n`)
+      process.exit(1)
+    }
+  })
 
 program
   .command('compress <file>')
@@ -610,15 +633,17 @@ program
   .option('--baseUrl <url>', '中台地址，默认 https://manager.museav.top')
   .option('--apiKey <key>', 'apiKey（sk-studio-xxx）')
   .option('--tenantBaseUrl <url>', '租户自己后台的域名，供 products/assets 命令用；已知租户（hym/mzmeso）不配也能跑')
+  .option('--minimaxApiKey <key>', 'MiniMax API Key（`museav speak` 直连上游时需要）')
   .action(async (opts) => {
-    if (!opts.baseUrl && !opts.apiKey && !opts.tenantBaseUrl) {
+    if (!opts.baseUrl && !opts.apiKey && !opts.tenantBaseUrl && !opts.minimaxApiKey) {
       try {
         const cfg = loadConfig()
         process.stderr.write(
           `当前配置 (~/.museav.json):\n` +
           `  baseUrl: ${cfg.baseUrl}\n` +
           `  apiKey: ${cfg.apiKey ? cfg.apiKey.slice(0, 16) + '...' : '(未设置)'}\n` +
-          `  tenantBaseUrl: ${cfg.tenantBaseUrl || '(未设置，products/assets 对已知租户用内置默认值)'}\n`,
+          `  tenantBaseUrl: ${cfg.tenantBaseUrl || '(未设置，products/assets 对已知租户用内置默认值)'}\n` +
+          `  minimaxApiKey: ${cfg.minimaxApiKey ? cfg.minimaxApiKey.slice(0, 12) + '...' : '(未设置，仅直连 TTS 需要)'}\n`,
 
         )
       } catch (e) {
@@ -632,7 +657,8 @@ program
       `✅ 已保存到 ~/.museav.json\n` +
       `  baseUrl: ${cfg.baseUrl}\n` +
       `  apiKey: ${cfg.apiKey ? cfg.apiKey.slice(0, 16) + '...' : '(未设置)'}\n` +
-      `  tenantBaseUrl: ${cfg.tenantBaseUrl || '(未设置)'}\n`,
+      `  tenantBaseUrl: ${cfg.tenantBaseUrl || '(未设置)'}\n` +
+      `  minimaxApiKey: ${cfg.minimaxApiKey ? cfg.minimaxApiKey.slice(0, 12) + '...' : '(未设置)'}\n`,
     )
     // 配置了 apiKey 就识别身份打招呼（租户欢迎；个人 token 场景欢迎在 login 后打）
     if (opts.apiKey) {

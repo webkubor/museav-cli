@@ -21,7 +21,7 @@ museav speak "第三集开始，雨水顺着屋檐落下来" --voice male-qn-qin
 | `-v, --voice <id>` | 音色 ID（如 `male-qn-qingse`）。**必填** |
 | `-l, --language <lang>` | `zh` / `en`；不给就让上游自己判断 |
 | `--format <fmt>` | `mp3`（默认）/ `wav` |
-| `--speed <n>` | 语速，`1.0` 为常速 |
+| `--speed <n>` | 语速，`1.0` 为常速；只收 `0.5`–`2.0` 之间的数字，别的值在调用上游前就报错 |
 | `-o, --out <path>` | 输出文件；不给则落到 `./speech-<时间戳>.<格式>` |
 | `--model <name>` | 上游模型档位，默认 `speech-02-hd` |
 | `--overwrite` | 允许覆盖已存在的输出文件 |
@@ -63,9 +63,9 @@ museav speak "第三集开始，雨水顺着屋檐落下来" --voice male-qn-qin
 - 音频在 `data.audio`，是 **hex 字符串**（不是 base64，也不是直链），CLI 解码后落盘。
 - `language_boost` 只在给了 `--language` 时才发（上游自己会按文本判断语言）。
 
-## 接入 muse·tv（reel-kit）
+## 接入 muse·tv
 
-muse·tv 的配音链路在 `reel-kit/src/voice.mjs`，`--voice-engine museav` 这一档原来直接抛错
+muse·tv 的配音链路在 `muse-tv` 仓的 `src/voice.mjs`，`--voice-engine museav` 这一档原来直接抛错
 （"中台的 CLI 里没有 speak 命令"）。接上 CLI 之后的形状是：
 
 ```bash
@@ -75,19 +75,21 @@ museav speak "$TEXT" --voice "$VOICE" --format wav --out "$OUT" --overwrite
 
 ### 已经落地了
 
-接线在 reel-kit 仓（远端 `museav-ai/muse-tv`）落到了分支 `feat/museav-speak-voice`、
-commit `ace4666`，**尚未合并 main**，等评审。落地版比本仓原先给的方案多补了三点，
+接线在 `muse-tv` 仓（远端 `museav-ai/muse-tv`）落到了 commit `ace4666`，并已随 PR #4
+合入 main（merge commit `0916407`，2026-11-20）。落地版比本仓原先给的方案多补了三点，
 都是跑起来才暴露的坑：
 
 - 音色给默认值 `male-qn-qingse`（`speak` 必填 `--voice`，不给会让整条链路因为一个
   可省参数挂掉；可用 `REEL_MUSEA_VOICE` 覆盖）；
-- 显式透传 `MINIMAX_API_KEY`——CLI 只认自己的 `~/.museav.json`，而 reel-kit 的密钥在
-  `~/.reel-kit/config.json`，不透传就是「配了却不认」；
+- 显式透传 `MINIMAX_API_KEY`——CLI 只认自己的 `~/.museav.json`，而 muse·tv 的密钥在
+  `~/.reel-kit/config.json`（配置目录名沿用旧名），不透传就是「配了却不认」；
 - 失败时报到具体第几句，并提示需要 museav-cli 3.17.0+。
 
-接线方案（纯 unified diff，`git apply -p1` 落到 reel-kit 仓根目录）同步在
-[`docs/patches/muse-tv-museav-speak.patch`](./patches/muse-tv-museav-speak.patch)，
-内容与实际落地的 `ace4666` 一致。该改动在 reel-kit 仓，本仓只给方案、不越界改别人的代码。
+那份接线方案（纯 unified diff）留在
+[`docs/patches/muse-tv-museav-speak.patch`](./patches/muse-tv-museav-speak.patch) 里，
+现在只当**历史记录**看：它对应的改动已经进了 muse·tv 的 main，对当前的 muse·tv 再
+`git apply` 是打不上的。要接这条链路，取 muse·tv 仓里的 `ace4666` 就行。
+
 落地版认三个环境变量：
 
 | 变量 | 作用 | 默认 |
@@ -100,7 +102,7 @@ commit `ace4666`，**尚未合并 main**，等评审。落地版比本仓原先�
 
 - **CLI 要先发版**：3.17.0 还没发 npm，`museav speak` 目前只有本地构建可用。
 - **桌面版打包资源要刷新**：桌面版内置的 museav-cli 还是 3.16.0，CLI 发版后要跑
-  reel-kit 的 `scripts/prepare-resources.sh` 重新打包，Reel Studio 里才能直接用这个后端。
+  muse·tv 的 `scripts/prepare-resources.sh` 重新打包，Reel Studio 里才能直接用这个后端。
 
 ## 要 wav，就一定拿到 wav
 
@@ -109,6 +111,8 @@ commit `ace4666`，**尚未合并 main**，等评审。落地版比本仓原先�
 
 - 上游只出 mp3 → 本机 ffmpeg 转成 24kHz 单声道 16bit；
 - 本机没有 ffmpeg → **在调用上游之前**就报错退出，不会先把可能计费的调用跑掉再失败。
+
+找 ffmpeg 先看 PATH（命令能跑通就认），再兜底看几个常见安装位置。
 
 ## 失败时会看到什么
 
@@ -120,6 +124,9 @@ commit `ace4666`，**尚未合并 main**，等评审。落地版比本仓原先�
 | 没配 MiniMax key | `未配置 MiniMax API Key …` |
 | 没给音色 | `MiniMax 直连必须指定 --voice <音色 ID>` |
 | 语言不认 | `--language 只支持 zh / en` |
+| 语速不认 | `--speed 要是一个数字（0.5–2.0）` / `--speed 超出范围` |
+| 上游回空音频 | `上游返回的音频是空的（0 字节）…` |
+| 上游回的不是音频 | `上游返回的内容不是音频（开头 …）…` |
 | 上游拒绝 | `MiniMax 拒绝请求（<code>）：<原因>` / `MiniMax HTTP <status>` |
 | 输出文件已存在 | `输出文件已存在：…（要覆盖加 --overwrite）` |
 | 文本给了多处 | `文本只能给一处：位置参数 / --text / --file 三选一` |

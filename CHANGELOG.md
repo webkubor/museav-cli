@@ -5,7 +5,7 @@
 ### 有了 `museav speak`：文字转语音，音频直接落到本地
 
 以前想给一段文字配音，只能自己找 TTS 服务、自己管 key、自己处理返回的是直链还是 base64，
-再把文件搬到该在的地方。muse·tv（reel-kit）的配音链路更是卡得更死：它的 `--voice-engine museav`
+再把文件搬到该在的地方。muse·tv 的配音链路更是卡得更死：它的 `--voice-engine museav`
 这一档从来就没跑通过——它调的那个 `museav speak` 命令，CLI 里根本不存在，调下去必然
 `unknown command`。
 
@@ -31,9 +31,19 @@ museav speak "第三集开始，雨水顺着屋檐落下来" --voice male-qn-qin
 要 wav 就一定拿到 wav：上游只出 mp3，CLI 先看字节本身再决定要不要用本机 ffmpeg 转一道，
 不会给你一个改后缀的假 wav；本机缺 ffmpeg 时，它是在调用上游（可能计费）**之前**就报错退出。
 
-用法与失败时的报错对照表见 [docs/speak.md](./docs/speak.md)；给 muse·tv 的接线方案见
-[docs/patches/muse-tv-museav-speak.patch](./docs/patches/muse-tv-museav-speak.patch)
-（该接线已在 reel-kit 的 `feat/museav-speak-voice` 分支落地，尚未合并 main）。
+用法与失败时的报错对照表见 [docs/speak.md](./docs/speak.md)；muse·tv 那边已经接上这条链路，
+改动落在 muse-tv 仓的 commit `ace4666`，并已随 PR #4 合入 main（merge commit `0916407`）。
+[docs/patches/muse-tv-museav-speak.patch](./docs/patches/muse-tv-museav-speak.patch) 里那份
+接线方案现在只当历史记录留着——对应的改动已经在 muse-tv 的 main 里，对当前代码再
+`git apply` 是打不上的。
+
+音频落地这头也补了校验：上游回空内容、回了不是 hex 的字符串、或者回了一段根本不是音频的
+字节，CLI 都会在写文件之前就报错退出（退出码 1），不再写出一个 0 字节文件然后告诉你
+"成功"。真 mp3 和真 wav 不受影响，照常放行。
+
+另外 `--speed` 现在只收 0.5–2.0 之间的数字，非法值（比如 `abc`）会在调用上游（可能计费）
+之前就报错，而不是变成 NaN 发给上游；找 ffmpeg 也改成先看 PATH，Windows 和 MacPorts 这类
+装法不再被误判成"没装"。
 
 
 ## 3.16.2 (2026-11-18)
